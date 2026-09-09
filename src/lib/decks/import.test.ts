@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { CollectionRow } from "../manabox/parse";
 import { buildDeckImport, type DeckImport, type ImportCatalogCard } from "./import";
+import { buildDecklistText } from "./export-helpers";
 
 /** Drops the source line. These cases are about which card a line *shape*
  *  resolves to; the line number each row carries is asserted in update.test.ts,
@@ -374,5 +376,63 @@ describe("lineCount", () => {
 
   it("is zero when the list holds nothing but section headers", () => {
     expect(build("SIDEBOARD:\nMAYBEBOARD:\n").lineCount).toBe(0);
+  });
+});
+
+// #364. The feature exists because one real deck could not be represented: a
+// `Partner—Father & son` pair, 88 lines totalling 100 cards, which the app used
+// to import as one commander and 98 of 99 — a card short, a commander missing,
+// and half the list unaddable because identity was measured against the primary
+// alone. The fixture is a reconstruction of that list's shape (the original
+// paste is not recorded in the issue): the totals, the two-commander header and
+// the Jeskai union are what the test turns on, not the individual card choices.
+describe("buildDeckImport — the motivating deck", () => {
+  it("parses the motivating deck as a pair with a body of 98", () => {
+    // Read off the repo root rather than import.meta.url: this file runs under
+    // the jsdom environment, where import.meta.url is an http URL.
+    const text = readFileSync("src/lib/decks/__fixtures__/father-and-son.txt", "utf8");
+
+    // Every name the list mentions becomes a catalog row. The two commanders are
+    // widened with the oracle text and identity the pair actually turns on.
+    const names = [...new Set(
+      text.split("\n").map((l) => l.match(/^\d+\s+(.+)$/)?.[1]?.trim()).filter((n): n is string => !!n),
+    )];
+    const catalog = names.map((name) => {
+      if (name.startsWith("Atreus")) return ATREUS;
+      if (name.startsWith("Kratos")) return KRATOS;
+      // The basics carry their real type line, because that is what lets a line
+      // hold more than one copy of them.
+      if (["Mountain", "Island", "Plains"].includes(name)) {
+        return card({ name, typeLine: `Basic Land — ${name}` });
+      }
+      return card({ name });
+    });
+
+    const result = buildDeckImport({ text, catalog });
+
+    expect(result.declaredCommander?.name).toMatch(/^Atreus/);
+    expect(result.declaredPartner?.name).toMatch(/^Kratos/);
+    expect(result.cards.reduce((n, c) => n + c.quantity, 0)).toBe(98);
+    expect(result.unresolved).toEqual([]);
+
+    // The bug this feature exists to fix: identity is the union, so every card in
+    // a Jeskai pair deck is addable.
+    const identity = new Set([...ATREUS.colorIdentity, ...KRATOS.colorIdentity]);
+    expect([...identity].sort()).toEqual(["R", "U", "W"]);
+
+    // And it round-trips through the exporter.
+    const back = buildDeckImport({
+      text: buildDecklistText({
+        commanderName: result.declaredCommander!.name,
+        partnerName: result.declaredPartner!.name,
+        cards: result.cards.map((c) => ({
+          quantity: c.quantity,
+          name: catalog.find((k) => k.oracleId === c.oracleId)!.name,
+        })),
+      }),
+      catalog,
+    });
+    expect(back.declaredPartner?.name).toBe(result.declaredPartner!.name);
+    expect(back.cards.reduce((n, c) => n + c.quantity, 0)).toBe(98);
   });
 });
