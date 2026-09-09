@@ -203,7 +203,8 @@ export async function createDeck(
   const userId = await requireUserId();
   // One query over both ids: reading the partner separately would say nothing
   // this does not.
-  const commanderIds = partnerOracleId ? [commanderOracleId, partnerOracleId] : [commanderOracleId];
+  const commanderIds =
+    partnerOracleId !== null ? [commanderOracleId, partnerOracleId] : [commanderOracleId];
   const commanderRows = await db.select().from(cards).where(inArray(cards.oracleId, commanderIds));
   const commander = commanderRows.find((c) => c.oracleId === commanderOracleId);
   if (!commander) throw new Error("commander not found");
@@ -213,10 +214,13 @@ export async function createDeck(
     throw new Error("card is not a legal commander");
   }
 
-  const partner = partnerOracleId
-    ? commanderRows.find((c) => c.oracleId === partnerOracleId)
-    : undefined;
-  if (partnerOracleId) {
+  // Presence, not truthiness: this is a server action, so an empty string is a
+  // partner id the request supplied and has to be validated rather than skipped.
+  const partner =
+    partnerOracleId !== null
+      ? commanderRows.find((c) => c.oracleId === partnerOracleId)
+      : undefined;
+  if (partnerOracleId !== null) {
     if (!partner) throw new Error("commander not found");
     if (!partner.commanderLegal || !isCommanderCandidate(partner)) {
       throw new Error("card is not a legal commander");

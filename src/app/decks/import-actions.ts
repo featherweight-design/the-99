@@ -171,7 +171,8 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   // Server actions are reachable via crafted requests — re-validate the commanders
   // rather than trusting the ids the picker sent back. One query over both ids: a
   // second round trip to read the partner would say nothing this one cannot.
-  const commanderIds = partnerOracleId ? [commanderOracleId, partnerOracleId] : [commanderOracleId];
+  const commanderIds =
+    partnerOracleId !== null ? [commanderOracleId, partnerOracleId] : [commanderOracleId];
   const commanderCards = await db
     .select()
     .from(cards)
@@ -182,7 +183,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     throw new Error("card is not a legal commander");
   }
 
-  if (partnerOracleId) {
+  if (partnerOracleId !== null) {
     const partner = commanderCards.find((c) => c.oracleId === partnerOracleId);
     if (!partner) throw new Error("commander not found");
     if (!partner.commanderLegal || !isCommanderCandidate(partner)) {
@@ -198,7 +199,10 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
       // it — only a crafted request reaches that. A pair the *paste* declared is
       // kept with a note, because the paste is the record of a deck that exists,
       // and refusing the import would lose the list rather than correct it.
-      if (input.partnerOracleId) throw new Error("commanders cannot be paired");
+      // Presence, not truthiness: an empty string is a partner the request
+      // supplied, and treating it as absent would route a crafted pair down the
+      // paste-declared path that keeps it.
+      if (input.partnerOracleId != null) throw new Error("commanders cannot be paired");
       notes.push({
         kind: "illegalPairDeclared",
         primary: commander.name,
