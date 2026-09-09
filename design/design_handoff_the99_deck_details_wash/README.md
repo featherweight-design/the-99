@@ -107,7 +107,7 @@ are restored here rather than sent back for another round. The R7 rulings above 
 
 `READINESS.md` was also deleted by both drops with no ruling retiring it. Kept.
 
-### The phone's rename trigger, and the fill decision 13 still appears to require
+### The phone's rename trigger has no fill, and decision 13's summary bullet still asks for one
 
 Shipped in PR #483: on the phone the box behind the rename pencil is gone entirely, and the pencil
 stands alone at `17px` with `COVER_INK_SHADOW`, counterweighted by a 44px `aria-hidden` spacer so

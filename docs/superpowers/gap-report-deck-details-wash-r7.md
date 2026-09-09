@@ -21,7 +21,7 @@ belongs to `/copy-review`.
 2. R7 ruling 3a — the trim paragraph's bold lead no longer takes the status token and inherits the
    paragraph's `var(--fg-body)`, at both widths. Verified in jsdom and on the real surface.
 
-## Deliberate deviations — the mobile rename trigger
+## Deliberate deviations — the mobile rename trigger's size and alignment
 
 Made at the user's direction without a Design round-trip: on the phone the pencil was the only
 chrome inside the band, and a bordered fill outweighed the 20px title beside it. The 44px target is
