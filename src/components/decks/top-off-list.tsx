@@ -54,9 +54,10 @@ export interface TopOffListProps {
   newestAsOf: Date | null;
   onAnnounce: (message: string) => void;
   onInflight: (inflight: boolean) => void;
-  /** Cancel, and the settled commit. Returns focus to the door. The reason is
-      what tells the strip a pass landed, which is what the door note says next. */
-  onClose: (reason: "cancel" | "committed") => void;
+  /** Cancel, and the settled commit. Returns focus to the door. One handler for
+      both, and no reason argument: the strip does the same thing either way,
+      because the selection survives a cancel exactly as it survives a commit. */
+  onClose: () => void;
 }
 
 /** The three ownership clauses, matching the three occupancies of §8's slot. */
@@ -333,7 +334,7 @@ export function TopOffList({
             )
           : topOffCopy.announce.addedNoBuy(String(result.added), String(result.total)),
       );
-      onClose("committed");
+      onClose();
     } catch {
       // A call that never arrived and one that arrived and failed are the same
       // event to the player, and the deck is unchanged either way — including
@@ -547,7 +548,7 @@ export function TopOffList({
           </button>
           <button
             type="button"
-            onClick={() => onClose("cancel")}
+            onClick={onClose}
             disabled={inflight}
             className={[
               "md:order-2 flex-none inline-flex items-center justify-center",

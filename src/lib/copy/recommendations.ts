@@ -157,7 +157,6 @@ export const recommendationsCopy = {
   fill: {
     // In-flight (state 14). One announcement on settle, never per row.
     filling: (n: string) => `Filling ${n} of 99…`,
-    fillingRows: (n: string) => `Sleeving ${n} cards…`,
     filledAnnounce: (filled: string, bought: string) =>
       `Deck filled. ${filled} of 99, ${bought} to buy.`,
     // State 15 — the deck exists, the fill did not land.

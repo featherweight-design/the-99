@@ -48,7 +48,7 @@ function Harness({
   newestAsOf?: Date | null;
   onAnnounce?: (m: string) => void;
   onInflight?: (v: boolean) => void;
-  onClose?: (r: "cancel" | "committed") => void;
+  onClose?: () => void;
 }) {
   const [ticked, setTicked] = useState<Set<string>>(new Set(initialTicked));
   const [declined, setDeclined] = useState<Set<string>>(new Set(initialDeclined));
@@ -271,7 +271,7 @@ describe("TopOffList", () => {
 
     expect(actions.commit).toHaveBeenCalledWith("deck-1", ["owned-1", "owned-2"]);
     expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.announce.addedNoBuy("2", "98"));
-    expect(onClose).toHaveBeenCalledWith("committed");
+    expect(onClose).toHaveBeenCalled();
     expect(onInflight.mock.calls.map((c) => c[0])).toEqual([true, false]);
   });
 
