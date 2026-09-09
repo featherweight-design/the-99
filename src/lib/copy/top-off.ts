@@ -58,8 +58,8 @@ export const topOffCopy = {
      *  and makes the safety promise the review step is for. */
     doorNote: (owned: string) =>
       owned === '1'
-        ? '1 of them is in your collection and arrives ticked. Nothing is added until you say so.'
-        : `${owned} of them are in your collection and arrive ticked. Nothing is added until you say so.`,
+        ? '1 candidate is in your collection and arrives ticked. Nothing is added until you say so.'
+        : `${owned} candidates are in your collection and arrive ticked. Nothing is added until you say so.`,
     /** Reopening after a partial accept. Says what is left and that the
      *  selection survived, so closing the list is never a loss. */
     doorNoteAgain: (cand: string) =>

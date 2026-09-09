@@ -154,16 +154,18 @@ describe("LastSlotsStrip", () => {
 
   // At 390px the open-slot figure is the commit bar's denominator, so the strip
   // caption stops repeating it and picks up the ordering, which phone has
-  // nowhere else to put. Desktop keeps its one caption at both states.
+  // nowhere else to put. Desktop drops the caption outright, because its list
+  // head states both figures and the ordering line states the ordering.
   it("swaps the phone caption for the ordering once the list is open", async () => {
     render(<LastSlotsStrip {...base} />);
     expect(screen.getByText(topOffCopy.strip.captionMobile("3", "3"))).toBeInTheDocument();
+    expect(screen.getByText(topOffCopy.strip.caption("3", "3"))).toBeInTheDocument();
 
     await click(screen.getByRole("button", { name: doorName("3") }));
 
     expect(screen.queryByText(topOffCopy.strip.captionMobile("3", "3"))).toBeNull();
     expect(screen.getByText(topOffCopy.strip.captionMobileOpen("3"))).toBeInTheDocument();
-    expect(screen.getByText(topOffCopy.strip.caption("3", "3"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.caption("3", "3"))).toBeNull();
   });
 
   // The selection survives a close, but the deck does not stand still: a
@@ -282,5 +284,25 @@ describe("LastSlotsStrip", () => {
     await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
 
     expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+  });
+
+  // The strip is the last thing on the builder page, so at 390px the list opens
+  // below the fold and the player is handed a commit bar with no card on screen.
+  // Closing must not scroll: the door is already where the reader is looking.
+  it("brings the panel into view when the list opens, and not when it closes", async () => {
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+
+      scrollIntoView.mockClear();
+      await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
   });
 });

@@ -735,7 +735,11 @@ function CandidateRow({
         onClick={onDecline}
         disabled={inflight}
         aria-label={topOffCopy.list.declineAria(c.name)}
-        className="flex-none flex items-center justify-center w-[26px] h-[26px] md:w-[18px] md:h-[18px] font-mono text-[13px] md:text-[11px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-locked)]"
+        // The glyph stays small; the box around it does not. A 26px square is
+        // under the target floor and sat flush against the inclusion figure, so
+        // the phone box takes the row's full height and its own width away
+        // from that figure.
+        className="flex-none flex items-center justify-center w-[36px] h-[44px] md:w-[22px] md:h-[22px] font-mono text-[13px] md:text-[11px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-locked)]"
       >
         {"×"}
       </button>

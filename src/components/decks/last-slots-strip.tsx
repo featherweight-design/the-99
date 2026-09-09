@@ -131,6 +131,7 @@ function LastSlotsStripInner({
 
   const closeRef = useRef<HTMLButtonElement>(null);
   const exhaustedRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const moveFocus = useRef(false);
 
   function openList() {
@@ -189,7 +190,16 @@ function LastSlotsStripInner({
     if (!moveFocus.current) return;
     moveFocus.current = false;
     const target = open ? closeRef.current : (doorRef.current ?? exhaustedRef.current);
-    target?.focus();
+    // The strip is the last thing on the builder page, so its head sits near the
+    // bottom of the viewport and the list opens below the fold — at 390px the
+    // player is handed a commit bar reading `Add 31 cards` with not one card on
+    // screen, which is the blind add the whole feature exists to end. The head
+    // is brought to the top of the viewport so the rows are what fills it.
+    // Scrolling the focus target would only re-reveal the head, which is already
+    // visible, so the scroll is asked of the panel and denied to the focus.
+    target?.focus({ preventScroll: true });
+    // Optional call: jsdom does not implement scrollIntoView at all.
+    if (open) rootRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
   }, [open]);
 
   // The strip unmounts the moment the deck fills, and a fill can land from the
@@ -227,6 +237,7 @@ function LastSlotsStripInner({
 
   return (
     <div
+      ref={rootRef}
       className={[
         "mx-[16px] md:mx-[30px] mt-[10px] md:mt-[12px] mb-[12px] md:mb-[16px] rounded-[10px]",
         // The open panel is tighter at phone, where the list beneath it carries
@@ -262,9 +273,16 @@ function LastSlotsStripInner({
                     String(candidates.length),
                   )}
             </span>
-            <span className="hidden md:inline">
-              {topOffCopy.strip.caption(String(openSlots), String(candidates.length))}
-            </span>
+            {/* Desktop drops the caption once the list is open: the list's own
+                head carries the candidate count and the slot denominator, and
+                the ordering line carries the ordering, so leaving it up states
+                both a third time. Phone keeps its variant because that head is
+                desktop-only. */}
+            {!open && (
+              <span className="hidden md:inline">
+                {topOffCopy.strip.caption(String(openSlots), String(candidates.length))}
+              </span>
+            )}
           </p>
         )}
 

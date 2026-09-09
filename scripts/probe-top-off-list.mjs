@@ -100,6 +100,10 @@ async function walk(page, width) {
   await boxes.first().waitFor({ timeout: 15_000 });
   const rows = await boxes.count();
   console.log(`[${w}] open: ${rows} rows, ${await ticks()} seeded ticks`);
+  // The open brings the panel to the top of the viewport, smoothly. Shooting
+  // before that settles reads the pre-scroll frame, which is the very thing
+  // this state is here to check at 390px.
+  await page.waitForTimeout(700);
   await shot(page, `${w}-2-open`);
 
   // The pinned bar is out of flow at phone, so the last row is only reachable
