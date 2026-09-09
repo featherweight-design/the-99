@@ -9,7 +9,8 @@ import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
 import { isBasicLand } from "../../lib/decks/grouping";
-import { deckSurfaces, revalidateClaims } from "../../lib/decks/revalidate";
+import { deckSurfaces } from "../../lib/decks/revalidate";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,

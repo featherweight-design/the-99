@@ -9,7 +9,7 @@ import type { DetailedCatalogCard } from "../../lib/collection/match";
 import type { Availability } from "../../lib/decks/availability";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
-import { revalidateClaims } from "../../lib/decks/revalidate";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
 import {
   deckImportMaxBytes,

@@ -1,9 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
-
-// The module under test reaches `next/cache` through `revalidateClaims`, which
-// nothing here calls. Mocked so importing it never depends on Next's runtime:
-// the two functions asserted below are pure, and should stay testable as such.
-vi.mock("next/cache", () => ({ revalidatePath: () => {}, updateTag: () => {} }));
+import { describe, expect, it } from "vitest";
 
 import { claimSurfaces, deckSurfaces } from "./revalidate";
 
