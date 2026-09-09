@@ -8,9 +8,7 @@ vi.mock("../../../db", () => ({
     select: () => ({
       from: () => ({
         innerJoin: () => ({
-          leftJoin: () => ({
-            where: () => ({ groupBy: () => Promise.resolve(rows.value) }),
-          }),
+          where: () => ({ groupBy: () => Promise.resolve(rows.value) }),
         }),
       }),
     }),
@@ -35,7 +33,7 @@ describe("readSynergyCards", () => {
     rows.value = [
       { oracleId: "a", name: "Command Tower", typeLine: "Land", inclusion: 82.4, synergy: 0.01, ownedQuantity: 0 },
     ];
-    const out = await readSynergyCards("user", "cmdr", []);
+    const out = await readSynergyCards("user", ["cmdr"], []);
     expect(out[0].inclusionPct).toBe(82);
     expect(out[0].synergyPts).toBe(1);
   });
@@ -44,7 +42,7 @@ describe("readSynergyCards", () => {
     rows.value = [
       { oracleId: "a", name: "Nulls", typeLine: "Instant", inclusion: null, synergy: null, ownedQuantity: 0 },
     ];
-    const out = await readSynergyCards("user", "cmdr", []);
+    const out = await readSynergyCards("user", ["cmdr"], []);
     expect(out[0].inclusionPct).toBeNull();
     expect(out[0].synergyPts).toBeNull();
   });
@@ -55,7 +53,7 @@ describe("readSynergyCards", () => {
       { oracleId: "high", name: "High", typeLine: "Instant", inclusion: 10, synergy: 0.5, ownedQuantity: 0 },
       { oracleId: "covered", name: "Covered", typeLine: "Artifact", inclusion: 80, synergy: 0.9, ownedQuantity: 2 },
     ];
-    const out = await readSynergyCards("user", "cmdr", ["covered"]);
+    const out = await readSynergyCards("user", ["cmdr"], ["covered"]);
     expect(out.map((c) => c.oracleId)).toEqual(["high", "low"]);
   });
 
@@ -64,7 +62,7 @@ describe("readSynergyCards", () => {
       { oracleId: "a", name: "Owned", typeLine: "Land", inclusion: null, synergy: 0.2, ownedQuantity: 1 },
       { oracleId: "b", name: "Not", typeLine: "Land", inclusion: null, synergy: 0.1, ownedQuantity: 0 },
     ];
-    const out = await readSynergyCards("user", "cmdr", []);
+    const out = await readSynergyCards("user", ["cmdr"], []);
     expect(out.map((c) => c.owned)).toEqual([true, false]);
   });
 
@@ -74,7 +72,7 @@ describe("readSynergyCards", () => {
       { oracleId: "b", name: "Free", typeLine: "Artifact", inclusion: null, synergy: 0.1, ownedQuantity: 1 },
     ];
     committed.value = new Map([["a", { id: "d1", name: "Atraxa" }]]);
-    const out = await readSynergyCards("user", "cmdr", []);
+    const out = await readSynergyCards("user", ["cmdr"], []);
     expect(out.map((c) => c.committedTo)).toEqual(["Atraxa", null]);
   });
 });

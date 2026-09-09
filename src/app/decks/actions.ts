@@ -12,6 +12,7 @@ import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { withinColorIdentity } from "../../lib/cards/identity-where";
 import { getEdhrecData } from "../../lib/edhrec/client";
+import { mergeEdhrecData } from "../../lib/edhrec/merge";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
@@ -326,7 +327,14 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) return { suggestions: [], degraded: false, shoppingFigures: {} };
 
-  const pool = await ownedColorLegalPool(userId, [commander]);
+  // The partner is a second commander for every purpose below: the pool it
+  // legalises and the advice it contributes.
+  const [partner] = deck.partnerOracleId
+    ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
+    : [];
+  const commanders = partner ? [commander, partner] : [commander];
+
+  const pool = await ownedColorLegalPool(userId, commanders);
   const inDeckRows = await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
     .where(eq(deckCards.deckId, deckId));
   const inDeck = new Set(inDeckRows.map((r) => r.oracleId));
@@ -336,8 +344,13 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   // cache). If EDHREC just doesn't index this commander (4xx), data === null
   // but the deck-suggestions panel should NOT flag "degraded" — user's normal
   // pool/role suggestions are unaffected.
-  const { data, unreachable } = await getEdhrecData(commander.oracleId, commander.name);
-  const degraded = unreachable;
+  const results = await Promise.all(commanders.map((c) => getEdhrecData(c.oracleId, c.name)));
+
+  // A pair's advice is the union of both lists, scored by the better of the two:
+  // a card the partner loves is not made worse by the primary not knowing it.
+  const data = mergeEdhrecData(results.map((r) => r.data));
+  // Either commander being unreachable leaves the list knowably incomplete.
+  const degraded = results.some((r) => r.unreachable);
   const topCards = data?.topCards ?? null;
   // Sparse: EDHREC reports a figure only for the cards it knows.
   const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
