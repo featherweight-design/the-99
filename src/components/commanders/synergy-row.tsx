@@ -137,8 +137,10 @@ export function SynergyRow({
 
         {/* Phone meta line: synergy pts · edhrec N% — only shown on phone, hidden on desktop */}
         {isPhone && (
+          // No `md:hidden` here: an inline `display` outranks a utility class,
+          // so the class never hid anything and only read as if it did. The
+          // `isPhone` gate above is the whole of the responsive rule.
           <div
-            className="md:hidden"
             style={{
               display: "flex",
               gap: 6,

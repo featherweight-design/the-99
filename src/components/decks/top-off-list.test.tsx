@@ -49,6 +49,7 @@ function Harness({
   onAnnounce?: (m: string) => void;
   onInflight?: (v: boolean) => void;
   onClose?: () => void;
+  onBarHeight?: (h: number) => void;
 }) {
   const [ticked, setTicked] = useState<Set<string>>(new Set(initialTicked));
   const [declined, setDeclined] = useState<Set<string>>(new Set(initialDeclined));
@@ -67,6 +68,7 @@ function Harness({
       onAnnounce={props.onAnnounce ?? (() => {})}
       onInflight={props.onInflight ?? (() => {})}
       onClose={props.onClose ?? (() => {})}
+      onBarHeight={props.onBarHeight ?? (() => {})}
     />
   );
 }
@@ -98,7 +100,7 @@ describe("TopOffList", () => {
   it("makes untouched rows inert at the cap and names the reason", async () => {
     render(<Harness openSlots={1} initialTicked={["owned-1"]} />);
 
-    expect(screen.getByText(topOffCopy.list.cap("1"))).toBeInTheDocument();
+    expect(screen.getByText(topOffCopy.list.cap)).toBeInTheDocument();
     const other = rowBox("owned-2");
     expect(other).toHaveAttribute("aria-disabled", "true");
     expect(other).toHaveAttribute("aria-describedby", "list-1-cap");
@@ -110,7 +112,7 @@ describe("TopOffList", () => {
   it("lets a ticked row untick at the cap", async () => {
     render(<Harness openSlots={1} initialTicked={["owned-1"]} />);
     await click(rowBox("owned-1"));
-    expect(screen.queryByText(topOffCopy.list.cap("1"))).toBeNull();
+    expect(screen.queryByText(topOffCopy.list.cap)).toBeNull();
   });
 
   // State 17. A quick-add lands while the list is open: the row keeps its slot
@@ -337,7 +339,7 @@ describe("TopOffList", () => {
     rerender(<Harness openSlots={1} initialTicked={["owned-1", "owned-2"]} />);
 
     expect(screen.getByText(topOffCopy.list.headMobile("1", "1"))).toBeInTheDocument();
-    expect(screen.getByText(topOffCopy.list.cap("1"))).toBeInTheDocument();
+    expect(screen.getByText(topOffCopy.list.cap)).toBeInTheDocument();
     // The survivor is the higher-ranked row; the tick lost is the last one made.
     expect(rowBox("owned-1")).toBeChecked();
     expect(rowBox("owned-2")).not.toBeChecked();

@@ -106,11 +106,16 @@ export const topOffCopy = {
     colDecks: 'Decks',
     ordering: 'ranked · synergy, then inclusion, then name',
 
-    /** The cap. Stated as a count with its denominator, and it says what to do
-     *  rather than only what is forbidden. Also the aria-describedby target of
-     *  every inert tick box, so a reader who tabs into one hears why. */
-    cap: (n: string) =>
-      `${n} of ${plural(n, 'slot', 'slots')} ticked — untick one to swap another in`,
+    /** The cap. Says what to do rather than only what is forbidden, and is the
+     *  aria-describedby target of every inert tick box, so a reader who tabs
+     *  into one hears why.
+     *
+     *  The count is deliberately absent, against the file's own
+     *  denominator-in-every-string rule. It led this line as "31 of 31 slots
+     *  ticked", which is `head` word for word at desktop and `headMobile` word
+     *  for word in the bar directly under it, so the one thing the line was for
+     *  arrived third, behind a figure already on screen twice. */
+    cap: 'Untick one to swap another in',
 
     /** The row's accessible name. All four visual atoms are aria-hidden, so
      *  this is the only place the marks are spoken. */
@@ -236,10 +241,15 @@ export const topOffCopy = {
       `${plural(n, 'card', 'cards')} — the roles and the mana base, ${buy} to buy.`,
     seedLineNoBuy: (n: string) =>
       `${plural(n, 'card', 'cards')} — the roles and the mana base.`,
-    /** The seed NAMES its reversal rather than growing a button for it: the
-     *  sweep is a rule and a row away in the toolbar, and duplicating it here
-     *  would put two destructive controls in one box. */
-    seedReversal: 'the sweep reverses it',
+    /** The seed NAMES its reversal rather than growing a button for it: that
+     *  control is a rule and a row away in the toolbar, and duplicating it here
+     *  would put two destructive controls in one box.
+     *
+     *  It is named by the label it actually wears there. This said "the sweep
+     *  reverses it", and "sweep" is an internal word that appears nowhere on
+     *  the surface, so the one row that cannot be undone from here pointed at a
+     *  control the reader could not go and find. */
+    seedReversal: 'Clear all auto reverses it',
 
     passLine: (n: string, slots: string, buy: string) =>
       `${plural(n, 'card', 'cards')} you chose from the last ${slots}, ${buy} of them to buy.`,

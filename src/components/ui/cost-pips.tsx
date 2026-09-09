@@ -61,7 +61,12 @@ export function CostPips({ cost, size = 14, track, cap, spoken, className }: Cos
         aria-hidden
         className={className ?? "flex gap-[3px]"}
         style={{
-          ...(shingled ? { display: "flex", gap: 0 } : null),
+          // Gap only. `display` was set here too, and an inline display beats a
+          // `hidden` utility class, so a track hidden at one width by its own
+          // className drew anyway the moment it shingled — two runs of pips
+          // overprinting each other. Every caller's className carries a display,
+          // including the default below.
+          ...(shingled ? { gap: 0 } : null),
           ...(track === undefined ? null : { width: track, justifyContent: "flex-end" }),
         }}
       >

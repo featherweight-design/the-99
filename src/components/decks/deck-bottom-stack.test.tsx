@@ -4,7 +4,9 @@
 // measured gap — jsdom lays nothing out, so these assert the rule, and
 // `scripts/probe-bottom.mjs` measures the result at runtime.
 import { act, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { topOffCopy } from "../../lib/copy/top-off";
+import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import type { DeckDetail } from "../../lib/decks/read";
 
 vi.mock("../../app/decks/actions", () => ({
@@ -14,6 +16,7 @@ vi.mock("../../app/decks/actions", () => ({
   removeCardFromDeck: vi.fn(),
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
+  commitTopOff: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -59,7 +62,7 @@ function makeDeck(): DeckDetail {
   } as DeckDetail;
 }
 
-async function dock() {
+async function shell(candidates: TopOffCandidate[] = []) {
   await act(async () => {
     render(
       <BuilderShell
@@ -69,9 +72,14 @@ async function dock() {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
+        candidates={candidates}
       />,
     );
   });
+}
+
+async function dock() {
+  await shell();
   return screen.getByTestId("quick-add-dock");
 }
 
@@ -93,6 +101,76 @@ describe("Quick-add bar — phone bottom stack", () => {
     // context, so at `z-auto` this bar lost to them and they drew over the
     // search field.
     expect(bar).toHaveClass("z-20");
+  });
+});
+
+// The open top-off list's commit bar is `fixed`, so it holds no space, and the
+// dock it displaces is hidden rather than shrunk. Nothing in flow then stands in
+// the bottom slot and the last rows of the decklist cannot be scrolled clear of
+// the bar. What makes this worth a test is not that a spacer exists — one did,
+// inside the strip, hundreds of rows above the page foot, where it opened a band
+// of dead space mid-list and reserved nothing at the end. The rule is the
+// spacer's PLACEMENT, which typecheck cannot see.
+describe("Top-off commit bar — page-foot reservation", () => {
+  function candidate(id: string): TopOffCandidate {
+    return {
+      oracleId: id,
+      name: id,
+      typeLine: "Instant",
+      facet: "spell",
+      inclusionPct: 40,
+      synergyPts: 20,
+      owned: true,
+      committedTo: null,
+      manaCost: null,
+      price: null,
+      availability: null,
+    };
+  }
+
+  const realRect = Element.prototype.getBoundingClientRect;
+  afterEach(() => {
+    Element.prototype.getBoundingClientRect = realRect;
+  });
+
+  async function openList() {
+    // jsdom measures everything at zero, and the reservation is conditional on a
+    // real height, so the bar has to report one.
+    Element.prototype.getBoundingClientRect = function () {
+      return { ...realRect.call(this), height: 72 } as DOMRect;
+    };
+    await shell([candidate("a"), candidate("b")]);
+    await act(async () => {
+      screen.getByLabelText(topOffCopy.strip.openAria("59")).click();
+    });
+  }
+
+  it("reserves nothing while the list is closed", async () => {
+    await dock();
+    expect(screen.queryByTestId("top-off-bar-reserve")).toBeNull();
+  });
+
+  it("stands in for the hidden dock, in the dock's own slot", async () => {
+    await openList();
+
+    const dock = screen.getByTestId("quick-add-dock");
+    expect(dock).toHaveClass("max-md:hidden");
+
+    const reserve = screen.getByTestId("top-off-bar-reserve");
+    expect(dock.nextElementSibling).toBe(reserve);
+    expect(reserve.style.height).toBe("72px");
+    // Desktop pins nothing: the commit row is an ordinary element at the foot of
+    // the list there, so a spacer would be a band of dead space under it.
+    expect(reserve).toHaveClass("md:hidden");
+  });
+
+  it("gives the space back when the list closes", async () => {
+    await openList();
+    await act(async () => {
+      screen.getByLabelText(topOffCopy.strip.close).click();
+    });
+
+    expect(screen.queryByTestId("top-off-bar-reserve")).toBeNull();
   });
 });
 
