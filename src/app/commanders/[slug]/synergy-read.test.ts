@@ -3,17 +3,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const rows = vi.hoisted(() => ({ value: [] as unknown[] }));
 const committed = vi.hoisted(() => ({ value: new Map<string, { id: string; name: string }>() }));
 
-vi.mock("../../../db", () => ({
-  db: {
-    select: () => ({
-      from: () => ({
-        innerJoin: () => ({
-          where: () => ({ groupBy: () => Promise.resolve(rows.value) }),
-        }),
-      }),
-    }),
-  },
-}));
+// One chainable builder answers both queries this module builds: the ownership
+// subquery, which ends at `.as`, and the outer select, which is awaited at
+// `.groupBy`. The builder is thenable so the await resolves to the fixture rows.
+vi.mock("../../../db", () => {
+  const chain: Record<string, unknown> = {
+    as: () => ({}),
+    then: (resolve: (value: unknown) => void) => resolve(rows.value),
+  };
+  for (const step of ["from", "innerJoin", "leftJoin", "where", "groupBy"]) {
+    chain[step] = () => chain;
+  }
+  return { db: { select: () => chain } };
+});
 
 // Deck membership has its own query and its own tests. Mocked here so this file
 // keeps describing one shape of row rather than two.

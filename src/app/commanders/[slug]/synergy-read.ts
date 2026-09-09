@@ -30,6 +30,22 @@ export async function readSynergyCards(
   commanderOracleIds: string[],
   coveredOracleIds: string[],
 ): Promise<SynergyCard[]> {
+  // The player's collection, summed per card once and joined in — rather than a
+  // correlated subselect, which the select list would evaluate per support row.
+  // Pre-aggregating is also what keeps a pair honest: joining the raw items
+  // against two support rows for the same card would fan out and count the
+  // copies owned twice. One row per card cannot. `::int` because the driver
+  // hands back `sum()` as a string.
+  const ownedTotals = db
+    .select({
+      oracleId: collectionItems.oracleId,
+      qty: sql<number>`sum(${collectionItems.quantity})::int`.as("qty"),
+    })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId))
+    .groupBy(collectionItems.oracleId)
+    .as("owned_totals");
+
   const rows = await db
     .select({
       oracleId: commanderSupportCards.oracleId,
@@ -42,20 +58,22 @@ export async function readSynergyCards(
       // lists. Over one id the grouped max is the row itself.
       inclusion: max(commanderSupportCards.inclusion),
       synergy: max(commanderSupportCards.synergy),
-      // A correlated subselect rather than a left join: joining the collection
-      // against two support rows for the same card would fan out and sum the
-      // copies owned twice. This does not multiply with the outer row count,
-      // and so needs no groupBy entry.
-      ownedQuantity: sql<number>`coalesce((
-        select sum(ci.quantity) from ${collectionItems} ci
-        where ci.oracle_id = ${commanderSupportCards.oracleId}
-          and ci.user_id = ${userId}
-      ), 0)::int`,
+      ownedQuantity: sql<number>`coalesce(${ownedTotals.qty}, 0)`,
     })
     .from(commanderSupportCards)
     .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId))
+    .leftJoin(ownedTotals, eq(ownedTotals.oracleId, commanderSupportCards.oracleId))
     .where(inArray(commanderSupportCards.commanderOracleId, commanderOracleIds))
-    .groupBy(commanderSupportCards.oracleId, cards.name, cards.typeLine, cards.manaCost);
+    // `owned_totals.qty` holds one value per card, so grouping by it splits
+    // nothing — it is here because Postgres requires every ungrouped select
+    // column to be aggregated, not because the figure varies within a group.
+    .groupBy(
+      commanderSupportCards.oracleId,
+      cards.name,
+      cards.typeLine,
+      cards.manaCost,
+      ownedTotals.qty,
+    );
 
   const committed = await readCommittedDecks(userId);
 
