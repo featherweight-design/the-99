@@ -244,9 +244,10 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
                 color: "var(--fg-body)",
               }}
             >
-              <b className="font-semibold" style={{ color: overInk }}>
-                {overCopy.trim.lead(overWord(toCut))}
-              </b>{" "}
+              {/* Bold, but not the status token: the figure and the delta are the
+                  readout, this line is the remedy, and alarm colour marks the
+                  problem rather than the fix. */}
+              <b className="font-semibold">{overCopy.trim.lead(overWord(toCut))}</b>{" "}
               {overCopy.trim.body(String(toCut))}
             </p>
           )}

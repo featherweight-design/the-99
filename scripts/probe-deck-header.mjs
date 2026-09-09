@@ -110,19 +110,28 @@ const READ_HEADER = `() => {
       ? Math.round((fill.getBoundingClientRect().width / fill.parentElement.getBoundingClientRect().width) * 100)
       : null,
     status: pill ? pill.textContent.trim() : null,
-    // R6 ruling 3 — every ink the over-99 state adds, so the walk can check that
-    // one state is not painted in two alarm colours. The figure row is the bar
-    // track's previous sibling and the trim line is the paragraph after it,
-    // which holds at both breakpoints; the type sizes do not.
+    // R6 ruling 3 — the inks that read the over-99 state out, so the walk can
+    // check that one state is not painted in two alarm colours. The figure row
+    // is the bar track's previous sibling, which holds at both breakpoints; the
+    // type sizes do not.
     overInks: (() => {
       const row = fill?.parentElement?.previousElementSibling;
       if (!row) return null;
-      const inks = [...row.children]
+      return [...row.children]
         .filter(visible)
         .map((s) => ({ text: s.textContent.trim(), color: getComputedStyle(s).color }));
+    })(),
+    // R7 ruling 3a — the trim line is the remedy, not the readout, so its bold
+    // lead is emphasis at the paragraph's own colour rather than the status
+    // token. Both are read so the walk compares them to each other.
+    trimInk: (() => {
       const lead = [...header.querySelectorAll('p b')].find(visible);
-      if (lead) inks.push({ text: lead.textContent.trim(), color: getComputedStyle(lead).color });
-      return inks;
+      if (!lead || !lead.parentElement) return null;
+      return {
+        text: lead.textContent.trim(),
+        lead: getComputedStyle(lead).color,
+        body: getComputedStyle(lead.parentElement).color,
+      };
     })(),
     hasCardDetails: Boolean(detail),
     // The meta row's ground is the claim §C8 makes: in the band at rest, below
@@ -246,7 +255,19 @@ try {
             .join(", ")}`,
         );
       } else {
-        note(`  over-99 inks all read the bar's ${over.barBackground}`);
+        note(`  over-99 readout all reads the bar's ${over.barBackground}`);
+      }
+      // R7 ruling 3a. The lead is checked against its own paragraph rather than
+      // against a token name, so it holds whatever var(--fg-body) resolves to.
+      const trim = over.trimInk;
+      if (!trim) {
+        fail(`the over-99 trim line has no bold lead to check`);
+      } else if (trim.lead === over.barBackground) {
+        fail(`the trim lead "${trim.text}" took the bar's ${trim.lead}`);
+      } else if (trim.lead !== trim.body) {
+        fail(`the trim lead "${trim.text}" is ${trim.lead}, not its paragraph's ${trim.body}`);
+      } else {
+        note(`  the trim lead stays at the paragraph's ${trim.body}`);
       }
     }
 
