@@ -107,6 +107,18 @@ are restored here rather than sent back for another round. The R7 rulings above 
 
 `READINESS.md` was also deleted by both drops with no ruling retiring it. Kept.
 
+### Deviation — the phone's rename trigger drops decision 13's opaque fill
+
+Decision 13 puts an opaque fill, a border and an `8px` radius behind the rename pencil. On a phone
+that box was the only chrome inside the band and outweighed the 20px title beside it, which Hugh
+judged too heavy from his own screenshots. Shipped instead: the box is gone entirely and the pencil
+stands alone at `17px` with `COVER_INK_SHADOW`, counterweighted by a 44px `aria-hidden` spacer so
+the title still centres. The 44×44 target, the `var(--fg)` ink and the always-visible opacity are
+untouched, and desktop still follows decision 13. This was an engineering call taken deliberately
+rather than a Design round-trip, on the grounds that the change is small and reversible; the seven
+property rows it moves are enumerated in `docs/superpowers/gap-report-deck-details-wash-r7.md`.
+Ratify or overturn it at the next drop.
+
 ---
 
 ## R5 — why this revision existed

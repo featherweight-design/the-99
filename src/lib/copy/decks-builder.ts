@@ -352,14 +352,9 @@ export const addPanelCopy = {
 // strings.ts. Over is a working state, so the copy never apologises and never
 // warns — it states the arithmetic and names the way out.
 export const overCopy = {
-  // The fifth pill value. One word, like the other four, and it names the
-  // deck's state rather than the player's activity.
-  pill: "Over",
-
   figure: {
     // The denominator never becomes the total: 99 is a rule of the format, not
     // a target the deck outgrew. Callers pass both figures pre-formatted.
-    over: (built: string) => built,
     denominator: " / 99",
     // A second figure, not a recolour — a lone amber 104 beside a 99 asks the
     // player to do the subtraction.
@@ -379,8 +374,11 @@ export const overCopy = {
   // already the whole message.
   trim: {
     lead: (words: string) => `${words} over the ninety-nine.`,
-    body: (n: string) =>
-      n === "1" ? "Cut one and it is legal." : `Cut ${n} and it is legal.`,
+    // Words in both halves, for the same reason the lead spells its number.
+    // "Five over the ninety-nine. Cut 5 and it is legal." changed register
+    // mid-paragraph, and the singular already spelled itself, so the sentence
+    // disagreed with itself at every count but one.
+    body: (words: string) => `Cut ${words.toLowerCase()} and it is legal.`,
     // Spelled out to nineteen, then digits. Deliberately small: past twenty
     // the player has pasted something wholesale and "Thirty-eight" is more
     // precious than useful.

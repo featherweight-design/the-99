@@ -261,7 +261,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
                 readout, this line is the remedy, and alarm colour marks the
                 problem rather than the fix. */}
             <b className="font-semibold">{overCopy.trim.lead(overWord(toCut))}</b>{" "}
-            {overCopy.trim.body(String(toCut))}
+            {overCopy.trim.body(overWord(toCut))}
           </p>
         )}
       </div>
