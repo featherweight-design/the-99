@@ -237,9 +237,9 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
           {over && (
             <p
               style={{
-                fontSize: 12.5,
+                fontSize: 11.5,
                 lineHeight: 1.5,
-                marginTop: 8,
+                marginTop: 6,
                 maxWidth: 520,
                 color: "var(--fg-body)",
               }}
