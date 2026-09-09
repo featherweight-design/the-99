@@ -23,6 +23,17 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv([
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 
+// Said at startup rather than left to fail inside Clerk. Localhost runs Clerk's
+// dev instance, where only a `+clerk_test` address can be signed in with the
+// fixed code below; a real one reaches sign-in, is offered `password` instead of
+// `email_code`, and reports a factor mismatch that reads like an instance
+// misconfiguration rather than the wrong identity.
+if (!EMAIL.includes("+clerk_test@")) {
+  throw new Error(
+    `E2E_AUDIT_USER_EMAIL must be a Clerk test address (+clerk_test@), got: ${EMAIL}`,
+  );
+}
+
 async function signIn(page) {
   await setupClerkTestingToken({ page });
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
