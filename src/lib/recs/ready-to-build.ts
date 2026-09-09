@@ -7,7 +7,9 @@
 // then `7 more scored 70 or better`, where 70 is the ninth commander's score.
 //
 // A score cut would need a threshold, and this app has deliberately never had
-// one (see src/components/home/commander-count.tsx). Do not add one here.
+// one: no surface has ever told a player their commander scores below a bar,
+// because a score is a ranking device and not a verdict on a deck they own.
+// Do not add one here.
 
 /** How many commanders are "ready to build". Nine, since the first Home. */
 export const READY_COUNT = 9;

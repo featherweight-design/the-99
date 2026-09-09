@@ -286,8 +286,8 @@ export async function createDeck(
     deckId = deck.id;
   }
   // The redirect renders the new deck's own page, but /decks and the home
-  // dashboard both list decks and are held in the client cache for a window
-  // now — without this the deck you just made is missing when you navigate back.
+  // dashboard both list decks, and a back navigation to either is served from
+  // the router cache — without this the deck you just made is missing there.
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
   // Outside the try: redirect() signals by throwing, and a catch here would
   // read that throw as a failed fill.

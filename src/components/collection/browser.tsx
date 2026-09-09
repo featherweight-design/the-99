@@ -1,11 +1,11 @@
 "use client";
 // Top-level collection browse client component.
 // Owns filter/sort/view/window/modal state, mirrors to URL query params
-// (?q= &c= &t= &s= &sort= &dir= &view= &card=) via router.replace shallow so
+// (OWNED_PARAMS below, the authoritative list) via history.replaceState so
 // chips + view + open card deep-link (READINESS #6).
 
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   DEFAULT_SORT_DIRECTION,
   filterCards,
@@ -46,14 +46,24 @@ import { parseColors } from "../../lib/color-param";
 
 const PAGE_SIZE = 200;
 
+/**
+ * The query keys this component owns. Everything else on the URL — a `ref=`, a
+ * campaign tag, anything a future surface adds — belongs to someone else and is
+ * carried through untouched, so the browse state is written by clearing exactly
+ * these and rewriting them rather than by rebuilding the whole query string.
+ */
+const OWNED_PARAMS = ["q", "c", "t", "s", "avail", "sort", "dir", "view", "card"] as const;
+
 function serializeParams(
   filters: BrowseFilters,
   sort: SortKey,
   direction: SortDirection,
   view: ViewMode | null,
   card: string | null,
+  existing: string,
 ): string {
-  const p = new URLSearchParams();
+  const p = new URLSearchParams(existing);
+  for (const key of OWNED_PARAMS) p.delete(key);
   if (filters.search.trim()) p.set("q", filters.search.trim());
   if (filters.colors.length > 0) p.set("c", filters.colors.join(""));
   // Comma-joined; a single bare type still parses, so pre-#100 links survive.
@@ -200,7 +210,6 @@ export function CollectionBrowser({
    */
   availabilityOk: boolean;
 }) {
-  const router = useRouter();
   const search = useSearchParams();
   const isDesktop = useIsDesktop();
 
@@ -343,13 +352,25 @@ export function CollectionBrowser({
     [openCardId, sorted],
   );
 
-  // Push state → URL. Shallow via router.replace so it doesn't refetch the RSC.
+  // Push state → URL via history, not the router. `/collection` ships the whole
+  // list in one payload and its page reads no searchParams, so every filter and
+  // sort change is answered from state already in this component — a
+  // `router.replace` would fetch an RSC payload identical to the one on screen.
   // Serialize the card param only when the card actually resolved; avoids
   // stale ?card= for IDs not in the current filtered result set.
   useEffect(() => {
-    const qs = serializeParams(filters, sort, sortDirection, view, openCard ? openCardId : null);
-    router.replace(`/collection${qs}`, { scroll: false });
-  }, [filters, sort, sortDirection, view, openCardId, openCard, router]);
+    const qs = serializeParams(
+      filters,
+      sort,
+      sortDirection,
+      view,
+      openCard ? openCardId : null,
+      // The live URL, not the mount-time one: a param this component does not
+      // own can arrive after mount and must survive the next filter change.
+      window.location.search,
+    );
+    window.history.replaceState(null, "", `/collection${qs}`);
+  }, [filters, sort, sortDirection, view, openCardId, openCard]);
   const openIndex = useMemo(
     () => (openCard ? sorted.findIndex((c) => c.oracleId === openCard.oracleId) : -1),
     [openCard, sorted],
