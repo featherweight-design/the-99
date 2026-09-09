@@ -89,6 +89,19 @@ const READ_HEADER = `() => {
   return {
     found: true,
     renameLabel: pencil ? pencil.getAttribute('aria-label') : null,
+    // The phone trigger lost its box but must keep its target, and a target is
+    // the one thing a class-name assertion cannot prove. Measured, not read.
+    renameBox: (() => {
+      if (!pencil) return null;
+      const r = pencil.getBoundingClientRect();
+      const cs = getComputedStyle(pencil);
+      return {
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+        background: cs.backgroundColor,
+        borderWidth: cs.borderTopWidth,
+      };
+    })(),
     plateBackground: art?.parentElement
       ? getComputedStyle(art.parentElement).backgroundColor
       : null,
@@ -223,6 +236,16 @@ try {
         fail(`rename trigger labelled "${h.renameLabel}", not "Rename deck: ${h.title}"`);
       }
       if (!h.title) fail(`no title in the header`);
+      // The phone trigger is always visible because there is no hover, so it
+      // keeps its 44px target while giving up the box that used to draw it.
+      if (vpName === "mobile") {
+        const box = h.renameBox;
+        if (!box) fail(`no rename trigger in the mobile header`);
+        else if (box.w < 44 || box.h < 44) fail(`rename target is ${box.w}x${box.h}, under 44`);
+        else if (box.borderWidth !== "0px" || !/rgba\(0, 0, 0, 0\)|transparent/.test(box.background)) {
+          fail(`rename trigger still draws a box: ${box.borderWidth} border on ${box.background}`);
+        } else note(`  rename trigger is a bare ${box.w}x${box.h} target`);
+      }
       // Mobile sits on the wash and must carry the shared ink shadow; desktop's
       // strings are past the scrim's flat stop and must carry none.
       const hasShadow = h.titleShadow && h.titleShadow !== "none";

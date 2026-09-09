@@ -86,4 +86,14 @@ describe("SpineMobile", () => {
     // applies no stylesheet, so the assertion is that nothing overrides it.
     expect(lead?.style.color).toBe("");
   });
+
+  // The phone has no hover, so the trigger is always visible — which is why it
+  // must stay a full 44px target even after losing the box that used to draw it.
+  it("keeps the rename trigger at a phone target with no box of its own", () => {
+    renderSpine(<SpineMobile {...props} />);
+    const trigger = screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) });
+    expect([trigger.style.width, trigger.style.height]).toEqual(["44px", "44px"]);
+    expect(trigger.className).not.toContain("border");
+    expect(trigger.className).not.toContain("bg-");
+  });
 });

@@ -158,9 +158,13 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
           ) : (
             <>
               <div
-                className="flex items-start justify-center"
+                className="flex items-center justify-center"
                 style={{ gap: 8, maxWidth: "100%" }}
               >
+                {/* The trigger's own width, opposite it: the row centres title
+                    and trigger together, so without this the name sits half a
+                    trigger left of the band's centre. */}
+                <span aria-hidden="true" className="flex-none" style={{ width: 44 }} />
                 <h1
                   className="min-w-0 font-display font-[700]"
                   style={{
@@ -177,13 +181,23 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
                 >
                   {deck.name}
                 </h1>
-                {/* Always visible, at a phone target: there is no hover here. */}
+                {/* Always visible, at a phone target: there is no hover here.
+                    The 44px target stays, but the box around it goes — it was
+                    the only chrome in the band, so a bordered fill outweighed
+                    the 20px title it sits beside. The glyph takes the title's
+                    ink and its shadow instead, because both are on art. */}
                 <button
                   type="button"
                   onClick={() => setRenaming(true)}
                   aria-label={renameCopy.triggerAria(deck.name)}
-                  className="flex flex-none items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-[color:var(--fg)]"
-                  style={{ width: 44, height: 44, fontSize: 15, cursor: "pointer" }}
+                  className="flex flex-none items-center justify-center text-[color:var(--fg)]"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    fontSize: 17,
+                    textShadow: COVER_INK_SHADOW,
+                    cursor: "pointer",
+                  }}
                 >
                   ✎
                 </button>
