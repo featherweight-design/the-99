@@ -86,6 +86,17 @@ describe("useDeckRename", () => {
     expect(result.current.error).toBe(renameCopy.errorLength);
   });
 
+  // U+0085 is a C1 control character. The server rejects it; a field with its
+  // own narrower regex would send it and show the generic failure instead of
+  // naming the rule the name broke.
+  it("names the control-character rule for the whole range the server rejects", async () => {
+    const { result } = renderHook(() => useDeckRename("d1", "Atraxa", () => {}));
+    act(() => result.current.setValue("Atraxa\u0085Superfriends"));
+    await act(async () => result.current.commit());
+    expect(renameDeck).not.toHaveBeenCalled();
+    expect(result.current.error).toBe(renameCopy.errorControl);
+  });
+
   it("a blur with no change closes without calling the action", async () => {
     const onDone = vi.fn();
     const { result } = renderHook(() => useDeckRename("d1", "Atraxa", onDone));

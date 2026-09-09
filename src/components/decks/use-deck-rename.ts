@@ -3,9 +3,9 @@
 import { useCallback, useState, useTransition } from "react";
 import { renameDeck } from "../../app/decks/actions";
 import { renameCopy } from "../../lib/copy/decks-builder";
-
-const MAX_NAME = 120;
-const CONTROL_CHARS = /[\u0000-\u001F\u007F]/;
+// The server's own rules, not a copy of them: a field that rejects less than the
+// action does turns a mistake it could have named into the generic failure.
+import { DECK_NAME_MAX, hasControlChars } from "../../lib/decks/deck-name";
 
 /**
  * The rename state machine, with no layout of its own. The builder spine renders
@@ -51,11 +51,11 @@ export function useDeckRename(deckId: string, currentName: string, onDone: () =>
   // so Enter on either does nothing at all and the field stays open.
   const commit = useCallback(() => {
     if (!canSave) return;
-    if (trimmed.length > MAX_NAME) {
+    if (trimmed.length > DECK_NAME_MAX) {
       setError(renameCopy.errorLength);
       return;
     }
-    if (CONTROL_CHARS.test(trimmed)) {
+    if (hasControlChars(trimmed)) {
       setError(renameCopy.errorControl);
       return;
     }
