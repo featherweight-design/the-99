@@ -189,6 +189,8 @@ export const topOffCopy = {
     inFlight: (ticked: string) => `Sleeving ${plural(ticked, 'card', 'cards')}…`,
     /** UNCHANGED — synergyCopy.lastSlots.topUpFailed. */
     refused: 'We couldn’t add those. The deck is unchanged.',
+    /** The plate's eyebrow, naming the state the sentence beside it explains. */
+    refusedLabel: 'refused',
   },
 
   // ── The provenance ledger (#359, in full) ─────────────────────────────

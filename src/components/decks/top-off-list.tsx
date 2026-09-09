@@ -832,7 +832,7 @@ export function RefusalPlate({
         className="flex-none font-mono uppercase"
         style={{ fontSize: "9.5px", letterSpacing: ".1em", color: "var(--danger)" }}
       >
-        refused
+        {topOffCopy.commit.refusedLabel}
       </span>
       <span className="text-[12.5px]" style={{ color: "var(--fg-body)" }}>
         {message}
