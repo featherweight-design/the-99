@@ -12,8 +12,9 @@ Files:
 - `brand/` — the locked brand sheet. **Not a colour source** (see the wash handoff's note on this).
 
 Decisions continue the numbering from `design_handoff_the99_deck_details_wash/` (11–15), so partner
-decisions are **16–21**. Every colour is `var(--*)`; two inherited literals remain and are named in
-the canvas's palette comment.
+decisions are **16–23** — R2 withdraws 16 and adds 22 and 23, both recorded in the table below.
+Every colour is `var(--*)`; four inherited literals remain and are named in the canvas's palette
+comment.
 
 The **§4 ceiling is assumed throughout**: a pair deck is 98, and every count drawn reads against 98.
 
@@ -131,8 +132,9 @@ and ~240px of actions). Between 768 and 1050px the partner ellipsises, correctly
 asymmetric rule below. §2's frame is drawn at 1180px for exactly this reason.
 
 The **resume row prints short names**: the substring before the first comma, which is the identifying
-half of a legend's name and the half a player says out loud. `commanderShortName`
-(`builder-shell.tsx:278`) already computes it, so this is an existing helper applied to both halves.
+half of a legend's name and the half a player says out loud. `shortCommanderName`
+(exported at `src/lib/copy/decks-builder.ts:17`) already computes it, so this is an existing helper
+applied to both halves.
 A name with no comma is already short and returns whole.
 
 `Ishai + Bruse Tarl` — 18 characters where the full pair is 55, and at the resume row's real width it
@@ -271,7 +273,7 @@ Per §6's split, the eng-carried four are not redesigned here:
 
 - **Pips and identity label** become the union from §2's colour rule; the pips are already a set. The
   canvas draws them as Jeskai to show where the label lands, not to respec them.
-- **`commanderShortName`'s other callers** — the guided banner and two empty-state strings — stay
+- **`shortCommanderName`'s other callers** — the guided banner and two empty-state strings — stay
   singular on the primary. This handoff reuses the helper on the resume row and touches none of those
   three sentences.
 - **Deck tiles on `/decks`** render no commander; nothing to widen.

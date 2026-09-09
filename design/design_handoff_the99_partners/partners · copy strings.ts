@@ -55,7 +55,7 @@ export const partnerCopy = {
 
   // ── The re-headed list, while a partner is being picked ────────────────────
   //
-  // `short` is commanderShortName(primary.name) — the primary scrolls out of
+  // `short` is shortCommanderName(primary.name) — the primary scrolls out of
   // view on a phone, so this strip is the only thing naming what you are
   // pairing. Short rather than full because the strip also carries the count
   // and a Cancel, and the full name is 27 characters of a 358px row.
