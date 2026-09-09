@@ -50,7 +50,7 @@ function makePass(
     kept: opts.kept ?? 0,
     removed: opts.removed ?? 0,
     openSlots: opts.openSlots ?? 5,
-    liveCards: oracleIds.map((oracleId) => ({ oracleId, quantity: 1 })),
+    liveCards: opts.liveCards ?? oracleIds.map((oracleId) => ({ oracleId, quantity: 1 })),
   };
 }
 
@@ -117,6 +117,20 @@ describe("ProvenanceLedger", () => {
       [makePass("p1", { oracleIds: ["a", "b"], openSlots: 5 })],
     );
     expect(sentences()).toContain(ledger.passLine("2", "5", "1"));
+  });
+
+  it("counts copies, not cards, in a stacked pass's buy figure", () => {
+    // Four copies of one unowned card is four to buy, not one.
+    mount(
+      [makeCard("a", { auto: true, owned: false, quantity: 4 })],
+      [makePass("p1", {
+        oracleIds: ["a"],
+        live: 4,
+        openSlots: 5,
+        liveCards: [{ oracleId: "a", quantity: 4 }],
+      })],
+    );
+    expect(sentences()).toContain(ledger.passLine("4", "5", "4"));
   });
 
   it("drops the buy clause when the pass bought nothing", () => {

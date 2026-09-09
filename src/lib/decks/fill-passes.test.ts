@@ -63,6 +63,48 @@ describe("summariseFillPasses", () => {
     expect(line).toMatchObject({ live: 1, kept: 0, removed: 1 });
   });
 
+  it("carries a stacked card's whole quantity through to the undo", () => {
+    const [line] = summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "forest", 30)],
+      deckCards: [live("forest", 30)],
+    });
+    expect(line).toMatchObject({ live: 30, kept: 0, removed: 0 });
+    expect(line.liveCards).toEqual([{ oracleId: "forest", quantity: 30 }]);
+  });
+
+  it("holds only what the deck still has of a trimmed stack", () => {
+    // The mana base placed 30 Forests and the player cut it to 24. Six are gone,
+    // and `Undo these 24` is the only honest offer.
+    const [line] = summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "forest", 30)],
+      deckCards: [live("forest", 24)],
+    });
+    expect(line).toMatchObject({ live: 24, kept: 0, removed: 6 });
+    expect(line.liveCards).toEqual([{ oracleId: "forest", quantity: 24 }]);
+  });
+
+  it("never claims copies the player added on top of a stack", () => {
+    // The pass placed 8; the deck holds 12. The other four are the player's, and
+    // an undo that took them would remove cards the app never placed.
+    const [line] = summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "island", 8)],
+      deckCards: [live("island", 12)],
+    });
+    expect(line).toMatchObject({ live: 8, kept: 0, removed: 0 });
+    expect(line.liveCards).toEqual([{ oracleId: "island", quantity: 8 }]);
+  });
+
+  it("counts a stack the player has claimed as kept, not live", () => {
+    expect(summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "swamp", 9)],
+      deckCards: [kept("swamp", 9)],
+    })).toEqual([]);
+  });
+
   it("drops a pass with no live cards, so its line goes", () => {
     expect(summariseFillPasses({
       passes: [pass({ id: "p1" })],
