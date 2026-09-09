@@ -371,9 +371,12 @@ export const topOffCopy = {
 //    or without.
 //
 // 8. recommendationsCopy.fill.provenance / .provenanceMobile /
-//    .provenanceAllOwned / .provenanceShort — DELETED. All four stated one
-//    deck-wide total for the whole fill, which is the thing the ledger stops
-//    doing. `provenanceShort`'s wording survives twice over: as ledger.seedLine
+//    .provenanceAllOwned / .provenanceShort / .provenanceFull /
+//    .provenanceFullAllOwned — DELETED. All six stated one deck-wide total for
+//    the whole fill, which is the thing the ledger stops doing. The full-fill
+//    pair was added to stop a 99/99 deck reading "The other 0 are yours"; the
+//    ledger cannot say that at all, because it counts each pass and never hands
+//    back a remainder. `provenanceShort`'s wording survives twice over: as ledger.seedLine
 //    (the seed is a line in the ledger, and its sentence is the one the strip
 //    already said) and, as the exhausted-list sentence in STATES §13, where
 //    the shipped key is synergyCopy.lastSlots.short rather than this one.

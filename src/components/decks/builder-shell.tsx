@@ -49,7 +49,7 @@ import { topOffCopy } from "../../lib/copy/top-off";
 // reaches for the database.
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { LastSlotsStrip } from "./last-slots-strip";
-import { deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
+import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";

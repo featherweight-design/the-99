@@ -201,37 +201,6 @@ describe("ProvenanceLedger", () => {
     });
   });
 
-  // The staging defect: a fill that reached 99 rendered state 13's shortfall
-  // copy, so the line read "We filled 99 of 99. Draw came up short… The other 0
-  // are yours" — three clauses contradicting one another.
-  it("takes the full-fill branch at 0 open, whatever the role tally says", () => {
-    const cards = [makeCard("a", { auto: true, owned: false })];
-    render(
-      <ProvenanceLine cards={cards} filled={99} bought={12} open={0} shortRole="draw" width="desktop" />,
-    );
-    expect(
-      screen.getByText(recommendationsCopy.fill.provenanceFull("99", "12")),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/came up short/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/other 0 are yours/)).not.toBeInTheDocument();
-  });
-
-  it("takes the full all-owned branch when a full fill bought nothing", () => {
-    const cards = [makeCard("a", { auto: true, owned: true })];
-    render(<ProvenanceLine cards={cards} filled={99} bought={0} open={0} width="desktop" />);
-    expect(
-      screen.getByText(recommendationsCopy.fill.provenanceFullAllOwned("99")),
-    ).toBeInTheDocument();
-  });
-
-  it("uses the same full-fill copy at phone width", () => {
-    const cards = [makeCard("a", { auto: true, owned: false })];
-    render(<ProvenanceLine cards={cards} filled={99} bought={12} open={0} width="phone" />);
-    expect(
-      screen.getByText(recommendationsCopy.fill.provenanceFull("99", "12")),
-    ).toBeInTheDocument();
-  });
-
   it("leaves when the last auto card does", () => {
     const passes = [makePass("p1", { oracleIds: ["a"] })];
     const { rerender } = mount([makeCard("a", { auto: true })], passes);

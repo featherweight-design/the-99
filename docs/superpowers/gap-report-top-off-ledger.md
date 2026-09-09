@@ -66,19 +66,24 @@ open gap.
 ## Copy review (Gate 7)
 
 Run over the diff in propose mode. The whole `ledger` block is quoted verbatim in the merged
-design table and is therefore frozen; this diff adds one string and deletes four.
+design table and is therefore frozen; this diff adds one string and deletes six.
 
 - `ledger.markedRow` — A11y, exempt from cuts, matches §14's wording. KEEP.
-- `fill.provenance` / `.provenanceMobile` / `.provenanceAllOwned` / `.provenanceShort` —
-  deleted with the surface they described. `rg -F` finds no live consumer; `deck-import.ts`
-  has its own unrelated `provenanceMobile`.
+- `fill.provenance` / `.provenanceMobile` / `.provenanceAllOwned` / `.provenanceShort` /
+  `.provenanceFull` / `.provenanceFullAllOwned` — deleted with the surface they described.
+  `rg -F` finds no live consumer; `deck-import.ts` has its own unrelated `provenanceMobile`.
+  The last two landed on main in #462, after this branch was cut, to stop a 99/99 fill
+  reading "The other 0 are yours". That fix is superseded rather than lost: the ledger
+  reports each pass's own count and never hands back a deck-wide remainder, so the sentence
+  the fix existed to prevent has no branch to render from. #462's three regression tests go
+  with the props they exercised.
 - One low defect found and fixed in this PR: the `sr-only` mark phrase was the marked row's
   first child, so a screen reader read "from top-off 1" before the card's name. It now
   follows the name and the auto tag.
 
 ## Sibling sweep (Gate 3)
 
-`rg` over the four deleted copy keys returns only documentation, design handoffs and the
+`rg` over the six deleted copy keys returns only documentation, design handoffs and the
 unrelated `deck-import.ts` key. No other surface still renders a deck-wide provenance
 sentence.
 
