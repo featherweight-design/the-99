@@ -361,11 +361,12 @@ export function BuilderShell({
               mix.label,
               computeRoleCounts(before)[card.role as MixRole] + card.quantity,
               mix.target,
+              bodySize,
             )
-          : addPanelCopy.announce.addedNoRole(card.name, nextBuilt),
+          : addPanelCopy.announce.addedNoRole(card.name, nextBuilt, bodySize),
       );
     },
-    [addOptimisticCard, cards],
+    [addOptimisticCard, cards, bodySize],
   );
 
   // Split in two on purpose. `useDeckMutation` dispatches its optimistic update
@@ -383,10 +384,14 @@ export function BuilderShell({
       // that decrements keeps its row, and its own count is the receipt.
       if (card.quantity > 1) return;
       setAnnouncement(
-        addPanelCopy.undo.announceRemoved(card.name, deckCounts(cards).built - 1),
+        addPanelCopy.undo.announceRemoved(
+          card.name,
+          deckCounts(cards).built - 1,
+          bodySize,
+        ),
       );
     },
-    [cards],
+    [cards, bodySize],
   );
   const removeCard = useCallback(
     (card: DeckDetailCard) => removeOptimisticCard(card.oracleId),
@@ -396,10 +401,14 @@ export function BuilderShell({
   const announceUndo = useCallback(
     (card: DeckDetailCard) => {
       setAnnouncement(
-        addPanelCopy.undo.announceUndone(card.name, deckCounts(cards).built + card.quantity),
+        addPanelCopy.undo.announceUndone(
+          card.name,
+          deckCounts(cards).built + card.quantity,
+          bodySize,
+        ),
       );
     },
-    [cards],
+    [cards, bodySize],
   );
   // A failed removal outlives the row that asked for it, so its reason is held
   // here. Cleared when the server answers again: any successful edit replaces
@@ -448,7 +457,10 @@ export function BuilderShell({
         const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
         const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
-          recommendationsCopy.auto.sweptAnnounce(String(removedCount), builtFragment(remaining)),
+          recommendationsCopy.auto.sweptAnnounce(
+            String(removedCount),
+            builtFragment(remaining, bodySize),
+          ),
         );
       } catch {
         // No explicit rollback: the transition ends here and React drops the
@@ -456,7 +468,7 @@ export function BuilderShell({
         setAutoError(recommendationsCopy.auto.sweepFailed);
       }
     });
-  }, [sweepPending, cards, deck.id, sweepOptimisticAuto]);
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto, bodySize]);
 
   // No receipt strip and no undo: a keep takes nothing, so there is nothing for
   // a receipt to hold open, and an undo would have to write `auto = true` back
@@ -500,7 +512,7 @@ export function BuilderShell({
       setAnnouncement(
         recommendationsCopy.auto.sweptRestoredAnnounce(
           String(restored),
-          builtFragment(deckCounts(cards).built + restored),
+          builtFragment(deckCounts(cards).built + restored, bodySize),
         ),
       );
       setSweptRows(null);
@@ -509,7 +521,7 @@ export function BuilderShell({
       // the sweep's "the deck is unchanged" would be the wrong action and false.
       setAutoError(recommendationsCopy.auto.restoreFailed);
     }
-  }, [sweptRows, deck.id, cards]);
+  }, [sweptRows, deck.id, cards, bodySize]);
 
   // Clear sweep state when the server list changes (revalidation settled).
   // The sweep receipt is decklist state: it persists across tab switches but

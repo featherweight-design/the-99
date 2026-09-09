@@ -379,7 +379,7 @@ describe("undo row lifetime (#185)", () => {
 
     await removeFromBuilder("Sol Ring");
     expect(liveRegion(container)).toHaveTextContent(
-      addPanelCopy.undo.announceRemoved("Sol Ring", 1),
+      addPanelCopy.undo.announceRemoved("Sol Ring", 1, 99),
     );
 
     await act(async () => {
@@ -388,7 +388,7 @@ describe("undo row lifetime (#185)", () => {
       );
     });
     expect(liveRegion(container)).toHaveTextContent(
-      addPanelCopy.undo.announceUndone("Sol Ring", 2),
+      addPanelCopy.undo.announceUndone("Sol Ring", 2, 99),
     );
     expect(container.querySelectorAll(BUILDER_REGION)).toHaveLength(1);
   });

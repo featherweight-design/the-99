@@ -652,7 +652,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     });
 
     expect(
-      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("2", builtFragment(2))),
+      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("2", builtFragment(2, 99))),
     ).toBeInTheDocument();
   });
 
@@ -681,7 +681,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     });
 
     expect(
-      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("1", builtFragment(1))),
+      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("1", builtFragment(1, 99))),
     ).toBeInTheDocument();
   });
 
