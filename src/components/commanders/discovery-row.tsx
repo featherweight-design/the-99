@@ -409,11 +409,11 @@ export function DiscoveryRow({
           )}
         </div>
 
-        {/* ── Desktop band: grid 24px 1fr auto 32px ── */}
+        {/* ── Desktop band: grid 24px 1fr auto ── */}
         <div
           className="relative hidden h-full sm:grid p-[24px_26px]"
           style={{
-            gridTemplateColumns: "24px 1fr auto 32px",
+            gridTemplateColumns: "24px 1fr auto",
             gap: 20,
             alignItems: "end",
           }}
@@ -486,18 +486,6 @@ export function DiscoveryRow({
           ) : (
             <span />
           )}
-
-          {/* Trailing action. `z-[2]` above the stretched link, which it shares a
-              destination with: the pill names the action the whole row performs. */}
-          <div className="flex items-center justify-center">
-            <Link
-              href={href}
-              className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[color-mix(in_oklab,var(--bg)_50%,transparent)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-              style={{ fontSize: 11 }}
-            >
-              {discoverCopy.row.action}
-            </Link>
-          </div>
         </div>
       </div>
 
@@ -555,7 +543,7 @@ export function DiscoveryRow({
         <div
           className="relative hidden sm:grid p-[24px_26px]"
           style={{
-            gridTemplateColumns: "24px 1fr 246px 32px",
+            gridTemplateColumns: "24px 1fr 246px",
             gap: 20,
             alignItems: "start",
           }}

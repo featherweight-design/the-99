@@ -549,194 +549,200 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
         excludedByExactly={excludedByExactly}
       />
 
-      {/* State 1 sits ABOVE a full list, not in place of one: with no decks
-          built the fit ranking is complete and only `Something new` is off. */}
-      {!discovery.hasDecks ? <NoDecksBanner /> : null}
+      {/* The inset the owned lane draws its list in, and for the same reason:
+          the rows run to the page edge without it, which clipped the right of
+          every desktop row. `flex-1` so a zero state can centre in what the
+          rack left. */}
+      <div className="flex flex-1 flex-col p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
+        {/* State 1 sits ABOVE a full list, not in place of one: with no decks
+            built the fit ranking is complete and only `Something new` is off. */}
+        {!discovery.hasDecks ? <NoDecksBanner /> : null}
 
-      {showFloorEmpty ? (
-        <FloorEmpty
-          floorPct={FLOOR_PCT}
-          candidateCount={discovery.candidateCount}
-          cardsRead={discovery.cardsRead}
-          bestPct={discovery.bestPct as number}
-          onRankByFit={() => update({ ...params, order: "bestfit" })}
-        />
-      ) : showHeldEmpty && report ? (
-        // The held state (§2b). The shared zero-state shell, with every part it
-        // would fill from the colour filter's vocabulary replaced: the heading
-        // names the commander, the body names the one control holding it, and
-        // the button undoes that control rather than clearing the pips. The
-        // aside keeps its figures beside the button, inert.
-        <ZeroState
-          heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
-          body={report.body}
-          primary={
-            report.cause === "scope" ? (
-              <PrimaryButton href={ownedHref} className={ZERO_PRIMARY}>
-                {report.cta}
-              </PrimaryButton>
-            ) : (
-              <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
-                {report.cta}
-              </PrimaryButton>
-            )
-          }
-          secondary={
-            report.aside ? (
-              <span className="self-center font-mono text-[11.5px] text-[color:var(--fg-faint)]">
-                {report.aside}
-              </span>
-            ) : undefined
-          }
-        />
-      ) : showSearchEmpty ? (
-        // D5. The candidate count, not the ranked one: this state fires only
-        // once the server has looked past the rows on screen and found nothing
-        // either, so the figure names the whole unbuilt pool.
-        <DiscoveryEmpty
-          query={trimmedQuery}
-          total={discovery.candidateCount}
-          onClearSearch={() => update({ ...params, q: "" })}
-        />
-      ) : showUnknownEmpty ? (
-        // The same shell saying less: no population figure, because the count of
-        // what was searched is exactly what this state does not know. That also
-        // costs it the other lane's link, which only means anything alongside a
-        // claim about what this lane holds.
-        <ZeroState
-          heading={planeCopy.search.unknownHeading(trimmedQuery)}
-          body={planeCopy.search.unknownBody}
-          primary={
-            <PrimaryButton
-              onClick={() => update({ ...params, q: "" })}
-              className={ZERO_PRIMARY}
-            >
-              {planeCopy.search.unknownCta}
-            </PrimaryButton>
-          }
-        />
-      ) : showFilteredEmpty ? (
-        <ZeroState
-          heading={emptyCopy.filteredHeading}
-          // The ranked count: "the N you have not built" names the list the
-          // filter just emptied, and under `sort="new"` the candidate count is
-          // the larger pre-exclusion figure the reader never saw a row of.
-          // The built clause is the one genuinely new reason this state has under
-          // discovery, so the whole clause is marked rather than a phrase inside it.
-          body={
-            <>
-              {emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
-              {builtClause ? (
-                <>
-                  {" "}
-                  <strong className="font-semibold text-[color:var(--fg)]">
-                    {builtClause}
-                  </strong>
-                </>
-              ) : null}
-            </>
-          }
-          primary={
-            <PrimaryButton
-              onClick={() => update({ ...params, colors: [], match: "contains" })}
-              className={ZERO_PRIMARY}
-            >
-              {emptyCopy.filteredCta}
-            </PrimaryButton>
-          }
-          // The other lane, reached the way D5 reaches it: a route, so a link.
-          secondary={
-            <GhostButton href={ownedHref} className={ZERO_SECONDARY}>
-              {emptyCopy.filteredScopeLink}
-            </GhostButton>
-          }
-        />
-      ) : (
-        <>
-          {/* §2c: a match exists that this list cannot show. Above the rows,
-              because it is about the list underneath it. */}
-          {report ? (
-            <div className="mb-[10px] sm:mb-[12px]">
-              <ExcludedMatchAside
-                report={report}
-                onCorrect={correct}
-                href={report.cause === "scope" ? ownedHref : undefined}
-              />
-            </div>
-          ) : null}
-
-          {/* The receipt for the list itself. At 375px the aside outranks it —
-              one thing below the rack explains the list, and the aside is about
-              a row the reader just typed. Desktop renders both: it has the
-              width. One element with a responsive class rather than two
-              subtrees, so the sentence exists once in the DOM. */}
-          {line ? (
-            <ExclusionLine
-              text={line.text}
-              figures={line.figures}
-              className={`mb-[10px] sm:mb-[12px] ${report ? "hidden sm:flex" : "flex"}`}
-            />
-          ) : null}
-
-          <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-            {filtered.slice(0, shown).map((item, i) => (
-              // Focusable only while the list is windowed, matching the owned
-              // lane: a row that never receives the reveal's focus move has no
-              // reason to be a tab stop between every card.
-              <li
-                key={item.slug}
-                tabIndex={wasWindowed ? -1 : undefined}
-                ref={
-                  wasWindowed
-                    ? (el) => {
-                        itemRefs.current[i] = el;
-                      }
-                    : undefined
-                }
-                className={
-                  wasWindowed
-                    ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
-                    : undefined
-                }
+        {showFloorEmpty ? (
+          <FloorEmpty
+            floorPct={FLOOR_PCT}
+            candidateCount={discovery.candidateCount}
+            cardsRead={discovery.cardsRead}
+            bestPct={discovery.bestPct as number}
+            onRankByFit={() => update({ ...params, order: "bestfit" })}
+          />
+        ) : showHeldEmpty && report ? (
+          // The held state (§2b). The shared zero-state shell, with every part it
+          // would fill from the colour filter's vocabulary replaced: the heading
+          // names the commander, the body names the one control holding it, and
+          // the button undoes that control rather than clearing the pips. The
+          // aside keeps its figures beside the button, inert.
+          <ZeroState
+            heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
+            body={report.body}
+            primary={
+              report.cause === "scope" ? (
+                <PrimaryButton href={ownedHref} className={ZERO_PRIMARY}>
+                  {report.cta}
+                </PrimaryButton>
+              ) : (
+                <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
+                  {report.cta}
+                </PrimaryButton>
+              )
+            }
+            secondary={
+              report.aside ? (
+                <span className="self-center font-mono text-[11.5px] text-[color:var(--fg-faint)]">
+                  {report.aside}
+                </span>
+              ) : undefined
+            }
+          />
+        ) : showSearchEmpty ? (
+          // D5. The candidate count, not the ranked one: this state fires only
+          // once the server has looked past the rows on screen and found nothing
+          // either, so the figure names the whole unbuilt pool.
+          <DiscoveryEmpty
+            query={trimmedQuery}
+            total={discovery.candidateCount}
+            onClearSearch={() => update({ ...params, q: "" })}
+          />
+        ) : showUnknownEmpty ? (
+          // The same shell saying less: no population figure, because the count of
+          // what was searched is exactly what this state does not know. That also
+          // costs it the other lane's link, which only means anything alongside a
+          // claim about what this lane holds.
+          <ZeroState
+            heading={planeCopy.search.unknownHeading(trimmedQuery)}
+            body={planeCopy.search.unknownBody}
+            primary={
+              <PrimaryButton
+                onClick={() => update({ ...params, q: "" })}
+                className={ZERO_PRIMARY}
               >
-                {/* `item.rank`, not the map index: the server ranked every item
-                    this list carries, so a colour filter narrows what is shown
-                    without renumbering what it leaves behind. */}
-                <RecCard discovery={item} rank={item.rank} sort={discovery.sort} />
-              </li>
-            ))}
-
-            {/* Inside the list, as the owned lane has it: the gap between the
-                control and the last card is the list's own row gap, and outside
-                the `<ul>` there is nothing to supply it. */}
-            {remaining > 0 ? (
-              <li>
-                <RevealControl
-                  remaining={remaining}
-                  // Clamped at the source, the way the owned list clamps it: a final
-                  // step that overshoots would otherwise have the live region announce
-                  // a negative "more below" and a range past the end of the list.
-                  onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
-                  // The band names ranks in the list the reader is looking at, so it
-                  // counts against the filtered length rather than the server's.
-                  band={discoveryCopy.window.revealBand(
-                    shown + 1,
-                    Math.min(shown + REVEAL_STEP, filtered.length),
-                    filtered.length,
-                  )}
+                {planeCopy.search.unknownCta}
+              </PrimaryButton>
+            }
+          />
+        ) : showFilteredEmpty ? (
+          <ZeroState
+            heading={emptyCopy.filteredHeading}
+            // The ranked count: "the N you have not built" names the list the
+            // filter just emptied, and under `sort="new"` the candidate count is
+            // the larger pre-exclusion figure the reader never saw a row of.
+            // The built clause is the one genuinely new reason this state has under
+            // discovery, so the whole clause is marked rather than a phrase inside it.
+            body={
+              <>
+                {emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
+                {builtClause ? (
+                  <>
+                    {" "}
+                    <strong className="font-semibold text-[color:var(--fg)]">
+                      {builtClause}
+                    </strong>
+                  </>
+                ) : null}
+              </>
+            }
+            primary={
+              <PrimaryButton
+                onClick={() => update({ ...params, colors: [], match: "contains" })}
+                className={ZERO_PRIMARY}
+              >
+                {emptyCopy.filteredCta}
+              </PrimaryButton>
+            }
+            // The other lane, reached the way D5 reaches it: a route, so a link.
+            secondary={
+              <GhostButton href={ownedHref} className={ZERO_SECONDARY}>
+                {emptyCopy.filteredScopeLink}
+              </GhostButton>
+            }
+          />
+        ) : (
+          <>
+            {/* §2c: a match exists that this list cannot show. Above the rows,
+                because it is about the list underneath it. */}
+            {report ? (
+              <div className="mb-[10px] sm:mb-[12px]">
+                <ExcludedMatchAside
+                  report={report}
+                  onCorrect={correct}
+                  href={report.cause === "scope" ? ownedHref : undefined}
                 />
-              </li>
+              </div>
             ) : null}
-          </ul>
 
-          {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
-          {remaining > 0 ? (
-            <div className="h-[24px] sm:hidden" />
-          ) : filtered.length > REVEAL_STEP ? (
-            <EndOfRanking total={filtered.length} />
-          ) : null}
-        </>
-      )}
+            {/* The receipt for the list itself. At 375px the aside outranks it —
+                one thing below the rack explains the list, and the aside is about
+                a row the reader just typed. Desktop renders both: it has the
+                width. One element with a responsive class rather than two
+                subtrees, so the sentence exists once in the DOM. */}
+            {line ? (
+              <ExclusionLine
+                text={line.text}
+                figures={line.figures}
+                className={`mb-[10px] sm:mb-[12px] ${report ? "hidden sm:flex" : "flex"}`}
+              />
+            ) : null}
+
+            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
+              {filtered.slice(0, shown).map((item, i) => (
+                // Focusable only while the list is windowed, matching the owned
+                // lane: a row that never receives the reveal's focus move has no
+                // reason to be a tab stop between every card.
+                <li
+                  key={item.slug}
+                  tabIndex={wasWindowed ? -1 : undefined}
+                  ref={
+                    wasWindowed
+                      ? (el) => {
+                          itemRefs.current[i] = el;
+                        }
+                      : undefined
+                  }
+                  className={
+                    wasWindowed
+                      ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+                      : undefined
+                  }
+                >
+                  {/* `item.rank`, not the map index: the server ranked every item
+                      this list carries, so a colour filter narrows what is shown
+                      without renumbering what it leaves behind. */}
+                  <RecCard discovery={item} rank={item.rank} sort={discovery.sort} />
+                </li>
+              ))}
+
+              {/* Inside the list, as the owned lane has it: the gap between the
+                  control and the last card is the list's own row gap, and outside
+                  the `<ul>` there is nothing to supply it. */}
+              {remaining > 0 ? (
+                <li>
+                  <RevealControl
+                    remaining={remaining}
+                    // Clamped at the source, the way the owned list clamps it: a final
+                    // step that overshoots would otherwise have the live region announce
+                    // a negative "more below" and a range past the end of the list.
+                    onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
+                    // The band names ranks in the list the reader is looking at, so it
+                    // counts against the filtered length rather than the server's.
+                    band={discoveryCopy.window.revealBand(
+                      shown + 1,
+                      Math.min(shown + REVEAL_STEP, filtered.length),
+                      filtered.length,
+                    )}
+                  />
+                </li>
+              ) : null}
+            </ul>
+
+            {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
+            {remaining > 0 ? (
+              <div className="h-[24px] sm:hidden" />
+            ) : filtered.length > REVEAL_STEP ? (
+              <EndOfRanking total={filtered.length} />
+            ) : null}
+          </>
+        )}
+      </div>
 
       {/* This list's own live region, for the two events the rack's result line
           cannot describe: a re-rank, and a reveal step. */}

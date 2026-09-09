@@ -168,7 +168,6 @@ export const discoverCopy = {
     novelty: (count: number) => `${count} of its top cards new to you`,
     notOwned: "not in your collection",
     ownOfTop: (own: number, top: number) => `own ${own} of top ${top}`,
-    action: "See the pool",
   },
 
   empty: {

@@ -116,14 +116,15 @@ describe("DiscoveryRow", () => {
     expect(screen.getAllByText(discoverCopy.row.notOwned)).toHaveLength(both);
   });
 
-  // The row is the action, and it is this lane's action: nothing here offers to
-  // start a deck from a commander the player does not own.
-  it("offers See the pool as its only named action", () => {
+  // The row is the action. It carries no named button of its own: the hover pill
+  // restated the destination the whole row already goes to, and cost the row the
+  // grid column it was clipping against.
+  it("names no action beside the row itself", () => {
     row();
-    expect(screen.getByRole("link", { name: discoverCopy.row.action })).toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: commandersCopy.row.action }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText("See the pool")).not.toBeInTheDocument();
   });
 
   // The art is the wash behind the row, not a printing in a box. `I3` is the

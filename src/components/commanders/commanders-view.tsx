@@ -365,7 +365,7 @@ export function CommandersView({
       />
 
       {/* ── Main content: list (or filtered-empty) ── */}
-      <div className="p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
+      <div className="flex flex-1 flex-col p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
         {/* Result list, or whichever zero state explains the emptiness. The
             colour state names a pip to drop and the search state names the
             other lane, so which one renders follows which control did the
