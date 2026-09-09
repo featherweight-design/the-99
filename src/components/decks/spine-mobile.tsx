@@ -108,6 +108,11 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
                 <button
                   type="button"
                   onClick={rename.commit}
+                  // Same guard Cancel carries, for the opposite reason: without
+                  // it the field's blur commits on mousedown and this tap
+                  // commits again before the first request has flipped
+                  // `isPending`, sending the rename twice.
+                  onMouseDown={(e) => e.preventDefault()}
                   // aria-disabled, never disabled: disabling the focused control
                   // blurs it, and blur commits.
                   aria-disabled={!rename.canSave}

@@ -48,6 +48,18 @@ describe("SpineDesktop", () => {
     expect(screen.queryByRole("button", { name: "Export" })).toBeNull();
   });
 
+  // Both Save and Cancel refuse the mousedown, for opposite reasons: Cancel so
+  // the blur does not save the edit it is refusing, Save so the blur does not
+  // send the same rename the click is about to send.
+  it("neither action lets the field's blur fire first", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
+    for (const name of [/Save/, "Cancel"]) {
+      const down = fireEvent.mouseDown(screen.getByRole("button", { name }));
+      expect(down).toBe(false);
+    }
+  });
+
   it("holds the field's box across every editing state", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
