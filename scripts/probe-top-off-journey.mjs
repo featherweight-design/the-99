@@ -236,7 +236,11 @@ async function forward(page, w) {
   await shot(page, `${w}-04-capped`);
 
   // Step 5: one commit, one request, and the mutation-feedback sub-check.
+  // The figure comes off the commit's own label rather than from the cap, so a
+  // server that placed fewer cards than the button offered is a failure here
+  // and not a deck that merely grew.
   const before = await deckSize();
+  const offered = Number(/^Add (\d+)/.exec(await commit())?.[1]);
   const posts = [];
   page.on("request", (r) => r.method() === "POST" && posts.push(r.url()));
   let held;
@@ -261,7 +265,12 @@ async function forward(page, w) {
   await page.unroute("**/decks/**");
   const after = await deckSize();
   check(scope, "step 5: one POST for the whole commit", posts.length === 1, `${posts.length} POSTs`);
-  check(scope, "step 5: the deck grew by the ticked count", after > before, `${before} → ${after}`);
+  check(
+    scope,
+    "step 5: the deck grew by the ticked count",
+    Number.isInteger(offered) && after - before === offered,
+    `${before} → ${after}, label offered ${offered}`,
+  );
   const listClosed = (await listBoxes(page).count()) === 0;
   check(scope, "step 5: the list closes on a settled commit", listClosed);
   check(scope, "step 5: the commit announces what landed", /added\./.test(await announcement(page)));
