@@ -348,7 +348,7 @@ describe("ConsiderPanel — unowned staples", () => {
     mount({ suggestions: [unowned("Smothering Tithe"), suggestion({ name: "Sol Ring" })] });
 
     const unownedAdd = screen.getByRole("button", {
-      name: "Add Smothering Tithe to the deck, which you do not own, so it will be added to buy",
+      name: "Add Smothering Tithe to the deck, and to your To buy list, because you do not own it",
     });
     const ownedAdd = screen.getByRole("button", { name: "Add Sol Ring to the deck" });
 

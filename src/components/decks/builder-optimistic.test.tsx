@@ -119,7 +119,7 @@ async function addSolRing() {
     // of this one, so a loose query would match both the day a test adds one.
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Add Sol Ring to the deck, which you do not own, so it will be added to buy",
+        name: "Add Sol Ring to the deck, and to your To buy list, because you do not own it",
       }),
     );
   });
