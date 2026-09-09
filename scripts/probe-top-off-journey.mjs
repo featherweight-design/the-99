@@ -93,7 +93,7 @@ async function resetDeck(target = 68) {
   await sql`update deck_cards set auto = true where deck_id = ${DECK}`;
   const [seed] = await sql`
     insert into fill_passes (deck_id, kind, ordinal, open_slots)
-    values (${DECK}, 'seed', 1, ${running}) returning id`;
+    values (${DECK}, 'seed', 1, 99) returning id`;
   await sql`
     insert into fill_pass_cards (pass_id, oracle_id, quantity)
     select ${seed.id}, oracle_id, quantity from deck_cards where deck_id = ${DECK}`;

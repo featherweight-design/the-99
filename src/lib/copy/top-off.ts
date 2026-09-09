@@ -12,7 +12,7 @@
  * it is a percentage of decks, and it is the shipped synergy row's own atom.
  */
 
-import { synergyCopy } from './synergy-discovery';
+import { synergyCopy } from "./synergy-discovery";
 
 // Counts arrive already stringified from the callers, so the singular test is
 // against "1" rather than a number. Applied by eng where the handoff pluralised
