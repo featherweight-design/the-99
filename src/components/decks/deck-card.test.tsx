@@ -18,6 +18,8 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderColorIdentity: ["W", "U", "B", "G"],
   commanderImageUri: "https://example.test/atraxa.jpg",
   commanderArtCropUri: "https://example.test/atraxa-crop.jpg",
+  partnerName: null,
+  partnerColorIdentity: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,

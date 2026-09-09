@@ -361,6 +361,7 @@ function makeDeck(cards: DeckDetailCard[]): DeckDetail {
       imageUri: null,
       artCropUri: null,
     },
+    partner: null,
     filled: true,
     cards,
     built,

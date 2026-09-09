@@ -45,6 +45,8 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderColorIdentity: ["W", "U", "B", "G"],
   commanderImageUri: null,
   commanderArtCropUri: null,
+  partnerName: null,
+  partnerColorIdentity: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,

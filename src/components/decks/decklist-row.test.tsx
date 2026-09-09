@@ -314,6 +314,7 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
       imageUri: null,
       artCropUri: null,
     },
+    partner: null,
     filled: false,
     cards,
     built,
