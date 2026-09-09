@@ -55,11 +55,18 @@ export const topOffCopy = {
 
     /** REPLACES lastSlots.ownedNote. That string existed to explain a number on
      *  a button face; there is no such number now. This one explains a default
-     *  and makes the safety promise the review step is for. */
-    doorNote: (owned: string) =>
-      owned === '1'
-        ? '1 of them is in your collection and arrives ticked. Nothing is added until you say so.'
-        : `${owned} of them are in your collection and arrive ticked. Nothing is added until you say so.`,
+     *  and makes the safety promise the review step is for.
+     *
+     *  The figure is the SEEDED TICK COUNT, which is the owned candidates
+     *  clamped to the open slots — so the sentence says what arrives ticked and
+     *  claims nothing about how many the player owns in total. A deck with 58
+     *  owned candidates for 31 slots seeds 31, and 'you own 31' would be false. */
+    doorNote: (seeded: string) =>
+      seeded === '0'
+        ? 'You own none of these, so the list arrives untouched. Nothing is added until you say so.'
+        : seeded === '1'
+        ? '1 candidate arrives ticked, from your collection. Nothing is added until you say so.'
+        : `${seeded} candidates arrive ticked, all from your collection. Nothing is added until you say so.`,
     /** Reopening after a partial accept. Says what is left and that the
      *  selection survived, so closing the list is never a loss. */
     doorNoteAgain: (cand: string) =>

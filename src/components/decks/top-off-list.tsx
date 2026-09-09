@@ -735,7 +735,14 @@ function CandidateRow({
         onClick={onDecline}
         disabled={inflight}
         aria-label={topOffCopy.list.declineAria(c.name)}
-        className="flex-none flex items-center justify-center w-[26px] h-[26px] md:w-[18px] md:h-[18px] font-mono text-[13px] md:text-[11px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-locked)]"
+        // The glyph stays small; the box around it does not. A 26px square is
+        // under the target floor and sat flush against the inclusion figure, so
+        // the phone box stretches to whatever the row is tall and takes its own
+        // width away from that figure. `min-h` is the floor for a row that ever
+        // draws shorter, not the height itself. Desktop keeps 18px, which is
+        // what the column header reserves for this slot — the row would step
+        // out of the Decks column by the difference otherwise.
+        className="flex-none self-stretch flex items-center justify-center w-[36px] min-h-[44px] md:self-auto md:w-[18px] md:min-h-0 md:h-[18px] font-mono text-[13px] md:text-[11px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-locked)]"
       >
         {"×"}
       </button>
