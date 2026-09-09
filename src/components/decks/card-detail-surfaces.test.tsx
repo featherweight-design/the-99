@@ -144,14 +144,17 @@ describe("deck card-detail triggers", () => {
     ).toBeNull();
   });
 
-  it("opens details from the commander thumb", async () => {
+  // The 72×100 thumb is retired with the art wash: the art is the band now, and
+  // `Card details` is the way into the printing.
+  it("opens details from the header's Card details pill", async () => {
     const deck = {
       id: "d1",
       name: "Muldrotha",
       createdAt: new Date(),
       commander: {
         oracleId: "o-muldrotha", name: "Muldrotha, the Gravetide", colorIdentity: ["B", "G", "U"],
-        manaCost: "{3}{B}{G}{U}", typeLine: "Legendary Creature", oracleText: null, imageUri: null,
+        manaCost: "{3}{B}{G}{U}", typeLine: "Legendary Creature", oracleText: null,
+        imageUri: null, artCropUri: "/crop.jpg",
       },
       cards: [], built: 0, ownedCount: 0, toBuyCount: 0,
     } as unknown as DeckDetail;
@@ -166,12 +169,10 @@ describe("deck card-detail triggers", () => {
       />,
     );
 
-    // One thumb sized responsively, not a mobile/desktop pair: a duplicated
-    // subtree gave the same commander two buttons in the accessibility tree.
-    const triggers = screen.getAllByRole("button", {
-      name: cardDetailCopy.triggerAria("Muldrotha, the Gravetide"),
-    });
-    expect(triggers).toHaveLength(1);
+    // One per band. The two widths are separate trees here — the wash strategy
+    // differs, not only the skin — so both are in the DOM and one is CSS-hidden.
+    const triggers = screen.getAllByRole("button", { name: "View card details" });
+    expect(triggers).toHaveLength(2);
     await act(async () => {
       fireEvent.click(triggers[0]);
     });
