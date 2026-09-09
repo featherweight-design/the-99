@@ -253,16 +253,18 @@ export type DeckBuyRow = { deckId: string; oracleId: string; quantity: number };
  * Rats with one in the box buys three, and this roll-up feeds a price total, so
  * returning the ask would charge for a copy already on the shelf.
  *
- * A DECK NEVER BUYS ITS OWN COMMANDER HERE, and the asymmetry is deliberate. The
- * commander is senior demand — a legend sleeved as another deck's commander
- * really is holding that copy, which is why `all_claims` unions it — but it is
- * not a line this deck can shop for: `DeckDetail.commander` carries no owned
- * flag, it is absent from `DeckDetail.cards`, and `built` and `ownedCount` count
- * `deck_cards` alone. Emitting a commander row would put a purchase on the tile
- * and the roll-up that the deck page has no row to show, which is the exact
- * cross-surface disagreement this whole change exists to end. Rows are therefore
- * driven off the decklist, while seniority is still measured against every claim
- * there is.
+ * A DECK NEVER BUYS ITS OWN COMMANDER HERE, and that is a LIMITATION rather than
+ * a principle — see #470, which is the ticket to lift it. The commander is real
+ * senior demand: a legend sleeved as another deck's commander really is holding
+ * that copy, which is why `all_claims` unions it, and a player who does not own
+ * their commander genuinely has one to buy. But no surface can currently say so.
+ * `DeckDetail.commander` carries no owned flag, it is absent from
+ * `DeckDetail.cards`, and `built` and `ownedCount` count `deck_cards` alone, so
+ * emitting a commander row would put a purchase on the tile and the roll-up that
+ * the deck page has no row to show — the exact cross-surface disagreement this
+ * change exists to end. Rows are therefore driven off the decklist while
+ * seniority is measured against every claim there is, and the commander is
+ * admitted here only once the deck page can render its ownership.
  */
 export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
   const rows = await db.execute<{
