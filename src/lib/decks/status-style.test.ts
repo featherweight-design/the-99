@@ -76,19 +76,26 @@ describe("status style", () => {
   });
 
   it("fills the bar proportionally while building and completely at or past 99", () => {
-    expect(statusBarStyle("Draft", 0).width).toBe("0%");
-    expect(statusBarStyle("Building", 87).width).toBe(`${(87 / 99) * 100}%`);
-    expect(statusBarStyle("Complete", 99).width).toBe("100%");
-    expect(statusBarStyle("To buy", 99).width).toBe("100%");
-    expect(statusBarStyle("Unresolved", 99).width).toBe("100%");
+    expect(statusBarStyle("Draft", 0, 99).width).toBe("0%");
+    expect(statusBarStyle("Building", 87, 99).width).toBe(`${(87 / 99) * 100}%`);
+    expect(statusBarStyle("Complete", 99, 99).width).toBe("100%");
+    expect(statusBarStyle("To buy", 99, 99).width).toBe("100%");
+    expect(statusBarStyle("Unresolved", 99, 99).width).toBe("100%");
     // Over is full, not 105% — the track cannot overflow its own container.
-    expect(statusBarStyle("Over", 104).width).toBe("100%");
+    expect(statusBarStyle("Over", 104, 99).width).toBe("100%");
+  });
+
+  // A pair deck is full at 98, so its finished bar must reach the end of the
+  // track. Measured against 99 it would stop just short and read as unfinished.
+  it("fills a pair deck's bar completely at 98", () => {
+    expect(statusBarStyle("Complete", 98, 98).width).toBe("100%");
+    expect(statusBarStyle("Building", 87, 98).width).toBe(`${(87 / 98) * 100}%`);
   });
 
   it("paints the bar and the keyline in the status's own colour", () => {
     for (const status of ALL) {
       const token = STATUS_TOKEN[status];
-      expect(statusBarStyle(status, 50).background).toBe(`var(${token})`);
+      expect(statusBarStyle(status, 50, 99).background).toBe(`var(${token})`);
       expect(statusKeylineStyle(status).background).toBe(`var(${token})`);
     }
   });

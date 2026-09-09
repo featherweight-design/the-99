@@ -24,7 +24,7 @@ import React, {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { FILL_BASELINE_TOTAL } from "../../lib/decks/fill";
+import { fillBaselineTotal } from "../../lib/decks/fill";
 import { MAX_SELECTION } from "../../lib/decks/selection-param";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { SynergyPanel } from "./synergy-panel";
@@ -103,7 +103,10 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
   // 40 picks the fill places 59, not 68. Reading it as fixed both overstated the
   // filled figure and made the clamp line — "your picks fill the 99 on their
   // own" — fire at 31 picks, where the fill is still placing most of the deck.
-  const filled = Math.min(FILL_BASELINE_TOTAL, 99 - picked);
+  //
+  // Single-commander throughout: this page is one commander's, and a partner is
+  // chosen later in the create picker, against a deck that does not exist yet.
+  const filled = Math.min(fillBaselineTotal(false), 99 - picked);
   const total = picked + filled;
   const unownedCount = selectedCards.filter((c) => !c.owned).length;
   const full = filled === 0;
@@ -222,7 +225,7 @@ export function SelectableBuildButton({
 export function SelectableLiveAnnouncer({ cards }: { cards: SynergyCard[] }) {
   const { selected } = useSynergySelection();
   const picked = cards.filter((c) => selected.has(c.oracleId)).length;
-  const total = Math.min(99, FILL_BASELINE_TOTAL + picked);
+  const total = Math.min(99, fillBaselineTotal(false) + picked);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [announcement, setAnnouncement] = useState("");

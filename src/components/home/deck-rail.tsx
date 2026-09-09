@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { MATURE_DECK_SIZE } from "../../lib/decks/availability";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
@@ -51,7 +51,7 @@ function railClause(deck: DeckListItem, shopping: ShoppingRollup): string | null
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
     case "Over":
-      return c.detailOver(deck.built - MATURE_DECK_SIZE);
+      return c.detailOver(deck.built - deckBodySize(false));
     // The three statuses the `87 / 99` on the same line already explains. A
     // clause invented to fill the slot would say it twice.
     case "Draft":
@@ -139,7 +139,7 @@ function PhoneRow({
       </span>
 
       <span className="flex-none font-mono text-[12px] tabular-nums text-[color:var(--fg)]">
-        {deck.built} / {MATURE_DECK_SIZE}
+        {deck.built} / {deckBodySize(false)}
       </span>
     </Link>
   );

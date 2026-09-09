@@ -18,7 +18,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
-import { FILL_BASELINE_TOTAL } from "../../lib/decks/fill";
+import { fillBaselineTotal } from "../../lib/decks/fill";
 import {
   SynergySelectionProvider,
   SelectableSynergyPanel,
@@ -426,7 +426,7 @@ export function CommanderDetail({
             {recommendationsCopy.build.stickyLabel}
           </span>
           <span style={{ fontSize: 12, color: "var(--fg-body)" }}>
-            {recommendationsCopy.build.stickyPromise(String(FILL_BASELINE_TOTAL))}
+            {recommendationsCopy.build.stickyPromise(String(fillBaselineTotal(false)))}
           </span>
           <SelectableSynergySelection cards={synergyCards} width="phone" />
         </div>
@@ -525,7 +525,7 @@ export function CommanderDetail({
               lineHeight: 1.5,
             }}
           >
-            {recommendationsCopy.build.seedNote(String(FILL_BASELINE_TOTAL))}
+            {recommendationsCopy.build.seedNote(String(fillBaselineTotal(false)))}
           </p>
 
           {/* Promise line + clear, below seed note — desktop width */}

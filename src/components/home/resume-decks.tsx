@@ -14,7 +14,7 @@
 
 import Link from "next/link";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { MATURE_DECK_SIZE } from "../../lib/decks/availability";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { StatusPillBadge } from "../decks/status-pill";
@@ -65,7 +65,7 @@ function toBuyCopies(shopping: ShoppingRollup, deckId: string): number | null {
 }
 
 function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null }) {
-  const count = `${deck.built} / ${MATURE_DECK_SIZE}`;
+  const count = `${deck.built} / ${deckBodySize(false)}`;
   return (
     <Link
       href={`/decks/${deck.id}`}

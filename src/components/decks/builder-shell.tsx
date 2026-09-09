@@ -5,6 +5,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
@@ -219,6 +220,7 @@ export function BuilderShell({
     // — unowned, and owned but held by an older finished deck — so this pill and
     // the Shopping filter's own count can never disagree.
     unfundedCount: cardCopies(deck.cards.filter(isShoppingCard)),
+    bodySize: deckBodySize(false),
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and

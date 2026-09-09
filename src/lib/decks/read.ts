@@ -11,8 +11,8 @@ import {
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
-import { MATURE_DECK_SIZE } from "./availability";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
+import { deckBodySize } from "./deck-size";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
@@ -408,7 +408,7 @@ export async function listDecksWithStats(
   // `loadShoppingRollup` alongside this, which asks the same question, so the
   // saving is a real second scan rather than a hypothetical one.
   const canFlip = rows.some(
-    (r) => r.built === MATURE_DECK_SIZE && r.ownedCount === r.built && r.unresolvedCount === 0,
+    (r) => r.built === deckBodySize(false) && r.ownedCount === r.built && r.unresolvedCount === 0,
   );
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
@@ -424,6 +424,7 @@ export async function listDecksWithStats(
       ownedCount: row.ownedCount,
       unresolvedCount: row.unresolvedCount,
       unfundedCount: unfundedByDeck.get(row.id) ?? 0,
+      bodySize: deckBodySize(false),
     });
     return {
       id: row.id,

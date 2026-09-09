@@ -11,19 +11,22 @@
  * the player owns, and how many imported lines we could not put a card to.
  *
  * `built` throughout is the matched count alone. Unresolved lines are not in it
- * and never push a deck to 99 or over: a list of 97 matched cards and 2 lines
- * we could not name is `Building`, not `Unresolved`. The two summed are `total`
- * (see `DeckDetail` in read.ts), which is the deck the player asked for rather
- * than the deck we can compute a status from.
+ * and never push a deck to its body size or over: a list of 97 matched cards and
+ * 2 lines we could not name is `Building`, not `Unresolved`. The two summed are
+ * `total` (see `DeckDetail` in read.ts), which is the deck the player asked for
+ * rather than the deck we can compute a status from.
  *
- * | Value        | When                                     | Means                          | Next action     |
- * | ------------ | ---------------------------------------- | ------------------------------ | --------------- |
- * | `Draft`      | 0 matched cards                          | Not started, unresolved or not | Add cards       |
- * | `Building`   | 1–98 matched                             | Short of a legal list          | Add the rest    |
- * | `Over`       | 100+ matched                             | Past a legal list              | Cut the excess  |
- * | `Unresolved` | 99 matched, some line unresolved         | Carrying lines we cannot name  | Resolve or drop |
- * | `To buy`     | 99 matched, no unresolved, some to buy    | A legal list you cannot sleeve | Buy the missing |
- * | `Complete`   | 99 matched, no unresolved, nothing to buy | Sleeve it and play it          | Play it         |
+ * The body size below is 99 for a single commander and 98 for a pair — the deck
+ * is 100 cards either way, and `deck-size.ts` is where that is decided.
+ *
+ * | Value        | When                                          | Means                          | Next action     |
+ * | ------------ | --------------------------------------------- | ------------------------------ | --------------- |
+ * | `Draft`      | 0 matched cards                               | Not started, unresolved or not | Add cards       |
+ * | `Building`   | 1 to below the body size                      | Short of a legal list          | Add the rest    |
+ * | `Over`       | past the body size                            | Past a legal list              | Cut the excess  |
+ * | `Unresolved` | at the body size, some line unresolved        | Carrying lines we cannot name  | Resolve or drop |
+ * | `To buy`     | at the body size, no unresolved, some to buy  | A legal list you cannot sleeve | Buy the missing |
+ * | `Complete`   | at the body size, no unresolved, none to buy  | Sleeve it and play it          | Play it         |
  *
  * "To buy" is not the same question as "do you own a copy". A card the player
  * owns can still be a card this deck has to buy, because an older finished deck
@@ -47,11 +50,11 @@ export type StatusPill = "Draft" | "Building" | "Over" | "Unresolved" | "To buy"
  * neither owning every card nor having named every line changes the answer. A
  * 104-card deck whose every card is owned is `Over`.
  *
- * Below 99, unresolved lines and ownership are both silent. A deck still being
+ * Below the body size, unresolved lines and ownership are both silent. A deck still being
  * built is `Building` whatever else is true of it, because the count is the
  * honest headline and the other two are not yet the thing to act on.
  *
- * At exactly 99, `Unresolved` outranks `To buy`: an unnamed line is a card we
+ * At exactly the body size, `Unresolved` outranks `To buy`: an unnamed line is a card we
  * cannot even price, so it has to be settled before the remainder is a
  * shopping list. The import handoff's reconciliation model requires this
  * ordering as well as recommending it — unresolved rows "never read as errors
@@ -64,10 +67,12 @@ export function statusPill(args: {
   ownedCount: number;
   unresolvedCount?: number;
   unfundedCount?: number;
+  /** 99, or 98 for a deck with a partner — see `deck-size.ts`. */
+  bodySize: number;
 }): StatusPill {
   if (args.built === 0) return "Draft";
-  if (args.built < 99) return "Building";
-  if (args.built > 99) return "Over";
+  if (args.built < args.bodySize) return "Building";
+  if (args.built > args.bodySize) return "Over";
   if ((args.unresolvedCount ?? 0) > 0) return "Unresolved";
   // Unowned cards are always unfunded, so the two tests would normally collapse
   // into one. They are kept separate because a caller that cannot compute the

@@ -1,16 +1,4 @@
 /**
- * A deck at 99 cards or more is finished enough that its cards are physically
- * sleeved, so its claims are hard. Below 99 it is a brew and its claims are
- * soft. This is the brief's proxy for deck maturity and it shares statusPill()'s
- * threshold without matching its partition: Unresolved/To buy/Complete sit at
- * exactly 99 and Over sits above it, so all four are mature, while
- * Draft/Building fall below. The comparison is `>=`, never `=` — an overfull
- * deck is sleeved too, and README decision 8 of the amendments handoff locks
- * that against being narrowed for symmetry with the pill.
- */
-export const MATURE_DECK_SIZE = 99;
-
-/**
  * One deck's claim on one card: which deck, how many copies it asks for, and
  * whether that deck is finished. Named rather than inlined because the shape has
  * now widened twice — from a bare name, to `{id, name}`, to this — and each
@@ -20,9 +8,17 @@ export const MATURE_DECK_SIZE = 99;
  * `quantity` is the deck's whole ask, commander included: a deck whose commander
  * also sits on its own list contributes ONE claim of `1 + listQuantity`, not two.
  *
- * `mature` is what makes the claim hard or soft (see MATURE_DECK_SIZE). It is
- * carried per claim rather than recomputed downstream because deck size is not
- * on this object and never should be — a card's availability has no business
+ * `mature` is what makes the claim hard or soft: a deck at its body size or more
+ * is finished enough that its cards are physically sleeved. The body size is
+ * `deckBodySize()` in `deck-size.ts` — 99, or 98 for a pair — and the comparison
+ * is `>=`, never `=`, because an overfull deck is sleeved too. README decision 8
+ * of the amendments handoff locks that against being narrowed for symmetry with
+ * the status pill, whose partition this shares a threshold with but not a shape:
+ * Unresolved/To buy/Complete sit at exactly the body size and Over sits above
+ * it, so all four are mature, while Draft/Building fall below.
+ *
+ * It is carried per claim rather than recomputed downstream because deck size is
+ * not on this object and never should be — a card's availability has no business
  * knowing how big somebody's deck is beyond this one bit.
  */
 export type DeckClaim = { id: string; name: string; quantity: number; mature: boolean };

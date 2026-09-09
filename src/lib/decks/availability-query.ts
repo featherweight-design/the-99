@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { MATURE_DECK_SIZE, type Availability, type DeckClaim } from "./availability";
+import { deckBodySize } from "./deck-size";
+import type { Availability, DeckClaim } from "./availability";
 
 type Row = {
   oracle_id: string;
@@ -73,7 +74,7 @@ const claimModel = (userId: string) => sql`
       -- LEFT: a deck whose only card is its commander has no deck_cards rows and
       -- therefore no deck_totals row. An inner join would drop that claim
       -- entirely. No rows means no cards means brewing, hence coalesce to 0.
-      coalesce(dt.cards, 0) >= ${MATURE_DECK_SIZE} as mature,
+      coalesce(dt.cards, 0) >= ${deckBodySize(false)} as mature,
       sum(ac.quantity)::int as quantity
     from all_claims ac
     left join deck_totals dt on dt.deck_id = ac.deck_id
@@ -144,7 +145,7 @@ export async function loadAvailability(
       select
         d.id,
         d.created_at,
-        coalesce(dt.cards, 0) >= ${MATURE_DECK_SIZE} as mature
+        coalesce(dt.cards, 0) >= ${deckBodySize(false)} as mature
       from decks d
       left join deck_totals dt on dt.deck_id = d.id
       where ${skip}::uuid is not null

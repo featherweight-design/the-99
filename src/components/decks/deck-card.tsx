@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { MATURE_DECK_SIZE } from "../../lib/decks/availability";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { colorLabel } from "../../lib/decks/format";
 import { formatCents } from "../../lib/decks/price";
 import type { DeckListItem } from "../../lib/decks/read";
@@ -60,7 +60,7 @@ function statusDetailFor(
       // the first says nothing and reads as a rendering fault.
       return null;
     case "Over":
-      return c.detailOver(deck.built - MATURE_DECK_SIZE);
+      return c.detailOver(deck.built - deckBodySize(false));
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
     case "To buy": {
@@ -124,7 +124,7 @@ interface DeckCardProps {
  */
 export function DeckCard({ deck, shopping, now }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
-  const count = `${deck.built} / ${MATURE_DECK_SIZE}`;
+  const count = `${deck.built} / ${deckBodySize(false)}`;
   const lastPlayed = deck.lastPlayedAt
     ? formatWhen(deck.lastPlayedAt, now)
     : refreshCopy.decks.lastPlayedNever;
@@ -233,7 +233,7 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
             <div
               data-deck-bar-fill
               className="absolute top-0 bottom-0 left-0 rounded-full"
-              style={statusBarStyle(deck.statusPill, deck.built)}
+              style={statusBarStyle(deck.statusPill, deck.built, deckBodySize(false))}
             />
           )}
         </div>

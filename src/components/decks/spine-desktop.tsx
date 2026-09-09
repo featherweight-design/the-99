@@ -12,6 +12,7 @@ import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { colorLabel } from "../../lib/decks/format";
 import type { StatusPill } from "../../lib/decks/status";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
@@ -219,7 +220,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
             <div
               data-testid="spine-bar-fill"
               className="h-full"
-              style={statusBarStyle(status, built)}
+              style={statusBarStyle(status, built, deckBodySize(false))}
             />
           </div>
 
