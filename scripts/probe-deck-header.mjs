@@ -53,6 +53,20 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
+// A rename is a server action, so the title the header draws lags the keystroke
+// by however long that round trip takes. Polling asks the question until the
+// answer settles rather than guessing a single interval that is either flaky or
+// slow; the timeout only bounds a genuine failure.
+async function readHeaderUntilTitled(page, read, wanted, timeout = 8000) {
+  const deadline = Date.now() + timeout;
+  let seen;
+  for (;;) {
+    seen = await page.evaluate(read);
+    if (seen.title === wanted || Date.now() > deadline) return seen;
+    await page.waitForTimeout(200);
+  }
+}
+
 // The one header the reader can actually see at this width. Both trees are in
 // the DOM — that is the whole point of the responsive split — so everything here
 // filters on `getClientRects()`, which is the only thing that knows about CSS.
@@ -374,8 +388,7 @@ try {
     await page.waitForTimeout(200);
     await field.fill(renamed);
     await field.press("Enter");
-    await page.waitForTimeout(1200);
-    now = await page.evaluate(`(${READ_HEADER})()`);
+    now = await readHeaderUntilTitled(page, `(${READ_HEADER})()`, renamed);
     if (now.title !== renamed) fail(`Enter did not save: "${now.title}"`);
     else note(`  Enter saves`);
 
@@ -386,8 +399,7 @@ try {
     // viewport is the app's nav, so a click there navigates away instead of
     // leaving the field. Blur is what the contract is actually about.
     await field.evaluate((el) => el.blur());
-    await page.waitForTimeout(1200);
-    now = await page.evaluate(`(${READ_HEADER})()`);
+    now = await readHeaderUntilTitled(page, `(${READ_HEADER})()`, originalName);
     if (now.title !== originalName) fail(`blurring the field did not save: "${now.title}"`);
     else note(`  leaving the field saves, and the deck's name is back to "${originalName}"`);
 
