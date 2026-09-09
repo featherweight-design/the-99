@@ -6,7 +6,26 @@
 import { useCardDetail } from "../cards/card-detail-provider";
 import { PENDING_OPACITY } from "./pending";
 
-export function FullCardTrigger({ oracleId }: { oracleId: string }) {
+/** The three corners the pill sits in. `hero` is the commander page's mobile
+    art header; the two `deck-*` values are the deck header at its two widths,
+    where the pill moves out of the way of the title and the rename pencil. */
+const PLACEMENT = {
+  hero: { top: 56, right: 16 },
+  "deck-desktop": { left: 16, bottom: 14 },
+  "deck-mobile": { top: 13, right: 16 },
+} as const;
+
+export function FullCardTrigger({
+  oracleId,
+  placement = "hero",
+  bandTapTarget = true,
+}: {
+  oracleId: string;
+  placement?: keyof typeof PLACEMENT;
+  /** The deck header withholds this: that band also carries the title button and
+      the rename pencil, and a full-band click layer above them eats both. */
+  bandTapTarget?: boolean;
+}) {
   const { open, pendingOracleId } = useCardDetail();
   const pending = pendingOracleId === oracleId;
 
@@ -15,11 +34,13 @@ export function FullCardTrigger({ oracleId }: { oracleId: string }) {
       {/* Full-band tap target — per state table, tapping the art header opens
           the card. Presentational (not a button, never focusable); the labeled
           chip below is the accessible control. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 cursor-pointer"
-        onClick={() => open(oracleId)}
-      />
+      {bandTapTarget ? (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 cursor-pointer"
+          onClick={() => open(oracleId)}
+        />
+      ) : null}
 
       {/* ⛶ affordance chip. The handoff heading is still §"⛶ Full card"
           affordance chip — that is the design doc's own title, kept here so the
@@ -32,8 +53,7 @@ export function FullCardTrigger({ oracleId }: { oracleId: string }) {
         // brand focus-visible outline treatment inherited from globals.css
         className="absolute inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] border border-[color:color-mix(in_oklab,var(--fg)_18%,transparent)]"
         style={{
-          top: 56,
-          right: 16,
+          ...PLACEMENT[placement],
           gap: 6,
           backdropFilter: "blur(4px)",
           padding: "6px 11px",

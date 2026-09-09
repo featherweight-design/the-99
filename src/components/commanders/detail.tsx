@@ -1,6 +1,6 @@
 // Commander Detail — §Commander Detail Page design table.
 // Desktop: sticky left column (63/88 card + oracle glass + build button) + scrolling right column.
-// Mobile: art header band (236px, gradient + overlay text) + sticky bottom Build bar + sections.
+// Mobile: art header band (1.6:1, the shared art wash + overlay text) + sticky bottom Build bar + sections.
 
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
@@ -12,6 +12,8 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { FitLegend, type FitLegendSegment } from "./fit-legend";
 import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
+import { IdentityPips } from "./commander-art";
+import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
@@ -232,36 +234,20 @@ export function CommanderDetail({
       <SelectableLiveAnnouncer cards={synergyCards} />
       {/* ── Mobile: art header band ─────────────────────────────────── */}
       <div
-        className="sm:hidden relative flex-none"
-        style={{
-          height: 236,
-          background: c.imageUri ? undefined : gradient,
-          backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          boxShadow: "inset 0 -60px 60px -30px color-mix(in oklab, var(--bg) 90%, transparent)",
-        }}
+        className="sm:hidden relative flex-none overflow-hidden"
+        style={{ aspectRatio: "1.6 / 1" }}
       >
+        <ArtWash
+          strategy="cover"
+          labelEdge="bottom"
+          artCropUri={c.artCropUri}
+          colorIdentity={c.colorIdentity}
+        />
+
         {/* Mana identity pips (top-right) */}
-        {c.colorIdentity.length > 0 && (
-          <div
-            className="absolute flex gap-[5px]"
-            style={{ top: 16, right: 16 }}
-          >
-            {c.colorIdentity.map((color) => (
-              <span
-                key={color}
-                className="block rounded-full shrink-0"
-                style={{
-                  width: 16,
-                  height: 16,
-                  background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
-                  boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
-                }}
-              />
-            ))}
-          </div>
-        )}
+        <div className="absolute" style={{ top: 14, right: 16 }}>
+          <IdentityPips colorIdentity={c.colorIdentity} size={12} />
+        </div>
 
         {/* ⛶ Card details trigger (client component) */}
         <FullCardTrigger oracleId={c.oracleId} />
@@ -270,34 +256,41 @@ export function CommanderDetail({
             through to the full-band card-details trigger */}
         <div
           className="absolute pointer-events-none"
-          style={{ left: 16, right: 16, bottom: 14 }}
+          style={{ left: 16, right: 16, bottom: 15 }}
         >
+          {/* --fg-body, not --accent: the accent measured below the floor on art. */}
           <p
             className="m-0 font-mono uppercase"
             style={{
-              fontSize: 10,
+              fontSize: 11,
               letterSpacing: "0.14em",
-              color: "var(--accent)",
+              color: "var(--fg-body)",
+              textShadow: "0 1px 3px rgba(0,0,0,0.8)",
             }}
           >
             Rank {rank}
             {isBestFit ? " · your best fit" : ""}
           </p>
           <h1
-            className="font-display font-[700]"
+            className="font-display font-[700] m-0"
             style={{
-              fontSize: 23,
+              fontSize: 25,
               color: "var(--fg)",
-              lineHeight: 1.1,
-              marginTop: 3,
-              marginBottom: 0,
+              lineHeight: 1.15,
+              marginTop: 4,
+              textShadow: COVER_INK_SHADOW,
             }}
           >
             {c.name}
           </h1>
           <p
             className="m-0"
-            style={{ fontSize: 12, color: "var(--fg-body)", marginTop: 2 }}
+            style={{
+              fontSize: 12.5,
+              color: "var(--fg-body)",
+              marginTop: 4,
+              textShadow: COVER_INK_SHADOW,
+            }}
           >
             {c.typeLine}
           </p>

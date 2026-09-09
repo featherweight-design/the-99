@@ -93,3 +93,38 @@ describe("FullCardTrigger", () => {
     expect(fetchCard).toHaveBeenCalledWith("o-atraxa");
   });
 });
+
+// The helper above pins one set of props, so placement gets its own mount. The
+// provider is still real: `fetchCard` defaults to a server action, and a bare
+// provider would reach for it.
+function mount(el: React.ReactNode) {
+  return render(<CardDetailProvider fetchCard={vi.fn(async () => ATRAXA)}>{el}</CardDetailProvider>);
+}
+
+describe("FullCardTrigger placement", () => {
+  it("defaults to the hero corner with a band tap target", () => {
+    const { container } = mount(<FullCardTrigger oracleId="o-atraxa" />);
+    const pill = screen.getByRole("button", { name: "View card details" });
+    expect(pill.style.top).toBe("56px");
+    expect(pill.style.right).toBe("16px");
+    expect(container.querySelector('[aria-hidden="true"].inset-0')).not.toBeNull();
+  });
+
+  it("sits bottom-left on the desktop deck header and draws no band tap target", () => {
+    const { container } = mount(
+      <FullCardTrigger oracleId="o-atraxa" placement="deck-desktop" bandTapTarget={false} />,
+    );
+    const pill = screen.getByRole("button", { name: "View card details" });
+    expect(pill.style.left).toBe("16px");
+    expect(pill.style.bottom).toBe("14px");
+    expect(pill.style.top).toBe("");
+    expect(container.querySelector('[aria-hidden="true"].inset-0')).toBeNull();
+  });
+
+  it("sits top-right at 13px on the mobile deck header", () => {
+    mount(<FullCardTrigger oracleId="o-atraxa" placement="deck-mobile" bandTapTarget={false} />);
+    const pill = screen.getByRole("button", { name: "View card details" });
+    expect(pill.style.top).toBe("13px");
+    expect(pill.style.right).toBe("16px");
+  });
+});

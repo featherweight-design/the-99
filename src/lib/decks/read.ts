@@ -95,6 +95,7 @@ export type DeckDetail = {
     typeLine: string;
     oracleText: string | null;
     imageUri: string | null;
+    artCropUri: string | null;
   };
   cards: DeckDetailCard[];
   /**
@@ -135,6 +136,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       typeLine: cards.typeLine,
       oracleText: cards.oracleText,
       imageUri: cards.imageUri,
+      artCropUri: cards.artCropUri,
     })
     .from(cards)
     .where(eq(cards.oracleId, deck.commanderOracleId));

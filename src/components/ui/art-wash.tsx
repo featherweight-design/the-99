@@ -5,9 +5,31 @@ import { commanderGradient } from "../../lib/collection/gradients";
 const tint = (token: string, pct: number) =>
   `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
 
-/** L3. Heavy where the labels are, thin through the middle third. The fourth
-    stop is what lets the status chip sit on art without its own plate. */
-const SCRIM = `linear-gradient(180deg, ${tint("--bg", 90)} 0%, ${tint("--bg", 30)} 40%, ${tint("--bg", 52)} 74%, ${tint("--bg", 86)} 100%)`;
+/** L3, as `[alphaPercent, positionPercent]` pairs. Heavy where the labels are,
+    thin through the middle. Exported because `wash-contrast.test.ts` derives its
+    contrast floors from these alphas — the two files drifting apart is the
+    failure that test exists to catch. */
+export type LabelEdge = "top" | "bottom";
+
+export const COVER_SCRIM_STOPS: Record<LabelEdge, readonly (readonly [number, number])[]> = {
+  top: [
+    [90, 0],
+    [30, 40],
+    [52, 74],
+    [86, 100],
+  ],
+  bottom: [
+    [66, 0],
+    [22, 26],
+    [62, 50],
+    [90, 100],
+  ],
+};
+
+const coverScrim = (edge: LabelEdge) =>
+  `linear-gradient(180deg, ${COVER_SCRIM_STOPS[edge]
+    .map(([alpha, pos]) => `${tint("--bg", alpha)} ${pos}%`)
+    .join(", ")})`;
 
 const COVER_ART_OPACITY = 0.58;
 
@@ -23,6 +45,11 @@ const COVER_PLATE = "color-mix(in srgb, var(--bg) 86%, black)";
     colour. The resume row is the stated exception: its type starts at the 116px
     inset, clear of the portrait, and carries none. */
 export const INK_SHADOW = "0 1px 3px rgba(0,0,0,.6)";
+
+/** The deeper shadow the `cover` bands carry. Their type sits over the middle of
+    a photograph rather than past a portrait's flat stop, so it is drawn against
+    the brightest pixel the crop can put there, not against the row's ground. */
+export const COVER_INK_SHADOW = "0 1px 4px rgba(0,0,0,0.85)";
 
 const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
@@ -40,41 +67,109 @@ const reducible = (opacity: number, art: boolean): CSSProperties =>
     "--art-wash-reduced-opacity": art ? Math.min(opacity, REDUCED_ART_OPACITY) : opacity,
   }) as CSSProperties;
 
+type Band = 168 | 148 | 72;
+
 /** Keyed to the band, not to the row: `band` is the only input, so both the mask
-    and the scrim travel with it at any row width. */
-const portrait = (band: 148 | 72) => {
-  const width = Math.round(band * PORTRAIT_RATIO); // 203 | 99
-  const maskEnd = band === 148 ? 58 : 62; // a fraction of the art
-  // The scrim resolves into the ground the row already draws, so the art fades
-  // into the row instead of into a darker patch of its own. The commander row
-  // sits on the page; the resume row draws its own inset surface.
-  const ground = band === 148 ? "--bg" : "--surface-inset";
-  const stops =
-    band === 148
-      ? `${tint(ground, 30)} 0px, ${tint(ground, 26)} 118px, ${tint(ground, 78)} ${width}px, var(${ground}) 264px`
-      : `${tint(ground, 22)} 0px, ${tint(ground, 18)} 58px, ${tint(ground, 80)} ${width}px, var(${ground}) 138px`;
+    and the scrim travel with it at any row width. Neither the near stop nor the
+    flat stop scales with the band — each was drawn against its own surface — so
+    they are read from the table rather than derived. Only `width` is derived,
+    because it is the crop's own aspect and is also the scrim's third stop.
+
+    `ground` is the ground the row already draws, so the art fades into the row
+    instead of into a darker patch of its own: the commander and deck rows sit on
+    the page, the resume row draws its own inset surface. */
+const BANDS: Record<
+  Band,
+  {
+    maskEnd: number;
+    ground: string;
+    ambientOpacity: number;
+    sharpOpacity: number;
+    nearStop: number;
+    nearAlpha: number;
+    startAlpha: number;
+    sharpAlpha: number;
+    flatStop: number;
+    /** `[startAlpha, midAlpha, midPosition, endAlpha]`. The mid position is per
+        band, not shared: 168 damps later than 148 because its type sits lower. */
+    vertical: readonly [number, number, number, number] | null;
+  }
+> = {
+  168: {
+    maskEnd: 58,
+    ground: "--bg",
+    ambientOpacity: 0.2,
+    sharpOpacity: 0.8,
+    nearStop: 134,
+    nearAlpha: 26,
+    startAlpha: 30,
+    sharpAlpha: 78,
+    flatStop: 240,
+    vertical: [30, 10, 46, 42],
+  },
+  148: {
+    maskEnd: 58,
+    ground: "--bg",
+    ambientOpacity: 0.2,
+    sharpOpacity: 0.8,
+    nearStop: 118,
+    nearAlpha: 26,
+    startAlpha: 30,
+    sharpAlpha: 78,
+    flatStop: 264,
+    vertical: [62, 16, 42, 74],
+  },
+  72: {
+    maskEnd: 62,
+    ground: "--surface-inset",
+    ambientOpacity: 0.14,
+    sharpOpacity: 0.85,
+    nearStop: 58,
+    nearAlpha: 18,
+    startAlpha: 22,
+    sharpAlpha: 80,
+    flatStop: 138,
+    vertical: null,
+  },
+};
+
+const portrait = (band: Band) => {
+  const b = BANDS[band];
+  const width = Math.round(band * PORTRAIT_RATIO); // 230 | 203 | 99
+  const stops = `${tint(b.ground, b.startAlpha)} 0px, ${tint(b.ground, b.nearAlpha)} ${b.nearStop}px, ${tint(b.ground, b.sharpAlpha)} ${width}px, var(${b.ground}) ${b.flatStop}px`;
   return {
     width,
-    ground,
-    ambientOpacity: band === 148 ? 0.2 : 0.14,
-    sharpOpacity: band === 148 ? 0.8 : 0.85,
+    ground: b.ground,
+    ambientOpacity: b.ambientOpacity,
+    sharpOpacity: b.sharpOpacity,
     // Black is the opaque end of a mask's alpha, not a palette colour.
-    mask: `linear-gradient(90deg, #000 0 ${maskEnd}%, transparent 100%)`,
+    mask: `linear-gradient(90deg, #000 0 ${b.maskEnd}%, transparent 100%)`,
     scrim: `linear-gradient(90deg, ${stops})`,
-    // Layer D, and only at 148: the commander row prints its rank, name and fit
-    // over the full height of the art, so the art needs damping at the top and
-    // bottom as well as across. The resume row's type starts clear of the
-    // portrait, so a vertical ramp there would darken the row for nothing.
-    verticalScrim:
-      band === 148
-        ? `linear-gradient(180deg, ${tint("--bg", 62)} 0%, ${tint("--bg", 16)} 42%, ${tint("--bg", 74)} 100%)`
-        : null,
+    // Layer D: a band that prints type over the full height of the art needs
+    // damping at the top and bottom as well as across. The resume row's type
+    // starts clear of the portrait, so a vertical ramp there would darken the
+    // row for nothing.
+    verticalScrim: b.vertical
+      ? `linear-gradient(180deg, ${tint("--bg", b.vertical[0])} 0%, ${tint("--bg", b.vertical[1])} ${b.vertical[2]}%, ${tint("--bg", b.vertical[3])} 100%)`
+      : null,
   };
 };
 
 export type ArtWashProps =
-  | { strategy: "cover"; band?: never; artCropUri: string | null; colorIdentity: string[] }
-  | { strategy: "left-portrait"; band: 148 | 72; artCropUri: string | null; colorIdentity: string[] };
+  | {
+      strategy: "cover";
+      band?: never;
+      labelEdge: LabelEdge;
+      artCropUri: string | null;
+      colorIdentity: string[];
+    }
+  | {
+      strategy: "left-portrait";
+      band: Band;
+      labelEdge?: never;
+      artCropUri: string | null;
+      colorIdentity: string[];
+    };
 
 export function ArtWash(props: ArtWashProps) {
   const { artCropUri, colorIdentity } = props;
@@ -147,7 +242,7 @@ export function ArtWash(props: ArtWashProps) {
       />
       <div
         className="art-wash-scrim art-wash-scrim-cover absolute inset-0"
-        style={{ background: SCRIM }}
+        style={{ background: coverScrim(props.labelEdge) }}
       />
     </div>
   );

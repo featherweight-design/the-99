@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { renameDeck } from "../../app/decks/actions";
+import { useRef } from "react";
+import { renameCopy } from "../../lib/copy/decks-builder";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { useDeckRename } from "./use-deck-rename";
+import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 
 interface RenameFormProps {
   deckId: string;
@@ -12,43 +14,41 @@ interface RenameFormProps {
 }
 
 /**
- * Inline rename form — used by the DeckCardOverflow menu (list page) and the
- * builder spine (Task 6). Wraps the `renameDeck` server action.
+ * Inline rename form — the DeckCardOverflow menu's stacked layout. The builder
+ * spine renders the same behaviour in its own two layouts; all three share
+ * `useDeckRename`.
+ *
+ * No `onBlur`. Blur-commit is a ruling about the deck header's title-in-place,
+ * not about this form, and wiring it here would double-submit: blur lands before
+ * the Save button's click.
  */
 export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
-  const [value, setValue] = useState(currentName);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const { value, setValue, error, isPending, canSave, commit, cancel, onKeyDown } = useDeckRename(
+    deckId,
+    currentName,
+    onDone,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const trimmed = value.trim();
-    if (trimmed.length === 0 || trimmed.length > 120) {
-      setError("Name must be 1–120 characters.");
-      return;
-    }
-    startTransition(async () => {
-      try {
-        await renameDeck(deckId, trimmed);
-        onDone();
-      } catch {
-        setError("Rename failed. Try again.");
-      }
-    });
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-[8px]">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        commit();
+      }}
+      className="flex flex-col gap-[8px]"
+    >
       <TextField
         ref={inputRef}
         autoFocus
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        maxLength={120}
-        disabled={isPending}
-        aria-label="Deck name"
+        onKeyDown={onKeyDown}
+        maxLength={DECK_NAME_MAX}
+        // readOnly, never disabled: a disabled input blurs, and the header's
+        // layout commits on blur.
+        readOnly={isPending}
+        aria-label={renameCopy.fieldAria}
         className="w-full rounded-[6px] px-[10px] py-[7px] text-[13px] font-sans bg-[color:var(--bg)]"
       />
       {error && (
@@ -60,19 +60,21 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
         {/* §rename-form — Save: PRIMARY submit — rounded-[6px] overrides primitive's rounded-lg */}
         <PrimaryButton
           type="submit"
-          disabled={isPending}
+          disabled={!canSave}
           className="flex-1 rounded-[6px] py-[7px] text-[13px]"
         >
-          {isPending ? "Saving…" : "Save"}
+          {isPending ? renameCopy.saving : error ? renameCopy.retry : renameCopy.save}
         </PrimaryButton>
         <button
           type="button"
-          onClick={onDone}
+          onClick={cancel}
+          // Guards the blur-then-click order the header's layout depends on.
+          onMouseDown={(e) => e.preventDefault()}
           disabled={isPending}
           className="rounded-[6px] px-[12px] py-[7px] text-[13px] font-sans transition-colors bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
           style={{ cursor: isPending ? "default" : "pointer" }}
         >
-          Cancel
+          {renameCopy.cancel}
         </button>
       </div>
     </form>

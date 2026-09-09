@@ -147,6 +147,7 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
       <div data-deck-art className="relative aspect-[2.2/1] min-h-[104px] overflow-hidden">
         <ArtWash
           strategy="cover"
+          labelEdge="top"
           artCropUri={deck.commanderArtCropUri}
           colorIdentity={deck.commanderColorIdentity}
         />

@@ -12,6 +12,7 @@ import { createDeck } from "../../app/decks/actions";
 import { colorLabel } from "../../lib/decks/format";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -51,8 +52,8 @@ export function CreatePreFilled({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = deckName.trim();
-    if (trimmed.length === 0 || trimmed.length > 120) {
-      setError("Name must be 1–120 characters.");
+    if (trimmed.length === 0 || trimmed.length > DECK_NAME_MAX) {
+      setError(`Name must be 1–${DECK_NAME_MAX} characters.`);
       return;
     }
     setError(null);
@@ -268,7 +269,7 @@ export function CreatePreFilled({
               autoFocus
               value={deckName}
               onChange={(e) => setDeckName(e.target.value)}
-              maxLength={120}
+              maxLength={DECK_NAME_MAX}
               placeholder="My awesome deck"
               disabled={isPending}
               className={`block w-full rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[15px] md:text-[16px] border-[color:var(--accent)] ${

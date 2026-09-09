@@ -7,6 +7,10 @@
 // (mock, Decks deltas). The export dialog's own chrome does draw copy from
 // here: see `overCopy.exportNote` and `exportLinkOutCopy`.
 
+// The one number this file does not own: the deck-name limit is the action's
+// rule, and a copy of it here would keep naming the old one after a change.
+import { DECK_NAME_MAX } from "../decks/deck-name";
+
 /** The mock names the commander in the short register ("Korvold"), not the full
  *  "Korvold, Fae-Cursed King" shown in the builder header. Everything up to the
  *  first comma. */
@@ -454,4 +458,19 @@ export const exportLinkOutCopy = {
  *  claim about every row that is false for some of them. */
 export const exportShoppingCopy = {
   countMeta: (copies: number) => `${copies} cards · to buy`,
+} as const;
+
+/** Deck rename. The hint is the one string that names both keys, so it is set
+    in mono at the same tracking as the rest of the spine's instrument type. */
+export const renameCopy = {
+  triggerAria: "Rename deck",
+  fieldAria: "Deck name",
+  hint: "↵ save · esc cancel",
+  save: "Save",
+  saving: "Saving…",
+  retry: "Retry",
+  cancel: "Cancel",
+  errorLength: `A deck name is 1–${DECK_NAME_MAX} characters.`,
+  errorControl: "That name can’t contain control characters.",
+  errorFailed: "That didn’t save. Try again.",
 } as const;

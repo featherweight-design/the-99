@@ -52,7 +52,12 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
       {/* The band is the deck card's, exactly — same aspect, same floor. A second
           number here would be a second answer to a question already settled. */}
       <div className="hero-band relative aspect-[2.2/1] min-h-[104px] overflow-hidden">
-        <ArtWash strategy="cover" artCropUri={item.artCropUri} colorIdentity={item.colorIdentity} />
+        <ArtWash
+          strategy="cover"
+          labelEdge="top"
+          artCropUri={item.artCropUri}
+          colorIdentity={item.colorIdentity}
+        />
 
         {/* §ReadyCard — name block, top-anchored: decision 6's `center top` focal
             puts the art's recognisable features below the type, not behind it. */}

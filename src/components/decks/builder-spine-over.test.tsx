@@ -50,25 +50,28 @@ function mount(built: number) {
   );
 }
 
+// Every figure below is asserted with `getAllByText`: the two widths are
+// separate trees since the art wash, so each sentence is in the DOM twice, one
+// copy CSS-hidden. Two is the assertion, not an artefact of it.
 describe("BuilderSpine over 99", () => {
   it("names the overage and what to do about it", () => {
     mount(104);
-    expect(screen.getByText(overCopy.trim.lead(overWord(5)))).toBeInTheDocument();
-    expect(screen.getByText(overCopy.trim.body("5"))).toBeInTheDocument();
+    expect(screen.getAllByText(overCopy.trim.lead(overWord(5)))).toHaveLength(2);
+    expect(screen.getAllByText(overCopy.trim.body("5"))).toHaveLength(2);
   });
 
   // Reading the optimistic count, not the server's 62 — the assertion the spec
   // asks review to make first.
   it("reads the optimistic count, not the deck row", () => {
     mount(104);
-    expect(screen.getByText(overCopy.figure.delta("5"))).toBeInTheDocument();
+    expect(screen.getAllByText(overCopy.figure.delta("5"))).toHaveLength(2);
     expect(screen.queryByText(/62/)).not.toBeInTheDocument();
   });
 
   it("says one, not 1, at a single card over", () => {
     mount(100);
-    expect(screen.getByText(overCopy.trim.lead("One"))).toBeInTheDocument();
-    expect(screen.getByText(overCopy.trim.body("1"))).toHaveTextContent(
+    expect(screen.getAllByText(overCopy.trim.lead("One"))).toHaveLength(2);
+    expect(screen.getAllByText(overCopy.trim.body("1"))[0]).toHaveTextContent(
       "Cut one and it is legal.",
     );
   });

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { COVER_SCRIM_STOPS } from "../../components/ui/art-wash";
 import { contrast, parseHex } from "./color";
 import { parseThemeBlocks } from "./parse-css";
 
@@ -20,8 +21,24 @@ const BRIGHTEST_ART = "#FFFFFF";
 // `--bg`, whose alpha varies down the band. Changing either file without the
 // other is the failure this test exists to catch.
 const ART_ALPHA = 0.58;
-const SCRIM_AT_TITLE = 0.9; // stop 1 — the label band
-const SCRIM_AT_META = 0.86; // stop 4 — the bottom band, where the chip sits
+
+/** Read off the shipped gradient rather than restated, so a stop moving in
+    `art-wash.tsx` moves the floor this test asserts. */
+const alphaAt = (edge: "top" | "bottom", position: number): number => {
+  const stops = COVER_SCRIM_STOPS[edge];
+  for (let i = 1; i < stops.length; i++) {
+    const [a1, p1] = stops[i];
+    const [a0, p0] = stops[i - 1];
+    if (position <= p1) {
+      return (a0 + ((a1 - a0) * (position - p0)) / (p1 - p0)) / 100;
+    }
+  }
+  return stops[stops.length - 1][0] / 100;
+};
+
+const TOP_AT_TITLE = alphaAt("top", 0); // 0.90 — the label band
+const TOP_AT_META = alphaAt("top", 100); // 0.86 — the bottom band, where the chip sits
+const BOTTOM_AT_LABEL = alphaAt("bottom", 54); // ≈0.643 — where the label block starts
 
 const over = (fg: string, bg: string, alpha: number): string => {
   const [fr, fgreen, fb] = parseHex(fg);
@@ -48,13 +65,23 @@ describe("art wash contrast floor", () => {
   });
 
   for (const theme of THEMES.keys()) {
-    it(`${theme}: a title clears 7:1 over the brightest possible art`, () => {
-      const ground = washGround(token(theme, "bg"), SCRIM_AT_TITLE);
+    it(`${theme}: a top-ramp title clears 7:1 over the brightest possible art`, () => {
+      const ground = washGround(token(theme, "bg"), TOP_AT_TITLE);
       expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(7);
     });
 
-    it(`${theme}: meta clears 4.5:1 in the lower band`, () => {
-      const ground = washGround(token(theme, "bg"), SCRIM_AT_META);
+    it(`${theme}: top-ramp meta clears 4.5:1 in the lower band`, () => {
+      const ground = washGround(token(theme, "bg"), TOP_AT_META);
+      expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it(`${theme}: bottom-ramp title ink clears 4.5:1 at the label edge`, () => {
+      const ground = washGround(token(theme, "bg"), BOTTOM_AT_LABEL);
+      expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it(`${theme}: bottom-ramp meta ink clears 4.5:1 at the label edge`, () => {
+      const ground = washGround(token(theme, "bg"), BOTTOM_AT_LABEL);
       expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
     });
   }
