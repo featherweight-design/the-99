@@ -198,8 +198,10 @@ function LastSlotsStripInner({
     // Scrolling the focus target would only re-reveal the head, which is already
     // visible, so the scroll is asked of the panel and denied to the focus.
     target?.focus({ preventScroll: true });
+    // Instant, like every other scroll on this surface: an animated scroll has
+    // to answer prefers-reduced-motion, and the jump answers it by not moving.
     // Optional call: jsdom does not implement scrollIntoView at all.
-    if (open) rootRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    if (open) rootRef.current?.scrollIntoView?.({ block: "start" });
   }, [open]);
 
   // The strip unmounts the moment the deck fills, and a fill can land from the

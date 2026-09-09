@@ -296,7 +296,7 @@ describe("LastSlotsStrip", () => {
     try {
       render(<LastSlotsStrip {...base} />);
       await click(screen.getByRole("button", { name: doorName("3") }));
-      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
 
       scrollIntoView.mockClear();
       await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
