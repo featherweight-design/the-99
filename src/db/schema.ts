@@ -183,6 +183,10 @@ export const decks = pgTable("decks", {
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   commanderOracleId: uuid("commander_oracle_id").notNull().references(() => cards.oracleId),
+  // The pair's order is the column order: `commander_oracle_id` is always the
+  // primary. A position field would be a second source of truth for a fact
+  // two columns already carry.
+  partnerOracleId: uuid("partner_oracle_id").references(() => cards.oracleId),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // True once a fill has run against this deck — including a fill that found
@@ -190,7 +194,14 @@ export const decks = pgTable("decks", {
   // answers the question this column exists to answer. Never reset by a sweep:
   // the swept-empty copy branches on "was this ever filled", not "is it filled".
   filled: boolean("filled").notNull().default(false),
-});
+},
+  (t) => [
+    check(
+      "decks_partner_distinct",
+      sql`${t.partnerOracleId} is null or ${t.partnerOracleId} <> ${t.commanderOracleId}`,
+    ),
+  ],
+);
 
 export const deckCards = pgTable("deck_cards", {
   deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),

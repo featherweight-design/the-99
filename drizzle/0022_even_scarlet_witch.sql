@@ -1,0 +1,3 @@
+ALTER TABLE "decks" ADD COLUMN "partner_oracle_id" uuid;--> statement-breakpoint
+ALTER TABLE "decks" ADD CONSTRAINT "decks_partner_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("partner_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "decks" ADD CONSTRAINT "decks_partner_distinct" CHECK ("decks"."partner_oracle_id" is null or "decks"."partner_oracle_id" <> "decks"."commander_oracle_id");
