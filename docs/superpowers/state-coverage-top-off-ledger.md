@@ -26,8 +26,8 @@ feature needs:
 - `readFillPasses(deckId)` (`src/lib/decks/fill-passes.ts:184`) returns `FillPassSummary[]`,
   oldest first, passes with `live === 0` already dropped.
 - `FillPassSummary` carries `id`, `kind`, `ordinal`, `openSlots`, `createdAt`, `live`, `kept`,
-  `removed` and `liveOracleIds` — which is every figure the design's lines state, plus the id set
-  the mark needs.
+  `removed` and `liveCards` (`{ oracleId, quantity }[]`) — which is every figure the design's
+  lines state, plus the id set the mark needs and the per-card quantities the undo counts.
 - `undoFillPass(deckId, passId)` (`src/app/decks/actions.ts:840`) takes the deck row lock,
   re-derives attribution, throws on a seed pass, and returns 0 for an already-undone one.
 - The whole `ledger` copy block ships (`src/lib/copy/top-off.ts:203-291`), along with
@@ -38,7 +38,7 @@ So this gate is not about missing fields. **It is about wiring**, and there is e
 | Need | Drawn by | Today | Mark |
 |---|---|---|---|
 | The pass summaries | every ledger line | `readFillPasses` is called by **no route**. `page.tsx:37`'s `Promise.all` holds suggestions, deck list, synergy cards and games; the ledger's data is never read | ❌ |
-| The live oracle ids of the marked pass | the 3px accent edge on `DecklistRow` | `liveOracleIds` is on the summary, but `DecklistRow` is mounted from five call sites (`decklist-group.tsx:84`, `decklist.tsx:409/439/469`) and no prop path reaches them | ❌ |
+| The live cards of the marked pass | the 3px accent edge on `DecklistRow` | `liveCards` is on the summary, but `DecklistRow` is mounted from five call sites (`decklist-group.tsx:84`, `decklist.tsx:409/439/469`) and no prop path reaches them | ❌ |
 | `auto` on a deck row | the legacy line (`l0`), the ledger's presence | `DeckDetailCard.auto` ✅, already consumed by `builder-shell.tsx:592` | ✅ |
 | Card counts for `buy` | every line's `{b}` | `DeckDetailCard.owned` ✅ | ✅ |
 
@@ -109,7 +109,7 @@ sentence about a record we keep on a deck with nothing to record.
 | # | State | Triggering condition | Type | Route | Runtime | Mark |
 |---|---|---|---|---|---|---|
 | k | Not marked | no pass marked | ✅ (client) | n/a | ✅ — the default | ✅ |
-| l | Marked | `markedPassId === pass.id`; rows whose `oracleId ∈ liveOracleIds` | `liveOracleIds` ✅ on the summary | ❌ never read | ❌ today — no prop path reaches `DecklistRow`. ✅ with fix 2 | ❌ → ✅ |
+| l | Marked | `markedPassId === pass.id`; rows whose `oracleId` is in `liveCards` | `liveCards` ✅ on the summary | ❌ never read | ❌ today — no prop path reaches `DecklistRow`. ✅ with fix 2 | ❌ → ✅ |
 | m | Another line marked — the mark moves | a second `Show these` tap | ✅ | ❌ | ✅ with fix 2. Single `markedPassId` state, so "one at a time" is the representation rather than a rule to enforce | ❌ → ✅ |
 | n | Cleared — tapped again, pass undone, or list committed | id set to null | ✅ | ❌ | ⚠️ **partial without care.** The re-tap is client state ✅. The other two are *server* events: after an undo or a commit the marked pass may no longer exist in the fresh summaries, and a stale `markedPassId` would mark nothing while `aria-pressed` stayed true on a line that is gone. The mark is therefore reconciled against the incoming summaries **during render**, not in an effect — the same rule the caching convention states for a fresh payload | ❌ → ✅ with fix 2 + the render-time reconcile |
 

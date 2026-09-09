@@ -3,7 +3,7 @@
  *
  * ADDS and REPLACES inside synergyCopy.lastSlots. The heading is untouched;
  * three strings are deleted with the controls they named (see the REPLACES
- * block at the foot of this file). recommendations.ts loses its four
+ * block at the foot of this file). recommendations.ts loses its six
  * fill.provenance* sentences to the ledger and keeps fill.fillingRows, which is
  * REUSED VERBATIM.
  *
