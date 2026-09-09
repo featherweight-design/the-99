@@ -164,6 +164,14 @@ export function BuilderShell({
   // An undo, a sweep or a keep-all can take the marked pass away on the server,
   // and an effect would leave one frame in which the ledger drew `aria-pressed`
   // on a line that is gone and the decklist marked nothing.
+  const newestPassId = fillPasses.at(-1)?.id ?? null;
+  const [seenNewestPassId, setSeenNewestPassId] = useState(newestPassId);
+  if (seenNewestPassId !== newestPassId) {
+    // A commit appends a pass. The mark was on the list the player was reading
+    // before deciding, and the design clears it the moment a new pass lands.
+    setSeenNewestPassId(newestPassId);
+    if (markedPassId !== null) setMarkedPassId(null);
+  }
   const markedPass = fillPasses.find((p) => p.id === markedPassId) ?? null;
   if (markedPassId !== null && markedPass === null) setMarkedPassId(null);
   const passMark = useMemo(() => passMarkFor(markedPass), [markedPass]);

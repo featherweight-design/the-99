@@ -77,7 +77,7 @@ export function ProvenanceLedger({
   const totalBuy = passes.reduce((n, p) => n + buyCount(p), 0);
 
   return (
-    <div className="mx-[16px] mt-[10px] mb-[10px] md:mx-[30px] md:mt-[12px] rounded-[9px] px-[12px] py-[10px] md:px-[15px] md:py-[12px]"
+    <div className="mx-[16px] mt-[10px] mb-[12px] md:mx-[30px] md:mt-[12px] rounded-[9px] px-[12px] py-[10px] md:px-[15px] md:py-[12px]"
       style={SHELL_STYLE}
     >
       <div className="flex items-center gap-[9px] md:gap-[11px] mb-[9px] md:mb-[11px]">
@@ -95,8 +95,9 @@ export function ProvenanceLedger({
         >
           {ledger.header(String(total))}
         </h3>
-        {/* Desktop only. The phone card carries its own right-hand meta per
-            line, and a second one over the header would restate it. */}
+        {/* Desktop only. On the phone each line's own sentence already states
+            its buy figure, and a deck-wide restatement over the header would
+            be the third place the same number appears in one card. */}
         {passes.length > 0 && (
           <span
             className="hidden md:block ml-auto font-mono text-[10.5px] whitespace-nowrap"
@@ -143,10 +144,13 @@ function LegacyLine() {
   const [happened, next] = splitOnce(ledger.legacy, ". ");
   return (
     <div
-      className="flex items-center min-h-[34px] rounded-[7px] px-[10px] py-[8px] md:py-0"
+      className="flex items-center gap-[10px] min-h-[34px] rounded-[7px] px-[10px]"
       style={{ background: "var(--surface)", border: "1px dashed var(--border-strong)" }}
     >
-      <p className="m-0 text-[12px] md:text-[12.5px] leading-[1.5]">
+      {/* The sentence wraps at 390px and the box grows with it. No vertical
+          padding at either width: 34px of minimum height already clears one
+          line, and a wrapped second line is meant to touch that minimum. */}
+      <p className="m-0 flex-auto min-w-0 text-[12.5px] leading-[1.5]">
         <span style={{ color: "var(--fg-faint)" }}>{happened}. </span>
         <span style={{ color: "var(--fg-locked)" }}>{next}</span>
       </p>
@@ -186,6 +190,9 @@ function LedgerLine({
   const isSeed = pass.kind === "seed";
   const n = String(pass.live);
   const sentence = lineSentence(pass, buy);
+  // The newest line's control carries the accent whether or not it is pressed,
+  // as the line above it does; pressing any other line's borrows it back.
+  const lit = newest || marked;
 
   const handleUndo = () => {
     onUndoError(null);
@@ -242,7 +249,13 @@ function LedgerLine({
         {sentence}
       </p>
 
-      <div className="flex items-center gap-[10px] mt-[8px] md:contents">
+      {/* The seed's row holds one control rather than two, and the design sets
+          it a point tighter under the sentence than a full pair. */}
+      <div
+        className={`flex items-center gap-[10px] md:contents ${
+          isSeed ? "mt-[7px]" : "mt-[8px]"
+        }`}
+      >
         <button
           type="button"
           aria-pressed={marked}
@@ -251,7 +264,7 @@ function LedgerLine({
           className={`flex-none flex items-center bg-transparent border-0 p-0 cursor-pointer
             font-mono text-[10.5px] whitespace-nowrap min-h-[44px] md:min-h-0
             hover:text-[color:var(--accent)] ${
-              marked ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
+              lit ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
             }`}
         >
           {/* The dashed rule is on the text, not the button: at the phone's 44px
@@ -259,7 +272,7 @@ function LedgerLine({
               words it belongs to. */}
           <span
             style={{
-              borderBottom: `1px dashed ${marked ? "var(--accent-shadow)" : "var(--border-strong)"}`,
+              borderBottom: `1px dashed ${lit ? "var(--accent-shadow)" : "var(--border-strong)"}`,
             }}
           >
             {pass.live === 1 ? ledger.markOne : ledger.mark(n)}
@@ -279,7 +292,8 @@ function LedgerLine({
               onClick={handleUndo}
               disabled={pending}
               aria-label={ledger.undoAria(n, label)}
-              className="rounded-[8px] md:rounded-[7px] font-mono text-[11.5px] md:text-[11px]
+              className="inline-flex items-center justify-center
+                rounded-[8px] md:rounded-[7px] font-mono text-[11.5px] md:text-[11px]
                 px-[13px] py-0 md:px-[10px] md:py-[5px] min-h-[44px] md:min-h-0 whitespace-nowrap"
             >
               {pending
@@ -303,14 +317,22 @@ function LedgerLine({
  * now yours" is what the pass holds now, and appending it to "68 cards — the
  * roles and the mana base, 7 to buy." would state the same 68 twice and then
  * quote a buy figure for cards that have since left.
+ *
+ * A recount also leads with what the pass PLACED, not with what survives. The
+ * pass put 68 cards down; five of them being yours now does not retract that,
+ * and a line that dropped to 63 would read as though the app had changed its
+ * mind about the fill. The undo beside it still counts survivors, because that
+ * is the number it would remove.
  */
 function lineSentence(pass: FillPassSummary, buy: number) {
-  const n = String(pass.live);
-  const text = recountText(pass, n) ?? baseText(pass, n, buy);
+  const live = String(pass.live);
+  const placed = String(pass.live + pass.kept + pass.removed);
+  const recount = recountText(pass, placed);
+  const text = recount ?? baseText(pass, live, buy);
   const [head, clause] = splitOnce(text, " · ");
   return (
     <>
-      <Weighted text={head} count={n} />
+      <Weighted text={head} count={recount ? placed : live} />
       {clause != null && (
         <span style={{ color: "var(--fg-locked)" }}>{" · "}{clause}</span>
       )}
@@ -318,11 +340,11 @@ function lineSentence(pass: FillPassSummary, buy: number) {
   );
 }
 
-function recountText(pass: FillPassSummary, n: string): string | null {
+function recountText(pass: FillPassSummary, placed: string): string | null {
   if (pass.kept > 0 && pass.removed > 0)
-    return ledger.passRecountedBoth(n, String(pass.kept), String(pass.removed));
-  if (pass.kept > 0) return ledger.passRecountedKept(n, String(pass.kept));
-  if (pass.removed > 0) return ledger.passRecounted(n, String(pass.removed));
+    return ledger.passRecountedBoth(placed, String(pass.kept), String(pass.removed));
+  if (pass.kept > 0) return ledger.passRecountedKept(placed, String(pass.kept));
+  if (pass.removed > 0) return ledger.passRecounted(placed, String(pass.removed));
   return null;
 }
 

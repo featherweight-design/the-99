@@ -231,10 +231,6 @@ export function DecklistRow({
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
         style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
       >
-        {/* The ledger is marking this pass. Additive to the card's own button
-            name rather than a replacement for it: the row has no aria-label to
-            extend, and the name of the card is what a reader came for. */}
-        {markLabel && <span className="sr-only">{topOffCopy.ledger.markedRow(markLabel)}</span>}
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
         <OwnershipDot
           owned={card.owned}
@@ -411,6 +407,13 @@ export function DecklistRow({
 
         {/* Auto tag — one per stack */}
         {card.auto && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
+
+        {/* The ledger is marking this pass. Additive to the card's own button
+            name rather than a replacement for it: the row has no aria-label to
+            extend. It follows the name and the auto tag rather than leading the
+            row, so a reader hears which card before hearing which pass placed
+            it — the same order the eye takes. */}
+        {markLabel && <span className="sr-only">{topOffCopy.ledger.markedRow(markLabel)}</span>}
 
         {/* Remove ✕ — at both widths now. The glyph stays 13px at both: the
             phone target is the padding around it. */}

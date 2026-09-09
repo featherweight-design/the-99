@@ -132,7 +132,8 @@ describe("ProvenanceLedger", () => {
       [makeCard("a", { auto: true })],
       [makePass("p1", { oracleIds: ["a"], live: 1, kept: 1, removed: 1 })],
     );
-    expect(sentences()).toContain(ledger.passRecountedBoth("1", "1", "1"));
+    // Leads with 3 — what the pass placed — not the 1 it still holds.
+    expect(sentences()).toContain(ledger.passRecountedBoth("3", "1", "1"));
     expect(sentences().join(" ")).not.toContain("you chose from the last");
   });
 
