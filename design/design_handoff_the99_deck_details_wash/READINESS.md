@@ -97,10 +97,13 @@ Not gaps. Work the handoff implies that no drawing can show.
    explicitly; the canvas draws `max-height` only because its style compiler drops `-webkit-box`.
    Follow `suggestion-tile.tsx:291-299`'s inline-style precedent — Tailwind's `line-clamp-2` is
    used nowhere in `src/`. No `min-height`.
-5. **One stale line, resolved in favour of the code.** README blocker 4 still reads "Drawn at
-   40/99, which renders `var(--danger)`", which its own corrected conflict 3, the canvas frame and
-   `statusBarStyle` all contradict — a 40/99 `Building` deck renders `var(--fg-body)`. Build to
-   `statusBarStyle`; Design to correct the line.
+5. **Four stale readings, corrected in review — nothing carried.** R5's two late corrections
+   (conflict 3 on the bar, blocker 5 on the chip) had not been propagated into the README's
+   summary sections: the retired-colour table still called the bar a percentage tri-state and gave
+   the chip a flat `var(--surface-sunken)` ground, blocker 4 said a 40/99 deck renders
+   `var(--danger)`, and conflict 6 listed the chip among the flat grounds. All four now read as
+   `statusBarStyle` / `statusPillStyle`. Build to those two functions; nothing in the document
+   disagrees with them any more.
 
 ## Open with Design, not blocking
 
