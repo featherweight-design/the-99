@@ -7,14 +7,14 @@ const layersOf = (c: HTMLElement) => Array.from(c.querySelectorAll("div"));
 describe("ArtWash — cover", () => {
   it("is decorative — hidden from the accessibility tree", () => {
     const { container } = render(
-      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="crop.jpg" colorIdentity={["G"]} />,
     );
     expect(container.firstElementChild).toHaveAttribute("aria-hidden");
   });
 
   it("draws the art at the top of the crop, never centred", () => {
     const { container } = render(
-      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="crop.jpg" colorIdentity={["G"]} />,
     );
     const art = layersOf(container).find((d) => d.style.backgroundImage.includes("crop.jpg"));
     expect(art?.style.backgroundPosition).toBe("center top");
@@ -23,9 +23,9 @@ describe("ArtWash — cover", () => {
 
   it("keeps the band and its layers when a commander has no art", () => {
     const withArt = render(
-      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="crop.jpg" colorIdentity={["G"]} />,
     );
-    const without = render(<ArtWash strategy="cover" artCropUri={null} colorIdentity={["G"]} />);
+    const without = render(<ArtWash strategy="cover" labelEdge="top" artCropUri={null} colorIdentity={["G"]} />);
     // No layout shift: the same number of layers, and the band itself unchanged.
     expect(layersOf(without.container)).toHaveLength(layersOf(withArt.container).length);
     expect(without.container.firstElementChild?.className).toBe(
@@ -35,7 +35,7 @@ describe("ArtWash — cover", () => {
 
   it("falls back to the colour identity, not to the stripes", () => {
     const { container } = render(
-      <ArtWash strategy="cover" artCropUri={null} colorIdentity={["U", "R"]} />,
+      <ArtWash strategy="cover" labelEdge="top" artCropUri={null} colorIdentity={["U", "R"]} />,
     );
     const html = container.innerHTML;
     expect(html).toContain("gradient");
@@ -44,14 +44,14 @@ describe("ArtWash — cover", () => {
 
   it("mixes every layer off a theme token — no Palette A literals", () => {
     const { container } = render(
-      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="crop.jpg" colorIdentity={["G"]} />,
     );
     expect(container.innerHTML).not.toMatch(/#[0-9A-Fa-f]{6}/);
   });
 
   it("exposes the hooks the accessibility rules target", () => {
     const { container } = render(
-      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="crop.jpg" colorIdentity={["G"]} />,
     );
     expect(container.querySelector(".art-wash-art")).toBeTruthy();
     expect(container.querySelector(".art-wash-scrim")).toBeTruthy();
@@ -59,7 +59,7 @@ describe("ArtWash — cover", () => {
 
   it("plates below the page ground, not at it", () => {
     const { container } = render(
-      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="crop.jpg" colorIdentity={["G"]} />,
     );
     const plate = container.firstElementChild as HTMLElement;
     expect(plate.style.background).toContain("color-mix");
@@ -165,12 +165,64 @@ describe("ArtWash — left portrait", () => {
   // request for less transparency by muting the only identity signal that row has.
   it("leaves the no-crop identity gradient at full opacity under the preference", () => {
     for (const el of [
-      <ArtWash key="c" strategy="cover" artCropUri={null} colorIdentity={["G"]} />,
+      <ArtWash key="c" strategy="cover" labelEdge="top" artCropUri={null} colorIdentity={["G"]} />,
       <ArtWash key="p" strategy="left-portrait" band={72} artCropUri={null} colorIdentity={["G"]} />,
     ]) {
       const { container } = render(el);
       const layer = container.querySelector<HTMLElement>(".art-wash-art");
       expect(layer?.style.getPropertyValue("--art-wash-reduced-opacity")).toBe("1");
     }
+  });
+});
+
+describe("left-portrait, band 168", () => {
+  it("scales the portrait to 230px and lands the flat stop at 240px", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={168} artCropUri="/a.jpg" colorIdentity={["G"]} />,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.height).toBe("168px");
+    const sharp = container.querySelectorAll<HTMLElement>(".art-wash-art")[1];
+    expect(sharp.style.width).toBe("230px");
+    const scrim = container.querySelector<HTMLElement>(".art-wash-scrim");
+    expect(scrim?.style.background).toContain("134px");
+    expect(scrim?.style.background).toContain("230px");
+    expect(scrim?.style.background).toContain("var(--bg) 240px");
+  });
+
+  it("draws a lighter vertical scrim than the 148 row's", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={168} artCropUri="/a.jpg" colorIdentity={["G"]} />,
+    );
+    const vertical = container.querySelectorAll<HTMLElement>(".art-wash-scrim")[1];
+    expect(vertical.style.background).toContain("180deg");
+    expect(vertical.style.background).toContain("var(--bg) 10%, transparent) 46%");
+  });
+
+  it("leaves the 148 row's vertical scrim exactly where it shipped", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="/a.jpg" colorIdentity={["G"]} />,
+    );
+    const vertical = container.querySelectorAll<HTMLElement>(".art-wash-scrim")[1];
+    expect(vertical.style.background).toContain("var(--bg) 16%, transparent) 42%");
+  });
+});
+
+describe("cover, label edge", () => {
+  it("puts the heavy end at the top for labelEdge=top", () => {
+    const { container } = render(
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="/a.jpg" colorIdentity={["G"]} />,
+    );
+    const scrim = container.querySelector<HTMLElement>(".art-wash-scrim-cover");
+    expect(scrim?.style.background).toContain("var(--bg) 90%, transparent) 0%");
+  });
+
+  it("puts the heavy end at the bottom for labelEdge=bottom", () => {
+    const { container } = render(
+      <ArtWash strategy="cover" labelEdge="bottom" artCropUri="/a.jpg" colorIdentity={["G"]} />,
+    );
+    const scrim = container.querySelector<HTMLElement>(".art-wash-scrim-cover");
+    expect(scrim?.style.background).toContain("var(--bg) 66%, transparent) 0%");
+    expect(scrim?.style.background).toContain("var(--bg) 90%, transparent) 100%");
   });
 });
