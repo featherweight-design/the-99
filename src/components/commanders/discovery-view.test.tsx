@@ -807,7 +807,7 @@ describe("DiscoveryView", () => {
   // The row is not in the payload at all, so only the server can say why.
   it("reports a match the server held back, once the typing settles", async () => {
     findExcluded.mockResolvedValue([
-      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
     const { container } = render(
       <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
@@ -838,7 +838,7 @@ describe("DiscoveryView", () => {
   // button here would be the bug again.
   it("links the aside's correction to the owned lane when a deck already holds the match", async () => {
     findExcluded.mockResolvedValue([
-      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
     render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
     fireEvent.change(field(), { target: { value: "the" } });
@@ -923,7 +923,7 @@ describe("DiscoveryView", () => {
   // commander the reader is no longer asking about.
   it("drops the server's answer when the query changes", async () => {
     findExcluded.mockResolvedValue([
-      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
     const { container } = render(
       <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,

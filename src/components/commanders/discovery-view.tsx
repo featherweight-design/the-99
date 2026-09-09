@@ -576,7 +576,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
             heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
             body={report.body}
             primary={
-              report.cause === "scope" ? (
+              report.cause === "built" ? (
                 <PrimaryButton href={ownedHref} className={ZERO_PRIMARY}>
                   {report.cta}
                 </PrimaryButton>
@@ -669,7 +669,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
                 <ExcludedMatchAside
                   report={report}
                   onCorrect={correct}
-                  href={report.cause === "scope" ? ownedHref : undefined}
+                  href={report.cause === "built" ? ownedHref : undefined}
                 />
               </div>
             ) : null}

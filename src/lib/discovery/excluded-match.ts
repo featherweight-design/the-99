@@ -7,14 +7,14 @@ import { clearsFloor, floorPct } from "./novelty";
  * colour pips and the join mode narrow rows the client already holds, so asking
  * the server about them would be a round trip for an answer in memory.
  */
-export type ExcludedCause = "scope" | "floor" | "unmeasured";
+export type ExcludedCause = "built" | "floor" | "unmeasured";
 
 export type ExcludedMatch = {
   oracleId: string;
   name: string;
   cause: ExcludedCause;
   /** The row's own support percentage, printed by the floor sentence as the
-      distance the row fell short by. Null for `scope` and `unmeasured`, which
+      distance the row fell short by. Null for `built` and `unmeasured`, which
       have no figure to carry. */
   pct: number | null;
 };
@@ -33,10 +33,10 @@ export function classifyMatches(
   const out: ExcludedMatch[] = [];
   for (const row of rows) {
     const base = { oracleId: row.oracleId, name: row.name };
-    // Tier 1. Outermost: a built commander is not a candidate under this scope
-    // at all, whatever the sort would have made of it.
+    // Tier 1. Outermost: a built commander belongs to the other lane and is not
+    // a candidate here at all, whatever the sort would have made of it.
     if (opts.builtOracleIds.has(row.oracleId)) {
-      out.push({ ...base, cause: "scope", pct: null });
+      out.push({ ...base, cause: "built", pct: null });
       continue;
     }
     // `fit` excludes nothing else — the floor is the novelty sort's instrument.

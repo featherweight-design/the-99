@@ -8,7 +8,7 @@ const copy = planeCopy.excluded;
  * One report for a search whose matches are not all on screen (§2b, §2c).
  *
  * ONE control is named. A row can be excluded by three at once, and naming all
- * three turns a one-tap fix into a diagnosis, so the outermost wins: scope, then
+ * three turns a one-tap fix into a diagnosis, so the outermost wins: built, then
  * the pips or the mode, then the sort's floor. The unmeasurable are the floor
  * tier's other population, which does not reorder the tiers.
  *
@@ -16,7 +16,7 @@ const copy = planeCopy.excluded;
  * and needs a title; the aside sits above a live list and is one sentence.
  */
 export type ExcludedReport = {
-  cause: "scope" | "colors" | "join" | "floor" | "unmeasured";
+  cause: "built" | "colors" | "join" | "floor" | "unmeasured";
   heading: string | null;
   /** The commander the sentence names, so the surface can mark it inside the
       finished sentence. Null when the report counts matches instead of naming
@@ -70,17 +70,17 @@ export function resolveExcludedReport(input: {
   const heldBody = (rows: number, control: string, one: string) =>
     total > 1 ? planeCopy.search.heldMany(rows, control) : one;
 
-  const scope = server.filter((m) => m.cause === "scope");
-  if (scope.length > 0) {
+  const built = server.filter((m) => m.cause === "built");
+  if (built.length > 0) {
     return {
-      cause: "scope",
-      name: held || scope.length > 1 ? null : scope[0].name,
-      heading: heading(scope[0].name),
+      cause: "built",
+      name: held || built.length > 1 ? null : built[0].name,
+      heading: heading(built[0].name),
       body: held
-        ? heldBody(scope.length, copy.control.scope, copy.heldScope)
-        : scope.length === 1
-          ? copy.scopeAlso(scope[0].name)
-          : more(scope.length, copy.control.scope),
+        ? heldBody(built.length, copy.control.scope, copy.heldScope)
+        : built.length === 1
+          ? copy.scopeAlso(built[0].name)
+          : more(built.length, copy.control.scope),
       cta: copy.scopeCta,
       aside,
     };
