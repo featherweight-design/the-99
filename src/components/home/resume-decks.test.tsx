@@ -93,6 +93,19 @@ describe("ResumeDecks", () => {
     expect(screen.getByText("99 / 99 · 3 unowned")).toBeInTheDocument();
   });
 
+  // §ResumeRow — the commander names the row's art. The deck name is the deck's
+  // own, so without this line the portrait is unattributed.
+  it("names the commander under the deck name", () => {
+    render(
+      <ResumeDecks
+        decks={[deck({ name: "Four colours, one plan", commanderName: "Atraxa, Praetors' Voice" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(screen.getByText("Four colours, one plan")).toBeInTheDocument();
+    expect(screen.getByText("Atraxa, Praetors' Voice")).toBeInTheDocument();
+  });
+
   it("prints the count alone when nothing is unowned", () => {
     render(
       <ResumeDecks
