@@ -32,7 +32,6 @@ import { FilterSheet } from "./filter-sheet";
 import { OrderControl } from "./order-control";
 import { ORDER_OPTIONS } from "./order-options";
 import { ResultLine } from "./result-line";
-import { ScopeControl } from "./scope-control";
 import { SearchControl } from "./search-control";
 
 export function FilterRack({
@@ -42,7 +41,7 @@ export function FilterRack({
   shown,
   total,
   excludedByExactly,
-  scopePending = false,
+  orderPending = false,
 }: {
   params: LaneParams;
   lane: Lane;
@@ -52,9 +51,10 @@ export function FilterRack({
   total: number;
   /** Null unless `Exactly` is active AND it costs rows `Any` would have shown. */
   excludedByExactly: number | null;
-  /** Discover only: a scope flip missed the payload cache and the server is
-      answering. Every other control narrows a list already in memory. */
-  scopePending?: boolean;
+  /** Discover only: a ranking order missed the payload cache and the server is
+      answering. Every other control, and every other order, narrows or arranges
+      a list already in memory. */
+  orderPending?: boolean;
 }) {
   const wide = useIsWide();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -84,6 +84,7 @@ export function FilterRack({
       // desktop trigger sharing a 34px rhythm with search.
       iconOnly={!wide}
       triggerHeight={wide ? 32 : 44}
+      pending={orderPending}
     />
   );
 
@@ -95,17 +96,6 @@ export function FilterRack({
         // lane's own control sits where its question is asked. Frame `I1`'s
         // trailing arrangement is deliberately not built.
         <div className="flex flex-wrap items-center gap-[14px]">
-          {/* Scope leads discover — it decides what the lane is ranked on
-              before anything narrows it. */}
-          {lane === "discover" && (
-            <ScopeControl
-              value={params.scope}
-              onChange={(scope) => onChange({ ...params, scope })}
-              wide
-              showGlosses={false}
-              pending={scopePending}
-            />
-          )}
           {search}
           <ColourControl
             colors={params.colors}
@@ -126,7 +116,10 @@ export function FilterRack({
               wide
             />
           )}
-          {/* Order trails on both lanes: it reorders what the others left. */}
+          {/* Order trails on both lanes, and stays put on discover even though
+              two of its options now decide what the lane is ranked on: one
+              shared control in two places by lane would have to be re-found on
+              every lane flip. */}
           <div className="ml-auto">{order}</div>
         </div>
       ) : (
@@ -170,7 +163,6 @@ export function FilterRack({
           onChange={onChange}
           shown={shown}
           total={total}
-          scopePending={scopePending}
         />
       )}
     </div>

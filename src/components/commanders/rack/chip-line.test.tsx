@@ -54,7 +54,6 @@ describe("ChipLine", () => {
           match: "exactly",
           avail: "free",
           order: "name",
-          scope: "bestfit",
         }}
         lane="owned"
         onChange={noop}
@@ -74,7 +73,6 @@ describe("ChipLine", () => {
           match: "exactly",
           avail: "free",
           order: "name",
-          scope: "bestfit",
         }}
         lane="owned"
         onChange={noop}

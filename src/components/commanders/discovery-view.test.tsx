@@ -7,12 +7,12 @@ import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
 import { revealAnnouncement } from "./reveal-control";
 import { DiscoveryView } from "./discovery-view";
 
-// One control on this lane navigates, and only one: `Scope` picks which ranking
-// the server produces. Everything else on the rack — search, the pips, the match
-// mode, the order — narrows or reorders a list the client already holds, so it
-// is read from and mirrored to the live URL through the History API rather than
-// routed. The router mock is therefore also an assertion: a call to `replace`
-// for anything but a scope flip is the bug.
+// One thing on this lane navigates, and only one: a change of RANKING, which is
+// two of order's five values. Everything else on the rack — search, the pips, the
+// match mode, and the other three orders — narrows or reorders a list the client
+// already holds, so it is read from and mirrored to the live URL through the
+// History API rather than routed. The router mock is therefore also an assertion:
+// a call to `replace` for anything but a ranking flip is the bug.
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
@@ -89,7 +89,8 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
 const pip = (name: string) => screen.getByRole("button", { name });
 const mode = (label: string) => screen.getByRole("radio", { name: label });
 const field = () => screen.getByRole("searchbox", { name: filterCopy.search.placeholderWide });
-const scopeTrigger = () => screen.getByRole("button", { name: discoverCopy.scope.bestFit });
+const orderTrigger = (label: string = discoverCopy.order.bestFit) =>
+  screen.getByRole("button", { name: filterCopy.order.trigger(label) });
 
 describe("DiscoveryView", () => {
   beforeEach(() => {
@@ -186,27 +187,23 @@ describe("DiscoveryView", () => {
   // ── The rack's own controls ───────────────────────────────────────────
   it("gives the lane its own orders, and no availability control", () => {
     render(<DiscoveryView discovery={list()} />);
-    expect(
-      screen.getByRole("button", {
-        name: filterCopy.order.trigger(discoverCopy.order.popularity),
-      }),
-    ).toBeInTheDocument();
+    expect(orderTrigger()).toBeInTheDocument();
     // The owned lane's control, named here only so this file can assert its absence.
     expect(
       screen.queryByRole("radiogroup", { name: commandersCopy.availability.legend }),
     ).toBeNull();
   });
 
-  // The only control here that reaches the server, and the only thing on this
-  // surface allowed to route. `bestfit` is the default and serialises as an
+  // Two of order's five values reach the server, and they are the only things on
+  // this surface allowed to route. `bestfit` is the default and serialises as an
   // absence, so the URL a flip writes names the ranking and nothing else.
-  it("navigates on a scope flip, and on nothing else", () => {
+  it("navigates on a ranking flip, and on nothing else", () => {
     render(<DiscoveryView discovery={list()} />);
-    fireEvent.click(scopeTrigger());
+    fireEvent.click(orderTrigger());
     fireEvent.click(
-      screen.getByRole("menuitemradio", { name: discoverCopy.scope.somethingNew }),
+      screen.getByRole("menuitemradio", { name: discoverCopy.order.somethingNew }),
     );
-    expect(replace).toHaveBeenCalledWith("/discover?s=new", { scroll: false });
+    expect(replace).toHaveBeenCalledWith("/discover?o=new", { scroll: false });
   });
 
   it("reorders on the client rather than asking the server for a second ranking", () => {
@@ -217,9 +214,7 @@ describe("DiscoveryView", () => {
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: filterCopy.order.trigger(discoverCopy.order.popularity) }),
-    );
+    fireEvent.click(orderTrigger());
     fireEvent.click(screen.getByRole("menuitemradio", { name: discoverCopy.order.recent }));
     expect(replace).not.toHaveBeenCalled();
     expect(window.location.search).toBe("?o=recent");
@@ -228,12 +223,12 @@ describe("DiscoveryView", () => {
     );
   });
 
-  // `Popularity` is the lane's default order and it ranks on the deck count the
-  // row prints under that name. It is not "whatever the server sent": the server
-  // ranks on the scope's question — support, or novelty — so a pass-through here
-  // would print the label over a different ordering entirely. The fixture makes
-  // them disagree, with the server's rank 1 second on deck count.
-  it("orders by the deck count under Popularity, not by the scope's ranking", () => {
+  // `Popularity` ranks on the deck count the row prints under that name. It is
+  // not "whatever the server sent": the server ranks on fit or on novelty, so a
+  // pass-through here would print the label over a different ordering entirely.
+  // The fixture makes them disagree, with the server's rank 1 second on deck count.
+  it("orders by the deck count under Popularity, not by the served ranking", () => {
+    window.history.replaceState(null, "", "/discover?o=popularity");
     const items = [
       item({ oracleId: "a", slug: "a", name: "Server First", deckCount: 12 }),
       item({ oracleId: "b", slug: "b", name: "Most Built", deckCount: 9000, rank: 2 }),
@@ -250,6 +245,7 @@ describe("DiscoveryView", () => {
   // claim that nobody has built it. It sorts last instead, which is where the
   // undated set sorts under `Recently released` for the same reason.
   it("sorts an uncounted commander last rather than as a zero", () => {
+    window.history.replaceState(null, "", "/discover?o=popularity");
     const items = [
       item({ oracleId: "a", slug: "a", name: "Uncounted", deckCount: null }),
       item({ oracleId: "b", slug: "b", name: "Counted", deckCount: 1, rank: 2 }),
@@ -381,7 +377,7 @@ describe("DiscoveryView", () => {
       />,
     );
     expect(screen.getByText(empty.floorHeading)).toBeTruthy();
-    // The CTA moves the scope back, which is a ranking this visit has not been
+    // The CTA moves the order back to the fit ranking, which this visit has not been
     // served — so it falls through the cache to a navigation.
     fireEvent.click(screen.getByRole("button", { name: empty.floorCta }));
     expect(replace).toHaveBeenCalledWith("/discover", { scroll: false });
@@ -574,20 +570,19 @@ describe("DiscoveryView", () => {
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getByRole("button", { name: /Show 25 more commanders, 10 remaining/ })).toBeTruthy();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: filterCopy.order.trigger(discoverCopy.order.popularity) }),
-    );
+    fireEvent.click(orderTrigger());
     fireEvent.click(screen.getByRole("menuitemradio", { name: discoverCopy.order.name }));
     expect(screen.getByRole("button", { name: /Show 25 more commanders, 35 remaining/ })).toBeTruthy();
   });
 
-  // #339. Every scope flip is a server round-trip, and before this a reader
+  // #339. Every ranking flip is a server round-trip, and before this a reader
   // toggling back to a ranking they had just been looking at paid for it twice.
   // The payloads are kept as they arrive, so the second ask is free.
   //
   // The key used to be a (sort, availability) pair. Availability went with the
-  // control, so the scope is the whole of it — the coverage is the same contract
-  // read against the parameter that survived.
+  // control and the scope was folded into order, so the ranking is the whole of
+  // it — the coverage is the same contract read against the parameter that
+  // survived.
   describe("the client cache", () => {
     const fitList = list({
       items: [item({ name: "Fit Ranked", slug: "fit-ranked" })],
@@ -599,27 +594,27 @@ describe("DiscoveryView", () => {
       sort: "new",
     });
     const flip = (label: string) => {
-      fireEvent.click(screen.getByRole("button", { name: /^(Best fit|Something new)$/ }));
+      fireEvent.click(screen.getByRole("button", { name: /^Order · / }));
       fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
     };
 
-    it("routes on a scope it has not seen and serves one it has", () => {
+    it("routes on a ranking it has not seen and serves one it has", () => {
       const { rerender } = render(<DiscoveryView discovery={fitList} />);
       // Plural queries throughout: a row renders its name once per breakpoint
       // subtree, so the singular form matches two nodes and throws.
       expect(screen.getAllByText("Fit Ranked").length).toBeGreaterThan(0);
 
       // Miss: nothing has ranked `new` this visit, so it has to be fetched.
-      flip(discoverCopy.scope.somethingNew);
+      flip(discoverCopy.order.somethingNew);
       expect(replace).toHaveBeenCalledTimes(1);
 
-      window.history.replaceState(null, "", "/discover?s=new");
+      window.history.replaceState(null, "", "/discover?o=new");
       rerender(<DiscoveryView discovery={newList} />);
       expect(screen.getAllByText("New Ranked").length).toBeGreaterThan(0);
 
       // Hit: the fit ranking is still in hand. No second request, and the URL
       // still names what is on screen so a copied link opens on it.
-      flip(discoverCopy.scope.bestFit);
+      flip(discoverCopy.order.bestFit);
       expect(replace).toHaveBeenCalledTimes(1);
       expect(screen.getAllByText("Fit Ranked").length).toBeGreaterThan(0);
       expect(window.location.search).toBe("");
@@ -631,20 +626,20 @@ describe("DiscoveryView", () => {
     it("leaves parameters it does not own alone when it serves from cache", () => {
       window.history.replaceState(null, "", "/discover?c=b,g&utm=x");
       const { rerender } = render(<DiscoveryView discovery={fitList} />);
-      flip(discoverCopy.scope.somethingNew);
-      window.history.replaceState(null, "", "/discover?c=b,g&utm=x&s=new");
+      flip(discoverCopy.order.somethingNew);
+      window.history.replaceState(null, "", "/discover?c=b,g&utm=x&o=new");
       rerender(<DiscoveryView discovery={newList} />);
 
-      flip(discoverCopy.scope.bestFit);
+      flip(discoverCopy.order.bestFit);
       const params = new URLSearchParams(window.location.search);
       expect(params.get("c")).toBe("b,g");
       expect(params.get("utm")).toBe("x");
-      expect(params.has("s")).toBe(false);
+      expect(params.has("o")).toBe(false);
     });
 
     // The payload the server just produced is the truth, whatever the cache
-    // holds for that scope — an upload or a new deck re-ranks everything.
-    it("takes a fresh payload over a cached one for the same scope", () => {
+    // holds for that ranking — an upload or a new deck re-ranks everything.
+    it("takes a fresh payload over a cached one for the same ranking", () => {
       const { rerender } = render(<DiscoveryView discovery={fitList} />);
       const rebuilt = list({
         items: [item({ name: "Re-Ranked", slug: "re-ranked" })],
@@ -655,14 +650,14 @@ describe("DiscoveryView", () => {
       expect(screen.queryAllByText("Fit Ranked").length).toBe(0);
     });
 
-    // The scope the server ranked on is reconciled during render, not in an
-    // effect: an effect would paint the control on the scope that was asked for
+    // The ranking the server settled on is reconciled during render, not in an
+    // effect: an effect would paint the control on the ranking that was asked for
     // once before correcting it to the one that came back. `loadDiscovery`
     // downgrades `new` to fit with no decks built, so the two really can differ.
-    it("shows the scope that came back, not the one that was asked for", () => {
+    it("shows the ranking that came back, not the one that was asked for", () => {
       window.history.replaceState(null, "", "/discover?s=new");
       render(<DiscoveryView discovery={list({ hasDecks: false })} />);
-      expect(screen.getByRole("button", { name: discoverCopy.scope.bestFit })).toBeInTheDocument();
+      expect(orderTrigger()).toBeInTheDocument();
     });
   });
 

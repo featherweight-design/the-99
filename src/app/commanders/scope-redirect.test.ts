@@ -12,7 +12,7 @@ describe("scopeRedirectTarget", () => {
 
   it("carries the colours and the order across", () => {
     expect(scopeRedirectTarget(new URLSearchParams("scope=play&c=b,g&sort=new"))).toBe(
-      "/discover?c=b%2Cg&s=new",
+      "/discover?c=b%2Cg&o=new",
     );
   });
 

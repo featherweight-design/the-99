@@ -143,29 +143,26 @@ export const discoverCopy = {
   navLabel: "Discover",
   otherLane: "Your commanders",
 
-  // Design left the third order open. Readiness decision 3 settled it as Recently released,
-  // which the earliest dated set a commander was printed in backs (`sets.released_at`, taken
-  // through `printings`); a Colour order has no query behind it, so it is absent rather than
-  // shipped dark.
-  // The glosses render in the order menu, where three orders that all sound
-  // plausible need one line each saying what they actually sort on. The owned
-  // lane's two are `Fit` and `Name` and are drawn without them.
+  // Readiness decision 3 settled Recently released as an order, which the earliest dated set a
+  // commander was printed in backs (`sets.released_at`, taken through `printings`); a Colour
+  // order has no query behind it, so it is absent rather than shipped dark.
+  //
+  // `bestFit` and `somethingNew` were the scope control's two values and are now the first two
+  // orders. Every option carries a gloss, because five orders that all sound plausible need one
+  // line each saying what they sort on — and the two rankings especially, since they are the
+  // only ones that change which commanders the list holds. The owned lane's `Fit` and `Name`
+  // are drawn without them.
   order: {
+    bestFit: "Best fit",
+    bestFitGloss: "most of its support list already owned",
+    somethingNew: "Something new",
+    somethingNewGloss: "farthest from the archetypes you have built",
     popularity: "Popularity",
     popularityGloss: "most decks tracked first",
     name: "Name",
     nameGloss: "A–Z",
     recent: "Recently released",
     recentGloss: "newest printing first",
-  },
-
-  // The shipped discovery scope, kept. Glosses render in the sheet only.
-  scope: {
-    legend: "Scope",
-    bestFit: "Best fit",
-    bestFitGloss: "most of its support list already owned",
-    somethingNew: "Something new",
-    somethingNewGloss: "farthest from the archetypes you have built",
   },
 
   result: {

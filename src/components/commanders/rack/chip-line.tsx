@@ -17,7 +17,7 @@ import {
   type Lane,
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
-import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
+import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 
 type ChipSpec = {
   key: string;
@@ -35,9 +35,9 @@ type ChipSpec = {
 // width is not knowable at render time (and is zero in jsdom, which is why the
 // plan's measured version could never pass its own test). A count is the same
 // promise held deterministically: four chips is the most either lane can
-// produce (search, colours, match, and availability or scope), so the rack at
-// 1024px+ never collapses, and the phone row shows the newest-read chip plus a
-// +N for the rest.
+// produce (search, colours, match, and — owned only — availability), so the rack
+// at 1024px+ never collapses, and the phone row shows the newest-read chip plus
+// a +N for the rest.
 const CAP: Record<"wide" | "narrow", number> = { wide: 4, narrow: 1 };
 
 export function ChipLine({
@@ -182,14 +182,10 @@ function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
     });
   }
 
-  if (lane === "discover" && params.scope === "new") {
-    chips.push({
-      key: "scope",
-      label: discoverCopy.scope.somethingNew,
-      removeAria: `Remove ${discoverCopy.scope.somethingNew} filter`,
-      next: { scope: "bestfit" },
-    });
-  }
+  // Order is never chipped, on either lane: it always has a value, and the
+  // trigger on the rack already names the one in force. That holds on discover
+  // even though two of its five orders now decide what the list is ranked on —
+  // a chip saying so would restate the control beside it.
 
   return chips;
 }

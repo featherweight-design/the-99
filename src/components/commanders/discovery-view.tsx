@@ -12,6 +12,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { filterByColors } from "../../lib/commanders/filter";
 import {
+  discoverSort,
   laneQuery,
   parseLaneParams,
   type LaneOrder,
@@ -65,18 +66,22 @@ const EMPTY_MATCHES: ExcludedMatch[] = [];
 const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
 
 /**
- * The lane's client-side ordering — all three of them, over rows the client
- * already holds. A round trip for a sort of a list in memory is the request this
- * lane's cache exists to avoid, and the payload carries every figure they rank
- * on. The scope picks which question the list answers and the order only
- * arranges the answer, so none of these touches `rank`, which stays the position
- * in the scope's own ranking.
+ * The lane's client-side ordering — three of its five orders, over rows the
+ * client already holds. A round trip for a sort of a list in memory is the
+ * request this lane's cache exists to avoid, and the payload carries every
+ * figure they rank on. None of these touches `rank`, which stays the position in
+ * the server's own ranking.
+ *
+ * The other two, `bestfit` and `new`, fall through untouched: they ARE the
+ * server's ranking, and the payload already arrives in that order. That
+ * fallthrough is the whole of the fix — the build before this one re-sorted
+ * every payload by a separate order control, so the ranking the reader asked for
+ * never reached the screen.
  *
  * `popularity` sorts on the EDHREC deck count, which is the figure the row
  * prints under that name. It is NOT the server's own order: the server ranks on
- * support or on novelty — the scope's two questions — so returning the list
- * untouched here would have printed `Popularity` over whichever of those was
- * active and called it the deck count.
+ * support or on novelty, so returning the list untouched here would have printed
+ * `Popularity` over whichever of those was active and called it the deck count.
  *
  * A row with no figure sorts last in both figure orders. An undated set and an
  * uncounted commander are absences, and an absence ordered as a zero would be
@@ -96,6 +101,18 @@ function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
 }
 
 /**
+ * The parameters with `order` corrected to the ranking the server actually
+ * returned. Only `new` can be refused — `loadDiscovery` downgrades it when there
+ * is no built deck to measure novelty from — and the four orders that ask for
+ * the fit ranking always get it, so a mismatch has exactly one meaning and one
+ * repair. Returning the same object when nothing moved is what lets the caller
+ * skip a set during render.
+ */
+function settleOrder(p: LaneParams, sort: "fit" | "new"): LaneParams {
+  return discoverSort(p.order) === sort ? p : { ...p, order: "bestfit" };
+}
+
+/**
  * Discovery's list is its own client component rather than an adaptation of
  * `CommandersView`: that one takes `CommanderListItem[]` and holds the owned
  * lane's two client-side rankings and its `ScoreDelta` state, none of which
@@ -111,29 +128,30 @@ function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
 export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList }) {
   // Shadowing the prop, so everything below reads the ranking that is on screen
   // without caring whether it arrived from the server this navigation or came
-  // back out of the cache. A scope already seen this visit is served with no
+  // back out of the cache. A ranking already seen this visit is served with no
   // request at all, which is also what makes the design table's "motion: none"
   // true for it — there is nothing to wait for.
   const { view: discovery, serve } = useDiscoveryCache(served);
   const search = useSearchParams();
   const router = useRouter();
   // #338's contract: a control whose flip is a server round-trip says so for the
-  // duration. Scope is the only one left that can reach the server, and even it
-  // usually does not — a cache hit answers in memory and this never turns true.
+  // duration. Order is the only control left that can reach the server, and only
+  // for the two of its values that name a ranking — and even then it usually does
+  // not: a cache hit answers in memory and this never turns true.
   const [navPending, startNav] = useTransition();
 
   // One parameter object for the whole rack, seeded off the URL — the lane flip
   // carries `?c=` and `?q=` across, so a reader who filtered to Golgari arrives
   // here with those pips lit rather than with params the list ignores.
   //
-  // `scope` is the exception: it is the one control the server ranks on, and
-  // `loadDiscovery` downgrades `new` to `bestfit` when there is no deck to
-  // measure novelty from. The ranking that actually came back wins over the one
-  // the URL asked for.
-  const [params, setParams] = useState<LaneParams>(() => ({
-    ...parseLaneParams(search, "discover"),
-    scope: served.sort === "new" ? "new" : "bestfit",
-  }));
+  // `order` is the exception: two of its five values are what the server ranks
+  // on, and `loadDiscovery` downgrades `new` to the fit ranking when there is no
+  // deck to measure novelty from. The ranking that actually came back wins over
+  // the one the URL asked for — but only ever by replacing `new`, since the other
+  // four all ask for the fit ranking and get it.
+  const [params, setParams] = useState<LaneParams>(() =>
+    settleOrder(parseLaneParams(search, "discover"), served.sort),
+  );
   const colors = useMemo(() => upper(params.colors), [params.colors]);
 
   // The query the reader has stopped typing. The list narrows on every keystroke
@@ -155,8 +173,8 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   );
 
   // Mirror the rack to the URL through the History API rather than
-  // `router.replace`: a replace is a navigation, and every control here except
-  // scope narrows a list the client already holds. `laneQuery` writes defaults
+  // `router.replace`: a replace is a navigation, and everything here except a
+  // ranking flip narrows a list the client already holds. `laneQuery` writes defaults
   // as absences and copies every parameter this lane does not own off the live
   // URL, so nothing another surface left behind is dropped.
   useEffect(() => {
@@ -165,33 +183,35 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
     window.history.replaceState(null, "", `${pathname}${next}`);
   }, [settled]);
 
-  // The scope the server actually ranked on, reconciled during render rather
-  // than in an effect: an effect would paint the control on the scope that was
+  // The ranking the server actually produced, reconciled during render rather
+  // than in an effect: an effect would paint the control on the order that was
   // asked for once before correcting it to the one that came back.
   const [prevList, setPrevList] = useState(discovery);
   if (discovery !== prevList) {
     setPrevList(discovery);
-    const scope = discovery.sort === "new" ? "new" : "bestfit";
-    if (scope !== params.scope) setParams((p) => ({ ...p, scope }));
+    setParams((p) => settleOrder(p, discovery.sort));
   }
 
   const [shown, setShown] = useState(REVEAL_STEP);
 
-  // Every control on the rack lands here. Only `scope` reaches the server, and
-  // even that goes to the cache first: `serve` reports a miss rather than
-  // throwing, so the navigation is the fallback and the URL ends up the same
+  // Every control on the rack lands here. Only a change of RANKING reaches the
+  // server, which is narrower than a change of order: three of the five orders
+  // arrange the fit ranking, so flipping between them asks the server nothing.
+  // Even a ranking flip goes to the cache first — `serve` reports a miss rather
+  // than throwing, so the navigation is the fallback and the URL ends up the same
   // either way.
   const update = useCallback(
     (next: LaneParams) => {
       setParams(next);
-      if (next.scope === params.scope) return;
+      const sort = discoverSort(next.order);
+      if (sort === discoverSort(params.order)) return;
       const asked = { ...next, q: settledQuery };
-      if (serve(next.scope === "new" ? "new" : "fit", asked)) return;
+      if (serve(sort, asked)) return;
       const { pathname, search: live } = window.location;
       const href = `${pathname}${laneQuery(new URLSearchParams(live), asked, "discover")}`;
       startNav(() => router.replace(href, { scroll: false }));
     },
-    [params.scope, settledQuery, serve, router],
+    [params.order, settledQuery, serve, router],
   );
 
   // Search narrows before colour, so the colour figures below describe the list
@@ -242,7 +262,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   useRerankAnnouncement(discovery.sort, sortMessage, setAnnouncement);
 
   // The window goes back to the top whenever the list underneath it changes — a
-  // scope flip, which is a server round-trip returning a differently ordered
+  // ranking flip, which is a server round-trip returning a differently ordered
   // list under this same mounted component, and every client-side narrowing and
   // reorder. Keeping the old depth would open the list part-way down a ranking
   // the player has not seen the top of: rank 800 under one filter is a different
@@ -484,7 +504,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
         return update({ ...params, match: "contains" });
       case "floor":
       case "unmeasured":
-        return update({ ...params, scope: "bestfit" });
+        return update({ ...params, order: "bestfit" });
       default:
         return;
     }
@@ -517,15 +537,15 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
       <PageHeader lane="discover" />
 
       {/* The rack, shared with the owned lane; `lane` is the whole of the
-          difference. Discover mounts a scope control and no availability
-          control — not a greyed stand-in for one. */}
+          difference. Discover mounts five orders and no availability control —
+          not a greyed stand-in for one. */}
       <FilterRack
         params={params}
         lane="discover"
         onChange={update}
         shown={filtered.length}
         total={discovery.items.length}
-        scopePending={navPending}
+        orderPending={navPending}
         excludedByExactly={excludedByExactly}
       />
 
@@ -539,7 +559,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
           candidateCount={discovery.candidateCount}
           cardsRead={discovery.cardsRead}
           bestPct={discovery.bestPct as number}
-          onRankByFit={() => update({ ...params, scope: "bestfit" })}
+          onRankByFit={() => update({ ...params, order: "bestfit" })}
         />
       ) : showHeldEmpty && report ? (
         // The held state (§2b). The shared zero-state shell, with every part it

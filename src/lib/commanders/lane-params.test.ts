@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   activeControlCount,
   defaultParams,
+  discoverSort,
+  laneQuery,
   parseLaneParams,
   serializeLaneParams,
 } from "./lane-params";
@@ -17,9 +19,8 @@ describe("parseLaneParams", () => {
       match: "contains",
       avail: "all",
       order: "fit",
-      scope: "bestfit",
     });
-    expect(parseLaneParams(sp(""), "discover").order).toBe("popularity");
+    expect(parseLaneParams(sp(""), "discover").order).toBe("bestfit");
   });
 
   it("reads colours in WUBRG order regardless of how they were written", () => {
@@ -48,9 +49,16 @@ describe("parseLaneParams", () => {
     expect(parseLaneParams(sp("a=free"), "owned").avail).toBe("free");
   });
 
-  it("ignores scope on the owned lane", () => {
-    expect(parseLaneParams(sp("s=new"), "owned").scope).toBe("bestfit");
-    expect(parseLaneParams(sp("s=new"), "discover").scope).toBe("new");
+  // `?s=` was the scope control's key for the one build that shipped it. Its
+  // novelty value is now an order, so the old link opens on that order rather
+  // than on a control that no longer exists.
+  it("reads the retired scope key as an order on discover, and ignores it on owned", () => {
+    expect(parseLaneParams(sp("s=new"), "discover").order).toBe("new");
+    expect(parseLaneParams(sp("s=new"), "owned").order).toBe("fit");
+  });
+
+  it("prefers an explicit order over the retired scope key", () => {
+    expect(parseLaneParams(sp("s=new&o=recent"), "discover").order).toBe("recent");
   });
 
   it("rejects an order that does not belong to the lane", () => {
@@ -65,10 +73,8 @@ describe("parseLaneParams", () => {
     expect(parseLaneParams(sp("sort=name"), "owned").order).toBe("name");
   });
 
-  it("reads the legacy sort=new as the discover scope, not an order", () => {
-    const p = parseLaneParams(sp("sort=new"), "discover");
-    expect(p.scope).toBe("new");
-    expect(p.order).toBe("popularity");
+  it("reads the legacy sort=new as the novelty order", () => {
+    expect(parseLaneParams(sp("sort=new"), "discover").order).toBe("new");
   });
 
   it("prefers the new key when both are present", () => {
@@ -78,7 +84,7 @@ describe("parseLaneParams", () => {
 
   it("applies the lane rules to a legacy key as it does to a new one", () => {
     expect(parseLaneParams(sp("avail=free"), "discover").avail).toBe("all");
-    expect(parseLaneParams(sp("sort=new"), "owned").scope).toBe("bestfit");
+    expect(parseLaneParams(sp("sort=new"), "owned").order).toBe("fit");
   });
 });
 
@@ -91,23 +97,20 @@ describe("serializeLaneParams", () => {
   it("writes only the non-default keys, in a stable order", () => {
     expect(
       serializeLaneParams(
-        { q: "druid", colors: ["b", "g"], match: "exactly", avail: "free", order: "name", scope: "bestfit" },
+        { q: "druid", colors: ["b", "g"], match: "exactly", avail: "free", order: "name" },
         "owned",
       ),
     ).toBe("?q=druid&c=b%2Cg&m=exact&a=free&o=name");
   });
 
-  it("never writes availability on discover, nor scope on owned", () => {
+  it("never writes availability on discover", () => {
     expect(
       serializeLaneParams({ ...defaultParams("discover"), avail: "free" }, "discover"),
-    ).toBe("");
-    expect(
-      serializeLaneParams({ ...defaultParams("owned"), scope: "new" }, "owned"),
     ).toBe("");
   });
 
   it("round-trips through parse", () => {
-    const p: LaneParams = { q: "a b", colors: ["u"], match: "exactly", avail: "all", order: "recent", scope: "new" };
+    const p: LaneParams = { q: "a b", colors: ["u"], match: "exactly", avail: "all", order: "recent" };
     const qs = serializeLaneParams(p, "discover");
     expect(parseLaneParams(new URLSearchParams(qs), "discover")).toEqual(p);
   });
@@ -115,6 +118,22 @@ describe("serializeLaneParams", () => {
   it("never writes a legacy key, so a legacy URL self-heals on the first write", () => {
     const qs = serializeLaneParams(parseLaneParams(sp("join=exact&avail=free"), "owned"), "owned");
     expect(qs).toBe("?m=exact&a=free");
+  });
+});
+
+describe("laneQuery", () => {
+  // The retired key is cleared rather than carried, so a link from the build
+  // that shipped the scope control stops being ambiguous on the first write.
+  it("clears the retired scope key, keeping the order it was read as", () => {
+    const live = sp("s=new");
+    expect(laneQuery(live, parseLaneParams(live, "discover"), "discover")).toBe("?o=new");
+  });
+
+  it("keeps a parameter the lane does not own", () => {
+    const live = sp("s=new&ref=email");
+    expect(laneQuery(live, parseLaneParams(live, "discover"), "discover")).toBe(
+      "?ref=email&o=new",
+    );
   });
 });
 
@@ -143,21 +162,40 @@ describe("activeControlCount", () => {
     ).toBe(2);
   });
 
-  // Three either way, out of different controls: colours and match plus
-  // availability on owned, plus scope on discover. Search and order never count,
-  // so no lane can reach four.
-  it("ceilings at 3 on both lanes", () => {
+  // Colours and match on both lanes, plus availability on owned. Search and
+  // order never count, and discover has no third control to count.
+  it("ceilings at 3 on owned and 2 on discover", () => {
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name", scope: "bestfit" },
+        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name" },
         "owned",
       ),
     ).toBe(3);
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent", scope: "new" },
+        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent" },
         "discover",
       ),
-    ).toBe(3);
+    ).toBe(2);
+  });
+
+  // The rankings are orders like any other now, so picking one lights no badge
+  // and produces no chip — the trigger beside the badge already names it.
+  it("never counts a discover ranking", () => {
+    expect(activeControlCount({ ...defaultParams("discover"), order: "new" }, "discover")).toBe(0);
+  });
+});
+
+describe("discoverSort", () => {
+  it("asks for the novelty ranking only under the novelty order", () => {
+    expect(discoverSort("new")).toBe("new");
+  });
+
+  // The point of the split: three of the five orders arrange a list the client
+  // already holds, so flipping between them must not reach the server.
+  it("asks for the fit ranking under every other order", () => {
+    for (const o of ["bestfit", "popularity", "name", "recent"] as const) {
+      expect(discoverSort(o)).toBe("fit");
+    }
   });
 });
