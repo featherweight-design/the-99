@@ -240,9 +240,13 @@ export const discoveryCopy = {
     // 3 · Filtered to zero inside discovery. The shipped FilteredEmpty plus ONE
     // clause — the only genuinely new reason this state has under discovery.
     // Rendered only when at least one built deck matches the filtered identity.
-    filteredHeading: "No unbuilt commander matches those colours",
+    // The population is an ownership one, not a build one: discover lists the
+    // commanders the player does not own, and every one of them is unbuilt by
+    // construction. Naming the wrong axis had the state describe a list nobody
+    // is looking at.
+    filteredHeading: "No commander in those colours",
     filteredBody: (colors: string, candidates: number) =>
-      `${colors} together leave nothing in the ${n(candidates)} you have not built.`,
+      `${colors} together leave nothing in the ${n(candidates)} you don't own.`,
     // "cover", not "are": the count behind this clause comes from the list's own
     // `selected ⊆ colorIdentity` test, so an Esper deck is counted under an
     // Orzhov filter. The drawn line claimed those decks ARE Orzhov, which is
@@ -256,7 +260,10 @@ export const discoveryCopy = {
             total,
           )} decks ${matching === 1 ? "covers" : "cover"} ${identity} — that is where those commanders went.`,
     filteredCta: "Clear the colour filter",
-    filteredScopeLink: "or switch to Commanders I own",
+    // Names the lane, the way `discoverCopy.otherLane` names it. The old wording
+    // was the deleted scope control's option label, and it opened on "or", which
+    // read as a trailing clause of the button beside it rather than a link.
+    filteredScopeLink: "Your commanders",
   },
 
   // ── Windowing at 3,342 (§7.7) ─────────────────────────────────────────

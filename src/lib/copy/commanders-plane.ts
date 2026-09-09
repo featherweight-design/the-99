@@ -177,7 +177,9 @@ export const planeCopy = {
     scope: (name: string) => `${name} matches, but you have already built a deck around it.`,
     scopeAlso: (name: string) =>
       `${name} also matches, but you have already built a deck around it.`,
-    scopeCta: "Switch to Commanders I own",
+    // The destination is the other lane, so it is named the way that lane names
+    // itself. `Commanders I own` was the deleted scope control's option label.
+    scopeCta: "Switch to your commanders",
 
     colors: (name: string, filtered: string[], own: string[]) =>
       `${name} matches, but the ${identity(
