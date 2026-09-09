@@ -145,11 +145,13 @@ export function suggestDeck(args: {
   commander: PoolCard;
   ownedPool: PoolCard[];
   edhrecTopCards: string[] | null;
-  hasPartner?: boolean;
+  // Required, not defaulted: a missed call site would quietly plan a pair deck
+  // to 99 cards and 37 lands, which is the one mistake this argument exists to
+  // make impossible.
+  hasPartner: boolean;
 }): Suggestion[] {
-  const hasPartner = args.hasPartner ?? false;
-  const max = deckBodySize(hasPartner);
-  const lands = landTarget(hasPartner);
+  const max = deckBodySize(args.hasPartner);
+  const lands = landTarget(args.hasPartner);
   const out: Suggestion[] = [];
   const used = new Set<string>();
   const add = (oracleId: string, reason: Suggestion["reason"]) => {

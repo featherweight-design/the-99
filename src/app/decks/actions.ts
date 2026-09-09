@@ -140,7 +140,8 @@ export async function buildFillPlan(
   excludeOracleIds: Set<string> = new Set(),
   // A pair's body is 98, and the slot it loses comes out of the lands — so the
   // plan needs to know before it picks any, not after it has been capped.
-  hasPartner = false,
+  // Required rather than defaulted, for the same reason `suggestDeck`'s is.
+  hasPartner: boolean,
 ): Promise<FillPlan> {
   const pool = dedupeSelectionFromPool(
     await ownedColorLegalPool(userId, [commander]),
@@ -345,6 +346,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
     ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
     : [];
   const commanders = partner ? [commander, partner] : [commander];
+  const hasPartner = partner != null;
 
   const pool = await ownedColorLegalPool(userId, commanders);
   const inDeckRows = await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
@@ -373,7 +375,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const ownedByOracleId = new Set(pool.map((c) => c.oracleId));
 
   // Compute owned pool suggestions
-  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards });
+  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner });
 
   // Enrich owned suggestions
   const ownedSuggestions: DeckSuggestion[] = raw.map((s) => {
@@ -392,6 +394,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
       },
       inclusionByName,
       synergyByName,
+      hasPartner,
     );
   });
 
@@ -418,12 +421,13 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
         },
         inclusionByName,
         synergyByName,
+        hasPartner,
       ),
     );
   }
 
-  // Combine and truncate to 99
-  const combined = [...ownedSuggestions, ...unownedSuggestions].slice(0, 99);
+  // Combine and truncate to the deck's body — 99, or 98 for a pair.
+  const combined = [...ownedSuggestions, ...unownedSuggestions].slice(0, deckBodySize(hasPartner));
 
   // Scoped to the tiles actually returned, and read from this deck's vantage so
   // a card the deck already claims does not count against itself. Swallowed:
