@@ -19,6 +19,11 @@ const COVER_ART_OPACITY = 0.58;
     into a darker patch of its own. */
 const COVER_PLATE = "color-mix(in srgb, var(--bg) 86%, black)";
 
+/** Decision 3 — ink over art carries a shadow, at full opacity, never an alpha
+    colour. The resume row is the stated exception: its type starts at the 116px
+    inset, clear of the portrait, and carries none. */
+export const INK_SHADOW = "0 1px 3px rgba(0,0,0,.6)";
+
 const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's

@@ -8,7 +8,7 @@ import type { DeckListItem } from "../../lib/decks/read";
 import type { DeckShopping } from "../../lib/decks/shopping-rollup";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import { formatWhen } from "../../lib/format/when";
-import { ArtWash } from "../ui/art-wash";
+import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
 
@@ -149,22 +149,36 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
           artCropUri={deck.commanderArtCropUri}
           colorIdentity={deck.commanderColorIdentity}
         />
+        {/* §4 — the status chip sits bottom-left. The scrim's fourth stop (.86
+            at 100%) is what lets it do that without a plate of its own. */}
         <StatusPillBadge status={deck.statusPill} />
         <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={deck.built} />
-        <h3
-          className="absolute inset-x-0 bottom-0 truncate px-[13px] pb-[10px] font-display text-[17px] font-semibold sm:text-[15px]"
-          style={{ color: "var(--fg)" }}
-        >
-          {deck.name}
-        </h3>
+        {/* Labels top-anchored, which is what decision 6's `center top` focal is
+            derived from: the art's recognisable features land at 43–71% of the
+            band, below the type rather than behind it. The right padding clears
+            the overflow button, which positions itself in the same corner. */}
+        <div className="absolute inset-x-0 top-0 min-w-0 pt-[10px] pr-[56px] pl-[13px] sm:pr-[48px]">
+          <h3
+            className="truncate font-display text-[17px] font-semibold sm:text-[15px]"
+            style={{ color: "var(--fg)", textShadow: INK_SHADOW }}
+          >
+            {deck.name}
+          </h3>
+          <p
+            className="mt-[3px] truncate font-mono text-[10.5px]"
+            style={{ color: "var(--fg-body)", textShadow: INK_SHADOW }}
+          >
+            {deck.commanderName}
+          </p>
+        </div>
       </div>
 
       {/* 2 · Body. Phone: `pips detail count` over the bar. Desktop: the colour
           label takes the middle slot, and the detail drops below the bar beside
           last played. */}
       <div
-        className="grid items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] [grid-template-areas:'pips_detail_count''bar_bar_bar'] sm:gap-y-[9px] sm:[grid-template-areas:'pips_label_count''bar_bar_bar''detail_._played']"
-        style={{ gridTemplateColumns: "auto 1fr auto" }}
+        className="deck-card-footer grid items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] [grid-template-areas:'pips_detail_count''bar_bar_bar'] sm:gap-y-[9px] sm:[grid-template-areas:'pips_label_count''bar_bar_bar''detail_._played']"
+        style={{ gridTemplateColumns: "auto 1fr auto", borderTop: "1px solid var(--border)" }}
       >
         <span className="flex gap-[3px]" style={{ gridArea: "pips" }} aria-hidden>
           {deck.commanderColorIdentity.map((color) => (
