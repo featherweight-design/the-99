@@ -24,12 +24,15 @@ export type ImportNote =
   | { kind: "quantityClamped"; name: string; requested: number; sourceLine: number }
   | { kind: "parseError"; sourceLine: number; reason: string }
   /**
-   * A Partner or Background list names two commanders; `decks.commander_oracle_id` holds
-   * one. The extra is dropped rather than imported into the 99, because a commander sitting
-   * in the 99 changes the deck's colour identity and its legality. Dropping it silently
-   * would change the deck without saying so, which is what this note exists to prevent.
+   * Two commanders is the format's whole allowance, so a third is a fact about the
+   * paste rather than about the deck. It is dropped rather than imported into the 99,
+   * because a commander sitting in the 99 changes the deck's colour identity and its
+   * legality. Dropping it silently would change the deck without saying so, which is
+   * what this note exists to prevent.
    */
-  | { kind: "extraCommanderDeclared"; name: string; sourceLine: number };
+  | { kind: "thirdCommanderDeclared"; name: string; sourceLine: number };
+
+type DeclaredCommander = { oracleId: string; name: string; sourceLine: number };
 
 export type DeckImport = {
   /** `sourceLine` is the first line that named the card — the figure the update
@@ -56,7 +59,12 @@ export type DeckImport = {
    * section). When it is set the picker is skipped entirely — a confirmation
    * step for a fact we already have is friction.
    */
-  declaredCommander: { oracleId: string; name: string; sourceLine: number } | null;
+  declaredCommander: DeclaredCommander | null;
+  /**
+   * The second commander of a Partner pair, when the source declares two. Null for
+   * the single-commander deck most decks are.
+   */
+  declaredPartner: DeclaredCommander | null;
   /**
    * Real card lines, after sections and annotations are stripped. The caller cannot
    * recover this by parsing the raw text: `parsePasteList` turns any non-blank line
@@ -194,6 +202,8 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
   const { matched, unmatched } = matchRows(rows, input.catalog, input.indexes);
 
   let declaredCommander: DeckImport["declaredCommander"] = null;
+  let declaredPartner: DeckImport["declaredPartner"] = null;
+  const declaredIds = new Set<string>();
   const quantities = new Map<string, { quantity: number; firstLine: number }>();
   const legendaryCandidates: DeckImport["legendaryCandidates"] = [];
 
@@ -201,20 +211,28 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
     const card = byOracleId.get(oracleId);
     if (commanderLines.has(row.line) && !declaredCommander) {
       declaredCommander = { oracleId, name: card?.name ?? row.name, sourceLine: row.line };
+      declaredIds.add(oracleId);
       continue;
     }
     // A commander that also appears in the 99 is an export artifact, not intent.
-    // Deduped silently: there is nothing here for the player to act on.
-    if (declaredCommander?.oracleId === oracleId) continue;
+    // Deduped silently: there is nothing here for the player to act on. A list naming
+    // the same commander twice is a duplicate line, not a pair.
+    if (declaredIds.has(oracleId)) continue;
 
-    // A second, different card marked as commander — a Partner or Background pair. Noted
-    // rather than dropped quietly, and kept out of the 99 rather than imported into it.
     if (commanderLines.has(row.line)) {
-      notes.push({
-        kind: "extraCommanderDeclared",
-        name: card?.name ?? row.name,
-        sourceLine: row.line,
-      });
+      // A second, different card marked as commander is a Partner pair, which the deck
+      // can hold. A third is past the format's allowance: noted rather than dropped
+      // quietly, and kept out of the 99 rather than imported into it.
+      if (!declaredPartner) {
+        declaredPartner = { oracleId, name: card?.name ?? row.name, sourceLine: row.line };
+        declaredIds.add(oracleId);
+      } else {
+        notes.push({
+          kind: "thirdCommanderDeclared",
+          name: card?.name ?? row.name,
+          sourceLine: row.line,
+        });
+      }
       continue;
     }
 
@@ -243,9 +261,10 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
 
   // A declared commander appearing later in the list would otherwise have been
   // counted before the declaration was seen; drop it and any candidate row.
-  if (declaredCommander) {
-    quantities.delete(declaredCommander.oracleId);
-    const i = legendaryCandidates.findIndex((c) => c.oracleId === declaredCommander!.oracleId);
+  for (const declared of [declaredCommander, declaredPartner]) {
+    if (!declared) continue;
+    quantities.delete(declared.oracleId);
+    const i = legendaryCandidates.findIndex((c) => c.oracleId === declared.oracleId);
     if (i !== -1) legendaryCandidates.splice(i, 1);
   }
 
@@ -276,6 +295,7 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
     })),
     legendaryCandidates,
     declaredCommander,
+    declaredPartner,
     // Matched plus unmatched, never rows.length: matchRows also drops tokens, emblems
     // and art series, which are neither imported nor shown as unresolved. Counting
     // them would tell the player about lines they will never see anywhere.
@@ -284,8 +304,12 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
   };
 }
 
-/** 1-based line numbers falling under a `Commander` header, before the next header. */
-function commanderSectionLines(text: string): number[] {
+/**
+ * 1-based line numbers falling under a `Commander` header, before the next header.
+ * Exported because the exporter writes the same section shape, and a private copy
+ * there would let the reader and the writer drift apart.
+ */
+export function commanderSectionLines(text: string): number[] {
   const lines = text.split(/\r?\n/);
   const out: number[] = [];
   let inSection = false;

@@ -29,6 +29,7 @@ function parsed(over: Partial<DeckImport> = {}): DeckImport {
     unresolved: [],
     legendaryCandidates: [],
     declaredCommander: null,
+    declaredPartner: null,
     lineCount: 0,
     notes: [],
     ...over,

@@ -42,7 +42,27 @@ const DELVER = card({
   typeLine: "Creature — Human Insect",
 });
 
-const CATALOG = [SOL_RING, FOREST, ATRAXA, TYMNA, DELVER];
+// The motivating deck's pair, and a third legend to overflow a declaration with.
+const ATREUS = card({
+  name: "Atreus, God of War",
+  typeLine: "Legendary Creature — God",
+  colorIdentity: ["R", "W"],
+  oracleText: "Partner—Father & son (You can have two commanders if both have Partner—Father & son.)",
+});
+const KRATOS = card({
+  name: "Kratos, God of War",
+  typeLine: "Legendary Creature — God",
+  colorIdentity: ["U", "R"],
+  oracleText: "Partner—Father & son (You can have two commanders if both have Partner—Father & son.)",
+});
+const ISHAI = card({
+  name: "Ishai, Ojutai Dragonspeaker",
+  typeLine: "Legendary Creature — Bird Monk",
+  colorIdentity: ["W", "U"],
+  oracleText: "Flying\nPartner (You can have two commanders if both have partner.)",
+});
+
+const CATALOG = [SOL_RING, FOREST, ATRAXA, TYMNA, DELVER, ATREUS, KRATOS, ISHAI];
 
 const build = (text: string, catalog: ImportCatalogCard[] = CATALOG) =>
   buildDeckImport({ text, catalog });
@@ -159,16 +179,48 @@ describe("buildDeckImport — locked decision: a commander also in the 99 is ded
     expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
-  it("notes a Partner pair's second commander rather than importing it into the 99", () => {
-    // decks.commander_oracle_id holds one commander. Importing the partner as a 99 card
+  it("reads a Partner pair's second commander as the partner, not as a 99 card", () => {
+    // Neither commander is a deck_cards row. Importing the partner into the 99
     // would change the deck's colour identity and its legality without saying so.
     const result = build("1 Tymna the Weaver *CMDR*\n1 Atraxa, Praetors' Voice *CMDR*\n1 Sol Ring");
     expect(result.declaredCommander?.oracleId).toBe(TYMNA.oracleId);
+    expect(result.declaredPartner?.oracleId).toBe(ATRAXA.oracleId);
     expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
-    expect(result.notes).toEqual([
-      { kind: "extraCommanderDeclared", name: ATRAXA.name, sourceLine: 2 },
-    ]);
+    expect(result.notes).toEqual([]);
     expect(result.legendaryCandidates).toEqual([]);
+  });
+
+  it("reads two declared commanders as a pair", () => {
+    const result = build("Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(result.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(result.declaredPartner?.sourceLine).toBe(3);
+  });
+
+  it("keeps neither commander in the card rows", () => {
+    const result = build("Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.cards.map((c) => c.oracleId)).toEqual([SOL_RING.oracleId]);
+  });
+
+  // Two is the format's whole allowance, so a third is a fact about the paste
+  // rather than about the deck — dropped, and said out loud.
+  it("takes a third declared commander as a note and drops it", () => {
+    const result = build(
+      "Commander\n1 Atreus, God of War\n1 Kratos, God of War\n1 Ishai, Ojutai Dragonspeaker\n\nDeck\n1 Sol Ring",
+    );
+    expect(result.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(result.notes).toContainEqual({
+      kind: "thirdCommanderDeclared",
+      name: "Ishai, Ojutai Dragonspeaker",
+      sourceLine: 4,
+    });
+    expect(result.cards.map((c) => c.oracleId)).toEqual([SOL_RING.oracleId]);
+  });
+
+  it("leaves a single declared commander alone", () => {
+    const result = build("Commander\n1 Atreus, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(result.declaredPartner).toBeNull();
   });
 
   it("declares nothing when the source annotates no commander", () => {
@@ -185,7 +237,8 @@ describe("buildDeckImport — locked decision: re-importing the same list create
     const second = build(text);
     expect(second).toEqual(first);
     expect(Object.keys(first).sort()).toEqual([
-      "cards", "declaredCommander", "legendaryCandidates", "lineCount", "notes", "unresolved",
+      "cards", "declaredCommander", "declaredPartner", "legendaryCandidates", "lineCount",
+      "notes", "unresolved",
     ]);
   });
 });
