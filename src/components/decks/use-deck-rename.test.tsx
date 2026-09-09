@@ -105,6 +105,18 @@ describe("useDeckRename", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  // R6 ruling 2. Blur must not commit an invalid value, and empty reverts
+  // rather than leaving an empty box open — the same exit unchanged takes.
+  it("a blur on an empty name reverts and closes", async () => {
+    const onDone = vi.fn();
+    const { result } = renderHook(() => useDeckRename("d1", "Atraxa", onDone));
+    act(() => result.current.setValue("   "));
+    await act(async () => result.current.onBlur());
+    expect(renameDeck).not.toHaveBeenCalled();
+    expect(result.current.value).toBe("Atraxa");
+    expect(onDone).toHaveBeenCalled();
+  });
+
   // The spine mounts one of these per breakpoint. The hidden one is still
   // mounted when the visible one renames, so without this a resize would open
   // a field holding the previous name and a blur would rename the deck back.

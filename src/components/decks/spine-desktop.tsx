@@ -14,7 +14,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
 import type { StatusPill } from "../../lib/decks/status";
-import { statusBarStyle } from "../../lib/decks/status-style";
+import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 
@@ -46,6 +46,10 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
   const { built, ownedCount, toBuyCount } = counts;
   const over = built > 99;
   const toCut = built - 99;
+  // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
+  // ink the state adds reads the same token `statusBarStyle` gives the bar
+  // rather than a second alarm colour of its own.
+  const overInk = `var(${STATUS_TOKEN[status]})`;
   const rename = useDeckRename(deck.id, deck.name, () => setRenaming(false));
 
   // §F, as three booleans rather than a state string: they are not exclusive in
@@ -147,7 +151,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
                 <button
                   type="button"
                   onClick={() => setRenaming(true)}
-                  aria-label={renameCopy.triggerAria}
+                  aria-label={renameCopy.triggerAria(deck.name)}
                   // Focus-visible reveals it too, or it is keyboard-unreachable.
                   className="flex flex-none items-center justify-center rounded-[6px] border border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-muted)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[color:var(--elevated-hover)]"
                   style={{
@@ -184,7 +188,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
           <div className="flex items-baseline" style={{ gap: 4, marginTop: 5 }}>
             <span
               className="font-mono font-semibold"
-              style={{ fontSize: 20, color: over ? "var(--warning)" : "var(--fg)" }}
+              style={{ fontSize: 20, color: over ? overInk : "var(--fg)" }}
             >
               {built}
             </span>
@@ -194,7 +198,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
             {over && (
               <span
                 className="font-mono font-semibold"
-                style={{ fontSize: 13, marginLeft: 6, color: "var(--warning)" }}
+                style={{ fontSize: 13, marginLeft: 6, color: overInk }}
               >
                 {overCopy.figure.delta(String(toCut))}
               </span>
@@ -240,7 +244,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
                 color: "var(--fg-body)",
               }}
             >
-              <b className="font-semibold" style={{ color: "var(--warning)" }}>
+              <b className="font-semibold" style={{ color: overInk }}>
                 {overCopy.trim.lead(overWord(toCut))}
               </b>{" "}
               {overCopy.trim.body(String(toCut))}

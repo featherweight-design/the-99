@@ -225,4 +225,24 @@ describe("cover, label edge", () => {
     expect(scrim?.style.background).toContain("var(--bg) 66%, transparent) 0%");
     expect(scrim?.style.background).toContain("var(--bg) 90%, transparent) 100%");
   });
+
+  // R6 ruling 1. The plate is a loading device: it is darker than `--bg` so a
+  // slow image never flashes light. With no art there is nothing to load, and
+  // the scrim's own final stop is `var(--bg)` — so a plate ground would leave
+  // the flat region darker than the card below the divider.
+  it("plates a pending crop but grounds an absent one in --bg", () => {
+    const withArt = render(
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="/a.jpg" colorIdentity={["G"]} />,
+    );
+    expect((withArt.container.firstElementChild as HTMLElement).style.background).toBe(
+      "color-mix(in srgb, var(--bg) 86%, black)",
+    );
+
+    const withoutArt = render(
+      <ArtWash strategy="cover" labelEdge="top" artCropUri={null} colorIdentity={["G"]} />,
+    );
+    expect((withoutArt.container.firstElementChild as HTMLElement).style.background).toBe(
+      "var(--bg)",
+    );
+  });
 });

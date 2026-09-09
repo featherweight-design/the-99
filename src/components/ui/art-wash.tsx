@@ -33,12 +33,14 @@ const coverScrim = (edge: LabelEdge) =>
 
 const COVER_ART_OPACITY = 0.58;
 
-/** L1, the base plate: one step below the page ground, so a slow or missing
-    image never flashes light. No token is darker than `--bg` and the handoff
-    forbids adding one, so the plate derives from it and each theme gets its own
-    value of the same rule. `left-portrait` deliberately does not use this — those
-    rows plate to the row's own ground, so the art fades into the row rather than
-    into a darker patch of its own. */
+/** L1, the base plate: one step below the page ground, so a slow image never
+    flashes light. No token is darker than `--bg` and the handoff forbids adding
+    one, so the plate derives from it and each theme gets its own value of the
+    same rule. Applied only while there is a crop to load — an artless band
+    grounds in `var(--bg)`, the scrim's own final stop, per R6 ruling 1.
+    `left-portrait` deliberately does not use this — those rows plate to the
+    row's own ground, so the art fades into the row rather than into a darker
+    patch of its own. */
 const COVER_PLATE = "color-mix(in srgb, var(--bg) 86%, black)";
 
 /** Decision 3 — ink over art carries a shadow, at full opacity, never an alpha
@@ -227,7 +229,10 @@ export function ArtWash(props: ArtWashProps) {
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden"
-      style={{ background: COVER_PLATE }}
+      // R6 ruling 1: the plate is a loading device, not a ground. With no art
+      // there is nothing to load, and the scrim's final stop is `var(--bg)` —
+      // plating an artless band would seam it against the surface below.
+      style={{ background: artCropUri ? COVER_PLATE : "var(--bg)" }}
     >
       <div
         className="art-wash-art absolute inset-0"

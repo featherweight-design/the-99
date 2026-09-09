@@ -86,14 +86,18 @@ export function useDeckRename(deckId: string, currentName: string, onDone: () =>
   // A blur while the error is showing must not re-fire the request that failed:
   // the reader is looking at the message, and re-submitting on the way out would
   // replace it with a second identical failure they never asked for.
+  //
+  // Empty reverts rather than sitting open (R6 ruling 2). `commit` would refuse
+  // it anyway — `canSave` requires a non-empty name — but refusing leaves an
+  // empty box on screen, which is neither of the two exits the ruling names.
   const onBlur = useCallback(() => {
     if (isPending || error) return;
-    if (!changed) {
+    if (!changed || trimmed.length === 0) {
       cancel();
       return;
     }
     commit();
-  }, [cancel, changed, commit, error, isPending]);
+  }, [cancel, changed, commit, error, isPending, trimmed]);
 
   return { value, setValue, error, isPending, canSave, commit, cancel, onKeyDown, onBlur };
 }

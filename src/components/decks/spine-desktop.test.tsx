@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineDesktop } from "./spine-desktop";
+import { renameCopy } from "../../lib/copy/decks-builder";
 import { deck, props } from "./spine-fixtures";
 
 // The band's `Card details` pill reads the card-detail context, so the header
@@ -40,9 +41,27 @@ describe("SpineDesktop", () => {
     expect(screen.getByText("+5")).toBeTruthy();
   });
 
+  // R6 ruling 3. Past 99 the status is `Over`, whose bar is --danger. A
+  // --warning figure beside a --danger bar paints one state in two alarm
+  // colours, so every ink in the state reads the token the bar reads.
+  it("paints the over-99 inks in the status colour, not a second alarm colour", () => {
+    const { container } = renderSpine(
+      <SpineDesktop
+        {...props}
+        counts={{ built: 104, ownedCount: 100, toBuyCount: 4 }}
+        status="Over"
+      />,
+    );
+    const fill = container.querySelector<HTMLElement>("[data-testid='spine-bar-fill']");
+    expect(fill?.style.background).toBe("var(--danger)");
+    expect(container.innerHTML).not.toContain("var(--warning)");
+    expect(screen.getByText("104")).toHaveStyle({ color: "var(--danger)" });
+    expect(screen.getByText("+5")).toHaveStyle({ color: "var(--danger)" });
+  });
+
   it("swaps the actions slot for the rename hint while editing", () => {
     renderSpine(<SpineDesktop {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
+    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
     expect(screen.getByLabelText("Deck name")).toBeTruthy();
     expect(screen.getByText("↵ save · esc cancel")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Export" })).toBeNull();
@@ -53,7 +72,7 @@ describe("SpineDesktop", () => {
   // send the same rename the click is about to send.
   it("neither action lets the field's blur fire first", () => {
     renderSpine(<SpineDesktop {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
+    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
     for (const name of [/Save/, "Cancel"]) {
       const down = fireEvent.mouseDown(screen.getByRole("button", { name }));
       expect(down).toBe(false);
@@ -62,7 +81,7 @@ describe("SpineDesktop", () => {
 
   it("holds the field's box across every editing state", () => {
     renderSpine(<SpineDesktop {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
+    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
     const field = screen.getByLabelText("Deck name") as HTMLInputElement;
     const box = [field.style.width, field.style.height];
     expect(box).toEqual(["352px", "29px"]);
@@ -74,6 +93,15 @@ describe("SpineDesktop", () => {
 
     // and the hint row is present in every state, so no row is ever added
     expect(screen.getByTestId("spine-rename-hint")).toBeTruthy();
+  });
+
+  // R6 ruling 4. The header is reachable from list contexts, so the label has
+  // to say which deck is about to be renamed.
+  it("names the deck in the rename trigger's accessible name", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    expect(
+      screen.getByRole("button", { name: `Rename deck: ${props.deck.name}` }),
+    ).toBeTruthy();
   });
 
   it("drops the Card details pill when the commander has no crop", () => {
