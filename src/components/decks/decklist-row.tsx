@@ -27,6 +27,8 @@ import {
   useRemoveOptimisticCard,
   useReportRemoveFailure,
 } from "./optimistic-deck";
+import { usePassMark } from "./pass-mark";
+import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
@@ -174,6 +176,14 @@ export function DecklistRow({
   // Basics are excluded for the filter's own reason, not the meta line's: the
   // fill never buys them, so an owned basic is never a purchase.
   const spokenFor = inShopping && isSpokenFor(card);
+  const passMark = usePassMark();
+  const markLabel = passMark?.oracleIds.has(card.oracleId) ? passMark.label : null;
+  const marked = markLabel !== null;
+  // The mark is an inset edge for the same reason the over tint is an inset
+  // ring: 3px of real border would shunt one row's contents sideways.
+  const rowEdges: string[] = [];
+  if (marked) rowEdges.push("inset 3px 0 0 0 var(--accent)");
+  if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which
@@ -218,9 +228,13 @@ export function DecklistRow({
       <div
         {...previewHandlers}
         className={`group ${rowShell} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
-          [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
-          ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
+          [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
+        style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
       >
+        {/* The ledger is marking this pass. Additive to the card's own button
+            name rather than a replacement for it: the row has no aria-label to
+            extend, and the name of the card is what a reader came for. */}
+        {markLabel && <span className="sr-only">{topOffCopy.ledger.markedRow(markLabel)}</span>}
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
         <OwnershipDot
           owned={card.owned}

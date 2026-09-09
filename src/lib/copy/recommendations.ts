@@ -148,27 +148,13 @@ export const recommendationsCopy = {
   },
 
   // ── Surface B · the arrival (expressive moment 1) ─────────────────────
-  // Not a toast and not dismissible: it describes the deck's state, so it
-  // leaves when the last auto card does.
+  // The six provenance* sentences that stood here stated one deck-wide total
+  // for the whole fill. #359 needs each pass named and reversible on its own,
+  // so `topOffCopy.ledger` replaced them; the shortfall wording they carried
+  // lives on in `synergyCopy.lastSlots.short`. That includes the full-fill pair
+  // added by #462, whose "The other 0 are yours" defect the ledger cannot have:
+  // it states per-pass counts and never hands back a remainder.
   fill: {
-    provenance: (filled: string, bought: string, open: string) =>
-      `We filled the roles and the mana base — ${filled} cards, ${bought} of them from outside your collection. The other ${open} are yours: that is where this commander actually happens.`,
-    provenanceMobile: (filled: string, bought: string, open: string) =>
-      `We filled the roles and the mana base — ${filled} cards, ${bought} from outside your collection. The other ${open} are yours.`,
-    // Every baseline was covered from the collection, so nothing was bought.
-    provenanceAllOwned: (filled: string, open: string) =>
-      `We filled the roles and the mana base — ${filled} cards, all from your collection. The other ${open} are yours.`,
-    // State 13 — a baseline the fill could not reach. Names the shortfall
-    // rather than quietly reporting a smaller number.
-    provenanceShort: (filled: string, role: string, open: string) =>
-      `We filled ${filled} of 99. ${role} came up short — your collection and EDHREC between them had nothing more to place. The other ${open} are yours.`,
-    // The fill placed the whole 99, so there is no "other N" to hand back and
-    // every string above would close on "The other 0 are yours" — a clause that
-    // reads as an error the first time and as noise every time after.
-    provenanceFull: (filled: string, bought: string) =>
-      `We filled the roles and the mana base — the whole ${filled}, ${bought} of them from outside your collection.`,
-    provenanceFullAllOwned: (filled: string) =>
-      `We filled the roles and the mana base — the whole ${filled}, all from your collection.`,
     // In-flight (state 14). One announcement on settle, never per row.
     filling: (n: string) => `Filling ${n} of 99…`,
     fillingRows: (n: string) => `Sleeving ${n} cards…`,

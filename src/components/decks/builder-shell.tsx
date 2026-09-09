@@ -42,11 +42,14 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { ProvenanceLine, FillFailedBannerConnected } from "./provenance-line";
+import { ProvenanceLedger, FillFailedBannerConnected } from "./provenance-line";
+import { PassMarkProvider, passMarkFor, fillPassLabel } from "./pass-mark";
+import { topOffCopy } from "../../lib/copy/top-off";
+// Type only, for the same reason `games.ts` is imported as one: the module
+// reaches for the database.
+import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { LastSlotsStrip } from "./last-slots-strip";
-import { ROLE_TARGETS } from "../../lib/recs/roles";
-import { LAND_TARGET } from "../../lib/decks/suggest";
-import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
+import { deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
@@ -100,6 +103,10 @@ interface BuilderShellProps {
       renders rather than a reason to unmount it: the door stays while slots are
       open, and says the pool ran out. */
   candidates?: TopOffCandidate[];
+  /** One summary per fill pass, oldest first, passes with no live cards already
+      dropped. Empty on a deck built before the ledger existed — which the
+      ledger states rather than hides. */
+  fillPasses?: FillPassSummary[];
   /** Every game logged against this deck, newest first. */
   games?: DeckGame[];
   /** Aggregated on the server — `summarizeGames` is pure, so running it here
@@ -131,6 +138,7 @@ export function BuilderShell({
   newestAsOf = null,
   provenance = null,
   candidates = [],
+  fillPasses = [],
   games = [],
   gameSummary = NO_GAMES,
 }: BuilderShellProps) {
@@ -147,6 +155,18 @@ export function BuilderShell({
   // would race the pass being placed, so ClearAutoButton is disabled for the
   // duration (design table states 3 and 8).
   const [fillInflight, setFillInflight] = useState(false);
+
+  // The ledger's mark: which pass's cards the decklist below is highlighting.
+  // One id, so "one pass at a time" is the representation rather than a rule
+  // something has to enforce.
+  const [markedPassId, setMarkedPassId] = useState<string | null>(null);
+  // Reconciled against the incoming summaries during render, not in an effect.
+  // An undo, a sweep or a keep-all can take the marked pass away on the server,
+  // and an effect would leave one frame in which the ledger drew `aria-pressed`
+  // on a line that is gone and the decklist marked nothing.
+  const markedPass = fillPasses.find((p) => p.id === markedPassId) ?? null;
+  if (markedPassId !== null && markedPass === null) setMarkedPassId(null);
+  const passMark = useMemo(() => passMarkFor(markedPass), [markedPass]);
 
   // The top-off list is open. At phone widths its commit bar takes the bottom
   // slot, so the quick-add dock hides — one bottom slot, one occupant (state
@@ -288,6 +308,19 @@ export function BuilderShell({
   // add is narrated, so every add path goes through this wrapper rather than
   // calling addOptimisticCard directly.
   const [announcement, setAnnouncement] = useState("");
+
+  // The mark hides nothing and moves nothing, so it is the one act on this
+  // surface a screen reader would otherwise get nothing at all from.
+  const handleMarkChange = (passId: string | null) => {
+    setMarkedPassId(passId);
+    const pass = passId === null ? null : fillPasses.find((p) => p.id === passId);
+    setAnnouncement(
+      pass
+        ? topOffCopy.announce.marked(String(pass.live), fillPassLabel(pass))
+        : topOffCopy.announce.markCleared,
+    );
+  };
+
   // Composed from the pre-add list plus this card. `useOptimistic` state is not
   // readable synchronously here, and reading it a render later would announce
   // the previous add.
@@ -545,6 +578,7 @@ export function BuilderShell({
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
       <AddOptimisticCardProvider value={deckEdits}>
+        <PassMarkProvider value={passMark}>
         {/* One column at both widths now that the rail is gone. The document is
             the only scrollport at both widths: desktop used to frame the column
             in the viewport (`h-screen` + `overflow-hidden` here, `overflow-y-auto`
@@ -594,56 +628,31 @@ export function BuilderShell({
               }
             />
 
-            {/* Fill provenance line — tells the player where the auto cards
-                came from. Leaves when the last auto card does (autoCount
-                drives it off the optimistic list). Not shown during a first
-                run because the deck is still in-flight then. */}
-            {autoCount > 0 && !firstRun && (() => {
-              const autoCards = cards.filter((c) => c.auto);
-              const filledCount = cardCopies(autoCards);
-              const boughtCount = cardCopies(autoCards.filter((c) => !c.owned));
-              // The line reads "we filled N — the other M are yours", so N and M
-              // have to close at 99: measuring M against `built` would drop the
-              // cards the player kept or added out of the sentence entirely.
-              // "Yours" covers both — a kept card and an empty slot are equally
-              // the player's, and the spine carries the authoritative built/open
-              // split for anyone asking how much room is actually left.
-              const openCount = Math.max(0, 99 - filledCount);
-              // Detect a role shortfall: compare the auto cards' role tally to
-              // ROLE_TARGETS, and the lands to LAND_TARGET — a mana base that
-              // missed its target is a shortfall the line has copy for, and
-              // leaving it out let the commonest one of all go unnamed.
-              // Land comes last, the order buildFillPlan reports shortfalls in.
-              const roleCounts = computeRoleCounts(autoCards);
-              const shortRole =
-                (["ramp", "draw", "removal", "wipes"] as const).find(
-                  (r) => roleCounts[r] < ROLE_TARGETS[r],
-                ) ?? (roleCounts.land < LAND_TARGET ? ("land" as const) : undefined);
-              return (
-                <>
-                  <div className="md:hidden">
-                    <ProvenanceLine
-                      cards={cards}
-                      filled={filledCount}
-                      bought={boughtCount}
-                      open={openCount}
-                      shortRole={shortRole}
-                      width="phone"
-                    />
-                  </div>
-                  <div className="hidden md:block">
-                    <ProvenanceLine
-                      cards={cards}
-                      filled={filledCount}
-                      bought={boughtCount}
-                      open={openCount}
-                      shortRole={shortRole}
-                      width="desktop"
-                    />
-                  </div>
-                </>
-              );
-            })()}
+            {/* The provenance ledger — one line per pass, oldest first. Leaves
+                when the last auto card does (autoCount drives it off the
+                optimistic list). Not shown during a first run because the deck
+                is still in-flight then.
+
+                Mounted once: `md:contents` inside the ledger flattens each
+                line's phone wrappers on desktop, so one DOM serves both
+                layouts and there is one set of undo controls in the tab order.
+
+                `autoCount` is the header's figure as well as its condition. Not
+                a sum of the lines: a deck predating the ledger has auto cards
+                and no passes, and the design forbids a deck-wide total derived
+                from passes anyway. */}
+            {autoCount > 0 && !firstRun && (
+              <ProvenanceLedger
+                deckId={deck.id}
+                cards={cards}
+                total={autoCount}
+                built={built}
+                passes={fillPasses}
+                markedPassId={markedPassId}
+                onMarkChange={handleMarkChange}
+                onAnnounce={setAnnouncement}
+              />
+            )}
 
             {/* Last-31 strip — the door onto the top-off list. Open slots are
                 its only condition: it unmounts as a unit at 0 and at nothing
@@ -652,10 +661,8 @@ export function BuilderShell({
                 here any more — the old `candidates > 0` gate made STATES 12 and
                 13 unreachable by unmounting exactly the case they describe.
 
-                Mounted once: unlike ProvenanceLine, which uses a `width` prop to
-                branch conditional non-interactive content and therefore needs
-                two mounts, the strip uses responsive Tailwind classes for all
-                width-dependent elements. */}
+                Mounted once, with responsive Tailwind classes for every
+                width-dependent element — the same shape the ledger now takes. */}
             <LastSlotsStrip
               deckId={deck.id}
               openSlots={99 - built}
@@ -1039,6 +1046,7 @@ export function BuilderShell({
             />
           )}
         </div>
+        </PassMarkProvider>
       </AddOptimisticCardProvider>
     </CardDetailProvider>
   );

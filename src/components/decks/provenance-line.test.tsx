@@ -1,175 +1,203 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { FillPassSummary } from "../../lib/decks/fill-passes";
 
-// ── Module mock — fillDeck action, exercised by the connected banner's retry ──
+// ── Module mock — the two server actions the ledger and the banner call ──
 vi.mock("../../app/decks/actions", () => ({
   fillDeck: vi.fn(),
+  undoFillPass: vi.fn(),
 }));
 
-const { ProvenanceLine, FillFailedBanner, FillFailedBannerConnected } = await import("./provenance-line");
+const { ProvenanceLedger, FillFailedBanner, FillFailedBannerConnected } = await import(
+  "./provenance-line"
+);
+
+const ledger = topOffCopy.ledger;
 
 // ── Fixture helpers ──────────────────────────────────────────────────────────
 
 function makeCard(
   id: string,
-  opts: {
-    auto?: boolean;
-    owned?: boolean;
-    role?: DeckDetailCard["role"];
-    quantity?: number;
-  } = {},
+  opts: { auto?: boolean; owned?: boolean; quantity?: number } = {},
 ): DeckDetailCard {
   return {
     oracleId: id,
     name: `Card ${id}`,
     typeLine: "Artifact",
     cardTypeGroup: "Artifacts",
-    role: opts.role ?? "ramp",
+    role: "ramp",
     owned: opts.owned ?? true,
     quantity: opts.quantity ?? 1,
     auto: opts.auto ?? false,
     availability: null,
+  } as DeckDetailCard;
+}
+
+function makePass(
+  id: string,
+  opts: Partial<FillPassSummary> & { oracleIds?: string[] } = {},
+): FillPassSummary {
+  const oracleIds = opts.oracleIds ?? ["a"];
+  return {
+    id,
+    kind: opts.kind ?? "top_off",
+    ordinal: opts.ordinal ?? 1,
+    createdAt: new Date("2026-01-01"),
+    live: opts.live ?? oracleIds.length,
+    kept: opts.kept ?? 0,
+    removed: opts.removed ?? 0,
+    openSlots: opts.openSlots ?? 5,
+    liveCards: oracleIds.map((oracleId) => ({ oracleId, quantity: 1 })),
   };
 }
 
-// ── ProvenanceLine ──────────────────────────────────────────────────────────
+function mount(
+  cards: DeckDetailCard[],
+  passes: FillPassSummary[],
+  overrides: { markedPassId?: string | null; onMarkChange?: (id: string | null) => void } = {},
+) {
+  return render(
+    <ProvenanceLedger
+      deckId="deck-1"
+      cards={cards}
+      total={cards.filter((c) => c.auto).length}
+      built={cards.length}
+      passes={passes}
+      markedPassId={overrides.markedPassId ?? null}
+      onMarkChange={overrides.onMarkChange ?? vi.fn()}
+      onAnnounce={vi.fn()}
+    />,
+  );
+}
 
-describe("ProvenanceLine", () => {
+/** The line's sentences. Read whole rather than through `getByText`, because
+ *  the card count is its own element — the sentence is broken up by design. */
+function sentences(): string[] {
+  return Array.from(document.querySelectorAll("p")).map((p) => p.textContent ?? "");
+}
+
+// ── ProvenanceLedger ────────────────────────────────────────────────────────
+
+describe("ProvenanceLedger", () => {
   it("renders only when the deck holds at least one auto card", () => {
-    const cards = [
-      makeCard("a", { auto: false }),
-      makeCard("b", { auto: false }),
-    ];
-    render(
-      <ProvenanceLine
-        cards={cards}
-        filled={2}
-        bought={0}
-        open={97}
-        width="desktop"
-      />,
-    );
-    // No auto cards — line must not appear
-    expect(screen.queryByText(/We filled/)).not.toBeInTheDocument();
+    mount([makeCard("a"), makeCard("b")], [makePass("p1")]);
+    expect(screen.queryByText(ledger.header("2"))).not.toBeInTheDocument();
   });
 
-  it("names the bought count when something was bought", () => {
-    const cards = [
-      makeCard("a", { auto: true, owned: false }),
-      makeCard("b", { auto: true, owned: true }),
-    ];
-    render(
-      <ProvenanceLine
-        cards={cards}
-        filled={2}
-        bought={1}
-        open={97}
-        width="desktop"
-      />,
+  it("counts the deck's auto cards in the header, not the passes' cards", () => {
+    // Two auto cards, one pass that placed only one of them: the header states
+    // what the deck holds, the line states what the pass did.
+    mount(
+      [makeCard("a", { auto: true }), makeCard("b", { auto: true })],
+      [makePass("p1", { oracleIds: ["a"] })],
     );
-    // Should use the provenance (with bought) branch
-    expect(
-      screen.getByText(
-        recommendationsCopy.fill.provenance("2", "1", "97"),
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ledger.header("2"))).toBeInTheDocument();
   });
 
-  it("takes the all-owned branch when nothing was bought", () => {
-    const cards = [
-      makeCard("a", { auto: true, owned: true }),
-      makeCard("b", { auto: true, owned: true }),
-    ];
-    render(
-      <ProvenanceLine
-        cards={cards}
-        filled={2}
-        bought={0}
-        open={97}
-        width="desktop"
-      />,
+  it("names the seed and each top-off in order, oldest first", () => {
+    mount(
+      [makeCard("a", { auto: true }), makeCard("b", { auto: true })],
+      [
+        makePass("seed", { kind: "seed", ordinal: 0, oracleIds: ["a"] }),
+        makePass("p1", { ordinal: 1, oracleIds: ["b"] }),
+      ],
     );
-    expect(
-      screen.getByText(
-        recommendationsCopy.fill.provenanceAllOwned("2", "97"),
-      ),
-    ).toBeInTheDocument();
+    const labels = screen
+      .getAllByText(new RegExp(`^(${ledger.seedLabel}|${ledger.passLabel("1")})$`))
+      .map((el) => el.textContent);
+    expect(labels).toEqual([ledger.seedLabel, ledger.passLabel("1")]);
   });
 
-  it("takes the short branch and names the role when a role missed its target", () => {
-    // shortRole is passed in directly when a role came up short
-    const cards = [makeCard("a", { auto: true, owned: true })];
-    render(
-      <ProvenanceLine
-        cards={cards}
-        filled={1}
-        bought={0}
-        open={98}
-        shortRole="ramp"
-        width="desktop"
-      />,
+  it("counts a pass's unowned cards as its buy figure", () => {
+    mount(
+      [makeCard("a", { auto: true, owned: false }), makeCard("b", { auto: true })],
+      [makePass("p1", { oracleIds: ["a", "b"], openSlots: 5 })],
     );
-    expect(
-      screen.getByText(
-        recommendationsCopy.fill.provenanceShort("1", "Ramp", "98"),
-      ),
-    ).toBeInTheDocument();
+    expect(sentences()).toContain(ledger.passLine("2", "5", "1"));
   });
 
-  it("renders the mobile copy branch at phone width", () => {
-    const cards = [
-      makeCard("a", { auto: true, owned: false }),
-      makeCard("b", { auto: true, owned: true }),
-    ];
-    render(
-      <ProvenanceLine
-        cards={cards}
-        filled={2}
-        bought={1}
-        open={97}
-        width="phone"
-      />,
+  it("drops the buy clause when the pass bought nothing", () => {
+    mount(
+      [makeCard("a", { auto: true }), makeCard("b", { auto: true })],
+      [makePass("p1", { oracleIds: ["a", "b"], openSlots: 5 })],
     );
-    expect(
-      screen.getByText(
-        recommendationsCopy.fill.provenanceMobile("2", "1", "97"),
-      ),
-    ).toBeInTheDocument();
+    expect(sentences()).toContain(ledger.passLineNoBuy("2", "5"));
   });
 
-  it("still names a short role at phone width, where the mobile copy has no room for it", () => {
-    const cards = [
-      makeCard("a", { auto: true, owned: false }),
-      makeCard("b", { auto: true, owned: true }),
-    ];
-    render(
-      <ProvenanceLine
-        cards={cards}
-        filled={2}
-        bought={1}
-        open={97}
-        shortRole="ramp"
-        width="phone"
-      />,
+  it("states the recount instead of the base sentence once cards have moved", () => {
+    mount(
+      [makeCard("a", { auto: true })],
+      [makePass("p1", { oracleIds: ["a"], live: 1, kept: 1, removed: 1 })],
     );
+    expect(sentences()).toContain(ledger.passRecountedBoth("1", "1", "1"));
+    expect(sentences().join(" ")).not.toContain("you chose from the last");
+  });
+
+  it("says so when the deck predates the ledger", () => {
+    mount([makeCard("a", { auto: true })], []);
+    expect(screen.getByText(/built before we started keeping this record/)).toBeInTheDocument();
+  });
+
+  it("offers the sweep as the seed's reversal rather than an undo of its own", () => {
+    mount(
+      [makeCard("a", { auto: true })],
+      [makePass("seed", { kind: "seed", ordinal: 0, oracleIds: ["a"] })],
+    );
+    // Two spans, one per width — the line is mounted once and the widths hide
+    // each other's copy, which is how every other responsive split here works.
+    expect(screen.getAllByText(ledger.seedReversal)).toHaveLength(2);
     expect(
-      screen.getByText(recommendationsCopy.fill.provenanceShort("2", "Ramp", "97")),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(recommendationsCopy.fill.provenanceMobile("2", "1", "97")),
+      screen.queryByRole("button", { name: ledger.undoAria("1", ledger.seedLabel) }),
     ).not.toBeInTheDocument();
   });
 
-  it("takes the all-owned branch at phone width rather than reporting nothing bought", () => {
-    const cards = [makeCard("a", { auto: true, owned: true })];
-    render(
-      <ProvenanceLine cards={cards} filled={1} bought={0} open={98} width="phone" />,
+  it("marks a pass through the callback, and reports the mark as pressed", () => {
+    const onMarkChange = vi.fn();
+    mount([makeCard("a", { auto: true })], [makePass("p1", { oracleIds: ["a"] })], {
+      onMarkChange,
+    });
+    const mark = screen.getByRole("button", {
+      name: ledger.markAria("1", ledger.passLabel("1")),
+    });
+    expect(mark).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(mark);
+    expect(onMarkChange).toHaveBeenCalledWith("p1");
+  });
+
+  it("clears the mark when the marked pass's own control is pressed again", () => {
+    const onMarkChange = vi.fn();
+    mount([makeCard("a", { auto: true })], [makePass("p1", { oracleIds: ["a"] })], {
+      markedPassId: "p1",
+      onMarkChange,
+    });
+    const mark = screen.getByRole("button", {
+      name: ledger.unmarkAria(ledger.passLabel("1")),
+    });
+    expect(mark).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(mark);
+    expect(onMarkChange).toHaveBeenCalledWith(null);
+  });
+
+  it("keeps the line and states the refusal when an undo rejects", async () => {
+    const { undoFillPass } = await import("../../app/decks/actions");
+    vi.mocked(undoFillPass).mockRejectedValue(new Error("network"));
+
+    mount([makeCard("a", { auto: true })], [makePass("p1", { oracleIds: ["a"] })]);
+    fireEvent.click(
+      screen.getByRole("button", { name: ledger.undoAria("1", ledger.passLabel("1")) }),
     );
-    expect(
-      screen.getByText(recommendationsCopy.fill.provenanceAllOwned("1", "98")),
-    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText(ledger.undoFailed)).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: ledger.undoAria("1", ledger.passLabel("1")) }),
+      ).not.toBeDisabled();
+    });
   });
 
   // The staging defect: a fill that reached 99 rendered state 13's shortfall
@@ -204,27 +232,23 @@ describe("ProvenanceLine", () => {
   });
 
   it("leaves when the last auto card does", () => {
-    const { rerender } = render(
-      <ProvenanceLine
-        cards={[makeCard("a", { auto: true, owned: true })]}
-        filled={1}
-        bought={0}
-        open={98}
-        width="desktop"
-      />,
-    );
-    expect(screen.getByText(/We filled/)).toBeInTheDocument();
+    const passes = [makePass("p1", { oracleIds: ["a"] })];
+    const { rerender } = mount([makeCard("a", { auto: true })], passes);
+    expect(screen.getByText(ledger.header("1"))).toBeInTheDocument();
 
     rerender(
-      <ProvenanceLine
-        cards={[makeCard("a", { auto: false, owned: true })]}
-        filled={1}
-        bought={0}
-        open={98}
-        width="desktop"
+      <ProvenanceLedger
+        deckId="deck-1"
+        cards={[makeCard("a", { auto: false })]}
+        total={0}
+        built={1}
+        passes={passes}
+        markedPassId={null}
+        onMarkChange={vi.fn()}
+        onAnnounce={vi.fn()}
       />,
     );
-    expect(screen.queryByText(/We filled/)).not.toBeInTheDocument();
+    expect(screen.queryByText(ledger.header("1"))).not.toBeInTheDocument();
   });
 });
 

@@ -39,7 +39,12 @@ export interface FillPassSummary extends FillPassRow {
   kept: number;
   /** Cards the pass placed that are no longer in the deck at all. */
   removed: number;
-  liveOracleIds: string[];
+  /** The live cards themselves, with the number of copies this pass still holds
+      — which is not always the deck row's quantity, because a player can stack
+      copies of their own on top of a basic the pass placed. The ledger needs the
+      quantities to state what a pass costs, and the undo needs them to take back
+      only what it put there. */
+  liveCards: { oracleId: string; quantity: number }[];
 }
 
 /**
@@ -93,7 +98,7 @@ export function summariseFillPasses(args: {
     let live = 0;
     let kept = 0;
     let removed = 0;
-    const liveOracleIds: string[] = [];
+    const liveCards: { oracleId: string; quantity: number }[] = [];
 
     for (const member of membersByPass.get(pass.id) ?? []) {
       const row = byOracleId.get(member.oracleId);
@@ -114,13 +119,13 @@ export function summariseFillPasses(args: {
       removed += member.quantity - held;
       if (row.auto) {
         live += held;
-        liveOracleIds.push(member.oracleId);
+        liveCards.push({ oracleId: member.oracleId, quantity: held });
       } else {
         kept += held;
       }
     }
 
-    if (live > 0) summaries.set(pass.id, { ...pass, live, kept, removed, liveOracleIds });
+    if (live > 0) summaries.set(pass.id, { ...pass, live, kept, removed, liveCards });
   }
 
   // Oldest first: the ledger is read top-down as the deck's history, so the

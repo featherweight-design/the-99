@@ -39,7 +39,7 @@ describe("summariseFillPasses", () => {
       deckCards: [live("a"), live("b")],
     });
     expect(line).toMatchObject({ id: "p1", live: 2, kept: 0, removed: 0 });
-    expect(line.liveOracleIds).toEqual(["a", "b"]);
+    expect(line.liveCards).toEqual([{ oracleId: "a", quantity: 1 }, { oracleId: "b", quantity: 1 }]);
   });
 
   it("moves a kept card out of live without any write to the pass", () => {
@@ -51,7 +51,7 @@ describe("summariseFillPasses", () => {
     expect(line).toMatchObject({ live: 1, kept: 1, removed: 0 });
     // The design's ruling stated as a count: `Undo these {n}` cannot reach a
     // card the player has claimed.
-    expect(line.liveOracleIds).toEqual(["a"]);
+    expect(line.liveCards).toEqual([{ oracleId: "a", quantity: 1 }]);
   });
 
   it("counts a card that has left the deck as removed", () => {
@@ -91,9 +91,9 @@ describe("summariseFillPasses", () => {
     });
     expect(lines.map((l) => l.id)).toEqual(["p1", "p3"]);
     expect(lines[0]).toMatchObject({ live: 1, removed: 1 });
-    expect(lines[0].liveOracleIds).toEqual(["a"]);
+    expect(lines[0].liveCards).toEqual([{ oracleId: "a", quantity: 1 }]);
     expect(lines[1]).toMatchObject({ live: 1, removed: 0 });
-    expect(lines[1].liveOracleIds).toEqual(["shark"]);
+    expect(lines[1].liveCards).toEqual([{ oracleId: "shark", quantity: 1 }]);
   });
 
   it("returns lines oldest first, whatever order the passes arrive in", () => {

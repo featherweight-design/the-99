@@ -892,7 +892,7 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
     // to remove and nothing to report, which is what a second undo should do.
     if (!summary) return 0;
 
-    const live = new Set(summary.liveOracleIds);
+    const live = new Set(summary.liveCards.map((c) => c.oracleId));
     const placed = new Map(
       members.filter((m) => m.passId === passId).map((m) => [m.oracleId, m.quantity]),
     );

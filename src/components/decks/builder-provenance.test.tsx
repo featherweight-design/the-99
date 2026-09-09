@@ -1,12 +1,11 @@
-// The provenance line's arithmetic, exercised through BuilderShell because the
-// shell derives it — the line itself only renders the numbers it is handed.
-// The sentence reads "we filled N — the other M are yours", so N + M must be 99
-// even once the player keeps an auto card or adds one of their own; measuring M
-// against the deck's size would silently drop those cards out of the sentence.
-import { act, render, screen } from "@testing-library/react";
+// The ledger's wiring, exercised through BuilderShell because the shell owns
+// it: the header's figure, the mark that reaches the decklist rows, and the
+// reconcile that drops a mark whose pass is no longer in the summaries.
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
+import type { FillPassSummary } from "../../lib/decks/fill-passes";
+import { topOffCopy } from "../../lib/copy/top-off";
 
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -16,9 +15,12 @@ vi.mock("../../app/decks/actions", () => ({
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
   fillDeck: vi.fn(),
+  undoFillPass: vi.fn(),
 }));
 
 const { BuilderShell } = await import("./builder-shell");
+
+const ledger = topOffCopy.ledger;
 
 function makeDeck(autoCount: number, keptCount: number): DeckDetail {
   const cards = Array.from({ length: autoCount + keptCount }, (_, i) => ({
@@ -55,9 +57,24 @@ function makeDeck(autoCount: number, keptCount: number): DeckDetail {
   } as unknown as DeckDetail;
 }
 
-async function mount(deck: DeckDetail) {
+function makePass(id: string, ordinal: number, oracleIds: string[]): FillPassSummary {
+  return {
+    id,
+    kind: "top_off",
+    ordinal,
+    createdAt: new Date("2026-01-01"),
+    live: oracleIds.length,
+    kept: 0,
+    removed: 0,
+    openSlots: 5,
+    liveCards: oracleIds.map((oracleId) => ({ oracleId, quantity: 1 })),
+  };
+}
+
+async function mount(deck: DeckDetail, fillPasses: FillPassSummary[] = []) {
+  let view!: ReturnType<typeof render>;
   await act(async () => {
-    render(
+    view = render(
       <BuilderShell
         deck={deck}
         suggestions={[]}
@@ -65,61 +82,66 @@ async function mount(deck: DeckDetail) {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
+        fillPasses={fillPasses}
       />,
     );
   });
+  return view;
 }
 
-describe("BuilderShell — provenance arithmetic", () => {
-  it("closes at 99 when every card in the deck came from the fill", async () => {
-    await mount(makeDeck(3, 0));
-    // The fixture has no ramp, so the shortfall branch carries the numbers.
-    expect(
-      screen.getAllByText(recommendationsCopy.fill.provenanceShort("3", "Ramp", "96")),
-    ).toHaveLength(2);
+describe("BuilderShell — the ledger's header", () => {
+  it("states the deck's auto count, not the deck's size", async () => {
+    await mount(makeDeck(3, 20), [makePass("p1", 1, ["card-0", "card-1", "card-2"])]);
+    expect(screen.getByText(ledger.header("3"))).toBeInTheDocument();
   });
 
-  it("still closes at 99 once the player has kept cards of their own", async () => {
-    await mount(makeDeck(3, 20));
-    expect(
-      screen.getAllByText(recommendationsCopy.fill.provenanceShort("3", "Ramp", "96")),
-    ).toHaveLength(2);
+  it("is absent once the player has kept or swept every auto card", async () => {
+    await mount(makeDeck(0, 20), [makePass("p1", 1, [])]);
+    expect(screen.queryByText(/came from/)).not.toBeInTheDocument();
   });
 });
 
-// The line names the role the fill came up short in. Lands were left out of
-// that check, so the commonest shortfall of all — a collection with too few
-// lands to reach 37 — went unnamed even though the copy has a label for it.
-describe("BuilderShell — a mana base that missed its target", () => {
-  function deckShortOnLandsOnly(): DeckDetail {
-    const roles: Array<[string, number]> = [
-      ["ramp", 10], ["draw", 10], ["removal", 8], ["wipes", 3],
-    ];
-    const cards = roles.flatMap(([role, n]) =>
-      Array.from({ length: n }, (_, i) => ({
-        oracleId: `${role}-${i}`,
-        name: `${role} ${i}`,
-        typeLine: "Artifact",
-        cardTypeGroup: "Artifacts" as const,
-        role,
-        owned: true,
-        quantity: 1,
-        auto: true,
-      })),
-    );
-    return {
-      ...makeDeck(1, 0),
-      cards,
-      built: cards.length,
-      ownedCount: cards.length,
-      total: cards.length,
-    } as unknown as DeckDetail;
-  }
+describe("BuilderShell — the mark", () => {
+  it("names only the marked pass's rows in the decklist below", async () => {
+    await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
+    expect(screen.queryByText(ledger.markedRow(ledger.passLabel("1")))).not.toBeInTheDocument();
 
-  it("names the land shortfall when every other role is met", async () => {
-    await mount(deckShortOnLandsOnly());
-    expect(
-      screen.getAllByText(recommendationsCopy.fill.provenanceShort("31", "Land", "68")),
-    ).toHaveLength(2);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),
+      );
+    });
+
+    // One card in the pass, so exactly one row gains the marker — the other
+    // auto card is in the deck but not in this pass.
+    expect(screen.getAllByText(ledger.markedRow(ledger.passLabel("1")))).toHaveLength(1);
+  });
+
+  it("drops a mark whose pass is gone from the incoming summaries", async () => {
+    const deck = makeDeck(2, 0);
+    const view = await mount(deck, [makePass("p1", 1, ["card-0"])]);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),
+      );
+    });
+    expect(screen.getAllByText(ledger.markedRow(ledger.passLabel("1")))).toHaveLength(1);
+
+    // The undo landed on the server and the pass came back gone. The mark it
+    // held has to go with it, or the decklist keeps an edge nothing can clear.
+    await act(async () => {
+      view.rerender(
+        <BuilderShell
+          deck={deck}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport={false}
+          fillPasses={[makePass("p2", 2, ["card-1"])]}
+        />,
+      );
+    });
+    expect(screen.queryByText(ledger.markedRow(ledger.passLabel("1")))).not.toBeInTheDocument();
   });
 });
