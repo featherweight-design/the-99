@@ -22,8 +22,9 @@ export type CommanderRankings = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
-  /** `receiptCountsByCommander`'s map as entries: a Map does not survive being
-      cached, and does not cross the server/client boundary either. */
+  /** `receiptCountsByCommander`'s map as entries: the cache stores its payload
+      as JSON, and a Map comes back from that as `{}`. The page rebuilds the map
+      before handing it to the view. */
   receipts: [string, ReceiptCounts][];
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
