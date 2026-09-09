@@ -135,6 +135,14 @@ function listBoxes(page) {
   return page.getByRole("group", { name: /candidates? for the last/ }).getByRole("checkbox");
 }
 
+/** One decklist row, counted by its remove control. The rows are divs with no
+ *  test id, and a bare `li` count picks up the nav and the ledger as well, so a
+ *  filtered decklist could read as unchanged. Every row carries exactly one
+ *  remove button, and a stack of copies names the count instead. */
+function decklistRows(page) {
+  return page.getByRole("button", { name: /^Remove (one copy of )?.+/ });
+}
+
 /** The live region the whole surface announces through. Read rather than
  *  watched: every announcement this walk cares about survives its settle. */
 async function announcement(page) {
@@ -267,11 +275,11 @@ async function reverse(page, w) {
   await openDeck(page);
   const mark = page.getByRole("button", { name: /^Mark the .* from top-off 1 in the deck below$/ });
   const scrollBefore = await page.evaluate(() => window.scrollY);
-  const rowsBefore = await page.locator("[data-testid='decklist-row'], li").count();
+  const rowsBefore = await decklistRows(page).count();
   await mark.click();
   await page.waitForTimeout(400);
   const markedRows = await page.locator("text=/^from top-off 1$/").count();
-  const rowsAfter = await page.locator("[data-testid='decklist-row'], li").count();
+  const rowsAfter = await decklistRows(page).count();
   const scrollAfter = await page.evaluate(() => window.scrollY);
   check(scope, "step 6: the mark lands on the pass's rows", markedRows > 0, `${markedRows} rows`);
   check(scope, "step 6: nothing filters", rowsBefore === rowsAfter, `${rowsBefore} → ${rowsAfter}`);
