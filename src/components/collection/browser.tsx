@@ -46,14 +46,24 @@ import { parseColors } from "../../lib/color-param";
 
 const PAGE_SIZE = 200;
 
+/**
+ * The query keys this component owns. Everything else on the URL — a `ref=`, a
+ * campaign tag, anything a future surface adds — belongs to someone else and is
+ * carried through untouched, so the browse state is written by clearing exactly
+ * these and rewriting them rather than by rebuilding the whole query string.
+ */
+const OWNED_PARAMS = ["q", "c", "t", "s", "avail", "sort", "dir", "view", "card"] as const;
+
 function serializeParams(
   filters: BrowseFilters,
   sort: SortKey,
   direction: SortDirection,
   view: ViewMode | null,
   card: string | null,
+  existing: string,
 ): string {
-  const p = new URLSearchParams();
+  const p = new URLSearchParams(existing);
+  for (const key of OWNED_PARAMS) p.delete(key);
   if (filters.search.trim()) p.set("q", filters.search.trim());
   if (filters.colors.length > 0) p.set("c", filters.colors.join(""));
   // Comma-joined; a single bare type still parses, so pre-#100 links survive.
@@ -349,7 +359,16 @@ export function CollectionBrowser({
   // Serialize the card param only when the card actually resolved; avoids
   // stale ?card= for IDs not in the current filtered result set.
   useEffect(() => {
-    const qs = serializeParams(filters, sort, sortDirection, view, openCard ? openCardId : null);
+    const qs = serializeParams(
+      filters,
+      sort,
+      sortDirection,
+      view,
+      openCard ? openCardId : null,
+      // The live URL, not the mount-time one: a param this component does not
+      // own can arrive after mount and must survive the next filter change.
+      window.location.search,
+    );
     window.history.replaceState(null, "", `/collection${qs}`);
   }, [filters, sort, sortDirection, view, openCardId, openCard]);
   const openIndex = useMemo(
