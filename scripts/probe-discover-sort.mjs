@@ -33,6 +33,13 @@ async function signIn(page) {
       let attempt = await signIn.create({ identifier: email });
       if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
         const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
+        // Naming what WAS offered, because the two ways this fails need opposite
+        // repairs: a `+clerk_test` address the instance has never seen offers
+        // nothing at all, and a real one offers `password` instead.
+        if (!factor) {
+          const offered = (attempt.supportedFirstFactors ?? []).map((f) => f.strategy);
+          return `no email_code factor at ${attempt.status}; offered: ${offered.join(", ") || "none"}`;
+        }
         await signIn.prepareFirstFactor({
           strategy: "email_code",
           emailAddressId: factor.emailAddressId,
@@ -82,41 +89,68 @@ async function main() {
   await page.goto(`${BASE}/discover`, { waitUntil: "networkidle" });
   await page.waitForSelector("main ul > li h3", { timeout: 60_000 });
 
+  const failures = [];
+  const check = (ok, claim, detail) => {
+    console.log(`${ok ? "PASS" : "FAIL"}  ${claim}`);
+    if (detail !== undefined) console.log("      ", detail);
+    if (!ok) failures.push(claim);
+  };
+
   const before = await names(page);
-  console.log("URL       :", page.url());
-  console.log("bestfit   :", before);
+  check(before.length > 0, "the fit ranking renders rows", before);
 
   const mark = requests.length;
   await pick(page, "Something new");
   await page.waitForTimeout(6000);
   const after = await names(page);
-  console.log("URL       :", page.url());
-  console.log("new       :", after);
-  console.log("identical :", JSON.stringify(before) === JSON.stringify(after));
-  console.log("requests  :", requests.slice(mark));
+  const flipRequests = requests.slice(mark);
+
+  // The claim the defect broke, and the reason it is read off the screen: the
+  // URL said `?o=new` throughout, and so did the request. Only the rows lied.
+  check(
+    JSON.stringify(before) !== JSON.stringify(after),
+    "Something new puts a different ranking on screen",
+    after,
+  );
+  check(page.url().endsWith("?o=new"), "the flip writes ?o=new", page.url());
+  check(flipRequests.length === 1, "the flip costs exactly one payload", flipRequests);
 
   const mark2 = requests.length;
   await pick(page, "Best fit");
   await page.waitForTimeout(4000);
-  console.log("back      :", await names(page));
-  console.log("requests  :", requests.slice(mark2));
+  const back = await names(page);
+  const backRequests = requests.slice(mark2);
+  // A ranking this visit has already been served comes back out of
+  // `useDiscoveryCache`, so flipping back is not a request.
+  check(
+    JSON.stringify(back) === JSON.stringify(before),
+    "flipping back restores the fit ranking",
+    back,
+  );
+  check(backRequests.length === 0, "flipping back costs no payload", backRequests);
 
   // Route round-trip through the in-app nav, which is what the client router
   // cache actually governs — `page.goto` is a document load and bypasses it.
+  // Reported rather than asserted: closing this is an open design decision, and
+  // a check would fail every run until it is made.
   const go = async (label) => {
     await page.getByRole("link", { name: label, exact: true }).first().click();
     await page.waitForTimeout(3500);
   };
-  const mark3 = requests.length;
-  await go("Commanders");
-  await go("Discover");
-  console.log("lap 1     :", requests.slice(mark3));
-  const mark4 = requests.length;
-  await go("Commanders");
-  await go("Discover");
-  console.log("lap 2     :", requests.slice(mark4));
+  for (const lap of [1, 2]) {
+    const mark3 = requests.length;
+    await go("Commanders");
+    await go("Discover");
+    console.log(`lap ${lap} (reported, not asserted):`, requests.slice(mark3));
+  }
 
   await browser.close();
+
+  if (failures.length > 0) {
+    console.error(`\n${failures.length} failed: ${failures.join(" · ")}`);
+    process.exit(1);
+  }
+  console.log("\nall checks passed");
 }
 
 main().catch((error) => {
