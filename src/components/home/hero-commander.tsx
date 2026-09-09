@@ -5,7 +5,7 @@
 // this call site and no string is written here (plan ruling 5).
 
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
-import { ArtWash } from "@/components/ui/art-wash";
+import { ArtWash, INK_SHADOW } from "@/components/ui/art-wash";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { CommanderListItem } from "../../lib/recs/recommend";
@@ -42,41 +42,73 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
   const denominator = gap === -1 ? null : badge.slice(gap + 1);
 
   return (
-    // The band is the deck card's, exactly — same aspect, same floor. A second
-    // number here would be a second answer to a question already settled.
-    <div className="relative aspect-[2.2/1] min-h-[104px] overflow-hidden rounded-[14px] border border-[color:var(--border)]">
-      <ArtWash strategy="cover" artCropUri={item.artCropUri} colorIdentity={item.colorIdentity} />
+    // §4 — the wash owns one band and nothing else. The card frame moved up from
+    // the band to this root, so the footer below the divider sits inside the
+    // same rounded corner.
+    <div
+      className="relative overflow-hidden rounded-[14px] border border-[color:var(--border)]"
+      style={{ background: "var(--surface-inset)" }}
+    >
+      {/* The band is the deck card's, exactly — same aspect, same floor. A second
+          number here would be a second answer to a question already settled. */}
+      <div className="hero-band relative aspect-[2.2/1] min-h-[104px] overflow-hidden">
+        <ArtWash strategy="cover" artCropUri={item.artCropUri} colorIdentity={item.colorIdentity} />
 
-      {/* §ReadyCard — fit badge */}
-      <div className="absolute top-[10px] left-[11px] flex h-[22px] items-center rounded-[6px] bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] px-[8px] font-mono text-[10.5px] sm:top-[11px] sm:left-[12px]">
-        <span className="text-[color:var(--fg)]">{score}</span>
-        {denominator !== null && (
-          <span className="text-[color:var(--fg-faint)]">&nbsp;{denominator}</span>
-        )}
+        {/* §ReadyCard — name block, top-anchored: decision 6's `center top` focal
+            puts the art's recognisable features below the type, not behind it. */}
+        <div className="absolute inset-x-0 top-0 p-[13px] sm:p-[14px]">
+          <p
+            className="m-0 truncate font-display text-[17px] font-semibold text-[color:var(--fg)] sm:text-[18px]"
+            style={{ textShadow: INK_SHADOW }}
+          >
+            {item.name}
+          </p>
+          <p
+            className="m-0 mt-[3px] truncate font-mono text-[10.5px] text-[color:var(--fg-body)]"
+            style={{ textShadow: INK_SHADOW }}
+          >
+            {item.typeLine}
+          </p>
+        </div>
+
+        <span
+          className="absolute bottom-[10px] left-[11px] flex gap-[3px] sm:bottom-[11px] sm:left-[12px]"
+          aria-hidden
+        >
+          {item.colorIdentity.map((color) => (
+            <span
+              key={color}
+              // No hairline, unlike the deck tile's pips: these sit on art,
+              // not on a light ground (table §colour pip note).
+              className="h-[8px] w-[8px] rounded-[2px] sm:h-[9px] sm:w-[9px]"
+              style={{ background: WUBRG_COLOR[color] ?? "var(--fg-faint)" }}
+            />
+          ))}
+        </span>
+
+        {/* §ReadyCard — fit badge. Decision 3: a chip over art takes an opaque
+            plate and a hairline, exactly as the status pill does. */}
+        <div
+          className="hero-fit-chip absolute right-[11px] bottom-[10px] flex h-[22px] items-center rounded-[6px] px-[8px] font-mono text-[10.5px] sm:right-[12px] sm:bottom-[11px]"
+          style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
+        >
+          <span className="text-[color:var(--fg)]">{score}</span>
+          {denominator !== null && (
+            <span className="text-[color:var(--fg-faint)]">&nbsp;{denominator}</span>
+          )}
+        </div>
       </div>
 
-      {/* §ReadyCard — body block */}
-      <div className="absolute inset-x-0 bottom-0 p-[13px] sm:p-[14px]">
-        <p className="m-0 truncate font-display text-[17px] font-semibold text-[color:var(--fg)] sm:text-[18px]">
-          {item.name}
-        </p>
-
+      {/* §4 — below the divider, on flat ground: the pool clause and the actions. */}
+      <div
+        className="hero-footer p-[13px] sm:p-[14px]"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
         {/* §ReadyCard — meta row. The in-use clause is a sibling span at both
             widths rather than nesting inside the fit line on phone as the frame
             draws: the nesting exists only to carry the phone's ` · ` shorthand,
             which has no copy key and is not adopted. */}
-        <div className="mt-[6px] flex items-center gap-[7px] sm:mt-[7px] sm:gap-[8px]">
-          <span className="flex gap-[3px]" aria-hidden>
-            {item.colorIdentity.map((color) => (
-              <span
-                key={color}
-                // No hairline, unlike the deck tile's pips: these sit on art,
-                // not on a light ground (table §colour pip note).
-                className="h-[8px] w-[8px] rounded-[2px] sm:h-[9px] sm:w-[9px]"
-                style={{ background: WUBRG_COLOR[color] ?? "var(--fg-faint)" }}
-              />
-            ))}
-          </span>
+        <div className="flex items-center gap-[7px] sm:gap-[8px]">
           <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-body)] sm:text-[11px]">
             {c.fitLine(item.colorPoolSize)}
           </span>
