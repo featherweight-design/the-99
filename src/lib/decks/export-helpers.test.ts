@@ -5,48 +5,89 @@ import {
   decklistFilename,
   shoppingFilename,
 } from "./export-helpers";
+import { buildDeckImport, type ImportCatalogCard } from "./import";
+
+// The pair the export has to round-trip, and the catalog that reads it back.
+const card = (name: string, over: Partial<ImportCatalogCard> = {}): ImportCatalogCard => ({
+  oracleId: `oracle-${name.toLowerCase().replace(/[^a-z]+/g, "-")}`,
+  scryfallId: `scry-${name.toLowerCase().replace(/[^a-z]+/g, "-")}`,
+  name,
+  typeLine: "Artifact",
+  oracleText: null,
+  commanderLegal: true,
+  colorIdentity: [],
+  imageUri: null,
+  ...over,
+});
+const catalog = [
+  card("Atreus, God of War", { typeLine: "Legendary Creature — God" }),
+  card("Kratos, God of War", { typeLine: "Legendary Creature — God" }),
+  card("Lightning Bolt", { typeLine: "Instant" }),
+];
 
 describe("buildDecklistText", () => {
-  it("has commander as first line with '1 '", () => {
-    const out = buildDecklistText({
-      commanderName: "Muldrotha, the Gravetide",
-      cards: [],
+  it("emits a Commander section holding both, and round-trips through the parser", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: "Kratos, God of War",
+      cards: [{ quantity: 1, name: "Lightning Bolt" }],
     });
-    expect(out.split("\n")[0]).toBe("1 Muldrotha, the Gravetide");
+    expect(text).toBe(
+      "Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Lightning Bolt",
+    );
+
+    const back = buildDeckImport({ text, catalog });
+    expect(back.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(back.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(back.cards.map((c) => c.oracleId)).toEqual(["oracle-lightning-bolt"]);
   });
 
-  it("includes body cards with quantities after the commander", () => {
+  // One shape for both: the old bare-first-line form parsed correctly only by
+  // the convention that line one is the commander.
+  it("emits the section for a single commander too", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: null,
+      cards: [{ quantity: 1, name: "Lightning Bolt" }],
+    });
+    expect(text).toBe("Commander\n1 Atreus, God of War\n\nDeck\n1 Lightning Bolt");
+  });
+
+  it("includes body cards with quantities, in order", () => {
     const out = buildDecklistText({
       commanderName: "Muldrotha, the Gravetide",
+      partnerName: null,
       cards: [
         { name: "Sol Ring", quantity: 1 },
         { name: "Forest", quantity: 5 },
       ],
     });
     const lines = out.split("\n");
-    expect(lines[1]).toBe("1 Sol Ring");
-    expect(lines[2]).toBe("5 Forest");
+    expect(lines.slice(-2)).toEqual(["1 Sol Ring", "5 Forest"]);
   });
 
   it("contains no comment header or separator lines", () => {
     const out = buildDecklistText({
       commanderName: "Muldrotha, the Gravetide",
+      partnerName: null,
       cards: [{ name: "Sol Ring", quantity: 1 }],
     });
     expect(out).not.toMatch(/^#|^\/\//m);
   });
 
-  it("is just the commander line when cards is empty (no trailing newline)", () => {
+  it("ends at the Deck header when cards is empty (no trailing newline)", () => {
     const out = buildDecklistText({
       commanderName: "Muldrotha, the Gravetide",
+      partnerName: null,
       cards: [],
     });
-    expect(out).toBe("1 Muldrotha, the Gravetide");
+    expect(out).toBe("Commander\n1 Muldrotha, the Gravetide\n\nDeck");
   });
 
   it("produces consistent text for copy and download (same string)", () => {
     const args = {
       commanderName: "Muldrotha, the Gravetide",
+      partnerName: null,
       cards: [{ name: "Gravecrawler", quantity: 1 }],
     };
     expect(buildDecklistText(args)).toBe(buildDecklistText(args));

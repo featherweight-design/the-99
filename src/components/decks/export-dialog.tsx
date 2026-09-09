@@ -24,7 +24,9 @@ type Tab = "decklist" | "shopping";
 interface ExportDialogProps {
   deckName: string;
   commanderName: string;
-  /** Body cards (commander excluded). */
+  /** The second commander, or null for the single-commander deck most decks are. */
+  partnerName: string | null;
+  /** Body cards (both commanders excluded). */
   decklistCards: { name: string; quantity: number }[];
   /** What the Shopping filter shows: cards you do not own, plus cards you own
       whose every copy is spoken for by another deck. Never a basic land. */
@@ -36,6 +38,7 @@ interface ExportDialogProps {
 export function ExportDialog({
   deckName,
   commanderName,
+  partnerName,
   decklistCards,
   shoppingCards,
   open,
@@ -51,20 +54,22 @@ export function ExportDialog({
 
   if (!open) return null;
 
-  const decklistText = buildDecklistText({ commanderName, cards: decklistCards });
+  const decklistText = buildDecklistText({ commanderName, partnerName, cards: decklistCards });
   const shoppingText = buildShoppingText(shoppingCards);
   const activeText = tab === "decklist" ? decklistText : shoppingText;
 
-  // Preview rendering: line 0 is the commander, the rest are body lines. The
-  // muted `// name — count` header and separator in the preview are
-  // presentational only — never part of the copied/downloaded text.
-  const decklistLines = decklistText.split("\n");
-  const commanderLine = decklistLines[0];
-  const bodyLines = decklistLines.slice(1);
-  const totalCards = 1 + decklistCards.reduce((sum, c) => sum + c.quantity, 0);
+  // The preview draws the commanders accented above a separator and the body
+  // beneath, so it composes its own lines rather than splitting the export text
+  // — that text now carries section headers, which the preview never showed.
+  // Its muted `// name — count` header and separator are presentational only.
+  const commanderLines = [commanderName, ...(partnerName ? [partnerName] : [])].map(
+    (n) => `1 ${n}`,
+  );
+  const bodyLines = decklistCards.map((c) => `${c.quantity} ${c.name}`);
   // The body count, which is what `built` means everywhere else — derived here
   // rather than passed in, so it cannot disagree with the preview's own header.
-  const built = totalCards - 1;
+  const built = decklistCards.reduce((sum, c) => sum + c.quantity, 0);
+  const totalCards = commanderLines.length + built;
 
   return (
     <>
@@ -109,7 +114,7 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            commanderLine={commanderLine}
+            commanderLines={commanderLines}
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}
@@ -136,7 +141,7 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            commanderLine={commanderLine}
+            commanderLines={commanderLines}
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}
@@ -160,7 +165,7 @@ interface DialogContentProps {
   setTab: (t: Tab) => void;
   activeText: string;
   shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
-  commanderLine: string;
+  commanderLines: string[];
   bodyLines: string[];
   totalCards: number;
   /** Matched body cards — over 99 adds one line, see overCopy.exportNote. */
@@ -176,7 +181,7 @@ function DialogContent({
   setTab,
   activeText,
   shoppingCards,
-  commanderLine,
+  commanderLines,
   bodyLines,
   totalCards,
   built,
@@ -350,11 +355,13 @@ function DialogContent({
                 {`// ${deckName} — ${totalCards} cards`}
                 {"\n"}
               </span>
-              {/* Commander line: 1 commanderName */}
-              <span style={{ color: "var(--accent)" }}>
-                {commanderLine}
-                {"\n"}
-              </span>
+              {/* Commander lines: one per commander, both for a pair */}
+              {commanderLines.map((line) => (
+                <span key={line} style={{ color: "var(--accent)" }}>
+                  {line}
+                  {"\n"}
+                </span>
+              ))}
               {/* Preview-only separator — not part of the copied text */}
               <span aria-hidden style={{ color: "var(--border-strong)" }}>
                 {isMobile ? "—" : "————————————"}

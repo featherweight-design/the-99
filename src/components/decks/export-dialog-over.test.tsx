@@ -12,6 +12,7 @@ function mount(bodyCards: number) {
     <ExportDialog
       deckName="Kykar, Wind's Fury"
       commanderName="Kykar, Wind's Fury"
+      partnerName={null}
       // One row carrying the whole body: the note reads a summed quantity, not
       // a row count, and a stack of basics is how a real deck goes over.
       decklistCards={[{ name: "Mountain", quantity: bodyCards }]}

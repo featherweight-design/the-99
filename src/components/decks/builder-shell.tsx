@@ -1057,6 +1057,7 @@ export function BuilderShell({
             <ExportDialog
               deckName={deck.name}
               commanderName={deck.commander.name}
+              partnerName={deck.partner?.name ?? null}
               decklistCards={cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
               // The Shopping filter's own predicate, not a second `!owned` list.
               // The two diverged: this one carried the unowned basics the filter
