@@ -177,11 +177,21 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   // ranking flip narrows a list the client already holds. `laneQuery` writes defaults
   // as absences and copies every parameter this lane does not own off the live
   // URL, so nothing another surface left behind is dropped.
+  //
+  // Never while a ranking flip is in flight. Next intercepts
+  // `history.replaceState` and adopts the URL into router state, keeping the tree
+  // it already has; doing that to the URL the pending navigation is *heading for*
+  // makes that navigation look like one that has already happened, and its
+  // payload is dropped on arrival. The flip fetched the novelty ranking and then
+  // rendered the fit list — the whole of the defect. The router writes the URL
+  // itself when the payload lands, and this effect re-runs on the way out of
+  // pending to pick up anything typed meanwhile.
   useEffect(() => {
+    if (navPending) return;
     const { pathname, search: live } = window.location;
     const next = laneQuery(new URLSearchParams(live), settled, "discover");
     window.history.replaceState(null, "", `${pathname}${next}`);
-  }, [settled]);
+  }, [settled, navPending]);
 
   // The ranking the server actually produced, reconciled during render rather
   // than in an effect: an effect would paint the control on the order that was
