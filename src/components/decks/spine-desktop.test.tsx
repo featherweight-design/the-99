@@ -1,9 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineDesktop } from "./spine-desktop";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
-import { deck, props } from "./spine-fixtures";
+import { deck, pairDeck, props } from "./spine-fixtures";
 
 // The band's `Card details` pill reads the card-detail context, so the header
 // can only be rendered inside it.
@@ -18,6 +18,16 @@ describe("SpineDesktop", () => {
     const { container } = renderSpine(<SpineDesktop {...props} />);
     const wash = container.querySelector<HTMLElement>('[aria-hidden="true"].absolute');
     expect(wash?.style.height).toBe("168px");
+  });
+
+  // A deck is 100 cards including its commanders, so the denominator is the
+  // body: 99 for a single commander and 98 for a pair.
+  it("prints the body size as the denominator, 98 for a pair", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    expect(screen.getByText("/ 99")).toBeTruthy();
+    cleanup();
+    renderSpine(<SpineDesktop {...props} deck={pairDeck} />);
+    expect(screen.getByText("/ 98")).toBeTruthy();
   });
 
   it("colours the bar by status, not by percentage", () => {

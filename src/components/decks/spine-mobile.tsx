@@ -226,7 +226,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
             {built}
           </span>
           <span className="font-mono" style={{ fontSize: 14, color: "var(--fg-faint)" }}>
-            {overCopy.figure.denominator}
+            {overCopy.figure.denominator(deckBodySize(deck.partner !== null))}
           </span>
           {over && (
             <span

@@ -1,9 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineMobile } from "./spine-mobile";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
-import { props } from "./spine-fixtures";
+import { pairDeck, props } from "./spine-fixtures";
 
 function renderSpine(ui: React.ReactElement) {
   return render(
@@ -15,6 +15,16 @@ describe("SpineMobile", () => {
   it("never draws the owned line", () => {
     renderSpine(<SpineMobile {...props} />);
     expect(screen.queryByText(/owned ·/)).toBeNull();
+  });
+
+  // A deck is 100 cards including its commanders, so the denominator is the
+  // body: 99 for a single commander and 98 for a pair.
+  it("prints the body size as the denominator, 98 for a pair", () => {
+    renderSpine(<SpineMobile {...props} />);
+    expect(screen.getByText("/ 99")).toBeTruthy();
+    cleanup();
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    expect(screen.getByText("/ 98")).toBeTruthy();
   });
 
   it("moves the meta row below the divider while editing", () => {

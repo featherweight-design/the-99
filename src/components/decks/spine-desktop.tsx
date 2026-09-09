@@ -31,6 +31,17 @@ export interface SpineBandProps {
       colorIdentity: string[];
       artCropUri: string | null;
     };
+    /**
+     * The second commander, or null for the single-commander deck most decks
+     * are. Read here for the body size the count's denominator prints — a deck
+     * is 100 cards including its commanders.
+     */
+    partner: {
+      oracleId: string;
+      name: string;
+      colorIdentity: string[];
+      artCropUri: string | null;
+    } | null;
   };
   counts: { built: number; ownedCount: number; toBuyCount: number };
   status: StatusPill;
@@ -194,7 +205,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
               {built}
             </span>
             <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
-              {overCopy.figure.denominator}
+              {overCopy.figure.denominator(deckBodySize(deck.partner !== null))}
             </span>
             {over && (
               <span

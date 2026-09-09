@@ -353,9 +353,11 @@ export const addPanelCopy = {
 // warns — it states the arithmetic and names the way out.
 export const overCopy = {
   figure: {
-    // The denominator never becomes the total: 99 is a rule of the format, not
-    // a target the deck outgrew. Callers pass both figures pre-formatted.
-    denominator: " / 99",
+    // The denominator is the deck's body, never its total: a deck is 100 cards
+    // including its commanders, so a single reads 99 and a pair reads 98. What
+    // it must never become is the count of cards the deck happens to hold.
+    // Callers pass both figures pre-formatted.
+    denominator: (bodySize: number) => ` / ${bodySize}`,
     // A second figure, not a recolour — a lone amber 104 beside a 99 asks the
     // player to do the subtraction.
     delta: (n: string) => `+${n}`,
