@@ -19,7 +19,7 @@ export const hasControlChars = (name: string) => CONTROL_CHARS.test(name);
 export function validateDeckName(name: string): string {
   const trimmed = name.trim();
   if (trimmed.length === 0 || trimmed.length > DECK_NAME_MAX || hasControlChars(trimmed)) {
-    throw new Error("deck name must be 1–120 characters without control characters");
+    throw new Error(`deck name must be 1–${DECK_NAME_MAX} characters without control characters`);
   }
   return trimmed;
 }

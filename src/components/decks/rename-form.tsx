@@ -5,6 +5,7 @@ import { renameCopy } from "../../lib/copy/decks-builder";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useDeckRename } from "./use-deck-rename";
+import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 
 interface RenameFormProps {
   deckId: string;
@@ -43,7 +44,7 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={onKeyDown}
-        maxLength={120}
+        maxLength={DECK_NAME_MAX}
         // readOnly, never disabled: a disabled input blurs, and the header's
         // layout commits on blur.
         readOnly={isPending}

@@ -23,6 +23,7 @@ import { Crown } from "../ui/crown";
 import { TextField } from "../ui/text-field";
 import { CreatePicker } from "./create-picker";
 import { ImportNoCommander } from "./import-no-commander";
+import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 
 type ImportMode = Extract<DeckImportSource, "paste" | "file">;
 
@@ -361,7 +362,7 @@ export function ImportEntry() {
         id="import-deck-name"
         value={deckName}
         onChange={(e) => setDeckName(e.target.value)}
-        maxLength={120}
+        maxLength={DECK_NAME_MAX}
         className="block w-full rounded-[8px] p-[12px_14px] text-[16px] md:text-[14.5px]"
       />
 

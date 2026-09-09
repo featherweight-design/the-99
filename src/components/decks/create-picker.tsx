@@ -26,6 +26,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { PrimaryButton } from "@/components/ui/button";
 import { SearchField, TextField } from "@/components/ui/text-field";
+import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 
 const copy = deckImportCopy.commander;
 
@@ -150,7 +151,7 @@ export function CreatePicker(props: CreatePickerProps) {
   const selected = rows.find((r) => r.oracleId === selectedId) ?? null;
 
   const canCreate =
-    selected !== null && deckName.trim().length > 0 && deckName.trim().length <= 120;
+    selected !== null && deckName.trim().length > 0 && deckName.trim().length <= DECK_NAME_MAX;
 
   function handleCreate() {
     // `isPending` only turns true on the re-render that follows `startTransition`,
@@ -159,7 +160,7 @@ export function CreatePicker(props: CreatePickerProps) {
     // synchronously; import mode is guarded again by its own owner.
     if (!selected || inFlight.current) return;
     const trimmed = deckName.trim();
-    if (trimmed.length === 0 || trimmed.length > 120) {
+    if (trimmed.length === 0 || trimmed.length > DECK_NAME_MAX) {
       setError("Name must be 1–120 characters.");
       return;
     }
@@ -324,7 +325,7 @@ export function CreatePicker(props: CreatePickerProps) {
               id="picker-deck-name-mobile"
               value={deckName}
               onChange={(e) => setDeckName(e.target.value)}
-              maxLength={120}
+              maxLength={DECK_NAME_MAX}
               placeholder="Deck name…"
               disabled={isPending}
               aria-label={isImport ? undefined : "Deck name"}
@@ -514,7 +515,7 @@ export function CreatePicker(props: CreatePickerProps) {
                 id="picker-deck-name"
                 value={deckName}
                 onChange={(e) => setDeckName(e.target.value)}
-                maxLength={120}
+                maxLength={DECK_NAME_MAX}
                 placeholder="Deck name…"
                 disabled={isPending}
                 aria-label={isImport ? undefined : "Deck name"}
