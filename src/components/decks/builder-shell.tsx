@@ -181,6 +181,12 @@ export function BuilderShell({
   // 20). Hidden with `display:none` rather than unmounted, so a half-typed
   // query is still there when the list closes.
   const [topOffOpen, setTopOffOpen] = useState(false);
+  // The open list's commit bar is `fixed`, and the dock it displaces is hidden
+  // rather than shrunk, so at phone widths NOTHING in flow holds the bottom slot
+  // while the list is up and the tail of the decklist scrolls under the bar.
+  // Measured by the bar itself, because it runs two lines or three depending on
+  // whether the pass is spending money.
+  const [topOffBarHeight, setTopOffBarHeight] = useState(0);
 
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
@@ -679,6 +685,7 @@ export function BuilderShell({
               onAnnounce={setAnnouncement}
               onInflight={setFillInflight}
               onOpenChange={setTopOffOpen}
+              onBarHeight={setTopOffBarHeight}
             />
 
 
@@ -1026,6 +1033,20 @@ export function BuilderShell({
                   commanderOracleId={deck.commander.oracleId}
                 />
               </div>
+            )}
+
+            {/* Stands in for the dock the open top-off list hides, in the same
+                slot and at the same measured height, so the last rows of the
+                decklist can still be scrolled clear of the bar. Desktop never
+                needs it: there the commit row is an ordinary element at the foot
+                of the list and nothing is pinned. */}
+            {topOffBarHeight > 0 && (
+              <div
+                aria-hidden
+                data-testid="top-off-bar-reserve"
+                className="md:hidden"
+                style={{ height: topOffBarHeight }}
+              />
             )}
           </div>
 

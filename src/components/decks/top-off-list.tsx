@@ -58,6 +58,12 @@ export interface TopOffListProps {
       both, and no reason argument: the strip does the same thing either way,
       because the selection survives a cancel exactly as it survives a commit. */
   onClose: () => void;
+  /** The pinned commit bar's measured height, published so the page foot can
+      reserve it. The bar is `fixed` and the quick-add dock it displaces is
+      `sticky`, so while the list is open nothing in flow stands in for either
+      and the tail of the DECKLIST — which is far below this component — is what
+      ends up underneath. Reserving it here would only pad the strip. */
+  onBarHeight: (height: number) => void;
 }
 
 /** The three ownership clauses, matching the three occupancies of §8's slot. */
@@ -147,6 +153,7 @@ export function TopOffList({
   onAnnounce,
   onInflight,
   onClose,
+  onBarHeight,
 }: TopOffListProps) {
   const [inflight, setInflight] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -217,9 +224,14 @@ export function TopOffList({
 
   const capLineId = `${listId}-cap`;
 
-  // The height the spacer below the rows has to reserve for the pinned bar.
+  // The height the page foot has to reserve for the pinned bar.
   const barRef = useRef<HTMLDivElement>(null);
-  const [barHeight, setBarHeight] = useState(0);
+  // Read through a ref so a caller passing an inline handler does not retear
+  // down the observer on every render.
+  const publish = useRef(onBarHeight);
+  useEffect(() => {
+    publish.current = onBarHeight;
+  });
   // Layout rather than passive, and measured before it is observed: a passive
   // effect runs after paint, and the observer's own first callback is
   // asynchronous, so either alone leaves one frame with the tail of the list
@@ -228,11 +240,16 @@ export function TopOffList({
   useLayoutEffect(() => {
     const el = barRef.current;
     if (!el) return;
-    setBarHeight(el.getBoundingClientRect().height);
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setBarHeight(el.getBoundingClientRect().height));
+    publish.current(el.getBoundingClientRect().height);
+    if (typeof ResizeObserver === "undefined") return () => publish.current(0);
+    const ro = new ResizeObserver(() => publish.current(el.getBoundingClientRect().height));
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      // The bar goes with this component, so the reservation must go too or the
+      // closed page keeps a band of dead space at its foot.
+      publish.current(0);
+    };
   }, []);
 
   // One message per settle. The first render is the open announcement, which
@@ -484,7 +501,7 @@ export function TopOffList({
           className="font-mono text-[10.5px] mt-[9px]"
           style={{ color: "var(--fg-locked)" }}
         >
-          {topOffCopy.list.cap(String(openSlots))}
+          {topOffCopy.list.cap}
         </p>
       )}
 
@@ -495,13 +512,6 @@ export function TopOffList({
             : topOffCopy.commit.nothingTicked}
         </p>
       )}
-
-      {/* The pinned bar is out of flow, so the page has no idea it is there and
-          the tail of the list can never be scrolled clear of it. The dock it
-          replaces is sticky and reserves its own height; this reserves the
-          bar's. Measured rather than guessed because the bar runs two lines or
-          three depending on whether the pass is spending money. */}
-      <div aria-hidden className="md:hidden" style={{ height: barHeight }} />
 
       {/* ── Commit row (§9) / commit bar (§10) ─────────────────────────── */}
       <div

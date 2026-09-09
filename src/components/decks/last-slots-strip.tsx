@@ -37,6 +37,9 @@ export interface LastSlotsStripProps {
   /** Open/closed, so the shell can collapse the quick-add dock at phone widths
       (state 20) — the dock is hidden, never unmounted, so its query survives. */
   onOpenChange?: (open: boolean) => void;
+  /** The open list's pinned commit bar, measured, so the shell can reserve it at
+      the page foot. See TopOffListProps.onBarHeight. */
+  onBarHeight?: (height: number) => void;
 }
 
 // ── Exhausted line (state 13) ──────────────────────────────────────────────
@@ -106,6 +109,7 @@ function LastSlotsStripInner({
   onAnnounce,
   onInflight,
   onOpenChange,
+  onBarHeight,
 }: LastSlotsStripProps) {
   const listId = useId();
   const doorRef = useRef<HTMLButtonElement>(null);
@@ -303,12 +307,22 @@ function LastSlotsStripInner({
             // both spans are in the DOM at every width — so without this the
             // spoken name is the two of them run together.
             aria-label={topOffCopy.strip.close}
-            className="ml-auto flex-none inline-flex items-center min-h-[44px] md:min-h-0 font-mono text-[10px] md:text-[11px] bg-transparent cursor-pointer [color:var(--fg-faint)] [border-bottom:1px_dashed_var(--border-dashed)]"
+            // The rule belongs to the word, not to the tap target: the phone
+            // box is 44px tall and centres its text, so a border on the button
+            // draws a detached dash a good 15px under the label, underlining
+            // nothing. `flex w-fit` rather than `inline-flex` because the phone
+            // head is a block, where `ml-auto` on an inline box does nothing and
+            // the control sat left, reading as a section label over the ticks.
+            className="ml-auto flex-none flex w-fit items-center min-h-[44px] md:min-h-0 font-mono text-[10px] md:text-[11px] bg-transparent cursor-pointer [color:var(--fg-faint)]"
           >
             {/* Shortened at 390px, where the strip head has one line to give.
                 One element with responsive spans, not two mounted controls. */}
-            <span className="md:hidden">{topOffCopy.strip.closeShort}</span>
-            <span className="hidden md:inline">{topOffCopy.strip.close}</span>
+            <span className="md:hidden [border-bottom:1px_dashed_var(--border-dashed)]">
+              {topOffCopy.strip.closeShort}
+            </span>
+            <span className="hidden md:inline [border-bottom:1px_dashed_var(--border-dashed)]">
+              {topOffCopy.strip.close}
+            </span>
           </button>
         )}
       </div>
@@ -332,6 +346,7 @@ function LastSlotsStripInner({
           newestAsOf={newestAsOf}
           onAnnounce={onAnnounce}
           onInflight={(v) => onInflight?.(v)}
+          onBarHeight={(h) => onBarHeight?.(h)}
           onClose={closeList}
         />
       ) : exhausted ? (

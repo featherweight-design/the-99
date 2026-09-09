@@ -18,6 +18,12 @@ function secondCopies(n: string): string {
   return n === '1' ? 'second copy' : 'second copies';
 }
 
+/** Same shape as `plural` in decks-builder.ts and top-off.ts. The auto-card
+ *  family below counts a set that is routinely one card, and every one of its
+ *  strings pluralised unconditionally: "1 cards are yours now". */
+const plural = (n: string, one: string, many: string) =>
+  `${n} ${n === '1' ? one : many}`;
+
 export const recommendationsCopy = {
   // ── Surface A · Role Coverage ─────────────────────────────────────────
   coverage: {
@@ -109,22 +115,24 @@ export const recommendationsCopy = {
     keepAllMobile: (n: string) => `Keep ${n}`,
     // Says "auto cards" out loud, the way clearAllAria does: the visible
     // label's noun is carried by the tags on screen, and a reader has none.
+    // Not pluralised: the aria-label has to open with the visible label, which
+    // reads "Keep all 1", or voice control cannot match the control by name.
     keepAllAria: (n: string) => `Keep all ${n} auto cards in this deck`,
     // One message per settle, into the live region that carries sweptAnnounce.
     // Its second clause is keptNote's sentence, so the spoken receipt and the
     // written one agree word for word. Deck size did not change, so it is not
     // quoted here — that would imply it had.
     keptAllAnnounce: (kept: string, yours: string) =>
-      `${kept} cards kept. ${yours} cards are yours now.`,
+      `${plural(kept, 'card', 'cards')} kept. ${plural(yours, 'card is', 'cards are')} yours now.`,
     // Never "the deck is unchanged" — that is sweepFailed's sentence. Here the
     // deck is also unchanged, which is why saying so would be useless: what the
     // player needs to know is that the tags are back.
     keepAllFailed: 'We couldn’t keep those. They are still marked auto.',
     // Beside the sweep once some cards have been kept.
-    keptNote: (n: string) => `${n} cards are yours now`,
+    keptNote: (n: string) => `${plural(n, 'card is', 'cards are')} yours now`,
     // One receipt for the whole sweep — not one per row. Lifetime is decklist
     // state, per PR #204.
-    swept: (n: string) => `${n} auto cards removed`,
+    swept: (n: string) => `${plural(n, 'auto card', 'auto cards')} removed`,
     sweptUndo: 'Undo',
     sweptUndoAria: (n: string) => `Put all ${n} auto cards back`,
     // The single live-region message. One, never one per row. `built` arrives

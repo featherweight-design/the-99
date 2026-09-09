@@ -75,6 +75,19 @@ describe("CostPips — the pip ladder", () => {
     expect(pipsOf(<CostPips cost="{1}{W}{B}" {...TRACK} />)[1].style.marginLeft).toBe("-5px");
   });
 
+  // A shingled run used to set `display: flex` inline, which outranks a
+  // `hidden` utility class — so a track its caller hid at phone width drew
+  // anyway, over the top of the run that was meant to be showing.
+  it("leaves display to the caller's class when it shingles", () => {
+    const { container } = render(
+      <CostPips cost="{1}{W}{B}" {...TRACK} className="hidden md:flex gap-[3px]" />,
+    );
+    const run = container.firstElementChild as HTMLElement;
+    expect(run.style.display).toBe("");
+    expect(run.className).toContain("hidden");
+    expect(run.style.gap).toBe("0px");
+  });
+
   it("right-aligns inside a fixed track rather than widening it", () => {
     const { container } = render(<CostPips cost="{U}" {...TRACK} />);
     const run = container.firstElementChild as HTMLElement;
