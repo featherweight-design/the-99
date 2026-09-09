@@ -407,6 +407,14 @@ export const deckImportCopy = {
   // — tokens, emblems, sideboard, maybeboard, a commander duplicated into the
   // 99 — is dropped in silence.
   notes: {
+    // Two commanders is the format's whole allowance. A third line is kept out
+    // of the 99 — a commander sitting in the 99 would change the deck's colour
+    // identity — so the deck the player gets is one card shorter than the list
+    // they pasted, and this is the only account of where it went.
+    thirdCommanderDeclared: (n: number) =>
+      n === 1
+        ? "One more line was marked as a commander. A deck takes two at most, so we left it out."
+        : `${n} more lines were marked as commanders. A deck takes two at most, so we left them out.`,
     quantityClamped: (n: number) =>
       n === 1
         ? "One line asked for more than one copy of a card that only takes one. We brought over a single copy."

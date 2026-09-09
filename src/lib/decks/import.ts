@@ -37,6 +37,11 @@ export type ImportNote =
    * would lose the list rather than correct it — so the note is the only account of
    * the mismatch. Raised by the server action, which reads the oracle text; the pure
    * parser never sees whether a pair is legal.
+   *
+   * It has no surface yet, and neither does any other note on the first-import path:
+   * that flow navigates to the new deck, and notes do not survive the navigation. The
+   * update flow renders its notes because it stays on the page. Giving the arrival a
+   * note surface is a design call, not wiring.
    */
   | { kind: "illegalPairDeclared"; primary: string; partner: string };
 

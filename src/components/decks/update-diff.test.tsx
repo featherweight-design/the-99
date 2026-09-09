@@ -350,6 +350,20 @@ describe("UpdateDiff notes", () => {
     expect(screen.getByText(deckImportCopy.notes.quantityClamped(1))).toBeInTheDocument();
   });
 
+  // The line is kept out of the 99, so the deck is a card shorter than the list
+  // the player pasted and this note is the only account of where it went.
+  it("says a commander line past the second was left out", () => {
+    renderDiff({
+      notes: [
+        { kind: "thirdCommanderDeclared", name: "Ishai, Ojutai Dragonspeaker", sourceLine: 4 },
+        { kind: "thirdCommanderDeclared", name: "Tymna the Weaver", sourceLine: 5 },
+      ],
+    });
+    expect(
+      screen.getByText(deckImportCopy.notes.thirdCommanderDeclared(2)),
+    ).toBeInTheDocument();
+  });
+
   // Sideboard, maybeboard, a commander duplicated into the 99 — all dropped in
   // silence, the rule the shipped import already holds to.
   it("says nothing about the sections the parser drops", () => {
