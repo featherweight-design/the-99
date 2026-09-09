@@ -111,7 +111,7 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
           {/* The commander names the portrait beside it. No text shadow, here
               or anywhere on this row: the type starts at the 116px inset, clear
               of the art, which is decision 9's stated exception. */}
-          <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
+          <span className="min-w-0 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
             {deck.commanderName}
           </span>
           {/* Second in the flex line and the only shrinking child, so a narrow

@@ -1,8 +1,9 @@
 # Gap report — Art Wash Readability
 
-Two rounds. Round 1 verified the wash's own layers against
-`docs/superpowers/design-tables/art-wash.md`. Round 2 re-verified **the whole surface** against
-`docs/superpowers/design-tables/art-wash-full-surface.md`. Both tables enumerate
+Two rounds, one table. Round 1 verified the wash's own layers. Round 2 re-enumerated
+`docs/superpowers/design-tables/art-wash.md` **across the whole surface** — in place, replacing the
+layer-only table rather than sitting beside it, because the first table's scope was the defect and
+keeping it would leave a second document saying the surface was out of scope. It enumerates
 `design/design_handoff_the99_art_wash/` (README, READINESS, `… v2.dc.html` — the deliverable).
 
 ## Why there is a round 2
