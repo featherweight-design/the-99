@@ -26,11 +26,11 @@ Columns are **Mobile (<768px)** and **Desktop (≥768px)**.
 | Focus-visible | `outline: 2px solid var(--accent); outline-offset: 2px` (already in `globals.css @layer base`) |
 | Focus override | rename field only: `outline: none` — its `1px var(--accent)` border is the indicator |
 | Hover | `--accent-hover` / `--elevated-hover` |
-| Bar width | `min(100, built / 99)` % — an `Over` deck is full, not 105% |
+| Bar width | `min(100, (built / 99) * 100)` % — an `Over` deck is full, not 105% |
 | Bar fill | `var(STATUS_TOKEN[status])` — `statusBarStyle`. **No percentage thresholds.** |
 | Chip | `statusPillStyle` verbatim — status colour in the fill mixed into `--bg`, one `var(--border-strong)` hairline, `Building` differs only in `border-style: dashed` |
 | Text shadow | type on a wash carries one; type on flat ground does not |
-| Permitted non-`var()` colour | `rgba(0,0,0,0.4)` (pip + track ring), `0 1px 4px rgba(0,0,0,0.85)` / `0 1px 3px rgba(0,0,0,0.8)` (mobile shadows), `#000` / `transparent` inside `mask-image`. Anything else is a defect. |
+| Permitted non-`var()` colour | `rgba(0,0,0,0.4)` (pip + track ring), `0 1px 4px rgba(0,0,0,0.85)` / `0 1px 3px rgba(0,0,0,0.8)` (mobile shadows), `0 1px 3px rgba(0,0,0,.6)` (`INK_SHADOW`, already shipped in `art-wash.tsx`), `#000` / `transparent` inside `mask-image`. Anything else, on these surfaces, is a defect. |
 
 ---
 
@@ -333,7 +333,9 @@ Desktop field box is `352 × 29` in all four editing states.
 | hint ink | — | `var(--fg-faint)` | `var(--fg-faint)` | `var(--danger)` | `var(--fg-disabled)` |
 | hint row present | — | yes | yes | yes | yes — so no row is ever added |
 
-The error row is one row for all three causes: empty, duplicate, server failure.
+The error row is one row for every cause: an invalid name (control characters, over length), a
+duplicate, a server failure. An empty or unchanged name never reaches it — that is the
+disabled-Save state, where the field stays open and Enter is inert.
 
 ---
 
@@ -347,7 +349,7 @@ The error row is one row for all three causes: empty, duplicate, server failure.
 | **Rename · rest** | idle | title + pencil | field, Save, Cancel, hint |
 | **Rename · editing** | pencil clicked | field, Save, Cancel, hint | `Update`, `Export` (replaced, not pushed); pencil |
 | **Rename · saving** | submit in flight | read-only field, no caret, `Saving…` at `.6`, live Cancel | any disabled Cancel |
-| **Rename · error** | empty / duplicate / server failure | `var(--danger)` border, message in the existing hint row, Save reads `Retry` | any added row |
+| **Rename · error** | invalid name / duplicate / server failure | `var(--danger)` border, message in the existing hint row, Save reads `Retry` | any added row |
 | **Rename · disabled Save** | name empty or unchanged | full-width empty field, Save on `var(--elevated)` + `aria-disabled` | any box resize; a working Enter |
 | **Reduced transparency** | `prefers-reduced-transparency` | art `opacity: min(layer, .3)`; identity gradient uncapped | — |
 | **No commander** | — | **UNREACHABLE.** `decks.commander_oracle_id` is `NOT NULL` (`src/db/schema.ts:185`) and `getDeckDetail` returns `null` when the commander row is missing (`src/lib/decks/read.ts:142`). Blocker 7's state has no trigger and is not built. | the whole state |

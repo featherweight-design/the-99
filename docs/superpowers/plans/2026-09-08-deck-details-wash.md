@@ -634,6 +634,7 @@ Create `src/components/decks/use-deck-rename.test.tsx`:
 ```tsx
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renameCopy } from "../../lib/copy/decks-builder";
 import { useDeckRename } from "./use-deck-rename";
 
 const renameDeck = vi.hoisted(() => vi.fn());
@@ -696,6 +697,15 @@ describe("useDeckRename", () => {
     await act(async () => result.current.commit());
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it("an over-length name takes the error row rather than an inert Save", async () => {
+    const { result } = renderHook(() => useDeckRename("d1", "Atraxa", () => {}));
+    act(() => result.current.setValue("x".repeat(121)));
+    expect(result.current.canSave).toBe(true);
+    await act(async () => result.current.commit());
+    expect(renameDeck).not.toHaveBeenCalled();
+    expect(result.current.error).toBe(renameCopy.errorLength);
   });
 
   it("a blur with no change closes without calling the action", async () => {
@@ -764,7 +774,10 @@ export function useDeckRename(deckId: string, currentName: string, onDone: () =>
 
   const trimmed = value.trim();
   const changed = trimmed !== currentName.trim();
-  const canSave = !isPending && trimmed.length > 0 && trimmed.length <= MAX_NAME && changed;
+  // Length is not part of `canSave`: an over-length name is a name the reader typed
+  // and can be told about, so it takes the error row. Empty and unchanged are the
+  // only two cases §F draws as an inert Save.
+  const canSave = !isPending && trimmed.length > 0 && changed;
 
   const cancel = useCallback(() => {
     setValue(currentName);
@@ -777,6 +790,10 @@ export function useDeckRename(deckId: string, currentName: string, onDone: () =>
   // so Enter on either does nothing at all and the field stays open.
   const commit = useCallback(() => {
     if (!canSave) return;
+    if (trimmed.length > MAX_NAME) {
+      setError(renameCopy.errorLength);
+      return;
+    }
     if (CONTROL_CHARS.test(trimmed)) {
       setError(renameCopy.errorControl);
       return;
