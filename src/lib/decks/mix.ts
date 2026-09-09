@@ -76,17 +76,11 @@ export const RECOMMENDED_MIX: Record<
   },
 };
 
-// The canvas draws only "a guide, not a gate"; the source attribution is an
-// addition, so it joins on the middot the design already uses for metadata
-// rather than on a dash.
-export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages · a guide, not a gate";
-// A worked example teaching how to read a cell, so every number in it is
-// hypothetical. It used to end "you're at 8, fine for a slower build", which is
-// a second-person claim about the reader's deck made by a string that never
-// looks at one — on an empty deck it announced 8 ramp sources directly beneath
-// a RAMP cell reading 0. It now names no count but the recommendation itself.
-export const RECOMMENDED_MIX_WORKED_EXAMPLE =
-  "Ramp · rec 10. Decks that cast a 4-mana commander on curve average ~10 sources. Fewer is a slower build, not a broken one.";
+// Where the numbers come from, and nothing else. The line used to carry "· a
+// guide, not a gate" as well, which restated what "recommended" and "rec ~37"
+// already say and cost the one piece of information the header actually holds
+// its place for.
+export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages";
 
 // Colour and control now answer to the same number. An advisory role used to be
 // held back from the met colours on the grounds that ~37 lands is a range rather

@@ -58,13 +58,24 @@ export function ProvenanceLine({
   const boughtStr = String(bought);
   const openStr = String(open);
 
-  // A shortfall outranks width: naming the role is the whole reason this branch
-  // exists, and the mobile string has nowhere to put it, so a phone would
-  // quietly report the smaller number instead. `provenanceMobile` counts bought
-  // cards on its face, so it only stands in for the bought branch — an
+  // A full fill outranks everything below, including the shortfall branch. A
+  // ROLE that missed its target is not a FILL that came up short: state 13's
+  // copy says "We filled 67 of 99", and rendering it on a deck the fill took all
+  // the way to 99 produced "We filled 99 of 99. Draw came up short… The other 0
+  // are yours" — three clauses contradicting each other. The role counters
+  // beneath already report a thin role, and they report it against the whole
+  // deck rather than against the fill's share of it.
+  //
+  // Below that, a shortfall outranks width: naming the role is the whole reason
+  // that branch exists, and the mobile string has nowhere to put it, so a phone
+  // would quietly report the smaller number instead. `provenanceMobile` counts
+  // bought cards on its face, so it only stands in for the bought branch — an
   // all-owned phone takes the all-owned string, which is already one sentence.
+  // The two full-fill strings are short enough to need no phone variant at all.
   let text: string;
-  if (shortRole) {
+  if (open === 0) {
+    text = bought === 0 ? copy.provenanceFullAllOwned(filledStr) : copy.provenanceFull(filledStr, boughtStr);
+  } else if (shortRole) {
     text = copy.provenanceShort(filledStr, ROLE_LABELS[shortRole], openStr);
   } else if (bought === 0) {
     text = copy.provenanceAllOwned(filledStr, openStr);

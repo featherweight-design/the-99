@@ -11,7 +11,8 @@ import {
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
-import { loadAvailability } from "./availability-query";
+import { MATURE_DECK_SIZE } from "./availability";
+import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
@@ -390,11 +391,37 @@ export async function listDecksWithStats(
     ? inUseElsewhereByDeck(availability.values())
     : new Map<string, number>();
 
+  // This one decides the status pill, and every caller renders that.
+  // `ownedCount` alone cannot answer it — a card the player owns is still a card
+  // THIS deck must buy when an older finished deck already holds every copy — so
+  // without it a fully-owned deck reads `Complete` while its own Shopping list
+  // names twelve cards.
+  //
+  // Asked only when some deck could actually move. `unfunded` is read by exactly
+  // one branch of `statusPill`, the one deciding `Complete` against `To buy`, and
+  // every earlier branch returns without consulting it: a deck that is not at 99,
+  // does not own its whole list, or has an unresolved line has already been
+  // answered. With no such deck on the page the query is a collection-wide scan
+  // whose result nothing reads — and `/decks` and Home both run
+  // `loadShoppingRollup` alongside this, which asks the same question, so the
+  // saving is a real second scan rather than a hypothetical one.
+  const canFlip = rows.some(
+    (r) => r.built === MATURE_DECK_SIZE && r.ownedCount === r.built && r.unresolvedCount === 0,
+  );
+  // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
+  // ownership answer, which is the pre-seniority behaviour and not a 500.
+  const buyRows = canFlip ? await loadDeckBuyRows(userId).catch(() => []) : [];
+  const unfundedByDeck = new Map<string, number>();
+  for (const r of buyRows) {
+    unfundedByDeck.set(r.deckId, (unfundedByDeck.get(r.deckId) ?? 0) + r.quantity);
+  }
+
   return rows.map((row) => {
     const pill = statusPill({
       built: row.built,
       ownedCount: row.ownedCount,
       unresolvedCount: row.unresolvedCount,
+      unfundedCount: unfundedByDeck.get(row.id) ?? 0,
     });
     return {
       id: row.id,

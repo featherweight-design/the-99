@@ -1,7 +1,7 @@
 // The all-decks shopping roll-up.
 //
 // Two surfaces read this and they must agree: a deck tile's detail row
-// (`3 unowned · $18.40`) and Home's Commitments row (`18 · $94.80`). They are
+// (`3 to buy · $18.40`) and Home's Commitments row (`18 · $94.80`). They are
 // the same computation at two scopes, so they are one function — computing the
 // total separately is how the two come to disagree.
 //
@@ -13,6 +13,13 @@
 // COPIES, NOT DISTINCT CARDS, and deliberately double-counted across decks: a
 // card wanted by two decks and owned in zero copies is two copies to buy.
 //
+// "To buy" is the seniority question, not the ownership one, and the rows come
+// from `loadDeckBuyRows` so that this roll-up, the status pill and a deck's own
+// Shopping list are one definition. A card owned in one copy and wanted by four
+// finished decks is three copies to buy: the oldest deck is holding the one
+// that exists. Counting only cards owned in zero copies — which this did — made
+// the tile disagree with the deck page it links to.
+//
 // An unpriced copy is NOT free. The feed omits out-of-stock cards rather than
 // listing them at zero, so `summarisePrices` counts them against the
 // denominator and not into the total — `pricedCopies` is what makes that
@@ -23,9 +30,7 @@
 // them, so counting an unowned Forest here would put a cost on this roll-up
 // that no deck's own Shopping list shows.
 
-import { and, eq, notExists, sql } from "drizzle-orm";
-import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+import { loadDeckBuyRows } from "./availability-query";
 import { summarisePrices, type PricedCard } from "./price";
 import { loadPrices } from "./price-query";
 
@@ -57,38 +62,7 @@ export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
 }
 
 export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup> {
-  // Every deck line whose card the player owns no copy of. `notExists` rather
-  // than a left join with a null check: the join would need a distinct, and a
-  // distinct over quantities is a bug waiting to be written.
-  const rows = await db
-    .select({
-      deckId: deckCards.deckId,
-      oracleId: deckCards.oracleId,
-      quantity: deckCards.quantity,
-    })
-    .from(deckCards)
-    .innerJoin(decks, eq(decks.id, deckCards.deckId))
-    .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
-    .where(
-      and(
-        eq(decks.userId, userId),
-        // The SQL twin of `isBasicLand`'s `/\bBasic\b/`; `\m` and `\M` are
-        // Postgres's word-boundary escapes. Same predicate as
-        // `availability-query.ts`, so the two models exclude the same cards.
-        sql`${cards.typeLine} !~ '\\mBasic\\M'`,
-        notExists(
-          db
-            .select({ one: sql`1` })
-            .from(collectionItems)
-            .where(
-              and(
-                eq(collectionItems.userId, userId),
-                eq(collectionItems.oracleId, deckCards.oracleId),
-              ),
-            ),
-        ),
-      ),
-    );
+  const rows = await loadDeckBuyRows(userId);
 
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
 

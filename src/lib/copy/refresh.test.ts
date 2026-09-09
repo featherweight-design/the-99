@@ -32,7 +32,14 @@ describe("refreshCopy", () => {
     expect(refreshCopy.filters.sheetDismiss(3)).toBe("Show 3 decks");
   });
 
-  it("carries the price-free unowned clause added under ruling 5", () => {
-    expect(refreshCopy.decks.detailUnowned(3)).toBe("3 unowned");
+  it("carries the price-free to-buy clause added under ruling 5", () => {
+    expect(refreshCopy.decks.detailToBuyNoPrice(3)).toBe("3 to buy");
+  });
+
+  // The rail and the resume rows print the status word on the same line, so
+  // their clause counts the copies and says nothing else.
+  it("counts copies without repeating the status word", () => {
+    expect(refreshCopy.decks.detailCopies(1)).toBe("1 card");
+    expect(refreshCopy.decks.detailCopies(3)).toBe("3 cards");
   });
 });

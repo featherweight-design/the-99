@@ -72,11 +72,24 @@ export const refreshCopy = {
     sort: (by: string) => `Sort · ${by}`,
 
     // Tile detail row — the one figure that explains the status.
-    detailToBuy: (n: number, cost: string) => `${n} unowned · ${cost}`,
-    // Price-free unowned clause. Not in the handoff's copy file: Home's resume
-    // rows and the phone deck rail draw `99 / 99 · 3 unowned` with no cost,
-    // and detailToBuy always carries one. Added under plan ruling 5.
-    detailUnowned: (n: number) => `${n} unowned`,
+    //
+    // Both clauses read "to buy" rather than "unowned". Since seniority landed,
+    // the figure counts trips to a shop, and a card an older finished deck has
+    // already taken is one of them while being a card the player owns. The pill
+    // above it says "To buy" and now means the same thing.
+    detailToBuy: (n: number, cost: string) => `${n} to buy · ${cost}`,
+    // The same clause when nothing on the list carries a price. No price row is
+    // not a price of zero, so the copies print and the cost does not.
+    detailToBuyNoPrice: (n: number) => `${n} to buy`,
+    // Price-free clause. Not in the handoff's copy file: Home's resume rows and
+    // the phone deck rail draw `99 / 99 · 3 cards` with no cost, and
+    // detailToBuy always carries one. Added under plan ruling 5.
+    //
+    // Counts the copies and names nothing else. Both surfaces that use it print
+    // the status word on the same line, so `3 to buy` beside a `To buy` pill
+    // would say the same thing twice; the tile, whose pill sits up in the art,
+    // keeps the fuller clause above.
+    detailCopies: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
     detailComplete: 'all owned',
     detailUnresolved: (n: number) => (n === 1 ? '1 line unresolved' : `${n} lines unresolved`),
     detailOver: (n: number) => `${n} over`,

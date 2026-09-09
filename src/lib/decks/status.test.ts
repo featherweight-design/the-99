@@ -32,6 +32,27 @@ describe("statusPill", () => {
   it("Complete at 99 with every card owned and every line named", () =>
     expect(statusPill({ built: 99, ownedCount: 99, unresolvedCount: 0 })).toBe("Complete"));
 
+  // The defect seniority exposed: `HD - Bolg` owned all 99 of its cards and
+  // still had 12 to buy, because older finished decks held every copy. Ownership
+  // alone called that Complete.
+  it("To buy at 99 when every card is owned but copies are spoken for", () =>
+    expect(statusPill({ built: 99, ownedCount: 99, unfundedCount: 12 })).toBe("To buy"));
+
+  it("Complete when nothing is unfunded", () =>
+    expect(statusPill({ built: 99, ownedCount: 99, unfundedCount: 0 })).toBe("Complete"));
+
+  // A caller that cannot compute the allocation still gets the ownership answer
+  // rather than a wrong Complete.
+  it("falls back to ownership when unfundedCount is absent", () => {
+    expect(statusPill({ built: 99, ownedCount: 84 })).toBe("To buy");
+    expect(statusPill({ built: 99, ownedCount: 99 })).toBe("Complete");
+  });
+
+  it("Unresolved still outranks a spoken-for shopping list", () =>
+    expect(statusPill({ built: 99, ownedCount: 99, unresolvedCount: 1, unfundedCount: 12 })).toBe(
+      "Unresolved",
+    ));
+
   // Unresolved outranks To buy. Both are unfinished, but an unnamed line is the
   // one the player cannot even price — it has to be settled before the shopping
   // list is a shopping list.

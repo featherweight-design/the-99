@@ -89,11 +89,11 @@ describe("ResumeDecks", () => {
     expect(container.innerHTML).not.toContain("text-shadow");
   });
 
-  it("prints the built count and the unowned clause together", () => {
+  it("prints the built count and the copies clause together", () => {
     render(
       <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} />,
     );
-    expect(screen.getByText("99 / 99 · 3 unowned")).toBeInTheDocument();
+    expect(screen.getByText("99 / 99 · 3 cards")).toBeInTheDocument();
   });
 
   // §ResumeRow — the commander names the row's art. The deck name is the deck's
@@ -109,7 +109,7 @@ describe("ResumeDecks", () => {
     expect(screen.getByText("Atraxa, Praetors' Voice")).toBeInTheDocument();
   });
 
-  it("prints the count alone when nothing is unowned", () => {
+  it("prints the count alone when there is nothing to buy", () => {
     render(
       <ResumeDecks
         decks={[deck({ built: 87, toBuyCount: 0, statusPill: "Building" })]}
@@ -117,7 +117,7 @@ describe("ResumeDecks", () => {
       />,
     );
     expect(screen.getByText("87 / 99")).toBeInTheDocument();
-    expect(screen.queryByText(/unowned/)).toBeNull();
+    expect(screen.queryByText(/cards/)).toBeNull();
   });
 
   // The roll-up excludes basics and `toBuyCount` (`built − ownedCount`) does
@@ -126,10 +126,10 @@ describe("ResumeDecks", () => {
   // falling back to `toBuyCount` would print a count of cards no Shopping
   // surface will sell, and one that disagrees with the deck tile for the same
   // deck. The clause is absent instead.
-  it("draws no unowned clause for a deck the roll-up has no entry for", () => {
+  it("draws no copies clause for a deck the roll-up has no entry for", () => {
     render(<ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup()} />);
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
-    expect(screen.queryByText(/unowned/)).toBeNull();
+    expect(screen.queryByText(/cards/)).toBeNull();
   });
 
   it("names each row for the deck it opens", () => {

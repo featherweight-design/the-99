@@ -35,7 +35,7 @@ describe("DeckCard", () => {
     );
     expect(screen.getByText("To buy")).toBeInTheDocument();
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
-    expect(screen.getByText("3 unowned · $18.40")).toBeInTheDocument();
+    expect(screen.getByText("3 to buy · $18.40")).toBeInTheDocument();
     expect(screen.getByText("2 days ago")).toBeInTheDocument();
   });
 
@@ -50,12 +50,12 @@ describe("DeckCard", () => {
         now={now}
       />,
     );
-    expect(screen.getByText("1 unowned · $6.20")).toBeInTheDocument();
+    expect(screen.getByText("1 to buy · $6.20")).toBeInTheDocument();
   });
 
   it("prints the copies without a cost when nothing in the deck has a price", () => {
     render(<DeckCard deck={deck()} shopping={{ copies: 3, cents: 0, pricedCopies: 0 }} now={now} />);
-    expect(screen.getByText("3 unowned")).toBeInTheDocument();
+    expect(screen.getByText("3 to buy")).toBeInTheDocument();
   });
 
   // A deck whose only unowned cards are basics clears the `To buy` threshold —
@@ -64,7 +64,7 @@ describe("DeckCard", () => {
   // "unowned" figure that disagrees with every other surface in the app.
   it("draws no figure for a To buy deck the roll-up has nothing for", () => {
     render(<DeckCard deck={deck({ toBuyCount: 3 })} shopping={undefined} now={now} />);
-    expect(screen.queryByText(/unowned/)).toBeNull();
+    expect(screen.queryByText(/to buy/)).toBeNull();
   });
 
   it("has no call to action — the pill is the message and the tile is the target", () => {
@@ -184,7 +184,7 @@ describe("DeckCard", () => {
     );
     expect(
       screen.getByRole("link", {
-        name: "Atraxa, Praetors' Voice, To buy, 99 / 99, 3 unowned · $18.40",
+        name: "Atraxa, Praetors' Voice, To buy, 99 / 99, 3 to buy · $18.40",
       }),
     ).toBeInTheDocument();
   });
@@ -196,7 +196,7 @@ describe("DeckCard", () => {
     const { container } = render(
       <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
-    expect(screen.getAllByText("3 unowned · $18.40")).toHaveLength(1);
+    expect(screen.getAllByText("3 to buy · $18.40")).toHaveLength(1);
     expect(container.querySelectorAll("[data-deck-art]")).toHaveLength(1);
   });
 

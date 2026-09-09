@@ -267,7 +267,7 @@ from the prose files; nothing is inferred from the codebase.
 | Border-bottom | *(unspecified)* | `1px solid #2A241D` |
 | Caption layout | caption + gloss on one row | `display:flex; justify-content:space-between; margin-bottom:8px` |
 | Caption copy | `Recommended mix`, mono 11px, `letter-spacing:0.12em`, uppercase, #C6B79A | `Recommended mix`, mono 9px, `letter-spacing:0.1em`, uppercase, #8E8269 |
-| Gloss copy | `EDHREC averages · a guide, not a gate`, mono 10.5px, #8E8269 | `a guide, not a gate`, mono 9px, #6E6353 |
+| Gloss copy | `EDHREC averages`, mono 10.5px, #8E8269 — the `· a guide, not a gate` tail is **retired** | **retired**, no gloss drawn |
 | Cell gap | `8px` | `4px` |
 | Strip decision | **untouched** (decision 8) — no layout change, no rename, no new construct | same |
 

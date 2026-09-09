@@ -983,6 +983,12 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | color | #8E8269 | #C6B79A |
 
 ### Strip header — "a guide, not a gate" label
+
+**RETIRED.** Not drawn. The phone gloss and the desktop source line's `· a guide, not a
+gate` tail both said what "Recommended mix" and `rec ~37` already say, and the disclosure
+below the cells answers the same question properly. The source line survives as `EDHREC
+averages` alone. Table kept as the record of what was drawn.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
@@ -1073,6 +1079,12 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | margin-top | — | 6px |
 
 ### Worked-example callout (desktop mid-build)
+
+**RETIRED**, along with its "i" icon and text rows below. Not drawn. It taught how to read
+a cell using a hypothetical Ramp count, permanently, directly beneath the reader's own real
+counts; `StripRationale` answers the same question about the actual deck and is one tap
+away. Table kept as the record of what was drawn.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | display | — | flex |

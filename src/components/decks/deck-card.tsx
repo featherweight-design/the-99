@@ -66,9 +66,10 @@ function statusDetailFor(
     case "To buy": {
       // Every figure here comes from the roll-up, never from `deck.toBuyCount`.
       // The roll-up excludes basics, as every Shopping surface does;
-      // `toBuyCount` is `built − ownedCount` and does not, so the two are
-      // different definitions of "unowned" and mixing them prints a cost that
-      // covers fewer copies than the number beside it.
+      // `toBuyCount` is `built − ownedCount`, which neither excludes basics nor
+      // knows about seniority, so the two are different definitions of "to buy"
+      // and mixing them prints a cost that covers fewer copies than the number
+      // beside it.
       //
       // A deck whose only unowned cards are basics therefore has a `To buy`
       // pill — that threshold counts them — and no roll-up entry at all. It
@@ -78,7 +79,7 @@ function statusDetailFor(
       // No price row is not "free" — the copies still print, the cost does not.
       return shopping.cents > 0
         ? c.detailToBuy(shopping.copies, formatCents(shopping.cents))
-        : c.detailUnowned(shopping.copies);
+        : c.detailToBuyNoPrice(shopping.copies);
     }
     case "Complete":
       return c.detailComplete;
