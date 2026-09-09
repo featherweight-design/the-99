@@ -46,16 +46,21 @@ Add to `src/components/ui/art-wash.test.tsx`:
 // the flat region darker than the card below the divider.
 it("plates a pending crop but grounds an absent one in --bg", () => {
   const withArt = render(
-    <ArtWash strategy="cover" labelEdge="top" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+    <ArtWash strategy="cover" labelEdge="top" artCropUri="/a.jpg" colorIdentity={["G"]} />,
   );
-  expect(withArt.container.firstElementChild).toHaveStyle({
-    background: "color-mix(in srgb, var(--bg) 86%, black)",
-  });
+  // The inline style is read directly rather than through `toHaveStyle`: jsdom
+  // parses declarations before the matcher sees them, and a `color-mix()` value
+  // does not survive that round trip.
+  expect((withArt.container.firstElementChild as HTMLElement).style.background).toBe(
+    "color-mix(in srgb, var(--bg) 86%, black)",
+  );
 
   const withoutArt = render(
     <ArtWash strategy="cover" labelEdge="top" artCropUri={null} colorIdentity={["G"]} />,
   );
-  expect(withoutArt.container.firstElementChild).toHaveStyle({ background: "var(--bg)" });
+  expect((withoutArt.container.firstElementChild as HTMLElement).style.background).toBe(
+    "var(--bg)",
+  );
 });
 ```
 
@@ -107,7 +112,7 @@ git commit -m "fix(ui): an artless cover band grounds in --bg, not the loading p
 
 ---
 
-### Task 2: The over-99 figure takes the status token
+### Task 2: The over-99 inks take the status token
 
 R6 ruling 3. Past 99 the deck's status is `Over`, whose bar is `var(--danger)` via `statusBarStyle`. The shipped header pairs that bar with a `var(--warning)` figure, so one state is painted in two different alarm colours. The figure takes the status token, derived rather than hardcoded.
 
@@ -128,17 +133,23 @@ Add to `src/components/decks/spine-desktop.test.tsx`:
 
 ```tsx
 // R6 ruling 3. Past 99 the status is `Over`, whose bar is --danger. A --warning
-// figure beside a --danger bar paints one state in two alarm colours, so the
-// figure reads the status token the bar already reads.
-it("paints the over-99 figure in the status colour, not a second alarm colour", () => {
+// figure beside a --danger bar paints one state in two alarm colours, so every
+// ink in the state reads the token the bar reads.
+it("paints the over-99 inks in the status colour, not a second alarm colour", () => {
   const { container } = renderSpine(
-    <SpineDesktop {...props} status="Over" built={104} />,
+    <SpineDesktop
+      {...props}
+      counts={{ built: 104, ownedCount: 100, toBuyCount: 4 }}
+      status="Over"
+    />,
   );
   const fill = container.querySelector<HTMLElement>("[data-testid='spine-bar-fill']");
   expect(fill?.style.background).toBe("var(--danger)");
-  expect(container.textContent).not.toContain("var(--warning)");
-  const figure = screen.getByText("104");
-  expect(figure).toHaveStyle({ color: "var(--danger)" });
+  // innerHTML, not textContent: an inline style is an attribute, so the rendered
+  // text can never carry the token a surviving --warning would be written as.
+  expect(container.innerHTML).not.toContain("var(--warning)");
+  expect(screen.getByText("104")).toHaveStyle({ color: "var(--danger)" });
+  expect(screen.getByText("+5")).toHaveStyle({ color: "var(--danger)" });
 });
 ```
 
@@ -146,7 +157,7 @@ Add the same test to `src/components/decks/spine-mobile.test.tsx`, with `SpineMo
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `pnpm test -- src/components/decks/spine-desktop.test.tsx src/components/decks/spine-mobile.test.tsx -t "over-99 figure"`
+Run: `pnpm test -- src/components/decks/spine-desktop.test.tsx src/components/decks/spine-mobile.test.tsx -t "over-99 inks"`
 Expected: FAIL — the figure reports `var(--warning)`.
 
 - [ ] **Step 3: Write the implementation**
@@ -161,8 +172,8 @@ Then, near the top of each component's body, next to the existing `over` boolean
 
 ```ts
 // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so the
-// figure reads the same token `statusBarStyle` gives the bar rather than a
-// second alarm colour of its own.
+// figure, the delta and the trim lead each read the same token `statusBarStyle`
+// gives the bar rather than a second alarm colour of their own.
 const overInk = `var(${STATUS_TOKEN[status]})`;
 ```
 
@@ -205,7 +216,7 @@ Expected: no output.
 ```bash
 git add src/components/decks/spine-desktop.tsx src/components/decks/spine-mobile.tsx \
         src/components/decks/spine-desktop.test.tsx src/components/decks/spine-mobile.test.tsx
-git commit -m "fix(decks): the over-99 figure reads the status token the bar reads"
+git commit -m "fix(decks): the over-99 inks read the status token the bar reads"
 ```
 
 ---
