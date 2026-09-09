@@ -66,8 +66,9 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 below. **The art wash amendment joined and left on 2026-09-08**, the same day it was drawn — it is an
 amendment to a surface the refresh already shipped, not a new vertical, which is why it carries no
 ticket — and it sits in ✅ Shipped below.
-**#360 joined and left on 2026-09-08** — straight from 🕰️ Backlog through three design rounds and
-into 🔨 below, where its plan and its first PR now sit. **The refresh joined on
+**#360 joined and left this section on 2026-09-08** — straight from 🕰️ Backlog through three
+design rounds and into 🔨 below, where its first PR landed the same day. Its build then finished
+on 2026-09-09 and it now sits in ✅ Shipped; the two dates describe two different moves. **The refresh joined on
 2026-09-07.** **#10 left the same day** — not to
 a build, but to 🚦 Paused below. Its design is Green, its plan is merged, and Hugh's call is that
 now is not the time to build it; nothing about the work changed. It was the occupant before the
@@ -316,13 +317,19 @@ Fourteen findings came out of the mid-run cold-eyes review. Six shipped as fixes
 four root causes rather than six patches; two were triaged KEEP — the four `31`s on screen mean
 three different things, but each string carries its own denominator, which is the copy file's own
 rule, and `136 untouched` is the only place declines are quantified rather than restated
-arithmetic. Six were escalated. **Hugh ranked the escalations on 2026-09-09 and filed the first
-four:** #476, #477 and #478 are the Design-owned ones and carry the rows above; #479 is
-engineering-owned. The remainder — the undrawn decline trigger, the undrawn all-declined state,
-the missing 390px short form for the door note, `commit.slotsStayOpen` never reaching a phone,
-`list.cap` explaining a cap 167 rows from where it is disobeyed, the two exit words, the four
-Design-authored strings bypassing the `plural` helper, and two missing Errata entries — are
-deliberately unfiled and should ride into whichever design round touches this surface next.
+arithmetic. The rest were escalated, and joined the items earlier gates had already escalated to
+make one ranked list, which Hugh ranked on 2026-09-09.
+
+**Filed:** #476, #477 and #478, the Design-owned three, which carry the backlog rows above, and
+#479, which is engineering-owned and therefore has no row.
+
+**Deliberately not filed**, and to be picked up by whichever design round touches this surface
+next: the undrawn decline trigger, the undrawn all-declined state, the missing 390px short form
+for the door note, `commit.slotsStayOpen` never reaching a phone, `list.cap` explaining a cap 167
+rows from where it is disobeyed, the two exit words, the four Design-authored strings bypassing
+the `plural` helper, and two missing Errata entries. Three correctness holes the plan already knew
+about are also unfiled: uncapped ledger growth, a dropped pass taking its money out of the ledger,
+and `decks.filled` never being reset.
 
 **The 390px journey walk ran against a local production build, not staging.** Staging runs Clerk's
 production instance, which the headless `window.Clerk` + `+clerk_test` sign-in path cannot reach,
