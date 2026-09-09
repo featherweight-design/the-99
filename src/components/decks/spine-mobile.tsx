@@ -14,7 +14,7 @@ import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
-import { statusBarStyle } from "../../lib/decks/status-style";
+import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import type { SpineBandProps } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
@@ -25,6 +25,10 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
   const { built } = counts;
   const over = built > 99;
   const toCut = built - 99;
+  // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
+  // ink the state adds reads the same token `statusBarStyle` gives the bar
+  // rather than a second alarm colour of its own.
+  const overInk = `var(${STATUS_TOKEN[status]})`;
   const rename = useDeckRename(deck.id, deck.name, () => setRenaming(false));
 
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while
@@ -202,7 +206,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
         <div className="flex items-baseline" style={{ gap: 4 }}>
           <span
             className="font-mono font-semibold"
-            style={{ fontSize: 14, color: over ? "var(--warning)" : "var(--fg)" }}
+            style={{ fontSize: 14, color: over ? overInk : "var(--fg)" }}
           >
             {built}
           </span>
@@ -212,7 +216,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
           {over && (
             <span
               className="font-mono font-semibold"
-              style={{ fontSize: 12, marginLeft: 4, color: "var(--warning)" }}
+              style={{ fontSize: 12, marginLeft: 4, color: overInk }}
             >
               {overCopy.figure.delta(String(toCut))}
             </span>
@@ -239,7 +243,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
             className="text-center"
             style={{ fontSize: 12, lineHeight: 1.5, color: "var(--fg-body)" }}
           >
-            <b className="font-semibold" style={{ color: "var(--warning)" }}>
+            <b className="font-semibold" style={{ color: overInk }}>
               {overCopy.trim.lead(overWord(toCut))}
             </b>{" "}
             {overCopy.trim.body(String(toCut))}

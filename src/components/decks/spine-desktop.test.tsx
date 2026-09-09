@@ -40,6 +40,24 @@ describe("SpineDesktop", () => {
     expect(screen.getByText("+5")).toBeTruthy();
   });
 
+  // R6 ruling 3. Past 99 the status is `Over`, whose bar is --danger. A
+  // --warning figure beside a --danger bar paints one state in two alarm
+  // colours, so every ink in the state reads the token the bar reads.
+  it("paints the over-99 inks in the status colour, not a second alarm colour", () => {
+    const { container } = renderSpine(
+      <SpineDesktop
+        {...props}
+        counts={{ built: 104, ownedCount: 100, toBuyCount: 4 }}
+        status="Over"
+      />,
+    );
+    const fill = container.querySelector<HTMLElement>("[data-testid='spine-bar-fill']");
+    expect(fill?.style.background).toBe("var(--danger)");
+    expect(container.innerHTML).not.toContain("var(--warning)");
+    expect(screen.getByText("104")).toHaveStyle({ color: "var(--danger)" });
+    expect(screen.getByText("+5")).toHaveStyle({ color: "var(--danger)" });
+  });
+
   it("swaps the actions slot for the rename hint while editing", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
