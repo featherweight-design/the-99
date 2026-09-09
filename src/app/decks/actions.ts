@@ -20,6 +20,7 @@ import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
+import { canPair, partnerAbility } from "../../lib/decks/partner";
 import {
   validateCardForDeck,
   type DeckContextForValidation,
@@ -191,14 +192,34 @@ export async function createDeck(
   commanderOracleId: string,
   name: string,
   selectedOracleIds: string[] = [],
+  partnerOracleId: string | null = null,
 ): Promise<void> {
   const userId = await requireUserId();
-  const [commander] = await db.select().from(cards).where(eq(cards.oracleId, commanderOracleId));
+  // One query over both ids: reading the partner separately would say nothing
+  // this does not.
+  const commanderIds = partnerOracleId ? [commanderOracleId, partnerOracleId] : [commanderOracleId];
+  const commanderRows = await db.select().from(cards).where(inArray(cards.oracleId, commanderIds));
+  const commander = commanderRows.find((c) => c.oracleId === commanderOracleId);
   if (!commander) throw new Error("commander not found");
   // Server actions are reachable via crafted requests — re-validate that the
   // card can actually lead a deck, not just that it exists.
   if (!commander.commanderLegal || !isCommanderCandidate(commander)) {
     throw new Error("card is not a legal commander");
+  }
+
+  const partner = partnerOracleId
+    ? commanderRows.find((c) => c.oracleId === partnerOracleId)
+    : undefined;
+  if (partnerOracleId) {
+    if (!partner) throw new Error("commander not found");
+    if (!partner.commanderLegal || !isCommanderCandidate(partner)) {
+      throw new Error("card is not a legal commander");
+    }
+    // Always a pair the player picked, and the picker only ever offered a legal
+    // one — so a mismatch here is a crafted request and is refused outright.
+    if (!canPair(partnerAbility(commander.oracleText), partnerAbility(partner.oracleText))) {
+      throw new Error("commanders cannot be paired");
+    }
   }
 
   const deckName = validateDeckName(name);
@@ -227,10 +248,8 @@ export async function createDeck(
       .filter((card) => !validateCardForDeck(card, {
         commanderOracleId,
         commanderColorIdentity: commander.colorIdentity,
-        // A deck created here has one commander; the picker's second slot is
-        // what will give this one a partner to measure against.
-        partnerOracleId: null,
-        partnerColorIdentity: null,
+        partnerOracleId,
+        partnerColorIdentity: partner?.colorIdentity ?? null,
         built: 0,
       }))
       .map((card) => card.oracleId);
@@ -243,7 +262,7 @@ export async function createDeck(
     }, selectedSet);
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
-        .values({ userId, name: deckName, commanderOracleId, filled: true })
+        .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: true })
         .returning({ id: decks.id });
       // The selection first, then as much of the fill as fits under 99. The cap
       // sums quantity rather than counting rows, because planFill stacks basics
@@ -284,7 +303,7 @@ export async function createDeck(
     // them the one thing they actually asked for.
     console.error("buildFillPlan failed — falling back to empty deck", err);
     const [deck] = await db.insert(decks)
-      .values({ userId, name: deckName, commanderOracleId, filled: false })
+      .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: false })
       .returning({ id: decks.id });
     deckId = deck.id;
   }

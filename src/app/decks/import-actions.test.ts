@@ -7,6 +7,8 @@ const stub = vi.hoisted(() => {
   const nameOf = (table: unknown): string =>
     (table as Record<symbol, string>)[Symbol.for("drizzle:Name")];
 
+  const DECK_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+
   const state = {
     decks: [] as Record<string, unknown>[],
     unresolved: [] as Record<string, unknown>[],
@@ -33,14 +35,28 @@ const stub = vi.hoisted(() => {
       }),
     }),
     insert: () => ({
-      values: (values: Record<string, unknown>) => ({
-        onConflictDoUpdate: async () => {
-          state.inserts.push({ values, mode: "update" });
-        },
-        onConflictDoNothing: async () => {
-          state.inserts.push({ values, mode: "nothing" });
-        },
-      }),
+      // importDeck inserts arrays and awaits the builder directly, while the
+      // resolve path inserts one row and chains a conflict clause — so the
+      // builder has to be a thenable that also offers both clauses.
+      values: (values: Record<string, unknown> | Record<string, unknown>[]) => {
+        const record = (mode: "update" | "nothing") => {
+          for (const v of Array.isArray(values) ? values : [values]) {
+            state.inserts.push({ values: v, mode });
+          }
+        };
+        return {
+          then: (resolve: (v: unknown) => unknown) => {
+            record("nothing");
+            return Promise.resolve(undefined).then(resolve);
+          },
+          returning: async () => {
+            record("nothing");
+            return [{ id: DECK_ID }];
+          },
+          onConflictDoUpdate: async () => record("update"),
+          onConflictDoNothing: async () => record("nothing"),
+        };
+      },
     }),
     delete: (table: unknown) => ({
       // Drizzle's builder is a thenable that also offers .returning(), and both
@@ -61,13 +77,56 @@ const stub = vi.hoisted(() => {
     }),
   };
 
+  // importDeck reads outside the transaction as well as inside it, so the client
+  // answers the same queries the transaction handle does.
   const db = {
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
+    select: tx.select,
+    selectDistinct: tx.select,
   };
-  return { db, state };
+  return { db, state, DECK_ID };
+});
+
+// The catalog importDeck matches against. Mocked rather than read, because the
+// fake db answers a select by table and the catalog query selects columns.
+const catalog = vi.hoisted(() => {
+  const card = (over: Record<string, unknown> & { name: string }) => ({
+    oracleId: `oracle-${over.name.toLowerCase().replace(/[^a-z]+/g, "-")}`,
+    scryfallId: `scry-${over.name.toLowerCase().replace(/[^a-z]+/g, "-")}`,
+    typeLine: "Artifact",
+    oracleText: null as string | null,
+    commanderLegal: true,
+    colorIdentity: [] as string[],
+    imageUri: null as string | null,
+    ...over,
+  });
+  return [
+    card({ name: "Sol Ring" }),
+    card({
+      name: "Atreus, God of War",
+      typeLine: "Legendary Creature — God",
+      colorIdentity: ["R", "W"],
+      oracleText: "Partner—Father & son (You can have two commanders if both have Partner—Father & son.)",
+    }),
+    card({
+      name: "Kratos, God of War",
+      typeLine: "Legendary Creature — God",
+      colorIdentity: ["U", "R"],
+      oracleText: "Partner—Father & son (You can have two commanders if both have Partner—Father & son.)",
+    }),
+    card({
+      name: "Ishai, Ojutai Dragonspeaker",
+      typeLine: "Legendary Creature — Bird Monk",
+      colorIdentity: ["W", "U"],
+      oracleText: "Flying\nPartner (You can have two commanders if both have partner.)",
+    }),
+  ];
 });
 
 vi.mock("../../db", () => ({ db: stub.db }));
+vi.mock("../../lib/collection/import", () => ({
+  loadMatchInputs: async () => ({ catalog, indexes: {} }),
+}));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({
   revalidatePath: (p: string) => {
@@ -80,7 +139,7 @@ vi.mock("next/cache", () => ({
 
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
-import { deleteUnresolvedRow, resolveUnresolvedRow } from "./import-actions";
+import { deleteUnresolvedRow, importDeck, resolveUnresolvedRow } from "./import-actions";
 import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
 
 const dialect = new PgDialect();
@@ -124,6 +183,72 @@ beforeEach(() => {
   stub.state.revalidated.length = 0;
   stub.state.updatedTags.length = 0;
   stub.state.wheres.length = 0;
+});
+
+describe("importDeck — a declared pair", () => {
+  const ATREUS = "oracle-atreus-god-of-war";
+  const KRATOS = "oracle-kratos-god-of-war";
+  const ISHAI = "oracle-ishai-ojutai-dragonspeaker";
+  const SOL_RING = "oracle-sol-ring";
+
+  // The re-validation reads the commander cards back out of `cards`, so the
+  // fixtures the fake answers with are the catalog rows themselves.
+  const seedCards = () => stub.state.cards.push(...catalog);
+
+  const run = (text: string) =>
+    importDeck({ text, source: "paste", name: "Father and son" });
+
+  it("writes both commanders and files neither as a deck card", async () => {
+    seedCards();
+    const result = await run("Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.ok).toBe(true);
+
+    const deckInsert = stub.state.inserts.find((i) => "commanderOracleId" in i.values);
+    expect(deckInsert?.values.commanderOracleId).toBe(ATREUS);
+    expect(deckInsert?.values.partnerOracleId).toBe(KRATOS);
+
+    const cardInserts = stub.state.inserts.filter((i) => "quantity" in i.values);
+    expect(cardInserts.map((i) => i.values.oracleId)).toEqual([SOL_RING]);
+  });
+
+  it("leaves partnerOracleId null for a single declared commander", async () => {
+    seedCards();
+    await run("Commander\n1 Atreus, God of War\n\nDeck\n1 Sol Ring");
+    const deckInsert = stub.state.inserts.find((i) => "commanderOracleId" in i.values);
+    expect(deckInsert?.values.partnerOracleId).toBeNull();
+  });
+
+  // A pair the paste declares is the record of a deck that exists, so it is
+  // imported and the mismatch is said out loud rather than refused.
+  it("accepts an illegally paired declaration and notes it", async () => {
+    seedCards();
+    const result = await run(
+      "Commander\n1 Atreus, God of War\n1 Ishai, Ojutai Dragonspeaker\n\nDeck\n1 Sol Ring",
+    );
+    expect(result.notes).toContainEqual({
+      kind: "illegalPairDeclared",
+      primary: "Atreus, God of War",
+      partner: "Ishai, Ojutai Dragonspeaker",
+    });
+    const deckInsert = stub.state.inserts.find((i) => "commanderOracleId" in i.values);
+    expect(deckInsert?.values.partnerOracleId).toBe(ISHAI);
+  });
+
+  // A pair the *user* picked is refused, because the picker never offered it —
+  // only a crafted request can reach this.
+  it("refuses an illegal pair the request supplied", async () => {
+    seedCards();
+    await expect(
+      importDeck({
+        text: "1 Sol Ring",
+        source: "paste",
+        name: "Nope",
+        commanderOracleId: ATREUS,
+        partnerOracleId: ISHAI,
+      }),
+    ).rejects.toThrow("commanders cannot be paired");
+    expect(stub.state.inserts).toEqual([]);
+  });
 });
 
 describe("resolveUnresolvedRow", () => {

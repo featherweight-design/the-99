@@ -30,7 +30,15 @@ export type ImportNote =
    * legality. Dropping it silently would change the deck without saying so, which is
    * what this note exists to prevent.
    */
-  | { kind: "thirdCommanderDeclared"; name: string; sourceLine: number };
+  | { kind: "thirdCommanderDeclared"; name: string; sourceLine: number }
+  /**
+   * The two commanders the source declares cannot legally partner. The import takes
+   * them anyway — the paste is the record of a deck that exists, and refusing it
+   * would lose the list rather than correct it — so the note is the only account of
+   * the mismatch. Raised by the server action, which reads the oracle text; the pure
+   * parser never sees whether a pair is legal.
+   */
+  | { kind: "illegalPairDeclared"; primary: string; partner: string };
 
 type DeclaredCommander = { oracleId: string; name: string; sourceLine: number };
 

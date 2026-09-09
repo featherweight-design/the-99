@@ -9,6 +9,7 @@ import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
 import { isBasicLand } from "../../lib/decks/grouping";
+import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { isCommanderCandidate } from "../../lib/recs/score";
@@ -33,6 +34,8 @@ export type ImportDeckInput = {
   name: string;
   /** Set only once the player has picked one; a declared commander needs no pick. */
   commanderOracleId?: string;
+  /** The second commander of a pair, when the picker offered one and it was taken. */
+  partnerOracleId?: string | null;
 };
 
 /**
@@ -153,22 +156,52 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     };
   }
 
-  // Server actions are reachable via crafted requests — re-validate the commander
-  // rather than trusting the id the picker sent back.
-  const [commander] = await db.select().from(cards).where(eq(cards.oracleId, commanderOracleId));
+  const partnerOracleId = input.partnerOracleId ?? result.declaredPartner?.oracleId ?? null;
+  const notes = [...result.notes];
+
+  // Server actions are reachable via crafted requests — re-validate the commanders
+  // rather than trusting the ids the picker sent back. One query over both ids: a
+  // second round trip to read the partner would say nothing this one cannot.
+  const commanderIds = partnerOracleId ? [commanderOracleId, partnerOracleId] : [commanderOracleId];
+  const commanderCards = await db
+    .select()
+    .from(cards)
+    .where(inArray(cards.oracleId, commanderIds));
+  const commander = commanderCards.find((c) => c.oracleId === commanderOracleId);
   if (!commander || !commander.commanderLegal || !isCommanderCandidate(commander)) {
     throw new Error("card is not a legal commander");
   }
 
+  if (partnerOracleId) {
+    const partner = commanderCards.find((c) => c.oracleId === partnerOracleId);
+    if (!partner || !partner.commanderLegal || !isCommanderCandidate(partner)) {
+      throw new Error("card is not a legal commander");
+    }
+    if (!canPair(partnerAbility(commander.oracleText), partnerAbility(partner.oracleText))) {
+      // A pair the *player* picked is refused, because the picker never offered
+      // it — only a crafted request reaches that. A pair the *paste* declared is
+      // kept with a note, because the paste is the record of a deck that exists,
+      // and refusing the import would lose the list rather than correct it.
+      if (input.partnerOracleId) throw new Error("commanders cannot be paired");
+      notes.push({
+        kind: "illegalPairDeclared",
+        primary: commander.name,
+        partner: partner.name,
+      });
+    }
+  }
+
   // A commander the player picked from the 99 must not also sit in the 99.
-  const deckCardValues = result.cards.filter((c) => c.oracleId !== commanderOracleId);
+  const deckCardValues = result.cards.filter(
+    (c) => c.oracleId !== commanderOracleId && c.oracleId !== partnerOracleId,
+  );
 
   // One transaction: a deck that exists without its unresolved rows is a deck that
   // silently lost the player's data, and there is no second chance to write them.
   const deckId = await db.transaction(async (tx) => {
     const [deck] = await tx
       .insert(decks)
-      .values({ userId, name, commanderOracleId })
+      .values({ userId, name, commanderOracleId, partnerOracleId })
       .returning({ id: decks.id });
 
     for (let i = 0; i < deckCardValues.length; i += INSERT_BATCH) {
@@ -196,7 +229,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   });
 
   revalidateClaims(deckId, userId);
-  return { ok: true, deckId, unresolvedCount: result.unresolved.length, notes: result.notes };
+  return { ok: true, deckId, unresolvedCount: result.unresolved.length, notes };
 }
 
 /**
@@ -218,7 +251,11 @@ export async function resolveUnresolvedRow(
 
   await db.transaction(async (tx) => {
     const [deck] = await tx
-      .select({ id: decks.id, commanderOracleId: decks.commanderOracleId })
+      .select({
+        id: decks.id,
+        commanderOracleId: decks.commanderOracleId,
+        partnerOracleId: decks.partnerOracleId,
+      })
       .from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
     if (!deck) throw new Error("deck not found");
@@ -244,10 +281,10 @@ export async function resolveUnresolvedRow(
     // deliberately unchecked; the doc comment above says why.
     if (!card.commanderLegal) throw new Error("card is not commander legal");
 
-    // The commander must not also sit in the 99 — the same rule importDeck
+    // Neither commander may also sit in the 99 — the same rule importDeck
     // enforces when it filters the parsed rows. The line is still answered, so
     // it goes either way.
-    if (oracleId !== deck.commanderOracleId) {
+    if (oracleId !== deck.commanderOracleId && oracleId !== deck.partnerOracleId) {
       if (isBasicLand(card.typeLine)) {
         await tx
           .insert(deckCards)
