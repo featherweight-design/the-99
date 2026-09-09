@@ -113,6 +113,14 @@ async function pick(page, label) {
 async function main() {
   await clerkSetup();
   const browser = await chromium.launch();
+  try {
+    return await run(browser);
+  } finally {
+    await browser.close();
+  }
+}
+
+async function run(browser) {
   const page = await browser.newPage({ viewport: { width: 1300, height: 900 } });
 
   // Navigational RSC payloads only. The counts below are claims about what a
@@ -197,16 +205,21 @@ async function main() {
     console.log(`lap ${lap} (reported, not asserted):`, requests.slice(mark3));
   }
 
-  await browser.close();
-
-  if (failures.length > 0) {
-    console.error(`\n${failures.length} failed: ${failures.join(" · ")}`);
-    process.exit(1);
-  }
-  console.log("\nall checks passed");
+  return failures;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Reported out here rather than in `run`, because `process.exit` skips the
+// `finally` that closes the browser and would leave Chromium running on every
+// failing run — the runs where a stray process is least welcome.
+main()
+  .then((failures) => {
+    if (failures.length > 0) {
+      console.error(`\n${failures.length} failed: ${failures.join(" · ")}`);
+      process.exit(1);
+    }
+    console.log("\nall checks passed");
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
