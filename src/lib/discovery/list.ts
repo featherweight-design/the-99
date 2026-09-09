@@ -2,7 +2,6 @@ import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadCollectionPool } from "../recs/recommend";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
-import type { ReceiptCounts } from "../commanders/in-use";
 import type { RoleName } from "../recs/score";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { loadPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
@@ -13,11 +12,9 @@ import {
 } from "./novelty";
 
 export type DiscoveryItem = {
-  oracleId: string;
   slug: string;
   name: string;
   colorIdentity: string[];
-  imageUri: string | null;
   artCropUri: string | null;
   /** `YYYY-MM-DD`, or null for an undated set. The rack's `Recently released`
       order reads it on the client; nothing on the server sorts by it, so the
@@ -33,19 +30,9 @@ export type DiscoveryItem = {
       below-floor are already gone, and `floorExcluded` counts the second group. */
   rank: number;
   ownedSupport: number;
-  /** The same count over the whole collection, which is what the novelty floor
-      is decided on. It rides on the item because the floor is applied here,
-      over the enriched rows, and a floor that read `ownedSupport` would move
-      with whatever pool the ranking was scoped to. Equal to `ownedSupport`
-      unless the ranking is scoped to a smaller pool. */
-  collectionSupport: number;
   edhrecTotal: number | null;
   colorPoolSize: number;
   roleCounts: Record<RoleName, number>;
-  /** Null when the availability read failed. The rollup would report zeros in
-      that case, and a zero here is a claim — "nothing you own is committed" —
-      that a failed read cannot support. */
-  counts: ReceiptCounts | null;
   price: PriceSlot;
   tagTotal: number;
   unplayedLabels: string[];
@@ -182,7 +169,31 @@ export function assembleDiscovery(input: {
   const ordered = [...active].sort(input.sort === "new" ? byNovelty : byFit);
 
   return {
-    items: ordered.map((item, i) => ({ ...item, rank: i + 1 })),
+    // Named rather than spread, because four of the enriched fields are spent
+    // here and read by nothing downstream: `oracleId` is the two sorts' final
+    // tiebreak, `collectionSupport` is what the floor decides on, and `counts`
+    // and `imageUri` are the owned lane's, carried in by the shared rollup and
+    // candidate shapes. They were about a quarter of a 2.6MB payload. Listing
+    // what ships also means a field added to the enrichment has to be chosen.
+    items: ordered.map((c, i) => ({
+      slug: c.slug,
+      name: c.name,
+      colorIdentity: c.colorIdentity,
+      artCropUri: c.artCropUri,
+      releasedAt: c.releasedAt,
+      deckCount: c.deckCount,
+      rank: i + 1,
+      ownedSupport: c.ownedSupport,
+      edhrecTotal: c.edhrecTotal,
+      colorPoolSize: c.colorPoolSize,
+      roleCounts: c.roleCounts,
+      price: c.price,
+      tagTotal: c.tagTotal,
+      unplayedLabels: c.unplayedLabels,
+      unplayedCount: c.unplayedCount,
+      nearestDeck: c.nearestDeck,
+      supportPct: c.supportPct,
+    })),
     candidateCount: input.candidates.length,
     cardsRead: input.cardsRead,
     freePoolSize: input.freePoolSize,

@@ -36,7 +36,7 @@ import { laneHref, useRerankAnnouncement } from "./list-nav";
 import {
   EndOfRanking, REVEAL_STEP, RevealControl, revealAnnouncement,
 } from "./reveal-control";
-import { DiscoveryEmpty, FloorEmpty, NoDecksBanner } from "./discovery-empty";
+import { DiscoveryEmpty, FloorEmpty, NoDecksBanner, SearchPending } from "./discovery-empty";
 import { ExclusionLine } from "./exclusion-line";
 import { resolveExclusionLine } from "../../lib/commanders/exclusion-line";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
@@ -656,6 +656,10 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
               </GhostButton>
             }
           />
+        ) : pending && filtered.length === 0 ? (
+          // Every state above needs the lookup that has not landed, and the one
+          // below is a list with no rows in it.
+          <SearchPending />
         ) : (
           <>
             {/* §2c: a match exists that this list cannot show. Above the rows,

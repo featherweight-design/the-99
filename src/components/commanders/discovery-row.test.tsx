@@ -10,21 +10,17 @@ import { DiscoveryRow } from "./discovery-row";
 const name = "Lathril, Blade of the Elves";
 
 const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
-  oracleId: "o1",
   slug: "lathril",
   name,
   colorIdentity: ["B", "G"],
-  imageUri: null,
   artCropUri: null,
   releasedAt: "2021-04-23",
   deckCount: 1209,
   rank: 1,
   ownedSupport: 126,
-  collectionSupport: 126,
   edhrecTotal: 264,
   colorPoolSize: 34,
   roleCounts: { ramp: 9, draw: 6, removal: 7, wipes: 2 },
-  counts: null,
   price: { kind: "absent" },
   tagTotal: 5,
   unplayedLabels: ["elves", "tokens", "aristocrats", "counters"],
@@ -60,13 +56,11 @@ describe("DiscoveryRow", () => {
     expect(zone.querySelector(".discovery-band")).toBeNull();
   });
 
-  it("draws the frame-free crop, never the printed card", () => {
-    const { container } = row({
-      imageUri: "https://example.test/printed.jpg",
-      artCropUri: "https://example.test/crop.jpg",
-    });
+  // The printed card is no longer reachable from here to draw by mistake: the
+  // list stopped shipping `imageUri` once nothing on this lane read it.
+  it("draws the frame-free crop", () => {
+    const { container } = row({ artCropUri: "https://example.test/crop.jpg" });
     expect(container.innerHTML).toContain("crop.jpg");
-    expect(container.innerHTML).not.toContain("printed.jpg");
   });
 
   it("prints the support count over the EDHREC total", () => {
@@ -130,7 +124,7 @@ describe("DiscoveryRow", () => {
   // The art is the wash behind the row, not a printing in a box. `I3` is the
   // only frame with a thumbnail, and it applies only if a printing is named.
   it("shows no image at rest", () => {
-    const { container } = row({ imageUri: "https://example.test/art.jpg" });
+    const { container } = row({ artCropUri: "https://example.test/art.jpg" });
     expect(container.querySelector("img")).toBeNull();
   });
 

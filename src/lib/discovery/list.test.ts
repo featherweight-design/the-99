@@ -36,15 +36,15 @@ describe("assembleDiscovery", () => {
 
   it("ranks every item it carries, so rank survives colour filtering", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
-    expect(got.items.map((i) => i.oracleId)).toEqual(["c", "a", "b"]);
+    expect(got.items.map((i) => i.name)).toEqual(["C", "A", "B"]);
     expect(got.items.map((i) => i.rank)).toEqual([1, 2, 3]);
   });
 
   it("drops untagged commanders from the novelty sort only", () => {
-    expect(assembleDiscovery({ ...base, sort: "fit" }).items.map((i) => i.oracleId))
-      .toContain("b");
-    expect(assembleDiscovery({ ...base, sort: "new" }).items.map((i) => i.oracleId))
-      .not.toContain("b");
+    expect(assembleDiscovery({ ...base, sort: "fit" }).items.map((i) => i.name))
+      .toContain("B");
+    expect(assembleDiscovery({ ...base, sort: "new" }).items.map((i) => i.name))
+      .not.toContain("B");
   });
 
   it("excludes a commander below the floor and reports the nearest miss", () => {
@@ -87,7 +87,7 @@ describe("assembleDiscovery", () => {
   // the list.
   it("keeps every candidate it is handed, ownership being the query's call", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
-    expect(got.items.map((i) => i.oracleId).sort()).toEqual(["a", "b", "c"]);
+    expect(got.items.map((i) => i.name).sort()).toEqual(["A", "B", "C"]);
     expect(got.candidateCount).toBe(3);
   });
 
@@ -165,11 +165,14 @@ describe("assembleDiscovery", () => {
       .toBe(1190);
   });
 
-  // It ships now, because the floor is applied over these rows and the floor
-  // reads it. The figure the item carries has to be the figure the floor used,
-  // or the two can disagree about why a row is missing.
-  it("carries the collection-support count the floor was decided on", () => {
-    const got = assembleDiscovery({ ...base, sort: "fit" });
-    expect(got.items[0].collectionSupport).toBe(90);
+  // Each of these is spent during assembly and read by nothing downstream:
+  // `oracleId` is the sorts' final tiebreak, `collectionSupport` is what the
+  // floor decides on, `counts` and `imageUri` arrive from shapes the owned lane
+  // shares. Together they were about a quarter of the shipped payload.
+  it("ships none of the four fields only assembly reads", () => {
+    const [first] = assembleDiscovery({ ...base, sort: "fit" }).items;
+    for (const key of ["oracleId", "collectionSupport", "counts", "imageUri"]) {
+      expect(first).not.toHaveProperty(key);
+    }
   });
 });

@@ -58,21 +58,17 @@ const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
 });
 
 const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["items"][number] => ({
-  oracleId: "a",
   slug: "a",
   name: "A Commander",
   colorIdentity: ["G"],
-  imageUri: null,
   artCropUri: null,
   releasedAt: null,
   deckCount: 1209,
   rank: 1,
   ownedSupport: 12,
-  collectionSupport: 12,
   edhrecTotal: 40,
   colorPoolSize: 34,
   roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
-  counts: null,
   price: { kind: "absent" },
   tagTotal: 4,
   unplayedLabels: [],
@@ -121,13 +117,12 @@ describe("DiscoveryView", () => {
   ];
   const fixture = [
     ...DRUID_IDENTITIES.map((colorIdentity, i) =>
-      item({ oracleId: `d${i}`, slug: `d${i}`, name: `Druid ${i}`, colorIdentity, rank: i + 1 }),
+      item({ slug: `d${i}`, name: `Druid ${i}`, colorIdentity, rank: i + 1 }),
     ),
     // Golgari and more, but named nothing like the query: these are what a
     // figure counted over the unsearched list would sweep in.
     ...Array.from({ length: 8 }, (_, i) =>
       item({
-        oracleId: `x${i}`,
         slug: `x${i}`,
         name: `Sultai Sage ${i}`,
         colorIdentity: ["B", "G", "U"],
@@ -136,7 +131,6 @@ describe("DiscoveryView", () => {
     ),
     ...Array.from({ length: 23 }, (_, i) =>
       item({
-        oracleId: `w${i}`,
         slug: `w${i}`,
         name: `Plains Walker ${i}`,
         colorIdentity: ["W"],
@@ -208,8 +202,8 @@ describe("DiscoveryView", () => {
 
   it("reorders on the client rather than asking the server for a second ranking", () => {
     const items = [
-      item({ oracleId: "a", slug: "a", name: "Old Legend", releasedAt: "1994-08-01" }),
-      item({ oracleId: "b", slug: "b", name: "New Legend", releasedAt: "2024-02-02", rank: 2 }),
+      item({ slug: "a", name: "Old Legend", releasedAt: "1994-08-01" }),
+      item({ slug: "b", name: "New Legend", releasedAt: "2024-02-02", rank: 2 }),
     ];
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
@@ -230,8 +224,8 @@ describe("DiscoveryView", () => {
   it("orders by the deck count under Popularity, not by the served ranking", () => {
     window.history.replaceState(null, "", "/discover?o=popularity");
     const items = [
-      item({ oracleId: "a", slug: "a", name: "Server First", deckCount: 12 }),
-      item({ oracleId: "b", slug: "b", name: "Most Built", deckCount: 9000, rank: 2 }),
+      item({ slug: "a", name: "Server First", deckCount: 12 }),
+      item({ slug: "b", name: "Most Built", deckCount: 9000, rank: 2 }),
     ];
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
@@ -247,8 +241,8 @@ describe("DiscoveryView", () => {
   it("sorts an uncounted commander last rather than as a zero", () => {
     window.history.replaceState(null, "", "/discover?o=popularity");
     const items = [
-      item({ oracleId: "a", slug: "a", name: "Uncounted", deckCount: null }),
-      item({ oracleId: "b", slug: "b", name: "Counted", deckCount: 1, rank: 2 }),
+      item({ slug: "a", name: "Uncounted", deckCount: null }),
+      item({ slug: "b", name: "Counted", deckCount: 1, rank: 2 }),
     ];
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
@@ -274,8 +268,8 @@ describe("DiscoveryView", () => {
   // shows is the one the server ranked, not a client-side subtraction.
   it("counts the items it carries, and filters them by colour", () => {
     const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
+      item({ slug: "a", colorIdentity: ["G"] }),
+      item({ slug: "b", colorIdentity: ["U"], rank: 2 }),
     ];
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
@@ -292,8 +286,8 @@ describe("DiscoveryView", () => {
   it("opens with the colours the incoming URL names", () => {
     window.history.replaceState(null, "", "/discover?c=b,g");
     const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["B", "G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
+      item({ slug: "a", colorIdentity: ["B", "G"] }),
+      item({ slug: "b", colorIdentity: ["U"], rank: 2 }),
     ];
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
@@ -308,8 +302,8 @@ describe("DiscoveryView", () => {
   // see, not the ones the novelty floor removed before the page was drawn.
   it("counts the ranked rows on the result line, not the pre-exclusion candidates", () => {
     const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["B", "G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["U"] }),
+      item({ slug: "a", colorIdentity: ["B", "G"] }),
+      item({ slug: "b", colorIdentity: ["U"] }),
     ];
     const { container } = render(
       <DiscoveryView
@@ -343,8 +337,8 @@ describe("DiscoveryView", () => {
   it("opens under the mode the incoming URL names", () => {
     window.history.replaceState(null, "", "/discover?c=g&m=exact");
     const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+      item({ slug: "a", colorIdentity: ["G"] }),
+      item({ slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
     ];
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
@@ -472,7 +466,7 @@ describe("DiscoveryView", () => {
   // ── The window ────────────────────────────────────────────────────────
   const many = (n: number) =>
     Array.from({ length: n }, (_, i) =>
-      item({ oracleId: `o${i}`, slug: `s${i}`, name: `Commander ${i}`, rank: i + 1 }),
+      item({ slug: `s${i}`, name: `Commander ${i}`, rank: i + 1 }),
     );
 
   it("opens on one step and reveals the next, naming the band it is about to show", () => {
@@ -665,8 +659,8 @@ describe("DiscoveryView", () => {
   const search = planeCopy.search;
 
   const named = () => [
-    item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated" }),
-    item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", rank: 2 }),
+    item({ slug: "a", name: "Yarok, the Desecrated" }),
+    item({ slug: "b", name: "Meren of Clan Nel Toth", rank: 2 }),
   ];
 
   // The list narrows on the keystroke, with no wait — the rows are already in
@@ -742,6 +736,23 @@ describe("DiscoveryView", () => {
     );
   });
 
+  // Every sentence this surface could write about a miss waits on the lookup,
+  // and the branch below the empties is a list with no rows in it. That gap used
+  // to paint blank for as long as the round trip took.
+  it("holds the space with the loading mark while the lookup is out", async () => {
+    findExcluded.mockReturnValue(new Promise(() => {}));
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+    );
+    fireEvent.change(field(), { target: { value: "krenko" } });
+
+    await waitFor(() =>
+      expect(container.querySelector("[data-pending-mark]")).toBeInTheDocument(),
+    );
+    // And says nothing while it waits: the claim is the thing being checked.
+    expect(container.textContent).not.toContain(discoverCopy.empty.heading);
+  });
+
   // ── The excluded match ────────────────────────────────────────────────
   const excluded = planeCopy.excluded;
 
@@ -750,7 +761,7 @@ describe("DiscoveryView", () => {
   // the colour empty state would not say which row went missing.
   it("names the commander a pip excluded, and clears the filter that took it", async () => {
     const items = [
-      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["U"] }),
+      item({ slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["U"] }),
     ];
     const { container } = render(
       <DiscoveryView discovery={list({ items, candidateCount: 1 })} />,
@@ -774,7 +785,6 @@ describe("DiscoveryView", () => {
   it("names the mode when the mode is what removed the only match", async () => {
     const items = [
       item({
-        oracleId: "a",
         slug: "a",
         name: "Yarok, the Desecrated",
         colorIdentity: ["B", "G", "U"],
@@ -933,8 +943,8 @@ describe("DiscoveryView", () => {
   // ── The exclusion line ────────────────────────────────────────────────
   it("prints the list's receipt in tier order, and nothing when nothing was excluded", () => {
     const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
+      item({ slug: "a", colorIdentity: ["G"] }),
+      item({ slug: "b", colorIdentity: ["U"], rank: 2 }),
     ];
     const discovery = list({
       items,
