@@ -74,8 +74,29 @@ const READ_HEADER = `() => {
   const detail = [...header.querySelectorAll('button,a')].find(
     (e) => visible(e) && /card details/i.test(e.getAttribute('aria-label') || ''),
   );
+  const pencil = [...header.querySelectorAll('button')].find(
+    (e) => visible(e) && /^Rename deck/.test(e.getAttribute('aria-label') || ''),
+  );
+  // R6 ruling 1 needs the plate's own colour and the page ground to compare it
+  // to. The --bg token is resolved through a throwaway element rather than read off the
+  // custom property, so both sides of the comparison are in the same colour
+  // space whatever the token's authored form.
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;left:-9999px;background:var(--bg)';
+  document.body.appendChild(probe);
+  const pageGround = getComputedStyle(probe).backgroundColor;
+  probe.remove();
   return {
     found: true,
+    renameLabel: pencil ? pencil.getAttribute('aria-label') : null,
+    plateBackground: art?.parentElement
+      ? getComputedStyle(art.parentElement).backgroundColor
+      : null,
+    // Only the cover band carries the loading plate. A left-portrait row plates
+    // to the row's own ground on purpose, so the same reading means the opposite
+    // thing there and the check below has to know which band it is looking at.
+    isCover: Boolean(header.querySelector('.art-wash-scrim-cover')),
+    pageGround,
     headerHeight: Math.round(box.height),
     bandHeight: art ? Math.round(art.getBoundingClientRect().height) : null,
     artUrl: /url\\(/.test(image) ? image.replace(/^.*?url\\(["']?/, '').replace(/["']?\\).*$/, '') : null,
@@ -89,6 +110,20 @@ const READ_HEADER = `() => {
       ? Math.round((fill.getBoundingClientRect().width / fill.parentElement.getBoundingClientRect().width) * 100)
       : null,
     status: pill ? pill.textContent.trim() : null,
+    // R6 ruling 3 — every ink the over-99 state adds, so the walk can check that
+    // one state is not painted in two alarm colours. The figure row is the bar
+    // track's previous sibling and the trim line is the paragraph after it,
+    // which holds at both breakpoints; the type sizes do not.
+    overInks: (() => {
+      const row = fill?.parentElement?.previousElementSibling;
+      if (!row) return null;
+      const inks = [...row.children]
+        .filter(visible)
+        .map((s) => ({ text: s.textContent.trim(), color: getComputedStyle(s).color }));
+      const lead = [...header.querySelectorAll('p b')].find(visible);
+      if (lead) inks.push({ text: lead.textContent.trim(), color: getComputedStyle(lead).color });
+      return inks;
+    })(),
     hasCardDetails: Boolean(detail),
     // The meta row's ground is the claim §C8 makes: in the band at rest, below
     // the divider while editing. Its offset against the band's bottom edge says
@@ -152,13 +187,31 @@ try {
       if (h.status && !seenStatuses.has(h.status)) seenStatuses.set(h.status, { path, ...h });
 
       // Item 1 — art, not a flat gradient, and a title that is legible on it.
+      // R6 ruling 1 rides along: the plate is a loading device, so it is drawn
+      // only where there is a crop to load and an artless band takes `--bg`.
       if (h.artUrl) {
         if (!h.artUrl.includes("art_crop")) fail(`framed art in the band: ${h.artUrl}`);
+        if (h.isCover && h.plateBackground === h.pageGround) {
+          fail(`washed cover band is not plated: ${h.plateBackground}`);
+        }
       } else if (h.isGradientOnly) {
         note(`  identity gradient (commander has no crop) — band still ${h.bandHeight}px`);
         if (h.hasCardDetails) fail(`Card details pill drawn with no crop to open`);
+        if (h.isCover) {
+          if (h.plateBackground !== h.pageGround) {
+            fail(`artless band plated ${h.plateBackground}, not the page ground ${h.pageGround}`);
+          } else {
+            note(`  artless cover band grounds in --bg (${h.pageGround}), not the loading plate`);
+          }
+        }
       } else {
         fail(`band has neither art nor an identity gradient`);
+      }
+
+      // R6 ruling 4 — the header is reachable from list contexts, so the label
+      // has to name the deck it is about to rename.
+      if (h.renameLabel !== `Rename deck: ${h.title}`) {
+        fail(`rename trigger labelled "${h.renameLabel}", not "Rename deck: ${h.title}"`);
       }
       if (!h.title) fail(`no title in the header`);
       // Mobile sits on the wash and must carry the shared ink shadow; desktop's
@@ -180,6 +233,22 @@ try {
     const over = [...seenStatuses.values()].find((h) => /Over/.test(h.status));
     if (over && over.barWidthPct !== 100) fail(`over-99 bar not clamped: ${over.barWidthPct}%`);
     if (!over) note(`  (no over-99 deck in this account — clamp unverified on the surface)`);
+    if (over) {
+      // R6 ruling 3. The denominator is the one ink in the row that is not the
+      // state's own — it reads the same faint token at every status.
+      const strays = (over.overInks ?? []).filter(
+        (i) => !/^\/\s*99$/.test(i.text) && i.color !== over.barBackground,
+      );
+      if (strays.length) {
+        fail(
+          `over-99 inks disagree with the ${over.barBackground} bar: ${strays
+            .map((i) => `"${i.text}" ${i.color}`)
+            .join(", ")}`,
+        );
+      } else {
+        note(`  over-99 inks all read the bar's ${over.barBackground}`);
+      }
+    }
 
     // Items 2/3/4 — the rename flow on the first deck, screenshotted per state.
     const walk = deckPaths[0];
@@ -233,6 +302,19 @@ try {
     now = await page.evaluate(`(${READ_HEADER})()`);
     if (now.title !== originalName) fail(`Cancel saved the edit: "${now.title}"`);
     else note(`  Cancel does not save`);
+
+    // R6 ruling 2 — an empty name is one of two exits, and leaving the field is
+    // the revert. Checked before the saving exits so a bug here cannot leave the
+    // deck unnamed for the rest of the walk.
+    await pencil.click();
+    await page.waitForTimeout(200);
+    await field.fill("");
+    await field.evaluate((el) => el.blur());
+    await page.waitForTimeout(900);
+    now = await page.evaluate(`(${READ_HEADER})()`);
+    if (now.title !== originalName) fail(`blurring an empty name did not revert: "${now.title}"`);
+    else if (await field.count()) fail(`the field stayed open on an empty blur`);
+    else note(`  blurring an empty name reverts and closes the field`);
 
     // Enter saves, and clicking away saves — checked in that order so the second
     // has a name to put back.
