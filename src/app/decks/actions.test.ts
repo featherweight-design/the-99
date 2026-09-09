@@ -202,6 +202,7 @@ vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({
   revalidatePath: (path: string) => { stub.state.revalidated.push(path); },
+  updateTag: () => {},
 }));
 vi.mock("next/navigation", () => ({
   redirect: (target: string) => {

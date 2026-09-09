@@ -45,6 +45,9 @@ export default async function CollectionPage() {
   const userId = await requireUserId();
   const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
+    // The heaviest read on this page by an order of magnitude, but deliberately
+    // NOT run through `cacheForUser`: it serialises to 2.4 MB and the data cache
+    // refuses any entry over 2 MB. See `user-lists.ts`.
     loadBrowseCards(userId),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).

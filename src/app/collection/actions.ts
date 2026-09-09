@@ -6,6 +6,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
@@ -128,6 +129,8 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   // A preview written before migration 0008 carries no collectorNumber/finish;
   // replaceCollection coerces both rather than spreading undefined into the insert.
   await replaceCollection(userId, pendingItems, { confirmUploadId: uploadId });
+  // Every cached list this reader has is a function of the rows just replaced.
+  revalidateUserLists(userId);
   revalidatePath("/collection");
   revalidatePath("/");
   // Wiping commander_scores above changes what /commanders renders, and slugs are
@@ -186,6 +189,8 @@ export async function setCardArtPreference(
       target: [cardArtPreferences.userId, cardArtPreferences.oracleId],
       set: { setCode: normalizedSetCode, collectorNumber },
     });
+  // The browse payload carries the chosen printing's art, so it is stale now.
+  revalidateUserLists(userId);
   revalidatePath("/collection");
 }
 
@@ -196,5 +201,6 @@ export async function clearCardArtPreference(oracleId: string): Promise<void> {
     eq(cardArtPreferences.userId, userId),
     eq(cardArtPreferences.oracleId, oracleId),
   ));
+  revalidateUserLists(userId);
   revalidatePath("/collection");
 }

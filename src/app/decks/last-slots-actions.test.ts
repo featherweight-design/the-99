@@ -257,6 +257,7 @@ vi.mock("next/cache", () => ({
   revalidatePath: (path: string) => {
     stub.state.revalidated.push(path);
   },
+  updateTag: () => {},
 }));
 vi.mock("next/navigation", () => ({
   redirect: () => {

@@ -17,6 +17,7 @@ describe("claimSurfaces", () => {
       ...deckSurfaces("deck-1"),
       "/collection",
       "/commanders",
+      "/discover",
     ]);
   });
 });

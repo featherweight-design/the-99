@@ -39,6 +39,7 @@ vi.mock("next/cache", () => ({
   revalidatePath: (p: string) => {
     stub.calls.revalidated.push(p);
   },
+  updateTag: () => {},
 }));
 vi.mock("next/server", () => ({ after: (fn: () => void) => fn() }));
 
