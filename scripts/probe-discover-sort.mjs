@@ -56,12 +56,50 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
+// The top of the list, which is where a change of ranking shows. Read as the
+// probe's one observation of the screen, and the only thing the flip assertions
+// are made about.
+const ROWS = "main ul > li h3";
+
 const names = (page) =>
-  page.evaluate(() =>
-    [...document.querySelectorAll("main ul > li h3")].slice(0, 5).map((h) =>
-      (h.textContent ?? "").trim(),
-    ),
-  );
+  page.$$eval(ROWS, (nodes) => nodes.slice(0, 5).map((h) => (h.textContent ?? "").trim()));
+
+/**
+ * Settle on the rows the next assertion is about rather than on a clock: `want`
+ * is whether they should end up equal to `reference` or different from it.
+ *
+ * A timeout is swallowed deliberately. The assertion that follows reports what
+ * is actually on screen, and a probe that threw here would name a wait it ran
+ * out of instead of the defect that caused it.
+ */
+async function settle(page, reference, want) {
+  await page
+    .waitForFunction(
+      ({ selector, ref, want: matches }) => {
+        const rows = [...document.querySelectorAll(selector)]
+          .slice(0, 5)
+          .map((h) => (h.textContent ?? "").trim());
+        return rows.length > 0 && (JSON.stringify(rows) === ref) === matches;
+      },
+      { selector: ROWS, ref: JSON.stringify(reference), want },
+      { timeout: 20_000 },
+    )
+    .catch(() => {});
+}
+
+/**
+ * Let the request log go quiet before it is counted — a request not yet made
+ * cannot be counted, and the counts here are the assertions.
+ *
+ * Quiet is measured against this probe's own log rather than the whole network,
+ * which never settles under `next dev`.
+ */
+async function quiet(page, log) {
+  for (let seen = -1; seen !== log.length; ) {
+    seen = log.length;
+    await page.waitForTimeout(700);
+  }
+}
 
 async function pick(page, label) {
   await page.locator("main button, header button").filter({ hasText: /^Order · / }).first().click();
@@ -77,17 +115,23 @@ async function main() {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1300, height: 900 } });
 
+  // Navigational RSC payloads only. The counts below are claims about what a
+  // flip costs in list data, so document loads, static assets and speculative
+  // prefetches on the same paths would all inflate them without the reader
+  // having asked for anything.
   const requests = [];
   page.on("request", (r) => {
     const u = new URL(r.url());
-    if (u.pathname.startsWith("/discover") || u.pathname.startsWith("/commanders")) {
-      requests.push(`${r.method()} ${u.pathname}${u.search} rsc=${r.headers().rsc ?? "-"}`);
+    const lane = u.pathname.startsWith("/discover") || u.pathname.startsWith("/commanders");
+    const prefetch = r.headers()["next-router-prefetch"] === "1";
+    if (lane && u.searchParams.has("_rsc") && !prefetch) {
+      requests.push(`${r.method()} ${u.pathname}${u.search}`);
     }
   });
 
   await signIn(page);
   await page.goto(`${BASE}/discover`, { waitUntil: "networkidle" });
-  await page.waitForSelector("main ul > li h3", { timeout: 60_000 });
+  await page.waitForSelector(ROWS, { timeout: 60_000 });
 
   const failures = [];
   const check = (ok, claim, detail) => {
@@ -101,7 +145,8 @@ async function main() {
 
   const mark = requests.length;
   await pick(page, "Something new");
-  await page.waitForTimeout(6000);
+  await settle(page, before, false);
+  await quiet(page, requests);
   const after = await names(page);
   const flipRequests = requests.slice(mark);
 
@@ -112,12 +157,17 @@ async function main() {
     "Something new puts a different ranking on screen",
     after,
   );
-  check(page.url().endsWith("?o=new"), "the flip writes ?o=new", page.url());
+  check(
+    new URL(page.url()).searchParams.get("o") === "new",
+    "the flip writes o=new",
+    page.url(),
+  );
   check(flipRequests.length === 1, "the flip costs exactly one payload", flipRequests);
 
   const mark2 = requests.length;
   await pick(page, "Best fit");
-  await page.waitForTimeout(4000);
+  await settle(page, before, true);
+  await quiet(page, requests);
   const back = await names(page);
   const backRequests = requests.slice(mark2);
   // A ranking this visit has already been served comes back out of
@@ -133,14 +183,17 @@ async function main() {
   // cache actually governs — `page.goto` is a document load and bypasses it.
   // Reported rather than asserted: closing this is an open design decision, and
   // a check would fail every run until it is made.
-  const go = async (label) => {
+  const go = async (path, label) => {
     await page.getByRole("link", { name: label, exact: true }).first().click();
-    await page.waitForTimeout(3500);
+    await page.waitForURL((url) => url.pathname === path, { timeout: 20_000 }).catch(() => {});
+    await page.waitForSelector(ROWS, { timeout: 20_000 }).catch(() => {});
+    await quiet(page, requests);
   };
+
   for (const lap of [1, 2]) {
     const mark3 = requests.length;
-    await go("Commanders");
-    await go("Discover");
+    await go("/commanders", "Commanders");
+    await go("/discover", "Discover");
     console.log(`lap ${lap} (reported, not asserted):`, requests.slice(mark3));
   }
 
