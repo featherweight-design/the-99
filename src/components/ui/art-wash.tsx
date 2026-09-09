@@ -11,6 +11,14 @@ const SCRIM = `linear-gradient(180deg, ${tint("--bg", 90)} 0%, ${tint("--bg", 30
 
 const COVER_ART_OPACITY = 0.58;
 
+/** L1, the base plate: one step below the page ground, so a slow or missing
+    image never flashes light. No token is darker than `--bg` and the handoff
+    forbids adding one, so the plate derives from it and each theme gets its own
+    value of the same rule. `left-portrait` deliberately does not use this — those
+    rows plate to the row's own ground, so the art fades into the row rather than
+    into a darker patch of its own. */
+const COVER_PLATE = "color-mix(in srgb, var(--bg) 86%, black)";
+
 const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's
@@ -115,7 +123,8 @@ export function ArtWash(props: ArtWashProps) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 overflow-hidden bg-[color:var(--bg)]"
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ background: COVER_PLATE }}
     >
       <div
         className="art-wash-art absolute inset-0"
