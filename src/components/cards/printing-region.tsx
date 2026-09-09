@@ -409,7 +409,9 @@ function FinishChip({ label, active, onClick }: { label: string; active: boolean
       onClick={onClick}
       aria-pressed={active}
       className={[
-        "cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] py-[5px]",
+        // 44px on the phone: a finish chip is the only route to that finish,
+        // and the desktop figure alone would put it under the floor. R3 §2.
+        "cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] h-[44px] md:h-auto md:py-[5px]",
         "border border-solid border-[color:var(--border-strong)]",
         active
           ? "text-[color:var(--bg)] bg-[color:var(--accent)]"

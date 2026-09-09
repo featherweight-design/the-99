@@ -86,7 +86,7 @@ export function DeckSortMenu({
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] py-0 font-sans text-[12.5px] text-[color:var(--fg-body)]"
+        className="flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] py-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)]"
       >
         {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
       </button>

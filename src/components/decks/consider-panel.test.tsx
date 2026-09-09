@@ -285,7 +285,7 @@ describe("ConsiderPanel — tiles", () => {
   // click lands on a card the user never chose.
   it("adds on click and holds the tile's slot", async () => {
     mount({ suggestions: [suggestion({ name: "Sol Ring" })] });
-    fireEvent.click(screen.getByRole("button", { name: "Add Sol Ring to deck" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Sol Ring to the deck" }));
 
     await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", "sol-ring"));
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
@@ -341,16 +341,22 @@ describe("ConsiderPanel — unowned staples", () => {
     ).toHaveTextContent("buy");
   });
 
-  // Adding a card you do not own is a real action, just not the deck's
-  // default one, so Add drops out of accent.
-  it("offers the add as a secondary action, not the tile's primary one", () => {
+  // R3.1 §4: the two adds are peers, so they take one geometry and one weight.
+  // The consequence that differs is named in the label, never drawn as a style
+  // difference nobody can perceive while skimming a panel of tiles.
+  it("gives both adds the same pill and puts the difference in the label", () => {
     mount({ suggestions: [unowned("Smothering Tithe"), suggestion({ name: "Sol Ring" })] });
 
-    const secondary = screen.getByRole("button", { name: "Add Smothering Tithe to deck" });
-    expect(secondary.className).not.toContain("bg-accent");
-    expect(secondary.className).toContain("border-strong");
-    expect(screen.getByRole("button", { name: "Add Sol Ring to deck" }).className)
-      .toContain("bg-accent");
+    const unownedAdd = screen.getByRole("button", {
+      name: "Add Smothering Tithe to the deck, and to your To buy list, because you do not own it",
+    });
+    const ownedAdd = screen.getByRole("button", { name: "Add Sol Ring to the deck" });
+
+    expect(unownedAdd.className).toBe(ownedAdd.className);
+    expect(unownedAdd.className).not.toContain("bg-accent");
+    expect(ownedAdd.className).not.toContain("bg-accent");
+    expect(unownedAdd).toHaveTextContent("Add · to buy");
+    expect(ownedAdd).toHaveTextContent("Add");
   });
 
   // Design table §8-6 ungates the lift line from ownership so a synergy-ranked

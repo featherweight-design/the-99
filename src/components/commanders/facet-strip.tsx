@@ -62,9 +62,12 @@ export function FacetStrip({
     <div
       role="radiogroup"
       aria-label={synergyCopy.facet.groupAria}
-      // Horizontal scroll at phone width; wraps naturally on desktop where space allows.
+      // One row and a horizontal scroll at phone width, never a wrap: 44px
+      // chips make a wrapping strip tall enough to break the layout, and a
+      // taller strip is the cost R3 §2 chose to pay in width instead. Desktop
+      // wraps as before, where space allows.
       // gap-[6px] at both widths per design table (desktop also uses 6px).
-      className="flex flex-wrap gap-[6px] overflow-x-auto md:overflow-visible"
+      className="flex flex-nowrap md:flex-wrap gap-[6px] overflow-x-auto md:overflow-visible"
       style={{ scrollbarWidth: "none" }}
     >
       {shown.map((facet, i) => {
@@ -101,14 +104,18 @@ export function FacetStrip({
               e.preventDefault();
               step(i, dir);
             }}
+            // The Dense chip variant, scoped by name to this strip: it is the
+            // one horizontally scrolling row of many chips, where the default
+            // pill's 14px/16px padding costs a visible chip per screen. The
+            // 44px phone height is the same floor the default carries — a
+            // facet chip is the only route to its filter, so it cannot sit
+            // under it. R3 §2, R3.1 §5.
+            //
             // `md:` where the refresh's other controls use `sm:`, deliberately:
             // matching the breakpoints would move this strip at a width nobody
-            // reviewed. Only the desktop height changes, 30px to the hairline 32.
-            className="shrink-0 md:shrink flex items-center gap-[5px] md:gap-[6px] font-mono cursor-pointer h-8 md:h-[32px]"
+            // reviewed.
+            className="shrink-0 md:shrink flex items-center gap-[5px] md:gap-[6px] font-mono cursor-pointer h-[44px] md:h-[32px] px-[12px] rounded-[10px] md:rounded-[8px] text-[13px] md:text-[12.5px] font-medium"
             style={{
-              padding: "0 11px",
-              borderRadius: 999,
-              fontSize: 11.5,
               // eslint-disable-next-line no-restricted-syntax -- background is constant (transparent for All-unselected, --surface-raised otherwise); genuinely conditional
               background: !isSelected && facet === "all" ? "transparent" : "var(--surface-raised)",
               // eslint-disable-next-line no-restricted-syntax -- border changes with isSelected and facet=all; genuinely dynamic
@@ -116,7 +123,11 @@ export function FacetStrip({
                 ? "1px solid var(--accent)"
                 : facet === "all"
                   ? "1px dashed var(--border-strong)"
-                  : "1px solid var(--border)",
+                  // --border-strong, not --border: the pill table is the
+                  // complete statement of this control's resting border, and
+                  // R3.1 §5 made it so. Accent and the dashed All are state
+                  // treatments layered on top, which R3 did not reopen.
+                  : "1px solid var(--border-strong)",
             }}
           >
             <span style={{ color: isSelected ? "var(--fg)" : "var(--fg-body)" }}>

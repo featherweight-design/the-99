@@ -341,27 +341,30 @@ export function SuggestionTile({
         >
           {addPanelCopy.tile.inDeck}
         </span>
-      ) : suggestion.owned ? (
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={isPending}
-          aria-label={addPanelCopy.tile.addAria(suggestion.name)}
-          className="w-full rounded-[8px] md:rounded-[7px] h-[44px] md:h-auto md:py-[7px] text-[14px] md:text-[12px] font-semibold cursor-pointer disabled:opacity-50 border-none bg-accent text-bg hover:bg-accent-hover"
-        >
-          {addPanelCopy.tile.add}
-        </button>
       ) : (
-        // Adding a card you do not own is a real action, just not the deck's
-        // default one, so it takes the §404 secondary contract as written
-        // rather than a ghost button drawn on the tile.
+        // One geometry, one weight, two labels. The owned and unowned adds are
+        // peers — same importance, different consequence — so the consequence
+        // is named in the label rather than drawn as a tier difference nobody
+        // can perceive while skimming a panel. Accent is doubly wrong on the
+        // unowned branch: it is the one press that creates a to-buy
+        // obligation, on a tile already printing to-buy as accent data.
+        // R3.1 §4.
+        //
+        // Hairline geometry spelled out at `md:` rather than merged from
+        // `HAIRLINE`, which is a `sm:` constant: this file splits at `md`.
         <GhostButton
           onClick={handleAdd}
           disabled={isPending}
-          aria-label={addPanelCopy.tile.addAria(suggestion.name)}
-          className="w-full rounded-[8px] md:rounded-[7px] h-[44px] md:h-auto md:py-[6px] text-[14px] md:text-[12px] disabled:opacity-50"
+          aria-label={
+            suggestion.owned
+              ? addPanelCopy.tile.addAria(suggestion.name)
+              : addPanelCopy.tile.addUnownedAria(suggestion.name)
+          }
+          className="w-full text-center rounded-[10px] md:rounded-[8px] h-[44px] md:h-[32px] px-[16px] md:px-[14px] text-[14px] md:text-[12.5px] font-medium disabled:opacity-50"
         >
-          {addPanelCopy.tile.add}
+          {suggestion.owned
+            ? addPanelCopy.tile.add
+            : addPanelCopy.tile.addUnowned}
         </GhostButton>
       )}
 
