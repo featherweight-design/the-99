@@ -35,14 +35,15 @@ const WUBRG = ["W", "U", "B", "R", "G"];
  *
  * Sorted WUBRG rather than left in concatenation order, because `IdentityPips`
  * draws the array as given and a Boros partner behind a Jeskai primary would
- * otherwise put red after white. A letter outside WUBRG survives at the end
- * instead of being dropped — `colorLabel` deliberately refuses to name an
- * identity it does not recognise, and losing the letter here would hand it a
- * combination the deck does not have.
+ * otherwise put red after white. A single commander is ordered by the same
+ * rule, so one deck's pips never draw in a different order from another's. A
+ * letter outside WUBRG survives at the end instead of being dropped —
+ * `colorLabel` deliberately refuses to name an identity it does not recognise,
+ * and losing the letter here would hand it a combination the deck does not
+ * have.
  */
 export function deckIdentity(primary: string[], partner: string[] | null): string[] {
-  if (partner === null) return primary;
-  const set = new Set([...primary, ...partner]);
+  const set = new Set([...primary, ...(partner ?? [])]);
   return [
     ...WUBRG.filter((c) => set.has(c)),
     ...[...set].filter((c) => !WUBRG.includes(c)),

@@ -2,8 +2,9 @@ import { describe, it, expect } from "vitest";
 import { colorLabel, deckIdentity } from "./format";
 
 describe("deckIdentity", () => {
-  it("returns the primary's own identity untouched when there is no partner", () => {
-    expect(deckIdentity(["R", "W"], null)).toEqual(["R", "W"]);
+  it("orders a lone primary WUBRG, so its pips match a pair's", () => {
+    expect(deckIdentity(["R", "W"], null)).toEqual(["W", "R"]);
+    expect(deckIdentity(["W", "X"], null)).toEqual(["W", "X"]);
   });
 
   it("unions a pair and orders the union WUBRG", () => {
