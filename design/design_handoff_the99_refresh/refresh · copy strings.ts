@@ -94,6 +94,21 @@ export const refreshCopy = {
       `${name}, ${status}, ${count}, ${detail}`,
   },
 
+  // ── Suggestion tile — the two add branches (R3.1 §4) ─────────────────
+  // One geometry for both: the default hairline pill. The owned/unowned
+  // distinction lives in the LABEL, never in the button's weight — two
+  // hairline weights are indistinguishable in a panel of many tiles. Never
+  // accent: the unowned branch creates a to-buy obligation, and accent is
+  // already what to-buy looks like as DATA on this same tile.
+  suggestion: {
+    add: 'Add',
+    // Names the consequence in the vocabulary the six statuses teach: adding an
+    // unowned card moves the deck to To buy and adds a row to Home's total.
+    addUnowned: 'Add · to buy',
+    addAria: (name: string) => `Add ${name} to the deck`,
+    addUnownedAria: (name: string) => `Add ${name} to the deck — you do not own it, it will be added to buy`,
+  },
+
   // ── Zero states ───────────────────────────────────────────────────────
   // Distinct from filters.empty*, which is the FILTERED empty and offers Clear.
   zero: {

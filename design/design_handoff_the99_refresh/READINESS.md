@@ -1,6 +1,6 @@
 # Readiness — UI refresh · Home, Decks, chrome
 
-`design/design_handoff_the99_refresh/` · R2 · 2026-09-07
+`design/design_handoff_the99_refresh/` · R3 + R3.1 · 2026-09-08
 
 ## Closed
 
@@ -20,6 +20,12 @@
 | Import placement | **Closed (R2).** Peer of New deck, hairline, header-left of it; full-width pair on phone. |
 | Phone Ready-to-build | **Closed (R2).** Stacked list. Carousel withdrawn. |
 | Draft tiles | **Corrected (R2).** Commander art on every tile; placeholder art and *no commander yet* removed. |
+| Accent on actions — the four sites | **Closed (R3).** Three lose accent, signed-out Home keeps it as a written exception. `RULINGS-R3.md` §1. |
+| Phone touch targets | **Closed (R3).** Facet strip and coverage-sort both to 44px; the phone column of the targets table is a floor, and the tile-`…` exemption does not generalise. §2. |
+| Hairline side padding | **Closed (R3).** 14px confirmed; the R2 frames were off by a pixel and have been corrected. §3. |
+| Suggestion tile's two add branches | **Closed (R3.1).** One geometry, two labels — `Add` / `Add · to buy`; `GhostButton` retired from the tile. §4. |
+| Pill variants | **Closed (R3.1).** Two named variants only, Default and Dense chip; 44px phone height identical in both. §5. |
+| `§1` tie-breaker | **Ratified, untested (R3.1).** The log-form case turned out to be mutually exclusive states. Rule kept, premise corrected. §6. |
 
 ## Blocking a green
 
@@ -57,6 +63,12 @@ this package.
 the new display faces or the 32px button. One pass before build.
 
 **Collection.** Second item in the rail, no frame in this package.
+
+**Phone frames are budgeted, and the budget is tight.** All five are 390×800 with nothing clipped,
+but Home and first run are within ~20px of full. First run in particular carries a load-bearing
+`Import a deck` at the bottom — if a step gains a line of copy, that button is what falls off, and
+it is the one route for a player who arrives with a decklist and no CSV. Re-measure both frames
+after any copy change.
 
 **First run's locked rail needs accessible names.** The three dimmed items are inert; the reason
 they are inert should live in the accessible name (`firstRun.lockedItemAria`), not only in the
