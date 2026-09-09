@@ -87,22 +87,16 @@ describe("loadDiscovery — wiring", () => {
   });
 
   // An empty availability map counts every owned card as uncommitted, which is a
-  // claim the receipt cannot make on a failed read. The flag is what tells the
-  // two apart downstream.
-  it("reports availOk: false when the availability read fails", async () => {
+  // claim nothing can make on a failed read. The list carries no per-item receipt
+  // counts, so this flag is the only thing that tells the two reads apart.
+  it("reports the availability read's outcome either way", async () => {
+    expect((await loadDiscovery("user-1", { sort: "fit" })).availOk).toBe(true);
+
     availabilityThrows = true;
     const got = await loadDiscovery("user-1", { sort: "fit" });
     expect(got.availOk).toBe(false);
-    // The ranking survives — only the receipt counts are lost, and they are lost
-    // as unknown rather than as zeros.
+    // The ranking survives a failed read: only the receipt was ever at stake.
     expect(got.items).toHaveLength(1);
-    expect(got.items[0].counts).toBeNull();
-  });
-
-  it("carries the receipt counts when the read succeeds", async () => {
-    const got = await loadDiscovery("user-1", { sort: "fit" });
-    expect(got.availOk).toBe(true);
-    expect(got.items[0].counts).toEqual({ inUse: 0, wantedByBrew: 0 });
   });
 
   it("reads the subtitle's collection size off the whole collection", async () => {

@@ -12,6 +12,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { filterByColors } from "../../lib/commanders/filter";
 import {
+  discoverSort,
   laneQuery,
   parseLaneParams,
   type LaneOrder,
@@ -35,7 +36,7 @@ import { laneHref, useRerankAnnouncement } from "./list-nav";
 import {
   EndOfRanking, REVEAL_STEP, RevealControl, revealAnnouncement,
 } from "./reveal-control";
-import { DiscoveryEmpty, FloorEmpty, NoDecksBanner } from "./discovery-empty";
+import { DiscoveryEmpty, FloorEmpty, NoDecksBanner, SearchPending } from "./discovery-empty";
 import { ExclusionLine } from "./exclusion-line";
 import { resolveExclusionLine } from "../../lib/commanders/exclusion-line";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
@@ -65,18 +66,22 @@ const EMPTY_MATCHES: ExcludedMatch[] = [];
 const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
 
 /**
- * The lane's client-side ordering — all three of them, over rows the client
- * already holds. A round trip for a sort of a list in memory is the request this
- * lane's cache exists to avoid, and the payload carries every figure they rank
- * on. The scope picks which question the list answers and the order only
- * arranges the answer, so none of these touches `rank`, which stays the position
- * in the scope's own ranking.
+ * The lane's client-side ordering — three of its five orders, over rows the
+ * client already holds. A round trip for a sort of a list in memory is the
+ * request this lane's cache exists to avoid, and the payload carries every
+ * figure they rank on. None of these touches `rank`, which stays the position in
+ * the server's own ranking.
+ *
+ * The other two, `bestfit` and `new`, fall through untouched: they ARE the
+ * server's ranking, and the payload already arrives in that order. That
+ * fallthrough is the whole of the fix — the build before this one re-sorted
+ * every payload by a separate order control, so the ranking the reader asked for
+ * never reached the screen.
  *
  * `popularity` sorts on the EDHREC deck count, which is the figure the row
  * prints under that name. It is NOT the server's own order: the server ranks on
- * support or on novelty — the scope's two questions — so returning the list
- * untouched here would have printed `Popularity` over whichever of those was
- * active and called it the deck count.
+ * support or on novelty, so returning the list untouched here would have printed
+ * `Popularity` over whichever of those was active and called it the deck count.
  *
  * A row with no figure sorts last in both figure orders. An undated set and an
  * uncounted commander are absences, and an absence ordered as a zero would be
@@ -96,6 +101,18 @@ function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
 }
 
 /**
+ * The parameters with `order` corrected to the ranking the server actually
+ * returned. Only `new` can be refused — `loadDiscovery` downgrades it when there
+ * is no built deck to measure novelty from — and the four orders that ask for
+ * the fit ranking always get it, so a mismatch has exactly one meaning and one
+ * repair. Returning the same object when nothing moved is what lets the caller
+ * skip a set during render.
+ */
+function settleOrder(p: LaneParams, sort: "fit" | "new"): LaneParams {
+  return discoverSort(p.order) === sort ? p : { ...p, order: "bestfit" };
+}
+
+/**
  * Discovery's list is its own client component rather than an adaptation of
  * `CommandersView`: that one takes `CommanderListItem[]` and holds the owned
  * lane's two client-side rankings and its `ScoreDelta` state, none of which
@@ -111,29 +128,30 @@ function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
 export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList }) {
   // Shadowing the prop, so everything below reads the ranking that is on screen
   // without caring whether it arrived from the server this navigation or came
-  // back out of the cache. A scope already seen this visit is served with no
+  // back out of the cache. A ranking already seen this visit is served with no
   // request at all, which is also what makes the design table's "motion: none"
   // true for it — there is nothing to wait for.
   const { view: discovery, serve } = useDiscoveryCache(served);
   const search = useSearchParams();
   const router = useRouter();
   // #338's contract: a control whose flip is a server round-trip says so for the
-  // duration. Scope is the only one left that can reach the server, and even it
-  // usually does not — a cache hit answers in memory and this never turns true.
+  // duration. Order is the only control left that can reach the server, and only
+  // for the two of its values that name a ranking — and even then it usually does
+  // not: a cache hit answers in memory and this never turns true.
   const [navPending, startNav] = useTransition();
 
   // One parameter object for the whole rack, seeded off the URL — the lane flip
   // carries `?c=` and `?q=` across, so a reader who filtered to Golgari arrives
   // here with those pips lit rather than with params the list ignores.
   //
-  // `scope` is the exception: it is the one control the server ranks on, and
-  // `loadDiscovery` downgrades `new` to `bestfit` when there is no deck to
-  // measure novelty from. The ranking that actually came back wins over the one
-  // the URL asked for.
-  const [params, setParams] = useState<LaneParams>(() => ({
-    ...parseLaneParams(search, "discover"),
-    scope: served.sort === "new" ? "new" : "bestfit",
-  }));
+  // `order` is the exception: two of its five values are what the server ranks
+  // on, and `loadDiscovery` downgrades `new` to the fit ranking when there is no
+  // deck to measure novelty from. The ranking that actually came back wins over
+  // the one the URL asked for — but only ever by replacing `new`, since the other
+  // four all ask for the fit ranking and get it.
+  const [params, setParams] = useState<LaneParams>(() =>
+    settleOrder(parseLaneParams(search, "discover"), served.sort),
+  );
   const colors = useMemo(() => upper(params.colors), [params.colors]);
 
   // The query the reader has stopped typing. The list narrows on every keystroke
@@ -155,8 +173,8 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   );
 
   // Mirror the rack to the URL through the History API rather than
-  // `router.replace`: a replace is a navigation, and every control here except
-  // scope narrows a list the client already holds. `laneQuery` writes defaults
+  // `router.replace`: a replace is a navigation, and everything here except a
+  // ranking flip narrows a list the client already holds. `laneQuery` writes defaults
   // as absences and copies every parameter this lane does not own off the live
   // URL, so nothing another surface left behind is dropped.
   useEffect(() => {
@@ -165,33 +183,35 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
     window.history.replaceState(null, "", `${pathname}${next}`);
   }, [settled]);
 
-  // The scope the server actually ranked on, reconciled during render rather
-  // than in an effect: an effect would paint the control on the scope that was
+  // The ranking the server actually produced, reconciled during render rather
+  // than in an effect: an effect would paint the control on the order that was
   // asked for once before correcting it to the one that came back.
   const [prevList, setPrevList] = useState(discovery);
   if (discovery !== prevList) {
     setPrevList(discovery);
-    const scope = discovery.sort === "new" ? "new" : "bestfit";
-    if (scope !== params.scope) setParams((p) => ({ ...p, scope }));
+    setParams((p) => settleOrder(p, discovery.sort));
   }
 
   const [shown, setShown] = useState(REVEAL_STEP);
 
-  // Every control on the rack lands here. Only `scope` reaches the server, and
-  // even that goes to the cache first: `serve` reports a miss rather than
-  // throwing, so the navigation is the fallback and the URL ends up the same
+  // Every control on the rack lands here. Only a change of RANKING reaches the
+  // server, which is narrower than a change of order: three of the five orders
+  // arrange the fit ranking, so flipping between them asks the server nothing.
+  // Even a ranking flip goes to the cache first — `serve` reports a miss rather
+  // than throwing, so the navigation is the fallback and the URL ends up the same
   // either way.
   const update = useCallback(
     (next: LaneParams) => {
       setParams(next);
-      if (next.scope === params.scope) return;
+      const sort = discoverSort(next.order);
+      if (sort === discoverSort(params.order)) return;
       const asked = { ...next, q: settledQuery };
-      if (serve(next.scope === "new" ? "new" : "fit", asked)) return;
+      if (serve(sort, asked)) return;
       const { pathname, search: live } = window.location;
       const href = `${pathname}${laneQuery(new URLSearchParams(live), asked, "discover")}`;
       startNav(() => router.replace(href, { scroll: false }));
     },
-    [params.scope, settledQuery, serve, router],
+    [params.order, settledQuery, serve, router],
   );
 
   // Search narrows before colour, so the colour figures below describe the list
@@ -242,7 +262,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   useRerankAnnouncement(discovery.sort, sortMessage, setAnnouncement);
 
   // The window goes back to the top whenever the list underneath it changes — a
-  // scope flip, which is a server round-trip returning a differently ordered
+  // ranking flip, which is a server round-trip returning a differently ordered
   // list under this same mounted component, and every client-side narrowing and
   // reorder. Keeping the old depth would open the list part-way down a ranking
   // the player has not seen the top of: rank 800 under one filter is a different
@@ -484,7 +504,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
         return update({ ...params, match: "contains" });
       case "floor":
       case "unmeasured":
-        return update({ ...params, scope: "bestfit" });
+        return update({ ...params, order: "bestfit" });
       default:
         return;
     }
@@ -517,206 +537,216 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
       <PageHeader lane="discover" />
 
       {/* The rack, shared with the owned lane; `lane` is the whole of the
-          difference. Discover mounts a scope control and no availability
-          control — not a greyed stand-in for one. */}
+          difference. Discover mounts five orders and no availability control —
+          not a greyed stand-in for one. */}
       <FilterRack
         params={params}
         lane="discover"
         onChange={update}
         shown={filtered.length}
         total={discovery.items.length}
-        scopePending={navPending}
+        orderPending={navPending}
         excludedByExactly={excludedByExactly}
       />
 
-      {/* State 1 sits ABOVE a full list, not in place of one: with no decks
-          built the fit ranking is complete and only `Something new` is off. */}
-      {!discovery.hasDecks ? <NoDecksBanner /> : null}
+      {/* The inset the owned lane draws its list in, and for the same reason:
+          the rows run to the page edge without it, which clipped the right of
+          every desktop row. `flex-1` so a zero state can centre in what the
+          rack left. */}
+      <div className="flex flex-1 flex-col p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
+        {/* State 1 sits ABOVE a full list, not in place of one: with no decks
+            built the fit ranking is complete and only `Something new` is off. */}
+        {!discovery.hasDecks ? <NoDecksBanner /> : null}
 
-      {showFloorEmpty ? (
-        <FloorEmpty
-          floorPct={FLOOR_PCT}
-          candidateCount={discovery.candidateCount}
-          cardsRead={discovery.cardsRead}
-          bestPct={discovery.bestPct as number}
-          onRankByFit={() => update({ ...params, scope: "bestfit" })}
-        />
-      ) : showHeldEmpty && report ? (
-        // The held state (§2b). The shared zero-state shell, with every part it
-        // would fill from the colour filter's vocabulary replaced: the heading
-        // names the commander, the body names the one control holding it, and
-        // the button undoes that control rather than clearing the pips. The
-        // aside keeps its figures beside the button, inert.
-        <ZeroState
-          heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
-          body={report.body}
-          primary={
-            report.cause === "scope" ? (
-              <PrimaryButton href={ownedHref} className={ZERO_PRIMARY}>
-                {report.cta}
-              </PrimaryButton>
-            ) : (
-              <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
-                {report.cta}
-              </PrimaryButton>
-            )
-          }
-          secondary={
-            report.aside ? (
-              <span className="self-center font-mono text-[11.5px] text-[color:var(--fg-faint)]">
-                {report.aside}
-              </span>
-            ) : undefined
-          }
-        />
-      ) : showSearchEmpty ? (
-        // D5. The candidate count, not the ranked one: this state fires only
-        // once the server has looked past the rows on screen and found nothing
-        // either, so the figure names the whole unbuilt pool.
-        <DiscoveryEmpty
-          query={trimmedQuery}
-          total={discovery.candidateCount}
-          onClearSearch={() => update({ ...params, q: "" })}
-        />
-      ) : showUnknownEmpty ? (
-        // The same shell saying less: no population figure, because the count of
-        // what was searched is exactly what this state does not know. That also
-        // costs it the other lane's link, which only means anything alongside a
-        // claim about what this lane holds.
-        <ZeroState
-          heading={planeCopy.search.unknownHeading(trimmedQuery)}
-          body={planeCopy.search.unknownBody}
-          primary={
-            <PrimaryButton
-              onClick={() => update({ ...params, q: "" })}
-              className={ZERO_PRIMARY}
-            >
-              {planeCopy.search.unknownCta}
-            </PrimaryButton>
-          }
-        />
-      ) : showFilteredEmpty ? (
-        <ZeroState
-          heading={emptyCopy.filteredHeading}
-          // The ranked count: "the N you have not built" names the list the
-          // filter just emptied, and under `sort="new"` the candidate count is
-          // the larger pre-exclusion figure the reader never saw a row of.
-          // The built clause is the one genuinely new reason this state has under
-          // discovery, so the whole clause is marked rather than a phrase inside it.
-          body={
-            <>
-              {emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
-              {builtClause ? (
-                <>
-                  {" "}
-                  <strong className="font-semibold text-[color:var(--fg)]">
-                    {builtClause}
-                  </strong>
-                </>
-              ) : null}
-            </>
-          }
-          primary={
-            <PrimaryButton
-              onClick={() => update({ ...params, colors: [], match: "contains" })}
-              className={ZERO_PRIMARY}
-            >
-              {emptyCopy.filteredCta}
-            </PrimaryButton>
-          }
-          // The other lane, reached the way D5 reaches it: a route, so a link.
-          secondary={
-            <GhostButton href={ownedHref} className={ZERO_SECONDARY}>
-              {emptyCopy.filteredScopeLink}
-            </GhostButton>
-          }
-        />
-      ) : (
-        <>
-          {/* §2c: a match exists that this list cannot show. Above the rows,
-              because it is about the list underneath it. */}
-          {report ? (
-            <div className="mb-[10px] sm:mb-[12px]">
-              <ExcludedMatchAside
-                report={report}
-                onCorrect={correct}
-                href={report.cause === "scope" ? ownedHref : undefined}
-              />
-            </div>
-          ) : null}
-
-          {/* The receipt for the list itself. At 375px the aside outranks it —
-              one thing below the rack explains the list, and the aside is about
-              a row the reader just typed. Desktop renders both: it has the
-              width. One element with a responsive class rather than two
-              subtrees, so the sentence exists once in the DOM. */}
-          {line ? (
-            <ExclusionLine
-              text={line.text}
-              figures={line.figures}
-              className={`mb-[10px] sm:mb-[12px] ${report ? "hidden sm:flex" : "flex"}`}
-            />
-          ) : null}
-
-          <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-            {filtered.slice(0, shown).map((item, i) => (
-              // Focusable only while the list is windowed, matching the owned
-              // lane: a row that never receives the reveal's focus move has no
-              // reason to be a tab stop between every card.
-              <li
-                key={item.slug}
-                tabIndex={wasWindowed ? -1 : undefined}
-                ref={
-                  wasWindowed
-                    ? (el) => {
-                        itemRefs.current[i] = el;
-                      }
-                    : undefined
-                }
-                className={
-                  wasWindowed
-                    ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
-                    : undefined
-                }
+        {showFloorEmpty ? (
+          <FloorEmpty
+            floorPct={FLOOR_PCT}
+            candidateCount={discovery.candidateCount}
+            cardsRead={discovery.cardsRead}
+            bestPct={discovery.bestPct as number}
+            onRankByFit={() => update({ ...params, order: "bestfit" })}
+          />
+        ) : showHeldEmpty && report ? (
+          // The held state (§2b). The shared zero-state shell, with every part it
+          // would fill from the colour filter's vocabulary replaced: the heading
+          // names the commander, the body names the one control holding it, and
+          // the button undoes that control rather than clearing the pips. The
+          // aside keeps its figures beside the button, inert.
+          <ZeroState
+            heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
+            body={report.body}
+            primary={
+              report.cause === "built" ? (
+                <PrimaryButton href={ownedHref} className={ZERO_PRIMARY}>
+                  {report.cta}
+                </PrimaryButton>
+              ) : (
+                <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
+                  {report.cta}
+                </PrimaryButton>
+              )
+            }
+            secondary={
+              report.aside ? (
+                <span className="self-center font-mono text-[11.5px] text-[color:var(--fg-faint)]">
+                  {report.aside}
+                </span>
+              ) : undefined
+            }
+          />
+        ) : showSearchEmpty ? (
+          // D5. The candidate count, not the ranked one: this state fires only
+          // once the server has looked past the rows on screen and found nothing
+          // either, so the figure names the whole unbuilt pool.
+          <DiscoveryEmpty
+            query={trimmedQuery}
+            total={discovery.candidateCount}
+            onClearSearch={() => update({ ...params, q: "" })}
+          />
+        ) : showUnknownEmpty ? (
+          // The same shell saying less: no population figure, because the count of
+          // what was searched is exactly what this state does not know. That also
+          // costs it the other lane's link, which only means anything alongside a
+          // claim about what this lane holds.
+          <ZeroState
+            heading={planeCopy.search.unknownHeading(trimmedQuery)}
+            body={planeCopy.search.unknownBody}
+            primary={
+              <PrimaryButton
+                onClick={() => update({ ...params, q: "" })}
+                className={ZERO_PRIMARY}
               >
-                {/* `item.rank`, not the map index: the server ranked every item
-                    this list carries, so a colour filter narrows what is shown
-                    without renumbering what it leaves behind. */}
-                <RecCard discovery={item} rank={item.rank} sort={discovery.sort} />
-              </li>
-            ))}
-
-            {/* Inside the list, as the owned lane has it: the gap between the
-                control and the last card is the list's own row gap, and outside
-                the `<ul>` there is nothing to supply it. */}
-            {remaining > 0 ? (
-              <li>
-                <RevealControl
-                  remaining={remaining}
-                  // Clamped at the source, the way the owned list clamps it: a final
-                  // step that overshoots would otherwise have the live region announce
-                  // a negative "more below" and a range past the end of the list.
-                  onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
-                  // The band names ranks in the list the reader is looking at, so it
-                  // counts against the filtered length rather than the server's.
-                  band={discoveryCopy.window.revealBand(
-                    shown + 1,
-                    Math.min(shown + REVEAL_STEP, filtered.length),
-                    filtered.length,
-                  )}
+                {planeCopy.search.unknownCta}
+              </PrimaryButton>
+            }
+          />
+        ) : showFilteredEmpty ? (
+          <ZeroState
+            heading={emptyCopy.filteredHeading}
+            // The ranked count: "the N you have not built" names the list the
+            // filter just emptied, and under `sort="new"` the candidate count is
+            // the larger pre-exclusion figure the reader never saw a row of.
+            // The built clause is the one genuinely new reason this state has under
+            // discovery, so the whole clause is marked rather than a phrase inside it.
+            body={
+              <>
+                {emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
+                {builtClause ? (
+                  <>
+                    {" "}
+                    <strong className="font-semibold text-[color:var(--fg)]">
+                      {builtClause}
+                    </strong>
+                  </>
+                ) : null}
+              </>
+            }
+            primary={
+              <PrimaryButton
+                onClick={() => update({ ...params, colors: [], match: "contains" })}
+                className={ZERO_PRIMARY}
+              >
+                {emptyCopy.filteredCta}
+              </PrimaryButton>
+            }
+            // The other lane, reached the way D5 reaches it: a route, so a link.
+            secondary={
+              <GhostButton href={ownedHref} className={ZERO_SECONDARY}>
+                {emptyCopy.filteredScopeLink}
+              </GhostButton>
+            }
+          />
+        ) : pending && filtered.length === 0 ? (
+          // Every state above needs the lookup that has not landed, and the one
+          // below is a list with no rows in it.
+          <SearchPending />
+        ) : (
+          <>
+            {/* §2c: a match exists that this list cannot show. Above the rows,
+                because it is about the list underneath it. */}
+            {report ? (
+              <div className="mb-[10px] sm:mb-[12px]">
+                <ExcludedMatchAside
+                  report={report}
+                  onCorrect={correct}
+                  href={report.cause === "built" ? ownedHref : undefined}
                 />
-              </li>
+              </div>
             ) : null}
-          </ul>
 
-          {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
-          {remaining > 0 ? (
-            <div className="h-[24px] sm:hidden" />
-          ) : filtered.length > REVEAL_STEP ? (
-            <EndOfRanking total={filtered.length} />
-          ) : null}
-        </>
-      )}
+            {/* The receipt for the list itself. At 375px the aside outranks it —
+                one thing below the rack explains the list, and the aside is about
+                a row the reader just typed. Desktop renders both: it has the
+                width. One element with a responsive class rather than two
+                subtrees, so the sentence exists once in the DOM. */}
+            {line ? (
+              <ExclusionLine
+                text={line.text}
+                figures={line.figures}
+                className={`mb-[10px] sm:mb-[12px] ${report ? "hidden sm:flex" : "flex"}`}
+              />
+            ) : null}
+
+            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
+              {filtered.slice(0, shown).map((item, i) => (
+                // Focusable only while the list is windowed, matching the owned
+                // lane: a row that never receives the reveal's focus move has no
+                // reason to be a tab stop between every card.
+                <li
+                  key={item.slug}
+                  tabIndex={wasWindowed ? -1 : undefined}
+                  ref={
+                    wasWindowed
+                      ? (el) => {
+                          itemRefs.current[i] = el;
+                        }
+                      : undefined
+                  }
+                  className={
+                    wasWindowed
+                      ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+                      : undefined
+                  }
+                >
+                  {/* `item.rank`, not the map index: the server ranked every item
+                      this list carries, so a colour filter narrows what is shown
+                      without renumbering what it leaves behind. */}
+                  <RecCard discovery={item} rank={item.rank} sort={discovery.sort} />
+                </li>
+              ))}
+
+              {/* Inside the list, as the owned lane has it: the gap between the
+                  control and the last card is the list's own row gap, and outside
+                  the `<ul>` there is nothing to supply it. */}
+              {remaining > 0 ? (
+                <li>
+                  <RevealControl
+                    remaining={remaining}
+                    // Clamped at the source, the way the owned list clamps it: a final
+                    // step that overshoots would otherwise have the live region announce
+                    // a negative "more below" and a range past the end of the list.
+                    onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
+                    // The band names ranks in the list the reader is looking at, so it
+                    // counts against the filtered length rather than the server's.
+                    band={discoveryCopy.window.revealBand(
+                      shown + 1,
+                      Math.min(shown + REVEAL_STEP, filtered.length),
+                      filtered.length,
+                    )}
+                  />
+                </li>
+              ) : null}
+            </ul>
+
+            {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
+            {remaining > 0 ? (
+              <div className="h-[24px] sm:hidden" />
+            ) : filtered.length > REVEAL_STEP ? (
+              <EndOfRanking total={filtered.length} />
+            ) : null}
+          </>
+        )}
+      </div>
 
       {/* This list's own live region, for the two events the rack's result line
           cannot describe: a re-rank, and a reveal step. */}

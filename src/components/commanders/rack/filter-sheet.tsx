@@ -1,5 +1,5 @@
 "use client";
-// The filter sheet — every control except search, below 1024px.
+// The filter sheet — every control except search and order, below 1024px.
 //
 // `src/components/ui/filter-panel.tsx` is the reference implementation and its
 // rules are carried whole rather than redesigned: the same sheet markup, the
@@ -16,9 +16,11 @@
 // 3. Esc is dismiss, never undo — as are the handle drag, the scrim tap and
 //    that primary. They are one action with four gestures.
 //
-// Search is deliberately absent: it stays on the persistent row behind the
-// scrim, which is why `activeControlCount` does not count it and why the badge
-// here cannot either.
+// Search and order are deliberately absent: both stay on the persistent row
+// behind the scrim, which is why `activeControlCount` counts neither and why
+// the badge here cannot either. A second copy of the order control in the sheet
+// is what the reader reported as redundant — two doors to one control, one of
+// them behind a scrim hiding the other.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -27,14 +29,11 @@ import {
   type Lane,
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
-import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
+import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
 import { ColourControl } from "./colour-control";
-import { OrderControl } from "./order-control";
-import { ORDER_OPTIONS } from "./order-options";
 import { resultSentence } from "./result-line";
-import { ScopeControl } from "./scope-control";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
@@ -48,7 +47,6 @@ export function FilterSheet({
   onChange,
   shown,
   total,
-  scopePending = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -59,8 +57,6 @@ export function FilterSheet({
       live — nothing here is staged. */
   shown: number;
   total: number;
-  /** Discover only: a scope flip is out with the server (#338). */
-  scopePending?: boolean;
 }) {
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
@@ -97,7 +93,6 @@ export function FilterSheet({
   if (!open) return null;
 
   const active = activeControlCount(params, lane);
-  const orders = ORDER_OPTIONS[lane];
 
   function close() {
     dragStartY.current = null;
@@ -153,8 +148,7 @@ export function FilterSheet({
   }
 
   // The pips and their match modifier are one control and one group; the rest
-  // are wrapped here, so the sections are named in rack order and scope leads
-  // on discover.
+  // are wrapped here, so the sections are named in rack order.
   const colour = (
     <ColourControl
       colors={params.colors}
@@ -162,18 +156,7 @@ export function FilterSheet({
       onColorsChange={(colors) => onChange({ ...params, colors })}
       onMatchChange={(match) => onChange({ ...params, match })}
       wide={false}
-      showHint
     />
-  );
-  const order = (
-    <Section legend={filterCopy.order.legend} showLegend>
-      <OrderControl
-        value={params.order}
-        options={orders}
-        onChange={(next) => onChange({ ...params, order: next })}
-        wide={false}
-      />
-    </Section>
   );
 
   return (
@@ -229,35 +212,17 @@ export function FilterSheet({
         {/* min-h-0 so the section stack scrolls inside the 78vh cap rather than
             pushing the footer off the bottom of the sheet. */}
         <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-[16px] py-[6px]">
-          {lane === "discover" ? (
-            <>
-              {/* Scope leads discover, carrying both glosses. */}
-              <Section legend={discoverCopy.scope.legend} showLegend>
-                <ScopeControl
-                  value={params.scope}
-                  onChange={(scope) => onChange({ ...params, scope })}
-                  wide={false}
-                  showGlosses
-                  pending={scopePending}
-                />
-              </Section>
-              {colour}
-              {order}
-            </>
-          ) : (
-            <>
-              {colour}
-              {/* The control draws its own legend and its own explainer, so the
-                  section only has to name itself for AT. */}
-              <Section legend={commandersCopy.availability.legend} showLegend={false}>
-                <AvailabilityControl
-                  value={params.avail}
-                  onChange={(avail) => onChange({ ...params, avail })}
-                  wide={false}
-                />
-              </Section>
-              {order}
-            </>
+          {colour}
+          {/* The control draws its own legend and its own explainer, so the
+              section only has to name itself for AT. */}
+          {lane === "owned" && (
+            <Section legend={commandersCopy.availability.legend} showLegend={false}>
+              <AvailabilityControl
+                value={params.avail}
+                onChange={(avail) => onChange({ ...params, avail })}
+                wide={false}
+              />
+            </Section>
           )}
         </div>
 
@@ -295,10 +260,10 @@ export function FilterSheet({
 // Module scope, deliberately: a component declared inside `FilterSheet` would be
 // a new type on every render and would remount its whole subtree.
 //
-// The group is what names a section for AT. `ScopeControl` and `OrderControl`
-// are radiogroups, which is the right role for what they are but not one that
-// stands in for a section heading — and the sheet's sections have to be walkable
-// in rack order.
+// The group is what names a section for AT. `AvailabilityControl` is a
+// radiogroup, which is the right role for what it is but not one that stands in
+// for a section heading — and the sheet's sections have to be walkable in rack
+// order.
 function Section({
   legend,
   showLegend,

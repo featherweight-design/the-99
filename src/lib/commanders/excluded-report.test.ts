@@ -34,11 +34,11 @@ describe("resolveExcludedReport", () => {
 
   it("names the scope over every other cause", () => {
     const out = resolve({
-      server: [server({ cause: "scope", pct: null }), server({ oracleId: "b" })],
+      server: [server({ cause: "built", pct: null }), server({ oracleId: "b" })],
       colour: [colour()],
       colors: ["G"],
     });
-    expect(out?.cause).toBe("scope");
+    expect(out?.cause).toBe("built");
     expect(out?.cta).toBe(planeCopy.excluded.scopeCta);
   });
 
@@ -71,7 +71,7 @@ describe("resolveExcludedReport", () => {
   });
 
   it("names the commander above a live list, and marks it", () => {
-    const out = resolve({ server: [server({ cause: "scope", pct: null })] });
+    const out = resolve({ server: [server({ cause: "built", pct: null })] });
     expect(out?.name).toBe("Atraxa, Praetors' Voice");
     expect(out?.body).toContain("Atraxa, Praetors' Voice");
     // Above a live list the rows are the count, so there is no second figure.
@@ -81,7 +81,7 @@ describe("resolveExcludedReport", () => {
 
   it("takes the heading and the count when no row survived", () => {
     const out = resolve({
-      server: [server({ cause: "scope", pct: null })],
+      server: [server({ cause: "built", pct: null })],
       listHasRows: false,
     });
     expect(out?.heading).toBe(planeCopy.search.heldHeading("Atraxa, Praetors' Voice"));
@@ -108,7 +108,7 @@ describe("resolveExcludedReport", () => {
 
   it("names the tier's own count when a second cause is also holding a match back", () => {
     const out = resolve({
-      server: [server({ cause: "scope", pct: null }), server({ oracleId: "b" })],
+      server: [server({ cause: "built", pct: null }), server({ oracleId: "b" })],
       listHasRows: false,
     });
     // Two matches, one of them the outermost cause: the aside counts both, the body only

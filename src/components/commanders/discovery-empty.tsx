@@ -12,6 +12,7 @@
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { discoverCopy } from "../../lib/copy/lanes";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { PendingMark } from "../ui/pending-mark";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
 import { laneHref } from "./list-nav";
 
@@ -51,6 +52,29 @@ export function DiscoveryEmpty({
         </GhostButton>
       }
     />
+  );
+}
+
+/**
+ * The list is empty and the surface does not yet know why: the typing has
+ * settled but the index lookup that decides between "no commander by that name"
+ * and "it is on your other lane" is still out.
+ *
+ * Before this, that gap rendered an empty `<ul>` — a second of blank page
+ * between the last keystroke and the sentence explaining it. The house loading
+ * mark holds the space the sentence will take, and says nothing: every claim
+ * this surface could make here is the one still being checked.
+ */
+export function SearchPending() {
+  return (
+    <div
+      className="flex flex-1 flex-col items-center justify-center px-[22px] pt-[40px] pb-[40px] text-[color:var(--fg-faint)] sm:pt-[34px] sm:pb-[38px]"
+      // Not a live region: the answer one render later is what is worth
+      // announcing, and the states below it already do.
+      aria-hidden
+    >
+      <PendingMark />
+    </div>
   );
 }
 

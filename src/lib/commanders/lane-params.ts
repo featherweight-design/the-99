@@ -8,10 +8,14 @@ export type Lane = "owned" | "discover";
 // no acquisition date to sort on. An option that quietly falls back to Fit is
 // the same class of defect this redesign exists to remove.
 export type OwnedOrder = "fit" | "name";
-export type DiscoverOrder = "popularity" | "name" | "recent";
+// `bestfit` and `new` are the two rankings the server produces; the other three
+// arrange a list the client already holds. They are one control rather than an
+// order plus a scope because a separate scope could not be obeyed — the client
+// re-sorted by `order` after every server ranking, so the scope it asked for
+// never reached the screen.
+export type DiscoverOrder = "bestfit" | "new" | "popularity" | "name" | "recent";
 export type LaneOrder = OwnedOrder | DiscoverOrder;
 export type Avail = "all" | "free";
-export type Scope = "bestfit" | "new";
 
 export type LaneParams = {
   q: string;
@@ -19,15 +23,23 @@ export type LaneParams = {
   match: JoinMode;
   avail: Avail;
   order: LaneOrder;
-  scope: Scope;
 };
 
 const WUBRG = ["w", "u", "b", "r", "g"] as const;
 
 const ORDERS: Record<Lane, readonly LaneOrder[]> = {
   owned: ["fit", "name"],
-  discover: ["popularity", "name", "recent"],
+  discover: ["bestfit", "new", "popularity", "name", "recent"],
 };
+
+/**
+ * The ranking `loadDiscovery` is asked for under a given order. Only `new` wants
+ * the novelty ranking; every other order is arranged out of the fit ranking,
+ * which is what makes three of the five free — those rows are already in memory.
+ */
+export function discoverSort(order: LaneOrder): "fit" | "new" {
+  return order === "new" ? "new" : "fit";
+}
 
 export function defaultParams(lane: Lane): LaneParams {
   return {
@@ -36,7 +48,6 @@ export function defaultParams(lane: Lane): LaneParams {
     match: "contains",
     avail: "all",
     order: ORDERS[lane][0],
-    scope: "bestfit",
   };
 }
 
@@ -57,16 +68,18 @@ export function parseLaneParams(sp: URLSearchParams, lane: Lane): LaneParams {
   // order the letters arrived in.
   const raw = parseColors(sp.get("c"));
   const colors = WUBRG.filter((c) => raw.includes(c.toUpperCase()));
-  const order = ORDERS[lane].find((o) => o === read(sp, "o")) ?? base.order;
-  // `sort=new` was discovery's novelty ranking, which is now the scope control.
-  const scopeRaw = sp.get("s") ?? sp.get("sort");
+  // `?s=new` was the scope control's novelty ranking for the one build that
+  // shipped it. It now names an order, so it is read as `o=new` and never
+  // written back. `sort=new` needs no case of its own: `read` already falls back
+  // to it, and it meant the same ranking under the same name.
+  const orderRaw = read(sp, "o") ?? (sp.get("s") === "new" ? "new" : null);
+  const order = ORDERS[lane].find((o) => o === orderRaw) ?? base.order;
   return {
     q: sp.get("q") ?? "",
     colors,
     match: read(sp, "m") === "exact" ? "exactly" : "contains",
     avail: lane === "owned" && read(sp, "a") === "free" ? "free" : "all",
     order,
-    scope: lane === "discover" && scopeRaw === "new" ? "new" : "bestfit",
   };
 }
 
@@ -77,7 +90,6 @@ export function serializeLaneParams(p: LaneParams, lane: Lane): string {
   if (p.match === "exactly") sp.set("m", "exact");
   if (lane === "owned" && p.avail === "free") sp.set("a", "free");
   if (p.order !== ORDERS[lane][0]) sp.set("o", p.order);
-  if (lane === "discover" && p.scope === "new") sp.set("s", "new");
   const qs = sp.toString();
   return qs ? `?${qs}` : "";
 }
@@ -113,6 +125,5 @@ export function activeControlCount(p: LaneParams, lane: Lane): number {
   if (p.colors.length > 0) n += 1;
   if (p.colors.length > 0 && p.match === "exactly") n += 1;
   if (lane === "owned" && p.avail === "free") n += 1;
-  if (lane === "discover" && p.scope === "new") n += 1;
   return n;
 }

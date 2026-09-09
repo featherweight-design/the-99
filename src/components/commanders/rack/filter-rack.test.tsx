@@ -19,7 +19,7 @@ function renderRack(
   params: LaneParams = defaultParams(lane),
   shown = 148,
   total = 148,
-  scopePending = false,
+  orderPending = false,
 ) {
   return render(
     <FilterRack
@@ -29,7 +29,7 @@ function renderRack(
       shown={shown}
       total={total}
       excludedByExactly={null}
-      scopePending={scopePending}
+      orderPending={orderPending}
     />,
   );
 }
@@ -37,16 +37,13 @@ function renderRack(
 afterEach(() => vi.unstubAllGlobals());
 
 describe("FilterRack", () => {
-  it("leads the discover rack with scope, and gives the owned rack none", () => {
+  // The two rankings are order values now, not a control of their own, so
+  // discover's rack carries no second single-select beside order.
+  it("opens the discover rack on the fit ranking, as an order", () => {
     stubWidth(true);
     renderRack("discover", defaultParams("discover"), 3301, 3301);
-    expect(screen.getByRole("group", { name: "Scope" })).toBeInTheDocument();
-  });
-
-  it("gives the owned rack no scope control", () => {
-    stubWidth(true);
-    renderRack("owned");
-    expect(screen.queryByRole("group", { name: "Scope" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Order · Best fit" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Order · / })).toHaveLength(1);
   });
 
   it("gives the owned rack availability, and the discover rack none", () => {
@@ -75,12 +72,16 @@ describe("FilterRack", () => {
     expect(container.querySelector('path[d="M5 5h10M6.5 10h7M8.5 15h3"]')).toBeInTheDocument();
   });
 
-  // Discover's three orders all sound plausible; the glosses say what each one
+  // Discover's five orders all sound plausible; the glosses say what each one
   // actually sorts on. Fit and Name need no such line and are drawn without one.
   it("glosses the discover order menu and leaves the owned menu bare", () => {
     stubWidth(true);
     const { unmount } = renderRack("discover", defaultParams("discover"), 3301, 3301);
-    fireEvent.click(screen.getByRole("button", { name: "Order · Popularity" }));
+    fireEvent.click(screen.getByRole("button", { name: "Order · Best fit" }));
+    // The two rankings lead, and are glossed like the rest: they are the only
+    // options that change which commanders the list holds.
+    expect(screen.getByText("most of its support list already owned")).toBeInTheDocument();
+    expect(screen.getByText("farthest from the archetypes you have built")).toBeInTheDocument();
     expect(screen.getByText("most decks tracked first")).toBeInTheDocument();
     expect(screen.getByText("newest printing first")).toBeInTheDocument();
     unmount();
@@ -124,10 +125,10 @@ describe("FilterRack", () => {
 });
 
 // The in-flight ruling, in tests. Its substance is a negative — the rack is told
-// to do NOTHING while a scope flip is out, beyond the crown the control already
+// to do NOTHING while a ranking flip is out, beyond the crown the control already
 // wears — and the natural implementation of a pending flag is to reach for the
 // nearest count. These lock the nothing.
-describe("FilterRack while a scope flip is in flight", () => {
+describe("FilterRack while a ranking flip is in flight", () => {
   it("holds the result line's sentence verbatim, with no busy state", () => {
     stubWidth(true);
     const { unmount } = renderRack("discover", defaultParams("discover"), 3301, 3301);
@@ -140,49 +141,48 @@ describe("FilterRack while a scope flip is in flight", () => {
     const waiting = screen.getByText("3,301 commanders");
     expect(waiting.textContent).toBe(settled);
     expect(waiting).not.toHaveAttribute("aria-busy");
-    // One busy node on the whole rack, and it is the scope trigger.
+    // One busy node on the whole rack, and it is the order trigger.
     const busy = container.querySelectorAll("[aria-busy]");
     expect(busy).toHaveLength(1);
-    expect(busy[0]).toBe(
-      screen.getByRole("group", { name: "Scope" }).querySelector("button"),
-    );
+    expect(busy[0]).toBe(screen.getByRole("button", { name: "Order · Best fit" }));
   });
 
-  it("marks scope and nothing else", () => {
+  it("marks order and nothing else", () => {
     stubWidth(true);
     const { container } = renderRack("discover", defaultParams("discover"), 3301, 3301, true);
     expect(container.querySelectorAll("[data-pending-mark]")).toHaveLength(1);
-    const scope = screen.getByRole("group", { name: "Scope" });
-    expect(scope.querySelector("[data-pending-mark]")).toBeInTheDocument();
-    // Order sorts rows already held, on both lanes. It looks like scope, which
-    // is exactly why the absence is asserted.
-    expect(screen.getByRole("button", { name: "Order · Popularity" })).not.toHaveAttribute(
+    expect(
+      screen.getByRole("button", { name: "Order · Best fit" }).querySelector("[data-pending-mark]"),
+    ).toBeInTheDocument();
+    // The pips narrow a list already in memory whatever is in flight, so they
+    // stay live and unmarked.
+    expect(screen.getByRole("group", { name: "Colour identity" })).not.toHaveAttribute(
       "aria-busy",
     );
   });
 
+  // Nothing on the owned lane reaches the server, so its rack is never given the
+  // flag: `CommandersView` ships every ranking in one payload.
   it("gives the owned lane no pending state at all", () => {
     stubWidth(true);
-    const { container } = renderRack("owned", defaultParams("owned"), 148, 148, true);
+    const { container } = renderRack("owned");
     expect(container.querySelectorAll("[data-pending-mark]")).toHaveLength(0);
     expect(container.querySelectorAll("[aria-busy]")).toHaveLength(0);
-    expect(screen.getByRole("radiogroup", { name: "Score against" })).not.toHaveAttribute(
-      "aria-busy",
-    );
   });
 
-  it("marks the pressed scope option in the sheet and holds the footer count", () => {
+  // Order is on the persistent row behind the scrim, not in the sheet, so the
+  // sheet has nothing to mark — and the pending flag must not be plumbed into it
+  // looking for something.
+  it("puts no busy state in the sheet, and holds the footer count", () => {
     stubWidth(false);
-    renderRack("discover", defaultParams("discover"), 3301, 3301, true);
+    const { container } = renderRack("discover", defaultParams("discover"), 3301, 3301, true);
     fireEvent.click(screen.getByRole("button", { name: "Filters" }));
 
-    const scope = screen.getByRole("radiogroup", { name: "Scope" });
-    expect(scope).toHaveAttribute("aria-busy", "true");
-    // The mark rides the selected option only — selection is optimistic, so the
-    // pressed row is already the one the reader asked for.
-    expect(scope.querySelectorAll("[data-pending-mark]")).toHaveLength(1);
-    const pressed = screen.getByRole("radio", { name: "Best fit" });
-    expect(pressed.querySelector("[data-pending-mark]")).toBeInTheDocument();
+    const sheet = screen.getByRole("dialog");
+    expect(sheet.querySelectorAll("[aria-busy]")).toHaveLength(0);
+    expect(sheet.querySelectorAll("[data-pending-mark]")).toHaveLength(0);
+    // One mark on the whole rack still, and it is out on the row behind.
+    expect(container.querySelectorAll("[data-pending-mark]")).toHaveLength(1);
 
     // The footer is the result line's sentence in another voice. It holds too.
     expect(

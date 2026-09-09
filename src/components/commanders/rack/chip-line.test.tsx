@@ -6,9 +6,15 @@ import { ChipLine } from "./chip-line";
 const noop = () => {};
 
 describe("ChipLine", () => {
-  it("holds its height with nothing active, and says so", () => {
-    render(<ChipLine params={defaultParams("owned")} lane="owned" onChange={noop} wide />);
-    expect(screen.getByText("no filters — nothing to clear")).toBeInTheDocument();
+  // The disabled `Clear` beside no chips already says there is nothing to clear,
+  // so the row holds its height and says nothing.
+  it("holds its height with nothing active, without narrating the empty row", () => {
+    const { container } = render(
+      <ChipLine params={defaultParams("owned")} lane="owned" onChange={noop} wide />,
+    );
+    expect(screen.queryAllByTestId("filter-chip")).toHaveLength(0);
+    expect(container.firstElementChild).toHaveClass("min-h-[22px]");
+    expect(container.textContent).toBe("Clear");
   });
 
   it("keeps Clear present and inert rather than removing it", () => {
@@ -45,8 +51,10 @@ describe("ChipLine", () => {
     expect(chip.querySelectorAll("span[style*='background']")).toHaveLength(2);
   });
 
-  it("collapses past one line to a dashed +N rather than wrapping", () => {
-    render(
+  // Four is the most either lane can produce, and the phone shows all four: a
+  // chip hidden behind a count is a filter the reader cannot see is on.
+  it("shows every chip on the phone, wrapping rather than collapsing", () => {
+    const { container } = render(
       <ChipLine
         params={{
           q: "druid",
@@ -54,36 +62,15 @@ describe("ChipLine", () => {
           match: "exactly",
           avail: "free",
           order: "name",
-          scope: "bestfit",
         }}
         lane="owned"
         onChange={noop}
         wide={false}
       />,
     );
-    expect(screen.getByText("+3")).toBeInTheDocument();
-  });
-
-  it("opens the sheet from the +N, since the sheet is where those controls went", () => {
-    const onOverflowOpen = vi.fn();
-    render(
-      <ChipLine
-        params={{
-          q: "druid",
-          colors: ["b", "g"],
-          match: "exactly",
-          avail: "free",
-          order: "name",
-          scope: "bestfit",
-        }}
-        lane="owned"
-        onChange={noop}
-        wide={false}
-        onOverflowOpen={onOverflowOpen}
-      />,
-    );
-    screen.getByText("+3").click();
-    expect(onOverflowOpen).toHaveBeenCalledOnce();
+    expect(screen.getAllByTestId("filter-chip")).toHaveLength(4);
+    expect(screen.queryByText(/^\+\d/)).not.toBeInTheDocument();
+    expect(container.firstElementChild).toHaveClass("flex-wrap");
   });
 
   it("clears every control at once, back to the lane's defaults", async () => {

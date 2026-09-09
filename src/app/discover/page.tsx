@@ -3,7 +3,7 @@ import { getCollectionStats } from "../../lib/home/summary";
 import { CardFan } from "../../components/marks";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
 import { loadDiscovery } from "../../lib/discovery/list";
-import { parseLaneParams } from "../../lib/commanders/lane-params";
+import { discoverSort, parseLaneParams } from "../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { PrimaryButton } from "../../components/ui/button";
 import {
@@ -63,9 +63,7 @@ export default async function DiscoverPage({
   // The requested ranking, not necessarily the one that comes back:
   // `loadDiscovery` reads the played tags either way, and downgrades `new` to
   // `fit` when there is no deck to measure distance from.
-  const discovery = await loadDiscovery(userId, {
-    sort: params.scope === "new" ? "new" : "fit",
-  });
+  const discovery = await loadDiscovery(userId, { sort: discoverSort(params.order) });
 
   return (
     <section className="flex flex-col min-h-screen">

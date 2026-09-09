@@ -1,10 +1,11 @@
 "use client";
 // Row two of the rack: what is filtered, and the one control that undoes it.
 //
-// The row reserves its height with nothing active and says "no filters —
-// nothing to clear" rather than collapsing, and `Clear` stays present and
-// disabled rather than being removed. The shipped page popped both in and out
-// and the stack jumped under the reader's thumb.
+// The row reserves its height with nothing active rather than collapsing, and
+// `Clear` stays present and disabled rather than being removed. The shipped page
+// popped both in and out and the stack jumped under the reader's thumb. The
+// empty row says nothing: a disabled `Clear` beside no chips is already the
+// whole of "nothing to clear".
 //
 // One chip per CONTROL, never one per hue: two pips lit is "2 colours", the
 // same collapse `activeControlCount` counts. Removing a chip returns its
@@ -17,7 +18,7 @@ import {
   type Lane,
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
-import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
+import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 
 type ChipSpec = {
   key: string;
@@ -30,87 +31,45 @@ type ChipSpec = {
   next: Partial<LaneParams>;
 };
 
-// The tail collapses at a fixed chip count rather than at a measured width.
-// The row must not wrap, and the design's cue is "past one line, +N" — but a
-// width is not knowable at render time (and is zero in jsdom, which is why the
-// plan's measured version could never pass its own test). A count is the same
-// promise held deterministically: four chips is the most either lane can
-// produce (search, colours, match, and availability or scope), so the rack at
-// 1024px+ never collapses, and the phone row shows the newest-read chip plus a
-// +N for the rest.
-const CAP: Record<"wide" | "narrow", number> = { wide: 4, narrow: 1 };
-
 export function ChipLine({
   params,
   lane,
   onChange,
   wide,
-  onOverflowOpen,
 }: {
   params: LaneParams;
   lane: Lane;
   onChange: (next: LaneParams) => void;
   wide: boolean;
-  /** Opens the sheet the collapsed chips' controls live in. Absent at 1024px+,
-      where the cap is four and nothing can collapse. */
-  onOverflowOpen?: () => void;
 }) {
   const chips = chipsFor(params, lane);
   // Search is not in `activeControlCount` — it sits outside the sheet — so it
   // is asked for separately here. Clear undoes everything the row can show.
   const anyActive = activeControlCount(params, lane) > 0 || params.q !== "";
 
-  const cap = CAP[wide ? "wide" : "narrow"];
-  const shown = chips.length > cap ? chips.slice(0, cap) : chips;
-  const overflow = chips.length - shown.length;
-
   return (
     <div
       className={[
-        "flex items-center gap-[6px] overflow-hidden",
+        // Every chip is shown, at both widths. Four is the most either lane can
+        // produce (search, colours, match, and — owned only — availability), and
+        // the phone wraps rather than hiding any behind a count: a chip a reader
+        // cannot see is a filter they cannot see either.
+        "flex items-center gap-[6px]",
         // Height is reserved, not grown into: the rows below must not move when
         // the first chip appears.
-        wide ? "min-h-[22px] gap-[8px]" : "min-h-[30px]",
+        wide ? "min-h-[22px] gap-[8px]" : "min-h-[30px] flex-wrap",
       ].join(" ")}
     >
-      {chips.length === 0 ? (
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-locked)]">
-          {filterCopy.chips.none}
-        </span>
-      ) : (
-        shown.map((chip) => (
-          <Chip
-            key={chip.key}
-            label={chip.label}
-            dots={chip.dots}
-            wide={wide}
-            removeAria={chip.removeAria}
-            onRemove={() => onChange({ ...params, ...chip.next })}
-          />
-        ))
-      )}
-
-      {overflow > 0 && (
-        // Dashed, and a second door to the sheet: the chips it stands for are
-        // the controls it opens, so pressing what hid them is what shows them.
-        // Named for the chips it stands in for rather than for the sheet, which
-        // already has a button by that name one row above.
-        <button
-          type="button"
-          onClick={onOverflowOpen}
-          aria-label={filterCopy.chips.overflowAria(overflow)}
-          aria-haspopup="dialog"
-          className={[
-            "inline-flex shrink-0 cursor-pointer items-center rounded-full border border-dashed",
-            "bg-[color:var(--surface-sunken)] border-[color:var(--border-strong)] font-mono text-[color:var(--fg-body)]",
-            // The same height as the chips it stands in for, so the row reads as
-            // one line of chips with the last one dashed.
-            wide ? "h-[22px] px-[9px] text-[10.5px]" : "h-[30px] px-[11px] text-[11px]",
-          ].join(" ")}
-        >
-          {filterCopy.chips.overflow(overflow)}
-        </button>
-      )}
+      {chips.map((chip) => (
+        <Chip
+          key={chip.key}
+          label={chip.label}
+          dots={chip.dots}
+          wide={wide}
+          removeAria={chip.removeAria}
+          onRemove={() => onChange({ ...params, ...chip.next })}
+        />
+      ))}
 
       <button
         type="button"
@@ -182,14 +141,10 @@ function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
     });
   }
 
-  if (lane === "discover" && params.scope === "new") {
-    chips.push({
-      key: "scope",
-      label: discoverCopy.scope.somethingNew,
-      removeAria: `Remove ${discoverCopy.scope.somethingNew} filter`,
-      next: { scope: "bestfit" },
-    });
-  }
+  // Order is never chipped, on either lane: it always has a value, and the
+  // trigger on the rack already names the one in force. That holds on discover
+  // even though two of its five orders now decide what the list is ranked on —
+  // a chip saying so would restate the control beside it.
 
   return chips;
 }

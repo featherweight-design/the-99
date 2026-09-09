@@ -45,7 +45,10 @@ export function ZeroState({
   secondary?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-[12px] px-[22px] pt-[40px] pb-[40px] text-center sm:pt-[34px] sm:pb-[38px]">
+    // `flex-1` + centred: the state grows into whatever the viewport left after
+    // the rack, so it sits in the middle of a tall screen rather than clinging
+    // to the controls with the page empty below it.
+    <div className="flex flex-1 flex-col items-center justify-center gap-[12px] px-[22px] pt-[40px] pb-[40px] text-center sm:pt-[34px] sm:pb-[38px]">
       <DiamondRule />
       <h2 className="font-display m-0 text-[19px] font-semibold text-[color:var(--fg)]">
         {heading}

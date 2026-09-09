@@ -9,12 +9,27 @@ import { commandersCopy } from "@/lib/copy/lanes";
 import { FilterSheet } from "./filter-sheet";
 
 describe("FilterSheet", () => {
-  it("puts scope first on the discover lane", () => {
+  // Discover's only sheet control is colour: order is on the persistent row
+  // behind the scrim, and availability belongs to the other lane.
+  it("leads with colour on the discover lane, and mounts nothing else", () => {
     render(
       <FilterSheet open onOpenChange={() => {}} params={defaultParams("discover")} lane="discover" onChange={() => {}} shown={3301} total={3301} />,
     );
     const legends = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
-    expect(legends[0]).toBe("Scope");
+    expect(legends).toEqual(["Colour identity"]);
+  });
+
+  // Reported as redundant: two doors to one control, with one of them behind a
+  // scrim hiding the other.
+  it("keeps order out of the sheet, on both lanes", () => {
+    for (const lane of ["owned", "discover"] as const) {
+      const { unmount } = render(
+        <FilterSheet open onOpenChange={() => {}} params={defaultParams(lane)} lane={lane} onChange={() => {}} shown={9} total={9} />,
+      );
+      expect(screen.queryByRole("radiogroup", { name: "Order" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Order · / })).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
   it("keeps search out of the sheet, which is why the badge does not count it", () => {

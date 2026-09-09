@@ -13,7 +13,19 @@ export const ORDER_OPTIONS: Record<
     { key: "fit", label: commandersCopy.order.fit },
     { key: "name", label: commandersCopy.order.name },
   ],
+  // The two rankings lead, and in that order: they decide which commanders the
+  // list holds, and the other three only arrange what they left.
   discover: [
+    {
+      key: "bestfit",
+      label: discoverCopy.order.bestFit,
+      gloss: discoverCopy.order.bestFitGloss,
+    },
+    {
+      key: "new",
+      label: discoverCopy.order.somethingNew,
+      gloss: discoverCopy.order.somethingNewGloss,
+    },
     {
       key: "popularity",
       label: discoverCopy.order.popularity,

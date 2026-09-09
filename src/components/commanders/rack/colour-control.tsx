@@ -30,16 +30,12 @@ export function ColourControl({
   onColorsChange,
   onMatchChange,
   wide,
-  showHint,
 }: {
   colors: string[];
   match: JoinMode;
   onColorsChange: (c: string[]) => void;
   onMatchChange: (m: JoinMode) => void;
   wide: boolean;
-  /** Sheet only. The rack says the same thing with geometry — the modifier is
-      22px from the pips it modifies, and in a sheet it is 60px below them. */
-  showHint: boolean;
 }) {
   // With nothing lit there is nothing to be exact about: the modifier is inert,
   // but present and remembered.
@@ -209,14 +205,6 @@ export function ColourControl({
           );
         })}
       </div>
-
-      {/* Sheet only, and only while greyed: in a sheet the pips are a section
-          away and the relationship has to be said in words. */}
-      {showHint && !live && (
-        <p className="font-mono m-0 text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-          {filterCopy.match.disabledHint}
-        </p>
-      )}
     </div>
   );
 }

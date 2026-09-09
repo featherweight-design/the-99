@@ -16,7 +16,6 @@ describe("ColourControl", () => {
         onColorsChange={noop}
         onMatchChange={noop}
         wide
-        showHint={false}
       />,
     );
     const group = screen.getByRole("radiogroup", { name: "Colour match" });
@@ -25,14 +24,14 @@ describe("ColourControl", () => {
 
   it("keeps the greyed control focusable", () => {
     render(
-      <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide showHint={false} />,
+      <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide />,
     );
     expect(screen.getByRole("radio", { name: "Exactly these" })).not.toHaveAttribute("disabled");
   });
 
   it("remembers the mode while greyed, so re-lighting a pip restores it", () => {
     render(
-      <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide showHint={false} />,
+      <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide />,
     );
     expect(screen.getByRole("radio", { name: "Exactly these" })).toHaveAttribute(
       "aria-checked",
@@ -42,31 +41,30 @@ describe("ColourControl", () => {
 
   it("goes live once a pip is lit", () => {
     render(
-      <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide showHint={false} />,
+      <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide />,
     );
     expect(screen.getByRole("radiogroup", { name: "Colour match" })).not.toHaveAttribute(
       "aria-disabled",
     );
   });
 
-  it("carries the explainer in the sheet only", () => {
+  // The explainer is gone at both widths. It only ever rendered while the mode
+  // was greyed, so it appeared and vanished on the first pip tap and took the
+  // sheet's height with it.
+  it("carries no explainer at either width", () => {
     const { rerender } = render(
-      <ColourControl colors={[]} match="contains" onColorsChange={noop} onMatchChange={noop} wide={false} showHint />,
+      <ColourControl colors={[]} match="contains" onColorsChange={noop} onMatchChange={noop} wide={false} />,
     );
-    expect(
-      screen.getByText("Pick a colour and this decides how the pips combine."),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/decides how the pips combine/)).not.toBeInTheDocument();
     rerender(
-      <ColourControl colors={[]} match="contains" onColorsChange={noop} onMatchChange={noop} wide showHint={false} />,
+      <ColourControl colors={[]} match="contains" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    expect(
-      screen.queryByText("Pick a colour and this decides how the pips combine."),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/decides how the pips combine/)).not.toBeInTheDocument();
   });
 
   it("does not mount two subtrees at one breakpoint", () => {
     render(
-      <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide showHint={false} />,
+      <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide />,
     );
     expect(screen.getAllByRole("radiogroup", { name: "Colour match" })).toHaveLength(1);
   });

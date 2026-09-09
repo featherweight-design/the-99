@@ -15,16 +15,16 @@ const row = (over: Partial<NameMatchRow> = {}): NameMatchRow => ({
 const none = new Set<string>();
 
 describe("classifyMatches", () => {
-  it("names the scope first, whatever the sort would have made of the row", () => {
+  it("names the built cause first, whatever the sort would have made of the row", () => {
     // Below the floor as well as built: the outermost control is the one the
     // sentence names, and switching sort would not bring it back.
     const rows = [row({ ownedSupport: 0 })];
     expect(classifyMatches(rows, { sort: "new", builtOracleIds: new Set(["a"]) })).toEqual([
-      { oracleId: "a", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+      { oracleId: "a", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
   });
 
-  it("excludes nothing but the scope under fit", () => {
+  it("excludes nothing but built commanders under fit", () => {
     const rows = [row({ ownedSupport: 0 }), row({ oracleId: "b", tagTotal: 0 })];
     expect(classifyMatches(rows, { sort: "fit", builtOracleIds: none })).toEqual([]);
   });
