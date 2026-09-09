@@ -292,7 +292,7 @@ try {
             .join(", ")}`,
         );
       } else {
-        note(`  over-99 readout all reads the bar's ${over.barBackground}`);
+        note(`  every ink in the over-99 readout reads the bar's ${over.barBackground}`);
       }
       // R7 ruling 3a. The lead is checked against its own paragraph rather than
       // against a token name, so it holds whatever var(--fg-body) resolves to.
