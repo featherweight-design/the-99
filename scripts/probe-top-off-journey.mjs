@@ -90,6 +90,16 @@ async function resetDeck(target = 68) {
   if (keep.length < rows.length) {
     await sql`delete from deck_cards where deck_id = ${DECK} and oracle_id <> all(${keep})`;
   }
+  // Whole rows are deleted, and a row can hold several copies, so a deck whose
+  // quantities do not add up to the target lands short. Every count the walk
+  // asserts is written against a deck exactly 31 slots open, so an undershoot
+  // fails here rather than as a mismatched figure eighteen steps later.
+  if (running !== target) {
+    console.error(
+      `PROBE_DECK trimmed to ${running}, not ${target}: its quantities do not add up to the target. Pick a deck with more single copies.`,
+    );
+    process.exit(1);
+  }
   await sql`update deck_cards set auto = true where deck_id = ${DECK}`;
   const [seed] = await sql`
     insert into fill_passes (deck_id, kind, ordinal, open_slots)
