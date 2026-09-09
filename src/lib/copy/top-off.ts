@@ -4,13 +4,15 @@
  * ADDS and REPLACES inside synergyCopy.lastSlots. The heading is untouched;
  * three strings are deleted with the controls they named (see the REPLACES
  * block at the foot of this file). recommendations.ts loses its six
- * fill.provenance* sentences to the ledger and keeps fill.fillingRows, which is
- * REUSED VERBATIM.
+ * fill.provenance* sentences to the ledger, and fill.fillingRows moves here as
+ * commit.inFlight.
  *
  * Every count in here carries its denominator in the same string. No
  * percentage is used for a count; the inclusion figure is a percentage because
  * it is a percentage of decks, and it is the shipped synergy row's own atom.
  */
+
+import { synergyCopy } from './synergy-discovery';
 
 // Counts arrive already stringified from the callers, so the singular test is
 // against "1" rather than a number. Applied by eng where the handoff pluralised
@@ -190,12 +192,15 @@ export const topOffCopy = {
     nothingTickedUnowned: (cand: string) =>
       `nothing ticked — you own none of these ${cand}, so every tick is one to buy`,
 
-    /** UNCHANGED — recommendationsCopy.fill.fillingRows. A 27-row write is
-     *  exactly what that string was written for; a second in-flight
-     *  vocabulary for the same act would be two voices. */
+    /** ADOPTED from recommendationsCopy.fill.fillingRows, which this key
+     *  replaces: a 27-row write is exactly what that sentence was written for,
+     *  and a second in-flight vocabulary for the same act would be two voices.
+     *  The one edit is the plural helper, so a single-card pass no longer
+     *  reads 'Sleeving 1 cards…'. The old key had no other reader and is gone. */
     inFlight: (ticked: string) => `Sleeving ${plural(ticked, 'card', 'cards')}…`,
-    /** UNCHANGED — synergyCopy.lastSlots.topUpFailed. */
-    refused: 'We couldn’t add those. The deck is unchanged.',
+    /** UNCHANGED — synergyCopy.lastSlots.topUpFailed, referenced rather than
+     *  transcribed so the two can never drift apart. */
+    refused: synergyCopy.lastSlots.topUpFailed,
     /** The plate's eyebrow, naming the state the sentence beside it explains. */
     refusedLabel: 'refused',
   },
@@ -388,7 +393,6 @@ export const topOffCopy = {
 //   cards came from which pass'. The ledger says all three.
 //
 // UNTOUCHED, and reused verbatim:
-//   recommendationsCopy.fill.fillingRows ....... commit.inFlight
 //   recommendationsCopy.fill.provenanceShort ... the exhausted-list sentence
 //   autoCopy.clearAll / .clearAllMobile / ...... the sweep, unmoved
 //     .swept / .sweptUndo

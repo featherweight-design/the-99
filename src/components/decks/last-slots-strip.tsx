@@ -112,12 +112,13 @@ function LastSlotsStripInner({
   const isDesktop = useIsDesktop();
 
   const [open, setOpen] = useState(false);
-  // A pass landed in this visit, so the door note stops describing a first
-  // open. Session state rather than a server figure: the note is about what
-  // the player just did and what their selection still holds, and both are
-  // things only this component knows. A reload has neither, and the first-open
-  // note is the honest thing to say then.
-  const [passed, setPassed] = useState(false);
+  // The list has been opened in this visit, so the door note stops promising a
+  // seed that already happened. Cancelling does not discard the selection, so
+  // this is set on the open rather than on a landed pass: reopening after a
+  // cancel restores what the player left, which is the reopen note's promise
+  // and not the first-open one's. Session state rather than a server figure —
+  // a reload has no selection, and the first-open note is honest again then.
+  const [visited, setVisited] = useState(false);
 
   // Held here rather than in TopOffList: both survive the list being closed and
   // reopened (state 9), and the list unmounts on close.
@@ -143,6 +144,7 @@ function LastSlotsStripInner({
     }
     moveFocus.current = true;
     setOpen(true);
+    setVisited(true);
     onOpenChange?.(true);
     // The selection survives a close, and the deck does not stand still while
     // the list is shut: slots can close under it and a card can join the deck
@@ -165,9 +167,8 @@ function LastSlotsStripInner({
     onAnnounce(isDesktop ? opened : `${opened} ${topOffCopy.dock.retiredAnnounce}`);
   }
 
-  function closeList(reason: "cancel" | "committed") {
+  function closeList() {
     moveFocus.current = true;
-    if (reason === "committed") setPassed(true);
     setOpen(false);
     onOpenChange?.(false);
   }
@@ -228,7 +229,7 @@ function LastSlotsStripInner({
   // the open slots, so it states the seeded figure rather than the owned one.
   // The two reopen notes are about ownership rather than ticks, so they keep the
   // unclamped count: you do still own all of them.
-  const doorNote = !passed
+  const doorNote = !visited
     ? topOffCopy.strip.doorNote(String(Math.min(ownedIds.length, Math.max(openSlots, 0))))
     : ownedIds.length === 0
       ? topOffCopy.strip.doorNoteAgain(String(candidates.length))
@@ -292,7 +293,7 @@ function LastSlotsStripInner({
           <button
             ref={closeRef}
             type="button"
-            onClick={() => closeList("cancel")}
+            onClick={closeList}
             // The expanded half of the disclosure the door opens, so it carries
             // the state and the target rather than leaving the pair silent
             // about both while the list is up.

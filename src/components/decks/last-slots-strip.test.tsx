@@ -278,8 +278,9 @@ describe("LastSlotsStrip", () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
-  // The door note is about what the player just did. Before a pass it counts
-  // what they own; after one it describes the pool they can come back to.
+  // The door note is about what the next open will do. Before the first one it
+  // promises the seed; afterwards the seed has already run, so it describes the
+  // pool and the selection the player can come back to.
   it("changes the door note once a pass has landed", async () => {
     render(<LastSlotsStrip {...base} />);
     await click(screen.getByRole("button", { name: doorName("3") }));
@@ -289,13 +290,17 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
   });
 
-  // Cancelling is not a pass. The note must not claim one happened.
-  it("keeps the first-open door note when the list is only cancelled", async () => {
+  // Cancelling adds nothing, but it does not discard the selection either: the
+  // seed has run and the player's edits survive. So the note moves off the
+  // first-open promise even though no pass landed, because promising a seed
+  // that has already happened is the one thing it must not do.
+  it("moves the door note off the first-open promise after a cancel", async () => {
     render(<LastSlotsStrip {...base} />);
     await click(screen.getByRole("button", { name: doorName("3") }));
     await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
 
-    expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+    expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
   });
 
   // The strip is the last thing on the builder page, so at 390px the list opens
