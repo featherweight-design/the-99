@@ -156,7 +156,6 @@ export function FilterSheet({
       onColorsChange={(colors) => onChange({ ...params, colors })}
       onMatchChange={(match) => onChange({ ...params, match })}
       wide={false}
-      showHint
     />
   );
 

@@ -28,8 +28,6 @@ export const filterCopy = {
     exactly: "Exactly these",
     anyShort: "Any",
     exactlyShort: "Exactly",
-    // Sheet only. The desktop rack says this with geometry, not words.
-    disabledHint: "Pick a colour and this decides how the pips combine.",
     // Appended to the result line; only when Exactly is active AND the counts differ.
     excludedAside: (excluded: number) => `Exactly excludes ${excluded} that Any would show`,
   },
@@ -41,15 +39,8 @@ export const filterCopy = {
 
   chips: {
     query: (q: string) => `"${q}"`,
-    overflow: (extra: number) => `+${extra}`,
-    // The +N opens the sheet, and its name has to say which filters it means —
-    // `Filters` alone is the sheet trigger's name and would be a second button
-    // by that name on the same row.
-    overflowAria: (extra: number) =>
-      `Show ${extra} more ${extra === 1 ? "filter" : "filters"}`,
     clear: "Clear",
     clearAll: "Clear all filters",
-    none: "no filters — nothing to clear",
   },
 
   sheet: {

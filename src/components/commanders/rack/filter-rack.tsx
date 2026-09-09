@@ -103,9 +103,6 @@ export function FilterRack({
             onColorsChange={(colors) => onChange({ ...params, colors })}
             onMatchChange={(match) => onChange({ ...params, match })}
             wide
-            // Rack only: the modifier sits 22px from the pips it modifies, so
-            // the geometry says what the sheet has to say in a sentence.
-            showHint={false}
           />
           {/* The owned lane's own control, and its only one. Discover mounts
               nothing here — not a greyed stand-in. */}
@@ -137,13 +134,7 @@ export function FilterRack({
         </div>
       )}
 
-      <ChipLine
-        params={params}
-        lane={lane}
-        onChange={onChange}
-        wide={wide}
-        onOverflowOpen={wide ? undefined : () => setSheetOpen(true)}
-      />
+      <ChipLine params={params} lane={lane} onChange={onChange} wide={wide} />
 
       <ResultLine
         shown={shown}
