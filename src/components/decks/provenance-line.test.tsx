@@ -2,7 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { topOffCopy } from "../../lib/copy/top-off";
-import type { DeckDetailCard } from "../../lib/decks/grouping";
+// `total` and `built` are copies rather than rows on the production call site,
+// so the helper below counts them the same way — a row-count helper would pass
+// a stacked deck's tests while the shipped header disagreed with them.
+import { cardCopies, type DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 
 // ── Module mock — the two server actions the ledger and the banner call ──
@@ -63,8 +66,8 @@ function mount(
     <ProvenanceLedger
       deckId="deck-1"
       cards={cards}
-      total={cards.filter((c) => c.auto).length}
-      built={cards.length}
+      total={cardCopies(cards.filter((c) => c.auto))}
+      built={cardCopies(cards)}
       passes={passes}
       markedPassId={overrides.markedPassId ?? null}
       onMarkChange={overrides.onMarkChange ?? vi.fn()}

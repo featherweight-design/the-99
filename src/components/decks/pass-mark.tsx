@@ -10,7 +10,7 @@ import type { FillPassSummary } from "../../lib/decks/fill-passes";
 /** The pass's name in the ledger and in a marked row's accessible name. Lives
  *  here rather than in `fill-passes.ts` because that module reaches for the
  *  database, and every consumer of this label is a client component. */
-export function fillPassLabel(pass: { kind: string; ordinal: number }): string {
+export function fillPassLabel(pass: Pick<FillPassSummary, "kind" | "ordinal">): string {
   return pass.kind === "seed"
     ? topOffCopy.ledger.seedLabel
     : topOffCopy.ledger.passLabel(String(pass.ordinal));
