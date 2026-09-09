@@ -50,7 +50,7 @@ follows the figure it explains.
 The built figure recolouring to `var(--warning)`: **redrawn.** Past 99 the deck's status is `Over`,
 whose bar is `var(--danger)` per `statusBarStyle` — so the shipped pairing paints one state in two
 different alarm colours. The figure takes **the status token**, derived not hardcoded:
-`var(STATUS_TOKEN[status])`. One state, one colour. Drawn as desktop state 03.
+`var(${STATUS_TOKEN[status]})`. One state, one colour. Drawn as desktop state 03.
 
 ### 4 · The rename trigger's accessible name — restore `Rename deck: ${deck.name}`
 
@@ -84,11 +84,15 @@ round. The R6 rulings above are untouched.
 
 | Where | The drop said | Restored to | Why |
 |---|---|---|---|
-| Retired values, bar row | `var(--elevated)` / "tri-state" | `var(--elevated)` / `statusBarStyle` | The bar keys off status, not percentage. `statusBarStyle` reads `var(STATUS_TOKEN[status])`. |
+| Retired values, bar row | `var(--elevated)` / "tri-state" | `var(--elevated)` / `statusBarStyle` | The bar keys off status, not percentage. `statusBarStyle` reads `var(${STATUS_TOKEN[status]})`. |
 | Retired values, chip row · decision 6 | chip ground `var(--surface-sunken)` | `statusPillStyle`; chip has no ground of its own | The chip's fill is `color-mix(in srgb, var(--token) 18%, var(--bg))`. A flat ground also contradicted decision 5 two lines below, which says `statusPillStyle` wins. |
 | Decision 4, bar below 100% | 40/99 "renders `var(--danger)`" | 40/99 renders `var(--fg-body)` | 40/99 is `Building`, whose token is `--fg-body`. `--danger` is `Over`. The R6 canvas draws state 02 with `barFill: V('--fg-body')`, so the canvas was already right. |
 
 `READINESS.md` was also deleted by the drop with no ruling retiring it. Kept.
+
+Every `STATUS_TOKEN` reference in this file and in the canvas is also corrected to the interpolated
+`` `var(${STATUS_TOKEN[status]})` ``, which is what `statusBarStyle` actually writes. The bare form
+is not valid syntax and reads as a CSS variable literally named `STATUS_TOKEN[status]`.
 
 ---
 
@@ -255,7 +259,7 @@ Accent stays where it is large enough to hold its own: the FIT figure and button
 
 **3 · Bar keys off status, not percentage — corrected.** Both the audit's framing and my answer to
 it were wrong, and reading `status-style.ts` for the chip caught it: `statusBarStyle` sets the fill
-to **`var(STATUS_TOKEN[status])`** — one token per status, with no thresholds on the count.
+to **`var(${STATUS_TOKEN[status]})`** — one token per status, with no thresholds on the count.
 Percentage thresholds would render a **40/99 `Building` deck red**, which is exactly the frame this
 document drew.
 

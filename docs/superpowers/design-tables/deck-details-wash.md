@@ -27,7 +27,7 @@ Columns are **Mobile (<768px)** and **Desktop (≥768px)**.
 | Focus override | rename field only: `outline: none` — its `1px var(--accent)` border is the indicator |
 | Hover | `--accent-hover` / `--elevated-hover` |
 | Bar width | `min(100, (built / 99) * 100)` % — an `Over` deck is full, not 105% |
-| Bar fill | `var(STATUS_TOKEN[status])` — `statusBarStyle`. **No percentage thresholds.** |
+| Bar fill | `var(${STATUS_TOKEN[status]})` — `statusBarStyle`. **No percentage thresholds.** |
 | Chip | `statusPillStyle` verbatim — status colour in the fill mixed into `--bg`, one `var(--border-strong)` hairline, `Building` differs only in `border-style: dashed` |
 | Text shadow | type on a wash carries one; type on flat ground does not |
 | Permitted non-`var()` colour | `rgba(0,0,0,0.4)` (pip + track ring), `0 1px 4px rgba(0,0,0,0.85)` / `0 1px 3px rgba(0,0,0,0.8)` (mobile shadows), `0 1px 3px rgba(0,0,0,.6)` (`INK_SHADOW`, already shipped in `art-wash.tsx`), `#000` / `transparent` inside `mask-image`. Anything else, on these surfaces, is a defect. |
