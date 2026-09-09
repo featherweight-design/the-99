@@ -49,16 +49,17 @@ export function resumeDecks(decks: readonly DeckListItem[]): DeckListItem[] {
 }
 
 /**
- * The unowned clause's figure, or null for no clause.
+ * The copies clause's figure, or null for no clause.
  *
  * The roll-up and only the roll-up. It excludes basics, as every Shopping
- * surface does; `deck.toBuyCount` is `built − ownedCount` and does not, so the
- * two are different definitions of "unowned" and falling back from one to the
- * other would put a count on this row that covers different cards from the one
- * the deck tile prints for the same deck. A deck with no entry draws the count
- * alone — the `87 / 99` beside it already says how far along it is.
+ * surface does, and knows about seniority; `deck.toBuyCount` is
+ * `built − ownedCount` and does neither, so the two are different definitions of
+ * "to buy" and falling back from one to the other would put a count on this row
+ * that covers different cards from the one the deck tile prints for the same
+ * deck. A deck with no entry draws the count alone — the `87 / 99` beside it
+ * already says how far along it is.
  */
-function unownedCopies(shopping: ShoppingRollup, deckId: string): number | null {
+function toBuyCopies(shopping: ShoppingRollup, deckId: string): number | null {
   const copies = shopping.byDeck.get(deckId)?.copies ?? 0;
   return copies > 0 ? copies : null;
 }
@@ -146,7 +147,7 @@ export function ResumeDecks({
 
       <div className="flex gap-[12px]">
         {decks.map((deck) => (
-          <ResumeRow key={deck.id} deck={deck} copies={unownedCopies(shopping, deck.id)} />
+          <ResumeRow key={deck.id} deck={deck} copies={toBuyCopies(shopping, deck.id)} />
         ))}
       </div>
     </section>

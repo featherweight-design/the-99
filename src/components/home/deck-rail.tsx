@@ -42,7 +42,7 @@ function railClause(deck: DeckListItem, shopping: ShoppingRollup): string | null
       // surface does; `deck.toBuyCount` is `built − ownedCount`, which neither
       // excludes basics nor knows about seniority, so the two are different
       // definitions of "to buy". A deck whose only
-      // unowned cards are basics therefore has a `To buy` pill — that threshold
+      // missing cards are basics therefore has a `To buy` pill — that threshold
       // counts them — and no roll-up entry at all; it draws the status alone
       // rather than a count of cards no Shopping surface will offer to sell.
       const copies = shopping.byDeck.get(deck.id)?.copies ?? 0;

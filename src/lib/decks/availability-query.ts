@@ -251,8 +251,18 @@ export type DeckBuyRow = { deckId: string; oracleId: string; quantity: number };
  *
  * `quantity` is the DEFICIT, not the deck's ask. A deck wanting four Relentless
  * Rats with one in the box buys three, and this roll-up feeds a price total, so
- * returning the ask would charge for a copy already on the shelf. The same
- * arithmetic covers the deck whose commander is also on its own list.
+ * returning the ask would charge for a copy already on the shelf.
+ *
+ * A DECK NEVER BUYS ITS OWN COMMANDER HERE, and the asymmetry is deliberate. The
+ * commander is senior demand — a legend sleeved as another deck's commander
+ * really is holding that copy, which is why `all_claims` unions it — but it is
+ * not a line this deck can shop for: `DeckDetail.commander` carries no owned
+ * flag, it is absent from `DeckDetail.cards`, and `built` and `ownedCount` count
+ * `deck_cards` alone. Emitting a commander row would put a purchase on the tile
+ * and the roll-up that the deck page has no row to show, which is the exact
+ * cross-surface disagreement this whole change exists to end. Rows are therefore
+ * driven off the decklist, while seniority is still measured against every claim
+ * there is.
  */
 export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
   const rows = await db.execute<{
@@ -261,19 +271,29 @@ export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
     quantity: number;
   }>(sql`
     with ${claimModel(userId)},
-    -- Every claim, beside the supply and the copies the decks ahead of it have
-    -- already taken. A card owned in no copies has no owned row at all and
-    -- falls through as zero, which is the other half of the shopping list.
+    -- The decklist alone, commander excluded. This is what a deck can be told to
+    -- go and buy; see the header. The inner join below drops a deck's
+    -- commander-only claim without a predicate to forget.
+    list_claims as (
+      select dc.deck_id, dc.oracle_id, sum(dc.quantity)::int as quantity
+      from deck_cards dc
+      join decks d on d.id = dc.deck_id
+      where d.user_id = ${userId}
+      group by dc.deck_id, dc.oracle_id
+    ),
+    -- Every decklist claim, beside the supply and the copies the decks ahead of
+    -- it have already taken. A card owned in no copies has no owned row at all
+    -- and falls through as zero, which is the other half of the shopping list.
     supply as (
       select
-        ca.deck_id,
-        ca.oracle_id,
-        ca.quantity,
+        lc.deck_id,
+        lc.oracle_id,
+        lc.quantity,
         coalesce(o.owned, 0)::int as owned,
         coalesce((
           select sum(senior.quantity)
           from claim_decks_all senior
-          where senior.oracle_id = ca.oracle_id
+          where senior.oracle_id = lc.oracle_id
             and senior.mature
             -- Mirrors senior_hard above: seniority orders the mature decks among
             -- themselves, and an immature deck sits behind all of them.
@@ -282,9 +302,11 @@ export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
               or (senior.created_at, senior.deck_id) < (ca.created_at, ca.deck_id)
             )
         ), 0)::int as senior
-      from claim_decks_all ca
-      join cards c on c.oracle_id = ca.oracle_id
-      left join owned o on o.oracle_id = ca.oracle_id
+      from list_claims lc
+      join claim_decks_all ca
+        on ca.deck_id = lc.deck_id and ca.oracle_id = lc.oracle_id
+      join cards c on c.oracle_id = lc.oracle_id
+      left join owned o on o.oracle_id = lc.oracle_id
       where c.type_line !~ '\\mBasic\\M'
     )
     select
