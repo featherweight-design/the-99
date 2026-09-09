@@ -1,9 +1,13 @@
-# Design Property Table — Deck details art wash (handoff R5)
+# Design Property Table — Deck details art wash (handoff R6)
 
 **Source of truth:** `design/design_handoff_the99_deck_details_wash/The 99 - Deck Details Art Wash.dc.html`.
 The README overrules the canvas in exactly two places, both stated in the README itself: Cancel
 never disables (blocker 3), and the clamp ships as `-webkit-line-clamp` rather than `max-height`
 (blocker 6). Everywhere else the canvas wins.
+
+R6 issued four rulings against the bands this table describes, and the rows below carry them. R6's
+own errata table in the README also corrects three values this table took from R5 — read the two
+together, since a row here that disagrees with the errata is the errata's.
 
 **Breakpoint: 768px (`md:`)** for the deck header — not the 640px `sm:` most of the app uses. The
 commander hero keeps its existing `sm:` split, because only its mobile subtree changes.
@@ -27,7 +31,7 @@ Columns are **Mobile (<768px)** and **Desktop (≥768px)**.
 | Focus override | rename field only: `outline: none` — its `1px var(--accent)` border is the indicator |
 | Hover | `--accent-hover` / `--elevated-hover` |
 | Bar width | `min(100, (built / 99) * 100)` % — an `Over` deck is full, not 105% |
-| Bar fill | `var(STATUS_TOKEN[status])` — `statusBarStyle`. **No percentage thresholds.** |
+| Bar fill | `var(${STATUS_TOKEN[status]})` — `statusBarStyle`. **No percentage thresholds.** |
 | Chip | `statusPillStyle` verbatim — status colour in the fill mixed into `--bg`, one `var(--border-strong)` hairline, `Building` differs only in `border-style: dashed` |
 | Text shadow | type on a wash carries one; type on flat ground does not |
 | Permitted non-`var()` colour | `rgba(0,0,0,0.4)` (pip + track ring), `0 1px 4px rgba(0,0,0,0.85)` / `0 1px 3px rgba(0,0,0,0.8)` (mobile shadows), `0 1px 3px rgba(0,0,0,.6)` (`INK_SHADOW`, already shipped in `art-wash.tsx`), `#000` / `transparent` inside `mask-image`. Anything else, on these surfaces, is a defect. |
