@@ -52,6 +52,19 @@ whose bar is `var(--danger)` per `statusBarStyle` — so the shipped pairing pai
 different alarm colours. The figure takes **the status token**, derived not hardcoded:
 `var(${STATUS_TOKEN[status]})`. One state, one colour. Drawn as desktop state 03.
 
+### 3a · The trim paragraph's bold lead — `var(--fg-body)`, not the status token
+
+**Reversed** (PR #482 extension, `spine-desktop.tsx:247` / `spine-mobile.tsx:246`). The
+"all three render only when over, so they are one state speaking" reading proves too much: the
+paragraph *body* also renders only when over, and it is agreed that should stay body colour. So
+co-occurrence is not what earns the token — **being the readout is.** The built figure and the `+N`
+delta are data; the trim line is the remedy. Alarm colour marks the problem, and colouring the fix
+red makes it read as more bad news.
+
+The defect was mine: my canvas drew that paragraph as one flat string with no lead, so there was
+nothing for an ink to attach to. State 03 now draws the lead explicitly — **bold at
+`var(--fg-body)`** — so the spec says it rather than leaving it to be inferred.
+
 ### 4 · The rename trigger's accessible name — restore `Rename deck: ${deck.name}`
 
 The bare `Rename deck` is fine in isolation but the deck header is reachable from list contexts, and
@@ -76,23 +89,23 @@ across two rounds of review at your request and mine; agreed it should not have 
 Note this does **not** retire the null-`art_crop` fallback, which is still reachable — a commander
 whose printing has no art crop.
 
-### Errata — three R5 lines restored in eng review
+### Errata — five lines restored in eng review, twice
 
-The R6 drop reverted three passages of the R5 prose to their pre-R5 text. Each contradicted the R6
-canvas *and* the shipped code, so all three are restored here rather than sent back for another
-round. The R6 rulings above are untouched.
+The R6 drop reverted three passages of the R5 prose to their pre-R5 text, and they were restored in
+PR #481. The R7 drop reverted the same passages again, along with the restoration itself — the
+document appears to be regenerated from Design's own copy each round, so corrections committed here
+do not survive into the next drop. Each contradicts the R7 canvas *and* the shipped code, so all
+are restored here rather than sent back for another round. The R7 rulings above are untouched.
 
 | Where | The drop said | Restored to | Why |
 |---|---|---|---|
 | Retired values, bar row | `var(--elevated)` / "tri-state" | `var(--elevated)` / `statusBarStyle` | The bar keys off status, not percentage. `statusBarStyle` reads `var(${STATUS_TOKEN[status]})`. |
 | Retired values, chip row · decision 6 | chip ground `var(--surface-sunken)` | `statusPillStyle`; chip has no ground of its own | The chip's fill is `color-mix(in srgb, var(--token) 18%, var(--bg))`. A flat ground also contradicted decision 5 two lines below, which says `statusPillStyle` wins. |
-| Decision 4, bar below 100% | 40/99 "renders `var(--danger)`" | 40/99 renders `var(--fg-body)` | 40/99 is `Building`, whose token is `--fg-body`. `--danger` is `Over`. The R6 canvas draws state 02 with `barFill: V('--fg-body')`, so the canvas was already right. |
+| Decision 4, bar below 100% | 40/99 "renders `var(--danger)`" | 40/99 renders `var(--fg-body)` | 40/99 is `Building`, whose token is `--fg-body`. `--danger` is `Over`. The R7 canvas draws state 02 with `barFill: V('--fg-body')`, so the canvas was already right. |
+| Canvas token block, comment | "every colour below is a `var()`, never a literal" | the definitions in the block are hex, as in `globals.css`; the var()-only claim belongs to the product frame | The comment sits directly above 37 hex definitions, so as written it is contradicted by the lines it introduces. |
+| `STATUS_TOKEN`, four sites | `var(STATUS_TOKEN[status])` | `` `var(${STATUS_TOKEN[status]})` `` | The bare form is not valid syntax and reads as a CSS variable literally named `STATUS_TOKEN[status]`. This is what `statusBarStyle` actually writes. |
 
-`READINESS.md` was also deleted by the drop with no ruling retiring it. Kept.
-
-Every `STATUS_TOKEN` reference in this file and in the canvas is also corrected to the interpolated
-`` `var(${STATUS_TOKEN[status]})` ``, which is what `statusBarStyle` actually writes. The bare form
-is not valid syntax and reads as a CSS variable literally named `STATUS_TOKEN[status]`.
+`READINESS.md` was also deleted by both drops with no ruling retiring it. Kept.
 
 ---
 

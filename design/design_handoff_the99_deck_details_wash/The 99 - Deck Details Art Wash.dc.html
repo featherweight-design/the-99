@@ -209,7 +209,7 @@
                   <div style="width:170px;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;margin-top:6px;"><div style="width:{{ s.barW }};height:100%;background:{{ s.barFill }};"></div></div>
                   <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);margin-top:6px;">{{ s.owned }}</div>
                   <sc-if value="{{ s.hasTrim }}" hint-placeholder-val="{{ true }}">
-                    <div style="font-size:11.5px;color:var(--fg-muted);line-height:1.5;margin-top:6px;max-width:520px;">{{ s.trim }}</div>
+                    <div style="font-size:11.5px;color:var(--fg-body);line-height:1.5;margin-top:6px;max-width:520px;"><b style="color:var(--fg-body);font-weight:600;">{{ s.trimLead }}</b> {{ s.trim }}</div>
                   </sc-if>
                 </div>
                 <div style="flex:none;display:flex;gap:9px;align-items:center;">
@@ -524,7 +524,8 @@ class Component extends DCLogic {
           chip:'Over', chipInk:'var(--danger)', chipFill:'color-mix(in srgb, var(--danger) 18%, var(--bg))', chipStyle:'solid',
           built:'104', builtInk:'var(--danger)', barW:'100%', barFill:V('--danger'), owned:'98 owned · 6 to buy',
           hasExport:true, hasOver:true, over:'+5', hasTrim:true,
-          trim:'Trim 5 cards to make this deck legal. The bar is clamped at 100%, so the +5 in the count row is the only place the overage is legible.' },
+          trimLead:'Cut five cards',
+          trim:'to make this deck legal. The lead is bold but stays var(--fg-body): the figure and the delta are the readout, this is the remedy. The bar is clamped at 100%, so the +5 is the only place the overage is legible.' },
         { tag:'04 · long name', note:'Two-line clamp at both widths, so the band never grows for a name — only for the trim copy above.',
           pad:'254px', hasWash:true,
           ambient:dog, ambientOp:0.2, sharp:dog, sharpOp:0.8, hasPill:true, hasPips:true,

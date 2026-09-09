@@ -53,6 +53,20 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
+// A rename is a server action, so the title the header draws lags the keystroke
+// by however long that round trip takes. Polling asks the question until the
+// answer settles rather than guessing a single interval that is either flaky or
+// slow; the timeout only bounds a genuine failure.
+async function readHeaderUntilTitled(page, read, wanted, timeout = 8000) {
+  const deadline = Date.now() + timeout;
+  let seen;
+  for (;;) {
+    seen = await page.evaluate(read);
+    if (seen.title === wanted || Date.now() > deadline) return seen;
+    await page.waitForTimeout(200);
+  }
+}
+
 // The one header the reader can actually see at this width. Both trees are in
 // the DOM — that is the whole point of the responsive split — so everything here
 // filters on `getClientRects()`, which is the only thing that knows about CSS.
@@ -89,6 +103,19 @@ const READ_HEADER = `() => {
   return {
     found: true,
     renameLabel: pencil ? pencil.getAttribute('aria-label') : null,
+    // The phone trigger lost its box but must keep its target, and a target is
+    // the one thing a class-name assertion cannot prove. Measured, not read.
+    renameBox: (() => {
+      if (!pencil) return null;
+      const r = pencil.getBoundingClientRect();
+      const cs = getComputedStyle(pencil);
+      return {
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+        background: cs.backgroundColor,
+        borderWidth: cs.borderTopWidth,
+      };
+    })(),
     plateBackground: art?.parentElement
       ? getComputedStyle(art.parentElement).backgroundColor
       : null,
@@ -110,19 +137,28 @@ const READ_HEADER = `() => {
       ? Math.round((fill.getBoundingClientRect().width / fill.parentElement.getBoundingClientRect().width) * 100)
       : null,
     status: pill ? pill.textContent.trim() : null,
-    // R6 ruling 3 — every ink the over-99 state adds, so the walk can check that
-    // one state is not painted in two alarm colours. The figure row is the bar
-    // track's previous sibling and the trim line is the paragraph after it,
-    // which holds at both breakpoints; the type sizes do not.
+    // R6 ruling 3 — the inks that read the over-99 state out, so the walk can
+    // check that one state is not painted in two alarm colours. The figure row
+    // is the bar track's previous sibling, which holds at both breakpoints; the
+    // type sizes do not.
     overInks: (() => {
       const row = fill?.parentElement?.previousElementSibling;
       if (!row) return null;
-      const inks = [...row.children]
+      return [...row.children]
         .filter(visible)
         .map((s) => ({ text: s.textContent.trim(), color: getComputedStyle(s).color }));
+    })(),
+    // R7 ruling 3a — the trim line is the remedy, not the readout, so its bold
+    // lead is emphasis at the paragraph's own colour rather than the status
+    // token. Both are read so the walk compares them to each other.
+    trimInk: (() => {
       const lead = [...header.querySelectorAll('p b')].find(visible);
-      if (lead) inks.push({ text: lead.textContent.trim(), color: getComputedStyle(lead).color });
-      return inks;
+      if (!lead || !lead.parentElement) return null;
+      return {
+        text: lead.textContent.trim(),
+        lead: getComputedStyle(lead).color,
+        body: getComputedStyle(lead.parentElement).color,
+      };
     })(),
     hasCardDetails: Boolean(detail),
     // The meta row's ground is the claim §C8 makes: in the band at rest, below
@@ -214,6 +250,16 @@ try {
         fail(`rename trigger labelled "${h.renameLabel}", not "Rename deck: ${h.title}"`);
       }
       if (!h.title) fail(`no title in the header`);
+      // The phone trigger is always visible because there is no hover, so it
+      // keeps its 44px target while giving up the box that used to draw it.
+      if (vpName === "mobile") {
+        const box = h.renameBox;
+        if (!box) fail(`no rename trigger in the mobile header`);
+        else if (box.w < 44 || box.h < 44) fail(`rename target is ${box.w}x${box.h}, under 44`);
+        else if (box.borderWidth !== "0px" || !/rgba\(0, 0, 0, 0\)|transparent/.test(box.background)) {
+          fail(`rename trigger still draws a box: ${box.borderWidth} border on ${box.background}`);
+        } else note(`  rename trigger is a bare ${box.w}x${box.h} target`);
+      }
       // Mobile sits on the wash and must carry the shared ink shadow; desktop's
       // strings are past the scrim's flat stop and must carry none.
       const hasShadow = h.titleShadow && h.titleShadow !== "none";
@@ -246,7 +292,19 @@ try {
             .join(", ")}`,
         );
       } else {
-        note(`  over-99 inks all read the bar's ${over.barBackground}`);
+        note(`  every ink in the over-99 readout reads the bar's ${over.barBackground}`);
+      }
+      // R7 ruling 3a. The lead is checked against its own paragraph rather than
+      // against a token name, so it holds whatever var(--fg-body) resolves to.
+      const trim = over.trimInk;
+      if (!trim) {
+        fail(`the over-99 trim line has no bold lead to check`);
+      } else if (trim.lead === over.barBackground) {
+        fail(`the trim lead "${trim.text}" took the bar's ${trim.lead}`);
+      } else if (trim.lead !== trim.body) {
+        fail(`the trim lead "${trim.text}" is ${trim.lead}, not its paragraph's ${trim.body}`);
+      } else {
+        note(`  the trim lead stays at the paragraph's ${trim.body}`);
       }
     }
 
@@ -330,8 +388,7 @@ try {
     await page.waitForTimeout(200);
     await field.fill(renamed);
     await field.press("Enter");
-    await page.waitForTimeout(1200);
-    now = await page.evaluate(`(${READ_HEADER})()`);
+    now = await readHeaderUntilTitled(page, `(${READ_HEADER})()`, renamed);
     if (now.title !== renamed) fail(`Enter did not save: "${now.title}"`);
     else note(`  Enter saves`);
 
@@ -342,8 +399,7 @@ try {
     // viewport is the app's nav, so a click there navigates away instead of
     // leaving the field. Blur is what the contract is actually about.
     await field.evaluate((el) => el.blur());
-    await page.waitForTimeout(1200);
-    now = await page.evaluate(`(${READ_HEADER})()`);
+    now = await readHeaderUntilTitled(page, `(${READ_HEADER})()`, originalName);
     if (now.title !== originalName) fail(`blurring the field did not save: "${now.title}"`);
     else note(`  leaving the field saves, and the deck's name is back to "${originalName}"`);
 
