@@ -3,6 +3,7 @@
 // Decklist Row — single card row with ownership dot, name, buy tag, remove button.
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
+import { useId } from "react";
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { availabilityState } from "../../lib/decks/availability";
@@ -179,6 +180,12 @@ export function DecklistRow({
   const passMark = usePassMark();
   const markLabel = passMark?.oracleIds.has(card.oracleId) ? passMark.label : null;
   const marked = markLabel !== null;
+  // Referenced by both name triggers rather than being left to sit beside them.
+  // Visually-hidden text alone is browse-mode only, and a reader moving through
+  // the decklist by Tab never leaves focus mode — so the pass that placed the
+  // card would go unspoken to exactly the reader the mark is drawn for.
+  const markDescriptionId = useId();
+  const describedBy = marked ? markDescriptionId : undefined;
   // The mark is an inset edge for the same reason the over tint is an inset
   // ring: 3px of real border would shunt one row's contents sideways.
   const rowEdges: string[] = [];
@@ -263,6 +270,7 @@ export function DecklistRow({
                 name={card.name}
                 siblings={siblings}
                 className={nameTextClass}
+                describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
               >
                 {card.name}
@@ -310,6 +318,7 @@ export function DecklistRow({
               name={card.name}
               siblings={siblings}
               className={nameTextClass}
+              describedBy={describedBy}
               style={{ color: "var(--fg)" }}
             >
               {card.name}
@@ -412,8 +421,13 @@ export function DecklistRow({
             name rather than a replacement for it: the row has no aria-label to
             extend. It follows the name and the auto tag rather than leading the
             row, so a reader hears which card before hearing which pass placed
-            it — the same order the eye takes. */}
-        {markLabel && <span className="sr-only">{topOffCopy.ledger.markedRow(markLabel)}</span>}
+            it — the same order the eye takes, and the order aria-describedby
+            reads it in too. */}
+        {markLabel && (
+          <span id={markDescriptionId} className="sr-only">
+            {topOffCopy.ledger.markedRow(markLabel)}
+          </span>
+        )}
 
         {/* Remove ✕ — at both widths now. The glyph stays 13px at both: the
             phone target is the padding around it. */}

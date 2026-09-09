@@ -117,6 +117,29 @@ describe("BuilderShell — the mark", () => {
     expect(screen.getAllByText(ledger.markedRow(ledger.passLabel("1")))).toHaveLength(1);
   });
 
+  // Visually-hidden text beside the name button is browse-mode only, and a
+  // reader moving through the decklist by Tab never leaves focus mode. The
+  // button has to point at it for the mark to be spoken to the reader it is for.
+  it("reads the mark after the card's own name when the name is focused", async () => {
+    await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),
+      );
+    });
+
+    const marker = screen.getByText(ledger.markedRow(ledger.passLabel("1")));
+    const described = document.querySelectorAll(`[aria-describedby="${marker.id}"]`);
+    expect(marker.id).not.toBe("");
+    expect(described).toHaveLength(1);
+
+    // And it is the marked card's own name that points at it. The other auto
+    // card is in the deck but not in this pass, so its name describes nothing
+    // rather than borrowing a neighbour's.
+    expect(described[0].textContent).toBe("Card 0");
+    expect(screen.getByText("Card 1").closest("button")).not.toHaveAttribute("aria-describedby");
+  });
+
   it("drops a mark whose pass is gone from the incoming summaries", async () => {
     const deck = makeDeck(2, 0);
     const view = await mount(deck, [makePass("p1", 1, ["card-0"])]);
