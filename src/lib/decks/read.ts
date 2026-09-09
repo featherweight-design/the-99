@@ -534,6 +534,11 @@ export type OwnedLegalCommander = {
   name: string;
   colorIdentity: string[];
   imageUri: string | null;
+  /**
+   * Read for the Partner ability, which decides whether a pick offers a second
+   * slot and which legends may fill it. Already fetched by the query below.
+   */
+  oracleText: string | null;
   /** Number of cards in the user's collection that fit within this commander's color identity. */
   poolCount: number;
 };
@@ -589,6 +594,7 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
         name: c.name,
         colorIdentity: c.colorIdentity,
         imageUri: c.imageUri,
+        oracleText: c.oracleText,
         poolCount,
       };
     })

@@ -61,6 +61,8 @@ export type DeckImport = {
     sourceLine: number;
     colorIdentity: string[];
     imageUri: string | null;
+    /** Read for the Partner ability, which decides who may fill a second slot. */
+    oracleText: string | null;
   }[];
   /**
    * Set when the source names its own commander (`*CMDR*`, or a `Commander`
@@ -263,6 +265,7 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
         sourceLine: row.line,
         colorIdentity: card.colorIdentity,
         imageUri: card.imageUri,
+        oracleText: card.oracleText,
       });
     }
   }

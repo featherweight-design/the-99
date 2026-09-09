@@ -122,7 +122,11 @@ export function ImportEntry() {
     setFailure(next);
   }
 
-  function submit(commanderOracleId?: string, name = deckName) {
+  function submit(
+    commanderOracleId?: string,
+    name = deckName,
+    partnerOracleId: string | null = null,
+  ) {
     // `pending` alone cannot hold this door. It only turns true on the re-render
     // that follows `startTransition`, so two clicks in one tick both read false
     // and both reach the server — and `importDeck` deliberately does not dedupe,
@@ -145,6 +149,7 @@ export function ImportEntry() {
           // Omitted rather than passed as undefined so the first pass sends the
           // exact payload it always has.
           ...(commanderOracleId ? { commanderOracleId } : {}),
+          ...(partnerOracleId ? { partnerOracleId } : {}),
         });
         if (result.ok) {
           committed = true;
@@ -221,7 +226,7 @@ export function ImportEntry() {
         mode="import"
         candidates={commanderStep.candidates}
         initialName={deckName}
-        onSubmit={(oracleId, name) => submit(oracleId, name)}
+        onSubmit={(oracleId, name, partnerOracleId) => submit(oracleId, name, partnerOracleId)}
       />
     );
   }

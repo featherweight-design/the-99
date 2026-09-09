@@ -300,6 +300,7 @@ describe("buildDeckImport — legendary candidates", () => {
         sourceLine: 2,
         colorIdentity: ["W", "U", "B", "G"],
         imageUri: "https://cards.example/atraxa.jpg",
+        oracleText: ATRAXA.oracleText,
       },
       {
         oracleId: TYMNA.oracleId,
@@ -307,6 +308,7 @@ describe("buildDeckImport — legendary candidates", () => {
         sourceLine: 3,
         colorIdentity: ["W", "B"],
         imageUri: null,
+        oracleText: TYMNA.oracleText,
       },
     ]);
   });

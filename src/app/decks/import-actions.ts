@@ -51,6 +51,8 @@ export type ImportCommanderCandidate = {
   sourceLine: number;
   colorIdentity: string[];
   imageUri: string | null;
+  /** Read for the Partner ability, which decides who may fill the second slot. */
+  oracleText: string | null;
   owned: boolean;
 };
 

@@ -22,8 +22,10 @@ import { createDeck } from "../../app/decks/actions";
 import type { ImportCommanderCandidate } from "../../app/decks/import-actions";
 import type { OwnedLegalCommander } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
+import { canPair, partnerAbility, partnerAbilityLabel } from "../../lib/decks/partner";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { PartnerSlot } from "./partner-slot";
 import { PrimaryButton } from "@/components/ui/button";
 import { SearchField, TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
@@ -46,7 +48,7 @@ type ImportModeProps = {
   candidates: ImportCommanderCandidate[];
   /** Pre-filled from the source, and editable (design table §8, README:224–226). */
   initialName: string;
-  onSubmit: (oracleId: string, name: string) => void;
+  onSubmit: (oracleId: string, name: string, partnerOracleId: string | null) => void;
 };
 
 export type CreatePickerProps = CreateModeProps | ImportModeProps;
@@ -110,8 +112,25 @@ export function CreatePicker(props: CreatePickerProps) {
     [candidates, legalCommanders],
   );
 
+  // What the second slot needs from a row, looked up rather than carried on
+  // `PickerRow`: the row draws neither the oracle text nor the source line, and
+  // the two modes carry them on different types.
+  const sourceById = useMemo(() => {
+    const source: (ImportCommanderCandidate | OwnedLegalCommander)[] =
+      candidates ?? legalCommanders ?? [];
+    return new Map(
+      source.map((c) => [
+        c.oracleId,
+        { oracleText: c.oracleText, sourceLine: "sourceLine" in c ? c.sourceLine : null },
+      ]),
+    );
+  }, [candidates, legalCommanders]);
+
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
+  /** True while the list is re-headed and filtered to the primary's legal partners. */
+  const [pairing, setPairing] = useState(false);
   const [deckName, setDeckName] = useState(props.mode === "import" ? props.initialName : "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -140,15 +159,80 @@ export function CreatePicker(props: CreatePickerProps) {
     return () => observer.disconnect();
   }, []);
 
+  // The commanders that may fill the second slot. Memoised on the id rather than
+  // on the resolved ability, which is a fresh object every render and would
+  // re-filter the player's whole legal pool on every keystroke.
+  const pairable = useMemo(() => {
+    const ability = selectedId
+      ? partnerAbility(sourceById.get(selectedId)?.oracleText ?? null)
+      : null;
+    if (!ability) return [];
+    return rows.filter(
+      (r) =>
+        r.oracleId !== selectedId &&
+        canPair(ability, partnerAbility(sourceById.get(r.oracleId)?.oracleText ?? null)),
+    );
+  }, [rows, selectedId, sourceById]);
+
   // Client-side substring filter over loaded list. The import picker has no search:
   // it lists the handful of legends one decklist contained.
-  const filtered = useMemo(() => {
+  const visible = useMemo(() => {
+    const base = pairing ? pairable : rows;
     const needle = query.trim().toLowerCase();
-    if (isImport || needle.length === 0) return rows;
-    return rows.filter((c) => c.name.toLowerCase().includes(needle));
-  }, [isImport, rows, query]);
+    if (isImport || needle.length === 0) return base;
+    return base.filter((c) => c.name.toLowerCase().includes(needle));
+  }, [isImport, rows, pairable, pairing, query]);
 
   const selected = rows.find((r) => r.oracleId === selectedId) ?? null;
+
+  // State A is decided here and nowhere else, so the slot and the eyebrows that
+  // appear with it can never disagree about whether a pair is possible.
+  const primaryAbility = selected
+    ? partnerAbility(sourceById.get(selected.oracleId)?.oracleText ?? null)
+    : null;
+
+  const partnerRow = partnerId ? (rows.find((r) => r.oracleId === partnerId) ?? null) : null;
+  const partnerSourceLine = partnerId ? (sourceById.get(partnerId)?.sourceLine ?? null) : null;
+  const partnerCard = partnerRow
+    ? {
+        name: partnerRow.name,
+        colorIdentity: partnerRow.colorIdentity,
+        imageUri: partnerRow.imageUri,
+        // In import mode both halves came from the paste, so the caption says so
+        // and names the line — auditable against the list rather than merely
+        // reversible. In create mode the partner is a pick like any other and
+        // reads the same meta line the primary above it does.
+        caption:
+          partnerSourceLine !== null ? copy.proposed(partnerSourceLine) : partnerRow.metaDesktop,
+        // The proposal's own accessible name, which says it is reversible before
+        // it says who it is. A create-mode pick is not a proposal, so it is named
+        // plainly and the `Change` and `Remove` buttons speak for themselves.
+        ariaLabel:
+          partnerSourceLine !== null ? copy.proposedAria(partnerRow.name) : partnerRow.name,
+      }
+    : null;
+
+  // The query belongs to the list, and the list changes out from under it: a
+  // search that found the primary matches none of its partners, so leaving it in
+  // place re-heads the list to nothing while the strip truthfully counts one.
+  function setPairingMode(next: boolean) {
+    setQuery("");
+    setPairing(next);
+  }
+
+  /** One row tap, whichever slot the list is currently filling. */
+  function pickRow(oracleId: string) {
+    if (pairing) {
+      setPartnerId(oracleId);
+      setPairingMode(false);
+      return;
+    }
+    // A partner belongs to the commander it was chosen for, so changing or
+    // clearing the primary drops it rather than carrying it onto a pair that was
+    // never checked.
+    setPartnerId(null);
+    setSelectedId(selectedId === oracleId ? null : oracleId);
+  }
 
   const canCreate =
     selected !== null && deckName.trim().length > 0 && deckName.trim().length <= DECK_NAME_MAX;
@@ -170,12 +254,12 @@ export function CreatePicker(props: CreatePickerProps) {
       // The import owns its own submission: it still holds the list, and a second
       // pass through `importDeck` is what actually writes the deck. That owner
       // unmounts this picker while it runs, so the flag is never released here.
-      props.onSubmit(selected.oracleId, trimmed);
+      props.onSubmit(selected.oracleId, trimmed, partnerId);
       return;
     }
     startTransition(async () => {
       try {
-        await createDeck(selected.oracleId, trimmed);
+        await createDeck(selected.oracleId, trimmed, [], partnerId);
       } catch (err) {
         // `createDeck` ends in `redirect()`, which signals by throwing, and the
         // throw reaches this catch before the router navigates — so every
@@ -289,7 +373,7 @@ export function CreatePicker(props: CreatePickerProps) {
                   className="hidden md:block font-mono ml-auto shrink-0"
                   style={{ fontSize: 11, color: "var(--fg-faint)" }}
                 >
-                  {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+                  {visible.length} result{visible.length !== 1 ? "s" : ""}
                 </span>
               }
             />
@@ -335,6 +419,51 @@ export function CreatePicker(props: CreatePickerProps) {
           </div>
           )}
 
+          {/* The slot on a phone sits in the scrolling flow beside the name
+              field — never in the dock, whose own comment says nothing else may
+              live there or its height moves under a thumb. */}
+          {selected && primaryAbility && (
+            <div className="md:hidden mb-[16px]">
+              <PartnerSlot
+                primaryName={selected.name}
+                ability={primaryAbility}
+                partner={partnerCard}
+                pairableCount={pairable.length}
+                onAdd={() => setPairingMode(true)}
+                onChange={() => setPairingMode(true)}
+                onRemove={() => setPartnerId(null)}
+              />
+            </div>
+          )}
+
+          {/* Picking the partner re-heads the list. The strip says which
+              commander is being paired — the primary scrolls out of view on a
+              phone — and prints the count, so a filter returning 3 of 400 is
+              visibly a filter and not a broken list. */}
+          {pairing && selected && (
+            <div
+              className="flex items-center gap-[10px] p-[10px_13px] mb-[10px] md:mb-[11px] rounded-[10px]"
+              style={{
+                background: "var(--surface-sunken)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <span
+                className="font-mono text-[11px] flex-1 min-w-0"
+                style={{ color: "var(--fg-body)" }}
+              >
+                {copy.pairingFor(shortCommanderName(selected.name), pairable.length)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPairingMode(false)}
+                className="font-mono text-[11px] text-[color:var(--fg-faint)] border-b border-[color:var(--border)]"
+              >
+                {copy.pairingCancel}
+              </button>
+            </div>
+          )}
+
           {/* §Commander picker rows */}
           {rows.length === 0 ? (
             <p
@@ -343,23 +472,29 @@ export function CreatePicker(props: CreatePickerProps) {
             >
               No owned commanders found. Add cards to your collection first.
             </p>
-          ) : filtered.length === 0 ? (
+          ) : visible.length === 0 ? (
             <p
               className="font-mono text-[12px] text-center py-[40px]"
               style={{ color: "var(--fg-faint)" }}
             >
-              No commanders match &ldquo;{query}&rdquo;.
+              {pairing && primaryAbility ? (
+                copy.partnerNoneOwned(partnerAbilityLabel(primaryAbility))
+              ) : (
+                <>No commanders match &ldquo;{query}&rdquo;.</>
+              )}
             </p>
           ) : (
             <ul className="flex flex-col gap-[10px] md:gap-[11px]">
-              {filtered.map((c) => {
-                const isSelected = selectedId === c.oracleId;
+              {visible.map((c) => {
+                const isSelected = pairing
+                  ? partnerId === c.oracleId
+                  : selectedId === c.oracleId;
                 const gradient = commanderGradient(c.colorIdentity);
                 return (
                   <li key={c.oracleId}>
                     <button
                       type="button"
-                      onClick={() => setSelectedId(isSelected ? null : c.oracleId)}
+                      onClick={() => pickRow(c.oracleId)}
                       className={[
                         "w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left transition-colors p-[10px_12px] md:p-[12px_15px] min-h-[44px] border border-solid",
                         isSelected
@@ -468,7 +603,24 @@ export function CreatePicker(props: CreatePickerProps) {
 
           {selected ? (
             <>
-              <div className="flex items-start gap-[12px] mb-[16px]">
+              {/* The eyebrows appear with the slot and never before it: a lone
+                  `Commander` label over a single pick is a new word on a shipped
+                  surface for no gain. In import mode both halves came from the
+                  paste, so the primary's says so too. */}
+              {primaryAbility && (
+                <p
+                  className="font-mono uppercase"
+                  style={{
+                    fontSize: 9.5,
+                    letterSpacing: "0.12em",
+                    color: "var(--fg-faint)",
+                    marginBottom: 7,
+                  }}
+                >
+                  {isImport ? copy.primaryLabelFromSource : copy.primaryLabel}
+                </p>
+              )}
+              <div className="flex items-start gap-[12px]">
                 {/* §Selected summary — card art: 44×62px, br 7px */}
                 <div
                   className="shrink-0 rounded-[7px]"
@@ -499,28 +651,42 @@ export function CreatePicker(props: CreatePickerProps) {
                 </div>
               </div>
 
+              {primaryAbility && (
+                <PartnerSlot
+                  primaryName={selected.name}
+                  ability={primaryAbility}
+                  partner={partnerCard}
+                  pairableCount={pairable.length}
+                  onAdd={() => setPairingMode(true)}
+                  onChange={() => setPairingMode(true)}
+                  onRemove={() => setPartnerId(null)}
+                />
+              )}
+
               {/* §Selected summary — deck name input. The visible label is the
                   import picker's; the create surface has never drawn one, and
                   adding it here would change /decks/new by accident. */}
-              {isImport && (
-                <label
-                  htmlFor="picker-deck-name"
-                  className="block font-mono"
-                  style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 7 }}
-                >
-                  {copy.nameLabel}
-                </label>
-              )}
-              <TextField
-                id="picker-deck-name"
-                value={deckName}
-                onChange={(e) => setDeckName(e.target.value)}
-                maxLength={DECK_NAME_MAX}
-                placeholder="Deck name…"
-                disabled={isPending}
-                aria-label={isImport ? undefined : "Deck name"}
-                className="block w-full p-[11px_13px] text-[14px] mb-[16px]"
-              />
+              <div style={{ marginTop: 16 }}>
+                {isImport && (
+                  <label
+                    htmlFor="picker-deck-name"
+                    className="block font-mono"
+                    style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 7 }}
+                  >
+                    {copy.nameLabel}
+                  </label>
+                )}
+                <TextField
+                  id="picker-deck-name"
+                  value={deckName}
+                  onChange={(e) => setDeckName(e.target.value)}
+                  maxLength={DECK_NAME_MAX}
+                  placeholder="Deck name…"
+                  disabled={isPending}
+                  aria-label={isImport ? undefined : "Deck name"}
+                  className="block w-full p-[11px_13px] text-[14px] mb-[16px]"
+                />
+              </div>
             </>
           ) : (
             <p
@@ -571,10 +737,17 @@ export function CreatePicker(props: CreatePickerProps) {
             className="font-mono text-[10.5px] truncate mb-[7px]"
             style={{ color: "var(--fg-faint)" }}
           >
+            {/* Unchanged: the dock takes the pair through the same argument it
+                takes a single name through, and its identity is the union the
+                deck will actually be built against. */}
             {selected
               ? addPanelCopy.createPicker.dockSummary(
-                  selected.name,
-                  colorLabel(selected.colorIdentity),
+                  partnerRow ? `${selected.name} + ${partnerRow.name}` : selected.name,
+                  colorLabel(
+                    partnerRow
+                      ? [...new Set([...selected.colorIdentity, ...partnerRow.colorIdentity])]
+                      : selected.colorIdentity,
+                  ),
                 )
               : addPanelCopy.createPicker.dockSummaryEmpty}
           </p>
