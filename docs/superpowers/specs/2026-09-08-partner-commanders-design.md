@@ -258,5 +258,5 @@ Two lines in the motivating deck — `Freya, Queen of the Valkyries` and `Battle
 Lair **flavor names** for Iroas, God of Victory and World at War. The catalog stores no flavor names and
 the matcher indexes `cards.name` front-face only (`src/lib/collection/match.ts:41, 58-63, 75-76`);
 `flavorName` appears nowhere in `src/`, `scripts/` or `drizzle/`. Those two lines land in
-`deck_unresolved_rows` regardless of anything in this spec. Recorded here so it is not rediscovered as a
-partner bug; no issue filed.
+`deck_unresolved_rows` regardless of anything in this spec, and identically on a single-commander deck.
+Filed as **#467**, and out of scope here.
