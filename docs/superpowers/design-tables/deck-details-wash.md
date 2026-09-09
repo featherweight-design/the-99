@@ -1,9 +1,13 @@
-# Design Property Table — Deck details art wash (handoff R5)
+# Design Property Table — Deck details art wash (handoff R6)
 
 **Source of truth:** `design/design_handoff_the99_deck_details_wash/The 99 - Deck Details Art Wash.dc.html`.
 The README overrules the canvas in exactly two places, both stated in the README itself: Cancel
 never disables (blocker 3), and the clamp ships as `-webkit-line-clamp` rather than `max-height`
 (blocker 6). Everywhere else the canvas wins.
+
+R6 issued four rulings against the bands this table describes, and the rows below carry them. R6's
+own errata table in the README also corrects three values this table took from R5 — read the two
+together, since a row here that disagrees with the errata is the errata's.
 
 **Breakpoint: 768px (`md:`)** for the deck header — not the 640px `sm:` most of the app uses. The
 commander hero keeps its existing `sm:` split, because only its mobile subtree changes.
