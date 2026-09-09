@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canPair, partnerAbility, partnerAbilityLabel } from "./partner";
+import { canPair, partnerAbility, partnerAbilityLabel, type PartnerAbility } from "./partner";
 
 describe("partnerAbility", () => {
   it("reads the generic ability", () => {
@@ -44,41 +44,72 @@ describe("partnerAbility", () => {
 });
 
 describe("canPair", () => {
+  // The name only decides the named form, so every other case states one that
+  // cannot be the reason the answer came out the way it did.
+  const side = (ability: PartnerAbility | null, name = "Somebody, of Somewhere") => ({
+    name,
+    ability,
+  });
+
   it("pairs two generics", () => {
-    expect(canPair({ kind: "generic" }, { kind: "generic" })).toBe(true);
+    expect(canPair(side({ kind: "generic" }), side({ kind: "generic" }))).toBe(true);
   });
 
   it("pairs two restricted commanders carrying the same label", () => {
     const a = { kind: "restricted", label: "Partner—Father & son" } as const;
-    expect(canPair(a, { ...a })).toBe(true);
+    expect(canPair(side(a), side({ ...a }))).toBe(true);
   });
 
   it("refuses restricted commanders carrying different labels", () => {
     expect(
       canPair(
-        { kind: "restricted", label: "Partner—Father & son" },
-        { kind: "restricted", label: "Partner—Survivors" },
+        side({ kind: "restricted", label: "Partner—Father & son" }),
+        side({ kind: "restricted", label: "Partner—Survivors" }),
       ),
     ).toBe(false);
   });
 
   it("refuses a generic paired with a restricted", () => {
-    expect(canPair({ kind: "generic" }, { kind: "restricted", label: "Partner—Survivors" })).toBe(
-      false,
-    );
+    expect(
+      canPair(side({ kind: "generic" }), side({ kind: "restricted", label: "Partner—Survivors" })),
+    ).toBe(false);
   });
 
   it("pairs two friends forever", () => {
-    expect(canPair({ kind: "friendsForever" }, { kind: "friendsForever" })).toBe(true);
+    expect(canPair(side({ kind: "friendsForever" }), side({ kind: "friendsForever" }))).toBe(true);
   });
 
   it("refuses friends forever paired with generic", () => {
-    expect(canPair({ kind: "friendsForever" }, { kind: "generic" })).toBe(false);
+    expect(canPair(side({ kind: "friendsForever" }), side({ kind: "generic" }))).toBe(false);
   });
 
   it("refuses when either side has no ability", () => {
-    expect(canPair(null, { kind: "generic" })).toBe(false);
-    expect(canPair({ kind: "generic" }, null)).toBe(false);
+    expect(canPair(side(null), side({ kind: "generic" }))).toBe(false);
+    expect(canPair(side({ kind: "generic" }), side(null))).toBe(false);
+  });
+
+  // `Partner with` is the one form that names a specific card, so two cards
+  // carrying it are a legal pair only when each is the card the other names.
+  it("pairs a named form only when each commander names the other", () => {
+    const pir = side({ kind: "with", name: "Toothy, Imaginary Friend" }, "Pir, Imaginative Rascal");
+    const toothy = side({ kind: "with", name: "Pir, Imaginative Rascal" }, "Toothy, Imaginary Friend");
+    expect(canPair(pir, toothy)).toBe(true);
+    expect(canPair(toothy, pir)).toBe(true);
+  });
+
+  it("refuses two named commanders that name someone else", () => {
+    const pir = side({ kind: "with", name: "Toothy, Imaginary Friend" }, "Pir, Imaginative Rascal");
+    const khorvath = side({ kind: "with", name: "Sylvia Brightspear" }, "Khorvath Brightflame");
+    expect(canPair(pir, khorvath)).toBe(false);
+  });
+
+  it("ignores case and surrounding space in the named form", () => {
+    expect(
+      canPair(
+        side({ kind: "with", name: "toothy, imaginary friend " }, "Pir, Imaginative Rascal"),
+        side({ kind: "with", name: " PIR, IMAGINATIVE RASCAL" }, "Toothy, Imaginary Friend"),
+      ),
+    ).toBe(true);
   });
 });
 

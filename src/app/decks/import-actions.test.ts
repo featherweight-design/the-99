@@ -249,6 +249,22 @@ describe("importDeck — a declared pair", () => {
     ).rejects.toThrow("commanders cannot be paired");
     expect(stub.state.inserts).toEqual([]);
   });
+
+  // The picker shows the declared pair pre-selected and lets the player remove
+  // it. That removal is an answer, not an absence: an explicit null means one
+  // commander, and only an unanswered slot falls back to what the paste said.
+  it("honours an explicit null partner over the paste's declaration", async () => {
+    seedCards();
+    await importDeck({
+      text: "Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Sol Ring",
+      source: "paste",
+      name: "Just Atreus",
+      commanderOracleId: ATREUS,
+      partnerOracleId: null,
+    });
+    const deckInsert = stub.state.inserts.find((i) => "commanderOracleId" in i.values);
+    expect(deckInsert?.values.partnerOracleId).toBeNull();
+  });
 });
 
 describe("resolveUnresolvedRow", () => {

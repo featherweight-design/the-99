@@ -121,7 +121,11 @@ export function CreatePicker(props: CreatePickerProps) {
     return new Map(
       source.map((c) => [
         c.oracleId,
-        { oracleText: c.oracleText, sourceLine: "sourceLine" in c ? c.sourceLine : null },
+        {
+          name: c.name,
+          oracleText: c.oracleText,
+          sourceLine: "sourceLine" in c ? c.sourceLine : null,
+        },
       ]),
     );
   }, [candidates, legalCommanders]);
@@ -163,14 +167,17 @@ export function CreatePicker(props: CreatePickerProps) {
   // on the resolved ability, which is a fresh object every render and would
   // re-filter the player's whole legal pool on every keystroke.
   const pairable = useMemo(() => {
-    const ability = selectedId
-      ? partnerAbility(sourceById.get(selectedId)?.oracleText ?? null)
-      : null;
-    if (!ability) return [];
+    const source = selectedId ? sourceById.get(selectedId) : undefined;
+    const ability = partnerAbility(source?.oracleText ?? null);
+    if (!source || !ability) return [];
+    const primary = { name: source.name, ability };
     return rows.filter(
       (r) =>
         r.oracleId !== selectedId &&
-        canPair(ability, partnerAbility(sourceById.get(r.oracleId)?.oracleText ?? null)),
+        canPair(primary, {
+          name: r.name,
+          ability: partnerAbility(sourceById.get(r.oracleId)?.oracleText ?? null),
+        }),
     );
   }, [rows, selectedId, sourceById]);
 

@@ -222,7 +222,12 @@ export async function createDeck(
     }
     // Always a pair the player picked, and the picker only ever offered a legal
     // one — so a mismatch here is a crafted request and is refused outright.
-    if (!canPair(partnerAbility(commander.oracleText), partnerAbility(partner.oracleText))) {
+    if (
+      !canPair(
+        { name: commander.name, ability: partnerAbility(commander.oracleText) },
+        { name: partner.name, ability: partnerAbility(partner.oracleText) },
+      )
+    ) {
       throw new Error("commanders cannot be paired");
     }
   }

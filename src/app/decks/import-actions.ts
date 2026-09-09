@@ -158,7 +158,14 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     };
   }
 
-  const partnerOracleId = input.partnerOracleId ?? result.declaredPartner?.oracleId ?? null;
+  // `undefined` is "the caller did not answer" — the first pass, before the
+  // picker has been shown — and only that falls back to the paste. An explicit
+  // `null` is the picker's answer that this deck has one commander, so a player
+  // who removed the pair the paste declared does not get it put back.
+  const partnerOracleId =
+    input.partnerOracleId !== undefined
+      ? input.partnerOracleId
+      : (result.declaredPartner?.oracleId ?? null);
   const notes = [...result.notes];
 
   // Server actions are reachable via crafted requests — re-validate the commanders
@@ -179,7 +186,12 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     if (!partner || !partner.commanderLegal || !isCommanderCandidate(partner)) {
       throw new Error("card is not a legal commander");
     }
-    if (!canPair(partnerAbility(commander.oracleText), partnerAbility(partner.oracleText))) {
+    if (
+      !canPair(
+        { name: commander.name, ability: partnerAbility(commander.oracleText) },
+        { name: partner.name, ability: partnerAbility(partner.oracleText) },
+      )
+    ) {
       // A pair the *player* picked is refused, because the picker never offered
       // it — only a crafted request reaches that. A pair the *paste* declared is
       // kept with a note, because the paste is the record of a deck that exists,

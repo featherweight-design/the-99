@@ -271,6 +271,10 @@ describe("state 11 — commander picker", () => {
       source: "paste",
       name: "Atraxa, borrowed",
       commanderOracleId: "oracle-4",
+      // Stated, not omitted: an empty second slot on the second pass is the
+      // player's answer that this deck has one commander, and the action reads
+      // an absent key as the paste's own declaration standing.
+      partnerOracleId: null,
     });
   });
 

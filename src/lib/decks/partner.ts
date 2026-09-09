@@ -2,9 +2,10 @@
 // table: a set that prints a new restricted label works the day the catalog
 // refreshes, with no code change.
 //
-// `canPair` is label equality, not a rules engine. It answers the one question
-// the picker and the import re-validation ask, and the spec's out-of-scope line
-// covers every legality rule beyond it.
+// `canPair` matches abilities — label equality for the generic and restricted
+// forms, mutual naming for `Partner with` — not a rules engine. It answers the
+// one question the picker and the import re-validation ask, and the spec's
+// out-of-scope line covers every legality rule beyond it.
 
 export type PartnerAbility =
   | { kind: "generic" }
@@ -38,15 +39,29 @@ export function partnerAbility(oracleText: string | null): PartnerAbility | null
   return null;
 }
 
-export function canPair(a: PartnerAbility | null, b: PartnerAbility | null): boolean {
-  if (!a || !b) return false;
-  if (a.kind === "generic" && b.kind === "generic") return true;
-  if (a.kind === "friendsForever" && b.kind === "friendsForever") return true;
-  if (a.kind === "restricted" && b.kind === "restricted") return a.label === b.label;
-  // A `with` commander names a card, but the app pairs by oracle id and this
-  // module has no I/O to resolve one to the other. Documented as an accepted
-  // deviation from spec §3.
-  if (a.kind === "with" && b.kind === "with") return true;
+/** A commander as `canPair` reads it: the card's name, and the ability it prints. */
+export type PartnerSide = { name: string; ability: PartnerAbility | null };
+
+/**
+ * The named form is legal only when each card names the other, so the printed
+ * name is compared against the other side's card name rather than assumed.
+ * Case- and space-insensitive because both strings come from the catalog and
+ * only their letters carry the claim.
+ */
+function names(declared: string, cardName: string): boolean {
+  return declared.trim().toLowerCase() === cardName.trim().toLowerCase();
+}
+
+export function canPair(a: PartnerSide, b: PartnerSide): boolean {
+  const x = a.ability;
+  const y = b.ability;
+  if (!x || !y) return false;
+  if (x.kind === "generic" && y.kind === "generic") return true;
+  if (x.kind === "friendsForever" && y.kind === "friendsForever") return true;
+  if (x.kind === "restricted" && y.kind === "restricted") return x.label === y.label;
+  if (x.kind === "with" && y.kind === "with") {
+    return names(x.name, b.name) && names(y.name, a.name);
+  }
   return false;
 }
 

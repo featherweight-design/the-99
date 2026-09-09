@@ -147,9 +147,11 @@ export function ImportEntry() {
           source: mode,
           name: name.trim(),
           // Omitted rather than passed as undefined so the first pass sends the
-          // exact payload it always has.
-          ...(commanderOracleId ? { commanderOracleId } : {}),
-          ...(partnerOracleId ? { partnerOracleId } : {}),
+          // exact payload it always has. The second pass sends the partner slot
+          // even when it is empty: a `null` there is the player's answer that
+          // this deck has one commander, and the action reads an absent key as
+          // the paste's declaration standing.
+          ...(commanderOracleId ? { commanderOracleId, partnerOracleId } : {}),
         });
         if (result.ok) {
           committed = true;
