@@ -654,7 +654,6 @@ export function BuilderShell({
                 deckId={deck.id}
                 cards={cards}
                 total={autoCount}
-                built={built}
                 passes={fillPasses}
                 markedPassId={markedPassId}
                 onMarkChange={handleMarkChange}

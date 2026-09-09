@@ -59,6 +59,8 @@ const stub = vi.hoisted(() => {
     // The mirror: copies added between the read and the writes, so the delete's
     // `quantity <= held` matches nothing and the row keeps every copy.
     concurrentGrowth: false,
+    // What the deck counts once an undo's writes have landed.
+    settledBuilt: 0,
   };
 
   function reset() {
@@ -78,6 +80,7 @@ const stub = vi.hoisted(() => {
     state.concurrentKeep = false;
     state.concurrentShrink = null;
     state.concurrentGrowth = false;
+    state.settledBuilt = 0;
     // Deck row so requireDeck succeeds
     state.collectionItems.push({
       id: "deck-1",
@@ -110,6 +113,13 @@ const stub = vi.hoisted(() => {
         const builder: SelectFromBuilder = {
           where: async () => {
             if (tableName === "deck_cards" && isTx) {
+              // undoFillPass's closing count, told apart from the row read by
+              // what it selects. Its own state field because the stub's deletes
+              // do not mutate `deckCards`, so summing that would report the
+              // deck as it was before the undo rather than after it.
+              if ((fields as Record<string, unknown> | undefined)?.copies) {
+                return [{ copies: state.settledBuilt }];
+              }
               return state.deckCards.map((r) => ({ auto: true, ...r }));
             }
             if (tableName === "deck_cards") throw new Error("stub: deck_cards select outside tx — not exercised");
@@ -433,8 +443,20 @@ describe("undoFillPass", () => {
       { oracleId: uuid(2), quantity: 1, auto: false },
     ];
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", passId)).toBe(1);
+    expect((await undoFillPass("deck-1", passId)).removed).toBe(1);
     expect(stub.state.deleteCalls).toEqual([{ table: "deck_cards" }]);
+  });
+
+  // The announcement states a deck size, and the browser cannot derive one:
+  // every other control stays live during an undo, so "what I held minus what
+  // came out" would state a size that never existed if an edit landed meanwhile.
+  it("counts the deck inside the transaction and reports the settled size", async () => {
+    pass();
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
+    stub.state.deckCards = [{ oracleId: uuid(1), quantity: 1 }];
+    stub.state.settledBuilt = 96;
+    const { undoFillPass } = await import("./actions");
+    expect(await undoFillPass("deck-1", passId)).toEqual({ removed: 1, built: 96 });
   });
 
   // The membership record is immutable, and the line goes on its own: with no
@@ -453,7 +475,7 @@ describe("undoFillPass", () => {
     stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
     stub.state.deckCards = []; // the first undo already took it
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", passId)).toBe(0);
+    expect((await undoFillPass("deck-1", passId)).removed).toBe(0);
     expect(stub.state.deleteCalls).toHaveLength(0);
   });
 
@@ -473,10 +495,10 @@ describe("undoFillPass", () => {
     ];
     stub.state.deckCards = [{ oracleId: uuid(1), quantity: 1 }];
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", older)).toBe(0);
+    expect((await undoFillPass("deck-1", older)).removed).toBe(0);
     expect(stub.state.deleteCalls).toHaveLength(0);
     // And the newer pass still owns it, so its own undo does reach it.
-    expect(await undoFillPass("deck-1", newer)).toBe(1);
+    expect((await undoFillPass("deck-1", newer)).removed).toBe(1);
   });
 
   // A stacked basic can hold copies the player added on top of the pass's. The
@@ -486,7 +508,7 @@ describe("undoFillPass", () => {
     stub.state.fillPassMembers = [{ passId, oracleId: uuid(1), quantity: 2 }];
     stub.state.deckCards = [{ oracleId: uuid(1), quantity: 5 }];
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", passId)).toBe(2);
+    expect((await undoFillPass("deck-1", passId)).removed).toBe(2);
     expect(stub.state.deleteCalls).toHaveLength(0);
     expect(stub.state.updateCalls).toEqual([{ table: "deck_cards", set: expect.anything() }]);
     // The copies left behind are the player's, so the same write clears the
@@ -502,7 +524,7 @@ describe("undoFillPass", () => {
     stub.state.fillPassMembers = [{ passId, oracleId: uuid(1), quantity: 2 }];
     stub.state.deckCards = [{ oracleId: uuid(1), quantity: 3, auto: false }];
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", passId)).toBe(0);
+    expect((await undoFillPass("deck-1", passId)).removed).toBe(0);
     expect(stub.state.updateCalls).toHaveLength(0);
     expect(stub.state.deleteCalls).toHaveLength(0);
   });
@@ -517,7 +539,7 @@ describe("undoFillPass", () => {
     stub.state.deckCards = [{ oracleId: uuid(1), quantity: 1 }];
     stub.state.concurrentKeep = true;
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", passId)).toBe(0);
+    expect((await undoFillPass("deck-1", passId)).removed).toBe(0);
   });
 
   // `removeCardFromDeck` decrements without taking the deck lock either, so a
@@ -530,7 +552,7 @@ describe("undoFillPass", () => {
     stub.state.deckCards = [{ oracleId: uuid(1), quantity: 5 }];
     stub.state.concurrentShrink = 2;
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", passId)).toBe(2);
+    expect((await undoFillPass("deck-1", passId)).removed).toBe(2);
     expect(stub.state.updateCalls).toHaveLength(1);
     expect(stub.state.deleteCalls).toEqual([{ table: "deck_cards" }]);
   });
@@ -544,7 +566,7 @@ describe("undoFillPass", () => {
     stub.state.deckCards = [{ oracleId: uuid(1), quantity: 2 }];
     stub.state.concurrentGrowth = true;
     const { undoFillPass } = await import("./actions");
-    expect(await undoFillPass("deck-1", passId)).toBe(0);
+    expect((await undoFillPass("deck-1", passId)).removed).toBe(0);
     expect(stub.state.updateCalls).toHaveLength(0);
   });
 

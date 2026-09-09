@@ -39,8 +39,6 @@ interface ProvenanceLedgerProps {
   /** The deck's live auto copies — the header's figure. Not a sum of the lines:
       a deck predating the ledger has auto rows and no passes to sum. */
   total: number;
-  /** Cards in the deck, for the undo's announcement. */
-  built: number;
   /** Oldest first, passes with no live cards already dropped. */
   passes: FillPassSummary[];
   markedPassId: string | null;
@@ -52,7 +50,6 @@ export function ProvenanceLedger({
   deckId,
   cards,
   total,
-  built,
   passes,
   markedPassId,
   onMarkChange,
@@ -122,7 +119,6 @@ export function ProvenanceLedger({
               buy={buyCount(pass)}
               // The last line is the newest, because the list is oldest first.
               newest={i === passes.length - 1}
-              built={built}
               marked={markedPassId === pass.id}
               onMarkChange={onMarkChange}
               onAnnounce={onAnnounce}
@@ -163,7 +159,6 @@ interface LedgerLineProps {
   pass: FillPassSummary;
   buy: number;
   newest: boolean;
-  built: number;
   marked: boolean;
   onMarkChange: (passId: string | null) => void;
   onAnnounce: (message: string) => void;
@@ -179,7 +174,6 @@ function LedgerLine({
   pass,
   buy,
   newest,
-  built,
   marked,
   onMarkChange,
   onAnnounce,
@@ -198,12 +192,15 @@ function LedgerLine({
     onUndoError(null);
     startTransition(async () => {
       try {
-        const removed = await undoFillPass(deckId, pass.id);
+        // Both figures come back from the write's own transaction. Rule (g)
+        // keeps every other control live during an undo, so subtracting from
+        // the size this click started from could state one that was never true.
+        const { removed, built: settled } = await undoFillPass(deckId, pass.id);
         // The mark points at cards that are no longer there. Cleared here as
         // well as by the render-time reconcile, because a pass whose undo
         // removed only some of its cards survives in the fresh summaries.
         if (marked) onMarkChange(null);
-        onAnnounce(topOffCopy.announce.undone(String(removed), String(built - removed)));
+        onAnnounce(topOffCopy.announce.undone(String(removed), String(settled)));
       } catch {
         onUndoError(ledger.undoFailed);
       }

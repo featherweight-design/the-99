@@ -1,10 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { topOffCopy } from "../../lib/copy/top-off";
-// `total` and `built` are copies rather than rows on the production call site,
-// so the helper below counts them the same way — a row-count helper would pass
-// a stacked deck's tests while the shipped header disagreed with them.
+// `total` is copies rather than rows on the production call site, so the helper
+// below counts it the same way — a row-count helper would pass a stacked deck's
+// tests while the shipped header disagreed with them.
 import { cardCopies, type DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 
@@ -67,7 +67,6 @@ function mount(
       deckId="deck-1"
       cards={cards}
       total={cardCopies(cards.filter((c) => c.auto))}
-      built={cardCopies(cards)}
       passes={passes}
       markedPassId={overrides.markedPassId ?? null}
       onMarkChange={overrides.onMarkChange ?? vi.fn()}
@@ -199,6 +198,42 @@ describe("ProvenanceLedger", () => {
     expect(onMarkChange).toHaveBeenCalledWith(null);
   });
 
+  it("announces the deck size the undo settled on, not the one it started from", async () => {
+    // Rule (g) leaves every other control live during an undo, so a hand
+    // removal can land while this one is in flight. Announcing 99-minus-what-
+    // I-removed off the pre-click figure states a size that was never true.
+    const { undoFillPass } = await import("../../app/decks/actions");
+    let settle!: (result: { removed: number; built: number }) => void;
+    vi.mocked(undoFillPass).mockReturnValue(
+      new Promise((resolve) => {
+        settle = resolve;
+      }),
+    );
+
+    const onAnnounce = vi.fn();
+    const passes = [makePass("p1", { oracleIds: ["a"] })];
+    const props = {
+      deckId: "deck-1",
+      passes,
+      markedPassId: null,
+      onMarkChange: vi.fn(),
+      onAnnounce,
+    };
+    render(<ProvenanceLedger {...props} cards={[makeCard("a", { auto: true })]} total={1} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: ledger.undoAria("1", ledger.passLabel("1")) }),
+    );
+
+    // The write counted the deck at 7 inside its own transaction: the one card
+    // this undo took, plus two more a hand removal took while it was out.
+    await act(async () => {
+      settle({ removed: 1, built: 7 });
+    });
+
+    expect(onAnnounce).toHaveBeenCalledWith(topOffCopy.announce.undone("1", "7"));
+  });
+
   it("keeps the line and states the refusal when an undo rejects", async () => {
     const { undoFillPass } = await import("../../app/decks/actions");
     vi.mocked(undoFillPass).mockRejectedValue(new Error("network"));
@@ -228,7 +263,6 @@ describe("ProvenanceLedger", () => {
         deckId="deck-1"
         cards={[makeCard("a", { auto: false })]}
         total={0}
-        built={1}
         passes={passes}
         markedPassId={null}
         onMarkChange={vi.fn()}

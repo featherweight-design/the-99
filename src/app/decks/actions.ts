@@ -834,15 +834,23 @@ export async function commitTopOff(deckId: string, oracleIds: string[]): Promise
  *  out again — and keeps "has this deck ever had a pass?" answerable, which is
  *  the condition the legacy line turns on.
  *
- *  Returns the number of cards actually removed, which is what the announcement
- *  states: a second undo of the same pass finds nothing live and removes none,
- *  and a card claimed between the read and the write is reported as staying. */
-export async function undoFillPass(deckId: string, passId: string): Promise<number> {
+ *  Returns the number of cards actually removed and the deck's size once the
+ *  undo has settled — both of which the announcement states. A second undo of
+ *  the same pass finds nothing live and removes none, and a card claimed
+ *  between the read and the write is reported as staying. The size is counted
+ *  inside the transaction rather than subtracted from a figure the browser held
+ *  before the click, because the rest of the builder stays live during an undo
+ *  and an edit landing meanwhile would make that subtraction state a deck size
+ *  that was never true. */
+export async function undoFillPass(
+  deckId: string,
+  passId: string,
+): Promise<{ removed: number; built: number }> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   if (!UUID_RE.test(passId)) throw new Error("invalid pass id");
 
-  const removed = await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // Under the same lock every deck write takes: attribution is read here and
     // acted on in the same breath, so a commit landing between the two cannot
     // make this undo delete a row the newer pass had just claimed.
@@ -889,8 +897,10 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
       deckCards: rows,
     }).find((s) => s.id === passId);
     // No live cards: already undone, swept, or kept out from under it. Nothing
-    // to remove and nothing to report, which is what a second undo should do.
-    if (!summary) return 0;
+    // to remove, and the deck is the size the read found it.
+    if (!summary) {
+      return { removed: 0, built: rows.reduce((n, r) => n + r.quantity, 0) };
+    }
 
     const live = new Set(summary.liveCards.map((c) => c.oracleId));
     const placed = new Map(
@@ -966,13 +976,18 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
       removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
     }
 
+    const [built] = await tx
+      .select({ copies: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
+      .from(deckCards)
+      .where(eq(deckCards.deckId, deckId));
+
     // The shopping list is derived from deck membership, so this is also what
     // gives the player their money back — nothing separate restores it.
     for (const path of claimSurfaces(deckId)) revalidatePath(path);
-    return removedCards;
+    return { removed: removedCards, built: built?.copies ?? 0 };
   });
 
-  return removed;
+  return result;
 }
 
 export type LogGameInput = {
