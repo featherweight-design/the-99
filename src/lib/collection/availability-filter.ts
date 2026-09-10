@@ -12,7 +12,7 @@
 
 import { availabilityState, type AvailabilityState } from "../decks/availability";
 import { availabilityCopy } from "../copy/availability";
-import { filterCards, type BrowseCard, type BrowseFilters } from "./browse";
+import { filterCards, type BrowseListCard, type BrowseFilters } from "./browse";
 
 /** Menu order, top to bottom, per the addendum canvas. */
 export const AVAILABILITY_STATES: AvailabilityState[] = ["free", "soft", "hard", "over"];
@@ -56,7 +56,7 @@ export function availabilityLabel(state: AvailabilityState): string {
  * failed read are the same silence everywhere else in this feature, and the
  * four counts must still partition.
  */
-export function cardAvailabilityState(card: BrowseCard): AvailabilityState {
+export function cardAvailabilityState(card: BrowseListCard): AvailabilityState {
   return card.availability ? availabilityState(card.availability) : "free";
 }
 
@@ -66,7 +66,7 @@ export function cardAvailabilityState(card: BrowseCard): AvailabilityState {
  * the same convention set-filter.ts and type-filter.ts follow.
  */
 export function buildAvailabilityOptions(
-  cards: BrowseCard[],
+  cards: BrowseListCard[],
   filters: BrowseFilters,
 ): AvailabilityOption[] {
   const surviving = filterCards(cards, {

@@ -3,7 +3,7 @@
 // Grid: 2-up mobile / 5-up desktop.
 // Missing art → color-identity gradient (READINESS #4).
 
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseListCard } from "../../lib/collection/browse";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
@@ -16,7 +16,7 @@ export function GridView({
   onShowMore,
   onOpen,
 }: {
-  cards: BrowseCard[];
+  cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
   onOpen: (oracleId: string) => void;

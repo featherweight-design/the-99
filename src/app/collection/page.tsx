@@ -10,6 +10,7 @@ import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/sum
 import { formatLastUpdated, loadBrowseCards, loadOwnedSetMeta } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
 import { CollectionBrowser } from "../../components/collection/browser";
+import { CardDetailProvider } from "../../components/cards/card-detail-provider";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import {
   EmptyState,
@@ -45,9 +46,7 @@ export default async function CollectionPage() {
   const userId = await requireUserId();
   const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
-    // The heaviest read on this page by an order of magnitude, but deliberately
-    // NOT run through `cacheForUser`: it serialises to 2.4 MB and the data cache
-    // refuses any entry over 2 MB. See `user-lists.ts`.
+    // The heaviest read on this page by an order of magnitude.
     loadBrowseCards(userId),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
@@ -135,11 +134,15 @@ export default async function CollectionPage() {
         </div>
       </div>
 
-      <CollectionBrowser
-        cards={cardsWithAvailability}
-        ownedSets={ownedSets}
-        availabilityOk={availability !== null}
-      />
+      {/* The browse list carries no printings or oracle text — the modal fetches the
+          one card it is opening, the same way every deck surface does. */}
+      <CardDetailProvider>
+        <CollectionBrowser
+          cards={cardsWithAvailability}
+          ownedSets={ownedSets}
+          availabilityOk={availability !== null}
+        />
+      </CardDetailProvider>
     </section>
   );
 }

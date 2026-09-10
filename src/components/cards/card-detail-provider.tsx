@@ -29,6 +29,12 @@ type CardDetailContextValue = {
   open: (oracleId: string, siblings?: string[]) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
+  /**
+   * The id of the card the modal is currently showing, or null when it is closed.
+   * A surface that mirrors the open card into the URL reads it from here rather
+   * than tracking its own copy, which would drift from the modal on Prev/Next.
+   */
+  openOracleId: string | null;
 };
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
@@ -141,8 +147,8 @@ export function CardDetailProvider({
   );
 
   const value = useMemo<CardDetailContextValue>(
-    () => ({ open, pendingOracleId }),
-    [open, pendingOracleId],
+    () => ({ open, pendingOracleId, openOracleId: card?.oracleId ?? null }),
+    [open, pendingOracleId, card],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;

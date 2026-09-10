@@ -5,7 +5,7 @@
 //   desktop: 52px 54px 1fr 150px 92px 18px   (qty · pips · name · type · set/rarity · chevron)
 // Rarity dot colors per §Rarity Dot Colors.
 
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseListCard } from "../../lib/collection/browse";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -13,7 +13,7 @@ import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
 
-const RARITY_DOT: Record<BrowseCard["rarity"], string> = {
+const RARITY_DOT: Record<BrowseListCard["rarity"], string> = {
   common: "var(--fg-muted)", uncommon: "var(--fg-body)", rare: "var(--accent)", mythic: "var(--warning)",
 };
 
@@ -23,7 +23,7 @@ export function RowsView({
   onShowMore,
   onOpen,
 }: {
-  cards: BrowseCard[];
+  cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
   onOpen: (oracleId: string) => void;
@@ -150,7 +150,7 @@ export function RowsView({
 // hairline on hover at four-plus pips.
 const SHINGLE_FROM = 4;
 
-function ColorPips({ colorIdentity }: { colorIdentity: BrowseCard["colorIdentity"] }) {
+function ColorPips({ colorIdentity }: { colorIdentity: BrowseListCard["colorIdentity"] }) {
   const shingled = colorIdentity.length >= SHINGLE_FROM;
   // Colourless draws one grey pip, so it can never shingle.
   const pips: (string | null)[] = colorIdentity.length === 0 ? [null] : [...colorIdentity];
@@ -176,7 +176,7 @@ function ColorPips({ colorIdentity }: { colorIdentity: BrowseCard["colorIdentity
   );
 }
 
-function SetRarityColumn({ card }: { card: BrowseCard }) {
+function SetRarityColumn({ card }: { card: BrowseListCard }) {
   return (
     <>
       {/* Mobile: single trailing set code — §Row: Set Code (mobile): mono 10.5px, --fg-faint, letter-spacing 0.04em */}

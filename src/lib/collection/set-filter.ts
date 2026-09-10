@@ -6,7 +6,7 @@
 // way is what lets the ordering, the filter-aware counts and the fallback for a
 // missing `sets` row be unit tested (untested-query pattern, see browse.ts).
 
-import { filterCards, type BrowseCard, type BrowseFilters } from "./browse";
+import { filterCards, type BrowseFilters, type BrowseListCard } from "./browse";
 
 /** One row of the `sets` catalog table, for a set the user actually owns. */
 export type OwnedSetMeta = {
@@ -38,14 +38,14 @@ export type SetOption = {
  *    and a selected set does not read as its own subset.
  * 2. A count is the sum of *quantities* owned from that set among the surviving
  *    cards, not the number of distinct oracle cards — the design's totals read
- *    as card counts ("2,933 cards"). Quantities come from the per-printing
- *    entries so a card owned in two sets is not counted twice in each.
+ *    as card counts ("2,933 cards"). Quantities come from `setCounts`, which is
+ *    per set, so a card owned in two sets is not counted twice in each.
  *
  * A set whose count falls to 0 stays in the list, disabled; removing it would
  * make sets appear and vanish as the other filters change.
  */
 export function buildSetOptions(
-  cards: BrowseCard[],
+  cards: BrowseListCard[],
   filters: BrowseFilters,
   meta: OwnedSetMeta[],
 ): SetOption[] {
@@ -66,9 +66,8 @@ export function buildSetOptions(
   });
   const counts = new Map<string, number>();
   for (const c of surviving) {
-    for (const p of c.printings) {
-      const code = p.setCode.toUpperCase();
-      counts.set(code, (counts.get(code) ?? 0) + p.quantity);
+    for (const [code, quantity] of c.setCounts) {
+      counts.set(code, (counts.get(code) ?? 0) + quantity);
     }
   }
 

@@ -1,24 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { buildColorOptions } from "./color-filter";
-import type { BrowseCard, BrowsePrinting } from "./browse";
+import type { BrowseListCard } from "./browse";
 
-const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
-  setCode: "BLB", setName: "Bloomburrow", collectorNumber: "1", releasedAt: "2024-08-02",
-  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, ...over,
-});
-
-const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
+const card = (over: Partial<BrowseListCard> = {}): BrowseListCard => ({
   oracleId: "o-1",
   name: "Sol Ring",
   typeLine: "Artifact",
   manaCost: "{1}",
-  oracleText: null,
   keywords: [],
   rarity: "rare",
   colorIdentity: [],
   imageUri: null,
   quantity: 1,
-  printings: [printing()],
+  setCounts: [["BLB", 1]],
   setCodes: ["BLB"],
   primarySetCode: "BLB",
   preferredPrinting: null,

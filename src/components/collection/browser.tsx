@@ -4,13 +4,13 @@
 // (OWNED_PARAMS below, the authoritative list) via history.replaceState so
 // chips + view + open card deep-link (READINESS #6).
 
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   DEFAULT_SORT_DIRECTION,
   filterCards,
   sortCards,
-  type BrowseCard,
+  type BrowseListCard,
   type BrowseFilters,
   type SortDirection,
   type SortKey,
@@ -41,7 +41,7 @@ import { ChipRow } from "./chip-row";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
 import { NoResults } from "./no-results";
-import { CardModal } from "../cards/card-modal";
+import { useCardDetail } from "../cards/card-detail-provider";
 import { parseColors } from "../../lib/color-param";
 
 const PAGE_SIZE = 200;
@@ -90,7 +90,7 @@ const colorCopy = collectionFilterCopy.color;
 const availCopy = collectionFilterCopy.availability;
 
 /** Sum of quantities, i.e. the "2,933 cards" figure the announcements quote. */
-function quantityOf(list: BrowseCard[]): number {
+function quantityOf(list: BrowseListCard[]): number {
   return list.reduce((sum, c) => sum + c.quantity, 0);
 }
 
@@ -105,7 +105,7 @@ function selectionAnnouncement(
   copy: FilterPanelCopy,
   cleared: boolean,
   next: BrowseFilters,
-  cards: BrowseCard[],
+  cards: BrowseListCard[],
   options: { code: string; label: string }[],
   totalQuantity: number,
 ): string | null {
@@ -130,7 +130,7 @@ function selectionAnnouncement(
 export function setChangeAnnouncement(
   prev: BrowseFilters,
   next: BrowseFilters,
-  cards: BrowseCard[],
+  cards: BrowseListCard[],
   options: { code: string; label: string }[],
   totalQuantity: number,
   intent?: FilterChangeIntent,
@@ -149,7 +149,7 @@ export function setChangeAnnouncement(
 export function colorChangeAnnouncement(
   prev: BrowseFilters,
   next: BrowseFilters,
-  cards: BrowseCard[],
+  cards: BrowseListCard[],
   options: { code: string; label: string }[],
   totalQuantity: number,
   intent?: FilterChangeIntent,
@@ -164,7 +164,7 @@ export function colorChangeAnnouncement(
 export function typeChangeAnnouncement(
   prev: BrowseFilters,
   next: BrowseFilters,
-  cards: BrowseCard[],
+  cards: BrowseListCard[],
   options: { code: string; label: string }[],
   totalQuantity: number,
   intent?: FilterChangeIntent,
@@ -183,7 +183,7 @@ export function typeChangeAnnouncement(
 export function availabilityChangeAnnouncement(
   prev: BrowseFilters,
   next: BrowseFilters,
-  cards: BrowseCard[],
+  cards: BrowseListCard[],
   options: { code: string; label: string }[],
   totalQuantity: number,
   intent?: FilterChangeIntent,
@@ -200,7 +200,7 @@ export function CollectionBrowser({
   ownedSets,
   availabilityOk,
 }: {
-  cards: BrowseCard[];
+  cards: BrowseListCard[];
   /** `sets` catalog rows for the sets this user owns — names + release dates. */
   ownedSets: OwnedSetMeta[];
   /**
@@ -234,7 +234,9 @@ export function CollectionBrowser({
     return v === "rows" || v === "grid" ? v : null;
   });
   const effectiveView: ViewMode = view ?? (isDesktop ? "grid" : "rows");
-  const [openCardId, setOpenCardId] = useState<string | null>(() => search.get("card"));
+  // The modal itself lives in the page's CardDetailProvider, which fetches the card's
+  // printings and oracle text on click. The browse list ships without them.
+  const { open: openDetail, openOracleId } = useCardDetail();
   const [shown, setShown] = useState(PAGE_SIZE);
 
   const totalQuantity = useMemo(() => cards.reduce((sum, c) => sum + c.quantity, 0), [cards]);
@@ -347,43 +349,47 @@ export function CollectionBrowser({
   const sorted = useMemo(() => sortCards(filtered, sort, sortDirection), [filtered, sort, sortDirection]);
   const windowed = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 
-  const openCard = useMemo(
-    () => (openCardId ? sorted.find((c) => c.oracleId === openCardId) ?? null : null),
-    [openCardId, sorted],
+  // The ordered ids Prev/Next pages through — the sorted list, not the window,
+  // so paging runs past the 200 cards currently rendered.
+  const siblings = useMemo(() => sorted.map((c) => c.oracleId), [sorted]);
+
+  const onOpen = useCallback(
+    (id: string) => openDetail(id, siblings),
+    [openDetail, siblings],
   );
+
+  // A `?card=` on arrival opens the modal, but only when the id is actually in the
+  // filtered and sorted list the link also describes — an id filtered out by the
+  // rest of the URL is not a card this page is showing. Mount-only: after that the
+  // modal owns itself, and re-opening on every sort change would fight the reader.
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    if (deepLinked.current) return;
+    deepLinked.current = true;
+    const id = search.get("card");
+    if (id && siblings.includes(id)) openDetail(id, siblings);
+  }, [search, siblings, openDetail]);
 
   // Push state → URL via history, not the router. `/collection` ships the whole
   // list in one payload and its page reads no searchParams, so every filter and
   // sort change is answered from state already in this component — a
   // `router.replace` would fetch an RSC payload identical to the one on screen.
-  // Serialize the card param only when the card actually resolved; avoids
-  // stale ?card= for IDs not in the current filtered result set.
+  // Serialize the card param only when the open card is still in the current
+  // result set; avoids a stale ?card= after a filter drops it.
+  const openInList = openOracleId !== null && siblings.includes(openOracleId);
   useEffect(() => {
     const qs = serializeParams(
       filters,
       sort,
       sortDirection,
       view,
-      openCard ? openCardId : null,
+      openInList ? openOracleId : null,
       // The live URL, not the mount-time one: a param this component does not
       // own can arrive after mount and must survive the next filter change.
       window.location.search,
     );
     window.history.replaceState(null, "", `/collection${qs}`);
-  }, [filters, sort, sortDirection, view, openCardId, openCard]);
-  const openIndex = useMemo(
-    () => (openCard ? sorted.findIndex((c) => c.oracleId === openCard.oracleId) : -1),
-    [openCard, sorted],
-  );
-
-  const onOpen = useCallback((id: string) => setOpenCardId(id), []);
-  const onClose = useCallback(() => setOpenCardId(null), []);
-  const onPrev = useCallback(() => {
-    if (openIndex > 0) setOpenCardId(sorted[openIndex - 1].oracleId);
-  }, [openIndex, sorted]);
-  const onNext = useCallback(() => {
-    if (openIndex >= 0 && openIndex < sorted.length - 1) setOpenCardId(sorted[openIndex + 1].oracleId);
-  }, [openIndex, sorted]);
+  }, [filters, sort, sortDirection, view, openOracleId, openInList]);
 
   return (
     <>
@@ -461,20 +467,6 @@ export function CollectionBrowser({
         <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />
       ) : (
         <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />
-      )}
-
-      {openCard && (
-        <CardModal
-          // Paging Prev/Next must not carry the previous card's expanded region or its
-          // optimistic art pick across; remounting is cheaper than resetting both.
-          key={openCard.oracleId}
-          card={openCard}
-          position={openIndex + 1}
-          total={sorted.length}
-          onClose={onClose}
-          onPrev={openIndex > 0 ? onPrev : null}
-          onNext={openIndex < sorted.length - 1 ? onNext : null}
-        />
       )}
     </>
   );

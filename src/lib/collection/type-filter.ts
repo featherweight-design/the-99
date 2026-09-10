@@ -4,7 +4,7 @@
 // of the cards that survive the *other* active filters, and the counting is
 // what wants unit tests, so it lives away from the component.
 
-import { AVAILABLE_TYPES, filterCards, type BrowseCard, type BrowseFilters } from "./browse";
+import { AVAILABLE_TYPES, filterCards, type BrowseListCard, type BrowseFilters } from "./browse";
 
 /** One option row in the Type ▾ panel. `code` is the type word itself. */
 export type TypeOption = {
@@ -31,7 +31,7 @@ export type TypeOption = {
  * the collection, so a type with no matches is still listed — disabled, never
  * removed.
  */
-export function buildTypeOptions(cards: BrowseCard[], filters: BrowseFilters): TypeOption[] {
+export function buildTypeOptions(cards: BrowseListCard[], filters: BrowseFilters): TypeOption[] {
   const surviving = filterCards(cards, {
     search: "",
     colors: filters.colors,

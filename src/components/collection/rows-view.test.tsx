@@ -4,21 +4,20 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseListCard } from "../../lib/collection/browse";
 import { RowsView } from "./rows-view";
 
-const card: BrowseCard = {
+const card: BrowseListCard = {
   oracleId: "o1",
   name: "Smothering Tithe",
   typeLine: "Enchantment",
   manaCost: "{3}{W}",
-  oracleText: "",
   keywords: [],
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: null,
   quantity: 1,
-  printings: [],
+  setCounts: [],
   setCodes: ["RVR"],
   primarySetCode: "RVR",
   preferredPrinting: null,
@@ -39,7 +38,7 @@ const avail = (
   claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true })),
 });
 
-function renderRows(c: BrowseCard) {
+function renderRows(c: BrowseListCard) {
   return render(
     <RowsView cards={[c]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} />,
   );

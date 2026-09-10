@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BrowseCard, BrowseFilters } from "./browse";
+import type { BrowseListCard, BrowseFilters } from "./browse";
 import { filterCards } from "./browse";
 import { buildTypeOptions } from "./type-filter";
 import { collectionFilterCopy } from "../copy/collection";
@@ -11,18 +11,17 @@ import {
   toggleAvailability,
 } from "./availability-filter";
 
-const base: BrowseCard = {
+const base: BrowseListCard = {
   oracleId: "o",
   name: "Card",
   typeLine: "Artifact",
   manaCost: "{1}",
-  oracleText: "",
   keywords: [],
   rarity: "common",
   colorIdentity: [],
   imageUri: null,
   quantity: 1,
-  printings: [],
+  setCounts: [],
   setCodes: ["ABC"],
   primarySetCode: "ABC",
   preferredPrinting: null,
@@ -38,14 +37,14 @@ const card = (
   hard: number,
   soft: number,
   free: number,
-): BrowseCard => ({
+): BrowseListCard => ({
   ...base,
   oracleId,
   quantity: owned,
   availability: { owned, hard, soft, free, claims: [] },
 });
 
-const cards: BrowseCard[] = [
+const cards: BrowseListCard[] = [
   card("free1", 2, 0, 0, 2),
   card("free2", 1, 0, 0, 1),
   card("soft1", 2, 0, 1, 2),

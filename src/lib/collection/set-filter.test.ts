@@ -6,25 +6,19 @@ import {
   serializeSetCodes,
   type OwnedSetMeta,
 } from "./set-filter";
-import type { BrowseCard, BrowsePrinting } from "./browse";
+import type { BrowseListCard } from "./browse";
 
-const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
-  setCode: "BLB", setName: "Bloomburrow", collectorNumber: "1", releasedAt: "2024-08-02",
-  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, ...over,
-});
-
-const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
+const card = (over: Partial<BrowseListCard> = {}): BrowseListCard => ({
   oracleId: "o-1",
   name: "Sol Ring",
   typeLine: "Artifact",
   manaCost: "{1}",
-  oracleText: null,
   keywords: [],
   rarity: "rare",
   colorIdentity: [],
   imageUri: null,
   quantity: 1,
-  printings: [printing()],
+  setCounts: [["BLB", 1]],
   setCodes: ["BLB"],
   primarySetCode: "BLB",
   preferredPrinting: null,
@@ -42,9 +36,9 @@ const noFilters = { search: "", colors: [], types: [], setCodes: [] };
 describe("buildSetOptions", () => {
   it("orders by release date descending, ties A→Z by name", () => {
     const cards = [
-      card({ oracleId: "a", setCodes: ["MH3"], printings: [printing({ setCode: "MH3" })] }),
-      card({ oracleId: "b", setCodes: ["BLC"], printings: [printing({ setCode: "BLC" })] }),
-      card({ oracleId: "c", setCodes: ["BLB"], printings: [printing({ setCode: "BLB" })] }),
+      card({ oracleId: "a", setCodes: ["MH3"], setCounts: [["MH3", 1]] }),
+      card({ oracleId: "b", setCodes: ["BLC"], setCounts: [["BLC", 1]] }),
+      card({ oracleId: "c", setCodes: ["BLB"], setCounts: [["BLB", 1]] }),
     ];
     expect(buildSetOptions(cards, noFilters, meta).map((o) => o.label)).toEqual([
       "Bloomburrow", "Bloomburrow Commander", "Modern Horizons 3",
@@ -58,9 +52,9 @@ describe("buildSetOptions", () => {
       { code: "plst", name: "The List", releasedAt: null },
     ];
     const cards = [
-      card({ oracleId: "a", setCodes: ["SLD"], printings: [printing({ setCode: "SLD" })] }),
-      card({ oracleId: "b", setCodes: ["PLST"], printings: [printing({ setCode: "PLST" })] }),
-      card({ oracleId: "c", setCodes: ["MH3"], printings: [printing({ setCode: "MH3" })] }),
+      card({ oracleId: "a", setCodes: ["SLD"], setCounts: [["SLD", 1]] }),
+      card({ oracleId: "b", setCodes: ["PLST"], setCounts: [["PLST", 1]] }),
+      card({ oracleId: "c", setCodes: ["MH3"], setCounts: [["MH3", 1]] }),
     ];
     expect(buildSetOptions(cards, noFilters, withUndated).map((o) => o.label)).toEqual([
       "Modern Horizons 3", "Secret Lair Drop", "The List",
@@ -68,29 +62,29 @@ describe("buildSetOptions", () => {
   });
 
   it("falls back to the uppercased code when no sets row exists, keeping the count", () => {
-    const cards = [card({ setCodes: ["XYZ"], printings: [printing({ setCode: "XYZ", quantity: 3 })] })];
+    const cards = [card({ setCodes: ["XYZ"], setCounts: [["XYZ", 3]] })];
     expect(buildSetOptions(cards, noFilters, meta)).toEqual([
       { code: "XYZ", label: "XYZ", hint: undefined, count: 3, disabled: false, releasedAt: null },
     ]);
   });
 
   it("carries the set code as a hint alongside the name", () => {
-    const cards = [card({ setCodes: ["MH3"], printings: [printing({ setCode: "MH3" })] })];
+    const cards = [card({ setCodes: ["MH3"], setCounts: [["MH3", 1]] })];
     expect(buildSetOptions(cards, noFilters, meta)[0]).toMatchObject({
       label: "Modern Horizons 3",
       hint: "MH3",
     });
   });
 
-  it("counts sum owned quantities per printing, not distinct oracle cards", () => {
+  it("counts sum owned quantities per set, not distinct oracle cards", () => {
     const cards = [
       card({
         oracleId: "a",
         setCodes: ["BLB", "MH3"],
         quantity: 5,
-        printings: [printing({ setCode: "BLB", quantity: 4 }), printing({ setCode: "MH3", quantity: 1 })],
+        setCounts: [["BLB", 4], ["MH3", 1]],
       }),
-      card({ oracleId: "b", setCodes: ["BLB"], quantity: 2, printings: [printing({ setCode: "BLB", quantity: 2 })] }),
+      card({ oracleId: "b", setCodes: ["BLB"], quantity: 2, setCounts: [["BLB", 2]] }),
     ];
     const counts = Object.fromEntries(buildSetOptions(cards, noFilters, meta).map((o) => [o.code, o.count]));
     expect(counts).toEqual({ BLB: 6, MH3: 1 });
@@ -98,8 +92,8 @@ describe("buildSetOptions", () => {
 
   it("counts respect the other structured filters and keep zero-count sets listed as disabled", () => {
     const cards = [
-      card({ oracleId: "a", typeLine: "Instant", setCodes: ["BLB"], printings: [printing({ setCode: "BLB", quantity: 2 })] }),
-      card({ oracleId: "b", typeLine: "Creature", setCodes: ["MH3"], printings: [printing({ setCode: "MH3", quantity: 9 })] }),
+      card({ oracleId: "a", typeLine: "Instant", setCodes: ["BLB"], setCounts: [["BLB", 2]] }),
+      card({ oracleId: "b", typeLine: "Creature", setCodes: ["MH3"], setCounts: [["MH3", 9]] }),
     ];
     const options = buildSetOptions(cards, { ...noFilters, types: ["Instant"] }, meta);
     expect(options.map((o) => [o.code, o.count, o.disabled])).toEqual([
@@ -110,8 +104,8 @@ describe("buildSetOptions", () => {
 
   it("counts respect the color filter", () => {
     const cards = [
-      card({ oracleId: "a", colorIdentity: ["R"], setCodes: ["BLB"], printings: [printing({ setCode: "BLB", quantity: 2 })] }),
-      card({ oracleId: "b", colorIdentity: ["U"], setCodes: ["MH3"], printings: [printing({ setCode: "MH3", quantity: 4 })] }),
+      card({ oracleId: "a", colorIdentity: ["R"], setCodes: ["BLB"], setCounts: [["BLB", 2]] }),
+      card({ oracleId: "b", colorIdentity: ["U"], setCodes: ["MH3"], setCounts: [["MH3", 4]] }),
     ];
     const options = buildSetOptions(cards, { ...noFilters, colors: ["R"] }, meta);
     expect(options.map((o) => o.count)).toEqual([2, 0]);
@@ -119,8 +113,8 @@ describe("buildSetOptions", () => {
 
   it("ignores the free-text search box so counts stay stable while typing", () => {
     const cards = [
-      card({ oracleId: "a", name: "Sol Ring", setCodes: ["BLB"], printings: [printing({ setCode: "BLB", quantity: 2 })] }),
-      card({ oracleId: "b", name: "Cyclonic Rift", setCodes: ["MH3"], printings: [printing({ setCode: "MH3", quantity: 4 })] }),
+      card({ oracleId: "a", name: "Sol Ring", setCodes: ["BLB"], setCounts: [["BLB", 2]] }),
+      card({ oracleId: "b", name: "Cyclonic Rift", setCodes: ["MH3"], setCounts: [["MH3", 4]] }),
     ];
     const options = buildSetOptions(cards, { ...noFilters, search: "sol" }, meta);
     expect(options.map((o) => o.count)).toEqual([2, 4]);
@@ -128,17 +122,17 @@ describe("buildSetOptions", () => {
 
   it("ignores the set selection itself — a selected set still counts its own cards", () => {
     const cards = [
-      card({ oracleId: "a", setCodes: ["BLB"], printings: [printing({ setCode: "BLB", quantity: 2 })] }),
-      card({ oracleId: "b", setCodes: ["MH3"], printings: [printing({ setCode: "MH3", quantity: 4 })] }),
+      card({ oracleId: "a", setCodes: ["BLB"], setCounts: [["BLB", 2]] }),
+      card({ oracleId: "b", setCodes: ["MH3"], setCounts: [["MH3", 4]] }),
     ];
     const options = buildSetOptions(cards, { ...noFilters, setCodes: ["BLB"] }, meta);
     expect(options.map((o) => o.count)).toEqual([2, 4]);
   });
 
-  it("lists every owned set exactly once, even across many printings", () => {
+  it("lists every owned set exactly once, however many of it a card carries", () => {
     const cards = [
-      card({ oracleId: "a", setCodes: ["BLB"], printings: [printing({ setCode: "BLB" }), printing({ setCode: "BLB", collectorNumber: "2" })] }),
-      card({ oracleId: "b", setCodes: ["BLB"], printings: [printing({ setCode: "BLB", collectorNumber: "3" })] }),
+      card({ oracleId: "a", setCodes: ["BLB"], setCounts: [["BLB", 2]] }),
+      card({ oracleId: "b", setCodes: ["BLB"], setCounts: [["BLB", 1]] }),
     ];
     expect(buildSetOptions(cards, noFilters, meta).map((o) => o.code)).toEqual(["BLB"]);
   });
@@ -147,9 +141,9 @@ describe("buildSetOptions", () => {
 describe("rankSetOptions", () => {
   const options = buildSetOptions(
     [
-      card({ oracleId: "a", setCodes: ["MH3"], printings: [printing({ setCode: "MH3" })] }),
-      card({ oracleId: "b", setCodes: ["BLC"], printings: [printing({ setCode: "BLC" })] }),
-      card({ oracleId: "c", setCodes: ["BLB"], printings: [printing({ setCode: "BLB" })] }),
+      card({ oracleId: "a", setCodes: ["MH3"], setCounts: [["MH3", 1]] }),
+      card({ oracleId: "b", setCodes: ["BLC"], setCounts: [["BLC", 1]] }),
+      card({ oracleId: "c", setCodes: ["BLB"], setCounts: [["BLB", 1]] }),
     ],
     noFilters,
     meta,
@@ -171,8 +165,8 @@ describe("rankSetOptions", () => {
     ];
     const built = buildSetOptions(
       [
-        card({ oracleId: "a", setCodes: ["MH3"], printings: [printing({ setCode: "MH3" })] }),
-        card({ oracleId: "b", setCodes: ["HOR"], printings: [printing({ setCode: "HOR" })] }),
+        card({ oracleId: "a", setCodes: ["MH3"], setCounts: [["MH3", 1]] }),
+        card({ oracleId: "b", setCodes: ["HOR"], setCounts: [["HOR", 1]] }),
       ],
       noFilters,
       horizons,

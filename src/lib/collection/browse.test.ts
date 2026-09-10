@@ -7,7 +7,9 @@ import {
   printingCaption,
   resolveImageUri,
   sortCards,
+  toListCards,
   type BrowseCard,
+  type BrowseListCard,
   type BrowsePrinting,
   type RawCollectionRow,
 } from "./browse";
@@ -34,6 +36,9 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   preferredPrinting: null,
   ...over,
 });
+
+/** The same card as the browse list carries it — through the real trimmer. */
+const listCard = (over: Partial<BrowseCard> = {}): BrowseListCard => toListCards([card(over)])[0];
 
 const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   oracleId: "o-1", quantity: 1, setCode: "c21", collectorNumber: "263", finish: "nonfoil",
@@ -289,10 +294,10 @@ describe("finish aggregation (#105 decision 9)", () => {
 
 describe("filterCards", () => {
   const list = [
-    card({ oracleId: "a", name: "Sol Ring", colorIdentity: [], typeLine: "Artifact", setCodes: ["C21"], primarySetCode: "C21" }),
-    card({ oracleId: "b", name: "Lightning Bolt", colorIdentity: ["R"], typeLine: "Instant", setCodes: ["2XM"], primarySetCode: "2XM" }),
-    card({ oracleId: "c", name: "Cyclonic Rift", colorIdentity: ["U"], typeLine: "Instant", setCodes: ["RTR"], primarySetCode: "RTR" }),
-    card({ oracleId: "d", name: "Shockingly Boring", colorIdentity: ["R", "U"], typeLine: "Sorcery", setCodes: ["MID"], primarySetCode: "MID" }),
+    listCard({ oracleId: "a", name: "Sol Ring", colorIdentity: [], typeLine: "Artifact", setCodes: ["C21"], primarySetCode: "C21" }),
+    listCard({ oracleId: "b", name: "Lightning Bolt", colorIdentity: ["R"], typeLine: "Instant", setCodes: ["2XM"], primarySetCode: "2XM" }),
+    listCard({ oracleId: "c", name: "Cyclonic Rift", colorIdentity: ["U"], typeLine: "Instant", setCodes: ["RTR"], primarySetCode: "RTR" }),
+    listCard({ oracleId: "d", name: "Shockingly Boring", colorIdentity: ["R", "U"], typeLine: "Sorcery", setCodes: ["MID"], primarySetCode: "MID" }),
   ];
 
   it("substring search is case-insensitive on name", () => {
@@ -339,7 +344,7 @@ describe("filterCards", () => {
     expect(filterCards(list, { search: "", colors: [], types: [], setCodes: [] })).toHaveLength(4);
   });
   it("a card owned in several sets matches on any one of them", () => {
-    const multi = [card({ oracleId: "m", name: "Sol Ring", setCodes: ["C21", "LEA"], primarySetCode: "C21" })];
+    const multi = [listCard({ oracleId: "m", name: "Sol Ring", setCodes: ["C21", "LEA"], primarySetCode: "C21" })];
     expect(filterCards(multi, { search: "", colors: [], types: [], setCodes: ["lea"] })).toHaveLength(1);
     expect(filterCards(multi, { search: "", colors: [], types: [], setCodes: ["c21"] })).toHaveLength(1);
     expect(filterCards(multi, { search: "", colors: [], types: [], setCodes: ["mid"] })).toHaveLength(0);
@@ -354,37 +359,37 @@ describe("filterCards", () => {
 
 describe("sortCards", () => {
   it("name A→Z", () => {
-    const list = [card({ oracleId: "a", name: "Cyclonic Rift" }), card({ oracleId: "b", name: "Ancestral Recall" })];
+    const list = [listCard({ oracleId: "a", name: "Cyclonic Rift" }), listCard({ oracleId: "b", name: "Ancestral Recall" })];
     expect(sortCards(list, "name").map((c) => c.name)).toEqual(["Ancestral Recall", "Cyclonic Rift"]);
   });
   it("quantity: high first", () => {
-    const list = [card({ oracleId: "a", name: "A", quantity: 1 }), card({ oracleId: "b", name: "B", quantity: 4 })];
+    const list = [listCard({ oracleId: "a", name: "A", quantity: 1 }), listCard({ oracleId: "b", name: "B", quantity: 4 })];
     expect(sortCards(list, "quantity").map((c) => c.quantity)).toEqual([4, 1]);
   });
   it("set: primarySetCode A→Z then name A→Z", () => {
     const list = [
-      card({ oracleId: "a", name: "B", primarySetCode: "C21" }),
-      card({ oracleId: "b", name: "A", primarySetCode: "C21" }),
-      card({ oracleId: "c", name: "C", primarySetCode: "2XM" }),
+      listCard({ oracleId: "a", name: "B", primarySetCode: "C21" }),
+      listCard({ oracleId: "b", name: "A", primarySetCode: "C21" }),
+      listCard({ oracleId: "c", name: "C", primarySetCode: "2XM" }),
     ];
     expect(sortCards(list, "set").map((c) => c.name)).toEqual(["C", "A", "B"]);
   });
   it("rarity: common < uncommon < rare < mythic, then name A→Z", () => {
     const list = [
-      card({ oracleId: "a", name: "M", rarity: "mythic" }),
-      card({ oracleId: "b", name: "C", rarity: "common" }),
-      card({ oracleId: "c", name: "R", rarity: "rare" }),
-      card({ oracleId: "d", name: "U", rarity: "uncommon" }),
+      listCard({ oracleId: "a", name: "M", rarity: "mythic" }),
+      listCard({ oracleId: "b", name: "C", rarity: "common" }),
+      listCard({ oracleId: "c", name: "R", rarity: "rare" }),
+      listCard({ oracleId: "d", name: "U", rarity: "uncommon" }),
     ];
     expect(sortCards(list, "rarity").map((c) => c.name)).toEqual(["C", "U", "R", "M"]);
   });
   it("color: WUBRG order, then multicolor, then colorless, then name A→Z", () => {
     const list = [
-      card({ oracleId: "a", name: "Multi", colorIdentity: ["W", "U"] }),
-      card({ oracleId: "b", name: "Colorless", colorIdentity: [] }),
-      card({ oracleId: "c", name: "White", colorIdentity: ["W"] }),
-      card({ oracleId: "d", name: "Blue", colorIdentity: ["U"] }),
-      card({ oracleId: "e", name: "Red", colorIdentity: ["R"] }),
+      listCard({ oracleId: "a", name: "Multi", colorIdentity: ["W", "U"] }),
+      listCard({ oracleId: "b", name: "Colorless", colorIdentity: [] }),
+      listCard({ oracleId: "c", name: "White", colorIdentity: ["W"] }),
+      listCard({ oracleId: "d", name: "Blue", colorIdentity: ["U"] }),
+      listCard({ oracleId: "e", name: "Red", colorIdentity: ["R"] }),
     ];
     expect(sortCards(list, "color").map((c) => c.name)).toEqual([
       "White", "Blue", "Red", "Multi", "Colorless",
@@ -392,24 +397,24 @@ describe("sortCards", () => {
   });
   it("reverses the primary key when asked, keeping the name tiebreak A→Z", () => {
     const list = [
-      card({ oracleId: "a", name: "B", quantity: 4 }),
-      card({ oracleId: "b", name: "A", quantity: 4 }),
-      card({ oracleId: "c", name: "C", quantity: 1 }),
+      listCard({ oracleId: "a", name: "B", quantity: 4 }),
+      listCard({ oracleId: "b", name: "A", quantity: 4 }),
+      listCard({ oracleId: "c", name: "C", quantity: 1 }),
     ];
     expect(sortCards(list, "quantity", "asc").map((c) => c.name)).toEqual(["C", "A", "B"]);
     expect(sortCards(list, "quantity", "desc").map((c) => c.name)).toEqual(["A", "B", "C"]);
   });
   it("defaults to each key's natural direction", () => {
-    const list = [card({ oracleId: "a", name: "A", quantity: 1 }), card({ oracleId: "b", name: "B", quantity: 4 })];
+    const list = [listCard({ oracleId: "a", name: "A", quantity: 1 }), listCard({ oracleId: "b", name: "B", quantity: 4 })];
     expect(sortCards(list, "quantity")).toEqual(sortCards(list, "quantity", "desc"));
     expect(sortCards(list, "name")).toEqual(sortCards(list, "name", "asc"));
   });
   it("name Z→A", () => {
-    const list = [card({ oracleId: "a", name: "Cyclonic Rift" }), card({ oracleId: "b", name: "Ancestral Recall" })];
+    const list = [listCard({ oracleId: "a", name: "Cyclonic Rift" }), listCard({ oracleId: "b", name: "Ancestral Recall" })];
     expect(sortCards(list, "name", "desc").map((c) => c.name)).toEqual(["Cyclonic Rift", "Ancestral Recall"]);
   });
   it("returns a new array — does not mutate input", () => {
-    const list = [card({ oracleId: "a", name: "B" }), card({ oracleId: "b", name: "A" })];
+    const list = [listCard({ oracleId: "a", name: "B" }), listCard({ oracleId: "b", name: "A" })];
     const copy = [...list];
     sortCards(list, "name");
     expect(list).toEqual(copy);
