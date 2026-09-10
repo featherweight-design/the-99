@@ -18,6 +18,7 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { TopOffList } from "./top-off-list";
+import { useTopOffDraft } from "./use-top-off-draft";
 
 export interface LastSlotsStripProps {
   deckId: string;
@@ -121,20 +122,32 @@ function LastSlotsStripInner({
   const isDesktop = useIsDesktop();
 
   const [open, setOpen] = useState(false);
-  // The list has been opened in this visit, so the door note stops promising a
-  // seed that already happened. Cancelling does not discard the selection, so
-  // this is set on the open rather than on a landed pass: reopening after a
-  // cancel restores what the player left, which is the reopen note's promise
-  // and not the first-open one's. Session state rather than a server figure —
-  // a reload has no selection, and the first-open note is honest again then.
-  const [visited, setVisited] = useState(false);
 
   // Held here rather than in TopOffList: both survive the list being closed and
-  // reopened (state 9), and the list unmounts on close.
-  const [ticked, setTicked] = useState<Set<string>>(new Set());
-  const [declined, setDeclined] = useState<Set<string>>(new Set());
+  // reopened (state 9), and the list unmounts on close. Persisted per deck
+  // rather than held in state, because they survive a reload too — a player
+  // part-way through choosing 31 cards used to lose the lot to a refresh, with
+  // nothing on screen saying so. Both halves persist together: restoring the
+  // ticks while re-offering every declined candidate would hand back a list
+  // the player has to clear again.
+  const { ticked, declined, restored, setTicked, setDeclined } = useTopOffDraft(deckId);
+
+  // The list has been opened before, so the door note stops promising a seed
+  // that already happened. Cancelling does not discard the selection, so this
+  // is true from the open rather than from a landed pass: reopening after a
+  // cancel restores what the player left, which is the reopen note's promise
+  // and not the first-open one's.
+  //
+  // A restored selection counts as a visit. The note promises what will arrive
+  // ticked, and a reload no longer empties the selection — so printing the
+  // first-open note to a player whose own 31 picks are about to come back
+  // would be the one reading of this state that is now false.
+  const [visitedThisMount, setVisitedThisMount] = useState(false);
+  const visited = visitedThisMount || restored;
+
   // Ticks are seeded on the FIRST open only. Reopening restores the selection
-  // the player left, which is the promise strip.doorNoteAgain makes.
+  // the player left, which is the promise strip.doorNoteAgain makes — and a
+  // restored selection is that same selection, so it is never seeded over.
   const seeded = useRef(false);
 
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
@@ -146,14 +159,17 @@ function LastSlotsStripInner({
 
   function openList() {
     let seedTicked = ticked;
-    if (!seeded.current) {
+    // A restored selection is one the player already made, so the seed would
+    // be writing over their choices — including the choice to clear every one
+    // of them, which reads as an empty selection and not as an absent one.
+    if (!seeded.current && !restored) {
       seeded.current = true;
       seedTicked = new Set(ownedIds.slice(0, openSlots));
       setTicked(seedTicked);
     }
     moveFocus.current = true;
     setOpen(true);
-    setVisited(true);
+    setVisitedThisMount(true);
     onOpenChange?.(true);
     // The selection survives a close, and the deck does not stand still while
     // the list is shut: slots can close under it and a card can join the deck
