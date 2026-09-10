@@ -694,11 +694,19 @@ export function BuilderShell({
                 here any more — the old `candidates > 0` gate made STATES 12 and
                 13 unreachable by unmounting exactly the case they describe.
 
+                The count is measured against `total`, not `built`: an
+                unresolved line is a card the player already chose and we could
+                not name, so it holds the slot it arrived on. Measured against
+                `built`, an import that came up two lines short offered to
+                choose two more cards beside a banner explaining the two lines —
+                and taking that offer would put the deck two cards over as soon
+                as those lines were resolved.
+
                 Mounted once, with responsive Tailwind classes for every
                 width-dependent element — the same shape the ledger now takes. */}
             <LastSlotsStrip
               deckId={deck.id}
-              openSlots={bodySize - built}
+              openSlots={bodySize - counts.total}
               bodySize={bodySize}
               candidates={candidates}
               deckOracleIds={topOffDeckOracleIds}
