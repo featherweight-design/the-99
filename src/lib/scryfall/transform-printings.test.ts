@@ -29,7 +29,8 @@ const asPrinting = (raw: Record<string, unknown>): PrintingRow => {
 
 const printing = (over: Partial<PrintingRow>): PrintingRow => ({
   scryfallId: "id", oracleId: "o", setCode: "ecl", collectorNumber: "1",
-  imageUri: null, imageUriSmall: null, finishes: ["nonfoil"], isVariant: false, ...over,
+  imageUri: null, imageUriSmall: null, finishes: ["nonfoil"], isVariant: false,
+  flavorName: null, ...over,
 });
 
 describe("classifyPrinting", () => {
@@ -43,6 +44,17 @@ describe("classifyPrinting", () => {
       imageUriSmall: "https://cards.scryfall.io/small/plains.jpg",
       finishes: ["nonfoil", "foil"],
       isVariant: false,
+      flavorName: null,
+    });
+  });
+
+  it("carries a Secret Lair printing's flavor name (#467)", () => {
+    // The name printed on the card: the only name a player holding it can type.
+    const sld = { ...plains, name: "Iroas, God of Victory", set: "SLD", collector_number: "2215",
+      flavor_name: "Freya, Queen of the Valkyries" };
+    expect(asPrinting(sld)).toMatchObject({
+      flavorName: "Freya, Queen of the Valkyries",
+      setCode: "sld",
     });
   });
 

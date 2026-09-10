@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings,
@@ -25,9 +25,10 @@ async function chunkedLookup<T>(
 /**
  * Loads the catalog plus the printing indexes matchRows needs.
  *
- * `printings` holds every printing in existence, so it is looked up by the ids the upload
- * actually contains rather than loaded whole; the oracle catalog is small enough to read in
- * full and is still needed for name matching.
+ * `printings` holds every printing in existence, so its identity rows are looked up by the ids
+ * the upload actually contains rather than loaded whole; the oracle catalog is small enough to
+ * read in full and is still needed for name matching. Flavor names are the exception — matched
+ * by name, so there are no ids to look them up by, and few enough to read whole.
  */
 export async function loadMatchInputs(
   rows: CollectionRow[],
@@ -62,8 +63,18 @@ export async function loadMatchInputs(
     )
     .from(cards);
 
+  // Loaded whole and unconditionally, unlike the id-keyed lookups below: a flavor name is
+  // matched by name, and the rows that need it most — a pasted decklist — carry no Scryfall
+  // id at all, so they take the early return. A few hundred printings have one (#467).
+  const flavorRows = await db
+    .select({ flavorName: printings.flavorName, oracleId: printings.oracleId })
+    .from(printings)
+    .where(isNotNull(printings.flavorName));
+  const flavorNames = flavorRows.flatMap(({ flavorName, oracleId }) =>
+    flavorName ? [{ flavorName, oracleId }] : []);
+
   const ids = [...new Set(rows.map((r) => r.scryfallId).filter((id): id is string => !!id && UUID_RE.test(id)))];
-  if (ids.length === 0) return { catalog, indexes: {} };
+  if (ids.length === 0) return { catalog, indexes: { flavorNames } };
 
   const printingRows = await chunkedLookup(ids, (chunk) =>
     db
@@ -81,6 +92,7 @@ export async function loadMatchInputs(
     indexes: {
       printings: printingRows,
       skippedScryfallIds: skippedRows.map((r) => r.scryfallId),
+      flavorNames,
     },
   };
 }

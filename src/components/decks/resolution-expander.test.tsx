@@ -37,6 +37,7 @@ const result = (over: Partial<SearchResult> & { name: string }): SearchResult =>
   role: "draw",
   imageUri: null,
   manaCost: null,
+  flavorName: null,
   ...over,
 });
 

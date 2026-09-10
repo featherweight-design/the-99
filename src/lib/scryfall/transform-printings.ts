@@ -9,6 +9,12 @@ export type PrintingRow = {
   imageUriSmall: string | null;
   finishes: string[];
   isVariant: boolean;
+  /**
+   * The name printed on this printing when it differs from its oracle card's — Secret Lair's
+   * renames. Printing-level, not oracle-level: the same card is "Iroas, God of Victory"
+   * everywhere else. Null on the ~99.9% of printings that carry no such name.
+   */
+  flavorName: string | null;
 };
 
 export type SkippedPrintingRow = { scryfallId: string; layout: string; name: string };
@@ -96,6 +102,9 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
         ? raw.finishes
         : ["nonfoil"],
       isVariant: isVariant(raw),
+      flavorName: typeof raw.flavor_name === "string" && raw.flavor_name !== ""
+        ? raw.flavor_name
+        : null,
     },
   };
 }

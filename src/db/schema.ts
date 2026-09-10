@@ -73,9 +73,18 @@ export const printings = pgTable("printings", {
   // Computed by a post-load pass (see setRepresentativePrintings) so reads are a plain
   // `where is_representative` instead of a natural-sort DISTINCT ON on every query.
   isRepresentative: boolean("is_representative").notNull().default(false),
+  // The name printed on this printing when it is not its oracle card's — Secret Lair's renames
+  // (#467). Null on all but a few hundred printings, which is why its index is partial.
+  flavorName: text("flavor_name"),
 }, (t) => [
   index("printings_oracle_set_idx").on(t.oracleId, t.setCode),
   index("printings_oracle_idx").on(t.oracleId),
+  // Lowercased because both readers are case-insensitive: the import's name index and the
+  // card search's ILIKE. Partial so it covers the few hundred rows that have a flavor name
+  // rather than a NULL for every other printing in existence.
+  index("printings_flavor_name_idx")
+    .on(sql`lower(${t.flavorName})`)
+    .where(sql`${t.flavorName} is not null`),
 ]);
 
 /**

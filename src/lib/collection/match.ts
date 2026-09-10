@@ -16,12 +16,20 @@ export type DetailedCatalogCard = CatalogCard & {
 };
 /** One row of `printings` — every printing in existence, keyed by its printing-level id. */
 export type PrintingIdentity = { scryfallId: string; oracleId: string };
+/** A printing whose front bears a name other than its oracle card's — Secret Lair's rename. */
+export type FlavorNameIdentity = { flavorName: string; oracleId: string };
 
 export type MatchIndexes = {
   /** `printings` (§3.6). Supersedes the oracle catalog's single arbitrary printing per card. */
   printings?: PrintingIdentity[];
   /** `skipped_printings.scryfall_id` — tokens, emblems and art series (§9.1). */
   skippedScryfallIds?: Iterable<string>;
+  /**
+   * `printings.flavor_name`, one entry per printing carrying one (#467). Every printing of a
+   * renamed card repeats the same flavor name, so repeats are expected; only two entries
+   * disagreeing about the oracle id are an ambiguity.
+   */
+  flavorNames?: FlavorNameIdentity[];
 };
 
 export type MatchResult = {
@@ -61,6 +69,23 @@ export function matchRows(
     byName.set(lower, c.oracleId);
     const front = lower.split(" // ")[0];
     if (!byName.has(front)) byName.set(front, c.oracleId);
+  }
+
+  // Flavor names are indexed after every oracle name, and never over one: a player holding
+  // the card whose real name is the key must get that card. A flavor name two oracle cards
+  // both claim is dropped rather than guessed — being asked to resolve the line is a smaller
+  // failure than silently importing a card the player does not own.
+  const flavorCandidates = new Map<string, string | null>();
+  for (const { flavorName, oracleId } of indexes.flavorNames ?? []) {
+    const lower = normalizeName(flavorName);
+    for (const key of [lower, lower.split(" // ")[0]]) {
+      const seen = flavorCandidates.get(key);
+      if (seen === undefined) flavorCandidates.set(key, oracleId);
+      else if (seen !== oracleId) flavorCandidates.set(key, null);
+    }
+  }
+  for (const [key, oracleId] of flavorCandidates) {
+    if (oracleId && !byName.has(key)) byName.set(key, oracleId);
   }
 
   const matched: MatchResult["matched"] = [];

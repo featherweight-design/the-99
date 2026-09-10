@@ -403,6 +403,9 @@ function QuickAddRow({
             ? markerAria(result.availability, { selfExcluded: selfClaimed })
             : null,
         ),
+        result.flavorName
+          ? `${addPanelCopy.quickAdd.rowFlavorNamePrefix}${result.flavorName}`
+          : null,
         result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
         applied ? addPanelCopy.quickAdd.rowInDeck : null,
       ]

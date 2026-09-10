@@ -1,8 +1,8 @@
 "use server";
 
-import { and, eq, ilike, sql } from "drizzle-orm";
+import { and, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "../../../db";
-import { cards, collectionItems } from "../../../db/schema";
+import { cards, collectionItems, printings } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
 import { withinColorIdentity } from "../../../lib/cards/identity-where";
 import type { Availability } from "../../../lib/decks/availability";
@@ -31,6 +31,12 @@ export type SearchResult = {
   ownedQty: number;
   /** Absent or null renders no marker — see DeckDetailCard.availability. */
   availability?: Availability | null;
+  /**
+   * The Secret Lair name this row was found by, when the query matched that rather than
+   * `name` (#467). Null whenever the oracle name matched too: the row's title already
+   * carries the run the player typed, and a second name beside it would be noise.
+   */
+  flavorName: string | null;
 };
 
 /**
@@ -70,17 +76,28 @@ export async function searchCards(
   const ownedQtySql = sql<number>`coalesce(${ownedTotals.qty}, 0)`;
   // All constraints live in SQL so LIMIT can't starve results when early
   // name matches are off-color or unowned.
+  // The Secret Lair name printed on some printing of this card, when that is what the
+  // query caught (#467). A correlated scalar rather than a join: a card can have several
+  // renamed printings, and one row per printing would multiply the result list.
+  const flavorNameSql = sql<string | null>`(
+    select p.flavor_name from ${printings} p
+    where p.oracle_id = ${cards.oracleId} and p.flavor_name ilike ${`%${escaped}%`}
+    limit 1
+  )`;
   const rows = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       ownedQty: ownedQtySql,
       oracleText: cards.oracleText, keywords: cards.keywords,
       imageUri: cards.imageUri, manaCost: cards.manaCost,
+      flavorName: flavorNameSql,
     })
     .from(cards)
     .leftJoin(ownedTotals, eq(ownedTotals.oracleId, cards.oracleId))
     .where(and(
-      ilike(cards.name, `%${escaped}%`),
+      // A player typing the name off the front of a Secret Lair card is typing the only
+      // name that card shows them, so the flavor name is a first-class way in.
+      or(ilike(cards.name, `%${escaped}%`), sql`${flavorNameSql} is not null`),
       colorIdentity === null ? undefined : withinColorIdentity(colorIdentity),
       eq(cards.commanderLegal, true),
       ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
@@ -107,8 +124,12 @@ export async function searchCards(
       : null;
   // Substring (not prefix) match is intentional: "gravetide" must find
   // "Muldrotha, the Gravetide". A scan over the ~35k-row cards table is cheap.
+  const lowerQuery = q.toLowerCase();
   return rows.map(({ oracleText, keywords, ...row }) => ({
     ...row,
+    // Dropped when the title itself matched: the flavor name is there to explain a row
+    // whose name does not contain what the player typed, and nothing else.
+    flavorName: row.name.toLowerCase().includes(lowerQuery) ? null : row.flavorName,
     owned: row.ownedQty > 0,
     cardTypeGroup: cardTypeGroup(row.typeLine),
     role: primaryRole({ typeLine: row.typeLine, oracleText, keywords }),
