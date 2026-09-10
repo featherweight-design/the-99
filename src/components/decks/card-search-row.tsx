@@ -5,6 +5,7 @@
 // what sits in the right-hand slot, so those are the only two props.
 
 import { CostPips } from "../ui/cost-pips";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { availabilityState } from "../../lib/decks/availability";
@@ -85,6 +86,16 @@ export function CardSearchRowBody({
       {" · "}
     </span>
   );
+  // Leads the meta line at both widths: it is the reason this row is on screen, so it
+  // must survive the truncation the type line and ownership can afford to lose (#467).
+  // Only set when the title does not itself hold the query — see SearchResult.flavorName.
+  const flavor = result.flavorName ? (
+    <>
+      {addPanelCopy.quickAdd.rowFlavorNamePrefix}
+      <HighlightedName name={result.flavorName} query={query} dim={dim} />
+      {" · "}
+    </>
+  ) : null;
 
   return (
     <div className="flex items-center gap-[10px] md:gap-[12px]">
@@ -129,6 +140,7 @@ export function CardSearchRowBody({
               overflow; spelling `min-w-0` out keeps the choice here rather than
               leaving it to which item the browser picks. */}
           <span className="truncate min-w-0">
+            {flavor}
             {result.typeLine} · {ownership}
           </span>
           {marker && joiner}
@@ -140,6 +152,7 @@ export function CardSearchRowBody({
         className="hidden md:block flex-1 min-w-0 font-mono text-[11px] truncate"
         style={{ color: dim ? "var(--fg-locked)" : "var(--fg-faint)" }}
       >
+        {flavor}
         {result.typeLine}
       </span>
 

@@ -90,6 +90,7 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
         imageUriSmall: sql`excluded.image_uri_small`,
         finishes: sql`excluded.finishes`,
         isVariant: sql`excluded.is_variant`,
+        flavorName: sql`excluded.flavor_name`,
       },
     });
     upserted += batch.length;

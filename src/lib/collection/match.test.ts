@@ -95,4 +95,67 @@ describe("matchRows", () => {
     expect(skipped).toHaveLength(0);
     expect(unmatched).toHaveLength(1);
   });
+
+  it("matches a Secret Lair flavor name to the oracle card it renames (#467)", () => {
+    const { matched } = matchRows([row("Freya, Queen of the Valkyries")], catalog, {
+      flavorNames: [{ flavorName: "Freya, Queen of the Valkyries", oracleId: "o-1" }],
+    });
+    expect(matched[0].oracleId).toBe("o-1");
+  });
+
+  it("matches a flavor name case-insensitively", () => {
+    const { matched } = matchRows([row("battle of olympus")], catalog, {
+      flavorNames: [{ flavorName: "Battle of Olympus", oracleId: "o-2" }],
+    });
+    expect(matched[0].oracleId).toBe("o-2");
+  });
+
+  it("lets an oracle name win a key a flavor name also claims", () => {
+    // A flavor name printed on one card and borne as the real name by another must
+    // resolve to the real card: the oracle name is what the rest of the app is keyed on.
+    const { matched } = matchRows([row("Sol Ring")], catalog, {
+      flavorNames: [{ flavorName: "Sol Ring", oracleId: "o-2" }],
+    });
+    expect(matched[0].oracleId).toBe("o-1");
+  });
+
+  it("drops a flavor name two different oracle cards share", () => {
+    // Guessing between them would import a card the player does not own; being asked
+    // to resolve the line is the lesser failure.
+    const { matched, unmatched } = matchRows([row("Twinned")], catalog, {
+      flavorNames: [
+        { flavorName: "Twinned", oracleId: "o-1" },
+        { flavorName: "Twinned", oracleId: "o-2" },
+      ],
+    });
+    expect(matched).toHaveLength(0);
+    expect(unmatched).toHaveLength(1);
+  });
+
+  it("keeps one oracle card's repeated flavor name matchable", () => {
+    // The same flavor name appears on every printing of that Secret Lair card —
+    // foil, nonfoil, gallery variants — which is a repeat, not an ambiguity.
+    const { matched } = matchRows([row("Freya, Queen of the Valkyries")], catalog, {
+      flavorNames: [
+        { flavorName: "Freya, Queen of the Valkyries", oracleId: "o-1" },
+        { flavorName: "Freya, Queen of the Valkyries", oracleId: "o-1" },
+      ],
+    });
+    expect(matched[0].oracleId).toBe("o-1");
+  });
+
+  it("normalises a multi-faced flavor name's slashes and front face", () => {
+    const flavorNames = [{ flavorName: "Hidden Face // Hidden Back", oracleId: "o-2" }];
+    expect(matchRows([row("Hidden Face / Hidden Back")], catalog, { flavorNames })
+      .matched[0].oracleId).toBe("o-2");
+    expect(matchRows([row("Hidden Face")], catalog, { flavorNames })
+      .matched[0].oracleId).toBe("o-2");
+  });
+
+  it("prefers a scryfall id over a flavor name that points elsewhere", () => {
+    const { matched } = matchRows([row("Freya, Queen of the Valkyries", "s-2")], catalog, {
+      flavorNames: [{ flavorName: "Freya, Queen of the Valkyries", oracleId: "o-1" }],
+    });
+    expect(matched[0].oracleId).toBe("o-2");
+  });
 });

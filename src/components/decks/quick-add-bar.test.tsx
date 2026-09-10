@@ -24,6 +24,7 @@ const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   role: "draw",
   imageUri: null,
   manaCost: null,
+  flavorName: null,
   ...over,
 });
 
@@ -264,6 +265,51 @@ describe("QuickAddBar — result rows", () => {
   // one meta line rather than the type line being dropped — which is what the
   // row did before, losing the only field that separates two same-named cards.
   it("keeps the type line at phone width by folding it into the meta line", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", ownedQty: 5 })]);
+    mount();
+    await search();
+
+    expect(screen.getByText("Enchantment · ×5 owned")).toBeInTheDocument();
+  });
+
+  // A row found by its Secret Lair flavor name is titled with the oracle name, which
+  // is not what the player typed. Without the printed name on the meta line the row
+  // looks like a mis-hit (#467).
+  it("names the flavor name a row was found by, ahead of the type line", async () => {
+    searchCards.mockResolvedValue([
+      row({ name: "Iroas, God of Victory", typeLine: "Legendary Creature — God",
+        flavorName: "Freya, Queen of the Valkyries" }),
+    ]);
+    mount();
+    await search("freya");
+
+    // Asserted on the row's text rather than one node: the matched run of the flavor
+    // name is its own accent-coloured element, so no single node holds the whole line.
+    expect(screen.getByRole("option").textContent).toContain(
+      "printed as Freya, Queen of the Valkyries · Legendary Creature — God · ×1 owned",
+    );
+    // The label has to say it too, or a screen reader hears a card the player never typed.
+    expect(screen.getByRole("option")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("printed as Freya, Queen of the Valkyries"),
+    );
+  });
+
+  it("highlights the flavor name's matched run, since the title cannot carry it", async () => {
+    searchCards.mockResolvedValue([
+      row({ name: "World at War", flavorName: "Battle of Olympus" }),
+    ]);
+    mount();
+    await search("olymp");
+
+    // Two hits, not one: the row draws its meta line twice — once folded for the phone,
+    // once as the desktop type-line cell — exactly as it already does the type line.
+    const hits = screen.getAllByText("Olymp");
+    expect(hits).toHaveLength(2);
+    for (const hit of hits) expect(hit).toHaveStyle({ color: "var(--accent)" });
+  });
+
+  it("leaves an ordinary row's meta line alone", async () => {
     searchCards.mockResolvedValue([row({ name: "Rhystic Study", ownedQty: 5 })]);
     mount();
     await search();

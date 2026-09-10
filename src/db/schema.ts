@@ -73,9 +73,19 @@ export const printings = pgTable("printings", {
   // Computed by a post-load pass (see setRepresentativePrintings) so reads are a plain
   // `where is_representative` instead of a natural-sort DISTINCT ON on every query.
   isRepresentative: boolean("is_representative").notNull().default(false),
+  // The name printed on this printing when it is not its oracle card's — Secret Lair's renames
+  // (#467). Null on all but a few hundred printings, which is why its index is partial.
+  flavorName: text("flavor_name"),
 }, (t) => [
   index("printings_oracle_set_idx").on(t.oracleId, t.setCode),
   index("printings_oracle_idx").on(t.oracleId),
+  // Partial, and that is the whole point of it: both readers want every row that has a flavor
+  // name and none of the millions that do not. Neither can use it to find one name — the import
+  // reads the set whole, and the card search's `%q%` ILIKE cannot be accelerated by a btree at
+  // all — so what this buys is a few-hundred-row scan in place of a full one.
+  index("printings_flavor_name_idx")
+    .on(t.flavorName)
+    .where(sql`${t.flavorName} is not null`),
 ]);
 
 /**

@@ -235,6 +235,11 @@ export const addPanelCopy = {
       `${name}, ${typeLine}, ${owned ? "owned" : "not owned"}` +
       (availability ? `, ${availability}` : ""),
 
+    // A row found by the name printed on a Secret Lair card is titled with the card's
+    // oracle name, which is not what the player typed. Prefixed rather than bare: the
+    // meta line already holds a type line, and a second name with no gloss reads as one.
+    rowFlavorNamePrefix: "printed as ",
+
     ownedToggle: "Owned only",
     ownedToggleAria: "Show only cards you own",
     ownedFilterOffNote: (n: number) =>
