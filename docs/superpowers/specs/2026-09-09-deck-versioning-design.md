@@ -285,8 +285,9 @@ replaces a deck's contents from pasted text, and that is how the deck this featu
 actually gets tinkered with: the list is edited on Deckcheck and pasted back.
 
 **A paste lands in the draft and never commits.** The user commits, always. This needs no code
-change — `updateDeckFromList` writes `deck_cards` and nothing else, so the paste already behaves
-this way — but it is recorded here because the reverse is the tempting reading, and it would
+change — `updateDeckFromList` writes `deck_cards` and `deck_unresolved_rows`, both of which are
+draft state, and touches no version table, so the paste already behaves this way — but it is
+recorded here because the reverse is the tempting reading, and it would
 skip the one moment the feature exists for: seeing the buy list and being offered the pulls
 before the claims move.
 
