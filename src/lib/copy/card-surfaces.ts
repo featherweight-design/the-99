@@ -78,6 +78,26 @@ export const twoFacedCopy = {
   flippedAria: (faceName: string) => `Showing ${faceName}`,
 } as const;
 
+/**
+ * The printed name (#467 follow-on). One string — everything else this feature
+ * shows is an existing string re-sourced from the resolved printing.
+ */
+export const printedNameCopy = {
+  /**
+   * The modal header's oracle-name label. Mono, lowercase, 10.5px, --fg-faint.
+   *
+   * One word on purpose: the modal's meta grid already carries a `Set` field
+   * naming the set and collector number, so the line does not have to explain
+   * itself. Lowercase mono is the shipped field-label register (`no number ·
+   * ×1`, `SLD · 2208`) — not the uppercase letterspaced register, which is
+   * reserved for section labels.
+   *
+   * Never rendered when the printing prints the oracle name: the whole line is
+   * absent in that case, label included.
+   */
+  oracleLabel: "oracle",
+} as const;
+
 /** "U/B" → "blue or black"; "2/W" → "2 or white"; "G/P" → "green or 2 life". */
 function speakSymbol(symbol: string): string {
   return symbol

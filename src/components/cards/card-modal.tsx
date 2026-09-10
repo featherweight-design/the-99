@@ -8,7 +8,13 @@
 import Link from "next/link";
 import React, { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
-import { cssUrl, printingCaption, resolvedPrinting, WUBRG_COLOR } from "../../lib/collection/browse";
+import {
+  cssUrl,
+  printedNameOf,
+  printingCaption,
+  resolvedPrinting,
+  WUBRG_COLOR,
+} from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { availabilityState } from "../../lib/decks/availability";
@@ -19,7 +25,7 @@ import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
-import { twoFacedCopy } from "../../lib/copy/card-surfaces";
+import { printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
@@ -362,7 +368,10 @@ export function CardModal({
   // existed carries the layout and no art, and a control that turns to a
   // colour-identity gradient is the lie the layout gate exists to prevent.
   const twoFaced = isTwoFaced(card.layout) && Boolean(card.backImageUri);
-  const faces = faceNames(card.name);
+  // The faces of the name on screen, which is the printed one when the copy in
+  // hand carries a printed name. The title above and this announcement must
+  // name the same card.
+  const faces = faceNames(printedNameOf(card));
 
   function onFlip() {
     const next = !flipped;
@@ -532,11 +541,34 @@ export function CardModal({
                   className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
                   style={{ color: "var(--fg)" }}
                 >
-                  {card.name}
+                  {printedNameOf(card)}
                 </h3>
-                {/* Type line — §Card Type Line: 13/14px, --fg-muted, margin-top 4/6px */}
+                {/* The oracle name — absent, not blank, when the printing prints
+                    its own name. A reserved empty line would spend 23px on every
+                    ordinary card to make the ordinary case look incomplete. The
+                    tighter gap above binds the two names into one unit; the
+                    looser one below keeps the type line a separate fact. */}
+                {card.printedName && (
+                  <p
+                    className="flex items-baseline gap-[6px] text-[13px] md:text-[13.5px] mt-[5px] md:mt-[6px] mb-0"
+                    style={{ color: "var(--fg-body)" }}
+                  >
+                    <span
+                      className="font-mono text-[10.5px]"
+                      style={{ color: "var(--fg-faint)" }}
+                    >
+                      {printedNameCopy.oracleLabel}
+                    </span>
+                    {card.name}
+                  </p>
+                )}
+                {/* Type line — §Card Type Line: 13/14px, --fg-muted, margin-top 4/6px.
+                    10px above when the oracle line is present: the wider gap is
+                    what keeps the type line from joining the name pair. */}
                 <p
-                  className="text-[13px] md:text-[14px] mt-[4px] md:mt-[6px]"
+                  className={`text-[13px] md:text-[14px] ${
+                    card.printedName ? "mt-[10px]" : "mt-[4px] md:mt-[6px]"
+                  }`}
                   style={{ color: "var(--fg-muted)" }}
                 >
                   {card.typeLine}

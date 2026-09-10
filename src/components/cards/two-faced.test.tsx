@@ -92,6 +92,16 @@ describe("CardModal flip control", () => {
     expect(screen.getByText(twoFacedCopy.flippedAria("Delver of Secrets"))).toBeTruthy();
   });
 
+  // A modal titled `Battle of Olympus // Aftermath` whose flip control announces
+  // `Insectile Aberration` names two different cards at once. The faces come off
+  // the name on screen, which is the printed one when the copy in hand has one.
+  it("names and announces the printed faces of a renamed two-faced card", () => {
+    mount({ ...delver, printedName: "Battle of Olympus // Aftermath" });
+    expect(flipTo("Aftermath").length).toBeGreaterThan(0);
+    fireEvent.click(flipTo("Aftermath")[0]);
+    expect(screen.getByText(twoFacedCopy.flippedAria("Aftermath"))).toBeTruthy();
+  });
+
   it("offers no control for a split card", () => {
     mount({ ...delver, name: "Fire // Ice", layout: "split", backImageUri: null });
     expect(flipTo("Ice")).toHaveLength(0);
