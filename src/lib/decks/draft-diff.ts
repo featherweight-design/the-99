@@ -58,8 +58,13 @@ export type BucketedAdd = {
 };
 
 /**
- * Split the adds three ways: have it free, have it but another deck has it
- * sleeved, do not have it at all.
+ * Split the adds three ways: covered by free copies, owned but sleeved in a
+ * named deck, or on the player's own hook for the shortfall.
+ *
+ * `unowned` is the last of those, and it does NOT mean zero copies owned: a
+ * player with one copy adding four is short three with nobody to ask, which is
+ * the same errand as owning none. Read it as "nothing to offer here", never as
+ * a count, and do not write copy that tells the player they own none.
  *
  * The middle bucket is the whole point. A card owned but spoken for is the one
  * case where there is something to offer — a named deck and a pull — and
