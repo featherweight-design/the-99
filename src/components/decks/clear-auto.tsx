@@ -37,6 +37,10 @@ const BULK_BUTTON_CLASS =
  *  verbatim minus its danger ink — this app's only confirm vocabulary, and it
  *  is a toolbar question here for the same reason it is a row question there.
  *  The caller appends the one border colour that separates the two answers. */
+/** One question is on screen at a time — the toolbar renders once per decklist
+ *  and the confirm replaces both bulk controls — so a constant id is enough. */
+const QUESTION_ID = "keep-all-confirm-question";
+
 const CONFIRM_BUTTON_CLASS =
   "flex-1 md:flex-none flex md:inline-flex items-center justify-center min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] text-fg-body bg-transparent border cursor-pointer disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -117,7 +121,15 @@ export function ClearAutoButton({
              between its two answers; desktop keeps all three inline. The row
              gap is zeroed because the question carries its own 9px below it. */
           <span className="w-full md:w-auto flex flex-wrap md:flex-nowrap items-center gap-x-[8px] gap-y-0">
-            <span className="w-full mb-[9px] md:w-auto md:mb-0 text-[11.5px] leading-[1.5] text-fg-body">
+            {/* Focus lands on `Keep them`, whose own label says nothing about
+                what is being kept. Both answers point back at the question, so
+                a screen reader hears what it is answering. The two width
+                variants sit inside this one element and only the visible one is
+                in the accessibility tree, so the description is never doubled. */}
+            <span
+              id={QUESTION_ID}
+              className="w-full mb-[9px] md:w-auto md:mb-0 text-[11.5px] leading-[1.5] text-fg-body"
+            >
               <span className="hidden md:inline">
                 {recommendationsCopy.auto.keepAllConfirm(String(count))}
               </span>
@@ -134,6 +146,7 @@ export function ClearAutoButton({
               ref={yesRef}
               type="button"
               disabled={busy}
+              aria-describedby={QUESTION_ID}
               onClick={() => {
                 setConfirming(false);
                 onKeepAll();
@@ -145,6 +158,7 @@ export function ClearAutoButton({
             <button
               type="button"
               disabled={busy}
+              aria-describedby={QUESTION_ID}
               onClick={() => {
                 returningFocus.current = true;
                 setConfirming(false);

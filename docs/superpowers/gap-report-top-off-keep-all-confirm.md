@@ -28,6 +28,13 @@ already produced by the toolbar's own `flex-1` spacer, which is what
 right-aligns the at-rest pair too. The drawn result holds; the dead class does
 not ship.
 
+**Both answers carry `aria-describedby`.** The handoff's accessibility tree
+draws the question as a plain span with no association to the two answers. Focus
+lands on `Keep them`, whose own label names nothing, so a screen reader would
+announce a two-word button and no subject. Both answers point back at the
+question instead. This adds nothing to the drawn surface and removes nothing
+from it.
+
 ## Ambiguity 3 — what shipped
 
 The component-notes values, at both widths: radius `7px`, question `11.5px`,

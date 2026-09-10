@@ -254,14 +254,25 @@ describe("ClearAutoButton", () => {
     });
 
     expect(onKeepAll).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(recommendationsCopy.auto.keepAllConfirm("3")),
-    ).toBeInTheDocument();
+    const question = screen.getByText(
+      recommendationsCopy.auto.keepAllConfirm("3"),
+    );
+    expect(question).toBeInTheDocument();
 
     const yes = screen.getByRole("button", {
       name: recommendationsCopy.auto.keepAllConfirmYes,
     });
     expect(yes).toHaveFocus();
+    // Focus lands on a button whose own label names nothing, so both answers
+    // point back at the question and a reader hears what it is answering.
+    const questionId = question.closest("[id]")?.id;
+    expect(questionId).toBeTruthy();
+    expect(yes).toHaveAttribute("aria-describedby", questionId);
+    expect(
+      screen.getByRole("button", {
+        name: recommendationsCopy.auto.keepAllConfirmNo,
+      }),
+    ).toHaveAttribute("aria-describedby", questionId);
 
     await act(async () => {
       yes.click();
