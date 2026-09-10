@@ -986,6 +986,18 @@ describe("pullCardFromDeck", () => {
     expect(commitVersion).not.toHaveBeenCalled();
   });
 
+  // A commander is a claim without being a `deck_cards` row, so a deck can be
+  // offered as a card's holder on the strength of one. The refusal has to say
+  // which of the two it is, or the reader is told the deck doesn't hold a card
+  // it plainly leads with.
+  it("refuses to pull the source deck's commander", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CMD, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.stringContaining("commander") });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
   it("removes the card and commits a version recording it", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);

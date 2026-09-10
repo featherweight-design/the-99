@@ -1376,7 +1376,15 @@ export async function pullCardFromDeck(
   // prevent. The write is in here for its own reason: a delete that lands
   // without its commit leaves the draft short of a card the version claims.
   const outcome = await db.transaction<DeckMutationResult>(async (tx) => {
-    await tx.select().from(decks).where(eq(decks.id, sourceDeckId)).for("update");
+    const [deck] = await tx.select().from(decks)
+      .where(eq(decks.id, sourceDeckId)).for("update");
+
+    // Neither commander is a `deck_cards` row, but both are claims, so a deck
+    // can be named as a card's holder on the strength of its commander alone.
+    // Without this the pull the reader was offered fails as "doesn't hold it".
+    if (deck?.commanderOracleId === oracleId || deck?.partnerOracleId === oracleId) {
+      return { ok: false, message: "That card is that deck's commander." };
+    }
 
     const version = await newestVersion(sourceDeckId, tx);
     if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
