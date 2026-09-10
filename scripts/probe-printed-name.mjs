@@ -118,7 +118,8 @@ async function pickFixture() {
   const { rows } = await pool.query(
     `select c.oracle_id, c.name,
             ci.set_code, ci.collector_number, ci.finish, ci.scryfall_id,
-            p.scryfall_id as printing_id, p.collector_number as printing_number
+            p.scryfall_id as printing_id, p.collector_number as printing_number,
+            p.image_uri as printing_image, c.image_uri as oracle_image
        from decks d
        join deck_cards dc on dc.deck_id = d.id
        join cards c on c.oracle_id = dc.oracle_id
@@ -136,7 +137,10 @@ async function pickFixture() {
         -- One holding per card, so the restore has one row to put back.
         and 1 = (select count(*) from collection_items x
                   where x.user_id = ci.user_id and x.oracle_id = ci.oracle_id)
-      order by c.name
+      -- A subject whose printing draws different art from the oracle row is
+      -- the only one that can prove the two travel together: where they are
+      -- the same picture, reading the wrong column looks correct.
+      order by (p.image_uri is distinct from c.image_uri) desc, c.name
       limit 2`,
     [DECK],
   );
@@ -217,6 +221,29 @@ function captionLines(page, text) {
     return { height: node.getBoundingClientRect().height, line, lines: Math.round(node.getBoundingClientRect().height / line) };
   }, text);
 }
+
+/**
+ * The background image the tile captioned `text` draws, or null.
+ *
+ * Walks out from the caption rather than querying the page, so the answer is
+ * this card's art and not the first picture on the screen.
+ */
+const tileArt = (page, text) =>
+  page.evaluate((wanted) => {
+    const leaf = [...document.querySelectorAll("span, div")]
+      .filter((n) => n.children.length === 0)
+      .find((n) => (n.textContent ?? "").trim() === wanted);
+    if (!leaf) return null;
+    let container = leaf;
+    for (let i = 0; i < 6 && container.parentElement; i += 1) {
+      container = container.parentElement;
+      const art = [...container.querySelectorAll("*")]
+        .map((n) => getComputedStyle(n).backgroundImage)
+        .find((v) => v.startsWith("url("));
+      if (art) return art.slice(5, -2);
+    }
+    return null;
+  }, text);
 
 /** Open the modal from the named trigger and report the header. */
 async function readModal(page, triggerName) {
@@ -330,6 +357,28 @@ try {
       check(
         "grid: the full printed name is a button's accessible name",
         (await page.getByRole("button", { name: new RegExp(escapeRe(PRINTED)) }).count()) > 0,
+      );
+
+      // 2b — the art and the caption are the same printing. Stated first as a
+      // fact about the fixture: where the two pictures are identical the check
+      // below passes off either column and proves nothing, so a run that could
+      // not find such a subject says so rather than reporting a green.
+      check(
+        "grid: the fixture's printing draws different art from the oracle row",
+        subject.printing_image !== subject.oracle_image,
+        subject.printing_image === subject.oracle_image ? "same picture — the art check is vacuous" : "",
+      );
+      const art = await tileArt(page, PRINTED);
+      check(
+        "grid: the tile draws the art of the printing it is named for",
+        art === subject.printing_image,
+        `${art} vs ${subject.printing_image}`,
+      );
+      const controlArt = await tileArt(page, control.name);
+      check(
+        "grid control: an un-renamed card still draws its own printing's art",
+        controlArt === control.printing_image,
+        `${controlArt} vs ${control.printing_image}`,
       );
     }
 
