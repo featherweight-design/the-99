@@ -921,7 +921,9 @@ describe("commitDeckVersion", () => {
   it("stores a whitespace-only note as null", async () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     await commitDeckVersion(DECK_ID, "   ");
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null);
+    // The third argument is the caller's transaction: the diff behind the
+    // receipt and the snapshot it describes are read under one lock.
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything());
   });
 });
 

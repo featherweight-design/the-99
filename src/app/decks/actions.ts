@@ -1272,7 +1272,10 @@ export type CommitResult =
  *
  * The two lists are computed BEFORE the write, against the version being
  * replaced — afterwards the draft and the newest version are identical by
- * definition and the diff is empty.
+ * definition and the diff is empty. They are also computed under the deck's
+ * row lock, in the same transaction as the write: read outside it, an edit
+ * landing in between puts the reader's receipt at odds with the version that
+ * was actually snapshotted, and the buy list names cards nobody committed.
  *
  * `revalidateClaims`, not a bare `revalidatePath`: a commit changes what every
  * other deck can claim, so the collection page and every cached list payload
@@ -1290,27 +1293,34 @@ export async function commitDeckVersion(
     return { ok: false, message: "We couldn't find that deck." };
   }
 
-  const previous = await newestVersion(deckId);
-  const before = previous ? await versionCards(previous.id) : [];
-  const draft = await db.select({
-    oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-  }).from(deckCards).where(eq(deckCards.deckId, deckId));
+  const result = await db.transaction<CommitResult>(async (tx) => {
+    await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
 
-  const diff = draftDiff(draft, before);
-  const availability = await loadAvailability(userId, {
-    oracleIds: diff.adds.map((a) => a.oracleId),
-    excludeDeckId: deckId,
+    const previous = await newestVersion(deckId, tx);
+    const before = previous ? await versionCards(previous.id, tx) : [];
+    const draft = await tx.select({
+      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
+    }).from(deckCards).where(eq(deckCards.deckId, deckId));
+
+    const diff = draftDiff(draft, before);
+    // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim,
+    // and the answer wanted is the one that held before this commit landed.
+    const availability = await loadAvailability(userId, {
+      oracleIds: diff.adds.map((a) => a.oracleId),
+      excludeDeckId: deckId,
+    });
+    // hardDecks, not the raw claims: a BREW "holding" a card holds nothing, and
+    // naming it would offer a pull against a list that was never sleeved.
+    const claimants = new Map(
+      [...availability].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
+    );
+    const buy = bucketAdds(diff.adds, claimants).filter((a) => a.bucket !== "free");
+
+    const { version } = await commitVersion(deckId, note?.trim() || null, tx);
+    return { ok: true, number: version.number, buy, pull: diff.removes };
   });
-  // hardDecks, not the raw claims: a BREW "holding" a card holds nothing, and
-  // naming it would offer a pull against a list that was never sleeved.
-  const claimants = new Map(
-    [...availability].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
-  );
-  const buy = bucketAdds(diff.adds, claimants).filter((a) => a.bucket !== "free");
-
-  const { version } = await commitVersion(deckId, note?.trim() || null);
   revalidateClaims(deckId, userId);
-  return { ok: true, number: version.number, buy, pull: diff.removes };
+  return result;
 }
 
 /**
