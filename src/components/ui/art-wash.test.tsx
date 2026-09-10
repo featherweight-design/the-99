@@ -91,10 +91,24 @@ describe("ArtWash — left portrait", () => {
     const short = render(
       <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
     );
-    expect(tall.container.querySelectorAll(".art-wash-scrim")).toHaveLength(2);
+    expect(tall.container.querySelectorAll(".art-wash-scrim")).toHaveLength(3);
     expect(tall.container.innerHTML).toContain("180deg");
     expect(short.container.querySelectorAll(".art-wash-scrim")).toHaveLength(1);
     expect(short.container.innerHTML).not.toContain("180deg");
+  });
+
+  // The 148 band is rendered at two widths, and only the narrow one puts type
+  // over the portrait. Both damping layers are in the markup at once; the
+  // breakpoint decides which one paints.
+  it("swaps the 148 band's vertical ramp for a flat hold below sm", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const ramp = container.querySelector<HTMLElement>(".art-wash-scrim.hidden");
+    const hold = container.querySelector<HTMLElement>(".art-wash-scrim.sm\\:hidden");
+    expect(ramp?.className).toContain("sm:block");
+    expect(ramp?.style.background).toContain("180deg");
+    expect(hold?.style.background).toBe("color-mix(in oklab, var(--bg) 70%, transparent)");
   });
 
   // The row already draws a ground; the scrim resolves into that one, so the
@@ -135,7 +149,7 @@ describe("ArtWash — left portrait", () => {
       <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
     );
     const ambient = Array.from(container.querySelectorAll("div")).find(
-      (d) => d.style.backgroundSize === "cover" && d.style.opacity === "0.2",
+      (d) => d.style.backgroundSize === "cover" && d.style.opacity === "0.28",
     );
     expect(ambient).toBeDefined();
   });
@@ -151,14 +165,14 @@ describe("ArtWash — left portrait", () => {
   });
 
   // A flat 0.3 under `prefers-reduced-transparency` would raise the ambient copy
-  // from 0.14, answering a request for less transparency with more art.
+  // from 0.22, answering a request for less transparency with more art.
   it("publishes a reduced opacity that is a ceiling, never a floor", () => {
     const { container } = render(
       <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
     );
     const layers = Array.from(container.querySelectorAll<HTMLElement>(".art-wash-art"));
     const reduced = layers.map((l) => l.style.getPropertyValue("--art-wash-reduced-opacity"));
-    expect(reduced).toEqual(["0.14", "0.3"]);
+    expect(reduced).toEqual(["0.22", "0.3"]);
   });
 
   // The identity gradient is ground, not photography. Dimming it would answer a
@@ -217,7 +231,7 @@ describe("cover, label edge", () => {
     expect(scrim?.style.background).toContain("var(--bg) 78%, transparent) 0%");
     // The second stop is the hold: the label block's foot keeps the dark value
     // rather than ramping off it, which is what a subtitle sits on.
-    expect(scrim?.style.background).toContain("var(--bg) 73%, transparent) 31%");
+    expect(scrim?.style.background).toContain("var(--bg) 78%, transparent) 31%");
   });
 
   it("puts the heavy end at the bottom for labelEdge=bottom", () => {
