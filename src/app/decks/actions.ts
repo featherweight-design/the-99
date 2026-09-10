@@ -201,6 +201,11 @@ export async function createDeck(
   partnerOracleId: string | null = null,
 ): Promise<void> {
   const userId = await requireUserId();
+  // A deck's two commanders are two different cards — the schema says so with a
+  // check constraint, and reaching it would surface as an opaque write failure.
+  if (partnerOracleId === commanderOracleId) {
+    throw new Error("a deck's two commanders must be different cards");
+  }
   // One query over both ids: reading the partner separately would say nothing
   // this does not.
   const commanderIds =

@@ -168,6 +168,12 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
       : (result.declaredPartner?.oracleId ?? null);
   const notes = [...result.notes];
 
+  // A deck's two commanders are two different cards — the schema says so with a
+  // check constraint, and reaching it would surface as an opaque write failure.
+  if (partnerOracleId === commanderOracleId) {
+    throw new Error("a deck's two commanders must be different cards");
+  }
+
   // Server actions are reachable via crafted requests — re-validate the commanders
   // rather than trusting the ids the picker sent back. One query over both ids: a
   // second round trip to read the partner would say nothing this one cannot.

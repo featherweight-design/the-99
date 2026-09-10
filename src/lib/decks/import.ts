@@ -335,12 +335,8 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
   };
 }
 
-/**
- * 1-based line numbers falling under a `Commander` header, before the next header.
- * Exported because the exporter writes the same section shape, and a private copy
- * there would let the reader and the writer drift apart.
- */
-export function commanderSectionLines(text: string): number[] {
+/** 1-based line numbers falling under a `Commander` header, before the next header. */
+function commanderSectionLines(text: string): number[] {
   const lines = text.split(/\r?\n/);
   const out: number[] = [];
   let inSection = false;

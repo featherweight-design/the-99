@@ -472,6 +472,16 @@ describe("createDeck — filled baseline", () => {
     expect(decksInserts.length).toBe(0);
     expect(stub.state.redirectTarget).toBeNull();
   });
+
+  it("refuses a partner that is the commander again", async () => {
+    stub.state.cards.push(commanderCard({}));
+
+    await expect(
+      createDeck(COMMANDER_ORACLE, "My Deck", [], COMMANDER_ORACLE),
+    ).rejects.toThrow("a deck's two commanders must be different cards");
+
+    expect(stub.state.insertCalls.filter((c) => c.table === "decks").length).toBe(0);
+  });
 });
 
 describe("restoreAutoCards — the rows come from the client", () => {

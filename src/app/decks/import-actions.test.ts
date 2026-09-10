@@ -250,6 +250,20 @@ describe("importDeck — a declared pair", () => {
     expect(stub.state.inserts).toEqual([]);
   });
 
+  it("refuses a partner that is the commander again", async () => {
+    seedCards();
+    await expect(
+      importDeck({
+        text: "1 Sol Ring",
+        source: "paste",
+        name: "Nope",
+        commanderOracleId: ATREUS,
+        partnerOracleId: ATREUS,
+      }),
+    ).rejects.toThrow("a deck's two commanders must be different cards");
+    expect(stub.state.inserts).toEqual([]);
+  });
+
   // The picker shows the declared pair pre-selected and lets the player remove
   // it. That removal is an answer, not an absence: an explicit null means one
   // commander, and only an unanswered slot falls back to what the paste said.
