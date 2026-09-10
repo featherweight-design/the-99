@@ -173,7 +173,11 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
     // The same `for update` commitVersion takes, and for the same reason: this
     // reads a list and then replaces `deck_cards` wholesale, so an add landing
     // from another tab in between is thrown away without a trace.
-    await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
+    const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
+    // Checked rather than discarded: a deck deleted underneath this would
+    // otherwise fail as "version not found", which sends the reader looking
+    // for a missing version of a deck that is itself gone.
+    if (!deck) throw new Error("deck not found");
 
     const [version] = await tx.select().from(deckVersions)
       .where(and(eq(deckVersions.id, versionId), eq(deckVersions.deckId, deckId)));
