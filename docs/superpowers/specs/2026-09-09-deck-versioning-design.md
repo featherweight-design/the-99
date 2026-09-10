@@ -277,6 +277,32 @@ Two smaller consequences, recorded so they are not read as bugs later:
   because a pull commits a source deck inside another deck's flow and two commits racing would
   otherwise collide on `deck_versions_deck_number_key`.
 
+## Addendum R2 — a pasted decklist is a draft
+
+The design above assumes the draft is reached one card at a time, through the deck page and the
+Add panel. It is not the only way in. `updateDeckFromList` in `src/app/decks/update-actions.ts`
+replaces a deck's contents from pasted text, and that is how the deck this feature was asked for
+actually gets tinkered with: the list is edited on Deckcheck and pasted back.
+
+**A paste lands in the draft and never commits.** The user commits, always. This needs no code
+change — `updateDeckFromList` writes `deck_cards` and nothing else, so the paste already behaves
+this way — but it is recorded here because the reverse is the tempting reading, and it would
+skip the one moment the feature exists for: seeing the buy list and being offered the pulls
+before the claims move.
+
+A guarantee falls out of it for free. Until the commit, the deck still claims exactly what its
+committed version claimed, so a newer deck cannot lose a card to a list somebody is still
+deciding on — which is the seniority complaint this design opens with, answered on the paste
+path without a rule of its own.
+
+Two consequences for the surfaces:
+
+- Pending state and Review changes must read as well at forty changed rows as at two. Arriving
+  by paste is the normal case, not the edge one, and a diff drawn card-by-card will not hold.
+- The update flow already previews its own in/out list before writing. On a committed deck there
+  are then two diffs for the same deck — that preview, and pending changes. Same overlap class as
+  the top-off buy list in §Surfaces, and it goes to Design with it.
+
 ## Out of scope
 
 Per-version win-rate figures, inference over version history, versioning the deck intent field
