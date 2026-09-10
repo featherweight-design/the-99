@@ -108,9 +108,14 @@ async function report(page, label) {
       // is not a small gap.
       // The tail's own children are [separator, figure], and the tail starts
       // exactly where the word ends — so the separator's painted box IS the
-      // gap, whether it is spelled in spaces or in padding. Reading it off the
-      // word directly would not work: with no accessible sentence to swap in,
-      // the word is a bare text node with no box of its own.
+      // gap, whether it is spelled in spaces or in padding.
+      //
+      // The tail is taken as the LAST element child rather than the second,
+      // because how many siblings precede it depends on the tag: an unlabelled
+      // tag draws its word as a bare text node with no box at all, while a
+      // labelled one draws the word in an `aria-hidden` span followed by an
+      // `sr-only` span carrying the spoken sentence. Reading the gap off the
+      // word would have to cope with both; reading it off the tail does not.
       const tail = el.querySelector(":scope > span:last-child");
       const figure = tail?.lastElementChild;
       const gap =
