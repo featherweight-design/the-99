@@ -5,13 +5,59 @@ the image source, the scrim, the ink, and the band geometry. Nothing else on Dec
 Home is redesigned.
 
 Files:
-- `The 99 - Art Wash Readability v2.dc.html` — **the deliverable.** Canvas (pan/zoom).
+- `The 99 - Scrim Recovery.dc.html` — **the current deliverable.** Canvas (pan/zoom), with a
+  theme prop. All nine washed screens, each drawn as ships-today vs proposed, every figure measured
+  off the band rather than estimated.
+- `The 99 - Art Wash Readability v2.dc.html` — the R6 amendment this builds on. Still current for
+  geometry (`art_crop`, `center top`, portrait `= band × 1.37`, decision 8's px-keyed stops);
+  superseded on opacity and ramp values by the canvas above.
 - `The 99 - Art Wash Readability.dc.html` — R1, superseded. Kept only because R2's captions cite its
   values. Do not build from it.
 
-Read `design/design_handoff_the99_decks/The 99 - Decks README.md` and
-`design/design_handoff_the99_commanders/README.md` first — this document records only what
-**changes**.
+Read `design_handoff_the99_decks/README.md` and `design_handoff_the99_commanders/README.md` first —
+this document records only what **changes**.
+
+## Scrim recovery — the current revision
+
+The amendment below fixed legibility and overcorrected: at art `.58` under the shipped ramps, only
+33–45% of the picture survived mid-band, which reads as a dimmed screen rather than a design. The
+recovery lifts art to `.80` (`.92/.28` on rows, `.95/.22` on the 72px resume row) and pays for it
+by **holding each ramp's dark value across its whole label block instead of ramping through it** —
+which also fixes a live defect: top-labelled subtitles ship at **3.16:1**, under the floor, on deck
+cards and Home ready-to-build.
+
+**Two findings ship on their own, ahead of any lift** — both are existing accessibility failures:
+the 3.16:1 top-labelled subtitle, and the 148 row at phone width, whose upper two lines read
+**3.12:1 and 3.92:1** today.
+
+**Three corrections to earlier drafts of that canvas, recorded so they are not reintroduced:**
+
+1. **There is no cover variant of a row.** `art-wash.tsx` takes `band: 168 | 148 | 72`, and
+   Commanders and Discover render the 148 `left-portrait` band at *every* width — only the text
+   layout changes. An earlier survey drew both as `cover 2.2/1` below 768px. That treatment does
+   not exist and should not be built.
+2. **Rows are three cases, not one.** 168 and 148 each ship a vertical ramp
+   (`.30 .10 .46 .42` and `.62 .16 .42 .74`); only 72 has none. The claim that
+   `left-portrait` carries no vertical ramp was true of exactly one of the three.
+3. **The 72px resume row ships `.85 / .14`**, not `.80 / .20`.
+
+### The one surface the lift cannot pay for
+
+At phone width the 148 row prints its type 13px from the edge, on the sharp portrait, spanning the
+band — so there is no dark end to derive a stop from, only the whole block. Holding the ramp flat at
+`.78` clears all three lines (measured **5.04–5.35:1** across themes) and leaves the art at **22%
+mid-band** — darker than what this document exists to fix. That hold ships anyway, because two of
+those lines are already failing. **The recommendation is to stop paying with the scrim and move the
+type off the portrait at that width**, which is what desktop already does. That is a layout change,
+so it is a separate proposal rather than a value in this one.
+
+### Checked, unchanged
+
+Home's hero pips keep their bare edge. The lift does brighten the ground under them, so it was
+measured: the lightest pip (`--w`) at art `.80` under a `.50` bottom stop reads **4.01–4.09:1**,
+and a pip's floor is 3:1 as a non-text component. The deliberate omission of a hairline stands.
+
+---
 
 ## The bug, in one line
 
