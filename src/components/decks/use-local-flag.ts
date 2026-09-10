@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
+import { readRaw, subscribeToKey, writeRaw } from "./local-store";
 
 // A per-deck "this has happened, don't show it again" bit, persisted in
 // localStorage rather than a DB column: a cosmetic one-shot does not justify a
@@ -11,45 +12,10 @@ import { useCallback, useSyncExternalStore } from "react";
 // cascading-render pattern the lint rule rejects. The server snapshot is
 // `true` — "assume seen" — so the server render and the hydration pass never
 // contain the thing being gated, and a returning user cannot catch a flash of it.
-
-// Keyed by storage key, so a write wakes only the components watching that key —
-// same reason the cross-tab handler below filters on it.
-const listeners = new Map<string, Set<() => void>>();
-
-// Storage can throw outright — Safari private mode, blocked storage, full
-// quota. Dismissal is driven entirely by the write below, so an unguarded
-// throw does not merely lose persistence: it leaves the surface on screen with
-// a dismiss button that cannot work. This session-scoped set is the fallback,
-// so the surface is always dismissable and the worst case degrades to "shows
-// again next visit" rather than "never goes away".
-const setThisSession = new Set<string>();
-
-function subscribeToKey(key: string, onStoreChange: () => void): () => void {
-  const forKey = listeners.get(key) ?? new Set<() => void>();
-  forKey.add(onStoreChange);
-  listeners.set(key, forKey);
-  // Cross-tab: acting in one tab should settle the other. Filtered to this
-  // key — every other deck's write fires the same global event, and an
-  // unfiltered handler would re-render every open builder tab.
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === key) onStoreChange();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    forKey.delete(onStoreChange);
-    if (forKey.size === 0) listeners.delete(key);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-function readFlag(key: string): boolean {
-  if (setThisSession.has(key)) return true;
-  try {
-    return localStorage.getItem(key) === "1";
-  } catch {
-    return false;
-  }
-}
+//
+// The store underneath — subscription, cross-tab handler, the session fallback
+// for a storage that throws, the read back that catches a quota-evicting
+// write — lives in ./local-store, shared with useTopOffDraft.
 
 /**
  * Returns `[isSet, set]` for the given localStorage key.
@@ -64,25 +30,11 @@ export function useLocalFlag(key: string): [boolean, () => void] {
   // nor hydration can contain the gated surface.
   const value = useSyncExternalStore(
     subscribe,
-    () => readFlag(key),
+    () => readRaw(key) === "1",
     () => true,
   );
 
-  const set = useCallback(() => {
-    // Added before the write, not after: if setItem throws, the UI has already
-    // settled and the dismiss button has done its job.
-    setThisSession.add(key);
-    try {
-      localStorage.setItem(key, "1");
-      // Read back rather than trusting the write — a quota-evicting store can
-      // accept setItem and drop the value. Only a confirmed read retires the
-      // fallback entry, so the set holds exactly the keys storage lost.
-      if (localStorage.getItem(key) === "1") setThisSession.delete(key);
-    } catch {
-      // Persistence is best-effort; the session set already settled the UI.
-    }
-    for (const listener of listeners.get(key) ?? []) listener();
-  }, [key]);
+  const set = useCallback(() => writeRaw(key, "1"), [key]);
 
   return [value, set];
 }
