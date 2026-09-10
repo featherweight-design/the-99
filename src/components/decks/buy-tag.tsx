@@ -135,8 +135,10 @@ function Tail({
 // A labelled tag swaps the word for the sentence rather than carrying an
 // `aria-label`: on a bare span the label lands on the generic role and is
 // discarded outright, and `role="img"` rescued it only by announcing a run of
-// text as an image. The row passes no label, because there the word already
-// sits in the row's own reading order.
+// text as an image. An unowned row passes no label, because there the word
+// already sits in the row's own reading order and says all there is to say. A
+// contested row does pass one: the plate reads `buy` on a card the player
+// owns, and only the sentence says which copy is being bought.
 export function BuyTag({
   variant,
   label,
@@ -154,7 +156,7 @@ export function BuyTag({
   newestAsOf?: Date | null;
   /** Server-built; only the labelled (tile) variant speaks it. */
   provenance?: ProvenanceForm | null;
-  /** Shopping reserves the figure a 58px slot so the column aligns. */
+  /** Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns. */
   reserveSlot?: boolean;
   /**
    * `collapsed` draws a bare `$` in the same box, ink, radius and position —
