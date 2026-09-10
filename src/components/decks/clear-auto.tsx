@@ -33,14 +33,14 @@ interface ClearAutoButtonProps {
 const BULK_BUTTON_CLASS =
   "font-mono text-[12px] text-fg-body bg-transparent border border-border-strong rounded-[8px] px-[12px] min-h-[44px] md:min-h-0 py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default";
 
-/** The confirm's two answers, taking `game-history-row.tsx`'s inline confirm
- *  verbatim minus its danger ink — this app's only confirm vocabulary, and it
- *  is a toolbar question here for the same reason it is a row question there.
- *  The caller appends the one border colour that separates the two answers. */
 /** One question is on screen at a time — the toolbar renders once per decklist
  *  and the confirm replaces both bulk controls — so a constant id is enough. */
 const QUESTION_ID = "keep-all-confirm-question";
 
+/** The confirm's two answers, taking `game-history-row.tsx`'s inline confirm
+ *  verbatim minus its danger ink — this app's only confirm vocabulary, and it
+ *  is a toolbar question here for the same reason it is a row question there.
+ *  The caller appends the one border colour that separates the two answers. */
 const CONFIRM_BUTTON_CLASS =
   "flex-1 md:flex-none flex md:inline-flex items-center justify-center min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] text-fg-body bg-transparent border cursor-pointer disabled:cursor-not-allowed disabled:opacity-50";
 
