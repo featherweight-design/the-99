@@ -255,6 +255,13 @@ try {
   });
   await walkList(phone, "phone");
   await walkConfirm(phone, "phone");
+} catch (error) {
+  // Counted as a failure rather than rethrown, for the same reason every read
+  // of a locator's text is guarded: a probe that dies mid-walk reports nothing
+  // — no transcript, no count, no shot list — and the one run that matters is
+  // the run where something has gone missing.
+  failures += 1;
+  console.log(`FAIL  the walk threw — ${error?.message ?? error}`);
 } finally {
   await restoreAuto(kept);
   await browser.close();
