@@ -1,2 +1,0 @@
-ALTER TABLE "printings" ADD COLUMN "flavor_name" text;--> statement-breakpoint
-CREATE INDEX "printings_flavor_name_idx" ON "printings" USING btree (lower("flavor_name")) WHERE "printings"."flavor_name" is not null;

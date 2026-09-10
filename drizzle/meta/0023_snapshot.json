@@ -1,5 +1,5 @@
 {
-  "id": "90abe7e9-7032-421a-836e-fdd994d5036d",
+  "id": "b2d55089-d623-439b-8618-7cdaa9bd065e",
   "prevId": "85d3edf3-5dbc-4e70-893a-4cba9ce573f8",
   "version": "7",
   "dialect": "postgresql",
@@ -1533,9 +1533,9 @@
           "name": "printings_flavor_name_idx",
           "columns": [
             {
-              "expression": "lower(\"flavor_name\")",
+              "expression": "flavor_name",
+              "isExpression": false,
               "asc": true,
-              "isExpression": true,
               "nulls": "last"
             }
           ],

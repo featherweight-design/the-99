@@ -79,11 +79,12 @@ export const printings = pgTable("printings", {
 }, (t) => [
   index("printings_oracle_set_idx").on(t.oracleId, t.setCode),
   index("printings_oracle_idx").on(t.oracleId),
-  // Lowercased because both readers are case-insensitive: the import's name index and the
-  // card search's ILIKE. Partial so it covers the few hundred rows that have a flavor name
-  // rather than a NULL for every other printing in existence.
+  // Partial, and that is the whole point of it: both readers want every row that has a flavor
+  // name and none of the millions that do not. Neither can use it to find one name — the import
+  // reads the set whole, and the card search's `%q%` ILIKE cannot be accelerated by a btree at
+  // all — so what this buys is a few-hundred-row scan in place of a full one.
   index("printings_flavor_name_idx")
-    .on(sql`lower(${t.flavorName})`)
+    .on(t.flavorName)
     .where(sql`${t.flavorName} is not null`),
 ]);
 

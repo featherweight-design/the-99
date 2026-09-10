@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { cards, collectionItems, printings } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
@@ -76,28 +76,37 @@ export async function searchCards(
   const ownedQtySql = sql<number>`coalesce(${ownedTotals.qty}, 0)`;
   // All constraints live in SQL so LIMIT can't starve results when early
   // name matches are off-color or unowned.
-  // The Secret Lair name printed on some printing of this card, when that is what the
-  // query caught (#467). A correlated scalar rather than a join: a card can have several
-  // renamed printings, and one row per printing would multiply the result list.
-  const flavorNameSql = sql<string | null>`(
-    select p.flavor_name from ${printings} p
-    where p.oracle_id = ${cards.oracleId} and p.flavor_name ilike ${`%${escaped}%`}
-    limit 1
-  )`;
+  // The Secret Lair names this query caught (#467), one row per card rather than per printing:
+  // a card can have several renamed printings and one row each would multiply the result list.
+  //
+  // Resolved once, ahead of the scan, rather than as a correlated subquery — the select list and
+  // the WHERE clause both need it, and correlated it would be evaluated per candidate card, twice
+  // over. Only a few hundred printings have a flavor name at all, and the partial index means
+  // this reads those and nothing else.
+  const flavorHits = db
+    .select({
+      oracleId: printings.oracleId,
+      flavorName: sql<string>`min(${printings.flavorName})`.as("flavor_name"),
+    })
+    .from(printings)
+    .where(ilike(printings.flavorName, `%${escaped}%`))
+    .groupBy(printings.oracleId)
+    .as("flavor_hits");
   const rows = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       ownedQty: ownedQtySql,
       oracleText: cards.oracleText, keywords: cards.keywords,
       imageUri: cards.imageUri, manaCost: cards.manaCost,
-      flavorName: flavorNameSql,
+      flavorName: flavorHits.flavorName,
     })
     .from(cards)
     .leftJoin(ownedTotals, eq(ownedTotals.oracleId, cards.oracleId))
+    .leftJoin(flavorHits, eq(flavorHits.oracleId, cards.oracleId))
     .where(and(
       // A player typing the name off the front of a Secret Lair card is typing the only
       // name that card shows them, so the flavor name is a first-class way in.
-      or(ilike(cards.name, `%${escaped}%`), sql`${flavorNameSql} is not null`),
+      or(ilike(cards.name, `%${escaped}%`), isNotNull(flavorHits.flavorName)),
       colorIdentity === null ? undefined : withinColorIdentity(colorIdentity),
       eq(cards.commanderLegal, true),
       ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
