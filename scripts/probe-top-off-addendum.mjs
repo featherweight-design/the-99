@@ -114,7 +114,14 @@ async function walkList(page, w) {
   const declines = list.getByRole("button", { name: /^Set .* aside$/ });
   const rows = await declines.count();
 
-  check("decline shows a word, not a glyph", (await declines.first().innerText()).trim() === "Set aside");
+  // Every read of a locator's text is guarded. A probe whose own failure
+  // throws reports nothing — no count, no transcript — and the one run that
+  // matters is the run where something is missing.
+  const face = await declines
+    .first()
+    .innerText()
+    .catch(() => "(absent)");
+  check("decline shows a word, not a glyph", face.trim() === "Set aside", face.trim());
 
   // The ring is a Tailwind `ring-2`, which is a box-shadow. The check is that
   // focusing the sr-only checkbox puts a shadow on the box beside it — the
@@ -189,7 +196,8 @@ async function walkConfirm(page, w) {
   // answering rather than a bare `Keep them`.
   const described = await yes.getAttribute("aria-describedby");
   const question = page.locator(`[id="${described}"]`);
-  check("the answer points at the question", (await question.count()) === 1, (await question.innerText()).trim());
+  const asked = await question.innerText().catch(() => "(absent)");
+  check("the answer points at the question", (await question.count()) === 1, asked.trim());
   await shot(page, `${w}-5-confirm`);
 
   await page.getByRole("button", { name: "Cancel" }).first().click();
