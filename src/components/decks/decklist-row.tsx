@@ -398,10 +398,11 @@ export function DecklistRow({
              there is nothing to reserve. */
           <BuyTag
             variant="row"
-            word={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTag : undefined}
-            // `buy` reads as the act it is, so the row passes no label for it.
-            // `2nd copy` does not: alone it names a thing rather than asking for
-            // one, so this one word gets the sentence.
+            // The plate says `buy` on both kinds of row — the act is the same
+            // act, and on a contested row the `Spoken for` heading above and the
+            // `short N` marker beside it already say which kind it is. The
+            // sentence is still worth spending: a reader who arrives at the row
+            // without the heading in earshot hears `buy` on a card they own.
             label={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTagAria : undefined}
             price={card.price}
             newestAsOf={newestAsOf}

@@ -217,16 +217,25 @@ describe("BuyTag is not a control", () => {
 });
 
 describe("BuyTag figure slot", () => {
-  // The 58px slot belongs to the Shopping list, not to the tag: under `All` the
+  // The slot belongs to the Shopping list, not to the tag: under `All` the
   // figure hugs the word instead of holding a column open.
   it("reserves the column only when asked", () => {
     render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} reserveSlot />);
-    expect(screen.getByText("$2.10")).toHaveStyle({ minWidth: "58px" });
+    expect(screen.getByText("$2.10")).toHaveStyle({ minWidth: "46px" });
   });
 
   it("does not reserve it by default", () => {
     render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} />);
-    expect(screen.getByText("$2.10")).not.toHaveStyle({ minWidth: "58px" });
+    expect(screen.getByText("$2.10")).not.toHaveStyle({ minWidth: "46px" });
+  });
+
+  // The slot's only job is holding a column open, so it has to survive the
+  // longest thing that can land in it. `sold out` is that thing, and a slot
+  // narrower than the word would let one row's tail push past the column every
+  // other row lines up on.
+  it("still holds the column open for `sold out`", () => {
+    render(<BuyTag variant="row" price={SOLD_OUT} newestAsOf={NEWEST} reserveSlot />);
+    expect(screen.getByText(priceCopy.tag.soldOut)).toHaveStyle({ minWidth: "46px" });
   });
 });
 

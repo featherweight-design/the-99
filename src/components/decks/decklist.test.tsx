@@ -497,8 +497,19 @@ describe("Shopping's predicate: unowned, or owned and over-committed", () => {
     renderDecklist([rampUnowned, rampSpokenFor], { shoppingFigures: null });
 
     expect(
-      screen.getByText(recommendationsCopy.shopping.rowSecondCopyTag),
+      screen.getByText(recommendationsCopy.shopping.rowSecondCopyTagAria),
     ).toBeInTheDocument();
+  });
+
+  // The plate says `buy` on a contested row, the same as on an unowned one: the
+  // heading above it and the marker beside it already say which kind of row it
+  // is, and `2nd copy` said it a third time. Only the spoken form still
+  // distinguishes them, which the test above covers.
+  it("draws the same word on a contested row as on an unowned one", () => {
+    renderDecklist([rampUnowned, rampSpokenFor]);
+
+    expect(screen.queryByText(/2nd copy/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(addPanelCopy.unowned.tag)).toHaveLength(2);
   });
 
   // Count-only is the list's own ruling, not a side effect of having a figure to
@@ -524,7 +535,9 @@ describe("A deck with nothing contested renders today's Shopping list", () => {
     expect(
       screen.queryByText(recommendationsCopy.shopping.spokenForGroupLabel),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText(/2nd copy/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.rowSecondCopyTagAria),
+    ).not.toBeInTheDocument();
 
     // Not merely "no split sentence": no string this amendment introduced.
     expect(
