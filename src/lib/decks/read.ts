@@ -254,7 +254,12 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   // which is exactly today's rendering.
   const resolved = new Map<
     string,
-    { printedName: string | null; setCode: string; collectorNumber: string }
+    {
+      printedName: string | null;
+      imageUri: string | null;
+      setCode: string;
+      collectorNumber: string;
+    }
   >();
   if (ownedIds.length > 0) {
     const owned = await selectCollectionRows(userId, ownedIds)
@@ -265,6 +270,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       if (p) {
         resolved.set(c.oracleId, {
           printedName: c.printedName,
+          imageUri: p.imageUri,
           setCode: p.setCode,
           collectorNumber: p.collectorNumber,
         });
@@ -283,7 +289,11 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     auto: row.auto,
     availability: availability?.get(row.oracleId) ?? null,
     manaCost: row.manaCost,
-    imageUri: row.imageUri,
+    // The art of the copy the player owns, falling back to the oracle-level
+    // image for a card they do not. `row.imageUri` alone captioned a renamed
+    // card with its printed name over another printing's art — the one thing
+    // the collection reader's standing invariant forbids.
+    imageUri: (row.owned ? resolved.get(row.oracleId)?.imageUri : null) ?? row.imageUri,
     // The `row.owned` guard is belt-and-braces — an unowned card has no
     // collection row and so cannot be in the map — but it states locked
     // decision 2 in the code rather than leaving it to the query's shape.
