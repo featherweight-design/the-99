@@ -39,6 +39,22 @@ describe("draftDiff", () => {
     );
     expect(d).toEqual({ adds: [], removes: [] });
   });
+
+  // Both inputs are selects with no `order by`, so row order is the database's
+  // to choose. The receipt is a list a player reads, and reading it twice has
+  // to give the same list in the same order.
+  it("orders each list the same way whatever order the rows arrive in", () => {
+    const forwards = draftDiff(
+      [{ oracleId: B, quantity: 1 }, { oracleId: A, quantity: 1 }],
+      [],
+    );
+    const backwards = draftDiff(
+      [{ oracleId: A, quantity: 1 }, { oracleId: B, quantity: 1 }],
+      [],
+    );
+    expect(forwards.adds.map((c) => c.oracleId)).toEqual([A, B].sort());
+    expect(forwards).toEqual(backwards);
+  });
 });
 
 describe("bucketAdds", () => {

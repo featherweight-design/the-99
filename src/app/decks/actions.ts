@@ -1296,7 +1296,10 @@ export async function commitDeckVersion(
   }
 
   const result = await db.transaction<CommitResult>(async (tx) => {
-    await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
+    const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
+    // Deleted between the ownership check above and this lock. Left to fall
+    // through, it reaches commitVersion, which throws rather than refusing.
+    if (!deck) return { ok: false, message: "We couldn't find that deck." };
 
     const previous = await newestVersion(deckId, tx);
     const before = previous ? await versionCards(previous.id, tx) : [];
@@ -1324,6 +1327,7 @@ export async function commitDeckVersion(
     const { version } = await commitVersion(deckId, note?.trim() || null, tx);
     return { ok: true, number: version.number, buy, pull: diff.removes };
   });
+  if (!result.ok) return result;
   revalidateClaims(deckId, userId);
   return result;
 }

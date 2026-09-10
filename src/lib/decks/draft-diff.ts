@@ -25,7 +25,11 @@ export function draftDiff(draft: CardQty[], version: CardQty[]): DraftDiff {
   const after = new Map(draft.map((c) => [c.oracleId, c.quantity]));
   const adds: DraftChange[] = [];
   const removes: DraftChange[] = [];
-  for (const oracleId of new Set([...before.keys(), ...after.keys()])) {
+  // Sorted, because both inputs come from selects with no `order by`: without
+  // this the two lists come back in whatever order the rows happened to arrive
+  // in, and a receipt the player reads twice reads differently each time.
+  const oracleIds = [...new Set([...before.keys(), ...after.keys()])].sort();
+  for (const oracleId of oracleIds) {
     const from = before.get(oracleId) ?? 0;
     const to = after.get(oracleId) ?? 0;
     if (to > from) adds.push({ oracleId, from, to });
