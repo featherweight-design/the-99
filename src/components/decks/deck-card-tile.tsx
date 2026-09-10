@@ -16,7 +16,7 @@
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy } from "../../lib/copy/card-surfaces";
-import { cssUrl } from "../../lib/collection/browse";
+import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -65,6 +65,11 @@ export function DeckCardTile({
   const availState = card.availability
     ? availabilityState(card.availability, { selfExcluded: true })
     : "free";
+  // Two strings, because they answer different questions. The caption is a
+  // front face and may clip; the trigger's accessible name is whole and never
+  // does. The modal — one tap away on the art — is the recovery path.
+  const displayName = printedFaceName(card);
+  const fullName = printedNameOf(card);
 
   function handleRemove() {
     markSlotSpent(card);
@@ -133,11 +138,15 @@ export function DeckCardTile({
 
           <CardDetailTrigger
             oracleId={card.oracleId}
-            name={card.name}
+            name={fullName}
             siblings={siblings}
+            // `undefined` below one copy on purpose: that is what makes the
+            // provider compose the label from `name`, which carries the full
+            // printed name. The single-copy tile is the common case, and a
+            // ternary fixed on one arm alone would leave it on the oracle name.
             ariaLabel={
               card.quantity > 1
-                ? `${cardDetailCopy.triggerAria(card.name)}, ${cardTileCopy.copiesAria(card.quantity)}`
+                ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}`
                 : undefined
             }
             className="block w-full shadow-[inset_0_-40px_40px_-30px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)] md:shadow-[inset_0_-50px_50px_-34px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)]"
@@ -182,12 +191,21 @@ export function DeckCardTile({
 
         {/* Caption — the name and the only route out of the deck in this view. */}
         <div className="flex items-center gap-[4px] min-h-[44px] md:min-h-[36px] pl-[9px] pr-[2px] md:pl-[11px] md:pr-[3px]">
+          {/* The printed front face, single line and never clamped: two lines
+              would make caption height depend on the data, and a grid whose
+              tiles are sometimes one line and sometimes two is either ragged or
+              padded to the worst case on every tile.
+
+              The `title` is gone and NOTHING replaces it on this element. An
+              `aria-label` on a plain `<span>` is exposed to nothing — it would
+              pass a testing-library query and reach no screen reader. The full
+              name's home is the trigger above, which is a real `<button>` and
+              is the tile's largest target. */}
           <span
             className="flex-auto min-w-0 truncate text-[12px] md:text-[13px] font-semibold"
             style={{ color: "var(--fg)" }}
-            title={card.name}
           >
-            {card.name}
+            {displayName}
           </span>
           {/* `ml-[2px]` on top of the caption's 4px gap: the mark's gap is 6px
               at both surfaces, and the caption's own rhythm is the ✕'s. */}
