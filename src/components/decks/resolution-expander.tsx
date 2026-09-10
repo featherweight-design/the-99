@@ -138,6 +138,13 @@ export function ResolutionExpander({
           // and only a basic land carries the line's own quantity over.
           quantity: isBasicLand(result.typeLine) ? row.quantity : 1,
           auto: false,
+          // Null on an optimistic row: the search result carries the oracle
+          // name only, and this row exists for the beat before the server
+          // answers. The revalidate supplies the printed name; until then the
+          // row reads exactly as it does today.
+          printedName: null,
+          printedSetCode: null,
+          printedCollectorNumber: null,
           manaCost: result.manaCost,
           imageUri: result.imageUri,
         });

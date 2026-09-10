@@ -42,6 +42,28 @@ export type DeckDetailCard = {
    */
   imageUri?: string | null;
   /**
+   * The name printed on the copy this player owns, when it differs from the
+   * oracle name — otherwise null. Resolved through the collection's own
+   * `primaryPrinting()`, so the deck row calls a card what the player's copy
+   * calls it. Always null on a card they do not own: there is no printing in
+   * hand to print a name.
+   *
+   * Required rather than optional, unlike the fields above: every surface that
+   * names a card reads it through `printedNameOf()` / `printedFaceName()`, whose
+   * `Pick` includes exactly this field — a literal allowed to omit it would
+   * quietly go on naming the card something the player's copy does not say.
+   */
+  printedName: string | null;
+  /**
+   * The printing this player's copy is, resolved through the same preference the
+   * art follows; null on a card they do not own. It rides along so the decklist
+   * export can name the printing it exports without resolving that preference a
+   * second time — two resolutions are how the name and the printing come to
+   * disagree.
+   */
+  printedSetCode: string | null;
+  printedCollectorNumber: string | null;
+  /**
    * Scryfall's layout word, for the `//` mark (#363). Optional for the same
    * reason the three above are; absent means no mark, which is the right way
    * for this to fail — see `lib/cards/faces.ts`.

@@ -54,6 +54,9 @@ const solRing: DeckDetailCard = {
   owned: true,
   quantity: 1,
   auto: false,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
 };
 
 const line = (over: Partial<DeckUnresolvedRow> = {}): DeckUnresolvedRow => ({

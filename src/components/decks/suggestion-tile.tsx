@@ -172,6 +172,13 @@ export function SuggestionTile({
         owned: suggestion.owned,
         quantity: 1,
         auto: false,
+        // Null on an optimistic row: the search result carries the oracle
+        // name only, and this row exists for the beat before the server
+        // answers. The revalidate supplies the printed name; until then the
+        // row reads exactly as it does today.
+        printedName: null,
+        printedSetCode: null,
+        printedCollectorNumber: null,
         manaCost: suggestion.manaCost,
         imageUri: suggestion.imageUri,
       }),

@@ -69,6 +69,8 @@ The column exists and no reader selects it. This task carries it from the databa
 
 Add to `src/lib/collection/browse.test.ts`. Find the existing `aggregateCollection` describe block and the row factory it already uses; if the factory does not take `flavorName`, add it there with a `null` default so every existing call site is unaffected.
 
+**The factory is called `raw`, not `row`** (`browse.test.ts:43`) — read `row(...)` as `raw(...)` in every snippet below.
+
 ```ts
 it("carries a printing's flavor name onto the printing it belongs to", () => {
   const [card] = aggregateCollection([
@@ -183,7 +185,9 @@ A card the player does not own still keeps its oracle name (locked decision 2), 
 - [ ] **Step 6: Fix every other place that constructs a `BrowsePrinting`**
 
 Run: `pnpm typecheck`
-Expected: errors in test fixtures and any other constructor of `BrowsePrinting` — notably `src/components/cards/card-modal.test.tsx:284` (`catalogPrinting`) and `src/components/cards/card-detail-provider.test.tsx`. Add `flavorName: null` to each. Do not add it as an optional field to dodge this — the compiler finding every construction site is the point.
+Expected: errors in test fixtures and any other constructor of `BrowsePrinting`. Add `flavorName: null` to each. Do not add it as an optional field to dodge this — the compiler finding every construction site is the point.
+
+**Measured, not predicted:** the compiler found six files — `card-modal.test.tsx` (three literals), `two-faced.test.tsx`, `printing-region.test.tsx`, `card-detail.test.ts`, `browse.test.ts`, and one **production** site, `printing-region.tsx:110-124`'s `dormantPick`. That last one is not a fixture: a preference names a set code and collector number only, so a printing no longer owned has no `printings` row to have printed a name of its own and takes `flavorName: null`. `card-detail-provider.test.tsx` builds a `BrowseCard`, not a `BrowsePrinting`, and is a Task 2 site instead.
 
 - [ ] **Step 7: Run the suite**
 
@@ -380,7 +384,7 @@ In `src/lib/collection/card-detail.ts`, in `catalogCard()`, set `printedName: nu
 - [ ] **Step 6: Run the tests and the typechecker**
 
 Run: `pnpm test src/lib/collection/ && pnpm typecheck`
-Expected: PASS. `pnpm typecheck` will flag any other `BrowseCard` literal in test fixtures — add `printedName: null` to each.
+Expected: PASS. `pnpm typecheck` will flag any other `BrowseCard` / `BrowseListCard` literal — add `printedName: null` to each. **Measured:** eleven files, all fixtures — `browse.test.ts`, `color-filter.test.ts`, `set-filter.test.ts`, `type-filter.test.ts`, `availability-filter.test.ts`, `card-detail-provider.test.tsx`, `card-modal.test.tsx`, `two-faced.test.tsx`, `collection/grid-view.test.tsx`, `collection/rows-view.test.tsx`, `commanders/full-card-trigger.test.tsx` and `decks/card-detail-surfaces.test.tsx`. No production site builds a `BrowseCard` literal outside `aggregateCollection` and `catalogCard`.
 
 - [ ] **Step 7: Commit**
 
@@ -559,7 +563,7 @@ The easy half. Both views already print the set code beside the name, so the pri
 **Files:**
 - Modify: `src/components/collection/grid-view.tsx:88`
 - Modify: `src/components/collection/rows-view.tsx` — `c.name` occurs at exactly **three** places, `:59`, `:91` and `:95`, and each is handled differently. `:95` is the displayed name and takes the printed one. `:91` is a `title` attribute and is **deleted outright** — the spec forbids a `title` on any of these surfaces, and left in place it would hover a stale oracle name over a printed one. `:59` is the trigger's `name` prop, which is the row's accessible name, and takes the printed name.
-- Test: `src/components/collection/grid-view.test.tsx` (create if absent)
+- Test: `src/components/collection/grid-view.test.tsx` — it exists, as does `rows-view.test.tsx`; both already carry a `BrowseListCard` factory Task 2 widened.
 
 **Interfaces:**
 - Consumes: `printedFaceName()` from Task 2.
@@ -724,6 +728,8 @@ Then in the `detailCards` map, beside `imageUri: row.imageUri,`:
 ```
 
 Add the two printing fields to `DeckDetailCard` in Step 2 alongside `printedName`, both `string | null`, documented as "the printing this player's copy is, resolved through the same preference the art follows; null on a card they do not own."
+
+**All three are required, not optional**, unlike the four fields above them on that type — `printedFaceName()`'s `Pick` includes `printedName`, so a literal allowed to omit it would quietly keep naming the card by its oracle name. **Measured cost of that call:** fifteen construction sites, of which twelve are fixtures and **three are production** — `quick-add-bar.tsx:367`, `resolution-expander.tsx:140` and `suggestion-tile.tsx:174`, all three the optimistic-add path. Each takes `null` for all three: the search result or suggestion carries the oracle name only, and the row exists for the beat before the revalidate answers with the printed one.
 
 The `row.owned` guard is belt-and-braces — an unowned card has no collection row and so cannot be in the map — but it states locked decision 2 in the code rather than leaving it to a coincidence of the query.
 

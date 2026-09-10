@@ -9,6 +9,11 @@ import {
   deckUnresolvedRows,
   decks,
 } from "../../db/schema";
+import {
+  aggregateCollection,
+  resolvedPrinting,
+  selectCollectionRows,
+} from "../collection/browse";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
@@ -238,6 +243,35 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
         )
       : null;
 
+  // The printed name comes from the player's own copy, which this route does not
+  // otherwise read: the deck query is oracle-level. Reusing the collection reader
+  // rather than joining `printings` here is deliberate — the name must follow the
+  // SAME printing the art preference picks, and `aggregateCollection` is where
+  // that precedence lives. One extra query for the whole decklist.
+  //
+  // Swallowed like the availability rollup above, and for the same reason: the
+  // decklist is the deck. A failed lookup leaves every row on its oracle name,
+  // which is exactly today's rendering.
+  const resolved = new Map<
+    string,
+    { printedName: string | null; setCode: string; collectorNumber: string }
+  >();
+  if (ownedIds.length > 0) {
+    const owned = await selectCollectionRows(userId, ownedIds)
+      .then(aggregateCollection)
+      .catch(() => []);
+    for (const c of owned) {
+      const p = resolvedPrinting(c);
+      if (p) {
+        resolved.set(c.oracleId, {
+          printedName: c.printedName,
+          setCode: p.setCode,
+          collectorNumber: p.collectorNumber,
+        });
+      }
+    }
+  }
+
   const detailCards: DeckDetailCard[] = cardRows.map((row) => ({
     oracleId: row.oracleId,
     name: row.name,
@@ -250,6 +284,13 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     availability: availability?.get(row.oracleId) ?? null,
     manaCost: row.manaCost,
     imageUri: row.imageUri,
+    // The `row.owned` guard is belt-and-braces — an unowned card has no
+    // collection row and so cannot be in the map — but it states locked
+    // decision 2 in the code rather than leaving it to the query's shape.
+    printedName: row.owned ? (resolved.get(row.oracleId)?.printedName ?? null) : null,
+    printedSetCode: row.owned ? (resolved.get(row.oracleId)?.setCode ?? null) : null,
+    printedCollectorNumber:
+      row.owned ? (resolved.get(row.oracleId)?.collectorNumber ?? null) : null,
     layout: row.layout,
   }));
 

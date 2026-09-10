@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
 import { availabilityState, type Availability, type AvailabilityState } from "../decks/availability";
@@ -521,7 +521,7 @@ export function sortCards(
 
 /**
  * Server query — joins collection_items × cards for the user, optionally narrowed to one
- * oracle id. Untested-query pattern (see recommend.ts / summary.ts): thin, logic-free SQL,
+ * oracle id or to a list of them. Untested-query pattern (see recommend.ts / summary.ts): thin, logic-free SQL,
  * pure aggregation covered by tests above.
  *
  * Rooted in collection_items, so a card the user does not own yields no rows at all —
@@ -529,7 +529,10 @@ export function sortCards(
  */
 export async function selectCollectionRows(
   userId: string,
-  oracleId?: string,
+  // A list, for the deck route, which needs ~99 of them in one pass. Never pass
+  // an empty array: `inArray` with no values is a SQL error in some drivers and
+  // a full scan in others, so callers guard on length.
+  oracleId?: string | string[],
 ): Promise<RawCollectionRow[]> {
   const { db } = await import("../../db");
   const { cardArtPreferences, cards, collectionItems, printings, sets } =
@@ -593,7 +596,11 @@ export async function selectCollectionRows(
     )
     .where(and(
       eq(collectionItems.userId, userId),
-      oracleId === undefined ? undefined : eq(collectionItems.oracleId, oracleId),
+      oracleId === undefined
+        ? undefined
+        : Array.isArray(oracleId)
+          ? inArray(collectionItems.oracleId, oracleId)
+          : eq(collectionItems.oracleId, oracleId),
     ));
   return rows;
 }

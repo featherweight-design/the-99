@@ -27,6 +27,9 @@ const autoCard = (id: string, name: string): DeckDetailCard => ({
   owned: true,
   quantity: 1,
   auto: true,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
 });
 
 const keptCard = (id: string, name: string): DeckDetailCard => ({
@@ -710,6 +713,9 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
       owned: true,
       quantity: 37,
       auto: true,
+      printedName: null,
+      printedSetCode: null,
+      printedCollectorNumber: null,
     };
     clearAutoCards.mockResolvedValue([
       { oracleId: "sol-ring", quantity: 1 },

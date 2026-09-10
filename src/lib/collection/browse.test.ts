@@ -239,6 +239,20 @@ describe("printedName", () => {
     const twoFaced = { name: "Delver of Secrets // Insectile Aberration", printedName: null };
     expect(printedFaceName(twoFaced)).toBe("Delver of Secrets // Insectile Aberration");
   });
+
+  // The deck route asks for ~99 oracle ids at once and keys the answers by id.
+  // `getDeckDetail` is raw SQL no unit test here reaches, so this covers the
+  // shape it relies on; the browser probe covers the route.
+  it("aggregates a printed name for each of several oracle ids", () => {
+    const cards = aggregateCollection([
+      raw({ oracleId: "o1", name: "World at War", setCode: "sld",
+            collectorNumber: "2208", flavorName: "Battle of Olympus" }),
+      raw({ oracleId: "o2", name: "Cultivate", setCode: "m21", collectorNumber: "177" }),
+    ]);
+    const byOracle = new Map(cards.map((c) => [c.oracleId, c.printedName]));
+    expect(byOracle.get("o1")).toBe("Battle of Olympus");
+    expect(byOracle.get("o2")).toBeNull();
+  });
 });
 
 describe("printingCaption", () => {
