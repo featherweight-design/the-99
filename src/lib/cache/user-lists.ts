@@ -43,7 +43,7 @@ function tagFor(userId: string): string {
  * down before being cached: `/commanders` ships its second ranking as a delta
  * rather than a second list, `/discover` caches the dictionary-encoded form
  * (3.1 MB plain, 1.1 MB encoded) and `/collection` caches a browse list with no
- * printings or oracle text (2.4 MB before, 1.0 MB after). Anything added to one
+ * printings, oracle text or back art (2.4 MB before, 1.0 MB after). Anything added to one
  * of these payloads spends headroom that is measured in hundreds of KB, not MB.
  */
 export function cacheForUser<T>(
