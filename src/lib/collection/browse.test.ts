@@ -16,7 +16,7 @@ import {
 
 const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
   setCode: "C21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
-  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, ...over,
+  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, flavorName: null, ...over,
 });
 
 const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
@@ -48,6 +48,7 @@ const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   keywords: [], rarity: "uncommon", colorIdentity: [],
   layout: "normal", backImageUri: null,
   exactImageUri: null, representativeImageUri: null, cardImageUri: null,
+  flavorName: null,
   ...over,
 });
 
@@ -156,6 +157,24 @@ describe("aggregateCollection", () => {
     expect(agg.imageUri).toBe("b.png");
     expect(agg.primarySetCode).toBe("C21");
     expect(printingCaption(agg)).toBe("C21 · 600 +1 more");
+  });
+  it("carries a printing's flavor name onto the printing it belongs to", () => {
+    const [agg] = aggregateCollection([
+      raw({
+        oracleId: "o1",
+        name: "World at War",
+        setCode: "sld",
+        collectorNumber: "2208",
+        flavorName: "Battle of Olympus",
+      }),
+    ]);
+    expect(agg.printings[0].flavorName).toBe("Battle of Olympus");
+  });
+  it("leaves flavorName null on an ordinary printing", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21", collectorNumber: "177" }),
+    ]);
+    expect(agg.printings[0].flavorName).toBeNull();
   });
 });
 

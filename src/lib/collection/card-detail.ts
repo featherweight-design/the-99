@@ -38,6 +38,7 @@ export type CatalogPrintingRow = {
   collectorNumber: string;
   releasedAt: string | null;
   imageUri: string | null;
+  flavorName: string | null;
 };
 
 /**
@@ -67,6 +68,7 @@ export function catalogCard(
           representativeImageUri: null,
           cardImageUri: card.imageUri,
         }),
+        flavorName: p.flavorName,
       } satisfies BrowsePrinting,
     }))
     .sort((a, b) => comparePrintings(a.printing, b.printing));
@@ -174,6 +176,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       collectorNumber: printings.collectorNumber,
       releasedAt: sets.releasedAt,
       imageUri: printings.imageUri,
+      flavorName: printings.flavorName,
     })
     .from(printings)
     // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.

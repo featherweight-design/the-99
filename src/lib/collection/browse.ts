@@ -28,6 +28,13 @@ export type BrowsePrinting = {
    */
   finishes: Partial<Record<Finish, number>>;
   imageUri: string | null;
+  /**
+   * The name printed on THIS printing when it differs from the oracle card's —
+   * `printings.flavor_name`, populated for Secret Lair and similar renames
+   * (#467). Null on the overwhelming majority of printings, which print the
+   * oracle name.
+   */
+  flavorName: string | null;
 };
 
 export type Finish = "nonfoil" | "foil" | "etched";
@@ -206,6 +213,8 @@ export type RawCollectionRow = {
   representativeImageUri: string | null;
   /** Tier 3 — the oracle-level catalog image, i.e. today's behavior. */
   cardImageUri: string | null;
+  /** From the exact printing owned — `printings.flavor_name`, or null. */
+  flavorName: string | null;
 };
 
 /**
@@ -274,6 +283,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       quantity: r.quantity,
       finishes: { [r.finish]: r.quantity },
       imageUri: resolveImageUri(r),
+      flavorName: r.flavorName,
     };
     const existing = byOracle.get(r.oracleId);
     if (existing) {
@@ -315,6 +325,10 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       seen.quantity += r.quantity;
       seen.finishes[r.finish] = (seen.finishes[r.finish] ?? 0) + r.quantity;
       seen.imageUri ??= printing.imageUri;
+      // Both finishes of one printing ARE one printing, so this can only ever
+      // coalesce a null onto the same value — belt and braces, in the spirit of
+      // the image line above.
+      seen.flavorName ??= printing.flavorName;
     } else {
       printings.set(printingKey, printing);
     }
@@ -502,6 +516,10 @@ export async function selectCollectionRows(
       layout: cards.layout,
       backImageUri: cards.backImageUri,
       exactImageUri: exact.imageUri,
+      // The `exact` alias is the printing joined on `collection_items.scryfall_id`
+      // — the printing the player physically owns, and the only one whose printed
+      // name is theirs to show.
+      flavorName: exact.flavorName,
       representativeImageUri: representative.imageUri,
       cardImageUri: cards.imageUri,
     })

@@ -35,6 +35,7 @@ const delver: BrowseCard = {
   printings: [{
     setCode: "ISD", setName: "Innistrad", collectorNumber: "51",
     releasedAt: "2011-09-30", quantity: 1, finishes: { nonfoil: 1 }, imageUri: FRONT,
+    flavorName: null,
   }],
   setCodes: ["ISD"],
   primarySetCode: "ISD",

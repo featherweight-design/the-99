@@ -121,6 +121,10 @@ export function PrintingRegion({
       quantity: 0,
       finishes: {},
       imageUri: null,
+      // A printing no longer owned is named by the preference alone, which stores
+      // set and collector number and nothing else — there is no printings row in
+      // hand to have printed a name of its own.
+      flavorName: null,
       dormant: true,
     };
   }, [preferred, printings]);

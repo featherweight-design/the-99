@@ -257,6 +257,7 @@ describe("CardModal mobile art header", () => {
         quantity: 1,
         finishes: { nonfoil: 1 },
         imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+        flavorName: null,
       },
     ],
   };
@@ -289,6 +290,7 @@ describe("CardModal printing picker scope", () => {
     quantity: 0,
     finishes: {},
     imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+    flavorName: null,
   });
 
   it("offers no picker for a card the user owns none of", () => {
