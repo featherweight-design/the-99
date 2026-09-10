@@ -217,7 +217,10 @@ async function walkConfirm(page, w) {
   await trigger.click();
   await page.waitForTimeout(200);
   await page.getByRole("button", { name: "Keep them" }).click();
-  await page.waitForTimeout(2500);
+  // Waited on the trigger's own removal rather than on a fixed sleep: the keep
+  // is a server action, and how long it takes is the network's business. A
+  // sleep long enough today is a flake on a slower run.
+  await trigger.waitFor({ state: "detached", timeout: 20_000 }).catch(() => {});
   check("the keep takes both controls away", (await trigger.count()) === 0 && (await sweep.count()) === 0);
   // The kept note is desktop-only: the toolbar has no room for it at 390px,
   // and that stays true after a keep.
@@ -241,9 +244,13 @@ async function walkConfirm(page, w) {
 const kept = await autoOracleIds();
 console.log(`[fixture] deck ${DECK} · ${kept.length} auto rows`);
 
-const browser = await clerkSetup().then(() => chromium.launch());
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+let browser;
 try {
+  // Inside the try with the walk itself: a Clerk or Chromium failure is as
+  // fatal to the run as a missing control, and reporting it the same way keeps
+  // one exit path and one summary.
+  browser = await clerkSetup().then(() => chromium.launch());
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   await signIn(page);
   await walkList(page, "desktop");
   await walkConfirm(page, "desktop");
@@ -264,7 +271,7 @@ try {
   console.log(`FAIL  the walk threw — ${error?.message ?? error}`);
 } finally {
   await restoreAuto(kept);
-  await browser.close();
+  await browser?.close();
 }
 
 console.log(`\nshots:\n${shots.join("\n")}`);
