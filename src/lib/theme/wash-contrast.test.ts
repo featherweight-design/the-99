@@ -7,6 +7,7 @@ import {
   bottomScrimStops,
   COVER_ART_OPACITY,
   COVER_SCRIM_STOPS,
+  OVER_ART_PLATE,
   PORTRAIT_BANDS,
   PORTRAIT_RATIO,
   type ScrimStops,
@@ -134,6 +135,11 @@ const PORTRAIT_INK: readonly {
   y: number;
   /** An opaque-ish plate the surface paints between the wash and its own ink. */
   plate?: number;
+  /** The ink tokens this surface actually prints. Defaults to a row's pair. A
+      chip that draws one token is measured on that one: asserting a token it
+      never uses would set a floor nothing on the band has to clear, and the
+      first honest tuning pass would have to argue its way past it. */
+  tokens?: readonly string[];
 }[] = [
   // Desktop: the name starts at 70px, its block top 81px down the band and its
   // foot 24px off the band's own. Phone: the name starts at 39px and its block
@@ -144,11 +150,27 @@ const PORTRAIT_INK: readonly {
   // The resume row's type starts at the 116px inset, past the 99px portrait but
   // short of the 138px flat stop, so the ambient crop is still under it.
   { surface: "resume row", band: 72, x: 116, y: 0 },
-  // The deck spine's view-card pill: 16px in, 14px off the foot, 26px tall, and
-  // the one thing on that band whose ink sits over the crop. It plates itself in
-  // `--bg` at 55% first, which is why it survives a ramp half the 148's weight.
-  { surface: "deck spine pill, top", band: 168, x: 16, y: 76, plate: 0.55 },
-  { surface: "deck spine pill, foot", band: 168, x: 120, y: 92, plate: 0.55 },
+  // The deck spine's `⛶ Card details` pill: 16px in, 14px off the foot, 26px
+  // tall, and the one thing on that band whose ink sits over the crop. Its band
+  // no longer draws a vertical ramp at all — the pill's own plate is what holds
+  // it up, which is why `verticalAlphaAt` returns 0 here and these still pass.
+  // Both its spans are `--fg`.
+  {
+    surface: "deck spine pill, top",
+    band: 168,
+    x: 16,
+    y: 76,
+    plate: OVER_ART_PLATE / 100,
+    tokens: ["fg"],
+  },
+  {
+    surface: "deck spine pill, foot",
+    band: 168,
+    x: 120,
+    y: 92,
+    plate: OVER_ART_PLATE / 100,
+    tokens: ["fg"],
+  },
 ];
 
 const verticalAlphaAt = (band: Band, y: number): number => {
@@ -183,19 +205,36 @@ describe("art wash contrast floor", () => {
     });
 
     for (const [surface, labelAt] of BOTTOM_SURFACES) {
-      it(`${theme}: bottom-ramp ink clears 4.5:1 at ${surface}'s label edge`, () => {
-        const ground = washGround(token(theme, "bg"), alphaAt(bottomScrimStops(labelAt), labelAt));
-        expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
-        expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
-      });
+      // Both edges of the block, as everywhere else: the ramp holds one value
+      // from `labelAt` to the band's foot precisely so the two agree, and it is
+      // that hold — not a second climb to 88% — that the sample at 100 proves.
+      for (const [edge, y] of [
+        ["top", labelAt],
+        ["foot", 100],
+      ] as const) {
+        it(`${theme}: bottom-ramp ink clears 4.5:1 at ${surface}'s label ${edge}`, () => {
+          const ground = washGround(token(theme, "bg"), alphaAt(bottomScrimStops(labelAt), y));
+          expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
+          expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
+        });
+      }
     }
+
+    // The `⛶ Card details` chip is the one control that prints where a bottom
+    // ramp is clear, so its plate is measured with no scrim under it at all.
+    // This is the assertion that lets the top of that ramp run at zero.
+    it(`${theme}: the over-art chip's plate clears 4.5:1 with no scrim beneath it`, () => {
+      const ground = over(token(theme, "bg"), washGround(token(theme, "bg"), 0), OVER_ART_PLATE / 100);
+      expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
+    });
 
     for (const ink of PORTRAIT_INK) {
       it(`${theme}: ${ink.surface} clears 4.5:1 over the brightest possible portrait`, () => {
         const vertical = verticalAlphaAt(ink.band, ink.y);
         const ground = portraitGround(theme, ink.band, ink.x, vertical, ink.plate ?? 0);
-        expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
-        expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
+        for (const name of ink.tokens ?? ["fg", "fg-body"]) {
+          expect(contrast(token(theme, name), ground)).toBeGreaterThanOrEqual(4.5);
+        }
       });
     }
 
