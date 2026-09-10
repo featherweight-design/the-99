@@ -84,6 +84,10 @@ export function catalogCard(
     rarity: coerceRarity(card.rarity),
     colorIdentity: card.colorIdentity,
     imageUri: card.imageUri,
+    // Locked decision 2: a card the player does not own keeps its oracle name.
+    // There is no printing in hand to print one, and choosing among the
+    // catalog's printings would assert a copy they do not have.
+    printedName: null,
     layout: card.layout,
     backImageUri: card.backImageUri,
     quantity: 0,

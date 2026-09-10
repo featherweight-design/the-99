@@ -16,6 +16,7 @@ const card: BrowseListCard = {
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: null,
+  printedName: null,
   quantity: 1,
   setCounts: [],
   setCodes: ["RVR"],

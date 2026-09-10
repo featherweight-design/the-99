@@ -15,6 +15,7 @@ const ATRAXA: BrowseCard = {
   rarity: "mythic",
   colorIdentity: ["W", "U", "B", "G"],
   imageUri: null,
+  printedName: null,
   quantity: 0,
   printings: [],
   setCodes: [],

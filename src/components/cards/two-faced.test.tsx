@@ -29,6 +29,7 @@ const delver: BrowseCard = {
   rarity: "common",
   colorIdentity: ["U"],
   imageUri: FRONT,
+  printedName: null,
   quantity: 1,
   // The front art resolves through the printing, which is the whole point of the
   // back's known limitation: the back has no per-printing form to resolve through.

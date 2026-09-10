@@ -11,6 +11,7 @@ const card = (over: Partial<BrowseListCard> = {}): BrowseListCard => ({
   rarity: "rare",
   colorIdentity: [],
   imageUri: null,
+  printedName: null,
   quantity: 1,
   setCounts: [["BLB", 1]],
   setCodes: ["BLB"],

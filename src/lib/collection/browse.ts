@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
 import { availabilityState, type Availability, type AvailabilityState } from "../decks/availability";
+import { faceNames } from "../cards/faces";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -53,6 +54,16 @@ export type BrowseCard = {
   colorIdentity: string[];
   /** The primary printing's image — first non-null across printings in display order. */
   imageUri: string | null;
+  /**
+   * The name printed on the resolved printing, when it differs from the oracle
+   * name — otherwise null. Derived from the SAME `primaryPrinting()` call that
+   * resolves `imageUri`, because a name that disagrees with the art on screen
+   * is the failure this field exists to prevent.
+   *
+   * Null is the overwhelmingly common case and means "call this card by its
+   * oracle name". Use `printedNameOf()` rather than testing this at each site.
+   */
+  printedName: string | null;
   /**
    * Scryfall's layout word and, for the layouts that have one, the back face's
    * art (#363). Optional rather than `| null` required for the reason
@@ -300,6 +311,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         rarity: coerceRarity(r.rarity),
         colorIdentity: r.colorIdentity,
         imageUri: null,
+        printedName: null,
         layout: r.layout,
         backImageUri: r.backImageUri,
         quantity: r.quantity,
@@ -342,6 +354,13 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
     if (primary) {
       card.primarySetCode = primary.setCode;
       card.imageUri = primary.imageUri;
+      // Exact equality, verbatim, per spec: a printing whose flavor name IS the
+      // oracle name has not renamed anything, and normalising would silently
+      // change which cards count as renamed.
+      card.printedName =
+        primary.flavorName !== null && primary.flavorName !== card.name
+          ? primary.flavorName
+          : null;
     }
   }
   return [...byOracle.values()];
@@ -383,6 +402,32 @@ function primaryPrinting(
  */
 export function resolvedPrinting(card: BrowseCard): BrowsePrinting | undefined {
   return primaryPrinting(card.printings, card.preferredPrinting);
+}
+
+/**
+ * The name to show a player looking at their own copy: the printing's own name
+ * where it has one, the oracle name otherwise. One place, so no surface has to
+ * remember which way round the fallback goes.
+ */
+export function printedNameOf(card: Pick<BrowseCard, "name" | "printedName">): string {
+  return card.printedName ?? card.name;
+}
+
+/**
+ * The same name, cut to its front face — what a row or a tile shows.
+ *
+ * Scryfall's `flavor_name` is one string per printing and joins a two-faced
+ * card's halves with ` // `, exactly as `cards.name` does, so a renamed modal
+ * card arrives here as `Battle of Olympus // Aftermath`. A 93px tile caption
+ * cannot hold that and locked decision 3 forbids the second line, so rows and
+ * tiles take the front half and the modal keeps the whole string.
+ *
+ * The split is applied ONLY to a printed name. A card with none is returned
+ * byte-identically, `//` and all: today's rows print the full oracle string and
+ * the control state must not move.
+ */
+export function printedFaceName(card: Pick<BrowseCard, "name" | "printedName">): string {
+  return card.printedName ? faceNames(card.printedName).front : card.name;
 }
 
 /**

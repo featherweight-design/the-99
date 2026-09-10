@@ -15,6 +15,7 @@ const card = (oracleId: string, name: string): BrowseCard => ({
   rarity: "common",
   colorIdentity: [],
   imageUri: null,
+  printedName: null,
   quantity: 0,
   printings: [],
   setCodes: [],

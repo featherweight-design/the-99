@@ -4,6 +4,8 @@ import {
   cssUrl,
   filterCards,
   formatLastUpdated,
+  printedFaceName,
+  printedNameOf,
   printingCaption,
   resolveImageUri,
   sortCards,
@@ -29,6 +31,7 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   rarity: "uncommon",
   colorIdentity: [],
   imageUri: null,
+  printedName: null,
   quantity: 1,
   printings: [printing()],
   setCodes: ["C21"],
@@ -175,6 +178,66 @@ describe("aggregateCollection", () => {
       raw({ oracleId: "o1", name: "Cultivate", setCode: "m21", collectorNumber: "177" }),
     ]);
     expect(agg.printings[0].flavorName).toBeNull();
+  });
+});
+
+describe("printedName", () => {
+  it("is the resolved printing's flavor name when it differs from the oracle name", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "World at War", setCode: "sld",
+            collectorNumber: "2208", flavorName: "Battle of Olympus" }),
+    ]);
+    expect(agg.printedName).toBe("Battle of Olympus");
+    expect(printedNameOf(agg)).toBe("Battle of Olympus");
+  });
+
+  it("is null when the printing prints the oracle name", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21", collectorNumber: "177" }),
+    ]);
+    expect(agg.printedName).toBeNull();
+    expect(printedNameOf(agg)).toBe("Cultivate");
+  });
+
+  it("is null when the flavor name equals the oracle name exactly", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21",
+            collectorNumber: "177", flavorName: "Cultivate" }),
+    ]);
+    expect(agg.printedName).toBeNull();
+  });
+
+  it("compares exactly — a case difference is a different name", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21",
+            collectorNumber: "177", flavorName: "CULTIVATE" }),
+    ]);
+    expect(agg.printedName).toBe("CULTIVATE");
+  });
+
+  it("follows the art preference, not the first printing owned", () => {
+    // The preference is oracle-level, so the real query repeats it on every row.
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "World at War", setCode: "m21",
+            collectorNumber: "177", flavorName: null,
+            preferredSetCode: "sld", preferredCollectorNumber: "2208" }),
+      raw({ oracleId: "o1", name: "World at War", setCode: "sld",
+            collectorNumber: "2208", flavorName: "Battle of Olympus",
+            preferredSetCode: "sld", preferredCollectorNumber: "2208" }),
+    ]);
+    expect(agg.printedName).toBe("Battle of Olympus");
+  });
+
+  it("shows a renamed two-faced card's front face on a row, and the whole string in full", () => {
+    const twoFaced = { name: "Delver of Secrets // Insectile Aberration",
+                       printedName: "Battle of Olympus // Aftermath" };
+    expect(printedFaceName(twoFaced)).toBe("Battle of Olympus");
+    expect(printedNameOf(twoFaced)).toBe("Battle of Olympus // Aftermath");
+  });
+
+  it("leaves an unrenamed two-faced card's row string exactly as it is today", () => {
+    const twoFaced = { name: "Delver of Secrets // Insectile Aberration", printedName: null };
+    expect(printedFaceName(twoFaced)).toBe("Delver of Secrets // Insectile Aberration");
   });
 });
 
