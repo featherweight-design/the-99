@@ -127,6 +127,20 @@ describe("useTopOffDraft", () => {
     expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
   });
 
+  // A null key is storage being cleared wholesale rather than one key moving,
+  // so it has to reach every subscriber — the shared listener dispatches by
+  // key, and this is the one event that names none.
+  it("settles when another tab clears storage outright", () => {
+    localStorage.setItem(KEY, '{"t":["sol-ring"],"d":[]}');
+    const { result } = renderHook(() => useTopOffDraft(DECK));
+    expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+    act(() => {
+      localStorage.removeItem(KEY);
+      window.dispatchEvent(new StorageEvent("storage", { key: null }));
+    });
+    expect(result.current.restored).toBe(false);
+  });
+
   it("ignores another deck's cross-tab write", () => {
     const other = topOffDraftKey("some-other-deck");
     const { result } = renderHook(() => useTopOffDraft(DECK));

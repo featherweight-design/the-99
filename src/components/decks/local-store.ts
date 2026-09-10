@@ -24,22 +24,36 @@ const listeners = new Map<string, Set<() => void>>();
 // survive the tab, which is where it stood before any of this existed.
 const sessionValues = new Map<string, string>();
 
+// Cross-tab: acting in one tab should settle the other. One listener for the
+// whole map rather than one per subscriber — the event is global, so a
+// per-subscriber handler would wake every one of them for every write and then
+// have each decide the same thing. A null key is storage being cleared
+// wholesale, which is every key at once.
+function onStorage(event: StorageEvent) {
+  if (event.key === null) {
+    for (const forKey of listeners.values()) for (const listener of forKey) listener();
+    return;
+  }
+  for (const listener of listeners.get(event.key) ?? []) listener();
+}
+
+// Attached on the first subscription rather than at import: this module is a
+// client module, but Next still runs it on the server to render, and there is
+// no window there. Never detached: it is one listener for the life of the
+// document, and the map it dispatches through is what empties.
+let attached = false;
+
 export function subscribeToKey(key: string, onStoreChange: () => void): () => void {
   const forKey = listeners.get(key) ?? new Set<() => void>();
   forKey.add(onStoreChange);
   listeners.set(key, forKey);
-  // Cross-tab: acting in one tab should settle the other. Filtered to this
-  // key — every other deck's write fires the same global event, and an
-  // unfiltered handler would re-render every open builder tab. A null key is
-  // storage being cleared wholesale, which is every key at once.
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === key) onStoreChange();
-  };
-  window.addEventListener("storage", onStorage);
+  if (!attached) {
+    attached = true;
+    window.addEventListener("storage", onStorage);
+  }
   return () => {
     forKey.delete(onStoreChange);
     if (forKey.size === 0) listeners.delete(key);
-    window.removeEventListener("storage", onStorage);
   };
 }
 
