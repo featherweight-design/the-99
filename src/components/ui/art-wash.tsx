@@ -28,9 +28,10 @@ export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
 /** The bottom ramp is derived from where the label block starts rather than
     read from a constant. A shared stop is a guess about a band whose height
     comes from an `aspect-ratio` and whose block position comes from its own
-    content: the commander hero's block starts at 68.1% of the band and the deck
-    spine's at 66%, so any single number is late for one of them — and late means
-    ink printed on a ramp that has not reached its dark value yet.
+    content: at its tallest the commander hero's block starts at 55% of the band
+    and the deck spine's at 57%, and each rises by ten points or so when its
+    title fits on one line, so any single number is late for one of them — and
+    late means ink printed on a ramp that has not reached its dark value yet.
 
     `labelAt` is the block's top edge as a percentage of band height. The trough
     sits at 48% of it, so it stays in the picture's middle whatever `labelAt` is
