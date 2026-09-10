@@ -31,9 +31,15 @@ const sessionValues = new Map<string, string>();
 // wholesale, which is every key at once.
 function onStorage(event: StorageEvent) {
   if (event.key === null) {
+    sessionValues.clear();
     for (const forKey of listeners.values()) for (const listener of forKey) listener();
     return;
   }
+  // The session fallback holds what storage would not take from *this* tab. A
+  // storage event is another tab writing the same key and being taken, so the
+  // held value is now the older of the two — and readRaw prefers it, which
+  // would leave this tab woken and still reading its own refused write.
+  sessionValues.delete(event.key);
   for (const listener of listeners.get(event.key) ?? []) listener();
 }
 

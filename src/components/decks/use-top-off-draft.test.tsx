@@ -127,6 +127,28 @@ describe("useTopOffDraft", () => {
     expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
   });
 
+  // A tab whose own write was refused holds it for the session, and that held
+  // value is preferred over storage. Once another tab writes the same key and
+  // is taken, the held value is the older of the two — so the event has to
+  // retire it, or this tab is woken and reads its own refused write back.
+  it("settles on another tab's write even after its own was refused", () => {
+    const deck = "deck-whose-write-was-refused";
+    const key = topOffDraftKey(deck);
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    const { result } = renderHook(() => useTopOffDraft(deck));
+    act(() => result.current.setTicked(new Set(["sol-ring"])));
+    expect(result.current.ticked).toEqual(new Set(["sol-ring"]));
+
+    setItem.mockRestore();
+    act(() => {
+      localStorage.setItem(key, '{"t":["mana-crypt"],"d":[]}');
+      window.dispatchEvent(new StorageEvent("storage", { key }));
+    });
+    expect(result.current.ticked).toEqual(new Set(["mana-crypt"]));
+  });
+
   // A null key is storage being cleared wholesale rather than one key moving,
   // so it has to reach every subscriber — the shared listener dispatches by
   // key, and this is the one event that names none.
