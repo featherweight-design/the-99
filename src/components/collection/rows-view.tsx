@@ -6,7 +6,7 @@
 // Rarity dot colors per §Rarity Dot Colors.
 
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { printedFaceName, printedNameOf, WUBRG_COLOR } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
@@ -55,8 +55,11 @@ export function RowsView({
           // have nothing to hand focus back to on close.
           aria-busy={pending}
           style={pending ? { opacity: 0.55 } : undefined}
+          // The FULL printed name, both faces of a two-faced card included — the
+          // visible caption below is the front face and may clip, and this is a
+          // real button, so the whole string is spoken here.
           aria-label={availabilityCopy.collection.rowAria(
-            c.name,
+            printedNameOf(c),
             c.typeLine,
             c.quantity,
             `${c.primarySetCode}, ${c.rarity}`,
@@ -83,16 +86,18 @@ export function RowsView({
                 marker inline after the name, inside the existing 1fr cell, so
                 neither grid template changes. */}
             <span className="flex items-center gap-[7px] md:gap-[9px] min-w-0">
-              {/* §Row: Card Name — 14/15px 600, --fg, ellipsis */}
-              {/* Row 13.2 wants the full name in the title as well as the
-                  accessible name. It matters more now than it did: the marker
-                  shares this cell, so the name truncates sooner. */}
+              {/* §Row: Card Name — 14/15px 600, --fg, ellipsis. The name printed
+                  on the copy the player owns, front face only, single line.
+                  The `title` that used to carry the full string is gone: it is
+                  pointer-only recovery on a phone-first surface, and it would
+                  hover a stale oracle name over a printed one. The whole string
+                  rides the row button's own `aria-label` above — a real control
+                  — and the modal is the recovery path for the clip. */}
               <span
-                title={c.name}
                 className="truncate min-w-0 text-[14px] md:text-[15px] font-semibold"
                 style={{ color: "var(--fg)" }}
               >
-                {c.name}
+                {printedFaceName(c)}
               </span>
               {c.availability && (
                 // `nameless` — /collection is the count-only vantage. No

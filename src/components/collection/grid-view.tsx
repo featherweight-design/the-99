@@ -4,7 +4,7 @@
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { cssUrl } from "../../lib/collection/browse";
+import { cssUrl, printedFaceName } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -84,9 +84,14 @@ export function GridView({
 
           {/* Caption — §Grid Tile: Caption Area */}
           <div className="px-[9px] md:px-[15px] py-[7px] md:py-[13px] pb-[9px] md:pb-[15px]">
-            {/* Name — 12/13px 600, ellipsis */}
+            {/* Name — 12/13px 600, ellipsis. The name printed on the copy the
+                player owns, front face only, single line and never clamped: a
+                two-line caption makes tile height data-dependent and costs the
+                grid its equal-height read. This surface carries no `//` mark
+                (spec errata 3) — the set code below is the fact that explains
+                the name. */}
             <div className="truncate text-[12px] md:text-[13px] font-semibold" style={{ color: "var(--fg)" }}>
-              {c.name}
+              {printedFaceName(c)}
             </div>
             {/* Set/rarity caption — mono 9.5/10px, --fg-faint */}
             <div className="font-mono text-[9.5px] md:text-[10px] mt-[2px] md:mt-[3px]" style={{ color: "var(--fg-faint)" }}>

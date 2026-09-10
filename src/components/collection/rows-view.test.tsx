@@ -152,3 +152,29 @@ describe("RowsView colour pips", () => {
     }
   });
 });
+
+// The printed name (#467 follow-on). The full string rides the row button's own
+// `aria-label`, which is a real control; the visible caption is the front face
+// and may clip, and the modal one tap away is the recovery path.
+describe("RowsView printed name", () => {
+  it("names the row by the printing the player owns", () => {
+    renderRows({ ...card, name: "World at War", printedName: "Battle of Olympus" });
+    expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
+    expect(screen.queryByText("World at War")).not.toBeInTheDocument();
+  });
+
+  it("carries the full printed name on the button, and never a title", () => {
+    const { container } = renderRows({
+      ...card,
+      name: "World at War",
+      printedName: "Battle of Olympus",
+    });
+    expect(screen.getByRole("button", { name: /Battle of Olympus/ })).toBeInTheDocument();
+    expect(container.querySelector("[title]")).toBeNull();
+  });
+
+  it("leaves an ordinary card on its oracle name, byte for byte", () => {
+    renderRows({ ...card, name: "Fire // Ice", printedName: null });
+    expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
+  });
+});

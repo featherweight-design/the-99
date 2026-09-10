@@ -90,3 +90,18 @@ describe("GridView availability chip", () => {
     expect(screen.getByText("RVR · rare")).toBeInTheDocument();
   });
 });
+
+// The printed name (#467 follow-on). `/collection` lists only what the player
+// owns, so the unowned fallback cannot occur on this surface by construction.
+describe("GridView printed name", () => {
+  it("captions a tile with the name printed on the copy the player owns", () => {
+    renderTiles({ ...card, name: "World at War", printedName: "Battle of Olympus" });
+    expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
+    expect(screen.queryByText("World at War")).not.toBeInTheDocument();
+  });
+
+  it("leaves an ordinary card on its oracle name, byte for byte", () => {
+    renderTiles({ ...card, name: "Fire // Ice", printedName: null });
+    expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
+  });
+});
