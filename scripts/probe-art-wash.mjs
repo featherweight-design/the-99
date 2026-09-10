@@ -114,6 +114,29 @@ const READ_148_SCRIMS = `() => {
     for stops that survive in sRGB. */
 const CLEAR_STOPS = /\/\s*0\)\s*\S+,\s*\S+\(\s*[^)]*\/\s*0\)/;
 
+/** A cover scrim's stops, as `{ alpha, position }`, read off the computed value.
+    An omitted `/ alpha` is alpha 1 — the browser drops it, exactly as it drops a
+    gradient's default 180deg. */
+const READ_COVER_STOPS = `(edge) => {
+  // Laid-out bands only. The commander detail hero's band is wrapped in
+  // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
+  // selector while drawing nothing — counting it would report a phone-only
+  // treatment as shipping on both widths.
+  return [...document.querySelectorAll('.art-wash-scrim-cover-' + edge)]
+    .filter((s) => s.getClientRects().length)
+    .map((s) => {
+      const image = getComputedStyle(s).backgroundImage;
+      const stops = image.match(/[a-z-]+\\([^()]*\\)\\s+[\\d.]+%/g) ?? [];
+      return stops.map((stop) => {
+        const alpha = stop.match(/\\/\\s*([\\d.]+)\\)/);
+        return {
+          alpha: alpha ? Number(alpha[1]) : 1,
+          position: Number(stop.match(/([\\d.]+)%$/)[1]),
+        };
+      });
+    });
+}`;
+
 // The scrims outlive the art under `forced-colors`, so they are what proves the
 // band kept its height when the photograph left.
 const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
@@ -176,6 +199,21 @@ try {
         if (g.opacity !== 1) note(`  FAIL identity gradient at opacity ${g.opacity}, expected 1`);
         if (g.reducedVar !== "1") note(`  FAIL gradient reduced var ${g.reducedVar}, expected 1`);
       }
+
+      // This round's cover ruling: a top-labelled band holds one thin value from
+      // the trough to the foot instead of climbing back to 50%. Every chip down
+      // there — the deck tile's status pill, the ready-to-build fit chip — is
+      // opaque on its own, so that climb was washing the crop for nothing. A
+      // rising final stop is the lift reverting.
+      const tops = await page.evaluate(`(${READ_COVER_STOPS})("top")`);
+      for (const stops of tops) {
+        const [last, prior] = [stops.at(-1), stops.at(-2)];
+        if (!last || !prior) {
+          note(`  FAIL top cover scrim computed ${stops.length} stops, expected 4`);
+        } else if (last.alpha > prior.alpha + 0.001) {
+          note(`  FAIL top cover scrim climbs at the foot: ${prior.alpha} to ${last.alpha}`);
+        }
+      }
     }
 
     // Ratification 2 — the 148 band's vertical damping, at this viewport. This
@@ -200,6 +238,41 @@ try {
       if (horizontals.length !== 1) note(`  FAIL expected exactly one horizontal scrim to paint`);
       else if (!CLEAR_STOPS.test(horizontals[0].image)) {
         note(`  FAIL horizontal scrim washes the portrait: ${horizontals[0].image.slice(0, 120)}`);
+      }
+    }
+
+    // Ratification 3 — the bottom-labelled cover ramp, on the commander page the
+    // phone draws it for. The band's top runs clear: the only control up there
+    // plates itself to `OVER_ART_PLATE`, so a non-zero alpha in the first two
+    // stops is the veil this round removed coming back. The link is read off the
+    // list rather than written down, so no slug is hard-coded here.
+    const slug = await page.evaluate(
+      `document.querySelector('a[href^="/commanders/"]')?.getAttribute('href') ?? null`,
+    );
+    if (!slug) {
+      note(`  FAIL no commander link on /commanders to follow`);
+    } else {
+      await page.goto(`${BASE}${slug}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-detail.png`, fullPage: false });
+      const bottoms = await page.evaluate(`(${READ_COVER_STOPS})("bottom")`);
+      // Desktop draws no bottom-labelled band at all — the treatment is the
+      // phone's — so an empty list is the desktop answer, not a silent pass.
+      note(`${vpName} ${slug}: ${bottoms.length} bottom-labelled cover bands`);
+      if (vpName === "mobile" && bottoms.length !== 1) {
+        note(`  FAIL expected exactly one bottom-labelled band on the phone`);
+      }
+      if (vpName === "desktop" && bottoms.length !== 0) {
+        note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
+      }
+      for (const stops of bottoms) {
+        const clear = stops.slice(0, 2).every((s) => s.alpha === 0);
+        if (!clear) {
+          note(`  FAIL bottom cover scrim veils its top: ${JSON.stringify(stops.slice(0, 2))}`);
+        }
+        if (stops.at(-1)?.alpha !== stops.at(-2)?.alpha) {
+          note(`  FAIL bottom cover scrim does not hold to the foot: ${JSON.stringify(stops.slice(-2))}`);
+        }
       }
     }
 

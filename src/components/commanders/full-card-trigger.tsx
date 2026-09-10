@@ -51,7 +51,14 @@ export function FullCardTrigger({
       <button
         type="button"
         // brand focus-visible outline treatment inherited from globals.css
-        className="absolute inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] border border-[color:color-mix(in_oklab,var(--fg)_18%,transparent)]"
+        // The chip carries its own legibility. Every band it sits on leaves the
+        // crop clear where it lands, so the plate is what `--fg` needs over the
+        // brightest pixel the art can put behind it rather than a value that
+        // assumed a scrim underneath. The percentage is written out because
+        // Tailwind cannot compile an interpolated class; `OVER_ART_PLATE` is
+        // what the contrast suite measures, and the test below asserts the two
+        // still agree.
+        className="absolute inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] border border-[color:color-mix(in_oklab,var(--fg)_18%,transparent)]"
         style={{
           ...PLACEMENT[placement],
           gap: 6,

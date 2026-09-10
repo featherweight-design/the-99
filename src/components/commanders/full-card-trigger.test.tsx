@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+import { OVER_ART_PLATE } from "../ui/art-wash";
 import { FullCardTrigger } from "./full-card-trigger";
 
 const ATRAXA: BrowseCard = {
@@ -126,5 +127,16 @@ describe("FullCardTrigger placement", () => {
     const pill = screen.getByRole("button", { name: "View card details" });
     expect(pill.style.top).toBe("13px");
     expect(pill.style.right).toBe("16px");
+  });
+
+  // The plate has to be written out as a literal class — Tailwind compiles no
+  // interpolated one — while the contrast suite measures the exported number.
+  // This is the only thing keeping the two from drifting, and the drift matters:
+  // every band this chip sits on now runs clear where it lands, so a plate below
+  // `OVER_ART_PLATE` is a label on bare art rather than a slightly lighter chip.
+  it("plates itself at the alpha the contrast suite measures", () => {
+    mount(<FullCardTrigger oracleId="o-atraxa" />);
+    const pill = screen.getByRole("button", { name: "View card details" });
+    expect(pill.className).toContain(`var(--bg)_${OVER_ART_PLATE}%`);
   });
 });

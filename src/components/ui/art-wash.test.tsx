@@ -221,17 +221,15 @@ describe("left-portrait, band 168", () => {
   });
 
   // The spine's title starts at a 254px inset, past this band's 240px flat stop,
-  // so the only ink the ramp protects is the view-card pill at the bottom-left —
-  // and the pill plates itself first. Half the 148 row's weight, and clear over
-  // the top three-fifths, where nothing is printed at all.
-  it("damps only the foot, where the view-card pill sits", () => {
+  // and the `⛶ Card details` pill at the bottom-left plates itself to
+  // `OVER_ART_PLATE`. Nothing on the band needs a vertical ramp, so it draws one
+  // scrim and no more — a second layer here damped the crop across the whole
+  // band's width for one 26px control.
+  it("draws no vertical ramp: nothing on this band stands on one", () => {
     const { container } = render(
       <ArtWash strategy="left-portrait" band={168} artCropUri="/a.jpg" colorIdentity={["G"]} />,
     );
-    const vertical = container.querySelectorAll<HTMLElement>(".art-wash-scrim")[1];
-    expect(vertical.style.background).toContain("180deg");
-    expect(vertical.style.background).toContain("var(--bg) 0%, transparent) 60%");
-    expect(vertical.style.background).toContain("var(--bg) 50%, transparent) 72%");
+    expect(container.querySelectorAll(".art-wash-scrim")).toHaveLength(1);
   });
 });
 
@@ -258,8 +256,21 @@ describe("cover, label edge", () => {
       />,
     );
     const scrim = container.querySelector<HTMLElement>(".art-wash-scrim-cover");
-    expect(scrim?.style.background).toContain("var(--bg) 44%, transparent) 0%");
-    expect(scrim?.style.background).toContain("var(--bg) 88%, transparent) 100%");
+    // Clear at the top — the only thing up there is a chip that plates itself —
+    // and one held value from the block to the band's foot.
+    expect(scrim?.style.background).toContain("var(--bg) 0%, transparent) 0%");
+    expect(scrim?.style.background).toContain("var(--bg) 73%, transparent) 100%");
+  });
+
+  // The override that re-weights a cover scrim under `prefers-reduced-transparency`
+  // can only be written for one shape, and the two edges put their clear part at
+  // opposite ends. The class is what keeps it off the ramp it does not describe.
+  it("names its label edge in the class, not only in the stops", () => {
+    const { container } = render(
+      <ArtWash strategy="cover" labelEdge="top" artCropUri="/a.jpg" colorIdentity={["G"]} />,
+    );
+    expect(container.querySelector(".art-wash-scrim-cover-top")).not.toBeNull();
+    expect(container.querySelector(".art-wash-scrim-cover-bottom")).toBeNull();
   });
 
   it("puts the bottom ramp's dark value at the label block, wherever it is", () => {
@@ -275,12 +286,13 @@ describe("cover, label edge", () => {
       );
       return container.querySelector<HTMLElement>(".art-wash-scrim-cover")!.style.background;
     };
-    // Two surfaces, two block positions, and the dark stop tracks each — the
-    // shared 50% guess this replaced was late for one of them.
+    // Two surfaces, two block positions, and both the dark stop and the point
+    // the climb starts from track each — the shared 50% guess this replaced was
+    // late for one of them.
     expect(at(55)).toContain("var(--bg) 73%, transparent) 55%");
-    expect(at(55)).toContain("var(--bg) 14%, transparent) 26%");
+    expect(at(55)).toContain("var(--bg) 0%, transparent) 26%");
     expect(at(57)).toContain("var(--bg) 73%, transparent) 57%");
-    expect(at(57)).toContain("var(--bg) 14%, transparent) 27%");
+    expect(at(57)).toContain("var(--bg) 0%, transparent) 27%");
   });
 
   // R6 ruling 1. The plate is a loading device: it is darker than `--bg` so a

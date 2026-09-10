@@ -6,12 +6,19 @@ const tint = (token: string, pct: number) =>
   `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
 
 /** L3, as `[alphaPercent, positionPercent]` pairs. Heavy across the whole label
-    block, thin through the middle. The dark value is *held* to the block's foot
-    rather than ramping away from its first stop: a ramp that starts dark at the
-    title and lightens through the subtitle leaves the subtitle on ground the
-    title never stood on, which is how 3.16:1 shipped. Exported because
-    `wash-contrast.test.ts` derives its contrast floors from these alphas — the
-    two files drifting apart is the failure that test exists to catch. */
+    block, then thin for the rest of the band. The dark value is *held* to the
+    block's foot rather than ramping away from its first stop: a ramp that starts
+    dark at the title and lightens through the subtitle leaves the subtitle on
+    ground the title never stood on, which is how 3.16:1 shipped. Exported
+    because `wash-contrast.test.ts` derives its contrast floors from these alphas
+    — the two files drifting apart is the failure that test exists to catch.
+
+    Below the block the ramp thins and stays thin. It used to climb back to 50%
+    at the band's foot, which washed the crop for nothing: every chip down there
+    — the deck tile's status pill, the ready-to-build card's fit chip — mixes its
+    fill into `--bg` rather than into transparency, so each one is already opaque
+    at the alpha it draws and the scrim was protecting ink that did not need it.
+    The colour pips beside them are `aria-hidden` swatches, not type. */
 export type LabelEdge = "top" | "bottom";
 
 export type ScrimStops = readonly (readonly [number, number])[];
@@ -21,7 +28,7 @@ export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
     [78, 0],
     [78, 31],
     [14, 62],
-    [50, 100],
+    [14, 100],
   ],
 };
 
@@ -33,14 +40,23 @@ export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
     title fits on one line, so any single number is late for one of them — and
     late means ink printed on a ramp that has not reached its dark value yet.
 
-    `labelAt` is the block's top edge as a percentage of band height. The trough
-    sits at 48% of it, so it stays in the picture's middle whatever `labelAt` is
-    instead of being pushed up into the block by a low one. */
+    `labelAt` is the block's top edge as a percentage of band height. Above it
+    the ramp runs at zero alpha and only starts climbing at 48% of it, so the
+    clear part stays in the picture's middle whatever `labelAt` is instead of
+    being pushed up into the block by a low one.
+
+    Nothing above the block is ink on this wash. The identity pips are
+    `aria-hidden` swatches, and the `⛶ Card details` chip plates itself in
+    opaque `--bg` — so the 44% this ramp used to carry at the band's top edge
+    was veiling the one part of the crop `center top` puts the face in. Below
+    the block it holds one value rather than climbing to 88% at the foot: 73%
+    already clears 4.5:1 for `--fg-body` against a pure white pixel, and the
+    band's last row of ink is the subtitle, not its bottom edge. */
 export const bottomScrimStops = (labelAt: number): ScrimStops => [
-  [44, 0],
-  [14, Math.round(labelAt * 0.48)],
+  [0, 0],
+  [0, Math.round(labelAt * 0.48)],
   [73, labelAt],
-  [88, 100],
+  [73, 100],
 ];
 
 const coverScrim = (stops: ScrimStops) =>
@@ -51,6 +67,16 @@ const coverScrim = (stops: ScrimStops) =>
 /** Exported so `wash-contrast.test.ts` measures the opacity that ships rather
     than a copy of it. */
 export const COVER_ART_OPACITY = 0.8;
+
+/** The plate a chip paints between the wash and its own label, as a `color-mix`
+    percentage of `--bg`. A chip is the one thing that prints where the scrim is
+    thin — the `⛶ Card details` pill sits above a bottom label block, where the
+    ramp is now clear — so it carries the whole burden itself and needs no help
+    from the band it sits on. 72% is what `--fg` needs over a pure white pixel at
+    `COVER_ART_OPACITY`; `wash-contrast.test.ts` measures it against all six
+    themes. Below it the chip was relying on a scrim that veiled the crop for
+    every surface, to protect one 26px control. */
+export const OVER_ART_PLATE = 72;
 
 /** L1, the base plate: one step below the page ground, so a slow image never
     flashes light. No token is darker than `--bg` and the handoff forbids adding
@@ -134,15 +160,12 @@ export const PORTRAIT_BANDS: Record<
     clearTo: 134,
     sharpAlpha: 78,
     flatStop: 240,
-    // The spine's title starts at a 254px inset, past the flat stop, so the only
-    // ink this ramp protects is the view-card pill at the band's bottom-left —
-    // 26px tall, 14px off the foot, so its top edge is 76% down.
-    vertical: [
-      [0, 0],
-      [0, 60],
-      [50, 72],
-      [50, 100],
-    ],
+    // No ramp. The spine's title starts at a 254px inset, past the flat stop,
+    // and the only other ink on this band is the `⛶ Card details` pill at the
+    // bottom-left, which now plates itself to `OVER_ART_PLATE` and stands on its
+    // own. A ramp drawn for one 26px control damped the crop under the whole
+    // band's width.
+    vertical: null,
   },
   148: {
     maskEnd: 58,
@@ -282,8 +305,8 @@ export function ArtWash(props: ArtWashProps) {
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden"
       // R6 ruling 1: the plate is a loading device, not a ground. With no art
-      // there is nothing to load, and the scrim's final stop is `var(--bg)` —
-      // plating an artless band would seam it against the surface below.
+      // there is nothing to load, so an artless band grounds in `var(--bg)`
+      // rather than in a darker patch that would seam against the surface below.
       style={{ background: artCropUri ? COVER_PLATE : "var(--bg)" }}
     >
       <div
@@ -298,7 +321,12 @@ export function ArtWash(props: ArtWashProps) {
         }}
       />
       <div
-        className="art-wash-scrim art-wash-scrim-cover absolute inset-0"
+        // The edge is in the class as well as in the stops: the
+        // reduced-transparency override replaces this gradient wholesale, and
+        // one replacement cannot describe both bands — a top-labelled ramp
+        // applied to a bottom-labelled one puts the thin part of the wash
+        // exactly where the block starts.
+        className={`art-wash-scrim art-wash-scrim-cover art-wash-scrim-cover-${props.labelEdge} absolute inset-0`}
         style={{
           background: coverScrim(
             props.labelEdge === "top" ? COVER_SCRIM_STOPS.top : bottomScrimStops(props.labelAt),
