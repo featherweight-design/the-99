@@ -200,10 +200,13 @@ async function walkConfirm(page, w) {
 
   // Both answers point back at the question, so a reader hears what it is
   // answering rather than a bare `Keep them`.
-  const described = await yes.getAttribute("aria-describedby");
-  const question = page.locator(`[id="${described}"]`);
-  const asked = await question.innerText().catch(() => "(absent)");
-  check("the answer points at the question", (await question.count()) === 1, asked.trim());
+  // `aria-describedby` is a token list, not an id. One token is what ships
+  // today, but reading the whole attribute as a single id would turn a second
+  // description added later into a failure of the first.
+  const ids = ((await yes.getAttribute("aria-describedby")) ?? "").split(/\s+/).filter(Boolean);
+  const question = page.locator(ids.map((id) => `[id="${id}"]`).join(",") || "[id='']");
+  const asked = await question.first().innerText().catch(() => "(absent)");
+  check("the answer points at the question", (await question.count()) >= 1, asked.trim());
   await shot(page, `${w}-5-confirm`);
 
   await page.getByRole("button", { name: "Cancel" }).first().click();
