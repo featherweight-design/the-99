@@ -986,7 +986,13 @@ describe("pullCardFromDeck", () => {
     vi.clearAllMocks();
     stub.state.revalidated.length = 0;
     stub.state.deleteCalls.length = 0;
-    stub.state.decks.push({ id: SOURCE_ID, userId: USER_ID, commanderOracleId: CMD });
+    // BOTH decks: a pull calls requireDeck on the asking deck as well as the
+    // source. The stub ignores the where clause, so leaving the asking deck
+    // out passes by accident and would stop meaning anything the day it stops.
+    stub.state.decks.push(
+      { id: SOURCE_ID, userId: USER_ID, commanderOracleId: CMD },
+      { id: ASKING_ID, userId: USER_ID, commanderOracleId: CMD },
+    );
     vi.mocked(newestVersion).mockResolvedValue(aVersion());
     vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 } });
   });
