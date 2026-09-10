@@ -1367,6 +1367,12 @@ export async function pullCardFromDeck(
   if (diff.adds.length > 0 || diff.removes.length > 0) {
     return { ok: false, message: "That deck has pending changes. Release the card there." };
   }
+  // Nothing to release. Without this the decrement and the delete both match
+  // no row, and the commit below writes a version identical to its predecessor
+  // — a line in the deck's history recording a pull that never happened.
+  if (!draft.some((c) => c.oracleId === oracleId)) {
+    return { ok: false, message: "That deck doesn't hold that card." };
+  }
 
   // One transaction. A delete that lands without its commit leaves the source
   // deck's draft short of a card its version still claims, so the copy is

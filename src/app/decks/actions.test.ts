@@ -964,6 +964,17 @@ describe("pullCardFromDeck", () => {
     expect(commitVersion).not.toHaveBeenCalled();
   });
 
+  // Otherwise the decrement and the delete both match nothing and the commit
+  // writes a version identical to its predecessor — history recording a pull
+  // that never happened.
+  it("refuses a card the source deck does not hold", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_B, ASKING_ID);
+    expect(result.ok).toBe(false);
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
   it("removes the card and commits a version recording it", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
