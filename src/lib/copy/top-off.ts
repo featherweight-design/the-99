@@ -187,7 +187,7 @@ export const topOffCopy = {
      *  which is the honest state — the tick was dropped when it was declined. */
     restoreAll: (declined: string) => `Show all ${declined} again`,
     restoreAllAria: (declined: string) =>
-      `Put all ${declined} declined candidates back on the list`,
+      `Put all ${plural(declined, 'declined candidate', 'declined candidates')} back on the list`,
   },
 
   // ── The commit row ────────────────────────────────────────────────────
@@ -348,6 +348,11 @@ export const topOffCopy = {
   // a statement about what will happen, not an instruction: the player did not
   // ask for quick-add to go away, so it does not read as their doing.
   dock: {
+    /** Currently rendered nowhere. The R1 addendum gave the bar's one status
+     *  line a priority order and put this last, behind two rungs that between
+     *  them cover every state, so it yields always rather than sometimes. Kept
+     *  because the fact it states is still true and the slot is still its own;
+     *  `retiredAnnounce` carries the same fact to a screen reader on open. */
     retired: 'Quick-add is back when you close the list',
     retiredAnnounce: 'Quick-add hidden while the list is open.',
   },

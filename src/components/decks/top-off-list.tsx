@@ -237,16 +237,21 @@ export function TopOffList({
   // first paint is already at the real width.
   const isDesktop = useIsDesktop();
 
+  // The bar's one status line. The addendum draws three rungs, but rungs 1 and 2
+  // partition the whole space — `atCap` is `slotsLeft <= 0` — so the third, the
+  // dock notice, is unreachable behind them. That follows from the priority the
+  // addendum itself sets and the reason it gives for setting it: the notice is
+  // the only one of the three about a control the player is not currently using,
+  // and `Cancel` and `Close` are both on screen and both the answer to it. So it
+  // is written as the two rungs that can actually render rather than a branch
+  // that never will.
   const slotsLeft = openSlots - tickedCount;
-  const barStatus = isDesktop
-    ? slotsLeft > 0
+  const barStatus =
+    slotsLeft > 0
       ? topOffCopy.commit.slotsStayOpen(String(slotsLeft))
-      : null
-    : atCap
-      ? topOffCopy.list.cap
-      : slotsLeft > 0
-        ? topOffCopy.commit.slotsStayOpen(String(slotsLeft))
-        : topOffCopy.dock.retired;
+      : isDesktop
+        ? null
+        : topOffCopy.list.cap;
 
   // The height the page foot has to reserve for the pinned bar.
   const barRef = useRef<HTMLDivElement>(null);

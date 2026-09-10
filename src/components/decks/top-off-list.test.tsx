@@ -517,8 +517,9 @@ describe("TopOffList", () => {
     expect(screen.queryByText(topOffCopy.commit.nothingTicked)).toBeNull();
   });
 
-  // The bar has one status line and cannot be allowed to grow a second. Rungs 1
-  // and 2 are mutually exclusive by arithmetic; rung 3 is what is left.
+  // The bar has one status line and cannot be allowed to grow a second. The two
+  // rungs partition every state between them, which is why the addendum's third
+  // one — the dock notice it ranks last — renders in neither case here.
   it("prints exactly one status line at phone, in ladder order", async () => {
     const { unmount } = render(<Harness openSlots={1} initialTicked={["owned-1"]} />);
     expect(screen.getByText(topOffCopy.list.cap)).toBeInTheDocument();
