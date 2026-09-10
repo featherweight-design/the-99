@@ -134,6 +134,18 @@ async function pickFixture() {
           select 1 from printings q
            where q.oracle_id = c.oracle_id and q.flavor_name is not null
         )
+        -- The art checks compare what the page draws against p.image_uri,
+        -- the representative printing for the holding's set. That is only the
+        -- picture the route resolves when nothing outranks it: a holding that
+        -- names its copy by id resolves that copy instead, and an art
+        -- preference outranks both. Excluding them here keeps the expected URL
+        -- and the resolved one the same thing, rather than failing a route
+        -- that is behaving correctly.
+        and ci.scryfall_id is null
+        and not exists (
+          select 1 from card_art_preferences a
+           where a.user_id = ci.user_id and a.oracle_id = c.oracle_id
+        )
         -- One holding per card, so the restore has one row to put back.
         and 1 = (select count(*) from collection_items x
                   where x.user_id = ci.user_id and x.oracle_id = ci.oracle_id)
