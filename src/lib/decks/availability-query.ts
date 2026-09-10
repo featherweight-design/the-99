@@ -13,59 +13,89 @@ type Row = {
 
 /**
  * The claim model both readers below share: who wants what, how many, and
- * whether their deck is sleeved. Deck size is computed in SQL rather than in TS
- * because maturity has to be known before the per-oracle rollup — loading every
- * deck to count it in JS would be a fanout over the whole collection.
+ * whether their deck is sleeved.
+ *
+ * A deck claims off its NEWEST COMMITTED VERSION — what is physically sleeved,
+ * not what its draft is toying with. A deck with no version at all is a brew,
+ * and claims softly off its live list exactly as everything did before
+ * versioning. This is what replaced a 99-card body count: the count was
+ * guessing at a fact the version answers outright, and the guess is what let a
+ * draft add take a card out of a deck that had it in a box.
  *
  * TWO THINGS THIS DELIBERATELY HANDLES, both verified against the schema:
  *
  * 1. NEITHER COMMANDER IS A deck_cards ROW. `decks.commander_oracle_id` and
  *    `decks.partner_oracle_id` are their own columns and never appear in
- *    deck_cards. Without the two union arms below, a single-copy legendary
- *    sleeved as another deck's commander would read as free everywhere.
+ *    deck_cards. Without the union arms below, a single-copy legendary sleeved
+ *    as another deck's commander would read as free everywhere. A committed
+ *    deck's commanders are read from the VERSION's snapshot of those columns,
+ *    so a query that answers for what is sleeved never mixes in draft truth.
  *
  * 2. BASIC LANDS ARE EXCLUDED ENTIRELY. A finished deck holds 30-odd Forests
- *    and almost nobody's collection row matches, so every mature deck would
+ *    and almost nobody's collection row matches, so every sleeved deck would
  *    push its basics into `over` and fire the over-committed summary on a deck
  *    with nothing wrong with it.
- *
- * Deck size for the maturity test stays sum(deck_cards.quantity), excluding the
- * commanders — that is exactly what `built` is and what statusPill thresholds
- * on, so the threshold here is the same body size the player sees on the pill:
- * 99, or 98 for a deck with a partner. Basics DO count toward that size; they
- * are only excluded as claim subjects.
  *
  * `claim_decks_all` carries every claim whatever the caller's vantage.
  * Self-exclusion is applied downstream, because the seniority ordering below has
  * to be able to see the excluded deck's own place in the queue.
  */
 const claimModel = (userId: string) => sql`
-  deck_totals as (
-    select dc.deck_id, sum(dc.quantity)::int as cards
-    from deck_cards dc
-    join decks d on d.id = dc.deck_id
+  -- The version each deck is currently sleeved as. number orders it, not
+  -- committed_at: the unique key makes number strictly increasing per deck,
+  -- and two versions committed in the same millisecond would tie on time.
+  newest_version as (
+    select distinct on (v.deck_id)
+      v.deck_id, v.id as version_id, v.committed_at,
+      v.commander_oracle_id, v.commander_since,
+      v.partner_oracle_id, v.partner_since
+    from deck_versions v
+    join decks d on d.id = v.deck_id
     where d.user_id = ${userId}
-    group by dc.deck_id
+    order by v.deck_id, v.number desc
   ),
-  -- Every claim on a card, one row per (deck, card): the deck's list, plus each
-  -- of the deck's commanders, which live in their own columns and would
-  -- otherwise be invisible to this feature.
+  -- Every claim on a card, one row per (deck, card).
   --
-  -- union all, not union: a deck cannot name the same card in both commander
-  -- columns, so there is nothing to deduplicate and the sort would be pure cost.
+  -- union all, not union: the arms are disjoint by construction — a deck is in
+  -- newest_version or it is not — so the sort would be pure cost.
+  --
+  -- since, not committed_at: seniority is per CARD. A deck that has held a
+  -- card for a year and then commits an unrelated swap must not jump to the
+  -- back of the queue on everything it holds. See Addendum R1 in the spec and
+  -- the column comment on deck_version_cards.since.
+  --
+  -- A brew's rows carry a null since, and null is the ordering's way of
+  -- saying "junior to everything sleeved" — the predicates below test for it
+  -- explicitly rather than relying on null comparison semantics.
   all_claims as (
-    select dc.deck_id, dc.oracle_id, dc.quantity
+    select nv.deck_id, vc.oracle_id, vc.quantity, vc.since
+    from newest_version nv
+    join deck_version_cards vc on vc.version_id = nv.version_id
+    union all
+    select nv.deck_id, nv.commander_oracle_id, 1, nv.commander_since
+    from newest_version nv
+    union all
+    select nv.deck_id, nv.partner_oracle_id, 1, nv.partner_since
+    from newest_version nv
+    where nv.partner_oracle_id is not null
+    union all
+    -- Brews: no version, so the live list is the only statement of intent
+    -- there is. These rows are graded soft below.
+    select dc.deck_id, dc.oracle_id, dc.quantity, null::timestamp
     from deck_cards dc
     join decks d on d.id = dc.deck_id
     where d.user_id = ${userId}
+      and not exists (select 1 from newest_version nv where nv.deck_id = dc.deck_id)
     union all
-    select d.id as deck_id, d.commander_oracle_id as oracle_id, 1 as quantity
+    select d.id, d.commander_oracle_id, 1, null::timestamp
     from decks d
     where d.user_id = ${userId}
+      and not exists (select 1 from newest_version nv where nv.deck_id = d.id)
     union all
-    select d.id as deck_id, d.partner_oracle_id as oracle_id, 1 as quantity
+    select d.id, d.partner_oracle_id, 1, null::timestamp
     from decks d
     where d.user_id = ${userId} and d.partner_oracle_id is not null
+      and not exists (select 1 from newest_version nv where nv.deck_id = d.id)
   ),
   -- One row per (oracle, claiming deck), carrying that deck's whole ask.
   -- Grouping rather than select distinct is what folds a deck whose commander is
@@ -77,25 +107,24 @@ const claimModel = (userId: string) => sql`
       ac.oracle_id,
       ac.deck_id,
       d.name,
-      d.created_at,
-      -- LEFT: a deck whose only card is its commander has no deck_cards rows and
-      -- therefore no deck_totals row. An inner join would drop that claim
-      -- entirely. No rows means no cards means brewing, hence coalesce to 0.
+      -- Seniority is "who sleeved it first", not "who registered the deck
+      -- first". Ordering on decks.created_at would hand a contested copy to
+      -- the older deck and silently send the deck that physically HAS the card
+      -- shopping — the implicit pull this whole feature exists to prevent.
       --
-      -- Mirrors deckBodySize() in deck-size.ts: a pair's body is one card
-      -- shorter, so a pair deck is sleeved at 98. The literal is unavoidable in
-      -- raw SQL; a change to the format's total has to touch both.
-      coalesce(dt.cards, 0)
-        >= (99 - (case when d.partner_oracle_id is null then 0 else 1 end)) as mature,
+      -- min() over the arms, which matters only for the deck whose commander is
+      -- also on its own list: one claimant, and the earlier of the two dates.
+      min(ac.since) as since,
+      -- Was a 99-card body test. A committed version answers outright what
+      -- that threshold was guessing at, which is also what retires the #334
+      -- commander carve-out: a committed deck's commander is hard because the
+      -- whole version is hard, not because commanders are special.
+      (nv.deck_id is not null) as sleeved,
       sum(ac.quantity)::int as quantity
     from all_claims ac
-    left join deck_totals dt on dt.deck_id = ac.deck_id
     join decks d on d.id = ac.deck_id
-    -- d.partner_oracle_id is grouped because the maturity expression reads it.
-    -- Postgres rejects the query outright without it.
-    group by
-      ac.oracle_id, ac.deck_id, d.name, d.created_at,
-      d.partner_oracle_id, coalesce(dt.cards, 0)
+    left join newest_version nv on nv.deck_id = ac.deck_id
+    group by ac.oracle_id, ac.deck_id, d.name, (nv.deck_id is not null)
   ),
   owned as (
     select ci.oracle_id, sum(ci.quantity)::int as owned
@@ -115,15 +144,16 @@ const claimModel = (userId: string) => sql`
  * join as hard = soft = 0, so free = owned. Cards the user does not own cannot
  * appear at all: the driver of the outer select is the collection.
  *
- * SENIORITY, on a deck's own decklist. Copies go to mature decks in
- * `created_at` order, `deck_id` breaking the tie — the oldest deck holding a
- * card keeps it and the newest goes and buys one. Before this, the deficit was
- * symmetric: one Sol Ring wanted by five finished decks marked the card short in
- * all five, so four decks that physically have it were told to go shopping.
+ * SENIORITY, on a deck's own decklist. A copy goes to whichever sleeved deck
+ * has held it longest — `deck_version_cards.since` ordering it, `deck_id`
+ * breaking the tie — and the deck that has not sleeved it goes and buys one.
+ * Before seniority existed the deficit was symmetric: one Sol Ring wanted by
+ * five finished decks marked the card short in all five, so four decks that
+ * physically have it were told to go shopping.
  *
- * An immature deck is junior to EVERY mature deck whatever its date. A brew
- * started two years ago has nothing sleeved; the deck finished last week does,
- * and a brew that outranked it would report copies sitting in another box.
+ * A deck that has not sleeved a card is junior on THAT card to every deck that
+ * has, whatever the decks' ages — which is what makes a draft add cost a
+ * purchase rather than quietly emptying somebody else's box.
  */
 export async function loadAvailability(
   userId: string,
@@ -155,37 +185,45 @@ export async function loadAvailability(
       group by ac.oracle_id
     ),
     -- The vantage deck's own place in the queue. Read from decks rather than
-    -- from claim_decks_all because a deck still has a date and a maturity when
-    -- it claims nothing at all, and one row is what the scalar read below wants.
+    -- from claim_decks_all because a deck is still sleeved or not when it
+    -- claims nothing at all, and one row is what the scalar read below wants.
     skip_deck as (
-      select
-        d.id,
-        d.created_at,
-        -- Same body size as claim_decks_all. Judged against a flat 99 a pair
-        -- deck's own vantage would call it immature at 98 and soften every
-        -- claim it makes.
-        coalesce(dt.cards, 0)
-          >= (99 - (case when d.partner_oracle_id is null then 0 else 1 end)) as mature
+      select d.id, (nv.deck_id is not null) as sleeved
       from decks d
-      left join deck_totals dt on dt.deck_id = d.id
+      left join newest_version nv on nv.deck_id = d.id
       where ${skip}::uuid is not null
         and d.id = ${skip}::uuid
         and d.user_id = ${userId}
+    ),
+    -- What the vantage deck itself holds, and since when. A card ABSENT here is
+    -- a card this deck has not sleeved — a draft add, or a brew's whole list —
+    -- and the join below reads that absence as junior to every sleeved
+    -- claimant. That one fact is what stops a draft add taking a card out of
+    -- another deck's committed version; there is no separate rule for it.
+    mine as (
+      select ca.oracle_id, ca.since
+      from claim_decks_all ca, skip_deck s
+      where ca.deck_id = s.id and ca.since is not null
     ),
     -- What the decks ahead of this one have already taken. Empty when there is
     -- no vantage deck, which is what makes free fall back to the total below.
     senior_hard as (
       select ca.oracle_id, sum(ca.quantity)::int as hard_senior
-      from claim_decks_all ca, skip_deck s
-      where ca.mature
-        and (not s.mature or (ca.created_at, ca.deck_id) < (s.created_at, s.id))
+      from claim_decks_all ca
+      cross join skip_deck s
+      left join mine m on m.oracle_id = ca.oracle_id
+      where ca.sleeved
+        and ca.deck_id <> s.id
+        -- m.since null covers both "the vantage is a brew" and "the vantage has
+        -- not sleeved this card". Both mean everyone sleeved is ahead of it.
+        and (m.since is null or (ca.since, ca.deck_id) < (m.since, s.id))
       group by ca.oracle_id
     ),
     claims as (
       select
         cd.oracle_id,
-        sum(case when cd.mature then cd.quantity else 0 end)::int as hard,
-        sum(case when cd.mature then 0 else cd.quantity end)::int as soft,
+        sum(case when cd.sleeved then cd.quantity else 0 end)::int as hard,
+        sum(case when cd.sleeved then 0 else cd.quantity end)::int as soft,
         -- json, not a composite array: the pg driver hands a Postgres array of
         -- records back as an unparsed "(uuid,name)" string, and a name with a
         -- comma or a quote in it is then unrecoverable. jsonb_agg arrives as a
@@ -197,7 +235,10 @@ export async function loadAvailability(
         jsonb_agg(
           jsonb_build_object(
             'id', cd.deck_id, 'name', cd.name,
-            'quantity', cd.quantity, 'mature', cd.mature
+            -- The JSON key stays mature on purpose: DeckClaim in
+            -- availability.ts and every consumer of the receipt read that key,
+            -- so renaming it is a separate change with its own blast radius.
+            'quantity', cd.quantity, 'mature', cd.sleeved
           )
           order by cd.name, cd.deck_id
         ) as claims
@@ -212,10 +253,17 @@ export async function loadAvailability(
       coalesce(c.soft, 0) as soft,
       -- Off a decklist there is no "me" to be senior to, so supply is measured
       -- against every hard claim there is and free keeps its old meaning:
-      -- copies not sleeved in a finished deck. On a mature deck's own decklist
-      -- it is (owned − ownClaim) − seniorHard, which is what lands the deficit on
-      -- the newest claimant instead of on all of them at once. A brew takes the
-      -- total too: it outranks nothing, so every hard claim is ahead of it.
+      -- copies not sleeved in a committed deck. On a sleeved deck's own
+      -- decklist it is (owned − ownClaim) − seniorHard, which is what lands the
+      -- deficit on the junior claimant instead of on all of them at once. A
+      -- brew takes the total too: it outranks nothing, so every hard claim is
+      -- ahead of it.
+      --
+      -- One consequence worth stating: own_claims also reads all_claims, so
+      -- on a committed deck's own page a card the DRAFT added contributes
+      -- nothing to own_claim and reads as free when a free copy exists. That
+      -- is correct — the deck has not sleeved it — and pnpm probe:claims
+      -- asserts it.
       --
       -- The senior subtraction is capped at the supply, because the decks ahead of
       -- this one cannot take copies that do not exist. Four finished decks each
@@ -225,7 +273,7 @@ export async function loadAvailability(
       -- deck that needs to buy one copy is a figure nobody can act on.
       (o.owned
         - coalesce(oc.own_claim, 0)
-        - case when coalesce((select s.mature from skip_deck s), false)
+        - case when coalesce((select s.sleeved from skip_deck s), false)
                then least(coalesce(sh.hard_senior, 0), o.owned)
                else coalesce(c.hard, 0)
           end
@@ -295,9 +343,10 @@ export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
     quantity: number;
   }>(sql`
     with ${claimModel(userId)},
-    -- The decklist alone, both commanders excluded. This is what a deck can be
-    -- told to go and buy; see the header. The inner join below drops a deck's
-    -- commander-only claims without a predicate to forget.
+    -- The DRAFT decklist alone, both commanders excluded. This is what a deck
+    -- can be told to go and buy — the preview the player acts on — while
+    -- seniority below is measured against what is sleeved. The two diverging
+    -- is the feature, which is why the join in supply is a LEFT join.
     list_claims as (
       select dc.deck_id, dc.oracle_id, sum(dc.quantity)::int as quantity
       from deck_cards dc
@@ -318,19 +367,25 @@ export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
           select sum(senior.quantity)
           from claim_decks_all senior
           where senior.oracle_id = lc.oracle_id
-            and senior.mature
-            -- Mirrors senior_hard above: seniority orders the mature decks among
-            -- themselves, and an immature deck sits behind all of them.
+            and senior.sleeved
+            and senior.deck_id <> lc.deck_id
+            -- Mirrors senior_hard exactly: a deck that does not hold this card
+            -- in its own version — mine absent — sits behind every sleeved
+            -- claim.
             and (
-              not ca.mature
-              or (senior.created_at, senior.deck_id) < (ca.created_at, ca.deck_id)
+              mine.since is null
+              or (senior.since, senior.deck_id) < (mine.since, lc.deck_id)
             )
         ), 0)::int as senior
       from list_claims lc
-      join claim_decks_all ca
-        on ca.deck_id = lc.deck_id and ca.oracle_id = lc.oracle_id
       join cards c on c.oracle_id = lc.oracle_id
       left join owned o on o.oracle_id = lc.oracle_id
+      -- LEFT, and this is load-bearing. list_claims reads the DRAFT while
+      -- claim_decks_all reads versions; an inner join between them is a filter
+      -- that deletes every draft-added card from the buy list — the one figure
+      -- the player commits against.
+      left join claim_decks_all mine
+        on mine.deck_id = lc.deck_id and mine.oracle_id = lc.oracle_id
       where c.type_line !~ '\\mBasic\\M'
     )
     select
