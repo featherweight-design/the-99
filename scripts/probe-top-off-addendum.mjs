@@ -143,14 +143,20 @@ async function walkList(page, w) {
 
   await declines.nth(0).click();
   await page.waitForTimeout(200);
+  // Both strings are asserted, not just the one the role selector matches on.
+  // The addendum's ruling is about the words a reader sees; an aria-label that
+  // stayed right while the visible label drifted is exactly the regression
+  // this is here to catch.
   const one = list.getByRole("button", { name: /^Put the declined candidate back on the list$/ });
-  check("one decline reads singular", (await one.count()) === 1, await one.innerText().catch(() => "(absent)"));
+  const oneFace = await one.innerText().catch(() => "(absent)");
+  check("one decline reads singular", (await one.count()) === 1 && oneFace.trim() === "Show the one again", oneFace.trim());
   await shot(page, `${w}-2-declined-one`);
 
   await declines.nth(0).click();
   await page.waitForTimeout(200);
   const two = list.getByRole("button", { name: /^Put all 2 declined candidates back on the list$/ });
-  check("two declines read plural", (await two.count()) === 1, await two.innerText().catch(() => "(absent)"));
+  const twoFace = await two.innerText().catch(() => "(absent)");
+  check("two declines read plural", (await two.count()) === 1 && twoFace.trim() === "Show all 2 again", twoFace.trim());
 
   await two.click();
   await page.waitForTimeout(200);
@@ -215,8 +221,20 @@ async function walkConfirm(page, w) {
   check("the keep takes both controls away", (await trigger.count()) === 0 && (await sweep.count()) === 0);
   // The kept note is desktop-only: the toolbar has no room for it at 390px,
   // and that stays true after a keep.
-  const note = await page.locator("text=/yours now/").count();
-  check(w === "phone" ? "kept note stays off the phone toolbar" : "kept note is drawn", w === "phone" ? true : note > 0);
+  // Counted visible, not present: the note is `hidden md:inline`, so at 390px it
+  // is in the document either way and a bare count would pass at both widths.
+  // The live region is then excluded by hand — `keptAllAnnounce` ends in
+  // keptNote's own sentence so the spoken and written receipts agree, and it is
+  // `sr-only` rather than hidden, which Playwright counts as visible. Without
+  // this filter the phone's announcement reads as a toolbar note that shipped.
+  const note = await page
+    .locator("text=/yours now/ >> visible=true")
+    .evaluateAll((els) => els.filter((el) => !el.classList.contains("sr-only")).length);
+  check(
+    w === "phone" ? "kept note stays off the phone toolbar" : "kept note is drawn",
+    w === "phone" ? note === 0 : note > 0,
+    `${note} found`,
+  );
   await shot(page, `${w}-6-kept`);
 }
 
