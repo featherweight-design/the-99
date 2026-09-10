@@ -358,7 +358,10 @@ export async function createDeck(
   // The redirect renders the new deck's own page, but /decks and the home
   // dashboard both list decks, and a back navigation to either is served from
   // the router cache — without this the deck you just made is missing there.
-  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  // The full claim set, not just those three: a new deck claims the cards its
+  // fill pass seeded, and it is a deck the discovery lane measures distance
+  // from, so both cached list payloads describe a world without it.
+  revalidateClaims(deckId, userId);
   // Outside the try: redirect() signals by throwing, and a catch here would
   // read that throw as a failed fill.
   redirect(`/decks/${deckId}`);

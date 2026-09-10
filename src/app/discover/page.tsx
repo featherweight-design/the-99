@@ -4,6 +4,7 @@ import { CardFan } from "../../components/marks";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
 import { loadDiscovery } from "../../lib/discovery/list";
 import { encodeDiscovery } from "../../lib/discovery/encode";
+import { cacheForUser } from "../../lib/cache/user-lists";
 import { discoverSort, parseLaneParams } from "../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { PrimaryButton } from "../../components/ui/button";
@@ -65,14 +66,19 @@ export default async function DiscoverPage({
   // `loadDiscovery` reads the played tags either way, and downgrades `new` to
   // `fit` when there is no deck to measure distance from.
   const sort = discoverSort(params.order);
-  const discovery = await loadDiscovery(userId, { sort });
+  // Encoded inside the cache entry rather than after it: the encoded form is
+  // what fits under the data cache's per-entry ceiling, and it is also what the
+  // view wants. Encoding here rather than inside `loadDiscovery` keeps the list
+  // a list for every other reader of it — slug resolution and the tests read
+  // `DiscoveryItem`s, not tuples.
+  const encoded = await cacheForUser(userId, ["discovery", sort], async () =>
+    encodeDiscovery(await loadDiscovery(userId, { sort })),
+  );
 
   return (
     <section className="flex flex-col min-h-screen">
-      {/* Encoded here rather than inside `loadDiscovery`, so the list stays a
-          list for every other reader of it — slug resolution and the tests read
-          `DiscoveryItem`s, not tuples. The view decodes once. */}
-      <DiscoveryView encoded={encodeDiscovery(discovery)} />
+      {/* The view decodes once. */}
+      <DiscoveryView encoded={encoded} />
     </section>
   );
 }
