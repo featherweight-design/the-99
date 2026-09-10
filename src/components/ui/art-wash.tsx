@@ -111,25 +111,19 @@ export const PORTRAIT_BANDS: Record<
     ground: string;
     ambientOpacity: number;
     sharpOpacity: number;
-    nearStop: number;
-    nearAlpha: number;
-    startAlpha: number;
+    /** How far the portrait runs unwashed. Past it the scrim climbs to its flat
+        stop, closing the crop out into the row before any type starts. */
+    clearTo: number;
     sharpAlpha: number;
     flatStop: number;
     /** The vertical ramp, in the same `[alpha, position]` pairs the cover bands
-        use. The trough is per band, not shared: 168 damps later than 148 because
-        its type sits lower. 148 holds its dark value from the top of its label
-        block rather than ramping through it, for the reason the cover's top ramp
-        does — ink printed on a ramp still climbing is ink on ground the line
-        above it never stood on. */
+        use. Every `left-portrait` row anchors its type to the band's foot, so
+        each ramp is clear above its own block and holds one value from the
+        block's top edge to the bottom of the band — held rather than still
+        climbing, for the reason the cover's top ramp holds: ink printed on a
+        rising ramp stands on ground the line above it never did. The hold is
+        per band because the blocks start at different heights. */
     vertical: ScrimStops | null;
-    /** A flat alpha that replaces `vertical` below the `sm` breakpoint. One band
-        is rendered at two widths, and the narrow one puts the whole title over
-        the portrait rather than past it, so a ramp drawn for the wide row leaves
-        the phone's type on the crop's brightest pixel. A ramp cannot answer both
-        — its trough is a position, and the two rows print at different ones — so
-        the narrow row holds one value across the band instead. */
-    verticalHold: number | null;
   }
 > = {
   168: {
@@ -137,55 +131,57 @@ export const PORTRAIT_BANDS: Record<
     ground: "--bg",
     ambientOpacity: 0.28,
     sharpOpacity: 0.92,
-    nearStop: 134,
-    nearAlpha: 26,
-    startAlpha: 30,
+    clearTo: 134,
     sharpAlpha: 78,
     flatStop: 240,
+    // The spine's title starts at a 254px inset, past the flat stop, so the only
+    // ink this ramp protects is the view-card pill at the band's bottom-left —
+    // 26px tall, 14px off the foot, so its top edge is 76% down.
     vertical: [
-      [30, 0],
-      [10, 46],
-      [42, 100],
+      [0, 0],
+      [0, 60],
+      [50, 72],
+      [50, 100],
     ],
-    verticalHold: null,
   },
   148: {
     maskEnd: 58,
     ground: "--bg",
     ambientOpacity: 0.28,
     sharpOpacity: 0.92,
-    nearStop: 118,
-    nearAlpha: 26,
-    startAlpha: 30,
+    clearTo: 118,
     sharpAlpha: 78,
     flatStop: 264,
+    // One ramp for both widths. The rows are `items-end` at either breakpoint,
+    // so the phone's block (top at 65%) sits inside the desktop's (top at 55%)
+    // and a hold from 55% covers both.
     vertical: [
-      [62, 0],
-      [16, 42],
-      [70, 58],
-      [74, 100],
+      [0, 0],
+      [0, 38],
+      [78, 55],
+      [78, 100],
     ],
-    verticalHold: 70,
   },
   72: {
     maskEnd: 62,
     ground: "--surface-inset",
     ambientOpacity: 0.22,
     sharpOpacity: 0.95,
-    nearStop: 58,
-    nearAlpha: 18,
-    startAlpha: 22,
+    clearTo: 58,
     sharpAlpha: 80,
     flatStop: 138,
     vertical: null,
-    verticalHold: null,
   },
 };
 
 const portrait = (band: Band) => {
   const b = PORTRAIT_BANDS[band];
   const width = Math.round(band * PORTRAIT_RATIO); // 230 | 203 | 99
-  const stops = `${tint(b.ground, b.startAlpha)} 0px, ${tint(b.ground, b.nearAlpha)} ${b.nearStop}px, ${tint(b.ground, b.sharpAlpha)} ${width}px, var(${b.ground}) ${b.flatStop}px`;
+  // The leading pair is the row's ground at zero alpha rather than the
+  // `transparent` keyword: `transparent` is a transparent *black*, and
+  // interpolating from it lays a grey haze over the half of the crop this ramp
+  // is meant to leave alone.
+  const stops = `${tint(b.ground, 0)} 0px, ${tint(b.ground, 0)} ${b.clearTo}px, ${tint(b.ground, b.sharpAlpha)} ${width}px, var(${b.ground}) ${b.flatStop}px`;
   return {
     width,
     ground: b.ground,
@@ -194,16 +190,14 @@ const portrait = (band: Band) => {
     // Black is the opaque end of a mask's alpha, not a palette colour.
     mask: `linear-gradient(90deg, #000 0 ${b.maskEnd}%, transparent 100%)`,
     scrim: `linear-gradient(90deg, ${stops})`,
-    // Layer D: a band that prints type over the full height of the art needs
-    // damping at the top and bottom as well as across. The resume row's type
-    // starts clear of the portrait, so a vertical ramp there would darken the
-    // row for nothing.
+    // Layer D: a band that prints type over the portrait needs damping down the
+    // band as well as across. The resume row's type starts clear of the
+    // portrait, so a vertical ramp there would darken the row for nothing.
     verticalScrim: b.vertical
       ? `linear-gradient(180deg, ${b.vertical
           .map(([alpha, pos]) => `${tint("--bg", alpha)} ${pos}%`)
           .join(", ")})`
       : null,
-    verticalHold: b.verticalHold === null ? null : tint("--bg", b.verticalHold),
   };
 };
 
@@ -277,16 +271,7 @@ export function ArtWash(props: ArtWashProps) {
         ) : null}
         <div className="art-wash-scrim absolute inset-0" style={{ background: p.scrim }} />
         {p.verticalScrim ? (
-          <div
-            className={`art-wash-scrim absolute inset-0${p.verticalHold ? " hidden sm:block" : ""}`}
-            style={{ background: p.verticalScrim }}
-          />
-        ) : null}
-        {p.verticalHold ? (
-          <div
-            className="art-wash-scrim absolute inset-0 sm:hidden"
-            style={{ background: p.verticalHold }}
-          />
+          <div className="art-wash-scrim absolute inset-0" style={{ background: p.verticalScrim }} />
         ) : null}
       </div>
     );

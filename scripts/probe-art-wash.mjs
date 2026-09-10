@@ -82,28 +82,37 @@ const READ_WASHES = `() => {
 // means one of the two files that carry these numbers moved without the other.
 const LIFTED_OPACITIES = [1, 0.8, 0.92, 0.28, 0.95, 0.22];
 
-// The 148 band ships both damping layers and lets the breakpoint choose. JSDOM
-// applies no CSS, so which one paints is only answerable in a browser — and it
-// is the whole ruling: a ramp drawn for the wide row leaves the phone's title on
-// the crop's brightest pixel.
-const READ_148_VERTICALS = `() => {
+// The 148 band's two scrims, as the browser computes them. JSDOM applies no CSS,
+// so this is the only place the ruling is answerable: one vertical ramp at both
+// widths, and a horizontal scrim that leaves the portrait alone until the
+// fade-out starts.
+const READ_148_SCRIMS = `() => {
   const band = document.querySelector('.discovery-band, .rec-band');
   if (!band) return null;
   return [...band.querySelectorAll('.art-wash-scrim')].map((s) => {
     const style = getComputedStyle(s);
+    const image = style.backgroundImage;
     return {
       display: style.display,
+      image,
       // Not \`/180deg/\`: 180deg is a gradient's default direction, so the browser
       // drops it from the computed value and that test never matches. A vertical
       // ramp is the gradient that names no angle at all; the horizontal scrim
       // beside it keeps its own 90deg.
-      ramp: /^linear-gradient\\((?!\\s*[\\d.-]+deg)/.test(style.backgroundImage),
-      // A flat alpha resolves to a colour, not an image, so the hold is the one
-      // vertical layer with no gradient of its own.
-      hold: style.backgroundImage === 'none' && !/^rgba?\\(0, 0, 0, 0\\)$/.test(style.backgroundColor),
+      ramp: /^linear-gradient\\((?!\\s*[\\d.-]+deg)/.test(image),
+      horizontal: /^linear-gradient\\(\\s*90deg/.test(image),
     };
-  }).filter((s) => s.ramp || s.hold);
+  });
 }`;
+
+/** The first two colour stops of the horizontal scrim, which this round drove to
+    zero alpha: the portrait carries no wash at all until the crop starts fading
+    out into the row. A non-zero alpha here is the lift silently reverting.
+
+    Matched on the `/ 0)` alpha rather than on `rgba(`: a `color-mix(in oklab, …)`
+    computes to an `oklab()` colour, and the browser only falls back to `rgba()`
+    for stops that survive in sRGB. */
+const CLEAR_STOPS = /\/\s*0\)\s*\S+,\s*\S+\(\s*[^)]*\/\s*0\)/;
 
 // The scrims outlive the art under `forced-colors`, so they are what proves the
 // band kept its height when the photograph left.
@@ -173,19 +182,24 @@ try {
     // load also serves the accessibility checks below, which measure the same page.
     await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
-    const verticals = await page.evaluate(`(${READ_148_VERTICALS})()`);
-    if (!verticals?.length) {
-      note(`  FAIL no vertical damping layer found on the 148 band`);
+    const scrims = await page.evaluate(`(${READ_148_SCRIMS})()`);
+    if (!scrims?.length) {
+      note(`  FAIL no scrim layers found on the 148 band`);
     } else {
-      const painted = verticals.filter((v) => v.display !== "none");
-      const wantsHold = vpName === "mobile";
+      const painted = scrims.filter((s) => s.display !== "none");
+      const ramps = painted.filter((s) => s.ramp);
+      const horizontals = painted.filter((s) => s.horizontal);
       note(
-        `${vpName} 148 band: ${painted.length} vertical layer painted — ` +
-          `${painted.map((v) => (v.ramp ? "ramp" : "hold")).join(", ") || "none"}`,
+        `${vpName} 148 band: ${ramps.length} vertical ramp, ${horizontals.length} horizontal scrim`,
       );
-      if (painted.length !== 1) note(`  FAIL expected exactly one vertical layer to paint`);
-      else if (painted[0].ramp === wantsHold) {
-        note(`  FAIL ${vpName} paints the ${painted[0].ramp ? "ramp" : "hold"}`);
+      // One ramp at both widths. The rows are `items-end` either way, so the
+      // phone's label block sits inside the desktop's and a single hold covers
+      // both — the breakpoint-swapped flat hold this replaced darkened the whole
+      // band to protect its bottom third.
+      if (ramps.length !== 1) note(`  FAIL expected exactly one vertical ramp to paint`);
+      if (horizontals.length !== 1) note(`  FAIL expected exactly one horizontal scrim to paint`);
+      else if (!CLEAR_STOPS.test(horizontals[0].image)) {
+        note(`  FAIL horizontal scrim washes the portrait: ${horizontals[0].image.slice(0, 120)}`);
       }
     }
 

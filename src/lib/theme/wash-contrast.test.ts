@@ -80,8 +80,8 @@ const washGround = (bg: string, scrimAlpha: number): string =>
 const horizontalStops = (band: Band): ScrimStops => {
   const b = PORTRAIT_BANDS[band];
   return [
-    [b.startAlpha, 0],
-    [b.nearAlpha, b.nearStop],
+    [0, 0],
+    [0, b.clearTo],
     [b.sharpAlpha, Math.round(band * PORTRAIT_RATIO)],
     [100, b.flatStop],
   ];
@@ -101,19 +101,27 @@ const portraitGround = (
   band: Band,
   x: number,
   verticalAlpha: number,
+  plate = 0,
 ): string => {
   const b = PORTRAIT_BANDS[band];
   const ground = token(theme, b.ground.replace("--", ""));
   let g = over(BRIGHTEST_ART, ground, b.ambientOpacity);
   if (x <= Math.round(band * PORTRAIT_RATIO)) g = over(BRIGHTEST_ART, g, b.sharpOpacity);
   g = over(ground, g, alphaAt(horizontalStops(band), x));
-  return over(token(theme, "bg"), g, verticalAlpha);
+  g = over(token(theme, "bg"), g, verticalAlpha);
+  return plate ? over(token(theme, "bg"), g, plate) : g;
 };
 
 /** Where each `left-portrait` surface actually prints ink, and how far down the
-    band. `x` is the worst point under that ink, not where it starts: a truncating
-    name runs past the horizontal ramp's trough, and the trough is the thinnest
-    ground it stands on.
+    band. `x` is the worst point under that ink: the horizontal scrim now runs at
+    zero alpha out to `clearTo` and only climbs after it, so the thinnest ground
+    any of this ink stands on is anywhere at or before that stop.
+
+    Both edges of each label block are sampled, not just one. The ramps hold a
+    flat value across the block precisely so the two agree — asserting only the
+    block's foot is what let a ramp ship that had not finished climbing at the
+    block's top, which is where the desktop 148 row measured 4.0:1 before this
+    round.
 
     The rank glyph each 148 row draws is deliberately absent. It is `--fg-faint`,
     which measures below 4.5:1 against flat `--bg` with no art at all, so no scrim
@@ -122,20 +130,25 @@ const PORTRAIT_INK: readonly {
   surface: string;
   band: Band;
   x: number;
-  /** Percent down the band, for the vertical ramp. Absent where the band holds
-      one flat value or draws no vertical layer at all. */
-  y?: number;
-  hold?: boolean;
+  /** Percent down the band, for the vertical ramp. */
+  y: number;
+  /** An opaque-ish plate the surface paints between the wash and its own ink. */
+  plate?: number;
 }[] = [
-  // Phone: the name starts at 39px (13px padding, a 16px rank, a 10px gap) and
-  // truncates rightward, so it crosses the 118px trough.
-  { surface: "discovery and rec rows, phone", band: 148, x: PORTRAIT_BANDS[148].nearStop, hold: true },
-  // Desktop: the name starts at 70px and its block bottom sits 24px off the
-  // band's foot — 84% of 148px.
-  { surface: "discovery and rec rows, desktop", band: 148, x: PORTRAIT_BANDS[148].nearStop, y: 84 },
+  // Desktop: the name starts at 70px, its block top 81px down the band and its
+  // foot 24px off the band's own. Phone: the name starts at 39px and its block
+  // spans 65%–92%. Both are `items-end`, so the phone's block sits inside the
+  // desktop's and the four samples below bound every 148 row at either width.
+  { surface: "discovery and rec rows, block top", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 55 },
+  { surface: "discovery and rec rows, block foot", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 92 },
   // The resume row's type starts at the 116px inset, past the 99px portrait but
   // short of the 138px flat stop, so the ambient crop is still under it.
-  { surface: "resume row", band: 72, x: 116 },
+  { surface: "resume row", band: 72, x: 116, y: 0 },
+  // The deck spine's view-card pill: 16px in, 14px off the foot, 26px tall, and
+  // the one thing on that band whose ink sits over the crop. It plates itself in
+  // `--bg` at 55% first, which is why it survives a ramp half the 148's weight.
+  { surface: "deck spine pill, top", band: 168, x: 16, y: 76, plate: 0.55 },
+  { surface: "deck spine pill, foot", band: 168, x: 120, y: 92, plate: 0.55 },
 ];
 
 const verticalAlphaAt = (band: Band, y: number): number => {
@@ -179,10 +192,8 @@ describe("art wash contrast floor", () => {
 
     for (const ink of PORTRAIT_INK) {
       it(`${theme}: ${ink.surface} clears 4.5:1 over the brightest possible portrait`, () => {
-        const vertical = ink.hold
-          ? (PORTRAIT_BANDS[ink.band].verticalHold ?? 0) / 100
-          : verticalAlphaAt(ink.band, ink.y ?? 0);
-        const ground = portraitGround(theme, ink.band, ink.x, vertical);
+        const vertical = verticalAlphaAt(ink.band, ink.y);
+        const ground = portraitGround(theme, ink.band, ink.x, vertical, ink.plate ?? 0);
         expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
         expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
       });
