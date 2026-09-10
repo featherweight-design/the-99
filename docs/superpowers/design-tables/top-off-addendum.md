@@ -10,8 +10,11 @@ frame the canvas draws the list at.
 
 Every colour is a `var(--*)` token; the addendum adds **no new token, no new hex,
 no new glyph, no new motion**. Focus everywhere is the global `:focus-visible`
-from `@layer base` — 2px `var(--accent)` at +2px offset, **not overridden by any
-element in this addendum**.
+from `@layer base` — 2px `var(--accent)` at +2px offset, **not restyled by any
+element in this addendum**. The candidate row's tick box is the one place it
+moves rather than changes: the checkbox is `sr-only`, so the ring is drawn on the
+visible box beside it via `peer-focus-visible`, in the same accent and width the
+base rule would have used on a box nobody can see.
 
 **Amendments in force**
 

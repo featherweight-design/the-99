@@ -35,6 +35,13 @@ an id that has left the route; the pool-intersected figure is the one the label 
 announcement both quote, so gating on the raw size would offer a control whose own count
 reads zero. Deliberate, and the narrower of the two.
 
+**The tick box carries a `peer-focus-visible` ring.** The addendum names the global
+`:focus-visible` and nothing bespoke, but the row's checkbox is `sr-only`, so the base
+rule draws its outline on a clipped 1px box and a keyboard reader sees nothing move. The
+ring is the base rule's own accent and width, moved onto the box that is actually on
+screen. `quick-add-bar.tsx` and `game-log-form.tsx` already do this for their own hidden
+checkboxes; this makes the third the same.
+
 ## Ambiguities in the handoff, and what shipped
 
 The table records seven. In scope here:
