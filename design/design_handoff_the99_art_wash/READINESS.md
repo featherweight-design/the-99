@@ -17,9 +17,12 @@ through it.
 
 The round also fixes a live accessibility defect that predates it: on Home's ready-to-build
 card and every deck card, the top ramp reaches its dark value at the title and then lightens
-through the subtitle, landing that line at **3.17:1** against a white pixel — under the
-4.5:1 floor. Reproduced independently against `globals.css` and the shipped
-`COVER_SCRIM_STOPS`; Design measured 3.16:1.
+through the subtitle, landing that line at **3.16:1** against a white pixel — under the
+4.5:1 floor. **3.16:1 is the canonical figure** for that defect everywhere in this handoff:
+Design's measurement, reproduced independently against `globals.css` and the shipped
+`COVER_SCRIM_STOPS`. My own recompute lands at 3.17:1 and one card in the canvas cites
+3.15:1; those are rounding of the same theme token, not three measurements, and neither is
+near enough the 4.5:1 floor for the difference to matter.
 
 R1 of this canvas was returned Orange for three mismatches against the code. R2 corrected all
 three and adopted the measured figures verbatim. What remains is eng-side work, ratified
@@ -118,7 +121,7 @@ future reader does not "correct" the code toward the model.
 Four PRs. The first two are independent of the lift and fix existing failures.
 
 1. **Top ramp** — `COVER_SCRIM_STOPS.top` → `[[78,0],[73,31],[14,62],[50,100]]`. Fixes the
-   3.17:1 subtitle on Home and every deck card. `wash-contrast.test.ts` samples only 0% and
+   3.16:1 subtitle on Home and every deck card. `wash-contrast.test.ts` samples only 0% and
    100% today, which is why this shipped; it gains a mid-band assertion.
 2. **Bottom ramp** — derived from the label position rather than a shared constant:
    `[[44,0],[14,round(labelAt*0.48)],[73,labelAt],[88,100]]`, with `labelAt` 68.1 for the

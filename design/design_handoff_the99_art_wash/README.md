@@ -1,4 +1,4 @@
-# The 99 — Commander art wash · readability amendment (design handoff)
+# The 99 — Commander art wash · scrim recovery (design handoff)
 
 An amendment to the **shipped** commander-wash redesign. The wash itself is kept; what changes is
 the image source, the scrim, the ink, and the band geometry. Nothing else on Decks, Commanders or
@@ -14,8 +14,9 @@ Files:
 - `The 99 - Art Wash Readability.dc.html` — R1, superseded. Kept only because R2's captions cite its
   values. Do not build from it.
 
-Read `design_handoff_the99_decks/README.md` and `design_handoff_the99_commanders/README.md` first —
-this document records only what **changes**.
+Read `design/design_handoff_the99_decks/R3-README.md` (the Decks handoff carries no plain
+`README.md` — R3 is its current revision) and `design/design_handoff_the99_commanders/README.md`
+first — this document records only what **changes**.
 
 ## Scrim recovery — the current revision
 
