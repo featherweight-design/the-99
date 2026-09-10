@@ -9,6 +9,8 @@ import { db } from "../../db";
 import { deckCards, deckVersionCards, deckVersions, decks } from "../../db/schema";
 import type { CardQty } from "./draft-diff";
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export type DeckVersion = {
   id: string;
   number: number;
@@ -62,76 +64,89 @@ export async function versionCards(versionId: string): Promise<CardQty[]> {
  * Every `since` is inherited from the predecessor when it held the same card,
  * and set to this version's committed_at when it did not. This is the one place
  * card-level seniority is decided; see the column comment in schema.ts.
+ *
+ * Pass `tx` to run inside a caller's transaction. A pull edits `deck_cards` and
+ * then commits the result: those two must land or fail together, or the source
+ * deck loses the card from its draft while its version still claims it.
  */
 export async function commitVersion(
   deckId: string,
   note: string | null,
+  tx?: Tx,
 ): Promise<{ version: DeckVersion }> {
-  return db.transaction(async (tx) => {
-    const [deck] = await tx.select().from(decks)
-      .where(eq(decks.id, deckId))
-      .for("update");
-    if (!deck) throw new Error("deck not found");
+  return tx
+    ? commitVersionIn(tx, deckId, note)
+    : db.transaction((t) => commitVersionIn(t, deckId, note));
+}
 
-    const [previous] = await tx.select()
-      .from(deckVersions)
-      .where(eq(deckVersions.deckId, deckId))
-      .orderBy(desc(deckVersions.number))
-      .limit(1);
+async function commitVersionIn(
+  tx: Tx,
+  deckId: string,
+  note: string | null,
+): Promise<{ version: DeckVersion }> {
+  const [deck] = await tx.select().from(decks)
+    .where(eq(decks.id, deckId))
+    .for("update");
+  if (!deck) throw new Error("deck not found");
 
-    // What the predecessor held, and since when. Empty on a first commit, which
-    // is what makes every `since` fall through to the new committed_at.
-    const inherited = new Map<string, Date>(
-      previous
-        ? (await tx.select({
-            oracleId: deckVersionCards.oracleId,
-            since: deckVersionCards.since,
-          }).from(deckVersionCards).where(eq(deckVersionCards.versionId, previous.id)))
-            .map((r) => [r.oracleId, r.since] as const)
-        : [],
+  const [previous] = await tx.select()
+    .from(deckVersions)
+    .where(eq(deckVersions.deckId, deckId))
+    .orderBy(desc(deckVersions.number))
+    .limit(1);
+
+  // What the predecessor held, and since when. Empty on a first commit, which
+  // is what makes every `since` fall through to the new committed_at.
+  const inherited = new Map<string, Date>(
+    previous
+      ? (await tx.select({
+          oracleId: deckVersionCards.oracleId,
+          since: deckVersionCards.since,
+        }).from(deckVersionCards).where(eq(deckVersionCards.versionId, previous.id)))
+          .map((r) => [r.oracleId, r.since] as const)
+      : [],
+  );
+
+  const [inserted] = await tx.insert(deckVersions).values({
+    deckId,
+    number: (previous?.number ?? 0) + 1,
+    note,
+    commanderOracleId: deck.commanderOracleId,
+    partnerOracleId: deck.partnerOracleId,
+  }).returning();
+
+  // committed_at is defaulted by the database, so the inheritance below reads
+  // it back off the inserted row rather than guessing at a client clock.
+  const now = inserted.committedAt;
+  const commanderSince =
+    previous && previous.commanderOracleId === deck.commanderOracleId
+      ? previous.commanderSince
+      : now;
+  const partnerSince = deck.partnerOracleId === null
+    ? null
+    : previous && previous.partnerOracleId === deck.partnerOracleId
+      ? previous.partnerSince
+      : now;
+  await tx.update(deckVersions)
+    .set({ commanderSince, partnerSince })
+    .where(eq(deckVersions.id, inserted.id));
+
+  const rows = await tx.select({
+    oracleId: deckCards.oracleId,
+    quantity: deckCards.quantity,
+  }).from(deckCards).where(eq(deckCards.deckId, deckId));
+
+  if (rows.length > 0) {
+    await tx.insert(deckVersionCards).values(
+      rows.map((r) => ({
+        versionId: inserted.id,
+        oracleId: r.oracleId,
+        quantity: r.quantity,
+        since: inherited.get(r.oracleId) ?? now,
+      })),
     );
-
-    const [inserted] = await tx.insert(deckVersions).values({
-      deckId,
-      number: (previous?.number ?? 0) + 1,
-      note,
-      commanderOracleId: deck.commanderOracleId,
-      partnerOracleId: deck.partnerOracleId,
-    }).returning();
-
-    // committed_at is defaulted by the database, so the inheritance below reads
-    // it back off the inserted row rather than guessing at a client clock.
-    const now = inserted.committedAt;
-    const commanderSince =
-      previous && previous.commanderOracleId === deck.commanderOracleId
-        ? previous.commanderSince
-        : now;
-    const partnerSince = deck.partnerOracleId === null
-      ? null
-      : previous && previous.partnerOracleId === deck.partnerOracleId
-        ? previous.partnerSince
-        : now;
-    await tx.update(deckVersions)
-      .set({ commanderSince, partnerSince })
-      .where(eq(deckVersions.id, inserted.id));
-
-    const rows = await tx.select({
-      oracleId: deckCards.oracleId,
-      quantity: deckCards.quantity,
-    }).from(deckCards).where(eq(deckCards.deckId, deckId));
-
-    if (rows.length > 0) {
-      await tx.insert(deckVersionCards).values(
-        rows.map((r) => ({
-          versionId: inserted.id,
-          oracleId: r.oracleId,
-          quantity: r.quantity,
-          since: inherited.get(r.oracleId) ?? now,
-        })),
-      );
-    }
-    return { version: { ...inserted, commanderSince, partnerSince } };
-  });
+  }
+  return { version: { ...inserted, commanderSince, partnerSince } };
 }
 
 /**

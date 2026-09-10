@@ -1368,9 +1368,14 @@ export async function pullCardFromDeck(
     return { ok: false, message: "That deck has pending changes. Release the card there." };
   }
 
-  await db.delete(deckCards)
-    .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
-  await commitVersion(sourceDeckId, "Pulled a card for another deck");
+  // One transaction. A delete that lands without its commit leaves the source
+  // deck's draft short of a card its version still claims, so the copy is
+  // neither in the deck nor free for the deck that asked for it.
+  await db.transaction(async (tx) => {
+    await tx.delete(deckCards)
+      .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
+    await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
+  });
   revalidateClaims(sourceDeckId, userId);
   revalidateClaims(askingDeckId, userId);
   return { ok: true };

@@ -39,8 +39,15 @@ export type AddBucket = "free" | "claimed" | "unowned";
 
 export type BucketedAdd = {
   oracleId: string;
-  /** The DELTA, never the whole ask — this figure feeds a price total. */
+  /** The DELTA the draft added, never the draft's whole ask. */
   needed: number;
+  /**
+   * Copies the player must actually obtain: the delta less whatever is free.
+   * This — not `needed` — is what a price total multiplies. One free copy
+   * against an ask of five is a purchase of four, and charging for five would
+   * quote a card the player already has on the table.
+   */
+  shortfall: number;
   bucket: AddBucket;
   /** Decks whose committed version holds a copy. Empty unless `claimed`. */
   heldBy: { id: string; name: string }[];
@@ -66,14 +73,24 @@ export function bucketAdds(
     const needed = change.to - change.from;
     const entry = availability.get(change.oracleId);
     if (!entry) {
-      return { oracleId: change.oracleId, needed, bucket: "unowned" as const, heldBy: [] };
+      return {
+        oracleId: change.oracleId, needed, shortfall: needed,
+        bucket: "unowned" as const, heldBy: [],
+      };
     }
     if (entry.free >= needed) {
-      return { oracleId: change.oracleId, needed, bucket: "free" as const, heldBy: [] };
+      return {
+        oracleId: change.oracleId, needed, shortfall: 0,
+        bucket: "free" as const, heldBy: [],
+      };
     }
+    // free can be negative — on a deck's own page it is a surplus, and a
+    // shortfall there is already someone else's copy. Clamping it at zero
+    // stops a deficit being counted twice.
     return {
       oracleId: change.oracleId,
       needed,
+      shortfall: needed - Math.max(entry.free, 0),
       bucket: entry.claims.length > 0 ? ("claimed" as const) : ("unowned" as const),
       heldBy: entry.claims,
     };

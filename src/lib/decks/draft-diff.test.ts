@@ -91,4 +91,25 @@ describe("bucketAdds", () => {
     expect(row.bucket).toBe("unowned");
     expect(row.heldBy).toEqual([]);
   });
+
+  // The figure a price total multiplies. Five wanted against one free copy is
+  // a purchase of four, and quoting five prices a card already on the table.
+  it("charges only for the copies the free ones do not cover", () => {
+    const [row] = bucketAdds([{ oracleId: D, from: 0, to: 5 }], avail);
+    expect(row.needed).toBe(5);
+    expect(row.shortfall).toBe(4);
+  });
+
+  it("charges nothing for an add the free copies cover", () => {
+    const [row] = bucketAdds([{ oracleId: A, from: 0, to: 1 }], avail);
+    expect(row.shortfall).toBe(0);
+  });
+
+  // A negative free is this deck's own deficit, already owed to a senior deck.
+  // Subtracting it would add the same missing copy to the bill twice.
+  it("does not double-charge when free is negative", () => {
+    const short = new Map([[B, { free: -2, claims: [] as { id: string; name: string }[] }]]);
+    const [row] = bucketAdds([{ oracleId: B, from: 0, to: 1 }], short);
+    expect(row.shortfall).toBe(1);
+  });
 });

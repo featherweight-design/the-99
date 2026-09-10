@@ -143,8 +143,32 @@ const stub = vi.hoisted(() => {
     };
   }
 
+  function makeDeleteBuilder(table: unknown) {
+    return {
+      // Thenable as well as chainable, because most deletes are awaited
+      // directly and deleteGame reads back what it removed.
+      where: (condition: unknown) => {
+        const tableName = nameOf(table);
+        const id = paramValue(condition);
+        state.deleteCalls.push({ table: tableName, id });
+        const bound = paramValues(condition);
+        const rows =
+          tableName === "deck_games"
+            ? state.deckGames
+                .filter((g) => bound.includes(g.id) && bound.includes(g.deckId))
+                .map((g) => ({ id: g.id }))
+            : [];
+        return {
+          returning: async () => rows,
+          then: (resolve: (v: unknown) => unknown) => Promise.resolve(undefined).then(resolve),
+        };
+      },
+    };
+  }
+
   const tx = {
     insert: (table: unknown) => makeInsertBuilder(table),
+    delete: (table: unknown) => makeDeleteBuilder(table),
     update: () => ({ set: () => ({ where: async () => {} }) }),
     execute: async () => {},
     // Table-aware, because `recordFillPass` reads the highest ordinal the deck
@@ -169,26 +193,7 @@ const stub = vi.hoisted(() => {
     select: () => makeSelectBuilder(),
     selectDistinctOn: () => makeSelectBuilder(),
     insert: (table: unknown) => makeInsertBuilder(table),
-    delete: (table: unknown) => ({
-      // Thenable as well as chainable, because most deletes are awaited
-      // directly and deleteGame reads back what it removed.
-      where: (condition: unknown) => {
-        const tableName = nameOf(table);
-        const id = paramValue(condition);
-        state.deleteCalls.push({ table: tableName, id });
-        const bound = paramValues(condition);
-        const rows =
-          tableName === "deck_games"
-            ? state.deckGames
-                .filter((g) => bound.includes(g.id) && bound.includes(g.deckId))
-                .map((g) => ({ id: g.id }))
-            : [];
-        return {
-          returning: async () => rows,
-          then: (resolve: (v: unknown) => unknown) => Promise.resolve(undefined).then(resolve),
-        };
-      },
-    }),
+    delete: (table: unknown) => makeDeleteBuilder(table),
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
       if (state.transactionError) throw state.transactionError;
       return fn(tx);
@@ -886,7 +891,7 @@ describe("commitDeckVersion", () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     const result = await commitDeckVersion(DECK_ID, null);
     expect(result.ok && result.buy).toEqual([
-      { oracleId: CARD_A, needed: 1, bucket: "unowned", heldBy: [] },
+      { oracleId: CARD_A, needed: 1, shortfall: 1, bucket: "unowned", heldBy: [] },
     ]);
   });
 
@@ -953,7 +958,9 @@ describe("pullCardFromDeck", () => {
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(true);
     expect(stub.state.deleteCalls).toContainEqual({ table: "deck_cards", id: SOURCE_ID });
-    expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String));
+    // The third argument is the caller's transaction: the delete above and this
+    // commit land together, or the draft loses a card its version still claims.
+    expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String), expect.anything());
   });
 
   // The player is looking at the ASKING deck's buy tag when they take the pull.
