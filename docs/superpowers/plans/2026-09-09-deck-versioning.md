@@ -1069,11 +1069,22 @@ In `package.json`, alongside the other `tsx` scripts:
 - [ ] **Step 3: Run it**
 
 Run: `pnpm probe:claims`
-Expected: five PASS lines and "All five figures hold."
+Expected: six PASS lines and "All six figures hold."
 
-If a check fails, fix the SQL from Task 5 — not the expected figure. The five
+If a check fails, fix the SQL from Task 5 — not the expected figure. The six
 are the spec's states restated, and moving one to make the probe green is the
 one failure mode this task exists to prevent.
+
+**Correction applied while building.** The figures as first drafted above ignored
+`own_claims`: on a deck's own page `free` subtracts the vantage deck's own claim
+alongside the senior ones, so it is a SURPLUS and not a count of copies in a box.
+Zero means "holds what it needs and no spare"; a negative figure is the shortfall
+this deck must buy. That is pre-existing behaviour from the seniority work in
+PR #464, not something this task introduced, so the probe's expectations were the
+thing that was wrong. Restated: the headline check — the older deck commits
+second and is told to buy rather than emptying the newer deck's box — asserts
+`free = -1`, and the pull that settles it asserts the figure returns to `0`. A
+sixth check was added for the source deck after the pull, which also reads `0`.
 
 - [ ] **Step 4: Document it in AGENTS.md**
 
