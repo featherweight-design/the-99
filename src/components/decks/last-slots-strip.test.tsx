@@ -55,6 +55,10 @@ async function click(el: HTMLElement) {
 }
 
 beforeEach(() => {
+  // Opening the list seeds and persists a draft, so any test that opens it
+  // leaves one behind for the next. The reload tests read exactly that key,
+  // and would otherwise pass or fail on the order the file happens to run in.
+  localStorage.clear();
   actions.commit
     .mockReset()
     .mockResolvedValue({ ok: true, added: 1, total: 97, passId: "p1", boughtDelta: 0 });
