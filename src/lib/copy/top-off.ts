@@ -184,10 +184,17 @@ export const topOffCopy = {
 
     /** The way back out of every decline at once. No server call and no new
      *  action: it empties the declined set. A restored row returns unticked,
-     *  which is the honest state — the tick was dropped when it was declined. */
-    restoreAll: (declined: string) => `Show all ${declined} again`,
+     *  which is the honest state — the tick was dropped when it was declined.
+     *
+     *  The control renders from one decline, so both strings carry a singular
+     *  form: 'all 1' is not English, and 'Show it again' is already the declined
+     *  row's own label a few rows down. */
+    restoreAll: (declined: string) =>
+      declined === '1' ? 'Show the one again' : `Show all ${declined} again`,
     restoreAllAria: (declined: string) =>
-      `Put all ${plural(declined, 'declined candidate', 'declined candidates')} back on the list`,
+      declined === '1'
+        ? 'Put the declined candidate back on the list'
+        : `Put all ${plural(declined, 'declined candidate', 'declined candidates')} back on the list`,
   },
 
   // ── The commit row ────────────────────────────────────────────────────
