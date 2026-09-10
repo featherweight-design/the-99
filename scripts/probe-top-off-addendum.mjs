@@ -251,6 +251,13 @@ try {
   // missing control, and reporting them the same way keeps one exit path and
   // one summary.
   kept = await autoOracleIds();
+  // Named here rather than met later as a UI timeout waiting for the strip
+  // door. A deck this database has never heard of and a deck whose door has
+  // gone missing are the same twenty seconds of silence otherwise, and only
+  // one of them is a regression.
+  if (kept.length === 0) {
+    throw new Error(`deck ${DECK} has no auto rows in this database — wrong PROBE_DECK or wrong DATABASE_URL?`);
+  }
   console.log(`[fixture] deck ${DECK} · ${kept.length} auto rows`);
 
   browser = await clerkSetup().then(() => chromium.launch());
