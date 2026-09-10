@@ -86,6 +86,36 @@ describe("useTopOffDraft", () => {
     expect(result.current.ticked).toEqual(new Set(["mana-crypt"]));
   });
 
+  // A landed pass is the one event that leaves nothing to hold, and the next
+  // open has to read as a first visit — otherwise it seeds nothing and offers
+  // an empty list to a player who still has slots to fill.
+  it("forgets the selection outright when it is discarded", () => {
+    localStorage.setItem(KEY, '{"t":["sol-ring"],"d":["chrome-mox"]}');
+    const { result, unmount } = renderHook(() => useTopOffDraft(DECK));
+    act(() => result.current.discard());
+    expect(result.current.ticked).toEqual(new Set());
+    expect(result.current.declined).toEqual(new Set());
+    expect(result.current.restored).toBe(false);
+    unmount();
+
+    const second = renderHook(() => useTopOffDraft(DECK));
+    expect(second.result.current.restored).toBe(false);
+  });
+
+  // The session map is where a value storage refused is held, and it is not
+  // reachable through localStorage — a discard that cleared only the store
+  // would leave the selection readable through the half it missed.
+  it("forgets a selection storage refused to take", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    const { result } = renderHook(() => useTopOffDraft("deck-whose-writes-throw-then-discard"));
+    act(() => result.current.setTicked(new Set(["sol-ring"])));
+    act(() => result.current.discard());
+    expect(result.current.ticked).toEqual(new Set());
+    expect(result.current.restored).toBe(false);
+  });
+
   // Acting in one tab should settle the other: the same deck open twice is the
   // second half of the loss this hook exists to close.
   it("settles when another tab writes this deck's selection", () => {

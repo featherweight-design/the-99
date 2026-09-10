@@ -7,7 +7,7 @@ import {
   type TopOffDraft,
   topOffDraftKey,
 } from "../../lib/decks/top-off-draft";
-import { readRaw, subscribeToKey, writeRaw } from "./local-store";
+import { readRaw, removeRaw, subscribeToKey, writeRaw } from "./local-store";
 
 const EMPTY: TopOffDraft = { ticked: new Set(), declined: new Set() };
 
@@ -19,6 +19,10 @@ export type TopOffDraftHandle = TopOffDraft & {
   restored: boolean;
   setTicked: (next: Set<string>) => void;
   setDeclined: (next: Set<string>) => void;
+  /** Forgets the selection outright, so the next open reads as a first visit.
+   *  What this hook holds is an *uncommitted* selection; a landed pass is the
+   *  one event that leaves nothing to hold. */
+  discard: () => void;
 };
 
 /**
@@ -67,6 +71,7 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
 
   const setTicked = useCallback((next: Set<string>) => write({ ticked: next }), [write]);
   const setDeclined = useCallback((next: Set<string>) => write({ declined: next }), [write]);
+  const discard = useCallback(() => removeRaw(key), [key]);
 
   return {
     ticked: draft?.ticked ?? EMPTY.ticked,
@@ -74,5 +79,6 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
     restored: draft !== null,
     setTicked,
     setDeclined,
+    discard,
   };
 }

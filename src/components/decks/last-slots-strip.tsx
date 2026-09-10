@@ -130,7 +130,7 @@ function LastSlotsStripInner({
   // nothing on screen saying so. Both halves persist together: restoring the
   // ticks while re-offering every declined candidate would hand back a list
   // the player has to clear again.
-  const { ticked, declined, restored, setTicked, setDeclined } = useTopOffDraft(deckId);
+  const { ticked, declined, restored, setTicked, setDeclined, discard } = useTopOffDraft(deckId);
 
   // The list has been opened before, so the door note stops promising a seed
   // that already happened. Cancelling does not discard the selection, so this
@@ -375,6 +375,7 @@ function LastSlotsStripInner({
           onDeclinedChange={setDeclined}
           newestAsOf={newestAsOf}
           onAnnounce={onAnnounce}
+          onCommitted={discard}
           onInflight={(v) => onInflight?.(v)}
           onBarHeight={(h) => onBarHeight?.(h)}
           onClose={closeList}

@@ -72,3 +72,17 @@ export function writeRaw(key: string, value: string): void {
   }
   for (const listener of listeners.get(key) ?? []) listener();
 }
+
+/** Drops the key from both storage and the session fallback, and wakes every
+ *  subscriber. Clearing one without the other would leave the value readable
+ *  through the half that was missed. */
+export function removeRaw(key: string): void {
+  sessionValues.delete(key);
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Same trade as the write: the session map is already clear, so the value
+    // is gone for this tab whatever storage did.
+  }
+  for (const listener of listeners.get(key) ?? []) listener();
+}

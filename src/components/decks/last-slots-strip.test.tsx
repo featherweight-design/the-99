@@ -394,6 +394,38 @@ describe("LastSlotsStrip", () => {
       expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
     });
 
+    // What survives a reload is an *uncommitted* selection. A landed pass has
+    // nothing left to survive, and a draft left behind would read as a choice
+    // the player made — so the next open would seed nothing and hand a player
+    // who still has slots an empty list.
+    it("does not bring back a selection that has already been committed", async () => {
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      await click(screen.getByRole("button", { name: /^Add 2 cards to the deck/ }));
+      expect(actions.commit).toHaveBeenCalled();
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
+    });
+
+    // A refusal changed nothing, so it is not a landed pass: the selection the
+    // player is about to retry has to still be there when they come back.
+    it("brings back a selection the server refused", async () => {
+      actions.commit.mockResolvedValue({ ok: false, message: "Nope." });
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      await click(screen.getAllByRole("checkbox", { checked: true })[0]);
+      await click(screen.getByRole("button", { name: /^Add 1 card to the deck/ }));
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+    });
+
     // The second half of the same loss: the deck open in two tabs at once.
     it("settles when the other tab changes the selection", async () => {
       render(<LastSlotsStrip {...base} />);

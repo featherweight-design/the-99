@@ -58,9 +58,13 @@ export interface TopOffListProps {
   newestAsOf: Date | null;
   onAnnounce: (message: string) => void;
   onInflight: (inflight: boolean) => void;
+  /** A pass has landed. The selection survives a cancel, and every refusal, but
+      not this: what the strip holds is an uncommitted selection, and once it is
+      committed there is nothing left to hold. */
+  onCommitted: () => void;
   /** Cancel, and the settled commit. Returns focus to the door. One handler for
-      both, and no reason argument: the strip does the same thing either way,
-      because the selection survives a cancel exactly as it survives a commit. */
+      both, and no reason argument: the strip moves focus the same way either
+      way. */
   onClose: () => void;
   /** The pinned commit bar's measured height, published so the page foot can
       reserve it. The bar is `fixed` and the quick-add dock it displaces is
@@ -157,6 +161,7 @@ export function TopOffList({
   newestAsOf,
   onAnnounce,
   onInflight,
+  onCommitted,
   onClose,
   onBarHeight,
 }: TopOffListProps) {
@@ -385,7 +390,7 @@ export function TopOffList({
         onAnnounce(result.message);
         return;
       }
-      onTickedChange(new Set());
+      onCommitted();
       onAnnounce(
         result.boughtDelta > 0
           ? topOffCopy.announce.added(

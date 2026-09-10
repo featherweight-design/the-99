@@ -91,14 +91,17 @@ async function walk(page, width) {
   // stays mounted while the list is open.
   // An attribute selector rather than `#id`: React's useId emits `«r0»`, which
   // is not a bare CSS identifier, and Node has no CSS.escape.
-  const listSel = `[id="${await door.getAttribute("aria-controls")}"]`;
-  const list = page.locator(listSel);
+  // Re-read after a reload rather than held: the id is React's useId, and
+  // nothing promises a fresh document numbers its tree the way the last one did.
+  let listSel = `[id="${await door.getAttribute("aria-controls")}"]`;
+  const list = () => page.locator(listSel);
+  const boxes = () => list().getByRole("checkbox");
   const ticks = () => page.locator(`${listSel} input[type=checkbox]:checked`).count();
+  const setAside = () => page.locator("text=not this one").count();
 
   await door.click();
-  const boxes = list.getByRole("checkbox");
-  await boxes.first().waitFor({ timeout: 15_000 });
-  const rows = await boxes.count();
+  await boxes().first().waitFor({ timeout: 15_000 });
+  const rows = await boxes().count();
   console.log(`[${w}] open: ${rows} rows, ${await ticks()} seeded ticks`);
   // The open brings the panel to the top of the viewport. Shooting before the
   // effect has run reads the pre-scroll frame, which is the very thing this
@@ -109,7 +112,7 @@ async function walk(page, width) {
   // The pinned bar is out of flow at phone, so the last row is only reachable
   // if the list reserves the bar's height. Scroll the last row to the foot and
   // look at it.
-  await boxes.last().scrollIntoViewIfNeeded();
+  await boxes().last().scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
   await shot(page, `${w}-2b-list-end`);
 
@@ -130,10 +133,46 @@ async function walk(page, width) {
   await decline.click();
   await page.waitForTimeout(200);
   await shot(page, `${w}-4-declined`);
-  console.log(`[${w}] declined row drawn: ${await page.locator("text=not this one").count()}`);
+  console.log(`[${w}] declined row drawn: ${await setAside()}`);
   await page.getByRole("button", { name: /^Put .* back on the list$/ }).first().click();
   await page.waitForTimeout(200);
-  console.log(`[${w}] restored: ${await page.locator("text=not this one").count() === 0}`);
+  console.log(`[${w}] restored: ${(await setAside()) === 0}`);
+
+  // Reload survival (#479). Taken here, with one candidate set aside again, so
+  // both halves of the selection are non-empty and non-equal — a jsdom remount
+  // is not proof that a real browser refresh brings either of them back.
+  await decline.click();
+  await page.waitForTimeout(200);
+  const ticksBefore = await ticks();
+  const asideBefore = await setAside();
+  await page.reload({ waitUntil: "networkidle" });
+  const doorAgain = page.getByRole("button", { name: /Choose the cards for the last/ });
+  await doorAgain.waitFor({ timeout: 20_000 });
+  // Both widths' returning note share this clause; the phone form drops the
+  // ownership figure the desktop one opens with. It has to be the returning
+  // note and not the first-open one, which would be promising a seed that the
+  // restored selection is about to override.
+  const noteAgain = await page.locator("text=/eopens where you left it/").count();
+  // Read before the click, not after: opening the list replaces the door.
+  listSel = `[id="${await doorAgain.getAttribute("aria-controls")}"]`;
+  await doorAgain.click();
+  await boxes().first().waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(300);
+  const ticksAfter = await ticks();
+  const asideAfter = await setAside();
+  console.log(
+    `[${w}] reload: ticks ${ticksBefore} then ${ticksAfter} · ` +
+      `set aside ${asideBefore} then ${asideAfter} · returning note: ${noteAgain > 0}`,
+  );
+  await shot(page, `${w}-4b-after-reload`);
+  if (ticksAfter !== ticksBefore || asideAfter !== asideBefore || noteAgain === 0) {
+    throw new Error(
+      `[${w}] the selection did not survive a reload: ticks ${ticksBefore} then ${ticksAfter}, ` +
+        `set aside ${asideBefore} then ${asideAfter}, returning note ${noteAgain > 0}`,
+    );
+  }
+  await page.getByRole("button", { name: /^Put .* back on the list$/ }).first().click();
+  await page.waitForTimeout(200);
 
   // Forced failure: kill the server action's POST, which is the thrown-call
   // half of state 15. The list must stay open with every tick intact.
@@ -145,7 +184,7 @@ async function walk(page, width) {
   await page.waitForTimeout(1500);
   // By test id, not by role: the plate carries no live role, because
   // BuilderShell's polite region is what speaks the refusal.
-  const refusal = await list
+  const refusal = await list()
     .getByTestId("top-off-refusal")
     .innerText()
     .catch(() => "(none)");

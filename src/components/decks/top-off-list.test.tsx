@@ -49,6 +49,7 @@ function Harness({
   newestAsOf?: Date | null;
   onAnnounce?: (m: string) => void;
   onInflight?: (v: boolean) => void;
+  onCommitted?: () => void;
   onClose?: () => void;
   onBarHeight?: (h: number) => void;
 }) {
@@ -70,6 +71,7 @@ function Harness({
       newestAsOf={props.newestAsOf ?? null}
       onAnnounce={props.onAnnounce ?? (() => {})}
       onInflight={props.onInflight ?? (() => {})}
+      onCommitted={props.onCommitted ?? (() => setTicked(new Set()))}
       onClose={props.onClose ?? (() => {})}
       onBarHeight={props.onBarHeight ?? (() => {})}
     />
