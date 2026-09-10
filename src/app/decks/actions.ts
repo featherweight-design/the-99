@@ -17,7 +17,7 @@ import { mergeEdhrecData } from "../../lib/edhrec/merge";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { hardDecks } from "../../lib/decks/availability";
 import {
-  commitVersion, newestVersion, restoreDraftFromVersion, versionCards,
+  commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
 } from "../../lib/decks/versions";
 import {
   bucketAdds, draftDiff, type BucketedAdd, type DraftChange,
@@ -1190,10 +1190,12 @@ export async function logGame(
   const hurt = [...new Set(input.hurt)] as GameAxisKey[];
   if (worked.some((key) => hurt.includes(key))) return refuse;
 
-  // Null for a brew, and null is accurate: a game played by a list nobody
-  // committed has no version to point at, and inventing one would be a
-  // claim the history cannot support.
-  const version = await newestVersion(deckId);
+  // The version live when the game was PLAYED, not when it was logged: a game
+  // can be backdated, and stamping it with today's list would credit a night's
+  // result to a deck that did not exist that night. Null for a brew, and null
+  // is accurate: a game played by a list nobody committed has no version to
+  // point at, and inventing one would be a claim the history cannot support.
+  const version = await versionLiveAt(deckId, playedAt);
 
   try {
     await db.transaction(async (tx) => {
@@ -1379,10 +1381,14 @@ export async function pullCardFromDeck(
     const [deck] = await tx.select().from(decks)
       .where(eq(decks.id, sourceDeckId)).for("update");
 
+    // Deleted between the ownership check and this lock. Left to fall through,
+    // it reaches commitVersion, which throws rather than refusing.
+    if (!deck) return { ok: false, message: "We couldn't find that deck." };
+
     // Neither commander is a `deck_cards` row, but both are claims, so a deck
     // can be named as a card's holder on the strength of its commander alone.
     // Without this the pull the reader was offered fails as "doesn't hold it".
-    if (deck?.commanderOracleId === oracleId || deck?.partnerOracleId === oracleId) {
+    if (deck.commanderOracleId === oracleId || deck.partnerOracleId === oracleId) {
       return { ok: false, message: "That card is that deck's commander." };
     }
 

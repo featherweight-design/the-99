@@ -263,6 +263,7 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
 // guards, their arithmetic and their revalidation.
 vi.mock("../../lib/decks/versions", () => ({
   newestVersion: vi.fn(),
+  versionLiveAt: vi.fn(),
   versionCards: vi.fn(),
   commitVersion: vi.fn(),
   restoreDraftFromVersion: vi.fn(),
@@ -276,7 +277,7 @@ import {
   pullCardFromDeck, restoreAutoCards,
 } from "./actions";
 import {
-  commitVersion, newestVersion, restoreDraftFromVersion, versionCards,
+  commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
 
@@ -712,6 +713,18 @@ describe("logGame", () => {
       { gameId: expect.any(String), axis: "board", polarity: "worked" },
       { gameId: expect.any(String), axis: "card_flow", polarity: "hurt" },
     ]);
+  });
+
+  // The stamp says which list was on the table that night. A game backdated
+  // to before a commit belongs to the version that was live then, so asking
+  // for the newest would credit a result to a deck that did not yet exist.
+  it("stamps a backdated game with the version live when it was played", async () => {
+    const playedAt = new Date("2026-01-01T00:00:00Z");
+    vi.mocked(versionLiveAt).mockResolvedValue({ ...aVersion(), id: "v-old" });
+    await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], playedAt });
+    expect(versionLiveAt).toHaveBeenCalledWith("deck_1", playedAt);
+    const [game] = stub.state.insertCalls.filter((c) => c.table === "deck_games");
+    expect(game.values).toMatchObject({ versionId: "v-old" });
   });
 
   // No marks at all is the fifteen-second log, and it is valid. The axis

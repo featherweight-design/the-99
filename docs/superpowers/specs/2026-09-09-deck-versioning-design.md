@@ -165,7 +165,8 @@ why it is offered at commit time.
 **4. Version history and diff.** Versions with date, note, and `+n / −n`. Opening one shows it
 against its predecessor. A v1 with no predecessor reads "initial", not "+99".
 
-**5. The game log stamp.** A logged game records the deck's current version. History rows show it
+**5. The game log stamp.** A logged game records the version live when it was PLAYED, which for a
+backdated game is not the current one. History rows show it
 as a small marker. Games from before this shipped show nothing rather than a guess.
 
 **Discard** sits beside Commit, throws the draft away and restores `deck_cards` from the newest

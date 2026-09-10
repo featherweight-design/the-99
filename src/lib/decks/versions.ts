@@ -4,7 +4,7 @@
 // means "which deck is this card already in", so nothing here says "committed
 // cards". A VERSION is a snapshot; the DRAFT is `deck_cards`.
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, lte } from "drizzle-orm";
 import { db } from "../../db";
 import { deckCards, deckVersionCards, deckVersions, decks } from "../../db/schema";
 import type { CardQty } from "./draft-diff";
@@ -38,6 +38,26 @@ export async function newestVersion(deckId: string, tx?: Tx): Promise<DeckVersio
     .from(deckVersions)
     .where(eq(deckVersions.deckId, deckId))
     .orderBy(desc(deckVersions.number))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * The version a deck was sleeved as at a given moment.
+ *
+ * A game can be logged with a `played_at` in the past, and the stamp is meant
+ * to say which list was on the table that night — not which one is on it now.
+ * Null when the deck had committed nothing yet, which is the accurate answer:
+ * that game was played by a list nobody recorded.
+ *
+ * `number` breaks a `committed_at` tie for the same reason `newestVersion`
+ * orders by it: two versions can share a millisecond.
+ */
+export async function versionLiveAt(deckId: string, at: Date): Promise<DeckVersion | null> {
+  const [row] = await db.select()
+    .from(deckVersions)
+    .where(and(eq(deckVersions.deckId, deckId), lte(deckVersions.committedAt, at)))
+    .orderBy(desc(deckVersions.committedAt), desc(deckVersions.number))
     .limit(1);
   return row ?? null;
 }
