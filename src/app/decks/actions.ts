@@ -1311,10 +1311,24 @@ export async function commitDeckVersion(
     }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
     const diff = draftDiff(draft, before);
+    // Basics are out of the availability model entirely — see that query's
+    // header — so an added Forest comes back with no row and would bucket as
+    // `unowned`, putting ten Forests on a shopping list. Dropped here rather
+    // than special-cased downstream, because every other Shopping surface in
+    // the app already treats basics as unlimited.
+    const basics = new Set(
+      diff.adds.length === 0 ? [] : (await tx.select({
+        oracleId: cards.oracleId, typeLine: cards.typeLine,
+      }).from(cards).where(inArray(cards.oracleId, diff.adds.map((a) => a.oracleId))))
+        .filter((c) => isBasicLand(c.typeLine))
+        .map((c) => c.oracleId),
+    );
+    const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
+
     // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim,
     // and the answer wanted is the one that held before this commit landed.
     const availability = await loadAvailability(userId, {
-      oracleIds: diff.adds.map((a) => a.oracleId),
+      oracleIds: adds.map((a) => a.oracleId),
       excludeDeckId: deckId,
     });
     // hardDecks, not the raw claims: a BREW "holding" a card holds nothing, and
@@ -1322,7 +1336,7 @@ export async function commitDeckVersion(
     const claimants = new Map(
       [...availability].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
     );
-    const buy = bucketAdds(diff.adds, claimants).filter((a) => a.bucket !== "free");
+    const buy = bucketAdds(adds, claimants).filter((a) => a.bucket !== "free");
 
     const { version } = await commitVersion(deckId, note?.trim() || null, tx);
     return { ok: true, number: version.number, buy, pull: diff.removes };

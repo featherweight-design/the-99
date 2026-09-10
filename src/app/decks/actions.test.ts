@@ -193,6 +193,8 @@ const stub = vi.hoisted(() => {
             return [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }];
           }
           if (tableName === "decks") return state.decks;
+          // The commit reads type lines to keep basics off the buy list.
+          if (tableName === "cards") return state.cards;
           return state.deckRows as unknown as Record<string, unknown>[];
         };
         return {
@@ -927,6 +929,17 @@ describe("commitDeckVersion", () => {
     expect(result.ok && result.buy).toEqual([
       { oracleId: CARD_A, needed: 1, shortfall: 1, bucket: "unowned", heldBy: [] },
     ]);
+  });
+
+  // Basics are excluded from the availability model, so an added Forest comes
+  // back with no row and would otherwise read as a card nobody owns — ten
+  // Forests on a shopping list nobody would ever shop from.
+  it("keeps a basic land off the buy list", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 10 });
+    stub.state.cards.push({ oracleId: CARD_A, typeLine: "Basic Land — Forest" });
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.buy).toEqual([]);
   });
 
   // An empty note is not a note. Storing "" would render a blank line in the
