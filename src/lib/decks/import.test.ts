@@ -219,6 +219,16 @@ describe("buildDeckImport — locked decision: a commander also in the 99 is ded
     expect(result.cards.map((c) => c.oracleId)).toEqual([SOL_RING.oracleId]);
   });
 
+  it("says so when a declared commander's count is clamped", () => {
+    const result = build("Commander\n2 Atreus, God of War\n3 Kratos, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(result.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(result.notes).toEqual([
+      { kind: "quantityClamped", name: "Atreus, God of War", requested: 2, sourceLine: 2 },
+      { kind: "quantityClamped", name: "Kratos, God of War", requested: 3, sourceLine: 3 },
+    ]);
+  });
+
   it("leaves a single declared commander alone", () => {
     const result = build("Commander\n1 Atreus, God of War\n\nDeck\n1 Sol Ring");
     expect(result.declaredCommander?.name).toBe("Atreus, God of War");

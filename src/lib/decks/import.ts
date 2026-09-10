@@ -222,11 +222,25 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
   const quantities = new Map<string, { quantity: number; firstLine: number }>();
   const legendaryCandidates: DeckImport["legendaryCandidates"] = [];
 
+  // A deck holds one of each commander, so `2 <name>` under a Commander header
+  // is clamped the same way a duplicate in the 99 is — and says so, rather than
+  // dropping the count with no account of itself.
+  function noteClampedCommander(row: { quantity: number; line: number }, name?: string): void {
+    if (row.quantity <= 1) return;
+    notes.push({
+      kind: "quantityClamped",
+      name: name ?? "",
+      requested: row.quantity,
+      sourceLine: row.line,
+    });
+  }
+
   for (const { row, oracleId } of matched) {
     const card = byOracleId.get(oracleId);
     if (commanderLines.has(row.line) && !declaredCommander) {
       declaredCommander = { oracleId, name: card?.name ?? row.name, sourceLine: row.line };
       declaredIds.add(oracleId);
+      noteClampedCommander(row, card?.name);
       continue;
     }
     // A commander that also appears in the 99 is an export artifact, not intent.
@@ -241,6 +255,7 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
       if (!declaredPartner) {
         declaredPartner = { oracleId, name: card?.name ?? row.name, sourceLine: row.line };
         declaredIds.add(oracleId);
+        noteClampedCommander(row, card?.name);
       } else {
         notes.push({
           kind: "thirdCommanderDeclared",
