@@ -169,6 +169,13 @@
       "when": 1789005379303,
       "tag": "0023_chubby_lady_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1789009018243,
+      "tag": "0024_flaky_sharon_ventura",
+      "breakpoints": true
     }
   ]
 }
