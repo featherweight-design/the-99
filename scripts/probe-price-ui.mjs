@@ -103,9 +103,8 @@ async function report(page, label) {
       // declarations: the separator's padding and the slot's min-width both
       // land here, and only their sum is what the eye reads as a gap.
       //
-      // The tag's own children are [word, tail]; the tail's are [separator,
-      // figure]. A tag with no tail reports null rather than 0, because no gap
-      // is not a small gap.
+      // The tail's children are [separator, figure]. A tag with no tail reports
+      // null rather than 0, because no gap is not a small gap.
       // The tail's own children are [separator, figure], and the tail starts
       // exactly where the word ends — so the separator's painted box IS the
       // gap, whether it is spelled in spaces or in padding.
