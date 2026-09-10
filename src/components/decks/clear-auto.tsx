@@ -7,7 +7,7 @@
 // §Decklist Group Toggle (design table) — ClearAutoButton lives right of the spacer,
 // left of the Group label.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 
@@ -32,10 +32,6 @@ interface ClearAutoButtonProps {
  *  pair wraps to a line of its own and becomes a phone target. */
 const BULK_BUTTON_CLASS =
   "font-mono text-[12px] text-fg-body bg-transparent border border-border-strong rounded-[8px] px-[12px] min-h-[44px] md:min-h-0 py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default";
-
-/** One question is on screen at a time — the toolbar renders once per decklist
- *  and the confirm replaces both bulk controls — so a constant id is enough. */
-const QUESTION_ID = "keep-all-confirm-question";
 
 /** The confirm's two answers, taking `game-history-row.tsx`'s inline confirm
  *  verbatim minus its danger ink — this app's only confirm vocabulary, and it
@@ -68,6 +64,10 @@ export function ClearAutoButton({
   // question, because it ships a receipt with a real undo. Confirm where there
   // is no undo, receipt where there is.
   const [confirming, setConfirming] = useState(false);
+  // Per instance rather than a module constant: two decklists on one page would
+  // otherwise share one id and leave `aria-describedby` pointing at whichever
+  // question the document happened to hold first.
+  const questionId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const yesRef = useRef<HTMLButtonElement>(null);
   // The trigger unmounts while the question is up, so focus has to be carried
@@ -138,7 +138,7 @@ export function ClearAutoButton({
                 variants sit inside this one element and only the visible one is
                 in the accessibility tree, so the description is never doubled. */}
             <span
-              id={QUESTION_ID}
+              id={questionId}
               className="w-full mb-[9px] md:w-auto md:mb-0 text-[11.5px] leading-[1.5] text-fg-body"
             >
               <span className="hidden md:inline">
@@ -157,7 +157,7 @@ export function ClearAutoButton({
               ref={yesRef}
               type="button"
               disabled={busy}
-              aria-describedby={QUESTION_ID}
+              aria-describedby={questionId}
               onClick={() => {
                 setConfirming(false);
                 onKeepAll();
@@ -169,7 +169,7 @@ export function ClearAutoButton({
             <button
               type="button"
               disabled={busy}
-              aria-describedby={QUESTION_ID}
+              aria-describedby={questionId}
               onClick={() => {
                 returningFocus.current = true;
                 setConfirming(false);
