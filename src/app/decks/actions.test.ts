@@ -483,6 +483,16 @@ describe("createDeck — filled baseline", () => {
     expect(stub.state.insertCalls.filter((c) => c.table === "decks").length).toBe(0);
   });
 
+  it("refuses a partner id that is not a uuid before it reaches a query", async () => {
+    stub.state.cards.push(commanderCard({}));
+
+    await expect(createDeck(COMMANDER_ORACLE, "My Deck", [], "not-a-uuid")).rejects.toThrow(
+      "partner not found",
+    );
+
+    expect(stub.state.insertCalls.filter((c) => c.table === "decks").length).toBe(0);
+  });
+
   it("names the partner when the partner is the id that is missing", async () => {
     stub.state.cards.push(commanderCard({}));
 

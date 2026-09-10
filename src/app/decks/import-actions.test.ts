@@ -90,8 +90,12 @@ const stub = vi.hoisted(() => {
 // The catalog importDeck matches against. Mocked rather than read, because the
 // fake db answers a select by table and the catalog query selects columns.
 const catalog = vi.hoisted(() => {
+  // Uuids rather than readable slugs: the actions validate the shape of every id
+  // they are handed before querying, so a slug would exercise that refusal
+  // instead of the deck the test means to describe.
+  let n = 0;
   const card = (over: Record<string, unknown> & { name: string }) => ({
-    oracleId: `oracle-${over.name.toLowerCase().replace(/[^a-z]+/g, "-")}`,
+    oracleId: `a0000000-0000-4000-8000-${String(++n).padStart(12, "0")}`,
     scryfallId: `scry-${over.name.toLowerCase().replace(/[^a-z]+/g, "-")}`,
     typeLine: "Artifact",
     oracleText: null as string | null,
@@ -186,10 +190,11 @@ beforeEach(() => {
 });
 
 describe("importDeck — a declared pair", () => {
-  const ATREUS = "oracle-atreus-god-of-war";
-  const KRATOS = "oracle-kratos-god-of-war";
-  const ISHAI = "oracle-ishai-ojutai-dragonspeaker";
-  const SOL_RING = "oracle-sol-ring";
+  // The ids the catalog fixture above minted, in the order it declares them.
+  const SOL_RING = "a0000000-0000-4000-8000-000000000001";
+  const ATREUS = "a0000000-0000-4000-8000-000000000002";
+  const KRATOS = "a0000000-0000-4000-8000-000000000003";
+  const ISHAI = "a0000000-0000-4000-8000-000000000004";
 
   // The re-validation reads the commander cards back out of `cards`, so the
   // fixtures the fake answers with are the catalog rows themselves.
@@ -261,6 +266,20 @@ describe("importDeck — a declared pair", () => {
         partnerOracleId: ATREUS,
       }),
     ).rejects.toThrow("a deck's two commanders must be different cards");
+    expect(stub.state.inserts).toEqual([]);
+  });
+
+  it("refuses a partner id that is not a uuid before it reaches a query", async () => {
+    seedCards();
+    await expect(
+      importDeck({
+        text: "1 Sol Ring",
+        source: "paste",
+        name: "Nope",
+        commanderOracleId: ATREUS,
+        partnerOracleId: "not-a-uuid",
+      }),
+    ).rejects.toThrow("partner not found");
     expect(stub.state.inserts).toEqual([]);
   });
 

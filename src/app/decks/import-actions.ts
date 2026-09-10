@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
@@ -167,6 +168,14 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
       ? input.partnerOracleId
       : (result.declaredPartner?.oracleId ?? null);
   const notes = [...result.notes];
+
+  // Shape first: a crafted request can put any string here, and a malformed uuid
+  // reaching `inArray` is rejected by Postgres rather than by this action — the
+  // player would see a 500 where the refusal below reads as one.
+  if (!isUuid(commanderOracleId)) throw new Error("commander not found");
+  if (partnerOracleId !== null && !isUuid(partnerOracleId)) {
+    throw new Error("partner not found");
+  }
 
   // A deck's two commanders are two different cards — the schema says so with a
   // check constraint, and reaching it would surface as an opaque write failure.

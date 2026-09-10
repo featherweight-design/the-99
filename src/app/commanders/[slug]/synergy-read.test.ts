@@ -8,7 +8,11 @@ const committed = vi.hoisted(() => ({ value: new Map<string, { id: string; name:
 // `.groupBy`. The builder is thenable so the await resolves to the fixture rows.
 vi.mock("../../../db", () => {
   const chain: Record<string, unknown> = {
-    as: () => ({}),
+    // The subquery's `.as` stands in for a Drizzle subquery, so it carries the
+    // two columns the outer select reads off it. Returning a bare `{}` would
+    // hand `undefined` to the join and the group-by, and the test would pass
+    // without ever describing the query it claims to.
+    as: () => ({ oracleId: "owned.oracle_id", qty: "owned.qty" }),
     then: (resolve: (value: unknown) => void) => resolve(rows.value),
   };
   for (const step of ["from", "innerJoin", "leftJoin", "where", "groupBy"]) {

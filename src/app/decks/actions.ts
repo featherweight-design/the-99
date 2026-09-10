@@ -9,6 +9,7 @@ import {
   fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { isUuid } from "../../lib/uuid";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { withinColorIdentity } from "../../lib/cards/identity-where";
 import { getEdhrecData } from "../../lib/edhrec/client";
@@ -39,7 +40,6 @@ export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
   | { ok: false; message: string };
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
 // Consider panel can sort by cost without a second round trip.
@@ -212,6 +212,13 @@ export async function createDeck(
   partnerOracleId: string | null = null,
 ): Promise<void> {
   const userId = await requireUserId();
+  // Shape first: a crafted request can put any string here, and a malformed uuid
+  // reaching `inArray` is rejected by Postgres rather than by this action — the
+  // player would see a 500 where the refusal below reads as one.
+  if (!isUuid(commanderOracleId)) throw new Error("commander not found");
+  if (partnerOracleId !== null && !isUuid(partnerOracleId)) {
+    throw new Error("partner not found");
+  }
   // A deck's two commanders are two different cards — the schema says so with a
   // check constraint, and reaching it would surface as an opaque write failure.
   if (partnerOracleId === commanderOracleId) {
@@ -777,7 +784,7 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   // onConflictDoNothing does not cover — Postgres rejects the statement whole.
   const byId = new Map<string, number>();
   for (const r of rows) {
-    if (!UUID_RE.test(r.oracleId)) throw new Error("invalid oracle id");
+    if (!isUuid(r.oracleId)) throw new Error("invalid oracle id");
     if (!Number.isInteger(r.quantity) || r.quantity < 1 || r.quantity > 99) {
       throw new Error("invalid quantity");
     }
@@ -846,7 +853,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
   const ids = [...new Set(oracleIds)];
   if (ids.length !== oracleIds.length) throw new Error("duplicate oracle id");
   for (const oracleId of ids) {
-    if (!UUID_RE.test(oracleId)) throw new Error("invalid oracle id");
+    if (!isUuid(oracleId)) throw new Error("invalid oracle id");
   }
   if (ids.length === 0) throw new Error("nothing selected");
 
@@ -962,7 +969,7 @@ export async function undoFillPass(
 ): Promise<{ removed: number; built: number }> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
-  if (!UUID_RE.test(passId)) throw new Error("invalid pass id");
+  if (!isUuid(passId)) throw new Error("invalid pass id");
 
   const result = await db.transaction(async (tx) => {
     // Under the same lock every deck write takes: attribution is read here and
