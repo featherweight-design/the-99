@@ -34,7 +34,10 @@ export default async function DeckBuilderPage({
   const detail = await getDeckDetail(id, userId);
   if (!detail) notFound();
 
-  const openSlots = deckBodySize(detail.partner !== null) - detail.built;
+  // `total`, not `built`, and the same figure the strip is measured against:
+  // unresolved lines hold the slots they arrived on, so a deck whose only gap
+  // is two lines we could not name has no last slots to rank candidates for.
+  const openSlots = deckBodySize(detail.partner !== null) - detail.total;
 
   // A pair's legal pool is the union of both identities, the same union
   // `ownedColorLegalPool` filters the suggestion pool by.
