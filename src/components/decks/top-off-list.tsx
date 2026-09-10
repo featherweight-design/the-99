@@ -739,17 +739,21 @@ function CandidateRow({
       <input
         type="checkbox"
         id={tickId}
-        className="sr-only"
+        className="peer sr-only"
         checked={ticked}
         aria-label={rowLabel(c, newestAsOf)}
         aria-disabled={inert || inflight ? true : undefined}
         aria-describedby={inert ? capLineId : undefined}
         onChange={onToggle}
       />
+      {/* The checkbox is `sr-only`, so the global `:focus-visible` outline is
+          drawn on a clipped 1px box and a keyboard reader sees nothing move.
+          The ring is borrowed off the peer onto the box that is actually on
+          screen, matching `quick-add-bar.tsx`'s own sr-only control. */}
       <label
         htmlFor={tickId}
         aria-hidden
-        className="flex-none flex items-center justify-center font-mono w-[26px] h-[26px] md:w-[18px] md:h-[18px] rounded-[6px] md:rounded-[5px] text-[13px] md:text-[11px] cursor-pointer"
+        className="flex-none flex items-center justify-center font-mono w-[26px] h-[26px] md:w-[18px] md:h-[18px] rounded-[6px] md:rounded-[5px] text-[13px] md:text-[11px] cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-[color:var(--accent)]"
         style={
           ticked
             ? {
