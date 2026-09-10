@@ -44,6 +44,7 @@ const printing = (over: Partial<CatalogPrintingRow> = {}): CatalogPrintingRow =>
   collectorNumber: "263",
   releasedAt: "2021-04-23",
   imageUri: "https://img/c21-263.jpg",
+  flavorName: null,
   ...over,
 });
 

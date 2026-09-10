@@ -37,6 +37,9 @@ function makeDeck(): DeckDetail {
     owned: true,
     quantity: 1,
     auto: false,
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
   }));
   return {
     id: "deck-1",

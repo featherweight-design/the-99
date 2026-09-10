@@ -17,6 +17,7 @@ const card: BrowseListCard = {
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: null,
+  printedName: null,
   quantity: 1,
   setCounts: [],
   setCodes: ["RVR"],
@@ -87,5 +88,42 @@ describe("GridView availability chip", () => {
   it("leaves the set · rarity caption untouched", () => {
     renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
     expect(screen.getByText("RVR · rare")).toBeInTheDocument();
+  });
+});
+
+// The printed name (#467 follow-on). `/collection` lists only what the player
+// owns, so the unowned fallback cannot occur on this surface by construction.
+describe("GridView printed name", () => {
+  it("captions a tile with the name printed on the copy the player owns", () => {
+    renderTiles({ ...card, name: "World at War", printedName: "Battle of Olympus" });
+    // Twice over: the visible caption and the sr-only string the button is
+    // named from. The oracle name appears in neither.
+    expect(screen.getAllByText("Battle of Olympus")).toHaveLength(2);
+    expect(screen.queryByText("World at War")).not.toBeInTheDocument();
+  });
+
+  it("leaves an ordinary card on its oracle name, byte for byte", () => {
+    renderTiles({ ...card, name: "Fire // Ice", printedName: null });
+    expect(screen.getAllByText("Fire // Ice")).toHaveLength(2);
+  });
+
+  // The tile's accessible name is its text content, so the clipped caption alone
+  // would announce a renamed two-faced card as its front face and lose the back.
+  it("speaks both faces of a renamed two-faced card, while the caption shows one", () => {
+    renderTiles({
+      ...card,
+      name: "Delver of Secrets // Insectile Aberration",
+      printedName: "Battle of Olympus // Aftermath",
+      layout: "transform",
+    });
+    expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Battle of Olympus \/\/ Aftermath/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("announces an ordinary card by exactly the name on its caption", () => {
+    renderTiles({ ...card, name: "Sol Ring", printedName: null });
+    expect(screen.getByRole("button", { name: /Sol Ring/ })).toBeInTheDocument();
   });
 });

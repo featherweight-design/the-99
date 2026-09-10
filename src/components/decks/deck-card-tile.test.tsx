@@ -153,3 +153,53 @@ describe("DeckCardTile — the spent slot", () => {
     expect(addCardToDeck).toHaveBeenCalledWith("d1", "sol-ring");
   });
 });
+
+// The printed name (#467 follow-on). Both quantities are asserted deliberately:
+// `ariaLabel` is composed only above one copy, and at one copy the provider
+// falls back to composing the label from the `name` prop — the common case.
+describe("DeckCardTile printed name", () => {
+  const renamed = {
+    ...card,
+    name: "World at War",
+    printedName: "Battle of Olympus // Aftermath",
+    // The front-face cut asks the layout word, so a fixture without one would
+    // caption the whole string — a split card is one face and keeps both halves.
+    layout: "transform",
+  } as DeckDetailCard;
+
+  it("captions the tile with the printed front face and drops the tooltip", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DeckCardTile deckId="d1" card={renamed} />
+      </CardDetailProvider>,
+    );
+    expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
+    expect(screen.queryByText("World at War")).not.toBeInTheDocument();
+    // A `title` is pointer-only recovery on a phone-first surface, and the
+    // trigger's accessible name already carries the full string properly.
+    expect(container.querySelector("[title]")).toBeNull();
+  });
+
+  it("carries the full printed name on the trigger at one copy", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...renamed, quantity: 1 } as DeckDetailCard} />);
+    expect(
+      screen.getByRole("button", {
+        name: cardDetailCopy.triggerAria("Battle of Olympus // Aftermath"),
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("carries it at more than one copy too, where the label is composed", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...renamed, quantity: 2 } as DeckDetailCard} />);
+    expect(
+      screen.getByRole("button", {
+        name: `${cardDetailCopy.triggerAria("Battle of Olympus // Aftermath")}, ${cardTileCopy.copiesAria(2)}`,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("leaves an ordinary card on its oracle name, byte for byte", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, name: "Fire // Ice" } as DeckDetailCard} />);
+    expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
+  });
+});

@@ -20,6 +20,7 @@ const base: BrowseListCard = {
   rarity: "common",
   colorIdentity: [],
   imageUri: null,
+  printedName: null,
   quantity: 1,
   setCounts: [],
   setCodes: ["ABC"],

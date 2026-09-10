@@ -7,6 +7,7 @@ import { render, screen, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { printedNameCopy } from "../../lib/copy/card-surfaces";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(),
@@ -25,6 +26,7 @@ const card: BrowseCard = {
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: null,
+  printedName: null,
   quantity: 1,
   printings: [],
   setCodes: ["RVR"],
@@ -257,6 +259,7 @@ describe("CardModal mobile art header", () => {
         quantity: 1,
         finishes: { nonfoil: 1 },
         imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+        flavorName: null,
       },
     ],
   };
@@ -289,6 +292,7 @@ describe("CardModal printing picker scope", () => {
     quantity: 0,
     finishes: {},
     imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+    flavorName: null,
   });
 
   it("offers no picker for a card the user owns none of", () => {
@@ -312,5 +316,30 @@ describe("CardModal printing picker scope", () => {
     });
     // The trigger sets the count beside a chevron, so match the phrase, not the whole node.
     expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+  });
+});
+
+// The printed name (#467 follow-on). The title is what the copy in hand says it
+// is; the oracle name survives here and nowhere else on screen.
+describe("CardModal oracle-name line", () => {
+  const label = () => screen.queryByText(printedNameCopy.oracleLabel);
+
+  it("titles the modal with the printed name and glosses it with the oracle name", () => {
+    mount({ ...card, name: "World at War", printedName: "Battle of Olympus" });
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Battle of Olympus");
+    expect(label()).toBeInTheDocument();
+    expect(screen.getByText("World at War")).toBeInTheDocument();
+  });
+
+  it("renders no oracle line at all on an ordinary card", () => {
+    mount({ ...card, name: "Cultivate", printedName: null });
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Cultivate");
+    // Absent, not blank: no label, no placeholder, no reserved height.
+    expect(label()).toBeNull();
+  });
+
+  it("keeps the title as the dialog's accessible name", () => {
+    mount({ ...card, name: "World at War", printedName: "Battle of Olympus" });
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Battle of Olympus");
   });
 });

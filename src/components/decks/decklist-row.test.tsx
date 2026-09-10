@@ -291,6 +291,9 @@ const solRing: DeckDetailCard = {
   owned: true,
   quantity: 1,
   auto: false,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
 };
 const arcaneSignet: DeckDetailCard = {
   ...solRing,
@@ -626,5 +629,55 @@ describe("DecklistRow buy tag density (#350)", () => {
       <DecklistRow deckId="d1" card={{ ...card, owned: false }} shoppingFigure={24} inShopping />,
     );
     expect(screen.queryByText("$")).toBeNull();
+  });
+});
+
+// The printed name (#467 follow-on). Both render sites are asserted: the row
+// picks its branch off `cardTypeGroup`, and a Lands row takes the other one.
+describe("DecklistRow printed name", () => {
+  const renamed = {
+    ...card,
+    name: "World at War",
+    printedName: "Battle of Olympus",
+  } as DeckDetailCard;
+
+  it("names the card by the printing the player owns", () => {
+    renderRow(<DecklistRow deckId="d1" card={renamed} />);
+    expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
+    expect(screen.queryByText("World at War")).not.toBeInTheDocument();
+  });
+
+  it("names it on the Lands branch too, which is the other render site", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...renamed, cardTypeGroup: "Lands" } as DeckDetailCard} />,
+    );
+    expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
+  });
+
+  it("carries the full printed name in the accessible name, and never a title", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistRow
+          deckId="d1"
+          card={{ ...renamed, printedName: "Battle of Olympus // Aftermath",
+                  layout: "transform" } as DeckDetailCard}
+        />
+      </CardDetailProvider>,
+    );
+    // Visible: the front face alone, single line. Spoken: the whole string.
+    expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: cardDetailCopy.triggerAria("Battle of Olympus // Aftermath"),
+      }),
+    ).toBeInTheDocument();
+    expect(container.querySelector("[title]")).toBeNull();
+  });
+
+  it("leaves an ordinary card on its oracle name, byte for byte", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, name: "Fire // Ice" } as DeckDetailCard} />,
+    );
+    expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
   });
 });

@@ -29,12 +29,14 @@ const delver: BrowseCard = {
   rarity: "common",
   colorIdentity: ["U"],
   imageUri: FRONT,
+  printedName: null,
   quantity: 1,
   // The front art resolves through the printing, which is the whole point of the
   // back's known limitation: the back has no per-printing form to resolve through.
   printings: [{
     setCode: "ISD", setName: "Innistrad", collectorNumber: "51",
     releasedAt: "2011-09-30", quantity: 1, finishes: { nonfoil: 1 }, imageUri: FRONT,
+    flavorName: null,
   }],
   setCodes: ["ISD"],
   primarySetCode: "ISD",
@@ -88,6 +90,16 @@ describe("CardModal flip control", () => {
     fireEvent.click(flipTo("Delver of Secrets")[0]);
     expect(wash().style.backgroundImage).toContain(FRONT);
     expect(screen.getByText(twoFacedCopy.flippedAria("Delver of Secrets"))).toBeTruthy();
+  });
+
+  // A modal titled `Battle of Olympus // Aftermath` whose flip control announces
+  // `Insectile Aberration` names two different cards at once. The faces come off
+  // the name on screen, which is the printed one when the copy in hand has one.
+  it("names and announces the printed faces of a renamed two-faced card", () => {
+    mount({ ...delver, printedName: "Battle of Olympus // Aftermath" });
+    expect(flipTo("Aftermath").length).toBeGreaterThan(0);
+    fireEvent.click(flipTo("Aftermath")[0]);
+    expect(screen.getByText(twoFacedCopy.flippedAria("Aftermath"))).toBeTruthy();
   });
 
   it("offers no control for a split card", () => {

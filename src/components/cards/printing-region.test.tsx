@@ -14,6 +14,7 @@ const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
   quantity: 1,
   finishes: { nonfoil: 1 },
   imageUri: null,
+  flavorName: null,
   ...over,
 });
 

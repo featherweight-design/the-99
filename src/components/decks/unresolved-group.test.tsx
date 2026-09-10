@@ -25,6 +25,9 @@ const card = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
   owned: false,
   quantity: 1,
   auto: false,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
   ...over,
 });
 

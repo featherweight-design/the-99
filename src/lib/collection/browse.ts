@@ -1,8 +1,9 @@
 import { cache } from "react";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
 import { availabilityState, type Availability, type AvailabilityState } from "../decks/availability";
+import { faceNames, isTwoFaced } from "../cards/faces";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -28,6 +29,13 @@ export type BrowsePrinting = {
    */
   finishes: Partial<Record<Finish, number>>;
   imageUri: string | null;
+  /**
+   * The name printed on THIS printing when it differs from the oracle card's —
+   * `printings.flavor_name`, populated for Secret Lair and similar renames
+   * (#467). Null on the overwhelming majority of printings, which print the
+   * oracle name.
+   */
+  flavorName: string | null;
 };
 
 export type Finish = "nonfoil" | "foil" | "etched";
@@ -46,6 +54,16 @@ export type BrowseCard = {
   colorIdentity: string[];
   /** The primary printing's image — first non-null across printings in display order. */
   imageUri: string | null;
+  /**
+   * The name printed on the resolved printing, when it differs from the oracle
+   * name — otherwise null. Derived from the SAME `primaryPrinting()` call that
+   * resolves `imageUri`, because a name that disagrees with the art on screen
+   * is the failure this field exists to prevent.
+   *
+   * Null is the overwhelmingly common case and means "call this card by its
+   * oracle name". Use `printedNameOf()` rather than testing this at each site.
+   */
+  printedName: string | null;
   /**
    * Scryfall's layout word and, for the layouts that have one, the back face's
    * art (#363). Optional rather than `| null` required for the reason
@@ -206,6 +224,10 @@ export type RawCollectionRow = {
   representativeImageUri: string | null;
   /** Tier 3 — the oracle-level catalog image, i.e. today's behavior. */
   cardImageUri: string | null;
+  /** Tier 1's printed name — the exact printing's `printings.flavor_name`, or null. */
+  flavorName: string | null;
+  /** Tier 2's printed name. `resolveFlavorName` takes whichever tier the art came from. */
+  representativeFlavorName: string | null;
 };
 
 /**
@@ -222,6 +244,27 @@ export function resolveImageUri(r: {
   cardImageUri: string | null;
 }): string | null {
   return r.exactImageUri ?? r.representativeImageUri ?? r.cardImageUri ?? null;
+}
+
+/**
+ * The printed name of whichever printing `resolveImageUri` just took the art from.
+ *
+ * The name and the art come off one printing or they disagree, and the art falls
+ * through three tiers — so the name has to fall through the same three, in step.
+ * A collection row with no `scryfall_id` misses the exact join entirely and shows
+ * the representative printing's art; sourcing the name from the exact printing
+ * alone would caption a Secret Lair art with the oracle name. Tier 3 is
+ * `cards.imageUri`, which belongs to no printing and therefore prints no name.
+ */
+export function resolveFlavorName(r: {
+  exactImageUri: string | null;
+  representativeImageUri: string | null;
+  flavorName: string | null;
+  representativeFlavorName: string | null;
+}): string | null {
+  if (r.exactImageUri !== null) return r.flavorName;
+  if (r.representativeImageUri !== null) return r.representativeFlavorName;
+  return null;
 }
 
 /**
@@ -274,6 +317,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       quantity: r.quantity,
       finishes: { [r.finish]: r.quantity },
       imageUri: resolveImageUri(r),
+      flavorName: resolveFlavorName(r),
     };
     const existing = byOracle.get(r.oracleId);
     if (existing) {
@@ -290,6 +334,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         rarity: coerceRarity(r.rarity),
         colorIdentity: r.colorIdentity,
         imageUri: null,
+        printedName: null,
         layout: r.layout,
         backImageUri: r.backImageUri,
         quantity: r.quantity,
@@ -315,6 +360,10 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       seen.quantity += r.quantity;
       seen.finishes[r.finish] = (seen.finishes[r.finish] ?? 0) + r.quantity;
       seen.imageUri ??= printing.imageUri;
+      // Both finishes of one printing ARE one printing, so this can only ever
+      // coalesce a null onto the same value — belt and braces, in the spirit of
+      // the image line above.
+      seen.flavorName ??= printing.flavorName;
     } else {
       printings.set(printingKey, printing);
     }
@@ -328,6 +377,13 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
     if (primary) {
       card.primarySetCode = primary.setCode;
       card.imageUri = primary.imageUri;
+      // Exact equality, verbatim, per spec: a printing whose flavor name IS the
+      // oracle name has not renamed anything, and normalising would silently
+      // change which cards count as renamed.
+      card.printedName =
+        primary.flavorName !== null && primary.flavorName !== card.name
+          ? primary.flavorName
+          : null;
     }
   }
   return [...byOracle.values()];
@@ -369,6 +425,39 @@ function primaryPrinting(
  */
 export function resolvedPrinting(card: BrowseCard): BrowsePrinting | undefined {
   return primaryPrinting(card.printings, card.preferredPrinting);
+}
+
+/**
+ * The name to show a player looking at their own copy: the printing's own name
+ * where it has one, the oracle name otherwise. One place, so no surface has to
+ * remember which way round the fallback goes.
+ */
+export function printedNameOf(card: Pick<BrowseCard, "name" | "printedName">): string {
+  return card.printedName ?? card.name;
+}
+
+/**
+ * The same name, cut to its front face — what a row or a tile shows.
+ *
+ * Scryfall's `flavor_name` is one string per printing and joins a two-faced
+ * card's halves with ` // `, exactly as `cards.name` does, so a renamed modal
+ * card arrives here as `Battle of Olympus // Aftermath`. A 93px tile caption
+ * cannot hold that and locked decision 3 forbids the second line, so rows and
+ * tiles take the front half and the modal keeps the whole string.
+ *
+ * The split is applied ONLY to a printed name on a card whose layout really has
+ * two faces. `Fire // Ice` and `Bonecrusher Giant // Stomp` carry the separator
+ * on one piece of card stock, so cutting them would drop half of a name the row
+ * shows whole today — the same reason `isTwoFaced` asks the layout word instead
+ * of looking for the mark. A card with no printed name is returned
+ * byte-identically, `//` and all: today's rows print the full oracle string and
+ * the control state must not move.
+ */
+export function printedFaceName(
+  card: Pick<BrowseCard, "name" | "printedName" | "layout">,
+): string {
+  if (!card.printedName) return card.name;
+  return isTwoFaced(card.layout) ? faceNames(card.printedName).front : card.printedName;
 }
 
 /**
@@ -462,7 +551,7 @@ export function sortCards(
 
 /**
  * Server query — joins collection_items × cards for the user, optionally narrowed to one
- * oracle id. Untested-query pattern (see recommend.ts / summary.ts): thin, logic-free SQL,
+ * oracle id or to a list of them. Untested-query pattern (see recommend.ts / summary.ts): thin, logic-free SQL,
  * pure aggregation covered by tests above.
  *
  * Rooted in collection_items, so a card the user does not own yields no rows at all —
@@ -470,7 +559,10 @@ export function sortCards(
  */
 export async function selectCollectionRows(
   userId: string,
-  oracleId?: string,
+  // A list, for the deck route, which needs ~99 of them in one pass. Never pass
+  // an empty array: `inArray` with no values is a SQL error in some drivers and
+  // a full scan in others, so callers guard on length.
+  oracleId?: string | string[],
 ): Promise<RawCollectionRow[]> {
   const { db } = await import("../../db");
   const { cardArtPreferences, cards, collectionItems, printings, sets } =
@@ -502,7 +594,12 @@ export async function selectCollectionRows(
       layout: cards.layout,
       backImageUri: cards.backImageUri,
       exactImageUri: exact.imageUri,
+      // The `exact` alias is the printing joined on `collection_items.scryfall_id`
+      // — the printing the player physically owns, and the only one whose printed
+      // name is theirs to show.
+      flavorName: exact.flavorName,
       representativeImageUri: representative.imageUri,
+      representativeFlavorName: representative.flavorName,
       cardImageUri: cards.imageUri,
     })
     .from(collectionItems)
@@ -530,7 +627,11 @@ export async function selectCollectionRows(
     )
     .where(and(
       eq(collectionItems.userId, userId),
-      oracleId === undefined ? undefined : eq(collectionItems.oracleId, oracleId),
+      oracleId === undefined
+        ? undefined
+        : Array.isArray(oracleId)
+          ? inArray(collectionItems.oracleId, oracleId)
+          : eq(collectionItems.oracleId, oracleId),
     ));
   return rows;
 }

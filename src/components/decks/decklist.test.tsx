@@ -35,6 +35,9 @@ function makeCard(overrides: Partial<DeckDetailCard> & { oracleId: string; name:
     owned: true,
     quantity: 1,
     auto: true,
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
     ...overrides,
   };
 }

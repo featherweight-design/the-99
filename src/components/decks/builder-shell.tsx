@@ -5,6 +5,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
+import { printedNameOf } from "../../lib/collection/browse";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
@@ -1086,7 +1087,17 @@ export function BuilderShell({
               deckName={deck.name}
               commanderName={deck.commander.name}
               partnerName={deck.partner?.name ?? null}
-              decklistCards={cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
+              decklistCards={cards.map((c) => ({
+                // The whole printed string, not the front face: an export is
+                // read by another deckbuilder, which wants the full name and
+                // has no width to run out of. Naming the printing while still
+                // exporting the oracle name would emit a line whose set and
+                // number describe a card face that reads something else.
+                name: printedNameOf(c),
+                quantity: c.quantity,
+                setCode: c.printedSetCode ?? undefined,
+                collectorNumber: c.printedCollectorNumber ?? undefined,
+              }))}
               // The Shopping filter's own predicate, not a second `!owned` list.
               // The two diverged: this one carried the unowned basics the filter
               // refuses to show and dropped the spoken-for cards it puts front

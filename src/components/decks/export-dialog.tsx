@@ -7,10 +7,12 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { downloadTextFile } from "../../lib/decks/download";
 import {
+  bodyLine,
   buildDecklistText,
   buildShoppingText,
   decklistFilename,
   shoppingFilename,
+  type DecklistCard,
 } from "../../lib/decks/export-helpers";
 import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
@@ -27,8 +29,9 @@ interface ExportDialogProps {
   commanderName: string;
   /** The second commander, or null for the single-commander deck most decks are. */
   partnerName: string | null;
-  /** Body cards (both commanders excluded). */
-  decklistCards: { name: string; quantity: number }[];
+  /** Body cards (both commanders excluded), each already named by the printing
+      the player owns — see `printedNameOf` at the call site. */
+  decklistCards: DecklistCard[];
   /** What the Shopping filter shows: cards you do not own, plus cards you own
       whose every copy is spoken for by another deck. Never a basic land. */
   shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
@@ -66,7 +69,9 @@ export function ExportDialog({
   const commanderLines = [commanderName, ...(partnerName ? [partnerName] : [])].map(
     (n) => `1 ${n}`,
   );
-  const bodyLines = decklistCards.map((c) => `${c.quantity} ${c.name}`);
+  // Composed through the same helper the exported text uses, so the preview
+  // cannot show a line shape the copied file does not have.
+  const bodyLines = decklistCards.map(bodyLine);
   // The body count, which is what `built` means everywhere else — derived here
   // rather than passed in, so it cannot disagree with the preview's own header.
   const built = decklistCards.reduce((sum, c) => sum + c.quantity, 0);

@@ -368,6 +368,13 @@ function QuickAddRow({
           // Carried, not left absent: the optimistic row draws before the
           // revalidate lands, and a row whose pips appear a beat after the rest
           // of it reads as the list correcting itself.
+          // Null on an optimistic row: the search result carries the oracle
+          // name only, and this row exists for the beat before the server
+          // answers. The revalidate supplies the printed name; until then the
+          // row reads exactly as it does today.
+          printedName: null,
+          printedSetCode: null,
+          printedCollectorNumber: null,
           manaCost: result.manaCost,
           imageUri: result.imageUri,
         }),

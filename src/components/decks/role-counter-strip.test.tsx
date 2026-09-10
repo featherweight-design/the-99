@@ -28,6 +28,9 @@ const card = (role: DeckDetailCard["role"], i: number): DeckDetailCard => ({
   owned: true,
   quantity: 1,
   auto: false,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
 });
 
 /** Enough of one role to sit ON target, leaving every other role short. */

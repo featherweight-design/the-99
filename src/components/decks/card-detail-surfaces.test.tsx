@@ -32,6 +32,9 @@ const deckCard = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
   owned: true,
   quantity: 1,
   auto: false,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
   ...over,
 });
 
@@ -205,6 +208,7 @@ describe("deck card-detail triggers", () => {
     fetchCard.mockResolvedValue({
       oracleId: "o-bear", name: "Grizzly Bears", typeLine: "Creature", manaCost: null,
       oracleText: null, keywords: [], rarity: "common", colorIdentity: [], imageUri: null,
+      printedName: null,
       quantity: 1, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
     });
     await clickTrigger("Grizzly Bears");

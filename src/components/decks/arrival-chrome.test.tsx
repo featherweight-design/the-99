@@ -42,6 +42,9 @@ function makeCards(n: number) {
     owned: true,
     quantity: 1,
     auto: false,
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
   }));
 }
 

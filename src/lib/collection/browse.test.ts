@@ -4,8 +4,11 @@ import {
   cssUrl,
   filterCards,
   formatLastUpdated,
+  printedFaceName,
+  printedNameOf,
   printingCaption,
   resolveImageUri,
+  resolveFlavorName,
   sortCards,
   toListCards,
   type BrowseCard,
@@ -16,7 +19,7 @@ import {
 
 const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
   setCode: "C21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
-  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, ...over,
+  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, flavorName: null, ...over,
 });
 
 const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
@@ -29,6 +32,7 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   rarity: "uncommon",
   colorIdentity: [],
   imageUri: null,
+  printedName: null,
   quantity: 1,
   printings: [printing()],
   setCodes: ["C21"],
@@ -48,7 +52,38 @@ const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   keywords: [], rarity: "uncommon", colorIdentity: [],
   layout: "normal", backImageUri: null,
   exactImageUri: null, representativeImageUri: null, cardImageUri: null,
+  flavorName: null, representativeFlavorName: null,
   ...over,
+});
+
+// The printed name has to fall through the same three tiers the art does, or a
+// collection row with no scryfall_id shows Secret Lair art under the oracle name.
+describe("resolveFlavorName — the name follows the art, tier for tier", () => {
+  it("tier 1: takes the exact printing's name when the exact art was used", () => {
+    expect(resolveFlavorName({ exactImageUri: "exact.png", representativeImageUri: "rep.png",
+                               flavorName: "Battle of Olympus", representativeFlavorName: null }))
+      .toBe("Battle of Olympus");
+  });
+  it("tier 2: takes the representative printing's name when its art was used", () => {
+    // A holding with no scryfall_id misses the exact join entirely. This is the
+    // common path on any collection imported without printing ids.
+    expect(resolveFlavorName({ exactImageUri: null, representativeImageUri: "rep.png",
+                               flavorName: null, representativeFlavorName: "Battle of Olympus" }))
+      .toBe("Battle of Olympus");
+  });
+  it("never captions fallback art with the exact printing's name", () => {
+    // The exact row joined but carries no image, so the art fell to tier 2.
+    // Its name must not travel without it.
+    expect(resolveFlavorName({ exactImageUri: null, representativeImageUri: "rep.png",
+                               flavorName: "Battle of Olympus", representativeFlavorName: null }))
+      .toBeNull();
+  });
+  it("tier 3 prints no name — cards.imageUri belongs to no printing", () => {
+    expect(resolveFlavorName({ exactImageUri: null, representativeImageUri: null,
+                               flavorName: "Battle of Olympus",
+                               representativeFlavorName: "Battle of Olympus" }))
+      .toBeNull();
+  });
 });
 
 describe("resolveImageUri (§3.5 — COALESCE on value, not on match)", () => {
@@ -156,6 +191,116 @@ describe("aggregateCollection", () => {
     expect(agg.imageUri).toBe("b.png");
     expect(agg.primarySetCode).toBe("C21");
     expect(printingCaption(agg)).toBe("C21 · 600 +1 more");
+  });
+  it("carries a printing's flavor name onto the printing it belongs to", () => {
+    const [agg] = aggregateCollection([
+      raw({
+        oracleId: "o1",
+        name: "World at War",
+        setCode: "sld",
+        collectorNumber: "2208",
+        // The art has to come off this printing too — a name with no tier to
+        // travel on names a printing that put nothing on screen.
+        exactImageUri: "sld.png",
+        flavorName: "Battle of Olympus",
+      }),
+    ]);
+    expect(agg.printings[0].flavorName).toBe("Battle of Olympus");
+  });
+  it("leaves flavorName null on an ordinary printing", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21", collectorNumber: "177" }),
+    ]);
+    expect(agg.printings[0].flavorName).toBeNull();
+  });
+});
+
+describe("printedName", () => {
+  it("is the resolved printing's flavor name when it differs from the oracle name", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "World at War", setCode: "sld",
+            collectorNumber: "2208", exactImageUri: "sld.png", flavorName: "Battle of Olympus" }),
+    ]);
+    expect(agg.printedName).toBe("Battle of Olympus");
+    expect(printedNameOf(agg)).toBe("Battle of Olympus");
+  });
+
+  it("is null when the printing prints the oracle name", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21", collectorNumber: "177" }),
+    ]);
+    expect(agg.printedName).toBeNull();
+    expect(printedNameOf(agg)).toBe("Cultivate");
+  });
+
+  it("is null when the flavor name equals the oracle name exactly", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21",
+            collectorNumber: "177", exactImageUri: "sld.png", flavorName: "Cultivate" }),
+    ]);
+    expect(agg.printedName).toBeNull();
+  });
+
+  it("compares exactly — a case difference is a different name", () => {
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "Cultivate", setCode: "m21",
+            collectorNumber: "177", exactImageUri: "sld.png", flavorName: "CULTIVATE" }),
+    ]);
+    expect(agg.printedName).toBe("CULTIVATE");
+  });
+
+  it("follows the art preference, not the first printing owned", () => {
+    // The preference is oracle-level, so the real query repeats it on every row.
+    const [agg] = aggregateCollection([
+      raw({ oracleId: "o1", name: "World at War", setCode: "m21",
+            collectorNumber: "177", flavorName: null,
+            preferredSetCode: "sld", preferredCollectorNumber: "2208" }),
+      raw({ oracleId: "o1", name: "World at War", setCode: "sld",
+            collectorNumber: "2208", exactImageUri: "sld.png", flavorName: "Battle of Olympus",
+            preferredSetCode: "sld", preferredCollectorNumber: "2208" }),
+    ]);
+    expect(agg.printedName).toBe("Battle of Olympus");
+  });
+
+  it("shows a renamed two-faced card's front face on a row, and the whole string in full", () => {
+    const twoFaced = { name: "Delver of Secrets // Insectile Aberration",
+                       printedName: "Battle of Olympus // Aftermath", layout: "transform" };
+    expect(printedFaceName(twoFaced)).toBe("Battle of Olympus");
+    expect(printedNameOf(twoFaced)).toBe("Battle of Olympus // Aftermath");
+  });
+
+  it("leaves an unrenamed two-faced card's row string exactly as it is today", () => {
+    const twoFaced = { name: "Delver of Secrets // Insectile Aberration",
+                       printedName: null, layout: "transform" };
+    expect(printedFaceName(twoFaced)).toBe("Delver of Secrets // Insectile Aberration");
+  });
+
+  // A split or adventure card carries ` // ` on one piece of card stock, so the
+  // front-face cut would drop half a name the row shows whole today. The layout
+  // word decides, exactly as `isTwoFaced` does for the `//` mark itself.
+  it("keeps both halves of a renamed split card, which has one face", () => {
+    const split = { name: "Fire // Ice", printedName: "Flame // Frost", layout: "split" };
+    expect(printedFaceName(split)).toBe("Flame // Frost");
+  });
+
+  it("keeps both halves of a renamed adventure card", () => {
+    const adventure = { name: "Bonecrusher Giant // Stomp",
+                        printedName: "Ogre // Smash", layout: "adventure" };
+    expect(printedFaceName(adventure)).toBe("Ogre // Smash");
+  });
+
+  // The deck route asks for ~99 oracle ids at once and keys the answers by id.
+  // `getDeckDetail` is raw SQL no unit test here reaches, so this covers the
+  // shape it relies on; the browser probe covers the route.
+  it("aggregates a printed name for each of several oracle ids", () => {
+    const cards = aggregateCollection([
+      raw({ oracleId: "o1", name: "World at War", setCode: "sld",
+            collectorNumber: "2208", exactImageUri: "sld.png", flavorName: "Battle of Olympus" }),
+      raw({ oracleId: "o2", name: "Cultivate", setCode: "m21", collectorNumber: "177" }),
+    ]);
+    const byOracle = new Map(cards.map((c) => [c.oracleId, c.printedName]));
+    expect(byOracle.get("o1")).toBe("Battle of Olympus");
+    expect(byOracle.get("o2")).toBeNull();
   });
 });
 
