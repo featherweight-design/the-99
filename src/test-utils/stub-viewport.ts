@@ -3,7 +3,11 @@ import { vi } from "vitest";
 /** A matchMedia that reports a viewport width and can be resized. Shared by the
  *  hook's own tests and by every component whose layout `useMinWidth` decides,
  *  because jsdom's matchMedia always reports false and would otherwise pin each
- *  of those components to its phone branch. */
+ *  of those components to its phone branch.
+ *
+ *  It lives in `src/test-utils` rather than beside the hook because it imports
+ *  `vitest`: under `src/components` a stray production import would pull a dev
+ *  dependency into the bundle, and nothing but the file's name would say so. */
 export function stubViewport(width: number) {
   const listeners = new Map<string, Set<() => void>>();
   let current = width;

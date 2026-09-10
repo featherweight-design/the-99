@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
-import { stubViewport } from "../ui/stub-viewport";
+import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 
 const actions = vi.hoisted(() => ({ commit: vi.fn() }));

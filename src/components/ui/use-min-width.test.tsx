@@ -1,7 +1,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { stubViewport } from "./stub-viewport";
+import { stubViewport } from "../../test-utils/stub-viewport";
 import { useIsDesktop } from "./use-is-desktop";
 import { useIsWide } from "./use-is-wide";
 import { useMinWidth } from "./use-min-width";

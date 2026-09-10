@@ -5,7 +5,7 @@ Sources: `design/design_handoff_the99_top_off/ADDENDUM-README.md`,
 `READINESS-ADDENDUM.md` (engineering verdict — **its two amendments override the
 addendum where they conflict**).
 
-Breakpoint: **640px** (Tailwind `md:`). "Mobile" = 390px, "Desktop" = the 940px
+Breakpoint: **768px** (Tailwind `md:`). "Mobile" = 390px, "Desktop" = the 940px
 frame the canvas draws the list at.
 
 Every colour is a `var(--*)` token; the addendum adds **no new token, no new hex,
@@ -438,8 +438,8 @@ phone **only** when a pass is exactly full — deliberate.
 
 | Condition | Result |
 |---|---|
-| `atCap` true, viewport < 640px | renders as bar rung 1 |
-| `atCap` true, viewport ≥ 640px | renders in the selection head |
+| `atCap` true, viewport < 768px | renders as bar rung 1 |
+| `atCap` true, viewport ≥ 768px | renders in the selection head |
 | `atCap` false | absent at both widths; the bar falls to rung 2 or 3 |
 | at the cap | the assurance (`slotsStayOpen`) is absent **by arithmetic** — the two can never both print |
 
@@ -530,8 +530,8 @@ Pattern is `game-history-row.tsx`'s inline confirm **verbatim, minus the danger 
 
 | State | Triggering condition | Element rendered | Copy key used |
 |---|---|---|---|
-| S-D1 · decline at rest (phone) | any live candidate row, viewport < 640px | `<button>` on line 2, `margin-left:auto`, `min-height:44px`, dashed underline | `list.decline` (label) · `list.declineAria` (name) |
-| S-D2 · decline at rest (desktop) | any live candidate row, viewport ≥ 640px | `<button>` in the `60px` right-aligned slot of a `34px` row | `list.decline` · `list.declineAria` |
+| S-D1 · decline at rest (phone) | any live candidate row, viewport < 768px | `<button>` on line 2, `margin-left:auto`, `min-height:44px`, dashed underline | `list.decline` (label) · `list.declineAria` (name) |
+| S-D2 · decline at rest (desktop) | any live candidate row, viewport ≥ 768px | `<button>` in the `60px` right-aligned slot of a `34px` row | `list.decline` · `list.declineAria` |
 | S-D3 · decline hover | pointer over the control | same element, `color: var(--fg-body)` | — |
 | S-D4 · decline focus | keyboard focus | global `:focus-visible` ring, 2px `var(--accent)` +2px | — |
 | S-D5 · row declined | the row is in `declined` | declined row: eyebrow + faint name + `Show it again` | `list.declined` · `list.restore` · `list.restoreAria` (all unchanged) |
@@ -540,19 +540,19 @@ Pattern is `game-history-row.tsx`'s inline confirm **verbatim, minus the danger 
 | S-R1 · bulk restore present | `declined.size >= 1` | third `GhostButton` in the selection head (own full-width row at phone, inline at desktop) | `list.restoreAll(declined)` · `list.restoreAllAria(declined)` |
 | S-R2 · bulk restore absent | `declined.size === 0` | — (two fixtures only) | — |
 | S-R3 · bulk restore fired | `onDeclinedChange(new Set())` | all rows return **unticked**; live region announces | `announce.restoredAll(declined, ticked, n)` |
-| S-N1 · door note, first open, phone | strip closed, no prior selection, `seeded >= 2`, < 640px | one-line mono note under the door | `strip.doorNoteMobile(seeded)` |
+| S-N1 · door note, first open, phone | strip closed, no prior selection, `seeded >= 2`, < 768px | one-line mono note under the door | `strip.doorNoteMobile(seeded)` |
 | S-N2 · door note, first open, one owned | `seeded === '1'` | one-line note | `strip.doorNoteMobile('1')` |
 | S-N3 · door note, first open, none owned | `seeded === '0'` | one-line note | `strip.doorNoteMobile('0')` |
-| S-N4 · door note, reopen, phone | a selection survives a close, < 640px | one-line note, no ownership figure | `strip.doorNoteAgainMobile` |
-| S-N5 · door note, desktop | ≥ 640px | shipped three-clause sentence | shipped desktop strings (unchanged) |
+| S-N4 · door note, reopen, phone | a selection survives a close, < 768px | one-line note, no ownership figure | `strip.doorNoteAgainMobile` |
+| S-N5 · door note, desktop | ≥ 768px | shipped three-clause sentence | shipped desktop strings (unchanged) |
 | S-L1 · ladder rung 1 (phone) | `atCap` | the bar's single status line, mono 10px `--fg-locked`, carries `capLineId` | `list.cap` |
 | S-L2 · ladder rung 2 (phone) | `!atCap && openSlots - tickedCount > 0` | the same single line | `commit.slotsStayOpen(n)` |
 | S-L3 · ladder rung 3 (phone) | neither above — the pass is exactly full | the same single line | `dock.retired` |
-| S-C1 · cap line, desktop | `atCap`, ≥ 640px | span in the selection head behind a `1px var(--border-strong)` left divider, `padding-left: 12px`, carries `capLineId` | `list.cap` |
+| S-C1 · cap line, desktop | `atCap`, ≥ 768px | span in the selection head behind a `1px var(--border-strong)` left divider, `padding-left: 12px`, carries `capLineId` | `list.cap` |
 | S-C2 · cap announced | tick attempt settles at the cap | live region (unchanged) | `announce.capped` |
 | S-K1 · keep-all at rest | `confirming === false` | `Keep all N` + `Clear all auto · N`, both `BULK_BUTTON_CLASS` | `auto.keepAll` / `auto.keepAllMobile` (unchanged) |
-| S-K2 · keep-all confirming (desktop) | `confirming === true`, ≥ 640px | question + `Keep them` + `Cancel`, replacing **both** bulk controls | `auto.keepAllConfirm(count)` · `keepAllConfirmYes` · `keepAllConfirmNo` |
-| S-K3 · keep-all confirming (phone) | `confirming === true`, < 640px | shortened question above a two-up 44px answer pair | `auto.keepAllConfirmMobile(count)` · `keepAllConfirmYes` · `keepAllConfirmNo` |
+| S-K2 · keep-all confirming (desktop) | `confirming === true`, ≥ 768px | question + `Keep them` + `Cancel`, replacing **both** bulk controls | `auto.keepAllConfirm(count)` · `keepAllConfirmYes` · `keepAllConfirmNo` |
+| S-K3 · keep-all confirming (phone) | `confirming === true`, < 768px | shortened question above a two-up 44px answer pair | `auto.keepAllConfirmMobile(count)` · `keepAllConfirmYes` · `keepAllConfirmNo` |
 | S-K4 · keep-all in flight | `busy` | both bulk controls disabled (shipped rule) | — |
 | S-K5 · keep-all refused | mutation error | `MutationError` beneath the toolbar | shipped error copy |
 | S-K6 · confirm cancelled | `Cancel` activated | at-rest pair returns; focus moves back to `Keep all N` | — |

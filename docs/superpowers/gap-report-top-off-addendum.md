@@ -55,9 +55,11 @@ Ambiguity 3 (the keep-all confirm's phone answers) belongs to the second pull re
 
 ## Correction to the table
 
-The table's header states the `md:` breakpoint as 640px. This repo has no Tailwind config
-and no `--breakpoint-md` override, so `md:` is Tailwind v4's default **768px**, which
-`globals.css:406` corroborates with a hand-written `@media (min-width: 768px)`. That makes
-`useIsDesktop` exactly coincident with `md:`. Had the breakpoint really been 640px, every
+The table as enumerated stated the `md:` breakpoint as 640px, in its header and in eleven
+later state conditions. This repo has no Tailwind config and no `--breakpoint-md` override,
+so `md:` is Tailwind v4's default **768px**, which `globals.css:406` corroborates with a
+hand-written `@media (min-width: 768px)`. That makes
+`useIsDesktop` exactly coincident with `md:`. Every occurrence has been corrected in the
+committed table. Had the breakpoint really been 640px, every
 `isDesktop` gate would have disagreed with its `md:` classes across the 640–768px band and
 the cap line would have rendered into the desktop commit row. As built they agree.
