@@ -13,6 +13,7 @@ function openShoppingTab() {
     <ExportDialog
       deckName="Kykar, Wind's Fury"
       commanderName="Kykar, Wind's Fury"
+      partnerName={null}
       decklistCards={[{ name: "Mountain", quantity: 30 }]}
       shoppingCards={[
         { name: "Sol Ring", quantity: 1, owned: false },

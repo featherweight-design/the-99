@@ -18,6 +18,7 @@ import { loadAvailability } from "../../../lib/decks/availability-query";
 import { provenanceForm } from "../../../lib/decks/price";
 import { listDeckGames, summarizeGames } from "../../../lib/decks/games";
 import { readFillPasses } from "../../../lib/decks/fill-passes";
+import { deckBodySize } from "../../../lib/decks/deck-size";
 
 export default async function DeckBuilderPage({
   params,
@@ -33,7 +34,16 @@ export default async function DeckBuilderPage({
   const detail = await getDeckDetail(id, userId);
   if (!detail) notFound();
 
-  const openSlots = 99 - detail.built;
+  const openSlots = deckBodySize(detail.partner !== null) - detail.built;
+
+  // A pair's legal pool is the union of both identities, the same union
+  // `ownedColorLegalPool` filters the suggestion pool by.
+  const commanderIdentity = [
+    ...new Set([
+      ...detail.commander.colorIdentity,
+      ...(detail.partner?.colorIdentity ?? []),
+    ]),
+  ];
 
   const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games, fillPasses] =
     await Promise.all([
@@ -46,7 +56,13 @@ export default async function DeckBuilderPage({
       // The in-deck filter belongs to listLastSlotsCandidates, not here: passing
       // detail.cards as coveredOracleIds would apply the role-coverage exclusion
       // to them, which is a different exclusion with a different meaning.
-      openSlots > 0 ? readSynergyCards(userId, detail.commander.oracleId, []) : [],
+      openSlots > 0
+        ? readSynergyCards(
+            userId,
+            [detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : [])],
+            [],
+          )
+        : [],
       listDeckGames(id, userId),
       // Not swallowed, unlike the price and availability reads below. Those
       // degrade to a missing ornament; a ledger that quietly vanished would tell
@@ -129,7 +145,7 @@ export default async function DeckBuilderPage({
       degraded={degraded}
       shoppingFigures={shoppingFigures}
       firstRun={firstRun}
-      commanderIdentity={detail.commander.colorIdentity}
+      commanderIdentity={commanderIdentity}
       candidates={candidates}
       fillPasses={fillPasses}
       games={games}

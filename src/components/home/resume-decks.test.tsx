@@ -12,6 +12,8 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderColorIdentity: ["W", "U", "B", "G"],
   commanderImageUri: null,
   commanderArtCropUri: null,
+  partnerName: null,
+  partnerColorIdentity: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,
@@ -93,7 +95,10 @@ describe("ResumeDecks", () => {
     render(
       <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} />,
     );
-    expect(screen.getByText("99 / 99 · 3 cards")).toBeInTheDocument();
+    // Two elements, not one string: the clause is the only child a narrow row
+    // is allowed to eat into, so it cannot share a span with the figure.
+    expect(screen.getByText("99 / 99")).toBeInTheDocument();
+    expect(screen.getByText("· 3 cards")).toBeInTheDocument();
   });
 
   // §ResumeRow — the commander names the row's art. The deck name is the deck's
@@ -136,6 +141,64 @@ describe("ResumeDecks", () => {
     render(<ResumeDecks decks={[deck({ name: "Atraxa", id: "d1" })]} shopping={rollup()} />);
     const link = screen.getByRole("link", { name: /Atraxa/ });
     expect(link).toHaveAttribute("href", "/decks/d1");
+  });
+
+  // Decision 19. A pair prints the substring before each first comma, and only
+  // a pair does — no single-commander row changes a word.
+  it("shortens both names for a pair and leaves a single commander in full", () => {
+    render(
+      <ResumeDecks
+        decks={[deck({ commanderName: "Ishai, Ojutai Dragonspeaker", partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(screen.getByText("Ishai")).toBeInTheDocument();
+    expect(screen.getByText("+ Bruse Tarl")).toBeInTheDocument();
+  });
+
+  // Decision 19 inverts the shrink: the count is pinned and the names are the
+  // only child that gives, with the partner giving first so the `+` is never
+  // the character truncation eats.
+  it("pins the count and shrinks the partner's half first", () => {
+    render(
+      <ResumeDecks
+        decks={[deck({ commanderName: "Ishai, Ojutai Dragonspeaker", partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    const count = screen.getByText("99 / 98");
+    expect(count.className).toContain("flex-none");
+    // The group keeps its automatic minimum — that minimum IS the figure's
+    // width, so the group stops shrinking once the clause is spent instead of
+    // letting the row clip an unshrinkable figure into `86 / 9`.
+    expect(count.parentElement?.className).not.toContain("min-w-0");
+    expect(screen.getByText("+ Bruse Tarl").style.flexShrink).toBe("1000");
+    expect(screen.getByText("Ishai").style.textOverflow).toBe("ellipsis");
+  });
+
+  // Decision 23. The long-form clause leaves negative room for a name at all,
+  // and a partly truncated figure is never the answer — so a pair row drops the
+  // clause outright and the figure survives in the accessible name.
+  it("drops the to-buy clause on a pair row and keeps it in the accessible name", () => {
+    render(
+      <ResumeDecks
+        decks={[
+          deck({
+            built: 95,
+            commanderName: "Ishai, Ojutai Dragonspeaker",
+            partnerName: "Bruse Tarl, Boorish Herder",
+          }),
+        ]}
+        shopping={rollup({ d1: 3 })}
+      />,
+    );
+    expect(screen.getByText("95 / 98")).toBeInTheDocument();
+    expect(screen.queryByText(/95 \/ 98 ·/)).toBeNull();
+    expect(
+      screen.getByRole("link", {
+        name: /Ishai, Ojutai Dragonspeaker, with partner Bruse Tarl, Boorish Herder · 3 copies to buy/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("renders nothing when there are no decks", () => {

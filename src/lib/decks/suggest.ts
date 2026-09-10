@@ -2,6 +2,7 @@ import type { Availability } from "./availability";
 import type { DeckDetailCard } from "./grouping";
 import type { PriceFact } from "./price";
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
+import { deckBodySize, landTarget } from "./deck-size";
 import type { PoolCard } from "../recs/score";
 
 export type ReasonType = "edhrec" | "role";
@@ -49,8 +50,10 @@ export type DeckSuggestion = {
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
-const MAX = 99;
-export const LAND_TARGET = 37;
+// The body ceiling and the land target both move with the commander count, so
+// neither can be a module constant. `landTarget` is re-exported as a function
+// rather than a number so no caller can read a stale 37.
+export { landTarget } from "./deck-size";
 
 // The slot a suggestion was picked to fill, which is not what the card is:
 // suggestDeck offers a card against the first role it can close a gap on, so a
@@ -79,6 +82,9 @@ export function buildSuggestionPayload(
   // Sparse: a name EDHREC never reported is simply absent from either map.
   inclusionByName: Record<string, number | undefined>,
   synergyByName: Record<string, number | undefined> = {},
+  // Only the `rec N` half of a role label reads this, and only the land role
+  // moves: a pair deck runs one fewer land and the same everything else.
+  hasPartner = false,
 ): DeckSuggestion {
   let reasonType: ReasonType;
   let reasonLabel: string;
@@ -110,7 +116,8 @@ export function buildSuggestionPayload(
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";
-    const target = s.reason === "land" ? LAND_TARGET : (ROLE_TARGETS[s.reason] ?? LAND_TARGET);
+    const lands = landTarget(hasPartner);
+    const target = s.reason === "land" ? lands : (ROLE_TARGETS[s.reason] ?? lands);
     reasonLabel = `Fills ${humanRole(s.reason)} · rec ${target}`;
   }
 
@@ -138,11 +145,17 @@ export function suggestDeck(args: {
   commander: PoolCard;
   ownedPool: PoolCard[];
   edhrecTopCards: string[] | null;
+  // Required, not defaulted: a missed call site would quietly plan a pair deck
+  // to 99 cards and 37 lands, which is the one mistake this argument exists to
+  // make impossible.
+  hasPartner: boolean;
 }): Suggestion[] {
+  const max = deckBodySize(args.hasPartner);
+  const lands = landTarget(args.hasPartner);
   const out: Suggestion[] = [];
   const used = new Set<string>();
   const add = (oracleId: string, reason: Suggestion["reason"]) => {
-    if (out.length < MAX && !used.has(oracleId)) { used.add(oracleId); out.push({ oracleId, reason }); }
+    if (out.length < max && !used.has(oracleId)) { used.add(oracleId); out.push({ oracleId, reason }); }
   };
 
   if (args.edhrecTopCards) {
@@ -174,7 +187,7 @@ export function suggestDeck(args: {
   for (const c of args.ownedPool) {
     if (used.has(c.oracleId)) continue;
     for (const role of classifyRoles(c)) {
-      const target = role === "land" ? LAND_TARGET : ROLE_TARGETS[role];
+      const target = role === "land" ? lands : ROLE_TARGETS[role];
       if (counts[role] < target) { add(c.oracleId, role); counts[role]++; break; }
     }
   }

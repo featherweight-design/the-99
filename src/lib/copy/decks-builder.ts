@@ -309,10 +309,10 @@ export const addPanelCopy = {
     action: "Undo",
     actionAria: (name: string) => `Undo removing ${name}`,
     // Read on the builder's existing live region, after the removal itself.
-    announceRemoved: (name: string, built: number) =>
-      `${name} removed · ${builtFragment(built)} · undo available`,
-    announceUndone: (name: string, built: number) =>
-      `${name} back in the deck · ${builtFragment(built)}`,
+    announceRemoved: (name: string, built: number, bodySize: number) =>
+      `${name} removed · ${builtFragment(built, bodySize)} · undo available`,
+    announceUndone: (name: string, built: number, bodySize: number) =>
+      `${name} back in the deck · ${builtFragment(built, bodySize)}`,
     // The undo row is the only thing standing between a mis-tap and a lost
     // card, so a failed undo says so where the row is, not in a banner.
     failed: "Couldn’t put that back. Try adding it again.",
@@ -331,9 +331,11 @@ export const addPanelCopy = {
       role: string,
       have: number,
       target: number,
-    ) => `${name} added · ${builtFragment(built)} · ${role} ${have} of ${target}`,
-    addedNoRole: (name: string, built: number) =>
-      `${name} added · ${builtFragment(built)}`,
+      bodySize: number,
+    ) =>
+      `${name} added · ${builtFragment(built, bodySize)} · ${role} ${have} of ${target}`,
+    addedNoRole: (name: string, built: number, bodySize: number) =>
+      `${name} added · ${builtFragment(built, bodySize)}`,
   },
 
   // ── /decks/new — the Create button becomes the route's dock (#177) ─────
@@ -353,9 +355,11 @@ export const addPanelCopy = {
 // warns — it states the arithmetic and names the way out.
 export const overCopy = {
   figure: {
-    // The denominator never becomes the total: 99 is a rule of the format, not
-    // a target the deck outgrew. Callers pass both figures pre-formatted.
-    denominator: " / 99",
+    // The denominator is the deck's body, never its total: a deck is 100 cards
+    // including its commanders, so a single reads 99 and a pair reads 98. What
+    // it must never become is the count of cards the deck happens to hold.
+    // Callers pass both figures pre-formatted.
+    denominator: (bodySize: number) => ` / ${bodySize}`,
     // A second figure, not a recolour — a lone amber 104 beside a 99 asks the
     // player to do the subtraction.
     delta: (n: string) => `+${n}`,
@@ -413,14 +417,19 @@ export const overCopy = {
       : `This list is ${total} cards. ${n} over what a Commander deck can hold.`,
 
   aria: {
-    // Replaces `${built} of 99 cards built` on the progressbar when over.
-    // aria-valuemax moves to Math.max(99, built) in the same edit: a valuenow
-    // of 104 against a max of 99 is an invalid range and some readers clamp it
-    // to 100%, which is the one reading this amendment exists to stop.
-    progress: (built: string, n: string) =>
+    // Replaces `${built} of ${bodySize} cards built` on the progressbar when
+    // over. aria-valuemax moves to Math.max(bodySize, built) in the same edit:
+    // a valuenow of 104 against a max of 99 is an invalid range and some
+    // readers clamp it to 100%, which is the one reading this amendment exists
+    // to stop.
+    //
+    // `bodySize` rather than a literal 99 because a Partner deck's body is 98,
+    // and a reader hearing "over the 99" beside a visible `/ 98` is being told
+    // the deck is one card further from legal than it is.
+    progress: (built: string, n: string, bodySize: number) =>
       n === "1"
-        ? `${built} cards, 1 over the 99`
-        : `${built} cards, ${n} over the 99`,
+        ? `${built} cards, 1 over the ${bodySize}`
+        : `${built} cards, ${n} over the ${bodySize}`,
   },
 } as const;
 
@@ -430,12 +439,19 @@ export function overWord(n: number): string {
 }
 
 /** The count fragment every live region uses to say where the deck stands.
- *  Past 99 it borrows the progressbar's phrasing rather than saying "104 of
- *  99", which is a range a screen reader cannot make sense of — the same
- *  reading the amber bar exists to stop, in the one place the bar is not. */
-export function builtFragment(built: number): string {
-  if (built <= 99) return `${built} of 99`;
-  return overCopy.aria.progress(String(built), String(built - 99));
+ *  Past the body size it borrows the progressbar's phrasing rather than saying
+ *  "104 of 99", which is a range a screen reader cannot make sense of — the
+ *  same reading the amber bar exists to stop, in the one place the bar is not.
+ *
+ *  `bodySize` is the deck's body, so a Partner deck reads "of 98" and crosses
+ *  over at 98 — the same figure the visible denominator prints. */
+export function builtFragment(built: number, bodySize: number): string {
+  if (built <= bodySize) return `${built} of ${bodySize}`;
+  return overCopy.aria.progress(
+    String(built),
+    String(built - bodySize),
+    bodySize,
+  );
 }
 
 /** Export dialog, Shopping tab, and the price strip under the Shopping filter.

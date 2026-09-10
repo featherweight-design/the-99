@@ -18,13 +18,16 @@ import { ExternalLink } from "../ui/external-link";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { exportLinkOutCopy, exportShoppingCopy, overCopy } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
+import { deckBodySize } from "../../lib/decks/deck-size";
 
 type Tab = "decklist" | "shopping";
 
 interface ExportDialogProps {
   deckName: string;
   commanderName: string;
-  /** Body cards (commander excluded). */
+  /** The second commander, or null for the single-commander deck most decks are. */
+  partnerName: string | null;
+  /** Body cards (both commanders excluded). */
   decklistCards: { name: string; quantity: number }[];
   /** What the Shopping filter shows: cards you do not own, plus cards you own
       whose every copy is spoken for by another deck. Never a basic land. */
@@ -36,6 +39,7 @@ interface ExportDialogProps {
 export function ExportDialog({
   deckName,
   commanderName,
+  partnerName,
   decklistCards,
   shoppingCards,
   open,
@@ -51,20 +55,25 @@ export function ExportDialog({
 
   if (!open) return null;
 
-  const decklistText = buildDecklistText({ commanderName, cards: decklistCards });
+  const decklistText = buildDecklistText({ commanderName, partnerName, cards: decklistCards });
   const shoppingText = buildShoppingText(shoppingCards);
   const activeText = tab === "decklist" ? decklistText : shoppingText;
 
-  // Preview rendering: line 0 is the commander, the rest are body lines. The
-  // muted `// name — count` header and separator in the preview are
-  // presentational only — never part of the copied/downloaded text.
-  const decklistLines = decklistText.split("\n");
-  const commanderLine = decklistLines[0];
-  const bodyLines = decklistLines.slice(1);
-  const totalCards = 1 + decklistCards.reduce((sum, c) => sum + c.quantity, 0);
+  // The preview draws the commanders accented above a separator and the body
+  // beneath, so it composes its own lines rather than splitting the export text
+  // — that text now carries section headers, which the preview never showed.
+  // Its muted `// name — count` header and separator are presentational only.
+  const commanderLines = [commanderName, ...(partnerName ? [partnerName] : [])].map(
+    (n) => `1 ${n}`,
+  );
+  const bodyLines = decklistCards.map((c) => `${c.quantity} ${c.name}`);
   // The body count, which is what `built` means everywhere else — derived here
   // rather than passed in, so it cannot disagree with the preview's own header.
-  const built = totalCards - 1;
+  const built = decklistCards.reduce((sum, c) => sum + c.quantity, 0);
+  const totalCards = commanderLines.length + built;
+  // A hundred cards including the commanders, so a pair's body is 98 and the
+  // overage line measures against that rather than a written-down 99.
+  const bodySize = deckBodySize(partnerName !== null);
 
   return (
     <>
@@ -109,10 +118,11 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            commanderLine={commanderLine}
+            commanderLines={commanderLines}
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}
+            bodySize={bodySize}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={false}
@@ -136,10 +146,11 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            commanderLine={commanderLine}
+            commanderLines={commanderLines}
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}
+            bodySize={bodySize}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={true}
@@ -160,11 +171,14 @@ interface DialogContentProps {
   setTab: (t: Tab) => void;
   activeText: string;
   shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
-  commanderLine: string;
+  commanderLines: string[];
   bodyLines: string[];
   totalCards: number;
-  /** Matched body cards — over 99 adds one line, see overCopy.exportNote. */
+  /** Matched body cards — over the body size adds one line, see
+      overCopy.exportNote. */
   built: number;
+  /** 99, or 98 for a pair. */
+  bodySize: number;
   setStatus: (s: string) => void;
   onClose: () => void;
   isMobile: boolean;
@@ -176,10 +190,11 @@ function DialogContent({
   setTab,
   activeText,
   shoppingCards,
-  commanderLine,
+  commanderLines,
   bodyLines,
   totalCards,
   built,
+  bodySize,
   setStatus,
   onClose,
   isMobile,
@@ -304,11 +319,11 @@ function DialogContent({
         {tab === "decklist" ? (
           /* Decklist tab body */
           <div style={{ margin: isMobile ? "14px 18px" : "0 24px" }}>
-            {/* Over 99: one line stating the arithmetic in the one place the
-                list leaves the app. Not a warning and not a blocker — export
-                stays enabled, because the player is very likely pasting this
-                somewhere to do the cutting. */}
-            {built > 99 && (
+            {/* Over the body size: one line stating the arithmetic in the one
+                place the list leaves the app. Not a warning and not a blocker —
+                export stays enabled, because the player is very likely pasting
+                this somewhere to do the cutting. */}
+            {built > bodySize && (
               <p
                 style={{
                   fontSize: isMobile ? 12 : 12.5,
@@ -317,12 +332,12 @@ function DialogContent({
                   margin: "0 0 10px",
                 }}
               >
-                {/* The size figure is the whole list, commander included, so it
+                {/* The size figure is the whole list, commanders included, so it
                     agrees with the preview header a few lines down rather than
                     contradicting it. The overage is still measured off the body:
-                    a Commander deck holds a hundred cards, ninety-nine and its
-                    commander, so 105 really is five over. */}
-                {overCopy.exportNote(String(totalCards), String(built - 99))}
+                    a Commander deck holds a hundred cards, so 105 really is five
+                    over whether one card of it leads the deck or two do. */}
+                {overCopy.exportNote(String(totalCards), String(built - bodySize))}
               </p>
             )}
             <pre
@@ -350,11 +365,13 @@ function DialogContent({
                 {`// ${deckName} — ${totalCards} cards`}
                 {"\n"}
               </span>
-              {/* Commander line: 1 commanderName */}
-              <span style={{ color: "var(--accent)" }}>
-                {commanderLine}
-                {"\n"}
-              </span>
+              {/* Commander lines: one per commander, both for a pair */}
+              {commanderLines.map((line) => (
+                <span key={line} style={{ color: "var(--accent)" }}>
+                  {line}
+                  {"\n"}
+                </span>
+              ))}
               {/* Preview-only separator — not part of the copied text */}
               <span aria-hidden style={{ color: "var(--border-strong)" }}>
                 {isMobile ? "—" : "————————————"}

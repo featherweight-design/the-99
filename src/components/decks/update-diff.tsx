@@ -171,6 +171,12 @@ export function UpdateDiff({
   const outCopies = preview.out.reduce((n, r) => n + r.quantity, 0);
   const wholesale = preview.built > 0 && outCopies / preview.built > WHOLESALE_SHARE;
   const clamped = preview.notes.filter((n) => n.kind === "quantityClamped").length;
+  // This flow never changes the deck's commanders, so a commander line in the
+  // paste is only ever kept out of the 99. Past the second it is also a card the
+  // player pasted and will not find in the deck, which is what earns it a line.
+  const extraCommanders = preview.notes.filter(
+    (n) => n.kind === "thirdCommanderDeclared",
+  ).length;
 
   return (
     // The rows open the card modal, and the builder's provider does not reach
@@ -189,12 +195,17 @@ export function UpdateDiff({
           </span>
         </p>
 
-        {/* The one non-fatal note the flow surfaces. Everything else the parser
+        {/* The non-fatal notes the flow surfaces. Everything else the parser
             drops — sideboard, maybeboard, a commander duplicated into the 99 — is
             dropped in silence, the rule the import already holds to. */}
         {clamped > 0 && (
           <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
             {deckImportCopy.notes.quantityClamped(clamped)}
+          </p>
+        )}
+        {extraCommanders > 0 && (
+          <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+            {deckImportCopy.notes.thirdCommanderDeclared(extraCommanders)}
           </p>
         )}
 

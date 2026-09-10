@@ -15,6 +15,22 @@ export const deck = {
     manaCost: "{G}{W}{U}{B}",
     oracleText: "",
   },
+  partner: null,
+};
+
+/** The same header with a second commander, for the pair-only assertions. */
+export const pairDeck = {
+  ...deck,
+  partner: {
+    oracleId: "o2",
+    name: "Kratos, God of War",
+    colorIdentity: ["R", "W"],
+    artCropUri: "/crop-2.jpg",
+    imageUri: "/full-2.jpg",
+    typeLine: "Legendary Creature",
+    manaCost: "{2}{R}{W}",
+    oracleText: "Partner—Father & son",
+  },
 };
 
 export const props = {

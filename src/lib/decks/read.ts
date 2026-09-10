@@ -1,4 +1,5 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import {
   cards,
@@ -11,8 +12,8 @@ import {
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
-import { MATURE_DECK_SIZE } from "./availability";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
+import { deckBodySize } from "./deck-size";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
@@ -28,6 +29,10 @@ import type { DeckSort } from "./sort";
 // ---------------------------------------------------------------------------
 // WUBRG bitmask helpers (tested)
 // ---------------------------------------------------------------------------
+
+/** `cards` a second time, for the partner. A join to the same table twice needs
+    a name for each side or the SQL is ambiguous. */
+const partnerCards = alias(cards, "partner_cards");
 
 const WUBRG_BITS: Record<string, number> = { W: 1, U: 2, B: 4, R: 8, G: 16 };
 
@@ -76,27 +81,61 @@ export function primaryRole(input: { typeLine: string; oracleText: string | null
   return roles[0] ?? "other";
 }
 
+/**
+ * Whether a deck row could flip from `To buy` to `Complete` once the seniority
+ * allocation is known — the gate deciding whether `listDecksWithStats` runs the
+ * shopping query at all. Its body size is its own: a pair deck is finished at
+ * 98, so measuring it against 99 would exclude the very deck the second query
+ * exists to answer for.
+ *
+ * Lives up here, exported, because it is the one part of that function a test
+ * can reach — the query around it needs a database and this file's tests mock
+ * `db` away entirely.
+ */
+export function deckIsFlippable(r: {
+  built: number;
+  partnerName: string | null;
+  ownedCount: number;
+  unresolvedCount: number;
+}): boolean {
+  return (
+    r.built === deckBodySize(r.partnerName !== null) &&
+    r.ownedCount === r.built &&
+    r.unresolvedCount === 0
+  );
+}
+
 // ---------------------------------------------------------------------------
 // DB query types and functions (untested — same policy as recommend.ts)
 // ---------------------------------------------------------------------------
 
 export type { DeckUnresolvedRow };
 
+/**
+ * One commander card, as a deck detail carries it. Named rather than inlined
+ * because a deck now has up to two of them and they are the same shape key for
+ * key — the pair's order is the field order, exactly as it is the column order
+ * in `decks`.
+ */
+export type DeckCommander = {
+  oracleId: string;
+  name: string;
+  colorIdentity: string[];
+  manaCost: string | null;
+  typeLine: string;
+  oracleText: string | null;
+  imageUri: string | null;
+  artCropUri: string | null;
+};
+
 export type DeckDetail = {
   id: string;
   name: string;
   createdAt: Date;
   filled: boolean;
-  commander: {
-    oracleId: string;
-    name: string;
-    colorIdentity: string[];
-    manaCost: string | null;
-    typeLine: string;
-    oracleText: string | null;
-    imageUri: string | null;
-    artCropUri: string | null;
-  };
+  commander: DeckCommander;
+  /** The second commander, or null for the single-commander deck most decks are. */
+  partner: DeckCommander | null;
   cards: DeckDetailCard[];
   /**
    * Lines the import could not match, sorted by their position in the player's
@@ -120,14 +159,21 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       createdAt: decks.createdAt,
       filled: decks.filled,
       commanderOracleId: decks.commanderOracleId,
+      partnerOracleId: decks.partnerOracleId,
     })
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
 
   if (!deck) return null;
 
-  // Second: fetch commander card details.
-  const [commander] = await db
+  // Second: fetch both commanders' card details in one query. The two ids are
+  // read back out of the result rather than trusted to come back in order —
+  // `in` promises a set, not a sequence.
+  const commanderIds = [
+    deck.commanderOracleId,
+    ...(deck.partnerOracleId ? [deck.partnerOracleId] : []),
+  ];
+  const commanderRows = await db
     .select({
       oracleId: cards.oracleId,
       name: cards.name,
@@ -139,9 +185,13 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       artCropUri: cards.artCropUri,
     })
     .from(cards)
-    .where(eq(cards.oracleId, deck.commanderOracleId));
+    .where(inArray(cards.oracleId, commanderIds));
 
+  const commander = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
   if (!commander) return null;
+  const partner = deck.partnerOracleId
+    ? (commanderRows.find((c) => c.oracleId === deck.partnerOracleId) ?? null)
+    : null;
 
   // Third: fetch all deck cards with owned flag.
   const ownedSql = sql<boolean>`exists (
@@ -221,6 +271,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     createdAt: deck.createdAt,
     filled: deck.filled,
     commander,
+    partner,
     cards: detailCards,
     unresolvedRows,
     ...deckCounts(detailCards, unresolvedCardCount(unresolvedRows)),
@@ -235,6 +286,17 @@ export type DeckListItem = {
   commanderColorIdentity: string[];
   commanderImageUri: string | null;
   commanderArtCropUri: string | null;
+  /**
+   * The second commander's name, or null for a single-commander deck — which is
+   * also the pair signal every list surface reads, because a deck has a partner
+   * exactly when this is non-null.
+   *
+   * No partner art rides along. Decision 21 rules the resume portrait structural
+   * and the rail spine 26px, so no list surface draws a second commander's art
+   * and selecting it would be a column nothing consumes.
+   */
+  partnerName: string | null;
+  partnerColorIdentity: string[] | null;
   built: number;
   ownedCount: number;
   toBuyCount: number;
@@ -350,6 +412,8 @@ export async function listDecksWithStats(
       commanderColorIdentity: cards.colorIdentity,
       commanderImageUri: cards.imageUri,
       commanderArtCropUri: cards.artCropUri,
+      partnerName: partnerCards.name,
+      partnerColorIdentity: partnerCards.colorIdentity,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
@@ -357,6 +421,10 @@ export async function listDecksWithStats(
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
+    // LEFT, and aliased: it is a second join to the same table, and most decks
+    // have no partner — an inner join would drop every single-commander deck
+    // from the list.
+    .leftJoin(partnerCards, eq(decks.partnerOracleId, partnerCards.oracleId))
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
     .groupBy(
@@ -367,6 +435,8 @@ export async function listDecksWithStats(
       cards.colorIdentity,
       cards.imageUri,
       cards.artCropUri,
+      partnerCards.name,
+      partnerCards.colorIdentity,
     )
     .orderBy(...order);
 
@@ -401,15 +471,13 @@ export async function listDecksWithStats(
   //
   // Asked only when some deck could actually move. `unfunded` is read by exactly
   // one branch of `statusPill`, the one deciding `Complete` against `To buy`, and
-  // every earlier branch returns without consulting it: a deck that is not at 99,
-  // does not own its whole list, or has an unresolved line has already been
-  // answered. With no such deck on the page the query is a collection-wide scan
-  // whose result nothing reads — and `/decks` and Home both run
+  // every earlier branch returns without consulting it: a deck short of its body
+  // size, not owning its whole list, or holding an unresolved line has already
+  // been answered. With no such deck on the page the query is a collection-wide
+  // scan whose result nothing reads — and `/decks` and Home both run
   // `loadShoppingRollup` alongside this, which asks the same question, so the
   // saving is a real second scan rather than a hypothetical one.
-  const canFlip = rows.some(
-    (r) => r.built === MATURE_DECK_SIZE && r.ownedCount === r.built && r.unresolvedCount === 0,
-  );
+  const canFlip = rows.some(deckIsFlippable);
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
   const buyRows = canFlip ? await loadDeckBuyRows(userId).catch(() => []) : [];
@@ -424,6 +492,7 @@ export async function listDecksWithStats(
       ownedCount: row.ownedCount,
       unresolvedCount: row.unresolvedCount,
       unfundedCount: unfundedByDeck.get(row.id) ?? 0,
+      bodySize: deckBodySize(row.partnerName !== null),
     });
     return {
       id: row.id,
@@ -433,6 +502,8 @@ export async function listDecksWithStats(
       commanderColorIdentity: row.commanderColorIdentity,
       commanderImageUri: row.commanderImageUri,
       commanderArtCropUri: row.commanderArtCropUri,
+      partnerName: row.partnerName,
+      partnerColorIdentity: row.partnerColorIdentity,
       built: row.built,
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,
@@ -463,6 +534,11 @@ export type OwnedLegalCommander = {
   name: string;
   colorIdentity: string[];
   imageUri: string | null;
+  /**
+   * Read for the Partner ability, which decides whether a pick offers a second
+   * slot and which legends may fill it. Already fetched by the query below.
+   */
+  oracleText: string | null;
   /** Number of cards in the user's collection that fit within this commander's color identity. */
   poolCount: number;
 };
@@ -518,6 +594,7 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
         name: c.name,
         colorIdentity: c.colorIdentity,
         imageUri: c.imageUri,
+        oracleText: c.oracleText,
         poolCount,
       };
     })

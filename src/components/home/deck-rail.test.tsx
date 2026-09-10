@@ -12,6 +12,8 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderColorIdentity: ["W", "U", "B", "G"],
   commanderImageUri: null,
   commanderArtCropUri: null,
+  partnerName: null,
+  partnerColorIdentity: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,
@@ -107,6 +109,49 @@ describe("DeckRail", () => {
     );
     expect(list("phone").getByText("Complete")).toBeInTheDocument();
     expect(list("desktop").getByText("Complete")).toBeInTheDocument();
+  });
+
+  // Decision 21. The denominator is the whole of the rail's pair handling: no
+  // second name, no halved art spine, just the ceiling this deck actually has.
+  it("prints 98 as a pair row's denominator and nothing else about the pair", () => {
+    render(
+      <DeckRail
+        decks={[deck({ built: 95, partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(list("phone").getByText("95 / 98")).toBeInTheDocument();
+    // Nothing about the pair is drawn. The phone row's accessible name is the
+    // one exception, checked below: it is heard, not seen, and the desktop row
+    // has no pair handling at all.
+    expect(list("desktop").queryByText(/Bruse Tarl/)).toBeNull();
+    expect(list("phone").queryByText("Bruse Tarl, Boorish Herder")).toBeNull();
+  });
+
+  // The denominator says `pair` only to a reader who can see it and knows the
+  // ceiling, so the row names both commanders in full to a screen reader.
+  it("names both commanders in the phone pair row's accessible name", () => {
+    render(
+      <DeckRail
+        decks={[deck({ built: 95, partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(
+      list("phone").getByText("Atraxa, Praetors' Voice, with partner Bruse Tarl, Boorish Herder"),
+    ).toBeInTheDocument();
+  });
+
+  // Over WHAT this deck's ceiling is: 99 cards is one over for a pair and
+  // exactly full for a single commander.
+  it("counts a pair's overflow against 98", () => {
+    render(
+      <DeckRail
+        decks={[deck({ built: 99, statusPill: "Over", partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(screen.getByText("Over · 1 over")).toBeInTheDocument();
   });
 
   it("renders nothing at all when there are no decks", () => {

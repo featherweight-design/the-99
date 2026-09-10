@@ -5,6 +5,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
@@ -206,6 +207,11 @@ export function BuilderShell({
   const counts = deckCounts(cards, unresolvedCount);
   const { built } = counts;
 
+  // The ceiling this page measures against, derived once. A pair's commanders
+  // take two of the hundred, so its body is 98 and every figure below counts
+  // toward that rather than a written-down 99.
+  const bodySize = deckBodySize(deck.partner !== null);
+
   // The one deliberate exception. Keyed off the SERVER counts because the
   // commitments roll-up below states a fact about other decks' claims, and a
   // predicted 99th card the server then rejects would zero the soft count for
@@ -219,6 +225,7 @@ export function BuilderShell({
     // — unowned, and owned but held by an older finished deck — so this pill and
     // the Shopping filter's own count can never disagree.
     unfundedCount: cardCopies(deck.cards.filter(isShoppingCard)),
+    bodySize,
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
@@ -354,11 +361,12 @@ export function BuilderShell({
               mix.label,
               computeRoleCounts(before)[card.role as MixRole] + card.quantity,
               mix.target,
+              bodySize,
             )
-          : addPanelCopy.announce.addedNoRole(card.name, nextBuilt),
+          : addPanelCopy.announce.addedNoRole(card.name, nextBuilt, bodySize),
       );
     },
-    [addOptimisticCard, cards],
+    [addOptimisticCard, cards, bodySize],
   );
 
   // Split in two on purpose. `useDeckMutation` dispatches its optimistic update
@@ -376,10 +384,14 @@ export function BuilderShell({
       // that decrements keeps its row, and its own count is the receipt.
       if (card.quantity > 1) return;
       setAnnouncement(
-        addPanelCopy.undo.announceRemoved(card.name, deckCounts(cards).built - 1),
+        addPanelCopy.undo.announceRemoved(
+          card.name,
+          deckCounts(cards).built - 1,
+          bodySize,
+        ),
       );
     },
-    [cards],
+    [cards, bodySize],
   );
   const removeCard = useCallback(
     (card: DeckDetailCard) => removeOptimisticCard(card.oracleId),
@@ -389,10 +401,14 @@ export function BuilderShell({
   const announceUndo = useCallback(
     (card: DeckDetailCard) => {
       setAnnouncement(
-        addPanelCopy.undo.announceUndone(card.name, deckCounts(cards).built + card.quantity),
+        addPanelCopy.undo.announceUndone(
+          card.name,
+          deckCounts(cards).built + card.quantity,
+          bodySize,
+        ),
       );
     },
-    [cards],
+    [cards, bodySize],
   );
   // A failed removal outlives the row that asked for it, so its reason is held
   // here. Cleared when the server answers again: any successful edit replaces
@@ -441,7 +457,10 @@ export function BuilderShell({
         const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
         const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
-          recommendationsCopy.auto.sweptAnnounce(String(removedCount), builtFragment(remaining)),
+          recommendationsCopy.auto.sweptAnnounce(
+            String(removedCount),
+            builtFragment(remaining, bodySize),
+          ),
         );
       } catch {
         // No explicit rollback: the transition ends here and React drops the
@@ -449,7 +468,7 @@ export function BuilderShell({
         setAutoError(recommendationsCopy.auto.sweepFailed);
       }
     });
-  }, [sweepPending, cards, deck.id, sweepOptimisticAuto]);
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto, bodySize]);
 
   // No receipt strip and no undo: a keep takes nothing, so there is nothing for
   // a receipt to hold open, and an undo would have to write `auto = true` back
@@ -493,7 +512,7 @@ export function BuilderShell({
       setAnnouncement(
         recommendationsCopy.auto.sweptRestoredAnnounce(
           String(restored),
-          builtFragment(deckCounts(cards).built + restored),
+          builtFragment(deckCounts(cards).built + restored, bodySize),
         ),
       );
       setSweptRows(null);
@@ -502,7 +521,7 @@ export function BuilderShell({
       // the sweep's "the deck is unchanged" would be the wrong action and false.
       setAutoError(recommendationsCopy.auto.restoreFailed);
     }
-  }, [sweptRows, deck.id, cards]);
+  }, [sweptRows, deck.id, cards, bodySize]);
 
   // Clear sweep state when the server list changes (revalidation settled).
   // The sweep receipt is decklist state: it persists across tab switches but
@@ -661,6 +680,7 @@ export function BuilderShell({
                 cards={cards}
                 total={autoCount}
                 passes={fillPasses}
+                bodySize={bodySize}
                 markedPassId={markedPassId}
                 onMarkChange={handleMarkChange}
                 onAnnounce={setAnnouncement}
@@ -678,7 +698,8 @@ export function BuilderShell({
                 width-dependent element — the same shape the ledger now takes. */}
             <LastSlotsStrip
               deckId={deck.id}
-              openSlots={99 - built}
+              openSlots={bodySize - built}
+              bodySize={bodySize}
               candidates={candidates}
               deckOracleIds={topOffDeckOracleIds}
               newestAsOf={newestAsOf}
@@ -972,6 +993,7 @@ export function BuilderShell({
                 commanderOracleId={deck.commander.oracleId}
                 deckOracleIds={deckOracleIds}
                 built={built}
+                bodySize={bodySize}
                 spentSlot={spentSlot}
                 filled={deck.filled}
                 filter={filter}
@@ -1055,6 +1077,7 @@ export function BuilderShell({
             <ExportDialog
               deckName={deck.name}
               commanderName={deck.commander.name}
+              partnerName={deck.partner?.name ?? null}
               decklistCards={cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
               // The Shopping filter's own predicate, not a second `!owned` list.
               // The two diverged: this one carried the unowned basics the filter

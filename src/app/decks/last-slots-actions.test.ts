@@ -86,6 +86,9 @@ const stub = vi.hoisted(() => {
       id: "deck-1",
       userId: "user_1",
       commanderOracleId: "commander-oracle-id",
+      // A single-commander deck, which is the 99 ceiling every figure below is
+      // written against.
+      partnerOracleId: null,
     });
     // Commander card (needed for the commander color-identity read and the
     // legality pass that checks cards.oracleId === commanderOracleId)

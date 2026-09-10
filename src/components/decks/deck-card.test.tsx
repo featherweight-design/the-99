@@ -18,6 +18,8 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderColorIdentity: ["W", "U", "B", "G"],
   commanderImageUri: "https://example.test/atraxa.jpg",
   commanderArtCropUri: "https://example.test/atraxa-crop.jpg",
+  partnerName: null,
+  partnerColorIdentity: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,
@@ -37,6 +39,33 @@ describe("DeckCard", () => {
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
     expect(screen.getByText("3 to buy · $18.40")).toBeInTheDocument();
     expect(screen.getByText("2 days ago")).toBeInTheDocument();
+  });
+
+  // #364. A pair's commanders take two of the hundred, so a finished pair deck
+  // is 98 of 98 — a tile reading 98 / 99 would tell its owner the deck is one
+  // card short, and its progress bar would stop just shy of full forever.
+  it("measures a pair against 98 and a single commander against 99", () => {
+    const pair = deck({ partnerName: "Kratos, Stoic Father", built: 98, statusPill: "Building" });
+    const { rerender } = render(<DeckCard deck={pair} shopping={undefined} now={now} />);
+    expect(screen.getByText("98 / 98")).toBeInTheDocument();
+
+    rerender(
+      <DeckCard deck={deck({ built: 98, statusPill: "Building" })} shopping={undefined} now={now} />,
+    );
+    expect(screen.getByText("98 / 99")).toBeInTheDocument();
+  });
+
+  // The overage is measured off the same ceiling: 100 cards in a pair deck is
+  // two over its body, not one.
+  it("counts a pair's overage against 98", () => {
+    render(
+      <DeckCard
+        deck={deck({ partnerName: "Kratos, Stoic Father", built: 100, statusPill: "Over" })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("2 over")).toBeInTheDocument();
   });
 
   // `toBuyCount` is `built − ownedCount` and counts basics; the roll-up refuses

@@ -67,22 +67,37 @@ describe("addPanelCopy counts at n = 1", () => {
   });
 
   it("names the role cell an add moved, and drops it when there is none", () => {
-    expect(addPanelCopy.announce.added("Sol Ring", 12, "Ramp", 4, 10)).toBe(
+    expect(addPanelCopy.announce.added("Sol Ring", 12, "Ramp", 4, 10, 99)).toBe(
       "Sol Ring added · 12 of 99 · Ramp 4 of 10",
     );
-    expect(addPanelCopy.announce.addedNoRole("Sol Ring", 12)).toBe("Sol Ring added · 12 of 99");
+    expect(addPanelCopy.announce.addedNoRole("Sol Ring", 12, 99)).toBe(
+      "Sol Ring added · 12 of 99",
+    );
   });
 
   // "104 of 99" is a range with no meaning, and the live region is the one
   // place the amber bar's second figure cannot do the explaining.
   it("stops saying 'of 99' once the deck is past it", () => {
-    expect(addPanelCopy.announce.addedNoRole("Mountain", 104)).toBe(
+    expect(addPanelCopy.announce.addedNoRole("Mountain", 104, 99)).toBe(
       "Mountain added · 104 cards, 5 over the 99",
     );
-    expect(addPanelCopy.undo.announceRemoved("Mountain", 100)).toBe(
+    expect(addPanelCopy.undo.announceRemoved("Mountain", 100, 99)).toBe(
       "Mountain removed · 100 cards, 1 over the 99 · undo available",
     );
-    expect(builtFragment(99)).toBe("99 of 99");
+    expect(builtFragment(99, 99)).toBe("99 of 99");
+  });
+
+  // A Partner deck's body is 98, and a reader hearing "of 99" beside a visible
+  // "/ 98" is told the deck is one card further from legal than it is.
+  it("measures a pair against 98, including the crossing point", () => {
+    expect(builtFragment(98, 98)).toBe("98 of 98");
+    expect(builtFragment(99, 98)).toBe("99 cards, 1 over the 98");
+    expect(addPanelCopy.announce.addedNoRole("Mountain", 103, 98)).toBe(
+      "Mountain added · 103 cards, 5 over the 98",
+    );
+    expect(addPanelCopy.undo.announceUndone("Sol Ring", 40, 98)).toBe(
+      "Sol Ring back in the deck · 40 of 98",
+    );
   });
 });
 

@@ -69,6 +69,7 @@ function makeDeck(): DeckDetail {
       imageUri: null,
       artCropUri: null,
     },
+    partner: null,
     filled: false,
     cards: [
       {

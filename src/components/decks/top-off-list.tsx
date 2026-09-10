@@ -39,8 +39,11 @@ const ANNOUNCE_SETTLE_MS = 600;
 export interface TopOffListProps {
   deckId: string;
   listId: string;
-  /** 99 minus the built count, live: quick-add can move it while the list is open. */
+  /** The body size minus the built count, live: quick-add can move it while the
+      list is open. */
   openSlots: number;
+  /** The ceiling every figure here is stated against — 99, or 98 for a pair. */
+  bodySize: number;
   /** The whole ranked pool, live. It is frozen inside for the life of one
       opening — see the comment at `frozen` — and the live value is read only to
       tell which of the frozen rows the route is still offering. */
@@ -143,6 +146,7 @@ export function TopOffList({
   deckId,
   listId,
   openSlots,
+  bodySize,
   candidates,
   deckOracleIds,
   ticked,
@@ -220,7 +224,7 @@ export function TopOffList({
     newestAsOf,
   );
   const buyCount = buying.length;
-  const total = 99 - openSlots + tickedCount;
+  const total = bodySize - openSlots + tickedCount;
 
   const capLineId = `${listId}-cap`;
 
@@ -348,8 +352,9 @@ export function TopOffList({
               String(result.added),
               String(result.total),
               String(result.boughtDelta),
+              bodySize,
             )
-          : topOffCopy.announce.addedNoBuy(String(result.added), String(result.total)),
+          : topOffCopy.announce.addedNoBuy(String(result.added), String(result.total), bodySize),
       );
       onClose();
     } catch {
@@ -379,7 +384,7 @@ export function TopOffList({
     ? primaryLabel
     : tickedCount === 0
       ? topOffCopy.commit.addEmpty
-      : topOffCopy.commit.addAria(String(tickedCount), String(total));
+      : topOffCopy.commit.addAria(String(tickedCount), String(total), bodySize);
 
   const headDesktop = topOffCopy.list.head(
     String(tickedCount),
@@ -590,7 +595,7 @@ export function TopOffList({
             </span>
           )}
           <span className="order-3 md:order-1 ml-auto md:ml-0 text-[color:var(--fg-locked)] md:text-[color:var(--fg-body)]">
-            {topOffCopy.commit.consequence(String(total))}
+            {topOffCopy.commit.consequence(String(total), bodySize)}
           </span>
         </div>
 

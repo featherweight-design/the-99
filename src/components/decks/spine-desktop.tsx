@@ -7,12 +7,14 @@
 
 import { useState } from "react";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { IdentityPips } from "../commanders/commander-art";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
-import { colorLabel } from "../../lib/decks/format";
+import { deckBodySize } from "../../lib/decks/deck-size";
+import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import type { StatusPill } from "../../lib/decks/status";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { StatusPillBadge } from "./status-pill";
@@ -30,6 +32,17 @@ export interface SpineBandProps {
       colorIdentity: string[];
       artCropUri: string | null;
     };
+    /**
+     * The second commander, or null for the single-commander deck most decks
+     * are. Read here for the body size the count's denominator prints — a deck
+     * is 100 cards including its commanders.
+     */
+    partner: {
+      oracleId: string;
+      name: string;
+      colorIdentity: string[];
+      artCropUri: string | null;
+    } | null;
   };
   counts: { built: number; ownedCount: number; toBuyCount: number };
   status: StatusPill;
@@ -40,12 +53,29 @@ export interface SpineBandProps {
     rather than left to layout: zero reflow between states is the point. */
 const FIELD_BOX = { width: 352, height: 29 } as const;
 
+/**
+ * Decision 18's shrinking half. Both names take it; the partner additionally
+ * raises `flexShrink` so it is the half that gives first. `minWidth: 0` is what
+ * makes the ellipsis reachable at all — a flex child's default `min-width:auto`
+ * floors it at its content width, so without this the group overflows rather
+ * than truncating.
+ */
+export const TRUNCATES: React.CSSProperties = {
+  flex: "0 1 auto",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
 export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
-  const { commander } = deck;
+  const { commander, partner } = deck;
   const { built, ownedCount, toBuyCount } = counts;
-  const over = built > 99;
-  const toCut = built - 99;
+  const bodySize = deckBodySize(partner !== null);
+  const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
+  const over = built > bodySize;
+  const toCut = built - bodySize;
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
@@ -170,12 +200,61 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
 
           <div
             className="flex flex-wrap items-center"
-            style={{ gap: 10, marginTop: 3 }}
+            style={{ gap: 10, marginTop: 3, minWidth: 0 }}
           >
-            <IdentityPips colorIdentity={commander.colorIdentity} size={10} />
-            <p className="font-mono" style={{ fontSize: 11, color: "var(--fg-body)" }}>
-              {commander.name} · {colorLabel(commander.colorIdentity)}
-            </p>
+            <IdentityPips colorIdentity={identity} size={10} />
+            {/* Decision 18: the caption states the pair, joined by a `+`. No row
+                is added and no badge is drawn — the band is one image, so the
+                second commander is a word rather than a picture. Desktop keeps
+                the identity label; the mobile caption drops it.
+
+                The group is an ordered shrink, not a run of text: between 768
+                and ~1085px the column is narrower than the pair, and wrapping
+                the names is the state decision 18 rules out. `flex-wrap` on the
+                row above spills the pips and pill first; past that the partner
+                gives, carrying a shrink factor large enough that the primary
+                yields only once the partner is gone. Writing the primary
+                `flex-none` instead is the obvious reading and a bug — it would
+                overflow the group and draw under the count. */}
+            <span
+              className="font-mono flex"
+              style={{
+                fontSize: 11,
+                color: "var(--fg-body)",
+                gap: 5,
+                minWidth: 0,
+                overflow: "hidden",
+                alignItems: "baseline",
+              }}
+            >
+              <span style={TRUNCATES}>{commander.name}</span>
+              {partner ? (
+                <>
+                  <span style={{ flex: "none" }}>+</span>
+                  {/* The partner's printing opens from the word that names it,
+                      and the rule under it is the whole visible affordance. The
+                      primary needs no equivalent — its trigger is the 230px of
+                      art beside this text. */}
+                  <CardDetailTrigger
+                    oracleId={partner.oracleId}
+                    name={partner.name}
+                    title={partner.name}
+                    ariaLabel={deckImportCopy.commander.partnerCardAria(partner.name)}
+                    className="font-mono"
+                    style={{
+                      ...TRUNCATES,
+                      flexShrink: 1000,
+                      fontSize: 11,
+                      color: "var(--fg-body)",
+                      borderBottom: "1px solid var(--border-strong)",
+                    }}
+                  >
+                    {partner.name}
+                  </CardDetailTrigger>
+                </>
+              ) : null}
+              <span style={{ flex: "none" }}>· {colorLabel(identity)}</span>
+            </span>
             {/* Geometry only; `statusPillStyle` still owns the colour. The prop
                 replaces the tile's class outright, so every box property §B8
                 names has to be restated here — there is no merge. */}
@@ -193,7 +272,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
               {built}
             </span>
             <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
-              {overCopy.figure.denominator}
+              {overCopy.figure.denominator(bodySize)}
             </span>
             {over && (
               <span
@@ -219,7 +298,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
             <div
               data-testid="spine-bar-fill"
               className="h-full"
-              style={statusBarStyle(status, built)}
+              style={statusBarStyle(status, built, bodySize)}
             />
           </div>
 

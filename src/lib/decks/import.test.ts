@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { CollectionRow } from "../manabox/parse";
 import { buildDeckImport, type DeckImport, type ImportCatalogCard } from "./import";
+import { buildDecklistText } from "./export-helpers";
 
 /** Drops the source line. These cases are about which card a line *shape*
  *  resolves to; the line number each row carries is asserted in update.test.ts,
@@ -42,7 +44,27 @@ const DELVER = card({
   typeLine: "Creature — Human Insect",
 });
 
-const CATALOG = [SOL_RING, FOREST, ATRAXA, TYMNA, DELVER];
+// The motivating deck's pair, and a third legend to overflow a declaration with.
+const ATREUS = card({
+  name: "Atreus, God of War",
+  typeLine: "Legendary Creature — God",
+  colorIdentity: ["R", "W"],
+  oracleText: "Partner—Father & son (You can have two commanders if both have Partner—Father & son.)",
+});
+const KRATOS = card({
+  name: "Kratos, God of War",
+  typeLine: "Legendary Creature — God",
+  colorIdentity: ["U", "R"],
+  oracleText: "Partner—Father & son (You can have two commanders if both have Partner—Father & son.)",
+});
+const ISHAI = card({
+  name: "Ishai, Ojutai Dragonspeaker",
+  typeLine: "Legendary Creature — Bird Monk",
+  colorIdentity: ["W", "U"],
+  oracleText: "Flying\nPartner (You can have two commanders if both have partner.)",
+});
+
+const CATALOG = [SOL_RING, FOREST, ATRAXA, TYMNA, DELVER, ATREUS, KRATOS, ISHAI];
 
 const build = (text: string, catalog: ImportCatalogCard[] = CATALOG) =>
   buildDeckImport({ text, catalog });
@@ -159,16 +181,58 @@ describe("buildDeckImport — locked decision: a commander also in the 99 is ded
     expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
-  it("notes a Partner pair's second commander rather than importing it into the 99", () => {
-    // decks.commander_oracle_id holds one commander. Importing the partner as a 99 card
+  it("reads a Partner pair's second commander as the partner, not as a 99 card", () => {
+    // Neither commander is a deck_cards row. Importing the partner into the 99
     // would change the deck's colour identity and its legality without saying so.
     const result = build("1 Tymna the Weaver *CMDR*\n1 Atraxa, Praetors' Voice *CMDR*\n1 Sol Ring");
     expect(result.declaredCommander?.oracleId).toBe(TYMNA.oracleId);
+    expect(result.declaredPartner?.oracleId).toBe(ATRAXA.oracleId);
     expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
-    expect(result.notes).toEqual([
-      { kind: "extraCommanderDeclared", name: ATRAXA.name, sourceLine: 2 },
-    ]);
+    expect(result.notes).toEqual([]);
     expect(result.legendaryCandidates).toEqual([]);
+  });
+
+  it("reads two declared commanders as a pair", () => {
+    const result = build("Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(result.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(result.declaredPartner?.sourceLine).toBe(3);
+  });
+
+  it("keeps neither commander in the card rows", () => {
+    const result = build("Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.cards.map((c) => c.oracleId)).toEqual([SOL_RING.oracleId]);
+  });
+
+  // Two is the format's whole allowance, so a third is a fact about the paste
+  // rather than about the deck — dropped, and said out loud.
+  it("takes a third declared commander as a note and drops it", () => {
+    const result = build(
+      "Commander\n1 Atreus, God of War\n1 Kratos, God of War\n1 Ishai, Ojutai Dragonspeaker\n\nDeck\n1 Sol Ring",
+    );
+    expect(result.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(result.notes).toContainEqual({
+      kind: "thirdCommanderDeclared",
+      name: "Ishai, Ojutai Dragonspeaker",
+      sourceLine: 4,
+    });
+    expect(result.cards.map((c) => c.oracleId)).toEqual([SOL_RING.oracleId]);
+  });
+
+  it("says so when a declared commander's count is clamped", () => {
+    const result = build("Commander\n2 Atreus, God of War\n3 Kratos, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(result.declaredPartner?.name).toBe("Kratos, God of War");
+    expect(result.notes).toEqual([
+      { kind: "quantityClamped", name: "Atreus, God of War", requested: 2, sourceLine: 2 },
+      { kind: "quantityClamped", name: "Kratos, God of War", requested: 3, sourceLine: 3 },
+    ]);
+  });
+
+  it("leaves a single declared commander alone", () => {
+    const result = build("Commander\n1 Atreus, God of War\n\nDeck\n1 Sol Ring");
+    expect(result.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(result.declaredPartner).toBeNull();
   });
 
   it("declares nothing when the source annotates no commander", () => {
@@ -185,7 +249,8 @@ describe("buildDeckImport — locked decision: re-importing the same list create
     const second = build(text);
     expect(second).toEqual(first);
     expect(Object.keys(first).sort()).toEqual([
-      "cards", "declaredCommander", "legendaryCandidates", "lineCount", "notes", "unresolved",
+      "cards", "declaredCommander", "declaredPartner", "legendaryCandidates", "lineCount",
+      "notes", "unresolved",
     ]);
   });
 });
@@ -247,6 +312,7 @@ describe("buildDeckImport — legendary candidates", () => {
         sourceLine: 2,
         colorIdentity: ["W", "U", "B", "G"],
         imageUri: "https://cards.example/atraxa.jpg",
+        oracleText: ATRAXA.oracleText,
       },
       {
         oracleId: TYMNA.oracleId,
@@ -254,6 +320,7 @@ describe("buildDeckImport — legendary candidates", () => {
         sourceLine: 3,
         colorIdentity: ["W", "B"],
         imageUri: null,
+        oracleText: TYMNA.oracleText,
       },
     ]);
   });
@@ -319,5 +386,63 @@ describe("lineCount", () => {
 
   it("is zero when the list holds nothing but section headers", () => {
     expect(build("SIDEBOARD:\nMAYBEBOARD:\n").lineCount).toBe(0);
+  });
+});
+
+// #364. The feature exists because one real deck could not be represented: a
+// `Partner—Father & son` pair, 88 lines totalling 100 cards, which the app used
+// to import as one commander and 98 of 99 — a card short, a commander missing,
+// and half the list unaddable because identity was measured against the primary
+// alone. The fixture is a reconstruction of that list's shape (the original
+// paste is not recorded in the issue): the totals, the two-commander header and
+// the Jeskai union are what the test turns on, not the individual card choices.
+describe("buildDeckImport — the motivating deck", () => {
+  it("parses the motivating deck as a pair with a body of 98", () => {
+    // Read off the repo root rather than import.meta.url: this file runs under
+    // the jsdom environment, where import.meta.url is an http URL.
+    const text = readFileSync("src/lib/decks/__fixtures__/father-and-son.txt", "utf8");
+
+    // Every name the list mentions becomes a catalog row. The two commanders are
+    // widened with the oracle text and identity the pair actually turns on.
+    const names = [...new Set(
+      text.split("\n").map((l) => l.match(/^\d+\s+(.+)$/)?.[1]?.trim()).filter((n): n is string => !!n),
+    )];
+    const catalog = names.map((name) => {
+      if (name.startsWith("Atreus")) return ATREUS;
+      if (name.startsWith("Kratos")) return KRATOS;
+      // The basics carry their real type line, because that is what lets a line
+      // hold more than one copy of them.
+      if (["Mountain", "Island", "Plains"].includes(name)) {
+        return card({ name, typeLine: `Basic Land — ${name}` });
+      }
+      return card({ name });
+    });
+
+    const result = buildDeckImport({ text, catalog });
+
+    expect(result.declaredCommander?.name).toMatch(/^Atreus/);
+    expect(result.declaredPartner?.name).toMatch(/^Kratos/);
+    expect(result.cards.reduce((n, c) => n + c.quantity, 0)).toBe(98);
+    expect(result.unresolved).toEqual([]);
+
+    // The bug this feature exists to fix: identity is the union, so every card in
+    // a Jeskai pair deck is addable.
+    const identity = new Set([...ATREUS.colorIdentity, ...KRATOS.colorIdentity]);
+    expect([...identity].sort()).toEqual(["R", "U", "W"]);
+
+    // And it round-trips through the exporter.
+    const back = buildDeckImport({
+      text: buildDecklistText({
+        commanderName: result.declaredCommander!.name,
+        partnerName: result.declaredPartner!.name,
+        cards: result.cards.map((c) => ({
+          quantity: c.quantity,
+          name: catalog.find((k) => k.oracleId === c.oracleId)!.name,
+        })),
+      }),
+      catalog,
+    });
+    expect(back.declaredPartner?.name).toBe(result.declaredPartner!.name);
+    expect(back.cards.reduce((n, c) => n + c.quantity, 0)).toBe(98);
   });
 });

@@ -21,8 +21,12 @@ import { TopOffList } from "./top-off-list";
 
 export interface LastSlotsStripProps {
   deckId: string;
-  /** 99 minus the current built count from the optimistic card list. */
+  /** The deck's body size minus the current built count from the optimistic
+      card list — 99 for a single commander, 98 for a pair. */
   openSlots: number;
+  /** The ceiling the counts on this strip are measured against. Passed rather
+      than reconstructed: `openSlots` alone cannot tell 3 of 99 from 3 of 98. */
+  bodySize: number;
   /** The whole ranked pool, uncapped, already excluding what the deck holds. */
   candidates: TopOffCandidate[];
   /** Oracle ids in the deck right now — the list names a row that went illegal
@@ -103,6 +107,7 @@ export function LastSlotsStrip(props: LastSlotsStripProps) {
 function LastSlotsStripInner({
   deckId,
   openSlots,
+  bodySize,
   candidates,
   deckOracleIds,
   newestAsOf,
@@ -337,6 +342,7 @@ function LastSlotsStripInner({
           deckId={deckId}
           listId={listId}
           openSlots={openSlots}
+          bodySize={bodySize}
           candidates={candidates}
           deckOracleIds={deckOracleIds}
           ticked={ticked}
@@ -352,7 +358,7 @@ function LastSlotsStripInner({
       ) : exhausted ? (
         <ExhaustedLine
           ref={exhaustedRef}
-          total={String(99 - openSlots)}
+          total={String(bodySize - openSlots)}
           shortfall={String(openSlots)}
         />
       ) : (

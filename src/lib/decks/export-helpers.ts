@@ -2,18 +2,32 @@
 // Tested in export-helpers.test.ts.
 
 /**
- * Assemble the decklist text copied / downloaded — spec format (#8): commander
- * first, then `N Card Name` lines, Moxfield/Archidekt-ready. The dialog's
- * preview header/separator are presentational only and never part of this text.
+ * Assemble the decklist text copied / downloaded — spec format (#8): a
+ * `Commander` section holding one or both commanders, then a `Deck` section of
+ * `N Card Name` lines, Moxfield/Archidekt-ready. The dialog's preview
+ * header/separator are presentational only and never part of this text.
+ *
+ * The sections are written for a single commander too. The older bare-first-line
+ * form said which card led the deck only by the convention that line one does,
+ * which a pair cannot express; one shape reads back the same either way, and the
+ * round-trip through `buildDeckImport` is what proves it.
  */
 export function buildDecklistText(args: {
   commanderName: string;
-  /** Body cards — commander excluded */
+  /** The second commander, or null for the single-commander deck most decks are. */
+  partnerName: string | null;
+  /** Body cards — both commanders excluded */
   cards: { name: string; quantity: number }[];
 }): string {
-  const { commanderName, cards } = args;
-  const lines = [`1 ${commanderName}`, ...cards.map((c) => `${c.quantity} ${c.name}`)];
-  return lines.join("\n");
+  const { commanderName, partnerName, cards } = args;
+  const commanders = [commanderName, ...(partnerName ? [partnerName] : [])];
+  return [
+    "Commander",
+    ...commanders.map((n) => `1 ${n}`),
+    "",
+    "Deck",
+    ...cards.map((c) => `${c.quantity} ${c.name}`),
+  ].join("\n");
 }
 
 /**

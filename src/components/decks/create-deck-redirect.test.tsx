@@ -30,6 +30,7 @@ const commanders = [
     name: "Greta, Sweettooth Scourge",
     colorIdentity: ["B", "G"],
     imageUri: null,
+    oracleText: null,
     poolCount: 42,
   },
 ];

@@ -74,7 +74,7 @@ export default async function CommanderDetailPage({
   // commander_support header row — scoreOneCommander and readSynergyCards both go to
   // commander_support_cards — so the paragraph does not ride along on an existing read.
   const [synergyCards, prose] = await Promise.all([
-    readSynergyCards(userId, commander.oracleId, coveredOracleIds),
+    readSynergyCards(userId, [commander.oracleId], coveredOracleIds),
     readCommanderProse(commander.oracleId),
   ]);
 

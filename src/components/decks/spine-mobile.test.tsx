@@ -1,9 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineMobile } from "./spine-mobile";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
-import { props } from "./spine-fixtures";
+import { pairDeck, props } from "./spine-fixtures";
 
 function renderSpine(ui: React.ReactElement) {
   return render(
@@ -15,6 +15,64 @@ describe("SpineMobile", () => {
   it("never draws the owned line", () => {
     renderSpine(<SpineMobile {...props} />);
     expect(screen.queryByText(/owned ·/)).toBeNull();
+  });
+
+  // A deck is 100 cards including its commanders, so the denominator is the
+  // body: 99 for a single commander and 98 for a pair.
+  it("prints the body size as the denominator, 98 for a pair", () => {
+    renderSpine(<SpineMobile {...props} />);
+    expect(screen.getByText("/ 99")).toBeTruthy();
+    cleanup();
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    expect(screen.getByText("/ 98")).toBeTruthy();
+  });
+
+  // Decision 18. The caption is centred inside an 18px inset, so at 390 two
+  // names are already the width of the row: the identity label is dropped for
+  // a pair and kept for a single commander.
+  it("states the pair without the identity label", () => {
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const group = screen.getByText("Atraxa, Praetors’ Voice").parentElement!;
+    expect([...group.children].map((n) => n.textContent)).toEqual([
+      "Atraxa, Praetors’ Voice",
+      "+",
+      "Kratos, God of War",
+    ]);
+    cleanup();
+    renderSpine(<SpineMobile {...props} />);
+    expect(screen.getByText(/Praetors’ Voice/).textContent).toBe(
+      "Atraxa, Praetors’ Voice · Non-red",
+    );
+  });
+
+  // Decision 18's ordered shrink. The names lead this row rather than following
+  // the pips, which is the one ordering difference from the desktop caption.
+  it("leads the row with the names and shrinks the partner first", () => {
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const row = screen.getByText("Atraxa, Praetors’ Voice").parentElement!.parentElement!;
+    expect(row.firstElementChild!.textContent).toContain("Atraxa, Praetors’ Voice");
+
+    const trigger = screen.getByRole("button", {
+      name: "Show the printing for Kratos, God of War",
+    });
+    expect(trigger.style.flexShrink).toBe("1000");
+    expect(trigger.style.textOverflow).toBe("ellipsis");
+  });
+
+  // The trigger is a 10px word inside a 10px caption, so the target is padding
+  // the equal negative margin takes back out of the row. The rule that marks it
+  // sits on the word rather than on that taller box.
+  it("gives the partner's trigger a 44px target without moving the caption", () => {
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const trigger = screen.getByRole("button", {
+      name: "Show the printing for Kratos, God of War",
+    });
+    expect(trigger.style.padding).toBe("22px 0px 9px");
+    expect(trigger.style.margin).toBe("-22px 0px -9px");
+    expect(trigger.style.borderBottom).toBe("");
+    expect((trigger.firstElementChild as HTMLElement).style.borderBottom).toBe(
+      "1px solid var(--border-strong)",
+    );
   });
 
   it("moves the meta row below the divider while editing", () => {

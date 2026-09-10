@@ -11,11 +11,14 @@
 
 import Link from "next/link";
 import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { MATURE_DECK_SIZE } from "../../lib/decks/availability";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
+
+const partnerCopy = deckImportCopy.commander;
 
 export const RAIL_ROWS = 4;
 export const RAIL_ROWS_PHONE = 3;
@@ -51,7 +54,10 @@ function railClause(deck: DeckListItem, shopping: ShoppingRollup): string | null
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
     case "Over":
-      return c.detailOver(deck.built - MATURE_DECK_SIZE);
+      // Over WHAT this deck's ceiling is, not over 99: a pair's body is 98, so
+      // the same 99 cards are one over for a pair and exactly full for a single
+      // commander. The status that names this row reads the same ceiling.
+      return c.detailOver(deck.built - deckBodySize(deck.partnerName !== null));
     // The three statuses the `87 / 99` on the same line already explains. A
     // clause invented to fill the slot would say it twice.
     case "Draft":
@@ -138,9 +144,22 @@ function PhoneRow({
         </span>
       </span>
 
+      {/* Decision 21. The denominator is the rail's only pair signal — a pair
+          row reads `/ 98` and is otherwise the row it always was. The 26px art
+          spine above is not halved: half of 26 is card frame with no face. */}
       <span className="flex-none font-mono text-[12px] tabular-nums text-[color:var(--fg)]">
-        {deck.built} / {MATURE_DECK_SIZE}
+        {deck.built} / {deckBodySize(deck.partnerName !== null)}
       </span>
+
+      {/* The denominator is a pair signal only to a reader who can see it and
+          knows the ceiling. Both names in full, primary first, stand in for it
+          — the row shortens nothing on screen, so this adds rather than
+          restates. */}
+      {deck.partnerName !== null && (
+        <span className="sr-only">
+          {partnerCopy.pairAria(deck.commanderName, deck.partnerName)}
+        </span>
+      )}
     </Link>
   );
 }

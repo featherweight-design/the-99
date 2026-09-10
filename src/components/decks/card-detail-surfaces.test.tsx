@@ -59,6 +59,7 @@ describe("deck card-detail triggers", () => {
         unresolvedRows={[]}
         cards={[deckCard()]}
         built={1}
+        bodySize={99}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}
@@ -79,6 +80,7 @@ describe("deck card-detail triggers", () => {
         unresolvedRows={[]}
         cards={[deckCard({ oracleId: "o-forest", name: "Forest", typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", role: "land", quantity: 3 })]}
         built={3}
+        bodySize={99}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}
@@ -192,6 +194,7 @@ describe("deck card-detail triggers", () => {
           deckCard(),
         ]}
         built={3}
+        bodySize={99}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}

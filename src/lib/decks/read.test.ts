@@ -3,7 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 // Mock db before importing read to avoid DATABASE_URL at module init.
 vi.mock("../../db", () => ({ db: {} }));
 
-import { cardTypeGroup, primaryRole, colorIdentityMask, poolCountFromMaskTally } from "./read";
+import {
+  cardTypeGroup,
+  deckIsFlippable,
+  primaryRole,
+  colorIdentityMask,
+  poolCountFromMaskTally,
+} from "./read";
 import { deckCounts, groupByCardType, groupByRole, unresolvedCardCount } from "./grouping";
 import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
 
@@ -250,5 +256,38 @@ describe("unresolvedCardCount", () => {
 
   it("is zero with no rows", () => {
     expect(unresolvedCardCount([])).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deckIsFlippable
+// ---------------------------------------------------------------------------
+describe("deckIsFlippable", () => {
+  it("flips a single-commander deck at 99", () => {
+    expect(
+      deckIsFlippable({ built: 99, partnerName: null, ownedCount: 99, unresolvedCount: 0 }),
+    ).toBe(true);
+  });
+
+  it("flips a pair deck at 98, and not at 99", () => {
+    expect(
+      deckIsFlippable({ built: 98, partnerName: "Kratos", ownedCount: 98, unresolvedCount: 0 }),
+    ).toBe(true);
+    expect(
+      deckIsFlippable({ built: 99, partnerName: "Kratos", ownedCount: 99, unresolvedCount: 0 }),
+    ).toBe(false);
+  });
+
+  // The two conjuncts the body-size change was not supposed to touch.
+  it("still refuses a mature deck holding an unresolved row", () => {
+    expect(
+      deckIsFlippable({ built: 98, partnerName: "Kratos", ownedCount: 98, unresolvedCount: 1 }),
+    ).toBe(false);
+  });
+
+  it("still refuses a mature deck the player does not fully own", () => {
+    expect(
+      deckIsFlippable({ built: 98, partnerName: "Kratos", ownedCount: 90, unresolvedCount: 0 }),
+    ).toBe(false);
   });
 });

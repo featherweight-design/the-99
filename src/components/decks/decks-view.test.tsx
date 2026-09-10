@@ -19,6 +19,8 @@ function deckOf(over: Partial<DeckListItem> = {}): DeckListItem {
     commanderColorIdentity: ["W", "U", "B", "G"],
     commanderImageUri: null,
     commanderArtCropUri: null,
+    partnerName: null,
+    partnerColorIdentity: null,
     statusPill: "Complete",
     built: 99,
     ownedCount: 99,

@@ -58,6 +58,8 @@ function Harness({
       deckId="deck-1"
       listId="list-1"
       openSlots={props.openSlots ?? 3}
+      // Every case here is a single-commander deck.
+      bodySize={99}
       candidates={props.candidates ?? candidates}
       deckOracleIds={props.deckOracleIds ?? new Set()}
       ticked={ticked}
@@ -269,10 +271,10 @@ describe("TopOffList", () => {
       />,
     );
 
-    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98") }));
+    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98", 99) }));
 
     expect(actions.commit).toHaveBeenCalledWith("deck-1", ["owned-1", "owned-2"]);
-    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.announce.addedNoBuy("2", "98"));
+    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.announce.addedNoBuy("2", "98", 99));
     expect(onClose).toHaveBeenCalled();
     expect(onInflight.mock.calls.map((c) => c[0])).toEqual([true, false]);
   });
@@ -288,9 +290,9 @@ describe("TopOffList", () => {
     const onAnnounce = vi.fn();
     render(<Harness initialTicked={["buy-1"]} onAnnounce={onAnnounce} />);
 
-    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97") }));
+    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97", 99) }));
 
-    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.announce.added("1", "97", "1"));
+    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.announce.added("1", "97", "1", 99));
   });
 
   // State 15. The refusal changed nothing, so it takes nothing away: every tick
@@ -301,7 +303,7 @@ describe("TopOffList", () => {
     const onAnnounce = vi.fn();
     render(<Harness initialTicked={["owned-1", "owned-2"]} onClose={onClose} onAnnounce={onAnnounce} />);
 
-    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98") }));
+    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98", 99) }));
 
     // Drawn and spoken once each, in the same words. The plate carries no live
     // role, because BuilderShell's polite region is what speaks here.
@@ -319,7 +321,7 @@ describe("TopOffList", () => {
     const onAnnounce = vi.fn();
     render(<Harness initialTicked={["owned-1"]} onAnnounce={onAnnounce} />);
 
-    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97") }));
+    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97", 99) }));
 
     expect(screen.getByTestId("top-off-refusal")).toHaveTextContent(topOffCopy.commit.refused);
     // A thrown call has no reason of its own, so both paths fall to the same
@@ -354,7 +356,7 @@ describe("TopOffList", () => {
     );
     render(<Harness initialTicked={["owned-1"]} />);
 
-    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97") }));
+    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97", 99) }));
 
     expect(screen.getByText(topOffCopy.commit.inFlight("1"))).toBeInTheDocument();
     expect(

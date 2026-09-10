@@ -5,6 +5,17 @@ import type { CardForValidation, DeckContextForValidation } from "./add-validati
 const greenCommander: DeckContextForValidation = {
   commanderOracleId: "cmdr-oracle-id",
   commanderColorIdentity: ["G"],
+  partnerOracleId: null,
+  partnerColorIdentity: null,
+  built: 0,
+};
+
+// The motivating deck: Atreus is Boros, Kratos is Izzet, and the pair is Jeskai.
+const jeskaiPair: DeckContextForValidation = {
+  commanderOracleId: "atreus",
+  commanderColorIdentity: ["R", "W"],
+  partnerOracleId: "kratos",
+  partnerColorIdentity: ["U", "R"],
   built: 0,
 };
 
@@ -69,6 +80,36 @@ describe("validateCardForDeck", () => {
   it("allows a card past 99 — the count says Over, the add is not refused", () => {
     const overDeck: DeckContextForValidation = { ...greenCommander, built: 104 };
     expect(validateCardForDeck(legalGreenCard, overDeck)).toBeNull();
+  });
+
+  // The bug that made the motivating deck unusable: a white-blue card is in
+  // neither commander's identity on its own, and in the pair's identity.
+  it("accepts a card inside the union of a pair's identities", () => {
+    const azoriusCard: CardForValidation = {
+      commanderLegal: true,
+      colorIdentity: ["U", "W"],
+      oracleId: "azorius-card",
+    };
+    expect(validateCardForDeck(azoriusCard, jeskaiPair)).toBeNull();
+  });
+
+  it("still refuses a card outside the union", () => {
+    const blackCard: CardForValidation = {
+      commanderLegal: true,
+      colorIdentity: ["B"],
+      oracleId: "black-card",
+    };
+    expect(validateCardForDeck(blackCard, jeskaiPair)).toBe("off-color-identity");
+  });
+
+  // A commander is not a deck_cards row, and that holds for the second one too.
+  it("refuses the partner as a deck card", () => {
+    const partnerAsCard: CardForValidation = {
+      commanderLegal: true,
+      colorIdentity: ["U", "R"],
+      oracleId: "kratos",
+    };
+    expect(validateCardForDeck(partnerAsCard, jeskaiPair)).toBe("is-commander");
   });
 
   it("allows a basic land (colorless identity) in any mono-color deck", () => {

@@ -13,6 +13,9 @@ export type CardForValidation = {
 export type DeckContextForValidation = {
   commanderOracleId: string;
   commanderColorIdentity: string[];
+  /** The second commander, or null for the single-commander deck most decks are. */
+  partnerOracleId: string | null;
+  partnerColorIdentity: string[] | null;
   built: number;
 };
 
@@ -36,19 +39,25 @@ export type DeckAddRejection =
  *
  * Rules:
  *  - Card must be commander_legal.
- *  - Card's color identity must be a subset of the deck commander's identity.
- *  - Card must not be the commander itself.
+ *  - Card's color identity must be a subset of the deck's identity, which for a
+ *    pair is the union of both commanders'.
+ *  - Card must not be either commander.
  */
 export function validateCardForDeck(
   card: CardForValidation,
   deck: DeckContextForValidation,
 ): DeckAddRejection | null {
   if (!card.commanderLegal) return "not-commander-legal";
-  const identitySet = new Set(deck.commanderColorIdentity);
+  // A pair's identity is the union of both commanders'. Measured against the
+  // primary alone, half of a Jeskai pair deck is unaddable to its own list.
+  const identitySet = new Set([
+    ...deck.commanderColorIdentity,
+    ...(deck.partnerColorIdentity ?? []),
+  ]);
   if (!card.colorIdentity.every((c) => identitySet.has(c))) {
     return "off-color-identity";
   }
-  if (card.oracleId === deck.commanderOracleId) {
+  if (card.oracleId === deck.commanderOracleId || card.oracleId === deck.partnerOracleId) {
     return "is-commander";
   }
   return null;

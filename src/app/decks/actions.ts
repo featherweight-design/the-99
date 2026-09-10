@@ -9,9 +9,11 @@ import {
   fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { isUuid } from "../../lib/uuid";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { withinColorIdentity } from "../../lib/cards/identity-where";
 import { getEdhrecData } from "../../lib/edhrec/client";
+import { mergeEdhrecData } from "../../lib/edhrec/merge";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
@@ -19,8 +21,13 @@ import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
-import { validateCardForDeck } from "../../lib/decks/add-validation";
+import { canPair, partnerAbility } from "../../lib/decks/partner";
+import {
+  validateCardForDeck,
+  type DeckContextForValidation,
+} from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
@@ -33,7 +40,6 @@ export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
   | { ok: false; message: string };
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
 // Consider panel can sort by cost without a second round trip.
@@ -43,7 +49,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // reads scan the same join under the same predicate.
 type SuggestionPoolCard = PoolCard & { manaValue: number; ownedQuantity: number };
 
-async function ownedColorLegalPool(userId: string, commander: Pick<PoolCard, "oracleId" | "colorIdentity">): Promise<SuggestionPoolCard[]> {
+// Takes every commander rather than one: a pair's legal pool is the union of
+// both identities, and neither commander belongs in its own deck's suggestions.
+async function ownedColorLegalPool(userId: string, commanders: Pick<PoolCard, "oracleId" | "colorIdentity">[]): Promise<SuggestionPoolCard[]> {
   const owned = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
@@ -59,8 +67,11 @@ async function ownedColorLegalPool(userId: string, commander: Pick<PoolCard, "or
     // dependent, so Postgres accepts them ungrouped — one row per oracle id,
     // which is what the old DISTINCT ON produced.
     .groupBy(cards.oracleId);
-  const identity = new Set(commander.colorIdentity);
-  return owned.filter((c) => c.oracleId !== commander.oracleId && c.colorIdentity.every((x) => identity.has(x)));
+  const identity = new Set(commanders.flatMap((c) => c.colorIdentity));
+  const commanderIds = new Set(commanders.map((c) => c.oracleId));
+  return owned.filter(
+    (c) => !commanderIds.has(c.oracleId) && c.colorIdentity.every((x) => identity.has(x)),
+  );
 }
 
 type UnownedStapleCard = {
@@ -69,10 +80,13 @@ type UnownedStapleCard = {
   imageUri: string | null; manaCost: string | null; manaValue: number;
 };
 
-/** Unowned EDHREC staples, ordered by EDHREC rank, that fit the commander's
-    colour identity. Returns the full ranked list; callers bound it. */
+/** Unowned EDHREC staples, ordered by EDHREC rank, that fit the deck's colour
+    identity. Takes every commander for the same reason `ownedColorLegalPool`
+    does: a pair's legal identity is the union of both, and a staple legal under
+    that union must not be dropped because the primary alone cannot cast it.
+    Returns the full ranked list; callers bound it. */
 async function unownedStaples(
-  commander: Pick<PoolCard, "oracleId" | "colorIdentity">,
+  commanders: Pick<PoolCard, "oracleId" | "colorIdentity">[],
   topCards: string[],
   ownedIds: Set<string>,
   excludeIds: Set<string>,
@@ -99,7 +113,7 @@ async function unownedStaples(
           inArray(sql`lower(split_part(${cards.name}, ' // ', 1))`, lowerTopCards),
         ),
         eq(cards.commanderLegal, true),
-        withinColorIdentity(commander.colorIdentity),
+        withinColorIdentity([...new Set(commanders.flatMap((c) => c.colorIdentity))]),
       ),
     );
 
@@ -123,13 +137,20 @@ async function unownedStaples(
     still guard this. */
 export async function buildFillPlan(
   userId: string,
-  commander: { oracleId: string; name: string; colorIdentity: string[] },
+  // Every commander, primary first: the pool and the staples are both drawn
+  // against the union identity, and a pair's body is 98 rather than 99. Passing
+  // the list rather than a `hasPartner` flag is what keeps those three answers
+  // from drifting apart. EDHREC is still asked about the primary — it indexes
+  // one commander per page.
+  commanders: { oracleId: string; name: string; colorIdentity: string[] }[],
   // The cards a selection has already placed. Defaults to empty, so `fillDeck`
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
 ): Promise<FillPlan> {
+  const commander = commanders[0];
+  const hasPartner = commanders.length > 1;
   const pool = dedupeSelectionFromPool(
-    await ownedColorLegalPool(userId, commander),
+    await ownedColorLegalPool(userId, commanders),
     excludeOracleIds,
   );
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
@@ -149,7 +170,12 @@ export async function buildFillPlan(
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
     data?.topCards
-      ? await unownedStaples(commander, data.topCards, ownedIds, new Set([commander.oracleId]))
+      ? await unownedStaples(
+          commanders,
+          data.topCards,
+          ownedIds,
+          new Set(commanders.map((c) => c.oracleId)),
+        )
       : [],
     excludeOracleIds,
   );
@@ -167,7 +193,7 @@ export async function buildFillPlan(
       owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ]);
+  ], hasPartner);
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the
@@ -183,14 +209,57 @@ export async function createDeck(
   commanderOracleId: string,
   name: string,
   selectedOracleIds: string[] = [],
+  partnerOracleId: string | null = null,
 ): Promise<void> {
   const userId = await requireUserId();
-  const [commander] = await db.select().from(cards).where(eq(cards.oracleId, commanderOracleId));
+  // Shape first: a crafted request can put any string here, and a malformed uuid
+  // reaching `inArray` is rejected by Postgres rather than by this action — the
+  // player would see a 500 where the refusal below reads as one.
+  if (!isUuid(commanderOracleId)) throw new Error("commander not found");
+  if (partnerOracleId !== null && !isUuid(partnerOracleId)) {
+    throw new Error("partner not found");
+  }
+  // A deck's two commanders are two different cards — the schema says so with a
+  // check constraint, and reaching it would surface as an opaque write failure.
+  if (partnerOracleId === commanderOracleId) {
+    throw new Error("a deck's two commanders must be different cards");
+  }
+  // One query over both ids: reading the partner separately would say nothing
+  // this does not.
+  const commanderIds =
+    partnerOracleId !== null ? [commanderOracleId, partnerOracleId] : [commanderOracleId];
+  const commanderRows = await db.select().from(cards).where(inArray(cards.oracleId, commanderIds));
+  const commander = commanderRows.find((c) => c.oracleId === commanderOracleId);
   if (!commander) throw new Error("commander not found");
   // Server actions are reachable via crafted requests — re-validate that the
   // card can actually lead a deck, not just that it exists.
   if (!commander.commanderLegal || !isCommanderCandidate(commander)) {
     throw new Error("card is not a legal commander");
+  }
+
+  // Presence, not truthiness: this is a server action, so an empty string is a
+  // partner id the request supplied and has to be validated rather than skipped.
+  const partner =
+    partnerOracleId !== null
+      ? commanderRows.find((c) => c.oracleId === partnerOracleId)
+      : undefined;
+  if (partnerOracleId !== null) {
+    // Named for the partner rather than reusing the primary's wording: the two
+    // ids fail for different reasons and a shared message hides which one did.
+    if (!partner) throw new Error("partner not found");
+    if (!partner.commanderLegal || !isCommanderCandidate(partner)) {
+      throw new Error("partner is not a legal commander");
+    }
+    // Always a pair the player picked, and the picker only ever offered a legal
+    // one — so a mismatch here is a crafted request and is refused outright.
+    if (
+      !canPair(
+        { name: commander.name, ability: partnerAbility(commander.oracleText) },
+        { name: partner.name, ability: partnerAbility(partner.oracleText) },
+      )
+    ) {
+      throw new Error("commanders cannot be paired");
+    }
   }
 
   const deckName = validateDeckName(name);
@@ -219,23 +288,32 @@ export async function createDeck(
       .filter((card) => !validateCardForDeck(card, {
         commanderOracleId,
         commanderColorIdentity: commander.colorIdentity,
+        partnerOracleId,
+        partnerColorIdentity: partner?.colorIdentity ?? null,
         built: 0,
       }))
       .map((card) => card.oracleId);
     const selectedSet = new Set(selected);
 
-    const plan = await buildFillPlan(userId, {
-      oracleId: commanderOracleId,
-      name: commander.name,
-      colorIdentity: commander.colorIdentity,
-    }, selectedSet);
+    const bodySize = deckBodySize(partnerOracleId !== null);
+    const plan = await buildFillPlan(
+      userId,
+      [
+        { oracleId: commanderOracleId, name: commander.name, colorIdentity: commander.colorIdentity },
+        ...(partner
+          ? [{ oracleId: partner.oracleId, name: partner.name, colorIdentity: partner.colorIdentity }]
+          : []),
+      ],
+      selectedSet,
+    );
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
-        .values({ userId, name: deckName, commanderOracleId, filled: true })
+        .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: true })
         .returning({ id: decks.id });
-      // The selection first, then as much of the fill as fits under 99. The cap
-      // sums quantity rather than counting rows, because planFill stacks basics
-      // (a single row can be thirty Forests).
+      // The selection first, then as much of the fill as fits under the body
+      // size — 99, or 98 for a pair. The cap sums quantity rather than counting
+      // rows, because planFill stacks basics (a single row can be thirty
+      // Forests).
       const rows = [
         ...selected.map((oracleId) => ({ deckId: deck.id, oracleId, quantity: 1, auto: true })),
         ...plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
@@ -243,11 +321,11 @@ export async function createDeck(
       const capped: typeof rows = [];
       let built = 0;
       for (const row of rows) {
-        const remaining = 99 - built;
+        const remaining = bodySize - built;
         if (remaining <= 0) break;
         // A stack that overruns the cap is truncated, not dropped. Skipping it
-        // would leave the deck short of 99 with room still on the table — two
-        // slots left and a stack of four Forests next would spend neither.
+        // would leave the deck short of its body with room still on the table —
+        // two slots left and a stack of four Forests next would spend neither.
         const quantity = Math.min(row.quantity, remaining);
         capped.push({ ...row, quantity });
         built += quantity;
@@ -258,9 +336,10 @@ export async function createDeck(
         // reversal is the sweep rather than an undo of its own. Recorded in the
         // same transaction as the rows it describes; a deck that got its cards
         // and not its pass would show auto rows the ledger cannot account for.
-        // openSlots is 99 because the deck did not exist a statement ago.
+        // openSlots is the whole body because the deck did not exist a
+        // statement ago.
         await recordFillPass(tx, {
-          deckId: deck.id, kind: "seed", openSlots: 99,
+          deckId: deck.id, kind: "seed", openSlots: bodySize,
           rows: capped.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
         });
       }
@@ -272,7 +351,7 @@ export async function createDeck(
     // them the one thing they actually asked for.
     console.error("buildFillPlan failed — falling back to empty deck", err);
     const [deck] = await db.insert(decks)
-      .values({ userId, name: deckName, commanderOracleId, filled: false })
+      .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: false })
       .returning({ id: decks.id });
     deckId = deck.id;
   }
@@ -295,7 +374,15 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) return { suggestions: [], degraded: false, shoppingFigures: {} };
 
-  const pool = await ownedColorLegalPool(userId, commander);
+  // The partner is a second commander for every purpose below: the pool it
+  // legalises and the advice it contributes.
+  const [partner] = deck.partnerOracleId
+    ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
+    : [];
+  const commanders = partner ? [commander, partner] : [commander];
+  const hasPartner = partner != null;
+
+  const pool = await ownedColorLegalPool(userId, commanders);
   const inDeckRows = await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
     .where(eq(deckCards.deckId, deckId));
   const inDeck = new Set(inDeckRows.map((r) => r.oracleId));
@@ -305,8 +392,13 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   // cache). If EDHREC just doesn't index this commander (4xx), data === null
   // but the deck-suggestions panel should NOT flag "degraded" — user's normal
   // pool/role suggestions are unaffected.
-  const { data, unreachable } = await getEdhrecData(commander.oracleId, commander.name);
-  const degraded = unreachable;
+  const results = await Promise.all(commanders.map((c) => getEdhrecData(c.oracleId, c.name)));
+
+  // A pair's advice is the union of both lists, scored by the better of the two:
+  // a card the partner loves is not made worse by the primary not knowing it.
+  const data = mergeEdhrecData(results.map((r) => r.data));
+  // Either commander being unreachable leaves the list knowably incomplete.
+  const degraded = results.some((r) => r.unreachable);
   const topCards = data?.topCards ?? null;
   // Sparse: EDHREC reports a figure only for the cards it knows.
   const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
@@ -317,7 +409,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const ownedByOracleId = new Set(pool.map((c) => c.oracleId));
 
   // Compute owned pool suggestions
-  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards });
+  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner });
 
   // Enrich owned suggestions
   const ownedSuggestions: DeckSuggestion[] = raw.map((s) => {
@@ -336,6 +428,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
       },
       inclusionByName,
       synergyByName,
+      hasPartner,
     );
   });
 
@@ -343,8 +436,8 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   let unownedSuggestions: DeckSuggestion[] = [];
   if (topCards && topCards.length > 0) {
     // unownedStaples returns the full ranked list; getDeckSuggestions caps at 5.
-    const excludeIds = new Set([commander.oracleId, ...inDeck]);
-    const eligible = await unownedStaples(commander, topCards, ownedByOracleId, excludeIds);
+    const excludeIds = new Set([...commanders.map((c) => c.oracleId), ...inDeck]);
+    const eligible = await unownedStaples(commanders, topCards, ownedByOracleId, excludeIds);
 
     unownedSuggestions = eligible.slice(0, 5).map((c) =>
       buildSuggestionPayload(
@@ -362,12 +455,13 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
         },
         inclusionByName,
         synergyByName,
+        hasPartner,
       ),
     );
   }
 
-  // Combine and truncate to 99
-  const combined = [...ownedSuggestions, ...unownedSuggestions].slice(0, 99);
+  // Combine and truncate to the deck's body — 99, or 98 for a pair.
+  const combined = [...ownedSuggestions, ...unownedSuggestions].slice(0, deckBodySize(hasPartner));
 
   // Scoped to the tiles actually returned, and read from this deck's vantage so
   // a card the deck already claims does not count against itself. Swallowed:
@@ -430,14 +524,46 @@ async function requireDeck(deckId: string, userId: string) {
   return deck;
 }
 
+/**
+ * The deck context every add path validates against: both commanders' ids and
+ * both their colour identities, in one read.
+ *
+ * A pair is legal in the union of its two identities, so a single read of the
+ * primary commander is not enough to say what the deck may hold. Throws when the
+ * primary is missing, as each of these call sites did before; a missing partner
+ * row is not fatal, because `partnerOracleId` being set with no card behind it
+ * would refuse every card in the deck rather than fail loudly.
+ */
+async function deckValidationContext(
+  deck: { commanderOracleId: string; partnerOracleId: string | null },
+): Promise<Omit<DeckContextForValidation, "built">> {
+  const ids = [
+    deck.commanderOracleId,
+    ...(deck.partnerOracleId ? [deck.partnerOracleId] : []),
+  ];
+  const rows = await db
+    .select({ oracleId: cards.oracleId, colorIdentity: cards.colorIdentity })
+    .from(cards)
+    .where(inArray(cards.oracleId, ids));
+  const commander = rows.find((r) => r.oracleId === deck.commanderOracleId);
+  if (!commander) throw new Error("commander not found");
+  return {
+    commanderOracleId: deck.commanderOracleId,
+    commanderColorIdentity: commander.colorIdentity,
+    partnerOracleId: deck.partnerOracleId,
+    partnerColorIdentity: deck.partnerOracleId
+      ? (rows.find((r) => r.oracleId === deck.partnerOracleId)?.colorIdentity ?? null)
+      : null,
+  };
+}
+
 export async function addCardToDeck(deckId: string, oracleId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);
 
-  // Fetch commander color identity in the same round-trip as the card lookup.
-  const [[commander], [card], [existingRow]] = await Promise.all([
-    db.select({ colorIdentity: cards.colorIdentity })
-      .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
+  // Fetch the deck's colour identity in the same round-trip as the card lookup.
+  const [identity, [card], [existingRow]] = await Promise.all([
+    deckValidationContext(deck),
     db.select({ typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
       .from(cards).where(eq(cards.oracleId, oracleId)),
     db.select({ oracleId: deckCards.oracleId })
@@ -445,7 +571,6 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   ]);
 
   if (!card) throw new Error("card not found");
-  if (!commander) throw new Error("commander not found");
 
   // Re-adding a non-basic that's already in the deck is a no-op (singleton) —
   // return before validation so a full deck doesn't spuriously reject it.
@@ -466,7 +591,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
     const built = builtRow?.total ?? 0;
     const error = validateCardForDeck(
       { commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity, oracleId },
-      { commanderOracleId: deck.commanderOracleId, commanderColorIdentity: commander.colorIdentity, built },
+      { ...identity, built },
     );
     if (error) return error;
 
@@ -526,7 +651,13 @@ export async function fillDeck(deckId: string): Promise<void> {
     .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
   if (existing.length > 0) return;
 
-  const plan = await buildFillPlan(userId, commander);
+  // The partner legalises pool and staples alongside the primary, so the retry
+  // reads it too rather than filling a pair as if it were a single.
+  const [partner] = deck.partnerOracleId
+    ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
+    : [];
+  const hasPartner = deck.partnerOracleId !== null;
+  const plan = await buildFillPlan(userId, partner ? [commander, partner] : [commander], new Set());
   await db.transaction(async (tx) => {
     // Lock the deck row before re-reading, the same way addCardToDeck does.
     // Without it the read sees a snapshot: a hand-add that commits between the
@@ -544,10 +675,10 @@ export async function fillDeck(deckId: string): Promise<void> {
       await tx.insert(deckCards).values(
         plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       );
-      // The retry's fill is still the seed. openSlots is 99 because this path
-      // refuses a deck that already holds cards.
+      // The retry's fill is still the seed. openSlots is the whole body because
+      // this path refuses a deck that already holds cards.
       await recordFillPass(tx, {
-        deckId, kind: "seed", openSlots: 99,
+        deckId, kind: "seed", openSlots: deckBodySize(hasPartner),
         rows: plan.rows.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
       });
     }
@@ -653,7 +784,7 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   // onConflictDoNothing does not cover — Postgres rejects the statement whole.
   const byId = new Map<string, number>();
   for (const r of rows) {
-    if (!UUID_RE.test(r.oracleId)) throw new Error("invalid oracle id");
+    if (!isUuid(r.oracleId)) throw new Error("invalid oracle id");
     if (!Number.isInteger(r.quantity) || r.quantity < 1 || r.quantity > 99) {
       throw new Error("invalid quantity");
     }
@@ -663,22 +794,16 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   // Every id gets the same legality pass addCardToDeck runs. The cap lives with
   // the write below, so `built: 0` here asks about legality alone.
   const ids = [...byId.keys()];
-  const [[commander], candidates] = await Promise.all([
-    db.select({ colorIdentity: cards.colorIdentity })
-      .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
+  const [identity, candidates] = await Promise.all([
+    deckValidationContext(deck),
     db.select({ oracleId: cards.oracleId, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
       .from(cards).where(inArray(cards.oracleId, ids)),
   ]);
-  if (!commander) throw new Error("commander not found");
   const byOracleId = new Map(candidates.map((c) => [c.oracleId, c]));
   for (const oracleId of ids) {
     const card = byOracleId.get(oracleId);
     if (!card) throw new Error("card not found");
-    const rejection = validateCardForDeck(card, {
-      commanderOracleId: deck.commanderOracleId,
-      commanderColorIdentity: commander.colorIdentity,
-      built: 0,
-    });
+    const rejection = validateCardForDeck(card, { ...identity, built: 0 });
     if (rejection) throw new Error(rejection);
   }
 
@@ -728,13 +853,12 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
   const ids = [...new Set(oracleIds)];
   if (ids.length !== oracleIds.length) throw new Error("duplicate oracle id");
   for (const oracleId of ids) {
-    if (!UUID_RE.test(oracleId)) throw new Error("invalid oracle id");
+    if (!isUuid(oracleId)) throw new Error("invalid oracle id");
   }
   if (ids.length === 0) throw new Error("nothing selected");
 
-  const [commander] = await db.select({ colorIdentity: cards.colorIdentity })
-    .from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) throw new Error("commander not found");
+  const identity = await deckValidationContext(deck);
+  const bodySize = deckBodySize(deck.partnerOracleId !== null);
 
   const landedIds = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
@@ -751,7 +875,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
     const landed = ids.filter((oracleId) => !here.has(oracleId));
     // A refusal, not a truncation: a caller past the cap is working from a stale
     // view of the deck and should be told rather than silently given less.
-    if (landed.length > 99 - built) throw new Error("more cards than open slots");
+    if (landed.length > bodySize - built) throw new Error("more cards than open slots");
 
     const byOracleId = new Map(
       (await tx.select({
@@ -766,11 +890,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       if (!card) throw new Error("card not found");
       // `built: 0` asks about legality alone — the cap is enforced above,
       // against the deck as the lock found it.
-      const rejection = validateCardForDeck(card, {
-        commanderOracleId: deck.commanderOracleId,
-        commanderColorIdentity: commander.colorIdentity,
-        built: 0,
-      });
+      const rejection = validateCardForDeck(card, { ...identity, built: 0 });
       if (rejection) throw new Error(rejection);
     }
 
@@ -780,7 +900,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
     // Only the rows that landed. A pass claiming a card it did not place would
     // offer to undo one the player put there themselves.
     const passId = await recordFillPass(tx, {
-      deckId, kind: "top_off", openSlots: 99 - built,
+      deckId, kind: "top_off", openSlots: bodySize - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
     revalidateClaims(deckId, userId);
@@ -849,7 +969,7 @@ export async function undoFillPass(
 ): Promise<{ removed: number; built: number }> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
-  if (!UUID_RE.test(passId)) throw new Error("invalid pass id");
+  if (!isUuid(passId)) throw new Error("invalid pass id");
 
   const result = await db.transaction(async (tx) => {
     // Under the same lock every deck write takes: attribution is read here and

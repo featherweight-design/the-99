@@ -52,6 +52,7 @@ function makeDeck(): DeckDetail {
       imageUri: null,
       artCropUri: null,
     },
+    partner: null,
     cards,
     built: 40,
     ownedCount: 40,

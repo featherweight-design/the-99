@@ -15,7 +15,6 @@
 // STATES-deck-statuses.md", so the per-value table is what ships.
 
 import type { CSSProperties } from "react";
-import { MATURE_DECK_SIZE } from "./availability";
 import type { StatusPill } from "./status";
 
 export const STATUS_TOKEN: Record<StatusPill, string> = {
@@ -75,9 +74,17 @@ export function statusPillStyle(status: StatusPill): CSSProperties {
  * 105% — a bar cannot overflow the track that measures it, and the `5 over`
  * figure in the detail row is where the excess is stated. A Draft deck needs no
  * special case; 0 built is already the empty track the states file draws.
+ *
+ * `bodySize` is the deck's own ceiling, not a constant: a pair deck is full at
+ * 98, and measuring it against 99 would draw a finished deck's bar short of the
+ * track. See `deckBodySize()` in `deck-size.ts`.
  */
-export function statusBarStyle(status: StatusPill, built: number): CSSProperties {
-  const pct = Math.min(100, Math.max(0, (built / MATURE_DECK_SIZE) * 100));
+export function statusBarStyle(
+  status: StatusPill,
+  built: number,
+  bodySize: number,
+): CSSProperties {
+  const pct = Math.min(100, Math.max(0, (built / bodySize) * 100));
   return { width: `${pct}%`, background: `var(${STATUS_TOKEN[status]})` };
 }
 

@@ -1,6 +1,6 @@
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import { isBasicLand } from "./grouping";
-import { LAND_TARGET } from "./suggest";
+import { landTarget } from "./deck-size";
 
 export type FillRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 
@@ -35,10 +35,11 @@ const NON_LAND_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
     the number the commander page can promise before any query has run. Derived
     rather than written down, because a target that moves must move the promise
     with it. */
-export const FILL_BASELINE_TOTAL =
-  NON_LAND_ROLES.reduce((n, r) => n + ROLE_TARGETS[r], 0) + LAND_TARGET;
+export function fillBaselineTotal(hasPartner: boolean): number {
+  return NON_LAND_ROLES.reduce((n, r) => n + ROLE_TARGETS[r], 0) + landTarget(hasPartner);
+}
 
-/** How many of the 37 land slots non-basics may take before basics get the
+/** How many of the land slots non-basics may take before basics get the
     rest. A deck of nothing but basics is hamstrung, but so is one with no
     basics at all: many non-basics fix colours only by reaching for a basic, or
     tap for colourless, so a base without a basic core casts less than its land
@@ -132,7 +133,8 @@ export function dedupeSelectionFromPool<T extends { oracleId: string }>(
   return pool.filter((c) => !picked.has(c.oracleId));
 }
 
-export function planFill(candidates: FillCandidate[]): FillPlan {
+export function planFill(candidates: FillCandidate[], hasPartner = false): FillPlan {
+  const landCeiling = landTarget(hasPartner);
   const ordered = [...candidates].sort(byPreference);
   // One entry per oracle id, the most-preferred one, because `ordered` is
   // already sorted and the first write wins. Both a row's cost lookup and the
@@ -190,7 +192,7 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
   // 37 copies of one basic — the shape this fill used to produce whenever a
   // player owned a playset of anything.
   for (const candidate of lands) {
-    if (counts.land >= Math.min(NONBASIC_LAND_CAP, LAND_TARGET)) break;
+    if (counts.land >= Math.min(NONBASIC_LAND_CAP, landCeiling)) break;
     if (isBasicLand(candidate.typeLine)) continue;
     takeLand(candidate, 1);
   }
@@ -212,11 +214,11 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
     basicsByColor.set(color, [...(basicsByColor.get(color) ?? []), candidate]);
   }
   const colors = [...basicsByColor.keys()].sort();
-  if (colors.length > 0 && counts.land < LAND_TARGET) {
+  if (colors.length > 0 && counts.land < landCeiling) {
     const capacity = new Map(
       colors.map((c) => [c, basicsByColor.get(c)!.reduce((n, b) => n + b.ownedQuantity, 0)]),
     );
-    const allocated = splitByWeight(colors, pips, LAND_TARGET - counts.land);
+    const allocated = splitByWeight(colors, pips, landCeiling - counts.land);
     // A colour capped below its share leaves slots on the table; they go to
     // whichever colours still have copies, heaviest first.
     let spare = 0;
@@ -248,7 +250,7 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
   // The collection had too few basics to finish the base, so the cap lifts and
   // the remaining utility lands take what is left.
   for (const candidate of lands) {
-    if (counts.land >= LAND_TARGET) break;
+    if (counts.land >= landCeiling) break;
     if (spent.has(candidate.oracleId)) continue;
     takeLand(candidate, 1);
   }
@@ -260,7 +262,7 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
     bought: rows.filter((r) => boughtIds.has(r.oracleId)).reduce((n, r) => n + r.quantity, 0),
     shortfalls: [
       ...NON_LAND_ROLES.filter((r) => counts[r] < ROLE_TARGETS[r]),
-      ...(counts.land < LAND_TARGET ? (["land"] as const) : []),
+      ...(counts.land < landCeiling ? (["land"] as const) : []),
     ],
   };
 }

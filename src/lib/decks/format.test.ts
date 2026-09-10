@@ -1,5 +1,33 @@
 import { describe, it, expect } from "vitest";
-import { colorLabel } from "./format";
+import { colorLabel, deckIdentity } from "./format";
+
+describe("deckIdentity", () => {
+  it("orders a lone primary WUBRG, so its pips match a pair's", () => {
+    expect(deckIdentity(["R", "W"], null)).toEqual(["W", "R"]);
+    expect(deckIdentity(["W", "X"], null)).toEqual(["W", "X"]);
+  });
+
+  it("unions a pair and orders the union WUBRG", () => {
+    // Jeskai primary, Boros partner: the naive concatenation puts the partner's
+    // red after white, and `IdentityPips` draws the array as given.
+    expect(deckIdentity(["W", "U", "R"], ["R", "W"])).toEqual(["W", "U", "R"]);
+    expect(deckIdentity(["G"], ["B", "W"])).toEqual(["W", "B", "G"]);
+  });
+
+  it("drops the duplicate a shared colour would otherwise repeat", () => {
+    expect(deckIdentity(["W", "U"], ["U", "B"])).toEqual(["W", "U", "B"]);
+  });
+
+  it("keeps an unrecognised letter rather than dropping it", () => {
+    // `colorLabel` refuses to name an identity it does not recognise, so losing
+    // the letter here would hand it a combination the deck does not have.
+    expect(deckIdentity(["W", "X"], ["U"])).toEqual(["W", "U", "X"]);
+  });
+
+  it("carries a colorless pair through as colorless", () => {
+    expect(deckIdentity([], [])).toEqual([]);
+  });
+});
 
 describe("colorLabel", () => {
   it("names the single colors", () => {

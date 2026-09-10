@@ -58,28 +58,34 @@ describe("suggestDeck", () => {
   it("prioritizes owned EDHREC top cards, tagging them 'edhrec'", () => {
     const solRing = card({ name: "Sol Ring", typeLine: "Artifact", oracleText: "{T}: Add {C}{C}." });
     const filler = card({ name: "Grizzly Bears" });
-    const out = suggestDeck({ commander, ownedPool: [solRing, filler], edhrecTopCards: ["Sol Ring"] });
+    const out = suggestDeck({ commander, ownedPool: [solRing, filler], edhrecTopCards: ["Sol Ring"], hasPartner: false });
     expect(out[0]).toEqual({ oracleId: solRing.oracleId, reason: "edhrec" });
   });
 
   it("fills roles up to targets from the remaining pool", () => {
     const ramps = Array.from({ length: 15 }, () =>
       card({ typeLine: "Artifact", oracleText: "{T}: Add {C}." }));
-    const out = suggestDeck({ commander, ownedPool: ramps, edhrecTopCards: null });
+    const out = suggestDeck({ commander, ownedPool: ramps, edhrecTopCards: null, hasPartner: false });
     expect(out.filter((s) => s.reason === "ramp")).toHaveLength(10); // capped at target
   });
 
   it("includes lands tagged 'land'", () => {
     const forest = card({ name: "Forest", typeLine: "Basic Land — Forest" });
-    const out = suggestDeck({ commander, ownedPool: [forest], edhrecTopCards: null });
+    const out = suggestDeck({ commander, ownedPool: [forest], edhrecTopCards: null, hasPartner: false });
     expect(out).toContainEqual({ oracleId: forest.oracleId, reason: "land" });
   });
 
   it("never suggests more than 99 cards and never duplicates an oracleId", () => {
     const pool = Array.from({ length: 150 }, () => card({ typeLine: "Basic Land — Forest" }));
-    const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null });
+    const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null, hasPartner: false });
     expect(out.length).toBeLessThanOrEqual(99);
     expect(new Set(out.map((s) => s.oracleId)).size).toBe(out.length);
+  });
+
+  it("plans a pair to 98 cards", () => {
+    const pool = Array.from({ length: 150 }, () => card({ typeLine: "Basic Land — Forest" }));
+    const out = suggestDeck({ commander, ownedPool: pool, edhrecTopCards: null, hasPartner: true });
+    expect(out.length).toBeLessThanOrEqual(98);
   });
 });
 

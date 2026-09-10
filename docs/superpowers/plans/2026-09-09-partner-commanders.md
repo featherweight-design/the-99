@@ -316,14 +316,24 @@ export function partnerAbilityLabel(ability: PartnerAbility): string {
 }
 ```
 
-**Accepted deviation from spec §3.** The spec says a `with` commander "pairs only with the
-named card"; this module returns `true` for any two `with` commanders. The reason is that the
-name a card prints is a *card* name while the app pairs by *oracle* id, so enforcing it would
-need a name→oracle resolution this module has no I/O to perform. The consequence is bounded:
-`Pir` paired with an unrelated `Partner with` commander is an illegal pair, and an illegal pair
-declared by a paste is one the spec **already** accepts with a note rather than refuses. The
-only thing lost is that the create picker will offer such a pair. Recorded here rather than
-silently diverging; revisit if Product objects.
+**Amended during review.** This step originally planned `canPair` as ability-only, returning
+`true` for any two `with` commanders on the reasoning that the printed name is a *card* name
+while the app pairs by *oracle* id. That deviates from spec §3 — "pairs only with the named
+card" — and the resolution turned out to need no I/O at all: every call site already holds both
+cards, so `canPair` takes `{ name, ability }` on each side and the named form requires each
+card to name the other. As shipped:
+
+```typescript
+export type PartnerSide = { name: string; ability: PartnerAbility | null };
+
+export function canPair(a: PartnerSide, b: PartnerSide): boolean {
+  // ...as above for the generic, restricted and friendsForever arms...
+  if (x.kind === "with" && y.kind === "with") {
+    return names(x.name, b.name) && names(y.name, a.name);
+  }
+  return false;
+}
+```
 
 - [ ] **Step 4: Run the tests to verify they pass**
 

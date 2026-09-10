@@ -1,9 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineDesktop } from "./spine-desktop";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
-import { deck, props } from "./spine-fixtures";
+import { deck, pairDeck, props } from "./spine-fixtures";
 
 // The band's `Card details` pill reads the card-detail context, so the header
 // can only be rendered inside it.
@@ -18,6 +18,16 @@ describe("SpineDesktop", () => {
     const { container } = renderSpine(<SpineDesktop {...props} />);
     const wash = container.querySelector<HTMLElement>('[aria-hidden="true"].absolute');
     expect(wash?.style.height).toBe("168px");
+  });
+
+  // A deck is 100 cards including its commanders, so the denominator is the
+  // body: 99 for a single commander and 98 for a pair.
+  it("prints the body size as the denominator, 98 for a pair", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    expect(screen.getByText("/ 99")).toBeTruthy();
+    cleanup();
+    renderSpine(<SpineDesktop {...props} deck={pairDeck} />);
+    expect(screen.getByText("/ 98")).toBeTruthy();
   });
 
   it("colours the bar by status, not by percentage", () => {
@@ -119,6 +129,41 @@ describe("SpineDesktop", () => {
     expect(
       screen.getByRole("button", { name: `Rename deck: ${props.deck.name}` }),
     ).toBeTruthy();
+  });
+
+  // Decision 18. Four spans, not one string: the caption is an ordered shrink,
+  // so the `+` and the identity label are their own non-shrinking children and
+  // the space around them is the group's gap. Desktop is the width that keeps
+  // the label — which for a pair is the union of both identities.
+  it("states the pair in the caption and labels the union identity", () => {
+    renderSpine(<SpineDesktop {...props} deck={pairDeck} />);
+    const group = screen.getByText("Atraxa, Praetors’ Voice").parentElement!;
+    expect([...group.children].map((n) => n.textContent)).toEqual([
+      "Atraxa, Praetors’ Voice",
+      "+",
+      "Kratos, God of War",
+      "· 5-color",
+    ]);
+  });
+
+  // The band is one image, so the partner's printing opens from the word that
+  // names it rather than from a second portrait — and it is the half that gives
+  // when the column is too narrow for both names.
+  it("opens the partner's printing from its name, and shrinks it first", () => {
+    renderSpine(<SpineDesktop {...props} deck={pairDeck} />);
+    const trigger = screen.getByRole("button", {
+      name: "Show the printing for Kratos, God of War",
+    });
+    expect(trigger.textContent).toBe("Kratos, God of War");
+    expect(trigger.style.borderBottom).toBe("1px solid var(--border-strong)");
+    expect(trigger.style.flexShrink).toBe("1000");
+    expect(trigger.style.textOverflow).toBe("ellipsis");
+
+    // The primary ellipsises too — writing it `flex-none` overflows the group
+    // and draws the names under the count.
+    const primary = screen.getByText("Atraxa, Praetors’ Voice");
+    expect(primary.style.textOverflow).toBe("ellipsis");
+    expect(primary.style.minWidth).toBe("0px");
   });
 
   it("drops the Card details pill when the commander has no crop", () => {
