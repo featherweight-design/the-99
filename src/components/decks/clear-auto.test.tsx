@@ -39,6 +39,18 @@ const unownedAutoCard = (id: string, name: string): DeckDetailCard => ({
   owned: false,
 });
 
+/** The keep is two clicks: the trigger raises the question, `Keep them`
+ *  answers it. Every test about what the write does goes through both, because
+ *  no path to the write skips the question. */
+const keepAllAnswered = async (count: string) => {
+  await act(async () => {
+    screen.getByRole("button", { name: recommendationsCopy.auto.keepAllAria(count) }).click();
+  });
+  await act(async () => {
+    screen.getByRole("button", { name: recommendationsCopy.auto.keepAllConfirmYes }).click();
+  });
+};
+
 // ── ClearAutoButton ────────────────────────────────────────────────────────────
 
 describe("ClearAutoButton", () => {
@@ -220,7 +232,9 @@ describe("ClearAutoButton", () => {
     for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled();
   });
 
-  it("calls onKeepAll once when clicked", async () => {
+  // The keep asks first, because it has no undo. The sweep beside it does not,
+  // because it ships a receipt with one.
+  it("asks before keeping, and only writes once the question is answered", async () => {
     const onKeepAll = vi.fn();
     render(
       <ClearAutoButton
@@ -239,7 +253,131 @@ describe("ClearAutoButton", () => {
         .click();
     });
 
+    expect(onKeepAll).not.toHaveBeenCalled();
+    const question = screen.getByText(
+      recommendationsCopy.auto.keepAllConfirm("3"),
+    );
+    expect(question).toBeInTheDocument();
+
+    const yes = screen.getByRole("button", {
+      name: recommendationsCopy.auto.keepAllConfirmYes,
+    });
+    expect(yes).toHaveFocus();
+    // Focus lands on a button whose own label names nothing, so both answers
+    // point back at the question and a reader hears what it is answering.
+    const questionId = question.closest("[id]")?.id;
+    expect(questionId).toBeTruthy();
+    expect(yes).toHaveAttribute("aria-describedby", questionId);
+    expect(
+      screen.getByRole("button", {
+        name: recommendationsCopy.auto.keepAllConfirmNo,
+      }),
+    ).toHaveAttribute("aria-describedby", questionId);
+
+    await act(async () => {
+      yes.click();
+    });
+
     expect(onKeepAll).toHaveBeenCalledOnce();
+  });
+
+  // The question replaces both bulk controls, so the sweep cannot be offered on
+  // cards an unanswered keep has already spoken for.
+  it("takes both bulk controls away while the question is up", async () => {
+    render(
+      <ClearAutoButton
+        count={3}
+        keptCount={0}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
+      />,
+    );
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("3") })
+        .click();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: recommendationsCopy.auto.clearAllAria("3") }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: recommendationsCopy.auto.keepAllAria("3") }),
+    ).not.toBeInTheDocument();
+  });
+
+  // A row's own keep can take the last auto card while the question is up. The
+  // question goes with the count; the flag must go with it, or the next fill
+  // pass reopens a question nobody asked for.
+  it("forgets an unanswered question once the count reaches 0", async () => {
+    const props = {
+      keptCount: 0,
+      onClear: vi.fn(),
+      pending: false,
+      onKeepAll: vi.fn(),
+      keepAllPending: false,
+    };
+    const { rerender } = render(<ClearAutoButton count={3} {...props} />);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("3") })
+        .click();
+    });
+    expect(
+      screen.getByText(recommendationsCopy.auto.keepAllConfirm("3")),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      rerender(<ClearAutoButton count={0} {...props} />);
+    });
+    await act(async () => {
+      rerender(<ClearAutoButton count={2} {...props} />);
+    });
+
+    expect(
+      screen.queryByText(recommendationsCopy.auto.keepAllConfirm("2")),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") }),
+    ).toBeInTheDocument();
+  });
+
+  // The trigger unmounts while the question is up, so a cancel that did not
+  // carry focus back would drop a keyboard reader at the top of the document.
+  it("writes nothing on cancel, and returns focus to the trigger", async () => {
+    const onKeepAll = vi.fn();
+    render(
+      <ClearAutoButton
+        count={3}
+        keptCount={0}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={onKeepAll}
+        keepAllPending={false}
+      />,
+    );
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("3") })
+        .click();
+    });
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllConfirmNo })
+        .click();
+    });
+
+    expect(onKeepAll).not.toHaveBeenCalled();
+    const trigger = screen.getByRole("button", {
+      name: recommendationsCopy.auto.keepAllAria("3"),
+    });
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it("calls onClear once when clicked", async () => {
@@ -753,11 +891,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
 
     const { revalidate } = renderBuilder([card1, card2]);
 
-    await act(async () => {
-      screen
-        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") })
-        .click();
-    });
+    await keepAllAnswered("2");
 
     expect(keepAllAutoCards).toHaveBeenCalledOnce();
     expect(keepAllAutoCards).toHaveBeenCalledWith("deck-sweep");
@@ -778,11 +912,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
 
     renderBuilder([card1, card2, card3]);
 
-    await act(async () => {
-      screen
-        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") })
-        .click();
-    });
+    await keepAllAnswered("2");
 
     // Two kept here, one kept already — the note's own sentence, word for word.
     const spoken = screen.getAllByText(
@@ -799,11 +929,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
 
     renderBuilder([card1, card2]);
 
-    await act(async () => {
-      screen
-        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") })
-        .click();
-    });
+    await keepAllAnswered("2");
 
     expect(screen.getByText(recommendationsCopy.auto.keepAllFailed)).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.auto.sweepFailed)).toBeNull();
