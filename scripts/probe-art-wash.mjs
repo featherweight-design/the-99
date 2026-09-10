@@ -93,7 +93,11 @@ const READ_148_VERTICALS = `() => {
     const style = getComputedStyle(s);
     return {
       display: style.display,
-      ramp: /180deg/.test(style.backgroundImage),
+      // Not \`/180deg/\`: 180deg is a gradient's default direction, so the browser
+      // drops it from the computed value and that test never matches. A vertical
+      // ramp is the gradient that names no angle at all; the horizontal scrim
+      // beside it keeps its own 90deg.
+      ramp: /^linear-gradient\\((?!\\s*[\\d.-]+deg)/.test(style.backgroundImage),
       // A flat alpha resolves to a colour, not an image, so the hold is the one
       // vertical layer with no gradient of its own.
       hold: style.backgroundImage === 'none' && !/^rgba?\\(0, 0, 0, 0\\)$/.test(style.backgroundColor),
