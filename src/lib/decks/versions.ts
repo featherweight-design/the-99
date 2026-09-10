@@ -163,6 +163,11 @@ async function commitVersionIn(
  */
 export async function restoreDraftFromVersion(deckId: string, versionId: string): Promise<void> {
   await db.transaction(async (tx) => {
+    // The same `for update` commitVersion takes, and for the same reason: this
+    // reads a list and then replaces `deck_cards` wholesale, so an add landing
+    // from another tab in between is thrown away without a trace.
+    await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
+
     const [version] = await tx.select().from(deckVersions)
       .where(and(eq(deckVersions.id, versionId), eq(deckVersions.deckId, deckId)));
     if (!version) throw new Error("version not found");

@@ -1372,8 +1372,20 @@ export async function pullCardFromDeck(
   // deck's draft short of a card its version still claims, so the copy is
   // neither in the deck nor free for the deck that asked for it.
   await db.transaction(async (tx) => {
-    await tx.delete(deckCards)
-      .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
+    // A pull takes ONE copy, matching removeCardFromDeck: a deck holding four
+    // Relentless Rats keeps three. Delete only when the decrement would hit 0.
+    const decremented = await tx.update(deckCards)
+      .set({ quantity: sql`${deckCards.quantity} - 1` })
+      .where(and(
+        eq(deckCards.deckId, sourceDeckId),
+        eq(deckCards.oracleId, oracleId),
+        gt(deckCards.quantity, 1),
+      ))
+      .returning({ oracleId: deckCards.oracleId });
+    if (decremented.length === 0) {
+      await tx.delete(deckCards)
+        .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
+    }
     await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
   });
   revalidateClaims(sourceDeckId, userId);

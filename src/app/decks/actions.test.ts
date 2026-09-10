@@ -18,6 +18,10 @@ const stub = vi.hoisted(() => {
     transactionError: null as Error | null,
     // The rows already in the deck, returned by the in-transaction read
     deckRows: [] as { oracleId: string; quantity: number }[],
+    // What an in-transaction `update(...).returning()` hands back. Empty means
+    // the guarded decrement matched nothing, which is how a caller learns the
+    // row was down to its last copy and must be deleted instead.
+    updateReturning: [] as Record<string, unknown>[],
     fillPasses: [] as { ordinal: number }[],
     // Whether getEdhrecData should reject
     edhrecError: null as Error | null,
@@ -169,7 +173,14 @@ const stub = vi.hoisted(() => {
   const tx = {
     insert: (table: unknown) => makeInsertBuilder(table),
     delete: (table: unknown) => makeDeleteBuilder(table),
-    update: () => ({ set: () => ({ where: async () => {} }) }),
+    update: () => ({
+      set: () => ({
+        where: () => Object.assign(
+          Promise.resolve(undefined),
+          { returning: async () => state.updateReturning },
+        ),
+      }),
+    }),
     execute: async () => {},
     // Table-aware, because `recordFillPass` reads the highest ordinal the deck
     // has used and would otherwise be handed deck card rows. That read is an
@@ -326,6 +337,7 @@ beforeEach(() => {
   stub.state.insertCalls.length = 0;
   stub.state.transactionError = null;
   stub.state.deckRows.length = 0;
+  stub.state.updateReturning.length = 0;
   stub.state.fillPasses.length = 0;
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
@@ -961,6 +973,17 @@ describe("pullCardFromDeck", () => {
     // The third argument is the caller's transaction: the delete above and this
     // commit land together, or the draft loses a card its version still claims.
     expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String), expect.anything());
+  });
+
+  // A pull takes one copy. A deck sleeving four Relentless Rats that lends one
+  // keeps three, so the row is decremented and never deleted.
+  it("decrements rather than deleting when the deck holds more than one", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 4 });
+    stub.state.updateReturning.push({ oracleId: CARD_A });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 4 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(stub.state.deleteCalls).not.toContainEqual({ table: "deck_cards", id: SOURCE_ID });
   });
 
   // The player is looking at the ASKING deck's buy tag when they take the pull.
