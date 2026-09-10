@@ -241,14 +241,18 @@ async function walkConfirm(page, w) {
   await shot(page, `${w}-6-kept`);
 }
 
-const kept = await autoOracleIds();
-console.log(`[fixture] deck ${DECK} · ${kept.length} auto rows`);
-
 let browser;
+// Empty until the fixture read returns, so a failure there leaves the restore
+// in `finally` with nothing to put back rather than an undefined to trip over.
+let kept = [];
 try {
-  // Inside the try with the walk itself: a Clerk or Chromium failure is as
-  // fatal to the run as a missing control, and reporting it the same way keeps
-  // one exit path and one summary.
+  // Everything the run needs sits inside the try with the walk itself: a
+  // fixture read, a Clerk setup or a Chromium launch failing is as fatal as a
+  // missing control, and reporting them the same way keeps one exit path and
+  // one summary.
+  kept = await autoOracleIds();
+  console.log(`[fixture] deck ${DECK} · ${kept.length} auto rows`);
+
   browser = await clerkSetup().then(() => chromium.launch());
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   await signIn(page);
