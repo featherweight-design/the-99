@@ -1,6 +1,6 @@
 /**
  * One deck's claim on one card: which deck, how many copies it asks for, and
- * whether that deck is finished. Named rather than inlined because the shape has
+ * whether that deck is sleeved. Named rather than inlined because the shape has
  * now widened twice — from a bare name, to `{id, name}`, to this — and each
  * widening had to be repeated at the SQL row, the model and the marker. One
  * definition means the next change is one edit.
@@ -8,18 +8,16 @@
  * `quantity` is the deck's whole ask, commander included: a deck whose commander
  * also sits on its own list contributes ONE claim of `1 + listQuantity`, not two.
  *
- * `mature` is what makes the claim hard or soft: a deck at its body size or more
- * is finished enough that its cards are physically sleeved. The body size is
- * `deckBodySize()` in `deck-size.ts` — 99, or 98 for a pair — and the comparison
- * is `>=`, never `=`, because an overfull deck is sleeved too. README decision 8
- * of the amendments handoff locks that against being narrowed for symmetry with
- * the status pill, whose partition this shares a threshold with but not a shape:
- * Unresolved/To buy/Complete sit at exactly the body size and Over sits above
- * it, so all four are mature, while Draft/Building fall below.
+ * `mature` is what makes the claim hard or soft, and it now means SLEEVED: the
+ * deck has a committed version. It is no longer a body-size test. A player who
+ * reaches 99 cards has decided nothing; a player who commits has said the list
+ * is the one going in the sleeves, and only that says a copy is spoken for.
+ * The key keeps the name because `hardDecks` and every consumer of the receipt
+ * read it, so renaming it is a separate change with its own blast radius.
  *
- * It is carried per claim rather than recomputed downstream because deck size is
- * not on this object and never should be — a card's availability has no business
- * knowing how big somebody's deck is beyond this one bit.
+ * It is carried per claim rather than recomputed downstream because whether a
+ * deck has committed is not on this object and never should be — a card's
+ * availability has no business knowing a deck's history beyond this one bit.
  */
 export type DeckClaim = { id: string; name: string; quantity: number; mature: boolean };
 

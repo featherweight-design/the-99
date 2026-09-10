@@ -40,7 +40,7 @@ export function inUseElsewhereByDeck(
       matureClaims += 1;
       soleMatureId = claim.id;
     }
-    // A brew's claim is not "in use", so a card no finished deck has sleeved
+    // A brew's claim is not "in use", so a card no committed deck has sleeved
     // is nobody's conflict.
     if (matureClaims === 0) continue;
     for (const claim of a.claims) {

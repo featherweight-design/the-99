@@ -238,6 +238,9 @@ export async function loadAvailability(
             -- The JSON key stays mature on purpose: DeckClaim in
             -- availability.ts and every consumer of the receipt read that key,
             -- so renaming it is a separate change with its own blast radius.
+            -- What it MEANS has moved, though: the value is cd.sleeved — the
+            -- deck has a committed version — and is no longer a body-size
+            -- test. A reader taking it for "has 99 cards" reads it wrong.
             'quantity', cd.quantity, 'mature', cd.sleeved
           )
           order by cd.name, cd.deck_id
