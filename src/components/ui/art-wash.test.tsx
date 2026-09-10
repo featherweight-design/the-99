@@ -81,9 +81,9 @@ describe("ArtWash — left portrait", () => {
     expect(sharp?.style.backgroundRepeat).toBe("no-repeat");
   });
 
-  // Layer D. The commander row prints over the whole height of its band, so the
-  // art is damped top and bottom as well as across; the resume row's type starts
-  // clear of the portrait and needs no such thing.
+  // Layer D. The commander row prints type over the portrait, so the art is
+  // damped down the band as well as across; the resume row's type starts clear
+  // of the portrait and needs no such thing.
   it("adds a vertical scrim at 148 and none at 72", () => {
     const tall = render(
       <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
@@ -91,24 +91,40 @@ describe("ArtWash — left portrait", () => {
     const short = render(
       <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
     );
-    expect(tall.container.querySelectorAll(".art-wash-scrim")).toHaveLength(3);
+    expect(tall.container.querySelectorAll(".art-wash-scrim")).toHaveLength(2);
     expect(tall.container.innerHTML).toContain("180deg");
     expect(short.container.querySelectorAll(".art-wash-scrim")).toHaveLength(1);
     expect(short.container.innerHTML).not.toContain("180deg");
   });
 
-  // The 148 band is rendered at two widths, and only the narrow one puts type
-  // over the portrait. Both damping layers are in the markup at once; the
-  // breakpoint decides which one paints.
-  it("swaps the 148 band's vertical ramp for a flat hold below sm", () => {
+  // One ramp at both widths, with no breakpoint swap. The 148 row is
+  // `items-end` at either width, so the phone's label block sits inside the
+  // desktop's and a single hold from 55% down covers both — the flat hold this
+  // replaced darkened the whole band to protect its bottom third.
+  it("damps the 148 band with one ramp at every width", () => {
     const { container } = render(
       <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
     );
-    const ramp = container.querySelector<HTMLElement>(".art-wash-scrim.hidden");
-    const hold = container.querySelector<HTMLElement>(".art-wash-scrim.sm\\:hidden");
-    expect(ramp?.className).toContain("sm:block");
-    expect(ramp?.style.background).toContain("180deg");
-    expect(hold?.style.background).toBe("color-mix(in oklab, var(--bg) 70%, transparent)");
+    const scrims = container.querySelectorAll<HTMLElement>(".art-wash-scrim");
+    expect(scrims).toHaveLength(2);
+    for (const s of scrims) expect(s.className).not.toContain("hidden");
+    expect(scrims[1].style.background).toContain("180deg");
+    // Clear above the block, then held flat from its top edge to the foot.
+    expect(scrims[1].style.background).toContain("var(--bg) 0%, transparent) 38%");
+    expect(scrims[1].style.background).toContain("var(--bg) 78%, transparent) 55%");
+    expect(scrims[1].style.background).toContain("var(--bg) 78%, transparent) 100%");
+  });
+
+  // The portrait carries no wash of its own until the crop starts fading out
+  // into the row. `color-mix(... 0%)` rather than `transparent`, which is a
+  // transparent *black* and hazes the half of the crop this ramp leaves alone.
+  it("leaves the portrait unwashed out to the band's clear stop", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const horizontal = container.querySelector<HTMLElement>(".art-wash-scrim");
+    expect(horizontal?.style.background).toContain("var(--bg) 0%, transparent) 0px");
+    expect(horizontal?.style.background).toContain("var(--bg) 0%, transparent) 118px");
   });
 
   // The row already draws a ground; the scrim resolves into that one, so the
@@ -199,26 +215,23 @@ describe("left-portrait, band 168", () => {
     const sharp = container.querySelectorAll<HTMLElement>(".art-wash-art")[1];
     expect(sharp.style.width).toBe("230px");
     const scrim = container.querySelector<HTMLElement>(".art-wash-scrim");
-    expect(scrim?.style.background).toContain("134px");
+    expect(scrim?.style.background).toContain("var(--bg) 0%, transparent) 134px");
     expect(scrim?.style.background).toContain("230px");
     expect(scrim?.style.background).toContain("var(--bg) 240px");
   });
 
-  it("draws a lighter vertical scrim than the 148 row's", () => {
+  // The spine's title starts at a 254px inset, past this band's 240px flat stop,
+  // so the only ink the ramp protects is the view-card pill at the bottom-left —
+  // and the pill plates itself first. Half the 148 row's weight, and clear over
+  // the top three-fifths, where nothing is printed at all.
+  it("damps only the foot, where the view-card pill sits", () => {
     const { container } = render(
       <ArtWash strategy="left-portrait" band={168} artCropUri="/a.jpg" colorIdentity={["G"]} />,
     );
     const vertical = container.querySelectorAll<HTMLElement>(".art-wash-scrim")[1];
     expect(vertical.style.background).toContain("180deg");
-    expect(vertical.style.background).toContain("var(--bg) 10%, transparent) 46%");
-  });
-
-  it("leaves the 148 row's vertical scrim exactly where it shipped", () => {
-    const { container } = render(
-      <ArtWash strategy="left-portrait" band={148} artCropUri="/a.jpg" colorIdentity={["G"]} />,
-    );
-    const vertical = container.querySelectorAll<HTMLElement>(".art-wash-scrim")[1];
-    expect(vertical.style.background).toContain("var(--bg) 16%, transparent) 42%");
+    expect(vertical.style.background).toContain("var(--bg) 0%, transparent) 60%");
+    expect(vertical.style.background).toContain("var(--bg) 50%, transparent) 72%");
   });
 });
 
