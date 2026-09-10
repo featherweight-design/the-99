@@ -134,10 +134,14 @@ async function commitVersionIn(
     .set({ commanderSince, partnerSince })
     .where(eq(deckVersions.id, inserted.id));
 
+  // `for update` on the draft rows, not merely the deck row above. Most of the
+  // paths that edit `deck_cards` — a quantity decrement, an auto-fill sweep —
+  // never touch the deck row, so its lock does not serialize them. A row lock
+  // does, because their own UPDATE takes the same one.
   const rows = await tx.select({
     oracleId: deckCards.oracleId,
     quantity: deckCards.quantity,
-  }).from(deckCards).where(eq(deckCards.deckId, deckId));
+  }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
   if (rows.length > 0) {
     await tx.insert(deckVersionCards).values(

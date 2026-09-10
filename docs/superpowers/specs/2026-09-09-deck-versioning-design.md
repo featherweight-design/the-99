@@ -62,7 +62,7 @@ deck_versions
   commander_oracle_id  uuid  not null → cards.oracle_id
   partner_oracle_id    uuid  nullable → cards.oracle_id
   unique (deck_id, number)
-  index (deck_id, committed_at)
+  index (deck_id, number)
 
 deck_version_cards
   version_id  uuid → deck_versions.id, on delete cascade

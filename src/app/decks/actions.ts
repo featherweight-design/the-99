@@ -1298,9 +1298,12 @@ export async function commitDeckVersion(
 
     const previous = await newestVersion(deckId, tx);
     const before = previous ? await versionCards(previous.id, tx) : [];
+    // `for update`, because the deck row's lock alone does not serialize this:
+    // the paths that edit `deck_cards` do not take it. Locking the draft rows
+    // makes a concurrent edit wait, so the receipt describes what was written.
     const draft = await tx.select({
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-    }).from(deckCards).where(eq(deckCards.deckId, deckId));
+    }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
     const diff = draftDiff(draft, before);
     // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim,
@@ -1379,9 +1382,12 @@ export async function pullCardFromDeck(
     if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
 
     const before = await versionCards(version.id, tx);
+    // `for update` for the same reason the commit takes it: the deck row's
+    // lock does not stop an edit to `deck_cards`, and the guard below is only
+    // as good as the draft still being what it read.
     const draft = await tx.select({
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-    }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId));
+    }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId)).for("update");
     const diff = draftDiff(draft, before);
     if (diff.adds.length > 0 || diff.removes.length > 0) {
       return { ok: false, message: "That deck has pending changes. Release the card there." };
