@@ -238,14 +238,22 @@ function LastSlotsStripInner({
   // the open slots, so it states the seeded figure rather than the owned one.
   // The two reopen notes are about ownership rather than ticks, so they keep the
   // unclamped count: you do still own all of them.
+  const seedCount = String(Math.min(ownedIds.length, Math.max(openSlots, 0)));
   const doorNote = !visited
-    ? topOffCopy.strip.doorNote(String(Math.min(ownedIds.length, Math.max(openSlots, 0))))
+    ? topOffCopy.strip.doorNote(seedCount)
     : ownedIds.length === 0
       ? topOffCopy.strip.doorNoteAgain(String(candidates.length))
       : topOffCopy.strip.doorNoteAgainOwned(
           String(ownedIds.length),
           String(candidates.length),
         );
+
+  // At 390px the desktop sentence runs three mono lines, so the phone forms drop
+  // the provenance and keep the promise. Both reopen cases take the one string:
+  // the closed caption directly above already states the candidate count.
+  const doorNoteMobile = !visited
+    ? topOffCopy.strip.doorNoteMobile(seedCount)
+    : topOffCopy.strip.doorNoteAgainMobile;
 
   return (
     <div
@@ -387,7 +395,8 @@ function LastSlotsStripInner({
             className="font-mono text-[10px] md:text-[10.5px] leading-[1.55] md:leading-[1.6] mt-[9px] md:mt-0 md:flex-1 md:min-w-[240px]"
             style={{ color: "var(--fg-locked)" }}
           >
-            {doorNote}
+            <span className="md:hidden">{doorNoteMobile}</span>
+            <span className="hidden md:inline">{doorNote}</span>
           </p>
         </div>
       )}

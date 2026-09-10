@@ -12,7 +12,7 @@
 // closed (design state 9), and this component unmounts on close, so both are
 // held by LastSlotsStrip and passed down.
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
@@ -31,6 +31,7 @@ import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { BuyTag } from "./buy-tag";
 import { GhostButton } from "../ui/button";
+import { useIsDesktop } from "../ui/use-is-desktop";
 
 /** How long ticking settles before one message is announced. Thirty fast taps
  *  is one message, which is the shipped selection rule from the Add panel. */
@@ -210,6 +211,7 @@ export function TopOffList({
   // subtracted from a pool it is not in, and the head would count rows down to
   // nothing.
   const declinedHere = pool.filter((c) => declined.has(c.oracleId)).length;
+  const allDeclined = pool.length > 0 && declinedHere === pool.length;
 
   // What the tick-all will actually tick. It replaces the selection wholesale
   // and clamps to the open slots, so a player owning twelve candidates for three
@@ -227,6 +229,29 @@ export function TopOffList({
   const total = bodySize - openSlots + tickedCount;
 
   const capLineId = `${listId}-cap`;
+  // The cap line has two homes and one id, and two elements cannot share one —
+  // so the width picks which of them mounts it. A `hidden md:block` pair would
+  // leave every inert tick box describing a `display: none` element at one of
+  // the two widths, which screen readers do not reliably announce. The list
+  // only ever mounts on a click, so this is never read during hydration and the
+  // first paint is already at the real width.
+  const isDesktop = useIsDesktop();
+
+  // The bar's one status line. The addendum draws three rungs, but rungs 1 and 2
+  // partition the whole space — `atCap` is `slotsLeft <= 0` — so the third, the
+  // dock notice, is unreachable behind them. That follows from the priority the
+  // addendum itself sets and the reason it gives for setting it: the notice is
+  // the only one of the three about a control the player is not currently using,
+  // and `Cancel` and `Close` are both on screen and both the answer to it. So it
+  // is written as the two rungs that can actually render rather than a branch
+  // that never will.
+  const slotsLeft = openSlots - tickedCount;
+  const barStatus =
+    slotsLeft > 0
+      ? topOffCopy.commit.slotsStayOpen(String(slotsLeft))
+      : isDesktop
+        ? null
+        : topOffCopy.list.cap;
 
   // The height the page foot has to reserve for the pinned bar.
   const barRef = useRef<HTMLDivElement>(null);
@@ -299,6 +324,21 @@ export function TopOffList({
     const next = new Set(declined);
     next.delete(id);
     onDeclinedChange(next);
+  }
+
+  // Emptying the set is the whole of it: no action, no server call. The ticks
+  // are not restored with the rows, because a decline dropped the tick and a row
+  // that comes back ticked would place a card the player set aside.
+  function restoreAll() {
+    if (inflight) return;
+    onDeclinedChange(new Set());
+    onAnnounce(
+      topOffCopy.announce.restoredAll(
+        String(declinedHere),
+        String(tickedCount),
+        String(openSlots),
+      ),
+    );
   }
 
   useEffect(() => {
@@ -411,7 +451,22 @@ export function TopOffList({
           )}
         </p>
 
-        <div className="flex gap-[8px] mt-[11px] md:contents">
+        {/* The cap's desktop home. The head is the one element always directly
+            above the rows, so a player who taps an inert box at row 3 gets an
+            answer; the line used to sit below all 38 of them. The divider is a
+            rule rather than a middot because this is a different kind of
+            statement from the figures beside it. */}
+        {isDesktop && atCap && (
+          <p
+            id={capLineId}
+            className="hidden md:block font-mono text-[10.5px] pl-[12px] [border-left:1px_solid_var(--border-strong)]"
+            style={{ color: "var(--fg-locked)" }}
+          >
+            {topOffCopy.list.cap}
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-[8px] mt-[11px] md:contents">
           <GhostButton
             onClick={() => onTickedChange(new Set(ownedIds.slice(0, tickable)))}
             disabled={inflight || tickable === 0}
@@ -427,6 +482,21 @@ export function TopOffList({
           >
             {topOffCopy.list.clearTicks}
           </GhostButton>
+          {/* The way back out of every decline at once. It appears at one
+              decline rather than at all of them: gating it on the all-declined
+              case would hide the general control to serve the extreme one. At
+              phone it takes its own full-width row instead of squeezing the two
+              fixtures a player did not ask to have narrowed. */}
+          {declinedHere > 0 && (
+            <GhostButton
+              onClick={restoreAll}
+              disabled={inflight}
+              aria-label={topOffCopy.list.restoreAllAria(String(declinedHere))}
+              className="flex basis-full items-center justify-center min-h-[44px] md:inline-flex md:basis-auto md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
+            >
+              {topOffCopy.list.restoreAll(String(declinedHere))}
+            </GhostButton>
+          )}
         </div>
 
         <p
@@ -448,9 +518,14 @@ export function TopOffList({
         <span className="flex-auto min-w-0">{topOffCopy.list.colCard}</span>
         <span className="w-[40px] flex-none text-right">{topOffCopy.list.colCost}</span>
         <span className="w-[84px] flex-none" />
-        <span className="w-[88px] flex-none text-right">{topOffCopy.list.colSynergy}</span>
-        <span className="w-[52px] flex-none text-right">{topOffCopy.list.colDecks}</span>
-        <span className="w-[18px] flex-none" />
+        {/* Both figures narrow to pay for the decline's 60px slot, measured
+            against the string the row actually renders — `+147 pts`, eight
+            characters at IBM Plex Mono's 0.6em advance, which is 57.6px at
+            12px. 44px is recovered against 42px spent, so the name column
+            gains 2px rather than paying anything. */}
+        <span className="w-[60px] flex-none text-right">{topOffCopy.list.colSynergy}</span>
+        <span className="w-[36px] flex-none text-right">{topOffCopy.list.colDecks}</span>
+        <span className="w-[60px] flex-none" />
       </div>
 
       {/* ── The rows (§4) ──────────────────────────────────────────────── */}
@@ -500,21 +575,17 @@ export function TopOffList({
         })}
       </div>
 
-      {atCap && (
-        <p
-          id={capLineId}
-          className="font-mono text-[10.5px] mt-[9px]"
-          style={{ color: "var(--fg-locked)" }}
-        >
-          {topOffCopy.list.cap}
-        </p>
-      )}
-
       {tickedCount === 0 && (
         <p className="font-mono text-[10.5px] mt-[9px]" style={{ color: "var(--fg-locked)" }}>
-          {ownedIds.length === 0
-            ? topOffCopy.commit.nothingTickedUnowned(String(pool.length))
-            : topOffCopy.commit.nothingTicked}
+          {/* Emptied by choosing is not empty, and it is not state 13 either:
+              every candidate is still there wearing its own way back. The other
+              two variants describe a list that arrived ticked, which by now is a
+              moment that has passed. */}
+          {allDeclined
+            ? topOffCopy.commit.nothingTickedAllDeclined(String(pool.length))
+            : ownedIds.length === 0
+              ? topOffCopy.commit.nothingTickedUnowned(String(pool.length))
+              : topOffCopy.commit.nothingTicked}
         </p>
       )}
 
@@ -534,12 +605,24 @@ export function TopOffList({
           "[border-top:1px_solid_var(--border-strong)] md:[border-top:1px_solid_var(--border)]",
         ].join(" ")}
       >
-        <p
-          className="order-1 md:hidden font-mono text-[10px]"
-          style={{ color: "var(--fg-locked)" }}
-        >
-          {topOffCopy.dock.retired}
-        </p>
+        {/* The bar's one status line, and one element rather than a pair split
+            by CSS, so the sentence is never in the DOM twice. Desktop carries
+            only the slots notice: its cap line lives in the head, and the dock
+            notice is a phone-only fixture. Phone stacks all three as a single
+            ternary so the bar can never grow a second line. Rungs 1 and 2 are
+            mutually exclusive by arithmetic — at the cap there are no slots left
+            to stay open — and the dock notice is last because it is the only one
+            of the three about a control the player is not currently using, and
+            `Cancel` and `Close` are both on screen and both the answer to it. */}
+        {barStatus && (
+          <p
+            id={!isDesktop && atCap ? capLineId : undefined}
+            className="order-1 md:order-4 md:ml-auto font-mono text-[10px] md:text-[10.5px]"
+            style={{ color: "var(--fg-locked)" }}
+          >
+            {barStatus}
+          </p>
+        )}
 
         <div className="order-3 flex gap-[8px] md:contents">
           <button
@@ -599,15 +682,6 @@ export function TopOffList({
           </span>
         </div>
 
-        {openSlots - tickedCount > 0 && (
-          <p
-            className="hidden md:block md:order-4 md:ml-auto font-mono text-[10.5px]"
-            style={{ color: "var(--fg-locked)" }}
-          >
-            {topOffCopy.commit.slotsStayOpen(String(openSlots - tickedCount))}
-          </p>
-        )}
-
         {error && <RefusalPlate className="order-4 md:order-5 md:w-full" message={error} />}
       </div>
     </div>
@@ -644,10 +718,16 @@ function CandidateRow({
 }) {
   const committed =
     c.owned && c.availability !== null && availabilityState(c.availability) === "hard";
+  const tickId = useId();
 
+  // The row's tappable area is three labels pointing at one box rather than one
+  // label wrapping everything, because the decline has to sit inside line 2 at
+  // phone and a control nested in a label toggles the tick on every tap of it.
+  // At desktop each wrapper is `contents`, so the row is one flex context and
+  // the eight slots order themselves against the column header.
   return (
     <div
-      className="flex items-center gap-[9px] md:gap-[10px] rounded-[7px] min-h-[52px] md:min-h-[34px] pl-[8px] pr-[4px] md:px-[9px]"
+      className="flex items-center gap-[9px] md:gap-[10px] rounded-[7px] min-h-[52px] md:min-h-[34px] pl-[8px] pr-[10px] md:px-[9px]"
       style={{
         background: ticked ? "var(--elevated-hover)" : "var(--surface)",
         border: ticked
@@ -656,73 +736,84 @@ function CandidateRow({
         ...(inert ? { opacity: 0.55 } : null),
       }}
     >
-      {/* The whole row is the label, so the target is the row and not the box. */}
-      <label className="flex flex-auto min-w-0 items-center gap-[9px] md:gap-[10px] cursor-pointer">
-        <input
-          type="checkbox"
-          className="sr-only"
-          checked={ticked}
-          aria-label={rowLabel(c, newestAsOf)}
-          aria-disabled={inert || inflight ? true : undefined}
-          aria-describedby={inert ? capLineId : undefined}
-          onChange={onToggle}
-        />
-        <span
-          aria-hidden
-          className="flex-none flex items-center justify-center font-mono w-[26px] h-[26px] md:w-[18px] md:h-[18px] rounded-[6px] md:rounded-[5px] text-[13px] md:text-[11px]"
-          style={
-            ticked
-              ? {
-                  border: "1px solid var(--accent)",
-                  background: "color-mix(in srgb, var(--accent) 12%, transparent)",
-                  color: "var(--accent)",
-                }
-              : {
-                  border: `1px solid var(--${inert ? "border" : "border-strong"})`,
-                  background: "transparent",
-                  color: `var(--fg-${inert ? "locked" : "faint"})`,
-                }
-          }
+      <input
+        type="checkbox"
+        id={tickId}
+        className="peer sr-only"
+        checked={ticked}
+        aria-label={rowLabel(c, newestAsOf)}
+        aria-disabled={inert || inflight ? true : undefined}
+        aria-describedby={inert ? capLineId : undefined}
+        onChange={onToggle}
+      />
+      {/* The checkbox is `sr-only`, so the global `:focus-visible` outline is
+          drawn on a clipped 1px box and a keyboard reader sees nothing move.
+          The ring is borrowed off the peer onto the box that is actually on
+          screen, matching `quick-add-bar.tsx`'s own sr-only control. */}
+      <label
+        htmlFor={tickId}
+        aria-hidden
+        className="flex-none flex items-center justify-center font-mono w-[26px] h-[26px] md:w-[18px] md:h-[18px] rounded-[6px] md:rounded-[5px] text-[13px] md:text-[11px] cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-[color:var(--accent)]"
+        style={
+          ticked
+            ? {
+                border: "1px solid var(--accent)",
+                background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+                color: "var(--accent)",
+              }
+            : {
+                border: `1px solid var(--${inert ? "border" : "border-strong"})`,
+                background: "transparent",
+                color: `var(--fg-${inert ? "locked" : "faint"})`,
+              }
+        }
+      >
+        {ticked ? "✓" : "+"}
+      </label>
+
+      <span className="flex flex-auto min-w-0 flex-col gap-[4px] md:contents">
+        <label
+          htmlFor={tickId}
+          className="flex items-center gap-[7px] cursor-pointer md:contents"
         >
-          {ticked ? "✓" : "+"}
-        </span>
-
-        <span className="flex flex-auto min-w-0 flex-col gap-[4px] md:flex-row md:items-center md:gap-[10px]">
-          <span className="flex items-center gap-[7px] md:contents">
-            <OwnershipDot
-              owned={c.owned}
-              committed={committed}
-              size={7}
-              className="md:order-1"
-            />
-            <span
-              className="flex-auto min-w-0 text-[12.5px] md:text-[13.5px] md:order-2"
-              style={{ color: "var(--fg)" }}
-            >
-              {c.name}
-            </span>
-            <span
-              aria-hidden
-              className="flex-none flex items-center justify-end whitespace-nowrap font-mono text-[10px] md:order-4 md:w-[84px]"
-            >
-              {!c.owned ? (
-                <BuyTag
-                  variant="row"
-                  price={c.price}
-                  newestAsOf={newestAsOf}
-                  density="full"
-                />
-              ) : c.availability ? (
-                <AvailabilityMarker availability={c.availability} nameless />
-              ) : null}
-            </span>
+          <OwnershipDot
+            owned={c.owned}
+            committed={committed}
+            size={7}
+            className="md:order-1"
+          />
+          <span
+            className="flex-auto min-w-0 text-[12.5px] md:text-[13.5px] md:order-2"
+            style={{ color: "var(--fg)" }}
+          >
+            {c.name}
           </span>
+          <span
+            aria-hidden
+            className="flex-none flex items-center justify-end whitespace-nowrap font-mono text-[10px] md:order-4 md:w-[84px]"
+          >
+            {!c.owned ? (
+              <BuyTag
+                variant="row"
+                price={c.price}
+                newestAsOf={newestAsOf}
+                density="full"
+              />
+            ) : c.availability ? (
+              <AvailabilityMarker availability={c.availability} nameless />
+            ) : null}
+          </span>
+        </label>
 
-          <span className="flex items-center gap-[8px] font-mono text-[10px] md:contents">
+        <span className="flex items-center gap-[8px] font-mono text-[10px] md:contents">
+          <label
+            htmlFor={tickId}
+            className="flex items-center gap-[8px] cursor-pointer md:contents"
+          >
             <CostTrack cost={c.manaCost} />
             <span
               aria-hidden
-              className="flex-none md:order-5 md:w-[88px] md:text-right md:text-[12px]"
+              className="flex-none md:order-5 md:w-[60px] md:text-right md:text-[12px]"
               style={{ color: "var(--accent)" }}
             >
               {c.synergyPts === null
@@ -731,37 +822,34 @@ function CandidateRow({
             </span>
             <span
               aria-hidden
-              className="flex-none md:order-6 md:w-[52px] md:text-right md:text-[11px]"
+              className="flex-none md:order-6 md:w-[36px] md:text-right md:text-[11px]"
               style={{ color: "var(--fg-faint)" }}
             >
               {c.inclusionPct === null
                 ? synergyCopy.figure.inclusionNone
                 : synergyCopy.figure.inclusion(String(c.inclusionPct))}
             </span>
-          </span>
-        </span>
-      </label>
+          </label>
 
-      {/* The decline. The design draws the declined row in full but never draws
-          the control that reaches it, and ships no string for one — so this is
-          the smallest honest affordance that makes state 7 reachable, flagged
-          for Design to place properly. */}
-      <button
-        type="button"
-        onClick={onDecline}
-        disabled={inflight}
-        aria-label={topOffCopy.list.declineAria(c.name)}
-        // The glyph stays small; the box around it does not. A 26px square is
-        // under the target floor and sat flush against the inclusion figure, so
-        // the phone box stretches to whatever the row is tall and takes its own
-        // width away from that figure. `min-h` is the floor for a row that ever
-        // draws shorter, not the height itself. Desktop keeps 18px, which is
-        // what the column header reserves for this slot — the row would step
-        // out of the Decks column by the difference otherwise.
-        className="flex-none self-stretch flex items-center justify-center w-[36px] min-h-[44px] md:self-auto md:w-[18px] md:min-h-0 md:h-[18px] font-mono text-[13px] md:text-[11px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-locked)]"
-      >
-        {"×"}
-      </button>
+          {/* A word, never a glyph: the deck row's remove is a visually identical
+              × one surface away, and that one is irreversible. The dashed
+              underline is this app's reversible register and is the exact
+              inverse of the declined row's `Show it again`. The rule belongs to
+              the word rather than to the 44px tap target, which is why it sits
+              on the inner span. */}
+          <button
+            type="button"
+            onClick={onDecline}
+            disabled={inflight}
+            aria-label={topOffCopy.list.declineAria(c.name)}
+            className="ml-auto md:ml-0 md:order-7 flex-none flex items-center justify-end min-h-[44px] md:min-h-0 md:w-[60px] font-mono text-[10.5px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-faint)] hover:[color:var(--fg-body)]"
+          >
+            <span className="[border-bottom:1px_dashed_var(--border-dashed)]">
+              {topOffCopy.list.decline}
+            </span>
+          </button>
+        </span>
+      </span>
     </div>
   );
 }

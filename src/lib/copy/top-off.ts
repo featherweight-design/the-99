@@ -78,6 +78,23 @@ export const topOffCopy = {
      *  different sentences and the first is the common one. */
     doorNoteAgainOwned: (owned: string, cand: string) =>
       `You own ${owned} of the ${cand} left. The list reopens where you left it, declines and all.`,
+
+    /** The 390px forms. The desktop sentence runs three mono lines there, and a
+     *  shorter one that is still two lines buys nothing, so the test is which
+     *  clause survives alone. The promise does: it is the reason the review step
+     *  exists and is carried nowhere else on the surface. The provenance does
+     *  not, because 31 filled dots, the head and every buy tag carry it the
+     *  moment the list opens. */
+    doorNoteMobile: (seeded: string) =>
+      seeded === '0'
+        ? 'You own none of these. Nothing is added until you say so.'
+        : seeded === '1'
+        ? '1 arrives ticked. Nothing is added until you say so.'
+        : `${seeded} arrive ticked. Nothing is added until you say so.`,
+    /** One string for both reopen cases. The two desktop variants differ only in
+     *  an ownership figure, and the closed caption directly above already states
+     *  the candidate count, so phone keeps only the clause that matters. */
+    doorNoteAgainMobile: 'Reopens where you left it, declines and all.',
   },
 
   // ── The list, open ────────────────────────────────────────────────────
@@ -156,12 +173,28 @@ export const topOffCopy = {
     declined: 'not this one',
     restore: 'Show it again',
     restoreAria: (name: string) => `Put ${name} back on the list`,
-    /** ENG-INVENTED, pending Design placement. The declined row is drawn in
-     *  full, but the control that reaches it is neither drawn nor named, and a
-     *  state with no way into it is a state that does not exist. This is the
-     *  inverse of restoreAria and nothing more; it is the string to replace
-     *  when Design places the control. */
+    /** Ratified by Design in the R1 addendum, verbatim: the trigger it names is
+     *  now drawn, and the string it was invented as is the one that ships. */
     declineAria: (name: string) => `Set ${name} aside`,
+
+    /** The visible face of that trigger. A word rather than a glyph, because a
+     *  bare × one column from the deck row's own remove × reads as the same
+     *  destructive act at 13px, and this one removes nothing. */
+    decline: 'Set aside',
+
+    /** The way back out of every decline at once. No server call and no new
+     *  action: it empties the declined set. A restored row returns unticked,
+     *  which is the honest state — the tick was dropped when it was declined.
+     *
+     *  The control renders from one decline, so both strings carry a singular
+     *  form: 'all 1' is not English, and 'Show it again' is already the declined
+     *  row's own label a few rows down. */
+    restoreAll: (declined: string) =>
+      declined === '1' ? 'Show the one again' : `Show all ${declined} again`,
+    restoreAllAria: (declined: string) =>
+      declined === '1'
+        ? 'Put the declined candidate back on the list'
+        : `Put all ${plural(declined, 'declined candidate', 'declined candidates')} back on the list`,
   },
 
   // ── The commit row ────────────────────────────────────────────────────
@@ -196,6 +229,11 @@ export const topOffCopy = {
     nothingTicked: 'nothing ticked — the list arrives with what you own already ticked',
     nothingTickedUnowned: (cand: string) =>
       `nothing ticked — you own none of these ${cand}, so every tick is one to buy`,
+    /** Zero ticks because every candidate was declined. The other two variants
+     *  both explain a list that is there to be ticked; this one is the only
+     *  state where the rows are gone, so it names the way back instead. */
+    nothingTickedAllDeclined: (cand: string) =>
+      `you've set all ${cand} aside — show any of them again to pick it up`,
 
     /** ADOPTED from recommendationsCopy.fill.fillingRows, which this key
      *  replaces: a 27-row write is exactly what that sentence was written for,
@@ -317,6 +355,11 @@ export const topOffCopy = {
   // a statement about what will happen, not an instruction: the player did not
   // ask for quick-add to go away, so it does not read as their doing.
   dock: {
+    /** Currently rendered nowhere. The R1 addendum gave the bar's one status
+     *  line a priority order and put this last, behind two rungs that between
+     *  them cover every state, so it yields always rather than sometimes. Kept
+     *  because the fact it states is still true and the slot is still its own;
+     *  `retiredAnnounce` carries the same fact to a screen reader on open. */
     retired: 'Quick-add is back when you close the list',
     retiredAnnounce: 'Quick-add hidden while the list is open.',
   },
@@ -339,6 +382,11 @@ export const topOffCopy = {
       `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}.`,
     declined: (name: string, ticked: string, n: string) =>
       `${name} set aside. ${ticked} of ${n} ticked.`,
+    /** The bulk restore. It states the tick count after the restore as well as
+     *  the number of rows returned, because a restored row comes back unticked
+     *  and a reader who is told only 'back on the list' would expect otherwise. */
+    restoredAll: (declined: string, ticked: string, n: string) =>
+      `${plural(declined, 'candidate', 'candidates')} back on the list. ${ticked} of ${n} ticked.`,
     undone: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} put back. ${total} of ${bodySize}.`,
     /** The mark is a visual grouping, so it is the one thing on this surface a

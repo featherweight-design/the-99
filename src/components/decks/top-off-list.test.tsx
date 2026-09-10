@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
+import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 
 const actions = vi.hoisted(() => ({ commit: vi.fn() }));
@@ -94,6 +95,9 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  // The width tests spy on matchMedia, and a leaked spy would put every later
+  // test in this file on whichever branch the last resize left behind.
+  vi.restoreAllMocks();
 });
 
 describe("TopOffList", () => {
@@ -457,5 +461,93 @@ describe("TopOffList", () => {
     });
 
     expect(onAnnounce).toHaveBeenCalledWith(topOffCopy.announce.capped("1"));
+  });
+
+  // #478. The deck row's remove is a visually identical × one surface away and
+  // it is irreversible, so this control is a word and never a glyph.
+  it("draws the decline as a word in its own tab stop, outside the tick label", async () => {
+    render(<Harness candidates={[candidate("owned-1", true)]} />);
+
+    const control = screen.getByRole("button", {
+      name: topOffCopy.list.declineAria("owned-1"),
+    });
+    expect(control).toHaveTextContent(topOffCopy.list.decline);
+    expect(control.closest("label")).toBeNull();
+
+    // The whole point of the seam: declining must not also toggle the tick.
+    await click(control);
+    expect(screen.getByText(topOffCopy.list.declined)).toBeInTheDocument();
+  });
+
+  // S25. Declines survive every close, so 38 of them left the only way back as
+  // 38 individual taps.
+  it("offers the bulk restore from the first decline and returns the rows unticked", async () => {
+    const onAnnounce = vi.fn();
+    render(<Harness initialTicked={["owned-1"]} onAnnounce={onAnnounce} />);
+
+    expect(screen.queryByText(topOffCopy.list.restoreAll("1"))).toBeNull();
+
+    await click(screen.getByRole("button", { name: topOffCopy.list.declineAria("owned-1") }));
+    await click(screen.getByRole("button", { name: topOffCopy.list.declineAria("owned-2") }));
+
+    const restoreAll = screen.getByRole("button", {
+      name: topOffCopy.list.restoreAllAria("2"),
+    });
+    expect(restoreAll).toHaveTextContent(topOffCopy.list.restoreAll("2"));
+
+    await click(restoreAll);
+    expect(screen.queryByText(topOffCopy.list.declined)).toBeNull();
+    expect(rowBox("owned-1")).not.toBeChecked();
+    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.announce.restoredAll("2", "0", "3"));
+  });
+
+  // Emptied by choosing is not empty. The shipped line says the list arrives
+  // with what you own already ticked, which by now describes a moment that has
+  // passed — and state 13's `your collection ran out` would blame the
+  // collection for the player's own preferences.
+  it("names the all-declined state rather than repeating the arrival line", async () => {
+    render(<Harness candidates={[candidate("owned-1", true)]} />);
+    expect(screen.getByText(topOffCopy.commit.nothingTicked)).toBeInTheDocument();
+
+    await click(screen.getByRole("button", { name: topOffCopy.list.declineAria("owned-1") }));
+
+    expect(
+      screen.getByText(topOffCopy.commit.nothingTickedAllDeclined("1")),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.commit.nothingTicked)).toBeNull();
+  });
+
+  // The bar has one status line and cannot be allowed to grow a second. The two
+  // rungs partition every state between them, which is why the addendum's third
+  // one — the dock notice it ranks last — renders in neither case here.
+  it("prints exactly one status line at phone, in ladder order", async () => {
+    const { unmount } = render(<Harness openSlots={1} initialTicked={["owned-1"]} />);
+    expect(screen.getByText(topOffCopy.list.cap)).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.dock.retired)).toBeNull();
+    expect(screen.queryByText(topOffCopy.commit.slotsStayOpen("1"))).toBeNull();
+    unmount();
+
+    render(<Harness openSlots={3} initialTicked={["owned-1"]} />);
+    expect(screen.getByText(topOffCopy.commit.slotsStayOpen("2"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.list.cap)).toBeNull();
+    expect(screen.queryByText(topOffCopy.dock.retired)).toBeNull();
+  });
+
+  // The cap line has two homes and one id. Two elements cannot share it, so the
+  // width picks which one mounts — and the inert boxes describe whichever it is.
+  it("keeps one cap line and one id when the width moves it to the head", async () => {
+    const viewport = stubViewport(390);
+    const { rerender } = render(<Harness openSlots={1} initialTicked={["owned-1"]} />);
+
+    expect(screen.getAllByText(topOffCopy.list.cap)).toHaveLength(1);
+    expect(rowBox("owned-2")).toHaveAttribute("aria-describedby", "list-1-cap");
+
+    await act(async () => {
+      viewport.resizeTo(1280);
+    });
+    rerender(<Harness openSlots={1} initialTicked={["owned-1"]} />);
+
+    expect(screen.getAllByText(topOffCopy.list.cap)).toHaveLength(1);
+    expect(document.getElementById("list-1-cap")).toHaveTextContent(topOffCopy.list.cap);
   });
 });

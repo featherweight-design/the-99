@@ -1,0 +1,56 @@
+import { vi } from "vitest";
+
+/** A matchMedia that reports a viewport width and can be resized. Shared by the
+ *  hook's own tests and by every component whose layout `useMinWidth` decides,
+ *  because jsdom's matchMedia always reports false and would otherwise pin each
+ *  of those components to its phone branch.
+ *
+ *  It lives in `src/test-utils` rather than beside the hook because it imports
+ *  `vitest`: under `src/components` a stray production import would pull a dev
+ *  dependency into the bundle, and nothing but the file's name would say so. */
+export function stubViewport(width: number) {
+  const listeners = new Map<string, Set<() => void>>();
+  let current = width;
+
+  // Only min-width is answered. Anything else — `(hover: hover)`,
+  // `(prefers-reduced-motion)` — is not a width question, and answering it with
+  // a width would put an unrelated component on a branch this stub knows
+  // nothing about. jsdom's own matchMedia reports false for those, which is
+  // what a test that never asked about them expects.
+  const matchesFor = (query: string) => {
+    const min = /min-width:\s*(\d+)px/.exec(query)?.[1];
+    return min !== undefined && current >= Number(min);
+  };
+
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query: string) =>
+      ({
+        get matches() {
+          return matchesFor(query);
+        },
+        media: query,
+        onchange: null,
+        addEventListener: (_: string, fn: () => void) => {
+          const set = listeners.get(query) ?? new Set();
+          set.add(fn);
+          listeners.set(query, set);
+        },
+        removeEventListener: (_: string, fn: () => void) => {
+          listeners.get(query)?.delete(fn);
+        },
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as unknown as MediaQueryList,
+  );
+
+  return {
+    resizeTo(next: number) {
+      current = next;
+      for (const set of listeners.values()) for (const fn of set) fn();
+    },
+    listenerCount() {
+      return [...listeners.values()].reduce((n, set) => n + set.size, 0);
+    },
+  };
+}
