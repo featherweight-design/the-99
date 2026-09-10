@@ -14,23 +14,36 @@ const tint = (token: string, pct: number) =>
     two files drifting apart is the failure that test exists to catch. */
 export type LabelEdge = "top" | "bottom";
 
-export const COVER_SCRIM_STOPS: Record<LabelEdge, readonly (readonly [number, number])[]> = {
+export type ScrimStops = readonly (readonly [number, number])[];
+
+export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
   top: [
     [78, 0],
     [73, 31],
     [14, 62],
     [50, 100],
   ],
-  bottom: [
-    [66, 0],
-    [22, 26],
-    [62, 50],
-    [90, 100],
-  ],
 };
 
-const coverScrim = (edge: LabelEdge) =>
-  `linear-gradient(180deg, ${COVER_SCRIM_STOPS[edge]
+/** The bottom ramp is derived from where the label block starts rather than
+    read from a constant. A shared stop is a guess about a band whose height
+    comes from an `aspect-ratio` and whose block position comes from its own
+    content: the commander hero's block starts at 68.1% of the band and the deck
+    spine's at 66%, so any single number is late for one of them — and late means
+    ink printed on a ramp that has not reached its dark value yet.
+
+    `labelAt` is the block's top edge as a percentage of band height. The trough
+    sits at 48% of it, so it stays in the picture's middle whatever `labelAt` is
+    instead of being pushed up into the block by a low one. */
+export const bottomScrimStops = (labelAt: number): ScrimStops => [
+  [44, 0],
+  [14, Math.round(labelAt * 0.48)],
+  [73, labelAt],
+  [88, 100],
+];
+
+const coverScrim = (stops: ScrimStops) =>
+  `linear-gradient(180deg, ${stops
     .map(([alpha, pos]) => `${tint("--bg", alpha)} ${pos}%`)
     .join(", ")})`;
 
@@ -164,7 +177,17 @@ export type ArtWashProps =
   | {
       strategy: "cover";
       band?: never;
-      labelEdge: LabelEdge;
+      labelEdge: "top";
+      labelAt?: never;
+      artCropUri: string | null;
+      colorIdentity: string[];
+    }
+  | {
+      strategy: "cover";
+      band?: never;
+      labelEdge: "bottom";
+      /** The label block's top edge, as a percentage of band height. */
+      labelAt: number;
       artCropUri: string | null;
       colorIdentity: string[];
     }
@@ -172,6 +195,7 @@ export type ArtWashProps =
       strategy: "left-portrait";
       band: Band;
       labelEdge?: never;
+      labelAt?: never;
       artCropUri: string | null;
       colorIdentity: string[];
     };
@@ -250,7 +274,11 @@ export function ArtWash(props: ArtWashProps) {
       />
       <div
         className="art-wash-scrim art-wash-scrim-cover absolute inset-0"
-        style={{ background: coverScrim(props.labelEdge) }}
+        style={{
+          background: coverScrim(
+            props.labelEdge === "top" ? COVER_SCRIM_STOPS.top : bottomScrimStops(props.labelAt),
+          ),
+        }}
       />
     </div>
   );

@@ -222,11 +222,38 @@ describe("cover, label edge", () => {
 
   it("puts the heavy end at the bottom for labelEdge=bottom", () => {
     const { container } = render(
-      <ArtWash strategy="cover" labelEdge="bottom" artCropUri="/a.jpg" colorIdentity={["G"]} />,
+      <ArtWash
+        strategy="cover"
+        labelEdge="bottom"
+        labelAt={55}
+        artCropUri="/a.jpg"
+        colorIdentity={["G"]}
+      />,
     );
     const scrim = container.querySelector<HTMLElement>(".art-wash-scrim-cover");
-    expect(scrim?.style.background).toContain("var(--bg) 66%, transparent) 0%");
-    expect(scrim?.style.background).toContain("var(--bg) 90%, transparent) 100%");
+    expect(scrim?.style.background).toContain("var(--bg) 44%, transparent) 0%");
+    expect(scrim?.style.background).toContain("var(--bg) 88%, transparent) 100%");
+  });
+
+  it("puts the bottom ramp's dark value at the label block, wherever it is", () => {
+    const at = (labelAt: number) => {
+      const { container } = render(
+        <ArtWash
+          strategy="cover"
+          labelEdge="bottom"
+          labelAt={labelAt}
+          artCropUri="/a.jpg"
+          colorIdentity={["G"]}
+        />,
+      );
+      return container.querySelector<HTMLElement>(".art-wash-scrim-cover")!.style.background;
+    };
+    // Two surfaces, two block positions, and the dark stop tracks each — the
+    // shared 50% guess this replaced was late for one of them.
+    expect(at(55)).toContain("var(--bg) 73%, transparent) 55%");
+    expect(at(55)).toContain("var(--bg) 14%, transparent) 26%");
+    expect(at(57)).toContain("var(--bg) 73%, transparent) 57%");
+    expect(at(57)).toContain("var(--bg) 14%, transparent) 27%");
   });
 
   // R6 ruling 1. The plate is a loading device: it is darker than `--bg` so a

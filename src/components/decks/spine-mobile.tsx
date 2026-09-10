@@ -121,6 +121,10 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
         <ArtWash
           strategy="cover"
           labelEdge="bottom"
+          // The block's top edge as a percentage of the 2.2/1 band, taken at
+          // its tallest. The title is `-webkit-line-clamp: 2`, so two lines is
+          // a hard ceiling rather than an estimate: 57% with two, 61% with one.
+          labelAt={57}
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
