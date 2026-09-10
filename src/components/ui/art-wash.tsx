@@ -19,7 +19,7 @@ export type ScrimStops = readonly (readonly [number, number])[];
 export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
   top: [
     [78, 0],
-    [73, 31],
+    [78, 31],
     [14, 62],
     [50, 100],
   ],
@@ -48,7 +48,9 @@ const coverScrim = (stops: ScrimStops) =>
     .map(([alpha, pos]) => `${tint("--bg", alpha)} ${pos}%`)
     .join(", ")})`;
 
-const COVER_ART_OPACITY = 0.58;
+/** Exported so `wash-contrast.test.ts` measures the opacity that ships rather
+    than a copy of it. */
+export const COVER_ART_OPACITY = 0.8;
 
 /** L1, the base plate: one step below the page ground, so a slow image never
     flashes light. No token is darker than `--bg` and the handoff forbids adding
@@ -70,7 +72,7 @@ export const INK_SHADOW = "0 1px 3px rgba(0,0,0,.6)";
     the brightest pixel the crop can put there, not against the row's ground. */
 export const COVER_INK_SHADOW = "0 1px 4px rgba(0,0,0,0.85)";
 
-const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
+export const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's
     art at `.58`; applied flat it would make a `left-portrait` row's ambient copy
@@ -86,7 +88,7 @@ const reducible = (opacity: number, art: boolean): CSSProperties =>
     "--art-wash-reduced-opacity": art ? Math.min(opacity, REDUCED_ART_OPACITY) : opacity,
   }) as CSSProperties;
 
-type Band = 168 | 148 | 72;
+export type Band = 168 | 148 | 72;
 
 /** Keyed to the band, not to the row: `band` is the only input, so both the mask
     and the scrim travel with it at any row width. Neither the near stop nor the
@@ -96,8 +98,13 @@ type Band = 168 | 148 | 72;
 
     `ground` is the ground the row already draws, so the art fades into the row
     instead of into a darker patch of its own: the commander and deck rows sit on
-    the page, the resume row draws its own inset surface. */
-const BANDS: Record<
+    the page, the resume row draws its own inset surface.
+
+    Exported for the same reason `COVER_SCRIM_STOPS` is: `wash-contrast.test.ts`
+    composes these numbers back into the ground a row's ink sits on, so lifting
+    an art opacity here moves the floor that test asserts rather than quietly
+    passing an old one. */
+export const PORTRAIT_BANDS: Record<
   Band,
   {
     maskEnd: number;
@@ -109,51 +116,74 @@ const BANDS: Record<
     startAlpha: number;
     sharpAlpha: number;
     flatStop: number;
-    /** `[startAlpha, midAlpha, midPosition, endAlpha]`. The mid position is per
-        band, not shared: 168 damps later than 148 because its type sits lower. */
-    vertical: readonly [number, number, number, number] | null;
+    /** The vertical ramp, in the same `[alpha, position]` pairs the cover bands
+        use. The trough is per band, not shared: 168 damps later than 148 because
+        its type sits lower. 148 holds its dark value from the top of its label
+        block rather than ramping through it, for the reason the cover's top ramp
+        does — ink printed on a ramp still climbing is ink on ground the line
+        above it never stood on. */
+    vertical: ScrimStops | null;
+    /** A flat alpha that replaces `vertical` below the `sm` breakpoint. One band
+        is rendered at two widths, and the narrow one puts the whole title over
+        the portrait rather than past it, so a ramp drawn for the wide row leaves
+        the phone's type on the crop's brightest pixel. A ramp cannot answer both
+        — its trough is a position, and the two rows print at different ones — so
+        the narrow row holds one value across the band instead. */
+    verticalHold: number | null;
   }
 > = {
   168: {
     maskEnd: 58,
     ground: "--bg",
-    ambientOpacity: 0.2,
-    sharpOpacity: 0.8,
+    ambientOpacity: 0.28,
+    sharpOpacity: 0.92,
     nearStop: 134,
     nearAlpha: 26,
     startAlpha: 30,
     sharpAlpha: 78,
     flatStop: 240,
-    vertical: [30, 10, 46, 42],
+    vertical: [
+      [30, 0],
+      [10, 46],
+      [42, 100],
+    ],
+    verticalHold: null,
   },
   148: {
     maskEnd: 58,
     ground: "--bg",
-    ambientOpacity: 0.2,
-    sharpOpacity: 0.8,
+    ambientOpacity: 0.28,
+    sharpOpacity: 0.92,
     nearStop: 118,
     nearAlpha: 26,
     startAlpha: 30,
     sharpAlpha: 78,
     flatStop: 264,
-    vertical: [62, 16, 42, 74],
+    vertical: [
+      [62, 0],
+      [16, 42],
+      [70, 58],
+      [74, 100],
+    ],
+    verticalHold: 70,
   },
   72: {
     maskEnd: 62,
     ground: "--surface-inset",
-    ambientOpacity: 0.14,
-    sharpOpacity: 0.85,
+    ambientOpacity: 0.22,
+    sharpOpacity: 0.95,
     nearStop: 58,
     nearAlpha: 18,
     startAlpha: 22,
     sharpAlpha: 80,
     flatStop: 138,
     vertical: null,
+    verticalHold: null,
   },
 };
 
 const portrait = (band: Band) => {
-  const b = BANDS[band];
+  const b = PORTRAIT_BANDS[band];
   const width = Math.round(band * PORTRAIT_RATIO); // 230 | 203 | 99
   const stops = `${tint(b.ground, b.startAlpha)} 0px, ${tint(b.ground, b.nearAlpha)} ${b.nearStop}px, ${tint(b.ground, b.sharpAlpha)} ${width}px, var(${b.ground}) ${b.flatStop}px`;
   return {
@@ -169,8 +199,11 @@ const portrait = (band: Band) => {
     // starts clear of the portrait, so a vertical ramp there would darken the
     // row for nothing.
     verticalScrim: b.vertical
-      ? `linear-gradient(180deg, ${tint("--bg", b.vertical[0])} 0%, ${tint("--bg", b.vertical[1])} ${b.vertical[2]}%, ${tint("--bg", b.vertical[3])} 100%)`
+      ? `linear-gradient(180deg, ${b.vertical
+          .map(([alpha, pos]) => `${tint("--bg", alpha)} ${pos}%`)
+          .join(", ")})`
       : null,
+    verticalHold: b.verticalHold === null ? null : tint("--bg", b.verticalHold),
   };
 };
 
@@ -245,8 +278,14 @@ export function ArtWash(props: ArtWashProps) {
         <div className="art-wash-scrim absolute inset-0" style={{ background: p.scrim }} />
         {p.verticalScrim ? (
           <div
-            className="art-wash-scrim absolute inset-0"
+            className={`art-wash-scrim absolute inset-0${p.verticalHold ? " hidden sm:block" : ""}`}
             style={{ background: p.verticalScrim }}
+          />
+        ) : null}
+        {p.verticalHold ? (
+          <div
+            className="art-wash-scrim absolute inset-0 sm:hidden"
+            style={{ background: p.verticalHold }}
           />
         ) : null}
       </div>

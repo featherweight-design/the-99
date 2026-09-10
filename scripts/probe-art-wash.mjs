@@ -78,6 +78,29 @@ const READ_WASHES = `() => {
   });
 }`;
 
+// The lift: every opacity a wash is allowed to compute. A value outside this set
+// means one of the two files that carry these numbers moved without the other.
+const LIFTED_OPACITIES = [1, 0.8, 0.92, 0.28, 0.95, 0.22];
+
+// The 148 band ships both damping layers and lets the breakpoint choose. JSDOM
+// applies no CSS, so which one paints is only answerable in a browser — and it
+// is the whole ruling: a ramp drawn for the wide row leaves the phone's title on
+// the crop's brightest pixel.
+const READ_148_VERTICALS = `() => {
+  const band = document.querySelector('.discovery-band, .rec-band');
+  if (!band) return null;
+  return [...band.querySelectorAll('.art-wash-scrim')].map((s) => {
+    const style = getComputedStyle(s);
+    return {
+      display: style.display,
+      ramp: /180deg/.test(style.backgroundImage),
+      // A flat alpha resolves to a colour, not an image, so the hold is the one
+      // vertical layer with no gradient of its own.
+      hold: style.backgroundImage === 'none' && !/^rgba?\\(0, 0, 0, 0\\)$/.test(style.backgroundColor),
+    };
+  }).filter((s) => s.ramp || s.hold);
+}`;
+
 // The scrims outlive the art under `forced-colors`, so they are what proves the
 // band kept its height when the photograph left.
 const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
@@ -129,9 +152,36 @@ try {
       if (framed.length) note(`  FAIL framed art still on ${routeName}: ${framed[0].url}`);
       const bands = [...new Set(washes.map((w) => w.bandHeight))].filter((h) => h);
       note(`  band heights: ${bands.sort((a, b) => a - b).join(", ")}`);
+      const offLift = washes.filter(
+        (w) => !LIFTED_OPACITIES.some((o) => Math.abs(w.opacity - o) < 0.005),
+      );
+      if (offLift.length) {
+        note(`  FAIL art opacity off the lifted set: ${[...new Set(offLift.map((w) => w.opacity))].join(", ")}`);
+      }
+
       for (const g of gradients) {
         if (g.opacity !== 1) note(`  FAIL identity gradient at opacity ${g.opacity}, expected 1`);
         if (g.reducedVar !== "1") note(`  FAIL gradient reduced var ${g.reducedVar}, expected 1`);
+      }
+    }
+
+    // Ratification 2 — the 148 band's vertical damping, at this viewport. This
+    // load also serves the accessibility checks below, which measure the same page.
+    await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    const verticals = await page.evaluate(`(${READ_148_VERTICALS})()`);
+    if (!verticals?.length) {
+      note(`  FAIL no vertical damping layer found on the 148 band`);
+    } else {
+      const painted = verticals.filter((v) => v.display !== "none");
+      const wantsHold = vpName === "mobile";
+      note(
+        `${vpName} 148 band: ${painted.length} vertical layer painted — ` +
+          `${painted.map((v) => (v.ramp ? "ramp" : "hold")).join(", ") || "none"}`,
+      );
+      if (painted.length !== 1) note(`  FAIL expected exactly one vertical layer to paint`);
+      else if (painted[0].ramp === wantsHold) {
+        note(`  FAIL ${vpName} paints the ${painted[0].ramp ? "ramp" : "hold"}`);
       }
     }
 
