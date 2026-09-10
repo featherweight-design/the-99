@@ -49,6 +49,7 @@ function Harness({
   newestAsOf?: Date | null;
   onAnnounce?: (m: string) => void;
   onInflight?: (v: boolean) => void;
+  onCommitted?: () => void;
   onClose?: () => void;
   onBarHeight?: (h: number) => void;
 }) {
@@ -70,6 +71,16 @@ function Harness({
       newestAsOf={props.newestAsOf ?? null}
       onAnnounce={props.onAnnounce ?? (() => {})}
       onInflight={props.onInflight ?? (() => {})}
+      // Both halves, as in production, where this is wired to the draft's
+      // discard: a harness that dropped only the ticks would let a test pass on
+      // declines the real surface has already forgotten.
+      onCommitted={
+        props.onCommitted ??
+        (() => {
+          setTicked(new Set());
+          setDeclined(new Set());
+        })
+      }
       onClose={props.onClose ?? (() => {})}
       onBarHeight={props.onBarHeight ?? (() => {})}
     />

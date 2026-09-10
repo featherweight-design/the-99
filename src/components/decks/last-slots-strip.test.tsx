@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import { topOffDraftKey } from "../../lib/decks/top-off-draft";
 
 const actions = vi.hoisted(() => ({ commit: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({ commitTopOff: actions.commit }));
@@ -54,6 +55,10 @@ async function click(el: HTMLElement) {
 }
 
 beforeEach(() => {
+  // Opening the list seeds and persists a draft, so any test that opens it
+  // leaves one behind for the next. The reload tests read exactly that key,
+  // and would otherwise pass or fail on the order the file happens to run in.
+  localStorage.clear();
   actions.commit
     .mockReset()
     .mockResolvedValue({ ok: true, added: 1, total: 97, passId: "p1", boughtDelta: 0 });
@@ -324,5 +329,119 @@ describe("LastSlotsStrip", () => {
     } finally {
       Element.prototype.scrollIntoView = original;
     }
+  });
+
+  // A remount with the same deck id is what a reload is, from this component's
+  // point of view: the tree is built again from nothing. Choosing 31 cards and
+  // losing them to an accidental refresh, silently, is the whole of #479.
+  describe("across a reload", () => {
+    it("brings back the selection the player left", async () => {
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      await click(screen.getAllByRole("checkbox", { checked: true })[0]);
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+    });
+
+    // The seed would otherwise run on the reload's first open, because that is
+    // the first open this mount has seen — putting back the two owned cards
+    // the player had just cleared.
+    it("does not seed over a restored selection", async () => {
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      for (const box of screen.getAllByRole("checkbox", { checked: true })) await click(box);
+      expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(0);
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(0);
+    });
+
+    it("keeps the candidates the player declined declined", async () => {
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      const rowsBefore = screen.getAllByRole("checkbox").length;
+      await click(screen.getAllByRole("button", { name: topOffCopy.list.declineAria("buy-1") })[0]);
+      expect(screen.getAllByRole("checkbox")).toHaveLength(rowsBefore - 1);
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.getAllByRole("checkbox")).toHaveLength(rowsBefore - 1);
+    });
+
+    // The door note promises what will arrive ticked. Once a selection
+    // survives the reload, that promise is about a seed that already happened.
+    it("greets a returning player with the reopen note, not the first-open one", async () => {
+      const first = render(<LastSlotsStrip {...base} />);
+      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
+      expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+    });
+
+    it("does not restore another deck's selection", async () => {
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} deckId="deck-2" />);
+      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+    });
+
+    // What survives a reload is an *uncommitted* selection. A landed pass has
+    // nothing left to survive, and a draft left behind would read as a choice
+    // the player made — so the next open would seed nothing and hand a player
+    // who still has slots an empty list.
+    it("does not bring back a selection that has already been committed", async () => {
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      await click(screen.getByRole("button", { name: /^Add 2 cards to the deck/ }));
+      expect(actions.commit).toHaveBeenCalled();
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
+    });
+
+    // A refusal changed nothing, so it is not a landed pass: the selection the
+    // player is about to retry has to still be there when they come back.
+    it("brings back a selection the server refused", async () => {
+      actions.commit.mockResolvedValue({ ok: false, message: "Nope." });
+      const first = render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      await click(screen.getAllByRole("checkbox", { checked: true })[0]);
+      await click(screen.getByRole("button", { name: /^Add 1 card to the deck/ }));
+      first.unmount();
+
+      render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+    });
+
+    // The second half of the same loss: the deck open in two tabs at once.
+    it("settles when the other tab changes the selection", async () => {
+      render(<LastSlotsStrip {...base} />);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
+
+      const key = topOffDraftKey(base.deckId);
+      await act(async () => {
+        localStorage.setItem(key, '{"t":["owned-1"],"d":[]}');
+        window.dispatchEvent(new StorageEvent("storage", { key }));
+      });
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+    });
   });
 });
