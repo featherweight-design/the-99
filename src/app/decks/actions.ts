@@ -80,10 +80,13 @@ type UnownedStapleCard = {
   imageUri: string | null; manaCost: string | null; manaValue: number;
 };
 
-/** Unowned EDHREC staples, ordered by EDHREC rank, that fit the commander's
-    colour identity. Returns the full ranked list; callers bound it. */
+/** Unowned EDHREC staples, ordered by EDHREC rank, that fit the deck's colour
+    identity. Takes every commander for the same reason `ownedColorLegalPool`
+    does: a pair's legal identity is the union of both, and a staple legal under
+    that union must not be dropped because the primary alone cannot cast it.
+    Returns the full ranked list; callers bound it. */
 async function unownedStaples(
-  commander: Pick<PoolCard, "oracleId" | "colorIdentity">,
+  commanders: Pick<PoolCard, "oracleId" | "colorIdentity">[],
   topCards: string[],
   ownedIds: Set<string>,
   excludeIds: Set<string>,
@@ -110,7 +113,7 @@ async function unownedStaples(
           inArray(sql`lower(split_part(${cards.name}, ' // ', 1))`, lowerTopCards),
         ),
         eq(cards.commanderLegal, true),
-        withinColorIdentity(commander.colorIdentity),
+        withinColorIdentity([...new Set(commanders.flatMap((c) => c.colorIdentity))]),
       ),
     );
 
@@ -134,17 +137,20 @@ async function unownedStaples(
     still guard this. */
 export async function buildFillPlan(
   userId: string,
-  commander: { oracleId: string; name: string; colorIdentity: string[] },
+  // Every commander, primary first: the pool and the staples are both drawn
+  // against the union identity, and a pair's body is 98 rather than 99. Passing
+  // the list rather than a `hasPartner` flag is what keeps those three answers
+  // from drifting apart. EDHREC is still asked about the primary — it indexes
+  // one commander per page.
+  commanders: { oracleId: string; name: string; colorIdentity: string[] }[],
   // The cards a selection has already placed. Defaults to empty, so `fillDeck`
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
-  // A pair's body is 98, and the slot it loses comes out of the lands — so the
-  // plan needs to know before it picks any, not after it has been capped.
-  // Required rather than defaulted, for the same reason `suggestDeck`'s is.
-  hasPartner: boolean,
 ): Promise<FillPlan> {
+  const commander = commanders[0];
+  const hasPartner = commanders.length > 1;
   const pool = dedupeSelectionFromPool(
-    await ownedColorLegalPool(userId, [commander]),
+    await ownedColorLegalPool(userId, commanders),
     excludeOracleIds,
   );
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
@@ -164,7 +170,12 @@ export async function buildFillPlan(
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
     data?.topCards
-      ? await unownedStaples(commander, data.topCards, ownedIds, new Set([commander.oracleId]))
+      ? await unownedStaples(
+          commanders,
+          data.topCards,
+          ownedIds,
+          new Set(commanders.map((c) => c.oracleId)),
+        )
       : [],
     excludeOracleIds,
   );
@@ -276,11 +287,16 @@ export async function createDeck(
     const selectedSet = new Set(selected);
 
     const bodySize = deckBodySize(partnerOracleId !== null);
-    const plan = await buildFillPlan(userId, {
-      oracleId: commanderOracleId,
-      name: commander.name,
-      colorIdentity: commander.colorIdentity,
-    }, selectedSet, partnerOracleId !== null);
+    const plan = await buildFillPlan(
+      userId,
+      [
+        { oracleId: commanderOracleId, name: commander.name, colorIdentity: commander.colorIdentity },
+        ...(partner
+          ? [{ oracleId: partner.oracleId, name: partner.name, colorIdentity: partner.colorIdentity }]
+          : []),
+      ],
+      selectedSet,
+    );
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
         .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: true })
@@ -411,8 +427,8 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   let unownedSuggestions: DeckSuggestion[] = [];
   if (topCards && topCards.length > 0) {
     // unownedStaples returns the full ranked list; getDeckSuggestions caps at 5.
-    const excludeIds = new Set([commander.oracleId, ...inDeck]);
-    const eligible = await unownedStaples(commander, topCards, ownedByOracleId, excludeIds);
+    const excludeIds = new Set([...commanders.map((c) => c.oracleId), ...inDeck]);
+    const eligible = await unownedStaples(commanders, topCards, ownedByOracleId, excludeIds);
 
     unownedSuggestions = eligible.slice(0, 5).map((c) =>
       buildSuggestionPayload(
@@ -626,8 +642,13 @@ export async function fillDeck(deckId: string): Promise<void> {
     .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
   if (existing.length > 0) return;
 
+  // The partner legalises pool and staples alongside the primary, so the retry
+  // reads it too rather than filling a pair as if it were a single.
+  const [partner] = deck.partnerOracleId
+    ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
+    : [];
   const hasPartner = deck.partnerOracleId !== null;
-  const plan = await buildFillPlan(userId, commander, new Set(), hasPartner);
+  const plan = await buildFillPlan(userId, partner ? [commander, partner] : [commander], new Set());
   await db.transaction(async (tx) => {
     // Lock the deck row before re-reading, the same way addCardToDeck does.
     // Without it the read sees a snapshot: a hand-add that commits between the
