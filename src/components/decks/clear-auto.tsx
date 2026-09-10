@@ -7,6 +7,8 @@
 // §Decklist Group Toggle (design table) — ClearAutoButton lives right of the spacer,
 // left of the Group label.
 
+import { useEffect, useRef, useState } from "react";
+
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 
 // ── ClearAutoButton ────────────────────────────────────────────────────────────
@@ -31,6 +33,13 @@ interface ClearAutoButtonProps {
 const BULK_BUTTON_CLASS =
   "font-mono text-[12px] text-fg-body bg-transparent border border-border-strong rounded-[8px] px-[12px] min-h-[44px] md:min-h-0 py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default";
 
+/** The confirm's two answers, taking `game-history-row.tsx`'s inline confirm
+ *  verbatim minus its danger ink — this app's only confirm vocabulary, and it
+ *  is a toolbar question here for the same reason it is a row question there.
+ *  The caller appends the one border colour that separates the two answers. */
+const CONFIRM_BUTTON_CLASS =
+  "flex-1 md:flex-none flex md:inline-flex items-center justify-center min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] text-fg-body bg-transparent border cursor-pointer disabled:cursor-not-allowed disabled:opacity-50";
+
 /** A GhostButton in mono 12px, right-aligned in the group toolbar.
  *  Absent entirely at zero rather than shown disabled, because a disabled
  *  "Clear 0 auto cards" is a control offering nothing. The one time it does
@@ -49,6 +58,29 @@ export function ClearAutoButton({
   onKeepAll,
   keepAllPending,
 }: ClearAutoButtonProps) {
+  // The keep asks first because it cannot be undone: its inverse would write
+  // `auto = true` back across forty rows, the app re-claiming as its own the
+  // cards the player has just declared theirs. The sweep beside it needs no
+  // question, because it ships a receipt with a real undo. Confirm where there
+  // is no undo, receipt where there is.
+  const [confirming, setConfirming] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const yesRef = useRef<HTMLButtonElement>(null);
+  // The trigger unmounts while the question is up, so focus has to be carried
+  // by hand at both ends or a keyboard reader is dropped back at the top of the
+  // document. Only a cancel restores it: after a confirm the trigger comes back
+  // disabled, or does not come back at all.
+  const returningFocus = useRef(false);
+
+  useEffect(() => {
+    if (confirming) {
+      yesRef.current?.focus();
+    } else if (returningFocus.current) {
+      returningFocus.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [confirming]);
+
   if (count === 0 && keptCount === 0) return null;
 
   // Either write in flight disables both. They read the same count and act on
@@ -64,43 +96,103 @@ export function ClearAutoButton({
        the wrapper's: the note is hidden on phones because the toolbar has no
        room for it, and that is still true after a keep. */
     <span
-      className={`${count === 0 ? "hidden md:flex" : "flex"} items-center gap-[8px]`}
+      /* `flex-wrap`: the question is much wider than the pair it replaces, and
+         at 390px it does not fit on one line beside its own two answers. The
+         cluster is a single child of the toolbar's wrap, so without this the
+         answers would be pushed off the edge rather than under the question. */
+      className={`${count === 0 ? "hidden md:flex" : "flex"} flex-wrap items-center gap-[8px]`}
     >
       {keptCount >= 1 && (
         <span className="font-mono text-[11px] text-fg-locked hidden md:inline">
           {recommendationsCopy.auto.keptNote(String(keptCount))}
         </span>
       )}
-      {/* Keep leads, so the cluster reads from the safe answer to the
-          destructive one and the sweep is not the first bulk control the eye
-          lands on. Both key on `count` alone: a toolbar showing one and not the
-          other would say that count means two things. */}
-      {count > 0 && (
-        <button
-          type="button"
-          onClick={onKeepAll}
-          disabled={busy}
-          aria-label={recommendationsCopy.auto.keepAllAria(String(count))}
-          className={BULK_BUTTON_CLASS}
-        >
-          <span className="hidden md:inline">{recommendationsCopy.auto.keepAll(String(count))}</span>
-          <span className="md:hidden">{recommendationsCopy.auto.keepAllMobile(String(count))}</span>
-        </button>
-      )}
-      {count > 0 && (
-        <button
-          type="button"
-          onClick={onClear}
-          disabled={busy}
-          aria-label={recommendationsCopy.auto.clearAllAria(String(count))}
-          className={BULK_BUTTON_CLASS}
-        >
-          {/* Responsive label: desktop shows the full string, mobile shows the short form.
-              Both live in one button element to keep a single interactive control. */}
-          <span className="hidden md:inline">{recommendationsCopy.auto.clearAll(String(count))}</span>
-          <span className="md:hidden">{recommendationsCopy.auto.clearAllMobile(String(count))}</span>
-        </button>
-      )}
+      {/* The question replaces both bulk controls rather than only the one
+          tapped, for the same reason `busy` disables both: they read the same
+          count and act on the same rows, so a sweep offered beside an unanswered
+          keep would be offered on cards already spoken for. */}
+      {count > 0 &&
+        (confirming ? (
+          /* Phone puts the question on a line of its own and splits the row
+             between its two answers; desktop keeps all three inline. The row
+             gap is zeroed because the question carries its own 9px below it. */
+          <span className="w-full md:w-auto flex flex-wrap md:flex-nowrap items-center gap-x-[8px] gap-y-0">
+            <span className="w-full mb-[9px] md:w-auto md:mb-0 text-[11.5px] leading-[1.5] text-fg-body">
+              <span className="hidden md:inline">
+                {recommendationsCopy.auto.keepAllConfirm(String(count))}
+              </span>
+              <span className="md:hidden">
+                {recommendationsCopy.auto.keepAllConfirmMobile(String(count))}
+              </span>
+            </span>
+            {/* Neither answer takes danger ink. Keeping is a graduation, not a
+                deletion — it destroys no cards, only the record of where they
+                came from — and danger would say the one thing this does not do.
+                The weaker border on Cancel is the only difference between them,
+                so the toolbar still recommends neither. */}
+            <button
+              ref={yesRef}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setConfirming(false);
+                onKeepAll();
+              }}
+              className={CONFIRM_BUTTON_CLASS + " border-border-strong"}
+            >
+              {recommendationsCopy.auto.keepAllConfirmYes}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                returningFocus.current = true;
+                setConfirming(false);
+              }}
+              className={CONFIRM_BUTTON_CLASS + " border-border"}
+            >
+              {recommendationsCopy.auto.keepAllConfirmNo}
+            </button>
+          </span>
+        ) : (
+          <>
+            {/* Keep leads, so the cluster reads from the safe answer to the
+                destructive one and the sweep is not the first bulk control the
+                eye lands on. Both key on `count` alone: a toolbar showing one
+                and not the other would say that count means two things. */}
+            <button
+              ref={triggerRef}
+              type="button"
+              onClick={() => setConfirming(true)}
+              disabled={busy}
+              aria-label={recommendationsCopy.auto.keepAllAria(String(count))}
+              className={BULK_BUTTON_CLASS}
+            >
+              <span className="hidden md:inline">
+                {recommendationsCopy.auto.keepAll(String(count))}
+              </span>
+              <span className="md:hidden">
+                {recommendationsCopy.auto.keepAllMobile(String(count))}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={onClear}
+              disabled={busy}
+              aria-label={recommendationsCopy.auto.clearAllAria(String(count))}
+              className={BULK_BUTTON_CLASS}
+            >
+              {/* Responsive label: desktop shows the full string, mobile shows the short form.
+                  Both live in one button element to keep a single interactive control. */}
+              <span className="hidden md:inline">
+                {recommendationsCopy.auto.clearAll(String(count))}
+              </span>
+              <span className="md:hidden">
+                {recommendationsCopy.auto.clearAllMobile(String(count))}
+              </span>
+            </button>
+          </>
+        ))}
     </span>
   );
 }

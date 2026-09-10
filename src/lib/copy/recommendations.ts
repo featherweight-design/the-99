@@ -128,6 +128,23 @@ export const recommendationsCopy = {
     // deck is also unchanged, which is why saying so would be useless: what the
     // player needs to know is that the tags are back.
     keepAllFailed: 'We couldn’t keep those. They are still marked auto.',
+    // The inline confirm. A keep cannot be undone — the inverse would write
+    // `auto = true` back across forty rows — so it asks first, while the sweep
+    // beside it ships a receipt instead. Confirm where there is no undo,
+    // receipt where there is. It names what is actually lost in the words the
+    // ledger's own header uses, never "the ledger", which appears nowhere on
+    // screen.
+    keepAllConfirm: (count: string) =>
+      `Keep all ${count}? You'll lose the record of where they came from.`,
+    // Phone shortens rather than wrapping to three lines in a toolbar. "The
+    // record" alone, because the full phrase has just been established by the
+    // ledger sitting a few rows up the same page.
+    keepAllConfirmMobile: (count: string) => `Keep all ${count}? The record goes too.`,
+    // "Keep them" rather than repeating "Keep all N": the count is in the
+    // question one element away, and an answer that restates the question reads
+    // as a second trigger rather than a confirmation.
+    keepAllConfirmYes: 'Keep them',
+    keepAllConfirmNo: 'Cancel',
     // Beside the sweep once some cards have been kept.
     keptNote: (n: string) => `${plural(n, 'card is', 'cards are')} yours now`,
     // One receipt for the whole sweep — not one per row. Lifetime is decklist
