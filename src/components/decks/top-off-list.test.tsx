@@ -71,7 +71,16 @@ function Harness({
       newestAsOf={props.newestAsOf ?? null}
       onAnnounce={props.onAnnounce ?? (() => {})}
       onInflight={props.onInflight ?? (() => {})}
-      onCommitted={props.onCommitted ?? (() => setTicked(new Set()))}
+      // Both halves, as in production, where this is wired to the draft's
+      // discard: a harness that dropped only the ticks would let a test pass on
+      // declines the real surface has already forgotten.
+      onCommitted={
+        props.onCommitted ??
+        (() => {
+          setTicked(new Set());
+          setDeclined(new Set());
+        })
+      }
       onClose={props.onClose ?? (() => {})}
       onBarHeight={props.onBarHeight ?? (() => {})}
     />
