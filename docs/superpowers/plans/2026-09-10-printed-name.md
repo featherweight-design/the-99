@@ -1119,23 +1119,43 @@ A probe script is the only proof a visual ruling shipped. Follow the shape of th
 
 **Files:**
 - Create: `scripts/probe-printed-name.mjs`
-- Modify: `package.json` (a `probe:printed-name` script, matching the existing probe entries)
+
+**Corrected against the tree:** `package.json` has **no** `probe:*` entries to match except
+`probe:claims`, which is a `.ts` script needing `tsx`. Every `.mjs` probe in `scripts/` is run by
+hand — `probe-flavor-name.mjs`'s own header says so — so this one is too, and `package.json` is
+not touched.
 
 **Interfaces:**
 - Consumes: the running app.
 - Produces: a pass/fail report.
 
-- [ ] **Step 1: Read `scripts/probe-flavor-name.mjs` first — the fixture already exists**
+- [ ] **Step 1: Read `scripts/probe-flavor-name.mjs` first, then plant this probe's own fixture**
 
-#467 shipped that probe, and its header comment carries the exact local-dev setup this one needs: `flavor_name` is null on a fresh local database, and the SQL to plant one is
+#467 shipped that probe. Reuse its Clerk sign-in helper verbatim — localhost runs Clerk's dev
+instance and only `window.Clerk` plus a `+clerk_test` code will sign in — and its `requireEnv`
+convention from `scripts/lib/env.mjs`.
 
-```sql
-update printings set flavor_name = 'Freya, Queen of the Valkyries' where ...
-```
+**Corrected against the database, not predicted:** its two hand-planted `flavor_name` rows are
+*not* enough for this probe, for two reasons.
 
-Use that card and that statement rather than inventing a Secret Lair fixture — the two probes then prove matching and display against one row. Read the file end to end and reuse its Clerk sign-in helper verbatim: localhost runs Clerk's dev instance and only `window.Clerk` plus a `+clerk_test` code will sign in.
+1. Those cards are in nobody's deck. That probe reads the Add panel, where any catalog card will
+   do; this one needs the renamed card to be **in a deck the probe account owns**.
+2. More seriously, **no card on local-dev can have a printed name at all today.**
+   `selectCollectionRows` reads `flavorName` off the `exact` printing — the one joined on
+   `collection_items.scryfall_id` — and every one of local-dev's 2,733 holdings has a null
+   `scryfall_id` and an empty `collector_number`, because the CSV they were seeded from carries
+   neither. Renaming a printing changes nothing until a holding says which printing it is.
 
-Substitute `Freya, Queen of the Valkyries` for `Battle of Olympus` throughout Step 2's assertions, and the printing's real set code and collector number for `(SLD) 2208`.
+So the probe writes its own fixture and restores it in a `finally`: it picks two owned, non-basic,
+never-renamed cards from `PROBE_DECK`, points the subject's holding at a representative printing
+(`scryfall_id` + `collector_number`), and prints `Battle of Olympus` on that printing. The second
+card is the control. Both writes are reversed by the key the first one wrote. It refuses a
+`DATABASE_URL` that looks like production.
+
+The empty `collector_number` is also why the export assertion needs this fixture rather than a
+hand-planted flavor name: `bodyLine` omits the printing unless **both** halves are known, so
+without it the renamed line would correctly read a bare `1 Battle of Olympus` and the check that
+matters most would have nothing to measure.
 
 - [ ] **Step 2: Write the probe**
 
@@ -1144,20 +1164,31 @@ It must assert, on a `local-dev` deck containing a Secret Lair printing:
 1. At 320, 390 and desktop width, in **list** view: the row shows the printed name, and its accessible name contains the full printed name.
 2. In **grid** view: the tile caption shows the printed name, the tile has **no** `title` attribute anywhere, and the caption is one line high.
 3. Opening the modal from that row: the heading is the printed name and an `oracle` label plus the oracle name follow it.
-4. **The control state:** a card with no printed name renders no `oracle` label in its modal and no extra header height — measure the header's bounding box against a printed-name card and assert the 23px difference lands only on the renamed one.
-5. The export dialog's decklist tab contains `(SLD) 2208` on the renamed line, and the shopping tab contains no parentheses at all.
+4. **The control state:** a card with no printed name renders no `oracle` label in its modal, has
+   only the type line under its title, and holds no height open for the line it does not draw.
+   **Not header height:** two cards have names of different lengths, so their titles wrap
+   differently and the taller header is sometimes the *control's* — measured, at desktop, before
+   the check was rewritten. The measurement that survives is the **gap between the title and the
+   type line**, which is the same two elements on both cards: 4–6px on the control, 35–36px on the
+   renamed one.
+5. The export dialog's decklist tab names both the printed name and the printing on the renamed
+   line, the oracle name appears nowhere in it, and the shopping tab contains no `(SET)` at all.
+   The set and number are checked against the holding the probe planted rather than a written-down
+   pair, so the check does not re-implement the art preference it exists to verify.
 
-Anchor every assertion to structure — a role, a label, a `data-testid` — never to a pixel coordinate. Expect the probe to be wrong before the code is: when it fails, check the probe first.
+Anchor every assertion to structure — a role, a label, a `data-testid` — never to a pixel coordinate. Expect the probe to be wrong before the code is: when it fails, check the probe first. (It was, twice: a page-wide `[title]` count reported the deck spine's partner tooltip as the row's fault, and the header-height check above.)
 
 - [ ] **Step 3: Run it**
 
-Run: `pnpm dev` in one shell, then `pnpm probe:printed-name`
-Expected: every check passes. Note the fixture constraint — the local-dev fixture owns everything, so build the deck by import if no Secret Lair printing is already in one.
+Run: `pnpm dev` in one shell, then
+`PROBE_BASE=http://localhost:3000 PROBE_DECK=<deck uuid> node scripts/probe-printed-name.mjs`.
+The deck must belong to `E2E_AUDIT_USER_EMAIL` — `alpha-test+clerk_test@the99.app` is *not* the
+account that owns the two 99-card fixture decks. Expected: every check passes at all three widths.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add scripts/probe-printed-name.mjs package.json
+git add scripts/probe-printed-name.mjs
 git commit -m "test(printed name): probe the printed name on every surface it reaches"
 ```
 
