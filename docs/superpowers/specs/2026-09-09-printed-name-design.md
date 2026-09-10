@@ -171,7 +171,19 @@ and line.
    already carries the set code, which is the fact that explains the name.
 4. **#467 has no truncation branch on `decklist-row.tsx`.** #467 (`034d6037`) touched
    `card-search-row.tsx`, `quick-add-bar.tsx` and `resolution-expander.tsx`. Nothing deletes.
-5. **The modal's meta field is labelled `Set`**, not `Printing` (`card-modal.tsx:575,617`), and
+5. **Call 4's `aria-label` is the wrong element.** The handoff replaces the deck tile's `title`
+   with "an `aria-label` carrying the full printed name". The `title` does go. But the element it
+   sat on is the caption `<span>`, and an `aria-label` there is exposed to nothing — it would pass
+   a testing-library query and reach no screen reader. The full name's home is the
+   `CardDetailTrigger`'s `name` prop, which is a real `<button>` and is already the accessible
+   name on both the row and the tile. The outcome call 4 wants is unchanged; only the element is.
+6. **The handoff is R2, with some rows re-derived at R3.** The README's title says R2, its call
+   table tags rows individually, and the density figures carry an R3 stamp because the audit's
+   arithmetic error was corrected in a later pass than the calls around it. There is one drop and
+   it is the authoritative one; **the per-row tag says when a figure was last re-derived, not that
+   two revisions are in play.** Recorded because a reader hunting for a separate R3 will not find
+   one.
+7. **The modal's meta field is labelled `Set`**, not `Printing` (`card-modal.tsx:575,617`), and
    still names set and collector number — so the one-word `oracle` label stands on the reasoning
    the handoff gives.
 

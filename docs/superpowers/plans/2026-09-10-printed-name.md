@@ -20,7 +20,13 @@
 - **Name and art come from the same printing.** The standing invariant is stated in `src/lib/collection/browse.ts:350-352`, the closing loop that sets `primarySetCode` and `imageUri` from one `primaryPrinting()` call. `printedName` is derived there too, from that same call.
 - **A card the player does not own keeps its oracle name.** Locked decision 2. There is no printing in hand to print a name.
 - **Rows and tiles: single line, end ellipsis, never a wrap and never a clamp.** Locked decision 3.
-- **The full untruncated name goes in `aria-label`. Never a `title`.**
+- **The full untruncated name is the accessible name, and it reaches a real `<button>`.** On every
+  surface here that button is the `CardDetailTrigger`, whose `name` prop the provider composes the
+  label from (`card-detail-provider.tsx:90`), so the full string goes there. **Never an
+  `aria-label` on a caption `<span>`** — it satisfies a testing-library query and reaches no
+  assistive technology, which is worse than not doing it. **Never a `title`** either: pointer-only
+  recovery on a phone-first surface. The handoff's call 4 says "the row's `aria-label`"; the spec
+  supersedes it and this is the wording to implement.
 - **Keep `flex-auto` on the decklist row's name block.** Do not swap it for `flex:1`. `decklist-row.tsx:103-110` explains why in a committed comment, and every sibling has been `flex-none` since #354, which already delivers the design's stated outcome. No shrink-order work is needed on that row.
 - **Copy externalises** to `src/lib/copy/card-surfaces.ts`. No user-visible string inline in a component.
 - **Pre-push gate, every push:** `pnpm typecheck && pnpm lint && pnpm test`, plus the stub-DB build (`DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build`), then `git fetch origin && git rebase origin/main`.
@@ -842,7 +848,7 @@ git commit -m "feat(printed name): the decklist row calls a card what the copy i
 
 ---
 
-### Task 7: The deck card tile — printed name, `title` removed, `aria-label` added
+### Task 7: The deck card tile — printed name, `title` removed, the full name onto the trigger
 
 The tile caption is the tightest block on the feature at 93–94px. It stays single-line, and the `✕` stays on the caption line: the design's preferred corner is occupied (spec errata 1), and moving it is a card-surfaces amendment outside this feature.
 
@@ -862,8 +868,8 @@ it("captions the tile with the printed name and drops the tooltip", () => {
     <DeckCardTile card={deckCard({ name: "World at War", printedName: "Battle of Olympus" })} {...handlers} />,
   );
   expect(screen.getByText("Battle of Olympus")).toBeInTheDocument();
-  // A `title` is pointer-only recovery on a phone-first surface, and it
-  // duplicates what the aria-label says properly.
+  // A `title` is pointer-only recovery on a phone-first surface, and the
+  // trigger's accessible name already carries the full string properly.
   expect(container.querySelector("[title]")).toBeNull();
 });
 
