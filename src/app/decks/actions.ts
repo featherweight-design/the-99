@@ -237,9 +237,11 @@ export async function createDeck(
       ? commanderRows.find((c) => c.oracleId === partnerOracleId)
       : undefined;
   if (partnerOracleId !== null) {
-    if (!partner) throw new Error("commander not found");
+    // Named for the partner rather than reusing the primary's wording: the two
+    // ids fail for different reasons and a shared message hides which one did.
+    if (!partner) throw new Error("partner not found");
     if (!partner.commanderLegal || !isCommanderCandidate(partner)) {
-      throw new Error("card is not a legal commander");
+      throw new Error("partner is not a legal commander");
     }
     // Always a pair the player picked, and the picker only ever offered a legal
     // one — so a mismatch here is a crafted request and is refused outright.

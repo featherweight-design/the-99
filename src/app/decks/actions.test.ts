@@ -482,6 +482,16 @@ describe("createDeck — filled baseline", () => {
 
     expect(stub.state.insertCalls.filter((c) => c.table === "decks").length).toBe(0);
   });
+
+  it("names the partner when the partner is the id that is missing", async () => {
+    stub.state.cards.push(commanderCard({}));
+
+    await expect(
+      createDeck(COMMANDER_ORACLE, "My Deck", [], "99999999-9999-9999-9999-999999999999"),
+    ).rejects.toThrow("partner not found");
+
+    expect(stub.state.insertCalls.filter((c) => c.table === "decks").length).toBe(0);
+  });
 });
 
 describe("restoreAutoCards — the rows come from the client", () => {
