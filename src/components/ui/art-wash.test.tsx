@@ -214,7 +214,10 @@ describe("cover, label edge", () => {
       <ArtWash strategy="cover" labelEdge="top" artCropUri="/a.jpg" colorIdentity={["G"]} />,
     );
     const scrim = container.querySelector<HTMLElement>(".art-wash-scrim-cover");
-    expect(scrim?.style.background).toContain("var(--bg) 90%, transparent) 0%");
+    expect(scrim?.style.background).toContain("var(--bg) 78%, transparent) 0%");
+    // The second stop is the hold: the label block's foot keeps the dark value
+    // rather than ramping off it, which is what a subtitle sits on.
+    expect(scrim?.style.background).toContain("var(--bg) 73%, transparent) 31%");
   });
 
   it("puts the heavy end at the bottom for labelEdge=bottom", () => {

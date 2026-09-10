@@ -570,7 +570,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    Only the `cover` scrim is re-weighted. A `left-portrait` scrim runs at 90deg
    on stops keyed to the portrait's pixel width, so replacing it with the
    handoff's vertical ramp would delete the fade the strategy exists for; its art
-   layers dimming is what carries the preference there. */
+   layers dimming is what carries the preference there.
+
+   Its stop *positions* track the base ramp's, so the two describe the same band:
+   a heavier gradient sitting on a different trough would move the thin part of
+   the wash out from under the preference rather than darkening it. */
 @media (prefers-reduced-transparency: reduce) {
   .art-wash-art {
     opacity: var(--art-wash-reduced-opacity) !important;
@@ -579,8 +583,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
     background: linear-gradient(
       180deg,
       color-mix(in oklab, var(--bg) 95%, transparent) 0%,
-      color-mix(in oklab, var(--bg) 60%, transparent) 40%,
-      color-mix(in oklab, var(--bg) 85%, transparent) 74%,
+      color-mix(in oklab, var(--bg) 92%, transparent) 31%,
+      color-mix(in oklab, var(--bg) 60%, transparent) 62%,
       color-mix(in oklab, var(--bg) 86%, transparent) 100%
     ) !important;
   }
