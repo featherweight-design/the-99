@@ -84,6 +84,64 @@ describe("buildDecklistText", () => {
     expect(out).toBe("Commander\n1 Muldrotha, the Gravetide\n\nDeck");
   });
 
+  it("names the printing on each body line", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: null,
+      cards: [{ name: "Battle of Olympus", quantity: 1, setCode: "SLD", collectorNumber: "2208" }],
+    });
+    expect(text).toBe(
+      "Commander\n1 Atreus, God of War\n\nDeck\n1 Battle of Olympus (SLD) 2208",
+    );
+  });
+
+  // The failure this test exists to catch: threading the printing through while
+  // still exporting the oracle name would emit `1 World at War (SLD) 2208` — a
+  // line naming a printing whose face reads something else.
+  it("round-trips a printed name and its printing through buildDeckImport", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: null,
+      cards: [{ name: "Battle of Olympus", quantity: 1, setCode: "SLD", collectorNumber: "2208" }],
+    });
+    expect(text).toContain("1 Battle of Olympus (SLD) 2208");
+    expect(text).not.toContain("World at War");
+
+    const back = buildDeckImport({
+      text,
+      catalog: [...catalog, card("World at War", { typeLine: "Sorcery" })],
+      indexes: {
+        flavorNames: [
+          { flavorName: "Battle of Olympus", oracleId: "oracle-world-at-war" },
+        ],
+      },
+    });
+    expect(back.cards.map((c) => c.oracleId)).toEqual(["oracle-world-at-war"]);
+    expect(back.unresolved).toEqual([]);
+  });
+
+  it("falls back to a bare line when the printing is unknown", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: null,
+      cards: [{ name: "Cultivate", quantity: 2 }],
+    });
+    expect(text).toContain("2 Cultivate");
+    expect(text).not.toContain("(");
+  });
+
+  it("omits the printing when only half of it is known", () => {
+    const text = buildDecklistText({
+      commanderName: "Atreus, God of War",
+      partnerName: null,
+      cards: [
+        { name: "Sol Ring", quantity: 1, setCode: "LTC" },
+        { name: "Forest", quantity: 2, collectorNumber: "280" },
+      ],
+    });
+    expect(text.split("\n").slice(-2)).toEqual(["1 Sol Ring", "2 Forest"]);
+  });
+
   it("produces consistent text for copy and download (same string)", () => {
     const args = {
       commanderName: "Muldrotha, the Gravetide",
@@ -102,6 +160,17 @@ describe("buildShoppingText", () => {
 
   it("returns empty string for empty input", () => {
     expect(buildShoppingText([])).toBe("");
+  });
+
+  // #330: we recommend an oracle card and let the player pick the printing on
+  // Mana Pool's grid. Pinning `(SLD) 2208` here would quote the priciest
+  // printing of every card, so the decklist's format must not leak across.
+  it("names no printing, even when the card carries one", () => {
+    const cards = [
+      { name: "Cultivate", setCode: "M21", collectorNumber: "177" },
+      { name: "World at War", setCode: "SLD", collectorNumber: "2208" },
+    ];
+    expect(buildShoppingText(cards)).toBe("Cultivate\nWorld at War");
   });
 
   it("never includes prices or quantities", () => {
