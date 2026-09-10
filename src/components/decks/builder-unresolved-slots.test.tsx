@@ -8,6 +8,7 @@ import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetail } from "../../lib/decks/read";
+import { unresolvedCardCount } from "../../lib/decks/grouping";
 import type { DeckUnresolvedRow } from "../../lib/decks/grouping";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
 
@@ -67,7 +68,10 @@ function makeDeck(matched: number, unresolvedRows: DeckUnresolvedRow[]): DeckDet
     built: matched,
     ownedCount: matched,
     toBuyCount: 0,
-    total: matched + unresolvedRows.length,
+    // Copies, not lines — the same sum `getDeckDetail` builds `total` from, so
+    // a fixture whose rows ever carry a quantity above one still describes a
+    // real deck.
+    total: matched + unresolvedCardCount(unresolvedRows),
     filled: false,
     unresolvedRows,
   } as DeckDetail;
