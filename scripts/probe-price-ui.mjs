@@ -98,9 +98,36 @@ async function report(page, label) {
       if (!/^buy/.test(t)) continue;
       const r = el.getBoundingClientRect();
       const s = getComputedStyle(el);
+      // The dead air between the word and the figure — the whole of what the
+      // 2026-09-09 amendment set out to cut. Measured as painted boxes, not as
+      // declarations: the separator's padding and the slot's min-width both
+      // land here, and only their sum is what the eye reads as a gap.
+      //
+      // The tail's children are [separator, figure]. A tag with no tail reports
+      // null rather than 0, because no gap is not a small gap.
+      // The tail's own children are [separator, figure], and the tail starts
+      // exactly where the word ends — so the separator's painted box IS the
+      // gap, whether it is spelled in spaces or in padding.
+      //
+      // The tail is taken as the LAST element child rather than the second,
+      // because how many siblings precede it depends on the tag: an unlabelled
+      // tag draws its word as a bare text node with no box at all, while a
+      // labelled one draws the word in an `aria-hidden` span followed by an
+      // `sr-only` span carrying the spoken sentence. Reading the gap off the
+      // word would have to cope with both; reading it off the tail does not.
+      const tail = el.querySelector(":scope > span:last-child");
+      const figure = tail?.lastElementChild;
+      const gap =
+        figure && tail
+          ? Math.round(
+              figure.getBoundingClientRect().left - tail.getBoundingClientRect().left,
+            )
+          : null;
       out.push({
         text: t,
         width: Math.round(r.width),
+        gapWordToFigure: gap,
+        figureSlot: figure ? Math.round(figure.getBoundingClientRect().width) : null,
         background: s.backgroundColor,
         fontSize: s.fontSize,
         // The tile plate is positioned; the row plate is not.
@@ -112,11 +139,11 @@ async function report(page, label) {
   console.log(`  buy tags on screen: ${tails.length}`);
   for (const t of tails.slice(0, 8)) {
     console.log(
-      `    [${t.variant}] ${JSON.stringify(t.text)} w=${t.width} size=${t.fontSize} bg=${t.background}`,
+      `    [${t.variant}] ${JSON.stringify(t.text)} w=${t.width} gap=${t.gapWordToFigure} slot=${t.figureSlot} size=${t.fontSize} bg=${t.background}`,
     );
   }
 
-  // The 58px slot, and whether the worst row overflows the narrowest phone.
+  // Whether the worst row overflows the narrowest phone.
   const rows = await page.evaluate(() => {
     const doc = document.scrollingElement;
     return {

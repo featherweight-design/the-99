@@ -77,8 +77,8 @@ interface DecklistRowProps {
    * The Shopping list is drawing this row. Separate from `shoppingFigure`
    * because that answers a different question: with EDHREC unreachable every
    * figure is `undefined`, which is also the All view's value, and a row that
-   * inferred the view from it would drop the `2nd copy` plate from exactly the
-   * rows amendment 5 adds — at the moment the list is least explicable.
+   * inferred the view from it would drop the plate from exactly the rows
+   * amendment 5 adds — at the moment the list is least explicable.
    */
   inShopping?: boolean;
   /** The newest `as_of` in `printing_prices`; the tag's liveness comparison. */
@@ -389,19 +389,21 @@ export function DecklistRow({
         )}
 
         {/* Buy tag — a card you don't own, or one the Shopping list is showing
-            because your copies are already sleeved elsewhere. One word differs:
-            the act is the same act, and the severity is already carried by the
-            marker a few pixels to the left. */}
+            because your copies are already sleeved elsewhere. One plate for
+            both: the act is the same act, and which kind of row it is is
+            already carried by the marker a few pixels to the left. */}
         {(!card.owned || spokenFor) && (
-          /* The figure's own flag, not `inShopping`: the 58px slot exists to
-             align the tag with the meta line, so with no meta line to align to
-             there is nothing to reserve. */
+          /* The figure's own flag, not `inShopping`: the reserved slot exists
+             to align the tag with the meta line, so with no meta line to align
+             to there is nothing to reserve. Its width is BuyTag's own
+             `FIGURE_SLOT`. */
           <BuyTag
             variant="row"
-            word={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTag : undefined}
-            // `buy` reads as the act it is, so the row passes no label for it.
-            // `2nd copy` does not: alone it names a thing rather than asking for
-            // one, so this one word gets the sentence.
+            // The plate says `buy` on both kinds of row — the act is the same
+            // act, and on a contested row the `Spoken for` heading above and the
+            // `short N` marker beside it already say which kind it is. The
+            // sentence is still worth spending: a reader who arrives at the row
+            // without the heading in earshot hears `buy` on a card they own.
             label={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTagAria : undefined}
             price={card.price}
             newestAsOf={newestAsOf}

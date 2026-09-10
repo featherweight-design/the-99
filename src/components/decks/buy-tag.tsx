@@ -48,6 +48,16 @@ const PLACEMENT: Record<BuyTagVariant, string> = {
  */
 const TILE_CORNER = { right: "right-[6px]", left: "left-[6px]" } as const;
 
+/**
+ * The reserved figure column, in px. Design table row 1.20 drew 58; the widest
+ * thing that can land in the slot is `sold out` — 8 characters of IBM Plex Mono
+ * at the row's 9.5px, and Plex Mono's advance is 0.6em, so 8 x 5.7 = 45.6px.
+ * The remaining 12px was dead air between the word and the figure, which is the
+ * whole of what the tag was too wide by. A four-figure price still bends the
+ * column rather than truncating: this is a min-width.
+ */
+const FIGURE_SLOT = 46;
+
 /** The figure's ink differs by plate: the row sits on a surface, the tile on art. */
 const FIGURE_INK: Record<BuyTagVariant, string> = {
   row: "var(--fg-body)",
@@ -91,17 +101,25 @@ function Tail({
 
   return (
     <span aria-hidden={silent ? "true" : undefined}>
-      <span aria-hidden="true" style={{ color: "var(--border-strong)" }}>
-        {" · "}
+      {/* The separator is padding, not characters. ` · ` spelled with literal
+          spaces costs three mono advances (~17px at 9.5px); the same dot with
+          3px either side costs ~12px and draws identically. The word and the
+          figure belong to one tag and were reading as two. */}
+      <span
+        aria-hidden="true"
+        style={{ color: "var(--border-strong)", padding: "0 3px" }}
+      >
+        ·
       </span>
-      {/* The 58px slot is the Shopping list's, not the tag's own: under `All`
-          the figure hugs. Right-aligned so a column of figures lines up on the
-          decimal point rather than on the word before it. */}
+      {/* The slot is the Shopping list's, not the tag's own: under `All` the
+          figure hugs. Right-aligned so a column of figures lines up on the
+          decimal point rather than on the word before it.
+          FIGURE_SLOT is what that column actually needs — see the constant. */}
       <span
         style={{
           color: FIGURE_INK[variant],
           ...(reserveSlot
-            ? { display: "inline-block", minWidth: 58, textAlign: "right" as const }
+            ? { display: "inline-block", minWidth: FIGURE_SLOT, textAlign: "right" as const }
             : null),
         }}
       >
@@ -117,11 +135,12 @@ function Tail({
 // A labelled tag swaps the word for the sentence rather than carrying an
 // `aria-label`: on a bare span the label lands on the generic role and is
 // discarded outright, and `role="img"` rescued it only by announcing a run of
-// text as an image. The row passes no label, because there the word already
-// sits in the row's own reading order.
+// text as an image. An unowned row passes no label, because there the word
+// already sits in the row's own reading order and says all there is to say. A
+// contested row does pass one: the plate reads `buy` on a card the player
+// owns, and only the sentence says which copy is being bought.
 export function BuyTag({
   variant,
-  word = addPanelCopy.unowned.tag,
   label,
   price,
   newestAsOf = null,
@@ -131,19 +150,13 @@ export function BuyTag({
   corner = "right",
 }: {
   variant: BuyTagVariant;
-  /**
-   * The word on the plate. Defaults to `buy`; the Shopping list passes
-   * `2nd copy` on a row whose copies are already sleeved elsewhere. No new
-   * plate, variant or colour — the act is the same act.
-   */
-  word?: string;
   label?: string;
   price?: PriceFact | null;
   /** Liveness is one comparison against the table's newest row, not a clock. */
   newestAsOf?: Date | null;
   /** Server-built; only the labelled (tile) variant speaks it. */
   provenance?: ProvenanceForm | null;
-  /** Shopping reserves the figure a 58px slot so the column aligns. */
+  /** Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns. */
   reserveSlot?: boolean;
   /**
    * `collapsed` draws a bare `$` in the same box, ink, radius and position —
@@ -174,6 +187,12 @@ export function BuyTag({
             : priceCopy.aria.priced(spokenFigure, provenance.when)
         }`
       : label;
+
+  // One word on every plate. The Shopping list used to swap in `2nd copy` on a
+  // contested row; the group it sits under is headed `Spoken for` and the
+  // marker beside it reads `short N`, which said the same thing twice. The
+  // sentence a reader hears still says which copy this is — see `label`.
+  const word = addPanelCopy.unowned.tag;
 
   const content = (
     <>

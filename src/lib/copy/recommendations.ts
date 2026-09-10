@@ -247,10 +247,11 @@ export const recommendationsCopy = {
     // At zero contested cards the strings above render byte-for-byte as they
     // ship — that is the assertion the amendment's safety rests on.
 
-    // Replaces the word inside BuyTag on a contested row. Same plate, size and
-    // colour: the trip to the shop is the same trip, and the severity is
-    // already carried by the marker beside it.
-    rowSecondCopyTag: '2nd copy',
+    // The tag on a contested row draws the same `buy` as every other row — the
+    // trip to the shop is the same trip, and which kind of trip it is is
+    // already carried twice, by the `Spoken for` heading above and the marker
+    // beside it. Only the spoken form differs, because a reader can reach the
+    // row without either of those in earshot.
     rowSecondCopyTagAria: 'a second copy to buy',
 
     // The group, pinned after `Other`. Its clause slot says why there is no

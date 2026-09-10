@@ -20,7 +20,7 @@ The tag is one component with a `row` and a `tile` variant. Every state below re
 |---|---|---|---|
 | 1.1 | The word | `buy`, unchanged from shipped | R3C:67 |
 | 1.2 | The word's ink | `--warning`, both variants | R2RM:97 |
-| 1.3 | Separator between word and tail | ` · `, ink `--border-strong` | R2RM:98, R3C:67 |
+| 1.3 | Separator between word and tail | A `·` in `--border-strong` with `3px` of padding either side. Drawn as ` · ` in R2RM; the literal spaces were three mono advances (~17px at 9.5px) where the padded dot draws the same mark in ~12px — see the amendment below | R2RM:98, R3C:67; amended 2026-09-09 |
 | 1.4 | Separator presence | Only when a tail renders. State 4 has no separator | R3C:70 |
 | 1.5 | Figure ink, row variant | `--fg-body` | R2RM:99 |
 | 1.6 | Figure ink, tile variant | `--fg` | R2RM:100 |
@@ -47,8 +47,26 @@ The tag is one component with a `row` and a `tile` variant. Every state below re
 
 | # | Property | Value | Source |
 |---|---|---|---|
-| 1.20 | Figure slot | `min-width: 58px`, right-aligned — a column of figures lines up on the decimal point | R3C:67–69, R3C:102–104 |
-| 1.21 | Slot scope | The **Shopping list's**, not the tag's. Under `All` the figure hugs the word; the drawn 58px slot appears only in the Shopping renderings | R3C:67–70 vs R3C:221–236 |
+| 1.20 | Figure slot | `min-width: 46px`, right-aligned — a column of figures lines up on the decimal point. R3C drew `58px`; see the amendment below | R3C:67–69, R3C:102–104; amended 2026-09-09 |
+| 1.21 | Slot scope | The **Shopping list's**, not the tag's. Under `All` the figure hugs the word; the drawn slot appears only in the Shopping renderings | R3C:67–70 vs R3C:221–236 |
+
+### Amendment · 2026-09-09 · the tag was too wide
+
+Owner's call, taken without a round-trip to Design because nothing about the
+drawing's intent changes — the column still opens, the mark still separates.
+Both amendments shrink dead air between `buy` and its figure:
+
+| # | Was | Is | Why |
+|---|---|---|---|
+| 1.3 | ` · ` spelled with literal spaces | `·` with `3px` padding | Three mono advances at 9.5px is ~17px of gap for one visible glyph. Padding draws the identical mark in ~12px. |
+| 1.20 | `min-width: 58px` | `min-width: 46px` | The widest thing that can land in the slot is `sold out`: 8 characters of IBM Plex Mono, whose advance is `0.6em`, so `8 x 5.7px = 45.6px`. The other 12px held nothing. Still a min-width, so a four-figure price bends the column rather than truncating. |
+
+Also retired here: the `2nd copy` word on a contested Shopping row (was row 5.2
+of the amendment-5 table in `card-availability.md`'s sibling brief). The plate
+draws `buy` on every row now. The group is headed `Spoken for` and the marker
+beside it reads `short N`, so the plate was the third telling. The spoken form
+is unchanged — `a second copy to buy` — because a reader can reach the row with
+neither the heading nor the marker in earshot.
 
 ### Accessible name
 
