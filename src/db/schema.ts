@@ -224,6 +224,69 @@ export const deckCards = pgTable("deck_cards", {
 }, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
 
 /**
+ * One committed state of a deck: what was sleeved, when, and why.
+ *
+ * A version stores the FULL list rather than a diff from its predecessor.
+ * Roughly 99 rows per commit costs nothing, whereas a diff chain would make
+ * "what is sleeved right now" a fold over history — and that read runs inside
+ * the claim model on every availability query in the application.
+ *
+ * Both commander columns are snapshotted because changing a commander is a
+ * version boundary like any other, and the claim model unions those columns
+ * alongside the decklist. Without them the claim query would have to read the
+ * live `decks` row for part of its answer, mixing draft truth and committed
+ * truth in the one query that must never mix them.
+ *
+ * There is deliberately NO `is_draft` column anywhere. Draft state is
+ * `deck_cards` differing from the newest version, so no flag can go stale
+ * against the rows it describes. A deck with no row here is a brew.
+ */
+export const deckVersions = pgTable("deck_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  number: integer("number").notNull(),
+  committedAt: timestamp("committed_at").notNull().defaultNow(),
+  // Why this version exists, in the player's words. Unrecoverable afterwards,
+  // which is why it is offered at commit time and never inferred.
+  note: text("note"),
+  commanderOracleId: uuid("commander_oracle_id").notNull().references(() => cards.oracleId),
+  partnerOracleId: uuid("partner_oracle_id").references(() => cards.oracleId),
+  // When this deck first sleeved each commander, in an unbroken run up to now.
+  // Not the same as committed_at: see deckVersionCards.since below, which these
+  // two mirror for the columns that are not deck_cards rows.
+  commanderSince: timestamp("commander_since").notNull().defaultNow(),
+  partnerSince: timestamp("partner_since"),
+}, (t) => [
+  unique("deck_versions_deck_number_key").on(t.deckId, t.number),
+  index("deck_versions_deck_number_idx").on(t.deckId, t.number),
+]);
+
+export const deckVersionCards = pgTable("deck_version_cards", {
+  versionId: uuid("version_id").notNull()
+    .references(() => deckVersions.id, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  quantity: integer("quantity").notNull(),
+  /**
+   * When this deck first sleeved this card, in an unbroken run up to this
+   * version. Seniority orders on it, and it is why it is not enough to order on
+   * the version's own `committed_at`: a deck that has held a card for a year and
+   * then commits an unrelated swap would jump to the back of the queue on every
+   * card it holds, and be told to buy copies already in its own box.
+   *
+   * Inherited from the predecessor version when that version held the same card,
+   * and set to the new version's committed_at when it did not — so a card
+   * dropped in v2 and re-added in v4 starts a fresh run at v4, and the deck that
+   * sleeved it in between keeps it. Continuity is decided once, at the rare
+   * write, rather than folded out of history by the hot read.
+   */
+  since: timestamp("since").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.versionId, t.oracleId] }),
+  // The claim model joins version cards by version and orders by since.
+  index("deck_version_cards_oracle_idx").on(t.oracleId),
+]);
+
+/**
  * One act of the app putting cards into a deck: the build's seed fill, or one
  * top-off the player committed from the last-31 list.
  *
@@ -278,6 +341,11 @@ export const deckGames = pgTable("deck_games", {
   userId: text("user_id").notNull(),
   result: text("result").notNull(),
   podSize: integer("pod_size").notNull(),
+  // The version live when the game was played. NULLABLE and `set null`, not
+  // cascade: games logged before versioning shipped were played by a list
+  // nobody recorded, and null is the accurate value — a backfill would be a
+  // fabricated claim. Deleting a version must never delete its games.
+  versionId: uuid("version_id").references(() => deckVersions.id, { onDelete: "set null" }),
   playedAt: timestamp("played_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [

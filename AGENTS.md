@@ -66,6 +66,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   generated before an id joined the list still holds that sentence, so the copy is the one
   path that could put a pulled sentence back.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
+- `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
+  `loadAvailability` — a committed version holds its cards against every other deck's draft, an
+  uncommitted removal still claims, and per-card `since` decides between two committed decks. The
+  claim model is raw SQL no unit test in this repository can reach, so this script is the only
+  proof it behaves. It writes a fixture under a per-run `user_id` and deletes it in a `finally`;
+  point it at `local-dev` or a scratch Neon branch, **never production**. On a deck's own page
+  `free` is a surplus, not a count of copies: 0 means "holds what it needs and no spare", and a
+  negative figure is the number of copies that deck has to buy.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 

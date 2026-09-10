@@ -18,6 +18,10 @@ const stub = vi.hoisted(() => {
     transactionError: null as Error | null,
     // The rows already in the deck, returned by the in-transaction read
     deckRows: [] as { oracleId: string; quantity: number }[],
+    // What an in-transaction `update(...).returning()` hands back. Empty means
+    // the guarded decrement matched nothing, which is how a caller learns the
+    // row was down to its last copy and must be deleted instead.
+    updateReturning: [] as Record<string, unknown>[],
     fillPasses: [] as { ordinal: number }[],
     // Whether getEdhrecData should reject
     edhrecError: null as Error | null,
@@ -143,33 +147,8 @@ const stub = vi.hoisted(() => {
     };
   }
 
-  const tx = {
-    insert: (table: unknown) => makeInsertBuilder(table),
-    update: () => ({ set: () => ({ where: async () => {} }) }),
-    execute: async () => {},
-    // Table-aware, because `recordFillPass` reads the highest ordinal the deck
-    // has used and would otherwise be handed deck card rows. That read is an
-    // aggregate, so it always returns exactly one row.
-    select: () => ({
-      from: (table: unknown) => {
-        const rows = () => (nameOf(table) === "fill_passes"
-          ? [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }]
-          : state.deckRows as unknown as Record<string, unknown>[]);
-        return {
-          where: () => Object.assign(
-            Promise.resolve(rows()),
-            { limit: async (n: number) => rows().slice(0, n) },
-          ),
-        };
-      },
-    }),
-  };
-
-  const db = {
-    select: () => makeSelectBuilder(),
-    selectDistinctOn: () => makeSelectBuilder(),
-    insert: (table: unknown) => makeInsertBuilder(table),
-    delete: (table: unknown) => ({
+  function makeDeleteBuilder(table: unknown) {
+    return {
       // Thenable as well as chainable, because most deletes are awaited
       // directly and deleteGame reads back what it removed.
       where: (condition: unknown) => {
@@ -188,7 +167,55 @@ const stub = vi.hoisted(() => {
           then: (resolve: (v: unknown) => unknown) => Promise.resolve(undefined).then(resolve),
         };
       },
+    };
+  }
+
+  const tx = {
+    insert: (table: unknown) => makeInsertBuilder(table),
+    delete: (table: unknown) => makeDeleteBuilder(table),
+    update: () => ({
+      set: () => ({
+        where: () => Object.assign(
+          Promise.resolve(undefined),
+          { returning: async () => state.updateReturning },
+        ),
+      }),
     }),
+    execute: async () => {},
+    // Table-aware, because `recordFillPass` reads the highest ordinal the deck
+    // has used and would otherwise be handed deck card rows. That read is an
+    // aggregate, so it always returns exactly one row.
+    select: () => ({
+      from: (table: unknown) => {
+        const tableName = nameOf(table);
+        const rows = () => {
+          if (tableName === "fill_passes") {
+            return [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }];
+          }
+          if (tableName === "decks") return state.decks;
+          // The commit reads type lines to keep basics off the buy list.
+          if (tableName === "cards") return state.cards;
+          return state.deckRows as unknown as Record<string, unknown>[];
+        };
+        return {
+          where: () => Object.assign(
+            Promise.resolve(rows()),
+            {
+              limit: async (n: number) => rows().slice(0, n),
+              // `for("update")` — the row lock a guard reads under.
+              for: async () => rows(),
+            },
+          ),
+        };
+      },
+    }),
+  };
+
+  const db = {
+    select: () => makeSelectBuilder(),
+    selectDistinctOn: () => makeSelectBuilder(),
+    insert: (table: unknown) => makeInsertBuilder(table),
+    delete: (table: unknown) => makeDeleteBuilder(table),
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
       if (state.transactionError) throw state.transactionError;
       return fn(tx);
@@ -229,7 +256,32 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
   readSynergyCards: async () => [],
 }));
 
-import { createDeck, deleteGame, fillDeck, logGame, restoreAutoCards } from "./actions";
+// The version module and the claim model are mocked rather than served by the
+// stub above. The stub's `where()` returns a thenable carrying only `limit`, so
+// it has no `orderBy` for `newestVersion`, and its transaction object has no
+// `delete` — `commitVersion` and `restoreDraftFromVersion` both throw inside
+// it. Teaching it those shapes would re-test round trips `pnpm probe:claims`
+// already proves against a real Postgres. What these tests own is the actions'
+// guards, their arithmetic and their revalidation.
+vi.mock("../../lib/decks/versions", () => ({
+  newestVersion: vi.fn(),
+  versionLiveAt: vi.fn(),
+  versionCards: vi.fn(),
+  commitVersion: vi.fn(),
+  restoreDraftFromVersion: vi.fn(),
+}));
+vi.mock("../../lib/decks/availability-query", () => ({
+  loadAvailability: vi.fn(async () => new Map()),
+}));
+
+import {
+  commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, logGame,
+  pullCardFromDeck, restoreAutoCards,
+} from "./actions";
+import {
+  commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
+} from "../../lib/decks/versions";
+import { loadAvailability } from "../../lib/decks/availability-query";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -297,6 +349,7 @@ beforeEach(() => {
   stub.state.insertCalls.length = 0;
   stub.state.transactionError = null;
   stub.state.deckRows.length = 0;
+  stub.state.updateReturning.length = 0;
   stub.state.fillPasses.length = 0;
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
@@ -664,6 +717,18 @@ describe("logGame", () => {
     ]);
   });
 
+  // The stamp says which list was on the table that night. A game backdated
+  // to before a commit belongs to the version that was live then, so asking
+  // for the newest would credit a result to a deck that did not yet exist.
+  it("stamps a backdated game with the version live when it was played", async () => {
+    const playedAt = new Date("2026-01-01T00:00:00Z");
+    vi.mocked(versionLiveAt).mockResolvedValue({ ...aVersion(), id: "v-old" });
+    await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], playedAt });
+    expect(versionLiveAt).toHaveBeenCalledWith("deck_1", playedAt);
+    const [game] = stub.state.insertCalls.filter((c) => c.table === "deck_games");
+    expect(game.values).toMatchObject({ versionId: "v-old" });
+  });
+
   // No marks at all is the fifteen-second log, and it is valid. The axis
   // insert must be skipped entirely rather than called with an empty array,
   // which Drizzle rejects.
@@ -787,5 +852,221 @@ describe("deleteGame", () => {
     const result = await deleteGame("deck_1", "game_1");
     expect(result.ok).toBe(false);
     expect(stub.state.revalidated).toHaveLength(0);
+  });
+});
+
+const VERSION_ID = "44444444-4444-4444-8444-444444444444";
+const DECK_ID = "11111111-1111-4111-8111-111111111111";
+const USER_ID = "user_1";
+const CMD = "22222222-2222-4222-8222-222222222222";
+const CARD_A = "33333333-3333-4333-8333-333333333333";
+const CARD_B = "77777777-7777-4777-8777-777777777777";
+
+const aVersion = () => ({
+  id: VERSION_ID,
+  number: 1,
+  committedAt: new Date(),
+  note: null,
+  commanderOracleId: CMD,
+  partnerOracleId: null,
+  commanderSince: new Date(),
+  partnerSince: null,
+});
+
+describe("commitDeckVersion", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stub.state.revalidated.length = 0;
+    stub.state.deleteCalls.length = 0;
+    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+    vi.mocked(versionCards).mockResolvedValue([]);
+    vi.mocked(loadAvailability).mockResolvedValue(new Map());
+    vi.mocked(commitVersion).mockResolvedValue({
+      version: { ...aVersion(), number: 2 },
+    });
+  });
+
+  it("refuses a deck the user does not own", async () => {
+    stub.state.decks.length = 0;
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    await commitDeckVersion(DECK_ID, null);
+    expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
+    expect(stub.state.revalidated).toContain("/collection");
+  });
+
+  // The pull list is computed BEFORE the write. Afterwards the draft and the
+  // newest version are identical by definition and the diff is empty.
+  it("returns the pull list from what the version dropped", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.length = 0;
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.pull).toEqual([{ oracleId: CARD_A, from: 1, to: 0 }]);
+  });
+
+  // A card the deck already has a free copy of is not a purchase, and listing
+  // it would send the player shopping for something on their own shelf.
+  it("leaves a covered add off the buy list", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(loadAvailability).mockResolvedValue(
+      new Map([[CARD_A, { owned: 1, hard: 0, soft: 0, free: 1, claims: [] }]]),
+    );
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.buy).toEqual([]);
+  });
+
+  it("puts an add nobody can cover on the buy list", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.buy).toEqual([
+      { oracleId: CARD_A, needed: 1, shortfall: 1, bucket: "unowned", heldBy: [] },
+    ]);
+  });
+
+  // Basics are excluded from the availability model, so an added Forest comes
+  // back with no row and would otherwise read as a card nobody owns — ten
+  // Forests on a shopping list nobody would ever shop from.
+  it("keeps a basic land off the buy list", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 10 });
+    stub.state.cards.push({ oracleId: CARD_A, typeLine: "Basic Land — Forest" });
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.buy).toEqual([]);
+  });
+
+  // An empty note is not a note. Storing "" would render a blank line in the
+  // history where the player wrote nothing.
+  it("stores a whitespace-only note as null", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    await commitDeckVersion(DECK_ID, "   ");
+    // The third argument is the caller's transaction: the diff behind the
+    // receipt and the snapshot it describes are read under one lock.
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything());
+  });
+});
+
+describe("discardDeckDraft", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stub.state.revalidated.length = 0;
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+  });
+
+  // A brew has nothing to go back to, and restoring it to an empty list would
+  // silently delete the whole deck.
+  it("refuses a deck with no version", async () => {
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await discardDeckDraft(DECK_ID);
+    expect(result.ok).toBe(false);
+    expect(restoreDraftFromVersion).not.toHaveBeenCalled();
+  });
+
+  it("restores the newest version and revalidates", async () => {
+    const result = await discardDeckDraft(DECK_ID);
+    expect(result.ok).toBe(true);
+    expect(restoreDraftFromVersion).toHaveBeenCalledWith(DECK_ID, VERSION_ID);
+    expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
+  });
+});
+
+describe("pullCardFromDeck", () => {
+  const SOURCE_ID = "55555555-5555-4555-8555-555555555555";
+  const ASKING_ID = "66666666-6666-4666-8666-666666666666";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stub.state.revalidated.length = 0;
+    stub.state.deleteCalls.length = 0;
+    // BOTH decks: a pull calls requireDeck on the asking deck as well as the
+    // source. The stub ignores the where clause, so leaving the asking deck
+    // out passes by accident and would stop meaning anything the day it stops.
+    stub.state.decks.push(
+      { id: SOURCE_ID, userId: USER_ID, commanderOracleId: CMD },
+      { id: ASKING_ID, userId: USER_ID, commanderOracleId: CMD },
+    );
+    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+    vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 } });
+  });
+
+  // The guard that stops a pull sweeping somebody else's half-finished
+  // tinkering into a version they never asked for.
+  it("refuses when the source deck already has pending changes", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 }, { oracleId: CARD_B, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.stringContaining("pending") });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  // Otherwise the decrement and the delete both match nothing and the commit
+  // writes a version identical to its predecessor — history recording a pull
+  // that never happened.
+  it("refuses a card the source deck does not hold", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_B, ASKING_ID);
+    expect(result.ok).toBe(false);
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  // A commander is a claim without being a `deck_cards` row, so a deck can be
+  // offered as a card's holder on the strength of one. The refusal has to say
+  // which of the two it is, or the reader is told the deck doesn't hold a card
+  // it plainly leads with.
+  it("refuses to pull the source deck's commander", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CMD, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.stringContaining("commander") });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  it("removes the card and commits a version recording it", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(stub.state.deleteCalls).toContainEqual({ table: "deck_cards", id: SOURCE_ID });
+    // The third argument is the caller's transaction: the delete above and this
+    // commit land together, or the draft loses a card its version still claims.
+    expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String), expect.anything());
+  });
+
+  // A pull takes one copy. A deck sleeving four Relentless Rats that lends one
+  // keeps three, so the row is decremented and never deleted.
+  it("decrements rather than deleting when the deck holds more than one", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 4 });
+    stub.state.updateReturning.push({ oracleId: CARD_A });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 4 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(stub.state.deleteCalls).not.toContainEqual({ table: "deck_cards", id: SOURCE_ID });
+  });
+
+  // The player is looking at the ASKING deck's buy tag when they take the pull.
+  it("revalidates both decks", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(stub.state.revalidated).toContain(`/decks/${SOURCE_ID}`);
+    expect(stub.state.revalidated).toContain(`/decks/${ASKING_ID}`);
+  });
+
+  // A brew holds nothing hard, so there is no claim to release and no version
+  // to commit against.
+  it("refuses a source deck that is not sleeved", async () => {
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(false);
+    expect(stub.state.deleteCalls).toHaveLength(0);
   });
 });
