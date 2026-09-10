@@ -47,8 +47,8 @@ export function useTopOffDraft(deckId: string): TopOffDraftHandle {
   // useSyncExternalStore compares snapshots by identity, and a fresh object
   // from every read would re-render forever. The server snapshot is null —
   // no selection — so the server render and the hydration pass agree, and the
-  // restore lands after. Nothing here is read before the player opens the
-  // list, which is an act of theirs and therefore already past hydration.
+  // restore lands after — the client snapshot runs on every render while this
+  // hook is mounted, but never before hydration has agreed with the server.
   const raw = useSyncExternalStore(
     subscribe,
     () => readRaw(key),
