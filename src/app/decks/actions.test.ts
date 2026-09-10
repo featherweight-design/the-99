@@ -229,7 +229,31 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
   readSynergyCards: async () => [],
 }));
 
-import { createDeck, deleteGame, fillDeck, logGame, restoreAutoCards } from "./actions";
+// The version module and the claim model are mocked rather than served by the
+// stub above. The stub's `where()` returns a thenable carrying only `limit`, so
+// it has no `orderBy` for `newestVersion`, and its transaction object has no
+// `delete` — `commitVersion` and `restoreDraftFromVersion` both throw inside
+// it. Teaching it those shapes would re-test round trips `pnpm probe:claims`
+// already proves against a real Postgres. What these tests own is the actions'
+// guards, their arithmetic and their revalidation.
+vi.mock("../../lib/decks/versions", () => ({
+  newestVersion: vi.fn(),
+  versionCards: vi.fn(),
+  commitVersion: vi.fn(),
+  restoreDraftFromVersion: vi.fn(),
+}));
+vi.mock("../../lib/decks/availability-query", () => ({
+  loadAvailability: vi.fn(async () => new Map()),
+}));
+
+import {
+  commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, logGame,
+  pullCardFromDeck, restoreAutoCards,
+} from "./actions";
+import {
+  commitVersion, newestVersion, restoreDraftFromVersion, versionCards,
+} from "../../lib/decks/versions";
+import { loadAvailability } from "../../lib/decks/availability-query";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -787,5 +811,166 @@ describe("deleteGame", () => {
     const result = await deleteGame("deck_1", "game_1");
     expect(result.ok).toBe(false);
     expect(stub.state.revalidated).toHaveLength(0);
+  });
+});
+
+const VERSION_ID = "44444444-4444-4444-8444-444444444444";
+const DECK_ID = "11111111-1111-4111-8111-111111111111";
+const USER_ID = "user_1";
+const CMD = "22222222-2222-4222-8222-222222222222";
+const CARD_A = "33333333-3333-4333-8333-333333333333";
+const CARD_B = "77777777-7777-4777-8777-777777777777";
+
+const aVersion = () => ({
+  id: VERSION_ID,
+  number: 1,
+  committedAt: new Date(),
+  note: null,
+  commanderOracleId: CMD,
+  partnerOracleId: null,
+  commanderSince: new Date(),
+  partnerSince: null,
+});
+
+describe("commitDeckVersion", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stub.state.revalidated.length = 0;
+    stub.state.deleteCalls.length = 0;
+    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+    vi.mocked(versionCards).mockResolvedValue([]);
+    vi.mocked(loadAvailability).mockResolvedValue(new Map());
+    vi.mocked(commitVersion).mockResolvedValue({
+      version: { ...aVersion(), number: 2 },
+    });
+  });
+
+  it("refuses a deck the user does not own", async () => {
+    stub.state.decks.length = 0;
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    await commitDeckVersion(DECK_ID, null);
+    expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
+    expect(stub.state.revalidated).toContain("/collection");
+  });
+
+  // The pull list is computed BEFORE the write. Afterwards the draft and the
+  // newest version are identical by definition and the diff is empty.
+  it("returns the pull list from what the version dropped", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.length = 0;
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.pull).toEqual([{ oracleId: CARD_A, from: 1, to: 0 }]);
+  });
+
+  // A card the deck already has a free copy of is not a purchase, and listing
+  // it would send the player shopping for something on their own shelf.
+  it("leaves a covered add off the buy list", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(loadAvailability).mockResolvedValue(
+      new Map([[CARD_A, { owned: 1, hard: 0, soft: 0, free: 1, claims: [] }]]),
+    );
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.buy).toEqual([]);
+  });
+
+  it("puts an add nobody can cover on the buy list", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.buy).toEqual([
+      { oracleId: CARD_A, needed: 1, bucket: "unowned", heldBy: [] },
+    ]);
+  });
+
+  // An empty note is not a note. Storing "" would render a blank line in the
+  // history where the player wrote nothing.
+  it("stores a whitespace-only note as null", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    await commitDeckVersion(DECK_ID, "   ");
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null);
+  });
+});
+
+describe("discardDeckDraft", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stub.state.revalidated.length = 0;
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+  });
+
+  // A brew has nothing to go back to, and restoring it to an empty list would
+  // silently delete the whole deck.
+  it("refuses a deck with no version", async () => {
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await discardDeckDraft(DECK_ID);
+    expect(result.ok).toBe(false);
+    expect(restoreDraftFromVersion).not.toHaveBeenCalled();
+  });
+
+  it("restores the newest version and revalidates", async () => {
+    const result = await discardDeckDraft(DECK_ID);
+    expect(result.ok).toBe(true);
+    expect(restoreDraftFromVersion).toHaveBeenCalledWith(DECK_ID, VERSION_ID);
+    expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
+  });
+});
+
+describe("pullCardFromDeck", () => {
+  const SOURCE_ID = "55555555-5555-4555-8555-555555555555";
+  const ASKING_ID = "66666666-6666-4666-8666-666666666666";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stub.state.revalidated.length = 0;
+    stub.state.deleteCalls.length = 0;
+    stub.state.decks.push({ id: SOURCE_ID, userId: USER_ID, commanderOracleId: CMD });
+    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+    vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 } });
+  });
+
+  // The guard that stops a pull sweeping somebody else's half-finished
+  // tinkering into a version they never asked for.
+  it("refuses when the source deck already has pending changes", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 }, { oracleId: CARD_B, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.stringContaining("pending") });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  it("removes the card and commits a version recording it", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(stub.state.deleteCalls).toContainEqual({ table: "deck_cards", id: SOURCE_ID });
+    expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String));
+  });
+
+  // The player is looking at the ASKING deck's buy tag when they take the pull.
+  it("revalidates both decks", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(stub.state.revalidated).toContain(`/decks/${SOURCE_ID}`);
+    expect(stub.state.revalidated).toContain(`/decks/${ASKING_ID}`);
+  });
+
+  // A brew holds nothing hard, so there is no claim to release and no version
+  // to commit against.
+  it("refuses a source deck that is not sleeved", async () => {
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(false);
+    expect(stub.state.deleteCalls).toHaveLength(0);
   });
 });

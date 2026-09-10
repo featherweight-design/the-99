@@ -15,6 +15,13 @@ import { withinColorIdentity } from "../../lib/cards/identity-where";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { mergeEdhrecData } from "../../lib/edhrec/merge";
 import { loadAvailability } from "../../lib/decks/availability-query";
+import { hardDecks } from "../../lib/decks/availability";
+import {
+  commitVersion, newestVersion, restoreDraftFromVersion, versionCards,
+} from "../../lib/decks/versions";
+import {
+  bucketAdds, draftDiff, type BucketedAdd, type DraftChange,
+} from "../../lib/decks/draft-diff";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
@@ -1183,11 +1190,19 @@ export async function logGame(
   const hurt = [...new Set(input.hurt)] as GameAxisKey[];
   if (worked.some((key) => hurt.includes(key))) return refuse;
 
+  // Null for a brew, and null is accurate: a game played by a list nobody
+  // committed has no version to point at, and inventing one would be a
+  // claim the history cannot support.
+  const version = await newestVersion(deckId);
+
   try {
     await db.transaction(async (tx) => {
       const [game] = await tx
         .insert(deckGames)
-        .values({ deckId, userId, result: input.result, podSize: input.podSize, playedAt })
+        .values({
+          deckId, userId, result: input.result, podSize: input.podSize, playedAt,
+          versionId: version?.id ?? null,
+        })
         .returning({ id: deckGames.id });
 
       const marks = [
@@ -1245,5 +1260,118 @@ export async function deleteGame(
   if (deleted.length === 0) return refuse;
 
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  return { ok: true };
+}
+
+export type CommitResult =
+  | { ok: true; number: number; buy: BucketedAdd[]; pull: DraftChange[] }
+  | { ok: false; message: string };
+
+/**
+ * Freeze the draft as the next version and say what it costs.
+ *
+ * The two lists are computed BEFORE the write, against the version being
+ * replaced — afterwards the draft and the newest version are identical by
+ * definition and the diff is empty.
+ *
+ * `revalidateClaims`, not a bare `revalidatePath`: a commit changes what every
+ * other deck can claim, so the collection page and every cached list payload
+ * are stale the moment it lands.
+ */
+export async function commitDeckVersion(
+  deckId: string,
+  note: string | null,
+): Promise<CommitResult> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  try {
+    await requireDeck(deckId, userId);
+  } catch {
+    return { ok: false, message: "We couldn't find that deck." };
+  }
+
+  const previous = await newestVersion(deckId);
+  const before = previous ? await versionCards(previous.id) : [];
+  const draft = await db.select({
+    oracleId: deckCards.oracleId, quantity: deckCards.quantity,
+  }).from(deckCards).where(eq(deckCards.deckId, deckId));
+
+  const diff = draftDiff(draft, before);
+  const availability = await loadAvailability(userId, {
+    oracleIds: diff.adds.map((a) => a.oracleId),
+    excludeDeckId: deckId,
+  });
+  // hardDecks, not the raw claims: a BREW "holding" a card holds nothing, and
+  // naming it would offer a pull against a list that was never sleeved.
+  const claimants = new Map(
+    [...availability].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
+  );
+  const buy = bucketAdds(diff.adds, claimants).filter((a) => a.bucket !== "free");
+
+  const { version } = await commitVersion(deckId, note?.trim() || null);
+  revalidateClaims(deckId, userId);
+  return { ok: true, number: version.number, buy, pull: diff.removes };
+}
+
+/**
+ * Throw the draft away and put the newest version's list back.
+ *
+ * Destructive and unrecoverable — the draft is not versioned — so the caller
+ * confirms first. A deck with no version has nothing to restore TO, and
+ * silently emptying it would delete a whole brew.
+ */
+export async function discardDeckDraft(deckId: string): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  await requireDeck(deckId, userId);
+  const version = await newestVersion(deckId);
+  if (!version) return { ok: false, message: "This deck has no version to go back to." };
+  await restoreDraftFromVersion(deckId, version.id);
+  revalidateClaims(deckId, userId);
+  return { ok: true };
+}
+
+/**
+ * Take a card out of the deck that currently holds it, on the player's say-so.
+ *
+ * Removing it and committing in one move is deliberate. Pulling a card out of
+ * a box is a physical change to that deck, so it earns a version; and the
+ * commit is what frees the copy on the spot, rather than leaving the asking
+ * deck showing a buy tag until someone remembers to go and commit the source.
+ *
+ * The guard is the whole reason this is not a bare delete: if the source deck
+ * already has pending changes, committing would sweep them into a version its
+ * owner never asked for. That case sends the player to the source deck instead.
+ */
+export async function pullCardFromDeck(
+  sourceDeckId: string,
+  oracleId: string,
+  askingDeckId: string,
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!isUuid(sourceDeckId) || !isUuid(oracleId) || !isUuid(askingDeckId)) {
+    return { ok: false, message: "We couldn't find that card." };
+  }
+  // Both decks, because both are revalidated and both must be the player's.
+  await requireDeck(sourceDeckId, userId);
+  await requireDeck(askingDeckId, userId);
+
+  const version = await newestVersion(sourceDeckId);
+  if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
+
+  const before = await versionCards(version.id);
+  const draft = await db.select({
+    oracleId: deckCards.oracleId, quantity: deckCards.quantity,
+  }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId));
+  const diff = draftDiff(draft, before);
+  if (diff.adds.length > 0 || diff.removes.length > 0) {
+    return { ok: false, message: "That deck has pending changes. Release the card there." };
+  }
+
+  await db.delete(deckCards)
+    .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
+  await commitVersion(sourceDeckId, "Pulled a card for another deck");
+  revalidateClaims(sourceDeckId, userId);
+  revalidateClaims(askingDeckId, userId);
   return { ok: true };
 }
