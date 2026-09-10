@@ -42,6 +42,17 @@ function check(label, ok, detail = "") {
   console.log(`${ok ? "  ok" : "FAIL"}  ${label}${detail ? ` — ${detail}` : ""}`);
 }
 
+/**
+ * Every question the probe asks of a live element is asked through here. The
+ * one run that matters is the run where a control has gone missing, and that
+ * is exactly the run where `evaluate` throws instead of answering: a missing
+ * control would take the whole transcript with it rather than failing the one
+ * check that noticed. `fallback` is the answer that reads as a failure.
+ */
+async function ask(locator, fn, fallback) {
+  return locator.evaluate(fn).catch(() => fallback);
+}
+
 async function shot(page, label) {
   const file = `${OUT}/${label}.png`;
   await page.screenshot({ path: file, fullPage: false });
@@ -134,10 +145,11 @@ async function walkList(page, w) {
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Tab");
   await page.waitForTimeout(150);
-  check("the tab lands on the tick box", await box.evaluate((el) => el === document.activeElement));
-  const shadow = await box.evaluate(
-    (el) => getComputedStyle(el.nextElementSibling).boxShadow,
+  check(
+    "the tab lands on the tick box",
+    await ask(box, (el) => el === document.activeElement, false),
   );
+  const shadow = await ask(box, (el) => getComputedStyle(el.nextElementSibling).boxShadow, "none");
   check("focused tick box draws a ring", shadow !== "none" && shadow !== "", shadow);
   await shot(page, `${w}-1-tick-focus`);
 
@@ -196,7 +208,10 @@ async function walkConfirm(page, w) {
   await page.waitForTimeout(200);
   const yes = page.getByRole("button", { name: "Keep them" });
   check("the question replaces the pair", (await yes.count()) === 1 && (await sweep.count()) === 0);
-  check("focus lands on Keep them", await yes.evaluate((el) => el === document.activeElement));
+  check(
+    "focus lands on Keep them",
+    await ask(yes, (el) => el === document.activeElement, false),
+  );
 
   // Both answers point back at the question, so a reader hears what it is
   // answering rather than a bare `Keep them`.
@@ -214,7 +229,7 @@ async function walkConfirm(page, w) {
   check("cancel restores the pair", (await sweep.count()) === 1);
   check(
     "cancel puts focus back on the trigger",
-    await trigger.evaluate((el) => el === document.activeElement),
+    await ask(trigger, (el) => el === document.activeElement, false),
   );
 
   await trigger.click();
@@ -235,7 +250,8 @@ async function walkConfirm(page, w) {
   // this filter the phone's announcement reads as a toolbar note that shipped.
   const note = await page
     .locator("text=/yours now/ >> visible=true")
-    .evaluateAll((els) => els.filter((el) => !el.classList.contains("sr-only")).length);
+    .evaluateAll((els) => els.filter((el) => !el.classList.contains("sr-only")).length)
+    .catch(() => -1);
   check(
     w === "phone" ? "kept note stays off the phone toolbar" : "kept note is drawn",
     w === "phone" ? note === 0 : note > 0,
