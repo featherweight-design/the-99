@@ -5,7 +5,7 @@
 // pushed the whole filter row down the page, so it becomes the same overlaid
 // FilterPanel as Type and Set.
 
-import { filterCards, type BrowseCard, type BrowseFilters } from "./browse";
+import { filterCards, type BrowseListCard, type BrowseFilters } from "./browse";
 
 export const WUBRG = ["W", "U", "B", "R", "G"] as const;
 
@@ -36,7 +36,7 @@ export type ColorOption = {
  * A color with no matches stays listed and disabled: the vocabulary is fixed, so
  * removing one would make the list five, then three, then four rows tall.
  */
-export function buildColorOptions(cards: BrowseCard[], filters: BrowseFilters): ColorOption[] {
+export function buildColorOptions(cards: BrowseListCard[], filters: BrowseFilters): ColorOption[] {
   const surviving = filterCards(cards, {
     search: "",
     colors: [],

@@ -4,21 +4,20 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseListCard } from "../../lib/collection/browse";
 import { RowsView } from "./rows-view";
 
-const card: BrowseCard = {
+const card: BrowseListCard = {
   oracleId: "o1",
   name: "Smothering Tithe",
   typeLine: "Enchantment",
   manaCost: "{3}{W}",
-  oracleText: "",
   keywords: [],
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: null,
   quantity: 1,
-  printings: [],
+  setCounts: [],
   setCodes: ["RVR"],
   primarySetCode: "RVR",
   preferredPrinting: null,
@@ -39,11 +38,33 @@ const avail = (
   claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true })),
 });
 
-function renderRows(c: BrowseCard) {
+function renderRows(c: BrowseListCard) {
   return render(
     <RowsView cards={[c]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} />,
   );
 }
+
+// The card the row opens is fetched on click, so the row itself is the only
+// thing on screen that can say the click landed.
+describe("RowsView pending row", () => {
+  it("marks the row whose card is being fetched, and only that row", () => {
+    const other = { ...card, oracleId: "o2", name: "Sol Ring" };
+    render(
+      <RowsView
+        cards={[card, other]}
+        totalCards={2}
+        onShowMore={() => {}}
+        onOpen={() => {}}
+        pendingOracleId="o1"
+      />,
+    );
+    const [first, second] = screen.getAllByRole("button").slice(0, 2);
+    expect(first).toHaveAttribute("aria-busy", "true");
+    expect(first.style.opacity).toBe("0.55");
+    expect(second).toHaveAttribute("aria-busy", "false");
+    expect(second.style.opacity).toBe("");
+  });
+});
 
 describe("RowsView availability marker", () => {
   // The single most important assertion in the feature: three of five rows in

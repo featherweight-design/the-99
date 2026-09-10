@@ -75,6 +75,41 @@ export type BrowseCard = {
   preferredPrinting: PreferredPrinting | null;
 };
 
+/**
+ * A card as the browse list carries it: everything above except the three
+ * fields only the modal reads.
+ *
+ * `printings`, `oracleText` and `backImageUri` were 1.17 MB of a 2.16 MB
+ * payload on the largest collection here — shipped for all 2,472 cards so that
+ * one of them could be opened. The modal now fetches the card it opens, exactly
+ * as every deck surface already did, and the list ships without them.
+ *
+ * `setCounts` is what survives of `printings` for the list's purposes: the
+ * quantity owned per set, uppercased, which the Set ▾ panel's counts sum. It is
+ * a tuple list rather than a record because it serialises smaller, and this
+ * type exists to make the payload small.
+ */
+export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "backImageUri"> & {
+  setCounts: [string, number][];
+};
+
+/** Drops what only the modal reads, and rolls the printings up into set counts. */
+export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
+  return cards.map((card) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured to drop them from `rest`
+    const { printings, oracleText, backImageUri, ...rest } = card;
+    const counts = new Map<string, number>();
+    for (const p of printings) {
+      // Uppercased here rather than trusted: `buildSetOptions` looks these codes
+      // up against uppercased catalog codes, and the aggregation that builds
+      // `BrowseCard` is not the only thing that can construct one.
+      const code = p.setCode.toUpperCase();
+      counts.set(code, (counts.get(code) ?? 0) + p.quantity);
+    }
+    return { ...rest, setCounts: [...counts] };
+  });
+}
+
 export type BrowseFilters = {
   search: string;
   colors: string[];       // subset of ["W","U","B","R","G"]
@@ -355,7 +390,7 @@ export function printingCaption(card: BrowseCard): string {
   return others > 0 ? `${base} +${others} more` : base;
 }
 
-export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] {
+export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseListCard[] {
   const search = f.search.trim().toLowerCase();
   // Types and sets each OR internally and AND with every other filter.
   const types = f.types.map((t) => t.toLowerCase());
@@ -391,7 +426,7 @@ function colorSortKey(identity: string[]): number {
 }
 
 /** Each key's primary comparator, always in ascending form. */
-const SORT_COMPARATORS: Record<SortKey, (a: BrowseCard, b: BrowseCard) => number> = {
+const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) => number> = {
   name: (a, b) => a.name.localeCompare(b.name),
   quantity: (a, b) => a.quantity - b.quantity,
   set: (a, b) => a.primarySetCode.localeCompare(b.primarySetCode),
@@ -413,10 +448,10 @@ export const DEFAULT_SORT_DIRECTION: Record<SortKey, SortDirection> = {
 };
 
 export function sortCards(
-  list: BrowseCard[],
+  list: BrowseListCard[],
   sort: SortKey,
   direction: SortDirection = DEFAULT_SORT_DIRECTION[sort],
-): BrowseCard[] {
+): BrowseListCard[] {
   const primary = SORT_COMPARATORS[sort];
   const sign = direction === "asc" ? 1 : -1;
   // The name tiebreak stays A→Z in both directions. It is not part of what the
@@ -502,8 +537,8 @@ export async function selectCollectionRows(
 
 export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
-): Promise<BrowseCard[]> {
-  return aggregateCollection(await selectCollectionRows(userId));
+): Promise<BrowseListCard[]> {
+  return toListCards(aggregateCollection(await selectCollectionRows(userId)));
 });
 
 /**

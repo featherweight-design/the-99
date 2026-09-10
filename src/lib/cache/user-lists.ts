@@ -1,13 +1,11 @@
 /**
- * The server-side cache behind `/commanders`.
+ * The server-side cache behind `/commanders`, `/discover` and `/collection`.
  *
  * Measured against the largest collection in the database, `/discover` spent
  * 1.1–1.6s, `/commanders` 1.2s and `/collection` 0.6s assembling their payload,
  * and paid it again on every visit — the browser's own timings put TTFB at 6ms,
  * so the wait is compute, not transport. None of that work depends on anything
- * but the reader's own rows, so it is cached here rather than recomputed. Only
- * `/commanders` is wired through it today — the other two payloads are over the
- * data cache's 2 MB per-entry ceiling, which `cacheForUser` documents below.
+ * but the reader's own rows, so it is cached here rather than recomputed.
  *
  * Not `experimental.staleTimes`, and not the client: this is the one lever that
  * also helps a first visit, which no client cache can reach. See the caching
@@ -41,9 +39,12 @@ function tagFor(userId: string): string {
  * That JSON must also come in under 2 MB, which is the data cache's per-entry
  * ceiling. An entry over it is refused with a warning and never stored, so the
  * loader runs on every request AND pays to serialise its result first — slower
- * than not caching at all. `/discover` (3.1 MB) and `/collection` (2.4 MB) are
- * both over it today and are deliberately left uncached; `/commanders` fits
- * because its second ranking ships as a delta rather than a second list.
+ * than not caching at all. It is the reason each of these three payloads was cut
+ * down before being cached: `/commanders` ships its second ranking as a delta
+ * rather than a second list, `/discover` caches the dictionary-encoded form
+ * (3.1 MB plain, 1.1 MB encoded) and `/collection` caches a browse list with no
+ * printings, oracle text or back art (2.4 MB before, 1.0 MB after). Anything added to one
+ * of these payloads spends headroom that is measured in hundreds of KB, not MB.
  */
 export function cacheForUser<T>(
   userId: string,

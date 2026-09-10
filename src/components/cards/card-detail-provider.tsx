@@ -29,6 +29,21 @@ type CardDetailContextValue = {
   open: (oracleId: string, siblings?: string[]) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
+  /**
+   * The id of the card the modal is currently showing, or null when it is closed.
+   * A surface that mirrors the open card into the URL reads it from here rather
+   * than tracking its own copy, which would drift from the modal on Prev/Next.
+   */
+  openOracleId: string | null;
+  /**
+   * Replace the ordered list Prev/Next pages through, without touching the open
+   * card. A surface whose list is a live filter of something larger re-files it
+   * here when that filter moves; otherwise the modal keeps paging the order that
+   * happened to be on screen at the moment it was opened.
+   */
+  setSiblings: (list: string[]) => void;
+  /** Close the modal, and abandon any fetch still in flight for it. */
+  close: () => void;
 };
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
@@ -140,9 +155,20 @@ export function CardDetailProvider({
     [load],
   );
 
+  // Bumping `latest` is what abandons an in-flight fetch: without it, a card
+  // requested before the close lands afterwards and re-opens the modal.
+  // `failed` is cleared too, or the live region keeps announcing a failure the
+  // reader has already dismissed.
+  const close = useCallback(() => {
+    latest.current++;
+    setCard(null);
+    setPendingOracleId(null);
+    setFailed(false);
+  }, []);
+
   const value = useMemo<CardDetailContextValue>(
-    () => ({ open, pendingOracleId }),
-    [open, pendingOracleId],
+    () => ({ open, pendingOracleId, openOracleId: card?.oracleId ?? null, setSiblings, close }),
+    [open, pendingOracleId, card, close],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
@@ -163,7 +189,7 @@ export function CardDetailProvider({
           card={card}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
-          onClose={() => setCard(null)}
+          onClose={close}
           onPrev={paging && index > 0 ? () => void load(siblings[index - 1]) : null}
           onNext={
             paging && index < siblings.length - 1 ? () => void load(siblings[index + 1]) : null

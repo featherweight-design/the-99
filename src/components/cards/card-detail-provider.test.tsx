@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { CardDetailProvider, CardDetailTrigger, cardDetailCopy } from "./card-detail-provider";
+import {
+  CardDetailProvider, CardDetailTrigger, cardDetailCopy, useCardDetail,
+} from "./card-detail-provider";
 
 const card = (oracleId: string, name: string): BrowseCard => ({
   oracleId,
@@ -46,6 +48,18 @@ function renderTriggers(
       </CardDetailTrigger>
     </CardDetailProvider>,
   );
+}
+
+/** Stands in for a surface whose list changes while the modal is open. */
+function Refiler({ list }: { list: string[] }) {
+  const { setSiblings } = useCardDetail();
+  return <button type="button" onClick={() => setSiblings(list)}>refile</button>;
+}
+
+/** Stands in for a surface closing the modal because its card left the list. */
+function Closer() {
+  const { close } = useCardDetail();
+  return <button type="button" onClick={close}>close</button>;
 }
 
 describe("CardDetailProvider", () => {
@@ -136,6 +150,63 @@ describe("CardDetailProvider", () => {
     expect(screen.getByRole("button", { name: "Previous card" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
     expect(screen.getByText("1 of 1")).toBeInTheDocument();
+  });
+
+  // A surface whose list is a live filter re-files it as that filter moves, and the
+  // modal must page the new order rather than the one it was opened with.
+  it("pages the sibling list a surface re-files, not the one it opened with", async () => {
+    const fetchCard = vi.fn(async (id: string) => (id === "o-signet" ? SIGNET : SOL));
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet"]}>
+          Arcane Signet
+        </CardDetailTrigger>
+        <Refiler list={["o-signet", "o-sol"]} />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+    expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
+
+    await click(screen.getByRole("button", { name: "refile" }));
+    await click(screen.getByRole("button", { name: "Next card" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
+  });
+
+  it("closes on request, and a fetch already in flight does not reopen it", async () => {
+    let resolve!: (c: BrowseCard) => void;
+    const fetchCard = vi.fn(() => new Promise<BrowseCard>((r) => { resolve = r; }));
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await click(screen.getByRole("button", { name: "close" }));
+
+    await act(async () => { resolve(SIGNET); });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText(cardDetailCopy.loading)).not.toBeInTheDocument();
+  });
+
+  it("stops announcing a failure once the reader has dismissed it", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(null);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    expect(await screen.findByText(cardDetailCopy.unavailable)).toBeInTheDocument();
+
+    await click(screen.getByRole("button", { name: "close" }));
+    expect(screen.queryByText(cardDetailCopy.unavailable)).not.toBeInTheDocument();
   });
 
   // Two overlapping clicks: the card the user asked for second has to be the one that lands.

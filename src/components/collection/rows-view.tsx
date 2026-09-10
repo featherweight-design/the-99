@@ -5,7 +5,7 @@
 //   desktop: 52px 54px 1fr 150px 92px 18px   (qty · pips · name · type · set/rarity · chevron)
 // Rarity dot colors per §Rarity Dot Colors.
 
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseListCard } from "../../lib/collection/browse";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -13,7 +13,7 @@ import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
 
-const RARITY_DOT: Record<BrowseCard["rarity"], string> = {
+const RARITY_DOT: Record<BrowseListCard["rarity"], string> = {
   common: "var(--fg-muted)", uncommon: "var(--fg-body)", rare: "var(--accent)", mythic: "var(--warning)",
 };
 
@@ -22,11 +22,14 @@ export function RowsView({
   totalCards,
   onShowMore,
   onOpen,
+  pendingOracleId = null,
 }: {
-  cards: BrowseCard[];
+  cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
   onOpen: (oracleId: string) => void;
+  /** The row whose card is being fetched, which shows the click landed. */
+  pendingOracleId?: string | null;
 }) {
   return (
     // §Rows Scroll Container: flex-1, padding 2px 12px 12px mobile / 12px 34px 34px desktop, flex column, gap 6/7px
@@ -41,11 +44,17 @@ export function RowsView({
         const border = "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--border-strong)]";
         const overRing =
           state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
+        const pending = pendingOracleId === c.oracleId;
         return (
         <button
           key={c.oracleId}
           type="button"
           onClick={() => onOpen(c.oracleId)}
+          // Never `disabled`, for the reason CardDetailTrigger states: disabling
+          // the focused row blurs it, and the modal's focus-return would then
+          // have nothing to hand focus back to on close.
+          aria-busy={pending}
+          style={pending ? { opacity: 0.55 } : undefined}
           aria-label={availabilityCopy.collection.rowAria(
             c.name,
             c.typeLine,
@@ -150,7 +159,7 @@ export function RowsView({
 // hairline on hover at four-plus pips.
 const SHINGLE_FROM = 4;
 
-function ColorPips({ colorIdentity }: { colorIdentity: BrowseCard["colorIdentity"] }) {
+function ColorPips({ colorIdentity }: { colorIdentity: BrowseListCard["colorIdentity"] }) {
   const shingled = colorIdentity.length >= SHINGLE_FROM;
   // Colourless draws one grey pip, so it can never shingle.
   const pips: (string | null)[] = colorIdentity.length === 0 ? [null] : [...colorIdentity];
@@ -176,7 +185,7 @@ function ColorPips({ colorIdentity }: { colorIdentity: BrowseCard["colorIdentity
   );
 }
 
-function SetRarityColumn({ card }: { card: BrowseCard }) {
+function SetRarityColumn({ card }: { card: BrowseListCard }) {
   return (
     <>
       {/* Mobile: single trailing set code — §Row: Set Code (mobile): mono 10.5px, --fg-faint, letter-spacing 0.04em */}

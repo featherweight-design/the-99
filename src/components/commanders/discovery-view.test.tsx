@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
+import { encodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
@@ -41,21 +42,25 @@ function stubWidth(wide: boolean) {
   );
 }
 
-const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
-  items: [],
-  candidateCount: 0,
-  cardsRead: 2805,
-  freePoolSize: 2805,
-  bestPct: null,
-  floorExcluded: 0,
-  poolExcluded: 0,
-  unmeasured: 0,
-  hasDecks: true,
-  deckIdentities: [],
-  availOk: true,
-  sort: "fit",
-  ...over,
-});
+// Encoded on the way in, because that is what the view is handed. Every test
+// below therefore runs the real decode, and a field the encoder drops fails here
+// as well as in the round-trip suite.
+const list = (over: Partial<DiscoveryList> = {}): EncodedDiscovery =>
+  encodeDiscovery({
+    items: [],
+    candidateCount: 0,
+    cardsRead: 2805,
+    freePoolSize: 2805,
+    bestPct: null,
+    floorExcluded: 0,
+    poolExcluded: 0,
+    unmeasured: 0,
+    hasDecks: true,
+    deckIdentities: [],
+    availOk: true,
+    sort: "fit",
+    ...over,
+  });
 
 const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["items"][number] => ({
   slug: "a",
@@ -141,7 +146,7 @@ describe("DiscoveryView", () => {
 
   it("counts only its own control in the Exactly aside", () => {
     window.history.replaceState(null, "", "/discover?q=druid&c=b,g&m=exact");
-    render(<DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />);
+    render(<DiscoveryView encoded={list({ items: fixture, candidateCount: 40 })} />);
     // Scoped to the result line itself: a bare `textContent.includes` matcher
     // also matches every ancestor of the line, up to `<body>`.
     expect(
@@ -158,7 +163,7 @@ describe("DiscoveryView", () => {
   it("counts every control in the ratio the aside is appended to", () => {
     window.history.replaceState(null, "", "/discover?q=druid&c=b,g&m=exact");
     const { container } = render(
-      <DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />,
+      <DiscoveryView encoded={list({ items: fixture, candidateCount: 40 })} />,
     );
     expect(container.textContent).toContain(discoverCopy.result.filtered(2, 40));
   });
@@ -167,20 +172,20 @@ describe("DiscoveryView", () => {
   it("says nothing about Exactly when it is off, or when it costs no row", () => {
     window.history.replaceState(null, "", "/discover?q=druid&c=b,g");
     const { container, unmount } = render(
-      <DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />,
+      <DiscoveryView encoded={list({ items: fixture, candidateCount: 40 })} />,
     );
     expect(container.textContent).not.toContain("Exactly excludes");
     unmount();
 
     // Exact, and every match is already exact: the two modes agree.
     window.history.replaceState(null, "", "/discover?q=plains&c=w&m=exact");
-    const only = render(<DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />);
+    const only = render(<DiscoveryView encoded={list({ items: fixture, candidateCount: 40 })} />);
     expect(only.container.textContent).not.toContain("Exactly excludes");
   });
 
   // ── The rack's own controls ───────────────────────────────────────────
   it("gives the lane its own orders, and no availability control", () => {
-    render(<DiscoveryView discovery={list()} />);
+    render(<DiscoveryView encoded={list()} />);
     expect(orderTrigger()).toBeInTheDocument();
     // The owned lane's control, named here only so this file can assert its absence.
     expect(
@@ -192,7 +197,7 @@ describe("DiscoveryView", () => {
   // this surface allowed to route. `bestfit` is the default and serialises as an
   // absence, so the URL a flip writes names the ranking and nothing else.
   it("navigates on a ranking flip, and on nothing else", () => {
-    render(<DiscoveryView discovery={list()} />);
+    render(<DiscoveryView encoded={list()} />);
     fireEvent.click(orderTrigger());
     fireEvent.click(
       screen.getByRole("menuitemradio", { name: discoverCopy.order.somethingNew }),
@@ -206,7 +211,7 @@ describe("DiscoveryView", () => {
       item({ slug: "b", name: "New Legend", releasedAt: "2024-02-02", rank: 2 }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 2 })} />,
     );
     fireEvent.click(orderTrigger());
     fireEvent.click(screen.getByRole("menuitemradio", { name: discoverCopy.order.recent }));
@@ -228,7 +233,7 @@ describe("DiscoveryView", () => {
       item({ slug: "b", name: "Most Built", deckCount: 9000, rank: 2 }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 2 })} />,
     );
     expect(container.textContent?.indexOf("Most Built")).toBeLessThan(
       container.textContent?.indexOf("Server First") ?? -1,
@@ -245,7 +250,7 @@ describe("DiscoveryView", () => {
       item({ slug: "b", name: "Counted", deckCount: 1, rank: 2 }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 2 })} />,
     );
     expect(container.textContent?.indexOf("Counted")).toBeLessThan(
       container.textContent?.indexOf("Uncounted") ?? -1,
@@ -256,7 +261,7 @@ describe("DiscoveryView", () => {
   // removed. The shipped bar dropped it, which made the stack jump and taught
   // nothing about what the mode belongs to.
   it("greys the match mode until a pip is lit, without taking it out of the tree", () => {
-    render(<DiscoveryView discovery={list({ items: [item({})], candidateCount: 1 })} />);
+    render(<DiscoveryView encoded={list({ items: [item({})], candidateCount: 1 })} />);
     const group = () => screen.getByRole("radiogroup", { name: filterCopy.match.legend });
     expect(group().getAttribute("aria-disabled")).toBe("true");
 
@@ -272,7 +277,7 @@ describe("DiscoveryView", () => {
       item({ slug: "b", colorIdentity: ["U"], rank: 2 }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 2 })} />,
     );
     // At rest the line states the lane rather than printing `2 of 2`.
     expect(container.textContent).toContain(discoverCopy.result.rest(2));
@@ -290,7 +295,7 @@ describe("DiscoveryView", () => {
       item({ slug: "b", colorIdentity: ["U"], rank: 2 }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 2 })} />,
     );
     expect(container.textContent).toContain(discoverCopy.result.filtered(1, 2));
     expect(pip(filterCopy.colour.names.g).getAttribute("aria-pressed")).toBe("true");
@@ -307,7 +312,7 @@ describe("DiscoveryView", () => {
     ];
     const { container } = render(
       <DiscoveryView
-        discovery={list({ items, candidateCount: 40, sort: "new", floorExcluded: 38 })}
+        encoded={list({ items, candidateCount: 40, sort: "new", floorExcluded: 38 })}
       />,
     );
     expect(container.textContent).toContain(discoverCopy.result.rest(2));
@@ -315,7 +320,7 @@ describe("DiscoveryView", () => {
   });
 
   it("mirrors a colour choice into the URL without routing for it", () => {
-    render(<DiscoveryView discovery={list()} />);
+    render(<DiscoveryView encoded={list()} />);
     fireEvent.click(pip(filterCopy.colour.names.g));
     expect(window.location.search).toBe("?c=g");
     expect(replace).not.toHaveBeenCalled();
@@ -324,7 +329,7 @@ describe("DiscoveryView", () => {
   // The mode outlives the pips: it is inert with none lit, but a reader who
   // lights one again gets back the mode they chose rather than the default.
   it("mirrors the mode into the URL, and keeps it when the last pip goes out", () => {
-    render(<DiscoveryView discovery={list()} />);
+    render(<DiscoveryView encoded={list()} />);
     fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.click(mode(filterCopy.match.exactly));
     expect(window.location.search).toBe("?c=g&m=exact");
@@ -341,14 +346,14 @@ describe("DiscoveryView", () => {
       item({ slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 2 })} />,
     );
     expect(container.textContent).toContain(discoverCopy.result.filtered(1, 2));
   });
 
   it("announces a re-rank on its own live region once the new ordering lands", () => {
-    const { rerender } = render(<DiscoveryView discovery={list()} />);
-    rerender(<DiscoveryView discovery={list({ sort: "new" })} />);
+    const { rerender } = render(<DiscoveryView encoded={list()} />);
+    rerender(<DiscoveryView encoded={list({ sort: "new" })} />);
     expect(screen.getByText(discoveryCopy.sort.announce("new", 0))).toBeTruthy();
   });
 
@@ -358,7 +363,7 @@ describe("DiscoveryView", () => {
   // State 1 sits ABOVE a full list: with no decks built the fit ranking is
   // complete and only the novelty ordering is unavailable.
   it("banners the no-decks reason without emptying the list", () => {
-    render(<DiscoveryView discovery={list({ items: [item({})], hasDecks: false })} />);
+    render(<DiscoveryView encoded={list({ items: [item({})], hasDecks: false })} />);
     expect(screen.getByText(empty.noDecksHeading)).toBeTruthy();
     expect(screen.getAllByText("A Commander").length).toBeGreaterThan(0);
   });
@@ -367,7 +372,7 @@ describe("DiscoveryView", () => {
     window.history.replaceState(null, "", "/discover?s=new");
     render(
       <DiscoveryView
-        discovery={list({ sort: "new", candidateCount: 3334, floorExcluded: 3334, bestPct: 18 })}
+        encoded={list({ sort: "new", candidateCount: 3334, floorExcluded: 3334, bestPct: 18 })}
       />,
     );
     expect(screen.getByText(empty.floorHeading)).toBeTruthy();
@@ -380,14 +385,14 @@ describe("DiscoveryView", () => {
   // An empty list the floor did not empty is a different fact — nothing had a
   // distance to measure — and the floor copy would name a floor that took nobody.
   it("does not blame the floor for an empty list it never excluded from", () => {
-    render(<DiscoveryView discovery={list({ sort: "new" })} />);
+    render(<DiscoveryView encoded={list({ sort: "new" })} />);
     expect(screen.queryByText(empty.floorHeading)).toBeNull();
   });
 
   it("blames the colours when the filter is what emptied the list, and names the built decks", () => {
     const items = [item({ colorIdentity: ["U"] })];
     render(
-      <DiscoveryView discovery={list({ items, deckIdentities: [["B", "G"], ["R"]] })} />,
+      <DiscoveryView encoded={list({ items, deckIdentities: [["B", "G"], ["R"]] })} />,
     );
     fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(empty.filteredHeading)).toBeTruthy();
@@ -411,7 +416,7 @@ describe("DiscoveryView", () => {
   // unbuilt, so with none matching there is nothing to explain the absence with.
   it("omits the built clause when no built deck matches the filter", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(<DiscoveryView discovery={list({ items, deckIdentities: [["R"]] })} />);
+    render(<DiscoveryView encoded={list({ items, deckIdentities: [["R"]] })} />);
     fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(empty.filteredBody("green", 1))).toBeTruthy();
   });
@@ -423,7 +428,7 @@ describe("DiscoveryView", () => {
     const items = [item({ colorIdentity: ["U"] })];
     render(
       <DiscoveryView
-        discovery={list({
+        encoded={list({
           items,
           sort: "new",
           candidateCount: 3334,
@@ -441,7 +446,7 @@ describe("DiscoveryView", () => {
   // marks the whole clause rather than a phrase inside it.
   it("emphasises the built clause", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(<DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} />);
+    render(<DiscoveryView encoded={list({ items, deckIdentities: [["G"]] })} />);
     fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(empty.filteredBuiltClause(1, 1, "Green")).tagName).toBe("STRONG");
   });
@@ -450,7 +455,7 @@ describe("DiscoveryView", () => {
   // decks cover the colours rather than that they are them.
   it("counts a wider deck identity, and does not call it the filtered one", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(<DiscoveryView discovery={list({ items, deckIdentities: [["G", "W"]] })} />);
+    render(<DiscoveryView encoded={list({ items, deckIdentities: [["G", "W"]] })} />);
     fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(empty.filteredBuiltClause(1, 1, "Green"))).toBeTruthy();
     expect(screen.queryByText(/decks is Green/)).toBeNull();
@@ -458,7 +463,7 @@ describe("DiscoveryView", () => {
 
   it("does not say one of your 1 decks", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(<DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} />);
+    render(<DiscoveryView encoded={list({ items, deckIdentities: [["G"]] })} />);
     fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(/^Your only deck covers Green/)).toBeTruthy();
   });
@@ -470,7 +475,7 @@ describe("DiscoveryView", () => {
     );
 
   it("opens on one step and reveals the next, naming the band it is about to show", () => {
-    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />);
+    render(<DiscoveryView encoded={list({ items: many(60), candidateCount: 60 })} />);
     expect(screen.queryByText("Commander 25")).toBeNull();
     expect(screen.getByText(discoveryCopy.window.revealBand(26, 50, 60))).toBeTruthy();
 
@@ -484,7 +489,7 @@ describe("DiscoveryView", () => {
   // and why the header's `WindowCount` went with the bar the rack replaced.
   it("counts the window in its own control, and speaks each reveal on the live region", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />,
+      <DiscoveryView encoded={list({ items: many(60), candidateCount: 60 })} />,
     );
     expect(container.textContent).toContain("35 remaining");
     expect(container.textContent).not.toContain("more below");
@@ -498,13 +503,13 @@ describe("DiscoveryView", () => {
   // never receive the reveal's focus move, so they are not tab stops.
   it("leaves an unwindowed list's rows out of the tab order", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(10), candidateCount: 10 })} />,
+      <DiscoveryView encoded={list({ items: many(10), candidateCount: 10 })} />,
     );
     expect(container.querySelectorAll("li[tabindex]").length).toBe(0);
   });
 
   it("rules off a list that was windowed once it is fully revealed", () => {
-    render(<DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} />);
+    render(<DiscoveryView encoded={list({ items: many(30), candidateCount: 30 })} />);
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
   });
@@ -513,7 +518,7 @@ describe("DiscoveryView", () => {
   // row gap, so outside the `<ul>` it sits flush against the card above it.
   it("keeps the reveal control inside the list, where the row gap reaches it", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />,
+      <DiscoveryView encoded={list({ items: many(60), candidateCount: 60 })} />,
     );
     const control = screen.getByRole("button", { name: /Show 25 more commanders/ });
     expect(control.closest("ul")).toBe(container.querySelector("ul"));
@@ -524,7 +529,7 @@ describe("DiscoveryView", () => {
   // window, where the count line and the band are both clamped by their callers.
   it("stops the window at the end of the list on a final short step", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} />,
+      <DiscoveryView encoded={list({ items: many(30), candidateCount: 30 })} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getByText(revealAnnouncement(30, 30, 25))).toBeTruthy();
@@ -538,17 +543,17 @@ describe("DiscoveryView", () => {
   it("returns the window to the top when the ordering underneath it changes", () => {
     const items = many(60);
     const { rerender } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 60 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 60 })} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
 
-    rerender(<DiscoveryView discovery={list({ items, candidateCount: 60, sort: "new" })} />);
+    rerender(<DiscoveryView encoded={list({ items, candidateCount: 60, sort: "new" })} />);
     expect(screen.queryByText("Commander 25")).toBeNull();
   });
 
   it("returns the window to the top when a colour filter narrows the list", () => {
-    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />);
+    render(<DiscoveryView encoded={list({ items: many(60), candidateCount: 60 })} />);
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
 
@@ -560,7 +565,7 @@ describe("DiscoveryView", () => {
   // window's own figure rather than a row name: a name sort keeps every one of
   // these 60 rows, only in a different order, so "is row N gone" says nothing.
   it("returns the window to the top when the order changes under it", () => {
-    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />);
+    render(<DiscoveryView encoded={list({ items: many(60), candidateCount: 60 })} />);
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getByRole("button", { name: /Show 25 more commanders, 10 remaining/ })).toBeTruthy();
 
@@ -593,7 +598,7 @@ describe("DiscoveryView", () => {
     };
 
     it("routes on a ranking it has not seen and serves one it has", () => {
-      const { rerender } = render(<DiscoveryView discovery={fitList} />);
+      const { rerender } = render(<DiscoveryView encoded={fitList} />);
       // Plural queries throughout: a row renders its name once per breakpoint
       // subtree, so the singular form matches two nodes and throws.
       expect(screen.getAllByText("Fit Ranked").length).toBeGreaterThan(0);
@@ -603,7 +608,7 @@ describe("DiscoveryView", () => {
       expect(replace).toHaveBeenCalledTimes(1);
 
       window.history.replaceState(null, "", "/discover?o=new");
-      rerender(<DiscoveryView discovery={newList} />);
+      rerender(<DiscoveryView encoded={newList} />);
       expect(screen.getAllByText("New Ranked").length).toBeGreaterThan(0);
 
       // Hit: the fit ranking is still in hand. No second request, and the URL
@@ -619,10 +624,10 @@ describe("DiscoveryView", () => {
     // does not own copied off the live URL rather than rebuilt.
     it("leaves parameters it does not own alone when it serves from cache", () => {
       window.history.replaceState(null, "", "/discover?c=b,g&utm=x");
-      const { rerender } = render(<DiscoveryView discovery={fitList} />);
+      const { rerender } = render(<DiscoveryView encoded={fitList} />);
       flip(discoverCopy.order.somethingNew);
       window.history.replaceState(null, "", "/discover?c=b,g&utm=x&o=new");
-      rerender(<DiscoveryView discovery={newList} />);
+      rerender(<DiscoveryView encoded={newList} />);
 
       flip(discoverCopy.order.bestFit);
       const params = new URLSearchParams(window.location.search);
@@ -634,12 +639,12 @@ describe("DiscoveryView", () => {
     // The payload the server just produced is the truth, whatever the cache
     // holds for that ranking — an upload or a new deck re-ranks everything.
     it("takes a fresh payload over a cached one for the same ranking", () => {
-      const { rerender } = render(<DiscoveryView discovery={fitList} />);
+      const { rerender } = render(<DiscoveryView encoded={fitList} />);
       const rebuilt = list({
         items: [item({ name: "Re-Ranked", slug: "re-ranked" })],
         candidateCount: 1,
       });
-      rerender(<DiscoveryView discovery={rebuilt} />);
+      rerender(<DiscoveryView encoded={rebuilt} />);
       expect(screen.getAllByText("Re-Ranked").length).toBeGreaterThan(0);
       expect(screen.queryAllByText("Fit Ranked").length).toBe(0);
     });
@@ -650,7 +655,7 @@ describe("DiscoveryView", () => {
     // downgrades `new` to fit with no decks built, so the two really can differ.
     it("shows the ranking that came back, not the one that was asked for", () => {
       window.history.replaceState(null, "", "/discover?s=new");
-      render(<DiscoveryView discovery={list({ hasDecks: false })} />);
+      render(<DiscoveryView encoded={list({ hasDecks: false })} />);
       expect(orderTrigger()).toBeInTheDocument();
     });
   });
@@ -667,7 +672,7 @@ describe("DiscoveryView", () => {
   // memory, and that feedback is the point. Only the URL, the window reset and
   // the server lookup wait for the typing to stop.
   it("narrows the list on the keystroke, not on the debounce", () => {
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
+    render(<DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />);
     fireEvent.change(field(), { target: { value: "yarok" } });
     expect(screen.queryByText("Meren of Clan Nel Toth")).toBeNull();
     expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
@@ -676,7 +681,7 @@ describe("DiscoveryView", () => {
   });
 
   it("mirrors the settled query as ?q=, and drops it when the field is cleared", async () => {
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
+    render(<DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />);
     fireEvent.change(field(), { target: { value: "yarok" } });
     expect(window.location.search).toBe("");
 
@@ -692,7 +697,7 @@ describe("DiscoveryView", () => {
 
   it("opens under the query the incoming URL names", () => {
     window.history.replaceState(null, "", "/discover?q=meren");
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
+    render(<DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />);
     expect(screen.getAllByText("Meren of Clan Nel Toth").length).toBeGreaterThan(0);
     expect(screen.queryByText("Yarok, the Desecrated")).toBeNull();
   });
@@ -703,7 +708,7 @@ describe("DiscoveryView", () => {
   it("names the whole unbuilt pool, not the ranked count, under the novelty sort", async () => {
     const { container } = render(
       <DiscoveryView
-        discovery={list({ items: named(), candidateCount: 40, sort: "new", floorExcluded: 38 })}
+        encoded={list({ items: named(), candidateCount: 40, sort: "new", floorExcluded: 38 })}
       />,
     );
     fireEvent.change(field(), { target: { value: "krenko" } });
@@ -716,7 +721,7 @@ describe("DiscoveryView", () => {
   // looked and offers the one correction that could help.
   it("names the query when nothing is called that, and clears the search rather than the colours", async () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.change(field(), { target: { value: "krenko" } });
@@ -742,7 +747,7 @@ describe("DiscoveryView", () => {
   it("holds the space with the loading mark while the lookup is out", async () => {
     findExcluded.mockReturnValue(new Promise(() => {}));
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "krenko" } });
 
@@ -764,7 +769,7 @@ describe("DiscoveryView", () => {
       item({ slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["U"] }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 1 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 1 })} />,
     );
     fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.change(field(), { target: { value: "yarok" } });
@@ -791,7 +796,7 @@ describe("DiscoveryView", () => {
       }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 1 })} />,
+      <DiscoveryView encoded={list({ items, candidateCount: 1 })} />,
     );
     fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.click(mode(filterCopy.match.exactly));
@@ -810,7 +815,7 @@ describe("DiscoveryView", () => {
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
     // Nothing is claimed until the server has answered: "no commander is named
@@ -840,7 +845,7 @@ describe("DiscoveryView", () => {
     findExcluded.mockResolvedValue([
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
+    render(<DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />);
     fireEvent.change(field(), { target: { value: "the" } });
 
     await waitFor(() =>
@@ -857,7 +862,7 @@ describe("DiscoveryView", () => {
   it("makes no claim about the index when the lookup fails", async () => {
     findExcluded.mockRejectedValue(new Error("down"));
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
     await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
@@ -869,7 +874,7 @@ describe("DiscoveryView", () => {
   it("makes no claim about the index when the lookup declines to answer", async () => {
     findExcluded.mockResolvedValue(null);
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
     await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
@@ -880,7 +885,7 @@ describe("DiscoveryView", () => {
   // in exactly the way a failure leaves it unchecked.
   it("keeps the index out of it when the query is too short to ask about", async () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "z" } });
     await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("z")));
@@ -893,7 +898,7 @@ describe("DiscoveryView", () => {
   // query that empties the list on its own outranks it.
   it("does not blame the colours for a query that matches nothing either", async () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.change(field(), { target: { value: "z" } });
@@ -908,7 +913,7 @@ describe("DiscoveryView", () => {
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "floor", pct: 9 },
     ]);
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "the" } });
 
@@ -926,7 +931,7 @@ describe("DiscoveryView", () => {
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+      <DiscoveryView encoded={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
     await waitFor(() =>
@@ -954,7 +959,7 @@ describe("DiscoveryView", () => {
       unmeasured: 212,
       bestPct: 22,
     });
-    const { container, rerender } = render(<DiscoveryView discovery={discovery} />);
+    const { container, rerender } = render(<DiscoveryView encoded={discovery} />);
     // The floor alone, so the nearest miss has room.
     expect(container.textContent).toContain(
       planeCopy.exclusion.floorAloneWithUnmeasured(1047, 212, 30, 22),
@@ -968,7 +973,7 @@ describe("DiscoveryView", () => {
       ),
     );
 
-    rerender(<DiscoveryView discovery={list({ items, candidateCount: 2, sort: "new" })} />);
+    rerender(<DiscoveryView encoded={list({ items, candidateCount: 2, sort: "new" })} />);
     expect(container.textContent).not.toContain("support floor");
   });
 
@@ -981,7 +986,7 @@ describe("DiscoveryView", () => {
     ]);
     const { container } = render(
       <DiscoveryView
-        discovery={list({
+        encoded={list({
           items: named(),
           candidateCount: 214,
           sort: "new",
