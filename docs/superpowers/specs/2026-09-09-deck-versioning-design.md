@@ -286,8 +286,9 @@ actually gets tinkered with: the list is edited on Deckcheck and pasted back.
 
 **A paste lands in the draft and never commits.** The user commits, always. This needs no code
 change — `updateDeckFromList` writes `deck_cards` and `deck_unresolved_rows`, both of which are
-draft state, and touches no version table, so the paste already behaves this way — but it is
-recorded here because the reverse is the tempting reading, and it would
+draft state on a deck that has committed a version, and touches no version table, so the paste
+already behaves this way. On a brew with no version there is nothing to diff against and a paste
+is simply the deck, exactly as today. It is recorded here because the reverse is the tempting reading, and it would
 skip the one moment the feature exists for: seeing the buy list and being offered the pulls
 before the claims move.
 
