@@ -4,7 +4,7 @@
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { cssUrl, printedFaceName } from "../../lib/collection/browse";
+import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -90,9 +90,21 @@ export function GridView({
                 grid its equal-height read. This surface carries no `//` mark
                 (spec errata 3) — the set code below is the fact that explains
                 the name. */}
-            <div className="truncate text-[12px] md:text-[13px] font-semibold" style={{ color: "var(--fg)" }}>
+            {/* The tile is a real <button> whose accessible name is its text
+                content — it carries no aria-label, because one would swallow the
+                availability marker's `spoken` prose above. So the full name is
+                spoken from an sr-only sibling and the clipped caption is hidden
+                from assistive tech, rather than a renamed two-faced card being
+                announced as its front face alone. For every card that is not
+                renamed the two strings are identical and nothing moves. */}
+            <div
+              aria-hidden
+              className="truncate text-[12px] md:text-[13px] font-semibold"
+              style={{ color: "var(--fg)" }}
+            >
               {printedFaceName(c)}
             </div>
+            <span className="sr-only">{printedNameOf(c)}</span>
             {/* Set/rarity caption — mono 9.5/10px, --fg-faint */}
             <div className="font-mono text-[9.5px] md:text-[10px] mt-[2px] md:mt-[3px]" style={{ color: "var(--fg-faint)" }}>
               <span className="md:hidden">{c.primarySetCode}</span>
