@@ -12,9 +12,14 @@ export function stubViewport(width: number) {
   const listeners = new Map<string, Set<() => void>>();
   let current = width;
 
+  // Only min-width is answered. Anything else — `(hover: hover)`,
+  // `(prefers-reduced-motion)` — is not a width question, and answering it with
+  // a width would put an unrelated component on a branch this stub knows
+  // nothing about. jsdom's own matchMedia reports false for those, which is
+  // what a test that never asked about them expects.
   const matchesFor = (query: string) => {
-    const min = Number(/min-width:\s*(\d+)px/.exec(query)?.[1] ?? 0);
-    return current >= min;
+    const min = /min-width:\s*(\d+)px/.exec(query)?.[1];
+    return min !== undefined && current >= Number(min);
   };
 
   vi.spyOn(window, "matchMedia").mockImplementation(
