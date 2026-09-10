@@ -3,7 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
 import { availabilityState, type Availability, type AvailabilityState } from "../decks/availability";
-import { faceNames } from "../cards/faces";
+import { faceNames, isTwoFaced } from "../cards/faces";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -422,12 +422,19 @@ export function printedNameOf(card: Pick<BrowseCard, "name" | "printedName">): s
  * cannot hold that and locked decision 3 forbids the second line, so rows and
  * tiles take the front half and the modal keeps the whole string.
  *
- * The split is applied ONLY to a printed name. A card with none is returned
+ * The split is applied ONLY to a printed name on a card whose layout really has
+ * two faces. `Fire // Ice` and `Bonecrusher Giant // Stomp` carry the separator
+ * on one piece of card stock, so cutting them would drop half of a name the row
+ * shows whole today — the same reason `isTwoFaced` asks the layout word instead
+ * of looking for the mark. A card with no printed name is returned
  * byte-identically, `//` and all: today's rows print the full oracle string and
  * the control state must not move.
  */
-export function printedFaceName(card: Pick<BrowseCard, "name" | "printedName">): string {
-  return card.printedName ? faceNames(card.printedName).front : card.name;
+export function printedFaceName(
+  card: Pick<BrowseCard, "name" | "printedName" | "layout">,
+): string {
+  if (!card.printedName) return card.name;
+  return isTwoFaced(card.layout) ? faceNames(card.printedName).front : card.printedName;
 }
 
 /**

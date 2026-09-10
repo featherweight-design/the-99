@@ -162,6 +162,9 @@ describe("DeckCardTile printed name", () => {
     ...card,
     name: "World at War",
     printedName: "Battle of Olympus // Aftermath",
+    // The front-face cut asks the layout word, so a fixture without one would
+    // caption the whole string — a split card is one face and keeps both halves.
+    layout: "transform",
   } as DeckDetailCard;
 
   it("captions the tile with the printed front face and drops the tooltip", () => {

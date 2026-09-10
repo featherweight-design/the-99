@@ -659,7 +659,8 @@ describe("DecklistRow printed name", () => {
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <DecklistRow
           deckId="d1"
-          card={{ ...renamed, printedName: "Battle of Olympus // Aftermath" } as DeckDetailCard}
+          card={{ ...renamed, printedName: "Battle of Olympus // Aftermath",
+                  layout: "transform" } as DeckDetailCard}
         />
       </CardDetailProvider>,
     );

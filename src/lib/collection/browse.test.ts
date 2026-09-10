@@ -230,14 +230,29 @@ describe("printedName", () => {
 
   it("shows a renamed two-faced card's front face on a row, and the whole string in full", () => {
     const twoFaced = { name: "Delver of Secrets // Insectile Aberration",
-                       printedName: "Battle of Olympus // Aftermath" };
+                       printedName: "Battle of Olympus // Aftermath", layout: "transform" };
     expect(printedFaceName(twoFaced)).toBe("Battle of Olympus");
     expect(printedNameOf(twoFaced)).toBe("Battle of Olympus // Aftermath");
   });
 
   it("leaves an unrenamed two-faced card's row string exactly as it is today", () => {
-    const twoFaced = { name: "Delver of Secrets // Insectile Aberration", printedName: null };
+    const twoFaced = { name: "Delver of Secrets // Insectile Aberration",
+                       printedName: null, layout: "transform" };
     expect(printedFaceName(twoFaced)).toBe("Delver of Secrets // Insectile Aberration");
+  });
+
+  // A split or adventure card carries ` // ` on one piece of card stock, so the
+  // front-face cut would drop half a name the row shows whole today. The layout
+  // word decides, exactly as `isTwoFaced` does for the `//` mark itself.
+  it("keeps both halves of a renamed split card, which has one face", () => {
+    const split = { name: "Fire // Ice", printedName: "Flame // Frost", layout: "split" };
+    expect(printedFaceName(split)).toBe("Flame // Frost");
+  });
+
+  it("keeps both halves of a renamed adventure card", () => {
+    const adventure = { name: "Bonecrusher Giant // Stomp",
+                        printedName: "Ogre // Smash", layout: "adventure" };
+    expect(printedFaceName(adventure)).toBe("Ogre // Smash");
   });
 
   // The deck route asks for ~99 oracle ids at once and keys the answers by id.
