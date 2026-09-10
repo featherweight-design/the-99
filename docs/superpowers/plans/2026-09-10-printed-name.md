@@ -408,7 +408,11 @@ git commit -m "feat(printed name): derive printedName from the printing the art 
 
 - [ ] **Step 1: Write the failing test**
 
-Add to `src/components/cards/card-modal.test.tsx`. The file already has a `card()` factory — extend it to accept `printedName`, defaulting to `null`.
+Add to `src/components/cards/card-modal.test.tsx`. **Corrected against the tree:** the file has no
+`card()` factory — it has a `const card: BrowseCard` literal and a `mount(c)` helper, so each case
+spreads (`mount({ ...card, name, printedName })`). Step 4b's flip assertion belongs in
+`two-faced.test.tsx`, which owns the flip control's tests and its `delver` fixture; `card-modal.test.tsx`
+has no flip test to match.
 
 ```ts
 describe("the oracle-name line", () => {
@@ -562,7 +566,16 @@ The easy half. Both views already print the set code beside the name, so the pri
 
 **Files:**
 - Modify: `src/components/collection/grid-view.tsx:88`
-- Modify: `src/components/collection/rows-view.tsx` — `c.name` occurs at exactly **three** places, `:59`, `:91` and `:95`, and each is handled differently. `:95` is the displayed name and takes the printed one. `:91` is a `title` attribute and is **deleted outright** — the spec forbids a `title` on any of these surfaces, and left in place it would hover a stale oracle name over a printed one. `:59` is the trigger's `name` prop, which is the row's accessible name, and takes the printed name.
+- Modify: `src/components/collection/rows-view.tsx` — `c.name` occurs at exactly **three** places, `:59`, `:91` and `:95`, and each is handled differently. `:95` is the displayed name and takes `printedFaceName`. `:91` is a `title` attribute and is **deleted outright** — the spec forbids a `title` on any of these surfaces, and left in place it would hover a stale oracle name over a printed one. `:59` takes `printedNameOf`, the whole string.
+
+  **Corrected against the tree:** neither collection view uses `CardDetailTrigger`. Each tile and
+  row is its own plain `<button>` calling `onOpen(oracleId)`. `:59` is therefore the row button's
+  own `aria-label`, composed through `availabilityCopy.collection.rowAria(...)` — still a real
+  control, so the full-name rule is satisfied in the same place, by a different mechanism. The
+  grid tile has **no** `aria-label` at all: its accessible name is its text content, which is the
+  caption. A renamed two-faced card's back face is therefore unspoken on the collection grid — the
+  same surface spec errata 3 already accepts as unsignposted, and the modal is its recovery path.
+  No `aria-label` is invented there, because inventing one is outside this plan's scope.
 - Test: `src/components/collection/grid-view.test.tsx` — it exists, as does `rows-view.test.tsx`; both already carry a `BrowseListCard` factory Task 2 widened.
 
 **Interfaces:**
