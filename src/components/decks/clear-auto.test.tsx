@@ -309,6 +309,43 @@ describe("ClearAutoButton", () => {
     ).not.toBeInTheDocument();
   });
 
+  // A row's own keep can take the last auto card while the question is up. The
+  // question goes with the count; the flag must go with it, or the next fill
+  // pass reopens a question nobody asked for.
+  it("forgets an unanswered question once the count reaches 0", async () => {
+    const props = {
+      keptCount: 0,
+      onClear: vi.fn(),
+      pending: false,
+      onKeepAll: vi.fn(),
+      keepAllPending: false,
+    };
+    const { rerender } = render(<ClearAutoButton count={3} {...props} />);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("3") })
+        .click();
+    });
+    expect(
+      screen.getByText(recommendationsCopy.auto.keepAllConfirm("3")),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      rerender(<ClearAutoButton count={0} {...props} />);
+    });
+    await act(async () => {
+      rerender(<ClearAutoButton count={2} {...props} />);
+    });
+
+    expect(
+      screen.queryByText(recommendationsCopy.auto.keepAllConfirm("2")),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") }),
+    ).toBeInTheDocument();
+  });
+
   // The trigger unmounts while the question is up, so a cancel that did not
   // carry focus back would drop a keyboard reader at the top of the document.
   it("writes nothing on cancel, and returns focus to the trigger", async () => {

@@ -76,6 +76,17 @@ export function ClearAutoButton({
   // disabled, or does not come back at all.
   const returningFocus = useRef(false);
 
+  // A row's own keep can take the last auto card while the question is up. The
+  // question unmounts with the count, but the flag would outlive it and raise
+  // the question again unasked the next time a fill pass puts auto cards back.
+  // Adjusted during render rather than in an effect so the stale question never
+  // paints, and so the focus effect below never runs against it.
+  const [seenCount, setSeenCount] = useState(count);
+  if (count !== seenCount) {
+    setSeenCount(count);
+    if (count === 0) setConfirming(false);
+  }
+
   useEffect(() => {
     if (confirming) {
       yesRef.current?.focus();
