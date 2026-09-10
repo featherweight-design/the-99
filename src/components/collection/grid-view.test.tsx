@@ -45,6 +45,28 @@ function renderTiles(c: BrowseListCard) {
   );
 }
 
+// The card the tile opens is fetched on click, so the tile itself is the only
+// thing on screen that can say the click landed.
+describe("GridView pending tile", () => {
+  it("marks the tile whose card is being fetched, and only that tile", () => {
+    const other = { ...card, oracleId: "o2", name: "Sol Ring" };
+    render(
+      <GridView
+        cards={[card, other]}
+        totalCards={2}
+        onShowMore={() => {}}
+        onOpen={() => {}}
+        pendingOracleId="o1"
+      />,
+    );
+    const [first, second] = screen.getAllByRole("button").slice(0, 2);
+    expect(first).toHaveAttribute("aria-busy", "true");
+    expect(first.style.opacity).toBe("0.55");
+    expect(second).toHaveAttribute("aria-busy", "false");
+    expect(second.style.opacity).toBe("");
+  });
+});
+
 describe("GridView availability chip", () => {
   it("renders nothing at all for a free card", () => {
     renderTiles({ ...card, quantity: 2, availability: avail(2, 0) });

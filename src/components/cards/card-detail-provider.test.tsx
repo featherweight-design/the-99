@@ -192,6 +192,23 @@ describe("CardDetailProvider", () => {
     expect(screen.queryByText(cardDetailCopy.loading)).not.toBeInTheDocument();
   });
 
+  it("stops announcing a failure once the reader has dismissed it", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(null);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    expect(await screen.findByText(cardDetailCopy.unavailable)).toBeInTheDocument();
+
+    await click(screen.getByRole("button", { name: "close" }));
+    expect(screen.queryByText(cardDetailCopy.unavailable)).not.toBeInTheDocument();
+  });
+
   // Two overlapping clicks: the card the user asked for second has to be the one that lands.
   it("ignores a slow fetch that a later click has superseded", async () => {
     const pending = new Map<string, (c: BrowseCard) => void>();

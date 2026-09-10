@@ -15,11 +15,14 @@ export function GridView({
   totalCards,
   onShowMore,
   onOpen,
+  pendingOracleId = null,
 }: {
   cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
   onOpen: (oracleId: string) => void;
+  /** The tile whose card is being fetched, which shows the click landed. */
+  pendingOracleId?: string | null;
 }) {
   return (
     // §Grid Container: grid, 1fr 1fr mobile / repeat(5,1fr) desktop, gap 12/20px (desktop +4 per Surfaces v2 browse loosening; mobile stays v1), padding 4px 14px 14px mobile / 20px 34px 34px desktop
@@ -32,11 +35,17 @@ export function GridView({
           state === "over"
             ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)]"
             : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--accent)]";
+        const pending = pendingOracleId === c.oracleId;
         return (
         <button
           key={c.oracleId}
           type="button"
           onClick={() => onOpen(c.oracleId)}
+          // Never `disabled`, for the reason CardDetailTrigger states: disabling
+          // the focused tile blurs it, and the modal's focus-return would then
+          // have nothing to hand focus back to on close.
+          aria-busy={pending}
+          style={pending ? { opacity: 0.55 } : undefined}
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: an inline
           // border outranks the hover: variant and the accent hover never lands.

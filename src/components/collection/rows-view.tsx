@@ -22,11 +22,14 @@ export function RowsView({
   totalCards,
   onShowMore,
   onOpen,
+  pendingOracleId = null,
 }: {
   cards: BrowseListCard[];
   totalCards: number;
   onShowMore: () => void;
   onOpen: (oracleId: string) => void;
+  /** The row whose card is being fetched, which shows the click landed. */
+  pendingOracleId?: string | null;
 }) {
   return (
     // §Rows Scroll Container: flex-1, padding 2px 12px 12px mobile / 12px 34px 34px desktop, flex column, gap 6/7px
@@ -41,11 +44,17 @@ export function RowsView({
         const border = "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--border-strong)]";
         const overRing =
           state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
+        const pending = pendingOracleId === c.oracleId;
         return (
         <button
           key={c.oracleId}
           type="button"
           onClick={() => onOpen(c.oracleId)}
+          // Never `disabled`, for the reason CardDetailTrigger states: disabling
+          // the focused row blurs it, and the modal's focus-return would then
+          // have nothing to hand focus back to on close.
+          aria-busy={pending}
+          style={pending ? { opacity: 0.55 } : undefined}
           aria-label={availabilityCopy.collection.rowAria(
             c.name,
             c.typeLine,

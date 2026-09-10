@@ -236,7 +236,13 @@ export function CollectionBrowser({
   const effectiveView: ViewMode = view ?? (isDesktop ? "grid" : "rows");
   // The modal itself lives in the page's CardDetailProvider, which fetches the card's
   // printings and oracle text on click. The browse list ships without them.
-  const { open: openDetail, openOracleId, setSiblings, close: closeDetail } = useCardDetail();
+  const {
+    open: openDetail,
+    openOracleId,
+    pendingOracleId,
+    setSiblings,
+    close: closeDetail,
+  } = useCardDetail();
   const [shown, setShown] = useState(PAGE_SIZE);
 
   const totalQuantity = useMemo(() => cards.reduce((sum, c) => sum + c.quantity, 0), [cards]);
@@ -476,9 +482,9 @@ export function CollectionBrowser({
           }
         />
       ) : effectiveView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} />
       )}
     </>
   );

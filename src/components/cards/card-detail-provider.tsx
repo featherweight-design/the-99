@@ -157,10 +157,13 @@ export function CardDetailProvider({
 
   // Bumping `latest` is what abandons an in-flight fetch: without it, a card
   // requested before the close lands afterwards and re-opens the modal.
+  // `failed` is cleared too, or the live region keeps announcing a failure the
+  // reader has already dismissed.
   const close = useCallback(() => {
     latest.current++;
     setCard(null);
     setPendingOracleId(null);
+    setFailed(false);
   }, []);
 
   const value = useMemo<CardDetailContextValue>(
