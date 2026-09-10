@@ -199,6 +199,14 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
     // for a missing version of a deck that is itself gone.
     if (!deck) throw new Error("deck not found");
 
+    // `for update` on the draft rows, not merely the deck row above. The paths
+    // that edit `deck_cards` mostly never touch the deck row, so its lock does
+    // not serialize them; a row lock does, because their own UPDATE takes the
+    // same one. Without it an edit landing mid-restore is deleted below with no
+    // trace, which is the one loss this whole function is careful to bound.
+    await tx.select({ oracleId: deckCards.oracleId })
+      .from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
+
     const [version] = await tx.select().from(deckVersions)
       .where(and(eq(deckVersions.id, versionId), eq(deckVersions.deckId, deckId)));
     if (!version) throw new Error("version not found");
