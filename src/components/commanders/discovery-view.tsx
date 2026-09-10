@@ -25,7 +25,11 @@ import { colorWords, guildLabel } from "../../lib/copy/color-labels";
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
 // and pulls `ws` and the neon driver in with it. A type-only clause is erased at
 // compile time, so none of that reaches the client bundle.
-import type { DiscoveryItem, DiscoveryList } from "../../lib/discovery/list";
+import type { DiscoveryItem } from "../../lib/discovery/list";
+// Not type-only: `decodeDiscovery` runs on the client. Safe to import as a
+// value for the same reason the clause above is not — `encode.ts` imports
+// nothing but types from `list.ts`, so the database module never comes with it.
+import { decodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { FilterRack } from "./rack/filter-rack";
 import { PageHeader } from "./page-header";
 import { RecCard } from "./rec-card";
@@ -125,7 +129,11 @@ function settleOrder(p: LaneParams, sort: "fit" | "new"): LaneParams {
  * pool was selected, so the control silently removed rows from a list it only
  * claimed to reorder.
  */
-export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList }) {
+export function DiscoveryView({ encoded }: { encoded: EncodedDiscovery }) {
+  // Decoded once per payload, and memoised on it: the cache below files rankings
+  // by identity, so a fresh object every render would refile the same ranking on
+  // every one of them.
+  const served = useMemo(() => decodeDiscovery(encoded), [encoded]);
   // Shadowing the prop, so everything below reads the ranking that is on screen
   // without caring whether it arrived from the server this navigation or came
   // back out of the cache. A ranking already seen this visit is served with no
