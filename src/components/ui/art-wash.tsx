@@ -5,18 +5,21 @@ import { commanderGradient } from "../../lib/collection/gradients";
 const tint = (token: string, pct: number) =>
   `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
 
-/** L3, as `[alphaPercent, positionPercent]` pairs. Heavy where the labels are,
-    thin through the middle. Exported because `wash-contrast.test.ts` derives its
-    contrast floors from these alphas — the two files drifting apart is the
-    failure that test exists to catch. */
+/** L3, as `[alphaPercent, positionPercent]` pairs. Heavy across the whole label
+    block, thin through the middle. The dark value is *held* to the block's foot
+    rather than ramping away from its first stop: a ramp that starts dark at the
+    title and lightens through the subtitle leaves the subtitle on ground the
+    title never stood on, which is how 3.16:1 shipped. Exported because
+    `wash-contrast.test.ts` derives its contrast floors from these alphas — the
+    two files drifting apart is the failure that test exists to catch. */
 export type LabelEdge = "top" | "bottom";
 
 export const COVER_SCRIM_STOPS: Record<LabelEdge, readonly (readonly [number, number])[]> = {
   top: [
-    [90, 0],
-    [30, 40],
-    [52, 74],
-    [86, 100],
+    [78, 0],
+    [73, 31],
+    [14, 62],
+    [50, 100],
   ],
   bottom: [
     [66, 0],

@@ -36,8 +36,12 @@ const alphaAt = (edge: "top" | "bottom", position: number): number => {
   return stops[stops.length - 1][0] / 100;
 };
 
-const TOP_AT_TITLE = alphaAt("top", 0); // 0.90 — the label band
-const TOP_AT_META = alphaAt("top", 100); // 0.86 — the bottom band, where the chip sits
+const TOP_AT_TITLE = alphaAt("top", 0); // 0.78 — the top of the label block
+/** 31% is the bottom of the label block — the subtitle's own line, and the last
+    row of ink a top-labelled band prints. Sampling only 0% and 100% is what let
+    a ramp ship that fell to 3.17:1 under the subtitle: both ends were held while
+    the ink between them sat in the trough. */
+const TOP_AT_SUBTITLE = alphaAt("top", 31);
 const BOTTOM_AT_LABEL = alphaAt("bottom", 54); // ≈0.643 — where the label block starts
 
 const over = (fg: string, bg: string, alpha: number): string => {
@@ -70,8 +74,12 @@ describe("art wash contrast floor", () => {
       expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(7);
     });
 
-    it(`${theme}: top-ramp meta clears 4.5:1 in the lower band`, () => {
-      const ground = washGround(token(theme, "bg"), TOP_AT_META);
+    // The bottom of a top-labelled band is not asserted: nothing there is ink on
+    // the wash. The status pill plates itself against `--bg`, the hero's fit chip
+    // sets an opaque background, and the colour pips are aria-hidden.
+    it(`${theme}: top-ramp ink still clears its floor at the foot of the label block`, () => {
+      const ground = washGround(token(theme, "bg"), TOP_AT_SUBTITLE);
+      expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(7);
       expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
     });
 
