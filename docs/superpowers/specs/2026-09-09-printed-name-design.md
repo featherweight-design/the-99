@@ -25,8 +25,10 @@ spec spends it on *display*.
 Settled in the brainstorm; not re-opened by this spec or by either handoff round.
 
 1. **The displayed name follows `resolvedPrinting()`** — the same printing the art comes from.
-   The name and the art must never disagree, which is the standing invariant at
-   `src/lib/collection/browse.ts:314`.
+   The name and the art must never disagree, which is the standing invariant stated in
+   `primaryPrinting()`'s own doc comment at `src/lib/collection/browse.ts:348-350` — *"Art and
+   caption MUST come from this same printing"* — and enforced by the closing loop that sets
+   `primarySetCode` and `imageUri` from one call to it.
 2. **A card you do not own keeps its oracle name.** With no printing in hand there is no printed
    name to resolve, and inventing one would assert a printing the player does not have.
 3. **Rows and tiles show the printed name alone.** No parenthetical, no second line, no marker.
@@ -40,7 +42,7 @@ Settled in the brainstorm; not re-opened by this spec or by either handoff round
 Human-facing surfaces **and** exports.
 
 **In:** the decklist row on `/decks/[id]` (list and grid view), the deck grid tile, the shared
-card modal, `/collection` grid and rows views, the row and tile `aria-label`s, and the decklist
+card modal, `/collection` grid and rows views, the row and tile accessible names, and the decklist
 export.
 
 **Out:** `card-search-row` (the player is choosing between printings and the set code is already
@@ -59,8 +61,11 @@ The handoff owns the drawing; this section records only what binds implementatio
 - Single line, end ellipsis, on every surface. **No wrap and no clamp** — a wrapped row shunts
   the ninety-eight rows below it, and a two-line caption makes tile height data-dependent and
   costs the grid its equal-height read.
-- The **full, untruncated** printed name goes in the row's and tile's `aria-label`. **Never a
-  `title`** — pointer-only recovery on a phone-first surface.
+- The **full, untruncated** printed name is the row's and tile's accessible name. On both surfaces
+  that name already comes from the `CardDetailTrigger`'s `name` prop, which is a real `<button>`,
+  so the full string goes there rather than onto an `aria-label` — a label on the caption `<span>`
+  would satisfy a test and reach no assistive technology. **Never a `title`** either: pointer-only
+  recovery on a phone-first surface.
 - The name block is the only shrinking child. On the decklist row this is already true and needs
   no change: `flex-auto` with `flex-none` siblings has been the shape since #354. **Keep
   `flex-auto`; do not swap it for `flex:1`.** The only requirement worth restating is
@@ -113,12 +118,21 @@ shopping list still does not use it, for the pricing reason above.
 ## Data and plumbing
 
 - `printings.flavorName` already exists. **No migration.**
-- `BrowsePrinting` (`src/lib/collection/browse.ts:16-31`) gains `flavorName: string | null`, and
+- `BrowsePrinting` (`src/lib/collection/browse.ts:16-36`) gains `flavorName: string | null`, and
   every select that builds one carries the column. `resolvedPrinting()` and `primaryPrinting()`
   are unchanged — they already return the object the name comes off.
-- **The deck route needs a printing join.** `src/lib/decks/read.ts:196-254` reads oracle columns
-  only; `resolvedPrinting()` has nothing to resolve there today. This is the one piece of real
-  query work in the feature. One join, no new prop threading, no second call per card.
+- **The deck route needs the player's resolved printing, which it does not read today.**
+  `src/lib/decks/read.ts:196-254` selects oracle columns only, so `resolvedPrinting()` has nothing
+  to resolve there. This is the one piece of real query work in the feature.
+
+  The readiness audit called this "one join". It is not, and the plan does not do it that way: a
+  join on `printings` would have to re-implement the tier-0 art preference in SQL, and a second
+  implementation of that precedence is exactly how the name and the art come to disagree. The
+  route instead reuses `selectCollectionRows()` + `aggregateCollection()`, which is where the
+  precedence already lives — **one extra query for the whole decklist**, no new prop threading,
+  no second call per card, and no second copy of the rule this spec's locked decision 1 exists to
+  protect. The cost is a collection-shaped query per deck load, accepted for that reason; the
+  plan records it rather than leaving it to be discovered.
 - The modal and both collection surfaces are free — they already resolve a printing to show art,
   so they need the column and nothing else.
 - The unowned-card path in `src/lib/collection/card-detail.ts:169-181` selects printings without
@@ -138,14 +152,18 @@ and line.
    the reasoning that the block "has two free corners". It has one. Top-left is the availability
    slot — `deck-card-tile.tsx:96-98` states it in a comment, and it draws the `AvailabilityMarker`
    chip when owned and the collapsed `$` `BuyTag` when not. Top-right is the `×2` count chip
-   (:122), bottom-left the ownership dot and cost pips (:165). **Bottom-right is the only free
-   corner.** The `✕` overlays the art as an absolute sibling rather than nesting inside
+   (:126-131), bottom-left the ownership dot and cost pips (:170-178). **Bottom-right is the only
+   free corner.** The `✕` overlays the art as an absolute sibling rather than nesting inside
    `CardDetailTrigger`, which is a `<button>` — the file already uses that pattern.
    **This spec takes call 3's own fallback**: the `✕` stays on the caption line, the caption keeps
-   its 93–94px single-line ladder, and the `title` removal plus `aria-label` addition ship
-   regardless. Moving the control is a card-surfaces amendment and is not part of this feature.
+   its 93–94px single-line ladder, and the `title` removal ships regardless — the full name goes
+   on the trigger's accessible name, not on an `aria-label` the caption `<span>` could not expose.
+   Moving the control is a card-surfaces amendment and is not part of this feature.
+   **The handoff's own call table still reads "leaves the caption line"** (`README.md`, call 3).
+   It is superseded here, and the handoff's covering rule — where the two disagree, the spec wins
+   — is what settles it. Design's drop is a historical record and is not edited after the fact.
 2. **The 93–94px caption figure is a ceiling.** It omits the conditional `TwoFacedMark` and its
-   `ml-[2px]` (`deck-card-tile.tsx:191`), and assumes 16px of padding where the tree has 11px
+   `ml-[2px]` (`deck-card-tile.tsx:194`), and assumes 16px of padding where the tree has 11px
    phone / 14px desktop. The same caveat R2 already applies to the row's figures.
 3. **The `//` layout mark is not on the collection grid.** Call 5 leans on it to signal a back
    face; it ships on `decklist-row.tsx:278,326` and the deck tile, but `collection/grid-view.tsx`
@@ -165,7 +183,7 @@ and line.
 - Unit: `resolvedPrinting()` name selection across owned/unowned/no-flavor-name; the exact-equality
   comparison; `buildDecklistText` emitting `N Name (SET) CN` and round-tripping through
   `buildDeckImport`; `buildShoppingText` unchanged.
-- Component: the modal header's present/absent line; the row and tile `aria-label` carrying the
+- Component: the modal header's present/absent line; the row and tile accessible name carrying the
   full name while the visible string clips; `title` gone from the deck tile.
 - Browser probe: a deck holding a Secret Lair printing, walked at 320, 390 and desktop, in list
   and grid view — the surface walk, not a screenshot of one row.
