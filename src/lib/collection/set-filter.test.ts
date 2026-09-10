@@ -45,6 +45,13 @@ describe("buildSetOptions", () => {
     ]);
   });
 
+  it("counts a lowercase set code against its uppercased option", () => {
+    const cards = [card({ oracleId: "a", setCodes: ["mh3"], setCounts: [["mh3", 4]] })];
+    const [option] = buildSetOptions(cards, noFilters, meta);
+    expect(option.code).toBe("MH3");
+    expect(option.count).toBe(4);
+  });
+
   it("sorts undated sets last, A→Z among themselves", () => {
     const withUndated: OwnedSetMeta[] = [
       ...meta,

@@ -62,6 +62,11 @@ describe("encodeDiscovery", () => {
     expect(roundTrip(list)).toEqual(list);
   });
 
+  it("round-trips an art crop under a scheme that is not http", () => {
+    const list = listOf([{ ...baseItem, artCropUri: "ipfs://QmArt/front/x.jpg" }]);
+    expect(roundTrip(list)).toEqual(list);
+  });
+
   it("round-trips a null nearest deck", () => {
     const list = listOf([{ ...baseItem, nearestDeck: null }]);
     expect(roundTrip(list)).toEqual(list);

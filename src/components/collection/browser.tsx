@@ -236,7 +236,7 @@ export function CollectionBrowser({
   const effectiveView: ViewMode = view ?? (isDesktop ? "grid" : "rows");
   // The modal itself lives in the page's CardDetailProvider, which fetches the card's
   // printings and oracle text on click. The browse list ships without them.
-  const { open: openDetail, openOracleId } = useCardDetail();
+  const { open: openDetail, openOracleId, setSiblings, close: closeDetail } = useCardDetail();
   const [shown, setShown] = useState(PAGE_SIZE);
 
   const totalQuantity = useMemo(() => cards.reduce((sum, c) => sum + c.quantity, 0), [cards]);
@@ -377,6 +377,18 @@ export function CollectionBrowser({
   // Serialize the card param only when the open card is still in the current
   // result set; avoids a stale ?card= after a filter drops it.
   const openInList = openOracleId !== null && siblings.includes(openOracleId);
+
+  // This list is a live filter of a larger one, so the order the modal pages
+  // through has to move with it: re-file it on every change, and close the modal
+  // outright when the card it is showing is no longer one of these results. Both
+  // fell out of the old modal for free, because it read the open card back out of
+  // `sorted` on every render and rendered nothing when it was not there.
+  useEffect(() => {
+    if (openOracleId === null) return;
+    if (openInList) setSiblings(siblings);
+    else closeDetail();
+  }, [siblings, openOracleId, openInList, setSiblings, closeDetail]);
+
   useEffect(() => {
     const qs = serializeParams(
       filters,

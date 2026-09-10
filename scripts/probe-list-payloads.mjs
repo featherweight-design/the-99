@@ -196,6 +196,21 @@ async function run(browser) {
     "Previous pages back",
   );
 
+  // A filter that excludes the open card takes it out of the list the modal is
+  // paging, so the modal goes with it — the behaviour the pre-fetch modal got for
+  // free by reading its card back out of the sorted list on every render.
+  // By accessible name, not the bare role: the Set ▾ panel has a search field too.
+  await page.getByRole("searchbox", { name: "Search your cards" }).fill("zzzzzzzz");
+  await page.waitForFunction(
+    () => document.querySelector('[role="dialog"]') === null,
+    null,
+    { timeout: 10_000 },
+  ).catch(() => {});
+  check(
+    !(await dialog.isVisible().catch(() => false)),
+    "a filter that excludes the open card closes the modal",
+  );
+
   // The deep link, which is the one path that opens the modal without a click.
   await page.evaluate(() => performance.clearResourceTimings());
   await page.goto(`${BASE}/collection?view=rows&sort=name&card=${cardParam}`, {

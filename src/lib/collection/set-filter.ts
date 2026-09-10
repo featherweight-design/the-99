@@ -66,8 +66,12 @@ export function buildSetOptions(
   });
   const counts = new Map<string, number>();
   for (const c of surviving) {
+    // Uppercased on the way in, exactly as `owned` is above: these counts are
+    // looked up by the option codes built from that set, and a case mismatch
+    // does not fail — it reads as a zero and disables a chip the reader owns.
     for (const [code, quantity] of c.setCounts) {
-      counts.set(code, (counts.get(code) ?? 0) + quantity);
+      const key = code.toUpperCase();
+      counts.set(key, (counts.get(key) ?? 0) + quantity);
     }
   }
 

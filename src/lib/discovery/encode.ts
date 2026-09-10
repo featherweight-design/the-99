@@ -21,6 +21,9 @@ import type { DiscoveryItem, DiscoveryList } from "./list";
 
 const ART_STEM = "https://cards.scryfall.io/art_crop/front/";
 
+/** RFC 3986 scheme, which every absolute URL carries and no stripped path does. */
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
 const ROLES: RoleName[] = ["ramp", "draw", "removal", "wipes"];
 
 const ROW_KEYS = [
@@ -89,8 +92,12 @@ function decodeValue(
   strings: string[],
 ): unknown {
   switch (key) {
+    // The encoder either stripped the stem, leaving a relative path, or left an
+    // absolute URL alone. A scheme is what tells those apart — testing for
+    // "http" instead would prepend the stem to an `ipfs:` or `data:` URL the
+    // encoder had deliberately preserved.
     case "artCropUri":
-      return typeof value === "string" && !value.startsWith("http")
+      return typeof value === "string" && !HAS_SCHEME.test(value)
         ? ART_STEM + value
         : value;
     case "roleCounts": {
