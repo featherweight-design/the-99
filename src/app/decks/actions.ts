@@ -1356,28 +1356,33 @@ export async function pullCardFromDeck(
   await requireDeck(sourceDeckId, userId);
   await requireDeck(askingDeckId, userId);
 
-  const version = await newestVersion(sourceDeckId);
-  if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
+  // One transaction, and the guards run inside it under the deck's row lock.
+  // Each guard is a decision about what the draft holds right now: read outside
+  // the lock, an edit landing before the commit is swept into a version its
+  // owner never asked for — the exact case the pending-changes guard exists to
+  // prevent. The write is in here for its own reason: a delete that lands
+  // without its commit leaves the draft short of a card the version claims.
+  const outcome = await db.transaction<DeckMutationResult>(async (tx) => {
+    await tx.select().from(decks).where(eq(decks.id, sourceDeckId)).for("update");
 
-  const before = await versionCards(version.id);
-  const draft = await db.select({
-    oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-  }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId));
-  const diff = draftDiff(draft, before);
-  if (diff.adds.length > 0 || diff.removes.length > 0) {
-    return { ok: false, message: "That deck has pending changes. Release the card there." };
-  }
-  // Nothing to release. Without this the decrement and the delete both match
-  // no row, and the commit below writes a version identical to its predecessor
-  // — a line in the deck's history recording a pull that never happened.
-  if (!draft.some((c) => c.oracleId === oracleId)) {
-    return { ok: false, message: "That deck doesn't hold that card." };
-  }
+    const version = await newestVersion(sourceDeckId, tx);
+    if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
 
-  // One transaction. A delete that lands without its commit leaves the source
-  // deck's draft short of a card its version still claims, so the copy is
-  // neither in the deck nor free for the deck that asked for it.
-  await db.transaction(async (tx) => {
+    const before = await versionCards(version.id, tx);
+    const draft = await tx.select({
+      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
+    }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId));
+    const diff = draftDiff(draft, before);
+    if (diff.adds.length > 0 || diff.removes.length > 0) {
+      return { ok: false, message: "That deck has pending changes. Release the card there." };
+    }
+    // Nothing to release. Without this the decrement and the delete both match
+    // no row, and the commit below writes a version identical to its predecessor
+    // — a line in the deck's history recording a pull that never happened.
+    if (!draft.some((c) => c.oracleId === oracleId)) {
+      return { ok: false, message: "That deck doesn't hold that card." };
+    }
+
     // A pull takes ONE copy, matching removeCardFromDeck: a deck holding four
     // Relentless Rats keeps three. Delete only when the decrement would hit 0.
     const decremented = await tx.update(deckCards)
@@ -1393,7 +1398,9 @@ export async function pullCardFromDeck(
         .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
     }
     await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
+    return { ok: true };
   });
+  if (!outcome.ok) return outcome;
   revalidateClaims(sourceDeckId, userId);
   revalidateClaims(askingDeckId, userId);
   return { ok: true };

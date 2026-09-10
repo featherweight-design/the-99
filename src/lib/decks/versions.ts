@@ -29,9 +29,12 @@ export type DeckVersion = {
  * strictly increasing per deck, whereas two versions committed in the same
  * millisecond — reachable when a pull commits a source deck inside another
  * deck's commit — would tie on the timestamp.
+ *
+ * Pass `tx` to read inside a caller's transaction, so a decision made from
+ * this row is taken under the same lock as the write it leads to.
  */
-export async function newestVersion(deckId: string): Promise<DeckVersion | null> {
-  const [row] = await db.select()
+export async function newestVersion(deckId: string, tx?: Tx): Promise<DeckVersion | null> {
+  const [row] = await (tx ?? db).select()
     .from(deckVersions)
     .where(eq(deckVersions.deckId, deckId))
     .orderBy(desc(deckVersions.number))
@@ -39,8 +42,8 @@ export async function newestVersion(deckId: string): Promise<DeckVersion | null>
   return row ?? null;
 }
 
-export async function versionCards(versionId: string): Promise<CardQty[]> {
-  return db.select({
+export async function versionCards(versionId: string, tx?: Tx): Promise<CardQty[]> {
+  return (tx ?? db).select({
     oracleId: deckVersionCards.oracleId,
     quantity: deckVersionCards.quantity,
   }).from(deckVersionCards).where(eq(deckVersionCards.versionId, versionId));

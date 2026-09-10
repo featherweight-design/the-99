@@ -187,13 +187,22 @@ const stub = vi.hoisted(() => {
     // aggregate, so it always returns exactly one row.
     select: () => ({
       from: (table: unknown) => {
-        const rows = () => (nameOf(table) === "fill_passes"
-          ? [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }]
-          : state.deckRows as unknown as Record<string, unknown>[]);
+        const tableName = nameOf(table);
+        const rows = () => {
+          if (tableName === "fill_passes") {
+            return [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }];
+          }
+          if (tableName === "decks") return state.decks;
+          return state.deckRows as unknown as Record<string, unknown>[];
+        };
         return {
           where: () => Object.assign(
             Promise.resolve(rows()),
-            { limit: async (n: number) => rows().slice(0, n) },
+            {
+              limit: async (n: number) => rows().slice(0, n),
+              // `for("update")` — the row lock a guard reads under.
+              for: async () => rows(),
+            },
           ),
         };
       },
