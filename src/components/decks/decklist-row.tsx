@@ -6,6 +6,7 @@
 import { useId } from "react";
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -156,6 +157,11 @@ export function DecklistRow({
   // preview that only opened over it would be a second, smaller target for a
   // gesture the reader is already making across the row.
   const previewHandlers = usePreviewRow(card.imageUri);
+  // Two strings, because they answer different questions. The visible one is a
+  // front face and may clip; the accessible one is whole and never does. The
+  // modal — one tap away on this very name — is the recovery path for the clip.
+  const displayName = printedFaceName(card);
+  const fullName = printedNameOf(card);
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -267,13 +273,13 @@ export function DecklistRow({
             <div className="min-w-0 flex items-center gap-[6px]">
               <CardDetailTrigger
                 oracleId={card.oracleId}
-                name={card.name}
+                name={fullName}
                 siblings={siblings}
                 className={nameTextClass}
                 describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
               >
-                {card.name}
+                {displayName}
               </CardDetailTrigger>
               <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
@@ -315,13 +321,13 @@ export function DecklistRow({
           <div className={nameBlockClass}>
             <CardDetailTrigger
               oracleId={card.oracleId}
-              name={card.name}
+              name={fullName}
               siblings={siblings}
               className={nameTextClass}
               describedBy={describedBy}
               style={{ color: "var(--fg)" }}
             >
-              {card.name}
+              {displayName}
             </CardDetailTrigger>
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
