@@ -292,6 +292,26 @@ describe("finish aggregation (#105 decision 9)", () => {
   });
 });
 
+describe("toListCards", () => {
+  it("sums a card's printings into one entry per set", () => {
+    const [list] = toListCards([
+      card({
+        printings: [
+          printing({ setCode: "C21", quantity: 2 }),
+          printing({ setCode: "C21", collectorNumber: "264", quantity: 1 }),
+          printing({ setCode: "2XM", quantity: 3 }),
+        ],
+      }),
+    ]);
+    expect(list.setCounts).toEqual([["C21", 3], ["2XM", 3]]);
+  });
+
+  it("uppercases set codes, which is what buildSetOptions looks them up by", () => {
+    const [list] = toListCards([card({ printings: [printing({ setCode: "c21", quantity: 2 })] })]);
+    expect(list.setCounts).toEqual([["C21", 2]]);
+  });
+});
+
 describe("filterCards", () => {
   const list = [
     listCard({ oracleId: "a", name: "Sol Ring", colorIdentity: [], typeLine: "Artifact", setCodes: ["C21"], primarySetCode: "C21" }),

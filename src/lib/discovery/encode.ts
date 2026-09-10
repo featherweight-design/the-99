@@ -31,9 +31,9 @@ const ROW_KEYS = [
 
 export type EncodedDiscovery = Omit<DiscoveryList, "items"> & {
   /** Field names, in the order every row tuple carries its values. */
-  keys: string[];
+  keys: (keyof DiscoveryItem)[];
   /** Role names, in the order every `roleCounts` tuple carries its counts. */
-  roles: string[];
+  roles: RoleName[];
   /** Every label and deck name, filed once. Rows carry indices into this. */
   strings: string[];
   rows: unknown[][];
@@ -53,7 +53,11 @@ class Dictionary {
   }
 }
 
-function encodeValue(key: string, item: DiscoveryItem, dict: Dictionary): unknown {
+function encodeValue(
+  key: keyof DiscoveryItem,
+  item: DiscoveryItem,
+  dict: Dictionary,
+): unknown {
   switch (key) {
     // Only that exact stem, so a URL from anywhere else survives untouched
     // rather than being silently truncated into a broken relative path.
@@ -74,14 +78,14 @@ function encodeValue(key: string, item: DiscoveryItem, dict: Dictionary): unknow
           ]
         : null;
     default:
-      return item[key as keyof DiscoveryItem];
+      return item[key];
   }
 }
 
 function decodeValue(
-  key: string,
+  key: keyof DiscoveryItem,
   value: unknown,
-  roles: string[],
+  roles: RoleName[],
   strings: string[],
 ): unknown {
   switch (key) {

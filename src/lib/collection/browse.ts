@@ -100,7 +100,11 @@ export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
     const { printings, oracleText, backImageUri, ...rest } = card;
     const counts = new Map<string, number>();
     for (const p of printings) {
-      counts.set(p.setCode, (counts.get(p.setCode) ?? 0) + p.quantity);
+      // Uppercased here rather than trusted: `buildSetOptions` looks these codes
+      // up against uppercased catalog codes, and the aggregation that builds
+      // `BrowseCard` is not the only thing that can construct one.
+      const code = p.setCode.toUpperCase();
+      counts.set(code, (counts.get(code) ?? 0) + p.quantity);
     }
     return { ...rest, setCounts: [...counts] };
   });
