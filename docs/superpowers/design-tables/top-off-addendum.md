@@ -377,10 +377,12 @@ element in this addendum**.
 |---|---|---|---|
 | 1 | `atCap` | `list.cap` — `Untick one to swap another in` | — |
 | 2 | `openSlots - tickedCount > 0` | `commit.slotsStayOpen` | `31 slots stay open — you can come back to them`, 45 chars ≈ 281px inside 366px |
-| 3 | otherwise (the pass is exactly full and the cap is not reached) | `dock.retired` | — |
 
-Rungs 1 and 2 are mutually exclusive by arithmetic. Rung 3 is now reachable at
-phone **only** when a pass is exactly full — deliberate.
+Rungs 1 and 2 partition the whole space by arithmetic: `atCap` is
+`tickedCount >= openSlots`, which is exactly `openSlots - tickedCount <= 0`, so
+no third rung has any residue to render into. The ladder ships with two rungs
+and `dock.retired` renders nowhere; the fact it carried still reaches a screen
+reader through `dock.retiredAnnounce` on open.
 
 ### The bar container (as drawn)
 
@@ -547,7 +549,6 @@ Pattern is `game-history-row.tsx`'s inline confirm **verbatim, minus the danger 
 | S-N5 · door note, desktop | ≥ 768px | shipped three-clause sentence | shipped desktop strings (unchanged) |
 | S-L1 · ladder rung 1 (phone) | `atCap` | the bar's single status line, mono 10px `--fg-locked`, carries `capLineId` | `list.cap` |
 | S-L2 · ladder rung 2 (phone) | `!atCap && openSlots - tickedCount > 0` | the same single line | `commit.slotsStayOpen(n)` |
-| S-L3 · ladder rung 3 (phone) | neither above — the pass is exactly full | the same single line | `dock.retired` |
 | S-C1 · cap line, desktop | `atCap`, ≥ 768px | span in the selection head behind a `1px var(--border-strong)` left divider, `padding-left: 12px`, carries `capLineId` | `list.cap` |
 | S-C2 · cap announced | tick attempt settles at the cap | live region (unchanged) | `announce.capped` |
 | S-K1 · keep-all at rest | `confirming === false` | `Keep all N` + `Clear all auto · N`, both `BULK_BUTTON_CLASS` | `auto.keepAll` / `auto.keepAllMobile` (unchanged) |
@@ -692,9 +693,11 @@ confirm on the decline, no confirm on the sweep, and **no fourth line in the bar
    `md:hidden` on either cap-line home while requiring one `capLineId`; those
    cannot both hold with two DOM parents. `use-min-width.ts` renders one element
    into one home. The intent is preserved, the literal instruction is not.
-6. **`dock.retired` at phone is now near-dead.** It only prints when a pass is
-   exactly full and the cap is not reached. Called deliberate by both readiness
-   docs, but it is effectively a retirement recorded as a demotion.
+6. **`dock.retired` at phone is fully dead, not near-dead.** The condition both
+   readiness docs describe — a pass exactly full with the cap not reached — is
+   arithmetically empty, so the key renders nowhere. Called a demotion by the
+   docs; it is a retirement. `dock.retiredAnnounce` still carries the fact to a
+   screen reader on open.
 7. **`commit.consequence` at zero ticks** (`68 of 99 when added` while nothing
    will be added) is drawn in the S25 phone bar. Pre-existing, explicitly out of
    scope, and it ships looking wrong in the very state this addendum adds.
