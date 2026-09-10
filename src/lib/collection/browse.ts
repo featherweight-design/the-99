@@ -224,8 +224,10 @@ export type RawCollectionRow = {
   representativeImageUri: string | null;
   /** Tier 3 — the oracle-level catalog image, i.e. today's behavior. */
   cardImageUri: string | null;
-  /** From the exact printing owned — `printings.flavor_name`, or null. */
+  /** Tier 1's printed name — the exact printing's `printings.flavor_name`, or null. */
   flavorName: string | null;
+  /** Tier 2's printed name. `resolveFlavorName` takes whichever tier the art came from. */
+  representativeFlavorName: string | null;
 };
 
 /**
@@ -242,6 +244,27 @@ export function resolveImageUri(r: {
   cardImageUri: string | null;
 }): string | null {
   return r.exactImageUri ?? r.representativeImageUri ?? r.cardImageUri ?? null;
+}
+
+/**
+ * The printed name of whichever printing `resolveImageUri` just took the art from.
+ *
+ * The name and the art come off one printing or they disagree, and the art falls
+ * through three tiers — so the name has to fall through the same three, in step.
+ * A collection row with no `scryfall_id` misses the exact join entirely and shows
+ * the representative printing's art; sourcing the name from the exact printing
+ * alone would caption a Secret Lair art with the oracle name. Tier 3 is
+ * `cards.imageUri`, which belongs to no printing and therefore prints no name.
+ */
+export function resolveFlavorName(r: {
+  exactImageUri: string | null;
+  representativeImageUri: string | null;
+  flavorName: string | null;
+  representativeFlavorName: string | null;
+}): string | null {
+  if (r.exactImageUri !== null) return r.flavorName;
+  if (r.representativeImageUri !== null) return r.representativeFlavorName;
+  return null;
 }
 
 /**
@@ -294,7 +317,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       quantity: r.quantity,
       finishes: { [r.finish]: r.quantity },
       imageUri: resolveImageUri(r),
-      flavorName: r.flavorName,
+      flavorName: resolveFlavorName(r),
     };
     const existing = byOracle.get(r.oracleId);
     if (existing) {
@@ -576,6 +599,7 @@ export async function selectCollectionRows(
       // name is theirs to show.
       flavorName: exact.flavorName,
       representativeImageUri: representative.imageUri,
+      representativeFlavorName: representative.flavorName,
       cardImageUri: cards.imageUri,
     })
     .from(collectionItems)
