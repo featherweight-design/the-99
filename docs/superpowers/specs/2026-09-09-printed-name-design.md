@@ -159,12 +159,15 @@ and line.
    its 93–94px single-line ladder, and the `title` removal ships regardless — the full name goes
    on the trigger's accessible name, not on an `aria-label` the caption `<span>` could not expose.
    Moving the control is a card-surfaces amendment and is not part of this feature.
-   **The handoff's own call table still reads "leaves the caption line"** (`README.md`, call 3).
-   It is superseded here, and the handoff's covering rule — where the two disagree, the spec wins
-   — is what settles it. Design's drop is a historical record and is not edited after the fact.
+   **The handoff's own call table still reads "leaves the caption line"** (`README.md`, calls 3
+   and 4), and `STATES-printed-name.md:49,56` still sizes the caption at the 132/143px the moved
+   `✕` would have bought. Both are superseded here, and the handoff's covering rule — where the
+   two disagree, the spec wins — is what settles it. Design's drop is a historical record and is
+   not edited after the fact.
 2. **The 93–94px caption figure is a ceiling.** It omits the conditional `TwoFacedMark` and its
    `ml-[2px]` (`deck-card-tile.tsx:194`), and assumes 16px of padding where the tree has 11px
-   phone / 14px desktop. The same caveat R2 already applies to the row's figures.
+   phone / 14px desktop. The same caveat R2 already applies to the row's figures. **93/94px is
+   the figure this feature builds to**, not the 132/143px of the STATES matrix.
 3. **The `//` layout mark is not on the collection grid.** Call 5 leans on it to signal a back
    face; it ships on `decklist-row.tsx:278,326` and the deck tile, but `collection/grid-view.tsx`
    has none. A front-face-only printed name is unsignposted there. Accepted: the collection tile
@@ -177,6 +180,7 @@ and line.
    a testing-library query and reach no screen reader. The full name's home is the
    `CardDetailTrigger`'s `name` prop, which is a real `<button>` and is already the accessible
    name on both the row and the tile. The outcome call 4 wants is unchanged; only the element is.
+   `STATES-printed-name.md:58` states the same rule for the row and is superseded the same way.
 6. **The handoff is R2, with some rows re-derived at R3.** The README's title says R2, its call
    table tags rows individually, and the density figures carry an R3 stamp because the audit's
    arithmetic error was corrected in a later pass than the calls around it. There is one drop and
