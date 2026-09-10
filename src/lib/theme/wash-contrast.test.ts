@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { COVER_SCRIM_STOPS } from "../../components/ui/art-wash";
+import { bottomScrimStops, COVER_SCRIM_STOPS, type ScrimStops } from "../../components/ui/art-wash";
 import { contrast, parseHex } from "./color";
 import { parseThemeBlocks } from "./parse-css";
 
@@ -24,8 +24,7 @@ const ART_ALPHA = 0.58;
 
 /** Read off the shipped gradient rather than restated, so a stop moving in
     `art-wash.tsx` moves the floor this test asserts. */
-const alphaAt = (edge: "top" | "bottom", position: number): number => {
-  const stops = COVER_SCRIM_STOPS[edge];
+const alphaAt = (stops: ScrimStops, position: number): number => {
   for (let i = 1; i < stops.length; i++) {
     const [a1, p1] = stops[i];
     const [a0, p0] = stops[i - 1];
@@ -36,15 +35,22 @@ const alphaAt = (edge: "top" | "bottom", position: number): number => {
   return stops[stops.length - 1][0] / 100;
 };
 
-const TOP_AT_TITLE = alphaAt("top", 0); // 0.78 — the top of the label block
+const TOP_AT_TITLE = alphaAt(COVER_SCRIM_STOPS.top, 0); // 0.78 — the top of the label block
 /** The second stop is the bottom of the label block — the subtitle's own line,
     and the last row of ink a top-labelled band prints. Read off the ramp rather
     than written down, so moving that stop moves what this test samples; a
     hard-coded position would keep measuring where the ink used to be. Sampling
     only 0% and 100% is what let a ramp ship that fell to 3.16:1 under the
     subtitle: both ends were held while the ink between them sat in the trough. */
-const TOP_AT_SUBTITLE = alphaAt("top", COVER_SCRIM_STOPS.top[1][1]);
-const BOTTOM_AT_LABEL = alphaAt("bottom", 54); // ≈0.643 — where the label block starts
+const TOP_AT_SUBTITLE = alphaAt(COVER_SCRIM_STOPS.top, COVER_SCRIM_STOPS.top[1][1]);
+
+/** The two bottom-labelled surfaces, at the `labelAt` each one passes. Asserting
+    a shared constant was the estimate this round removed: the floor has to hold
+    at each surface's own block edge, so each surface is measured. */
+const BOTTOM_SURFACES: readonly (readonly [string, number])[] = [
+  ["commander detail hero", 55],
+  ["deck spine, phone", 57],
+];
 
 const over = (fg: string, bg: string, alpha: number): string => {
   const [fr, fgreen, fb] = parseHex(fg);
@@ -85,14 +91,12 @@ describe("art wash contrast floor", () => {
       expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
     });
 
-    it(`${theme}: bottom-ramp title ink clears 4.5:1 at the label edge`, () => {
-      const ground = washGround(token(theme, "bg"), BOTTOM_AT_LABEL);
-      expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
-    });
-
-    it(`${theme}: bottom-ramp meta ink clears 4.5:1 at the label edge`, () => {
-      const ground = washGround(token(theme, "bg"), BOTTOM_AT_LABEL);
-      expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
-    });
+    for (const [surface, labelAt] of BOTTOM_SURFACES) {
+      it(`${theme}: bottom-ramp ink clears 4.5:1 at ${surface}'s label edge`, () => {
+        const ground = washGround(token(theme, "bg"), alphaAt(bottomScrimStops(labelAt), labelAt));
+        expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
   }
 });

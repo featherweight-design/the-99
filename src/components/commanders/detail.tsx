@@ -240,6 +240,12 @@ export function CommanderDetail({
         <ArtWash
           strategy="cover"
           labelEdge="bottom"
+          // The block's top edge as a percentage of the 1.6/1 band, taken at
+          // its tallest: a commander name that wraps to two lines at 25px puts
+          // the rank line at 55% rather than the 66% a one-line name would.
+          // The ramp is keyed to the worst case because the alternative is ink
+          // above the dark value on exactly the names that need it most.
+          labelAt={55}
           artCropUri={c.artCropUri}
           colorIdentity={c.colorIdentity}
         />
