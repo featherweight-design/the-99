@@ -29,6 +29,7 @@ const deckCard = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
   typeLine: "Artifact",
   cardTypeGroup: "Artifacts",
   role: "ramp",
+  cmc: 2,
   owned: true,
   quantity: 1,
   auto: false,

@@ -133,6 +133,7 @@ export function ResolutionExpander({
           typeLine: result.typeLine,
           cardTypeGroup: result.cardTypeGroup,
           role: result.role,
+          cmc: result.cmc,
           owned: result.owned,
           // Mirrors the server: a "3 Rhystic Study" line resolves to one copy,
           // and only a basic land carries the line's own quantity over.

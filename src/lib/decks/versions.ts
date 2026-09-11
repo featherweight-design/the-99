@@ -6,8 +6,9 @@
 
 import { and, desc, eq, lte } from "drizzle-orm";
 import { db } from "../../db";
-import { deckCards, deckVersionCards, deckVersions, decks } from "../../db/schema";
+import { cards, deckCards, deckVersionCards, deckVersions, decks } from "../../db/schema";
 import type { CardQty } from "./draft-diff";
+import { averageManaValue } from "./mana-value";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -225,4 +226,23 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
       );
     }
   });
+}
+
+/**
+ * The average mana value of a version's list — the strip's `was 7`.
+ *
+ * A join rather than a second query over `versionCards`: the snapshot stores
+ * quantities only, and the figure needs each card's cost and type line. Null
+ * when the version was all land, which `averageManaValue` decides.
+ */
+export async function versionManaValue(versionId: string): Promise<number | null> {
+  const rows = await db.select({
+    cmc: cards.cmc,
+    quantity: deckVersionCards.quantity,
+    typeLine: cards.typeLine,
+  })
+    .from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(eq(deckVersionCards.versionId, versionId));
+  return averageManaValue(rows);
 }

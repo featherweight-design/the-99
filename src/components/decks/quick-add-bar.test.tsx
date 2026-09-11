@@ -18,6 +18,7 @@ const { QuickAddBar } = await import("./quick-add-bar");
 const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   oracleId: over.name.toLowerCase(),
   typeLine: "Enchantment",
+  cmc: 2,
   owned: true,
   ownedQty: 1,
   cardTypeGroup: "Enchantments",

@@ -32,6 +32,7 @@ function makeCard(overrides: Partial<DeckDetailCard> & { oracleId: string; name:
     typeLine: "Artifact",
     cardTypeGroup: "Artifacts",
     role: "other",
+    cmc: 2,
     owned: true,
     quantity: 1,
     auto: true,

@@ -31,6 +31,7 @@ const unresolvedCopy = deckImportCopy.unresolved;
 const result = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   oracleId: over.name.toLowerCase(),
   typeLine: "Enchantment",
+  cmc: 2,
   owned: true,
   ownedQty: 1,
   cardTypeGroup: "Enchantments",
@@ -51,6 +52,7 @@ const solRing: DeckDetailCard = {
   typeLine: "Artifact",
   cardTypeGroup: "Artifacts",
   role: "ramp",
+  cmc: 2,
   owned: true,
   quantity: 1,
   auto: false,

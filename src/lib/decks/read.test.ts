@@ -82,6 +82,7 @@ function makeCard(
     oracleId: overrides.name.toLowerCase().replace(/\s+/g, "-"),
     cardTypeGroup: "Other",
     role: "other",
+    cmc: 2,
     owned: true,
     quantity: 1,
     auto: false,
@@ -213,7 +214,7 @@ describe("groupByRole", () => {
 describe("deckCounts", () => {
   const card = (over: Partial<DeckDetailCard>): DeckDetailCard => ({
     oracleId: "o", name: "n", typeLine: "Artifact", cardTypeGroup: "Artifacts",
-    role: "other", owned: true, quantity: 1, auto: false,
+    role: "other", cmc: 2, owned: true, quantity: 1, auto: false,
     printedName: null, printedSetCode: null, printedCollectorNumber: null, ...over,
   });
 

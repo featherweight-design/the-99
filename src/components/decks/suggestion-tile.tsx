@@ -169,6 +169,7 @@ export function SuggestionTile({
         typeLine: suggestion.typeLine,
         cardTypeGroup: suggestion.cardTypeGroup,
         role: suggestion.role,
+        cmc: suggestion.manaValue,
         owned: suggestion.owned,
         quantity: 1,
         auto: false,

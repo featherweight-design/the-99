@@ -24,6 +24,11 @@ export type SearchResult = {
   // value: CostPips draws hybrid and Phyrexian symbols from their halves, and
   // a number cannot be taken back apart into them.
   manaCost: string | null;
+  // Carried beside `manaCost` rather than derived from it: the optimistic row a
+  // quick add draws feeds the what-changed strip's mana value, and a row that
+  // arrived without a cost would average as a zero for the beat before the
+  // revalidate lands — visibly pulling the deck's figure down and then back up.
+  cmc: number;
   // Copies owned across every printing and finish, which is what the row draws
   // as "×N owned". A card is one row per (set, collector number, finish) in
   // `collection_items`, so this is a SUM rather than a count — four nonfoil and
@@ -97,7 +102,7 @@ export async function searchCards(
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       ownedQty: ownedQtySql,
       oracleText: cards.oracleText, keywords: cards.keywords,
-      imageUri: cards.imageUri, manaCost: cards.manaCost,
+      imageUri: cards.imageUri, manaCost: cards.manaCost, cmc: cards.cmc,
       flavorName: flavorHits.flavorName,
     })
     .from(cards)
