@@ -74,9 +74,15 @@ this run's work.
 
 | PR | Scope | Blocked by |
 |---|---|---|
-| 1 | Pip assets, the shared colour control, the chassis frame, `/decks` | nothing |
-| 2 | `/commanders` and `/discover` | PR 1 |
-| 3 | `/collection` | PR 2, and set collections' Task 9 |
+| 1a | Pip assets, `ColourPips`, `FilterChassis`, `ResultLine`'s move | nothing |
+| 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a |
+| 2 | `/commanders` and `/discover` | 1b |
+| 3 | `/collection` | 2, and set collections' Task 9 |
+
+**1a and 1b were one PR in the first draft of this plan.** They are split because the primitives
+are self-contained and fully tested while the `/decks` mount is a real refactor of `decks-view.tsx`
+plus a component deletion — reviewing them together buries the second in the first. 1a adds no
+behaviour: nothing mounts the new components until 1b.
 
 ---
 
