@@ -9,8 +9,8 @@ that commit, not recalled.
 
 The app filters on four routes across three implementations. They disagree on chassis, on where the
 controls sit, on what a colour selector looks like, and on whether filtering costs you horizontal
-room — and the two routes that share an implementation still hand it different controls in a
-different order. This brief asks for one chassis all four mount.
+room — and the two routes that share an implementation still hand it a different control set. This
+brief asks for one chassis all four mount.
 
 ---
 
@@ -19,15 +19,18 @@ different order. This brief asks for one chassis all four mount.
 | Surface | Chassis | Dimensions | Colour control |
 |---|---|---|---|
 | `/commanders` | Horizontal rack, mobile sheet — `src/components/commanders/rack/filter-rack.tsx:37` | search, colour, availability, order | `rack/colour-control.tsx:27` |
-| `/discover` | **The same `FilterRack`**, mounted by `commanders/discovery-view.tsx:560` | search, colour, order — **no availability**: `filter-rack.tsx:109` mounts `AvailabilityControl` only when `lane === "owned"`, and the tests assert its absence on discover | `rack/colour-control.tsx:27` |
+| `/discover` | **The same `FilterRack`**, mounted by `commanders/discovery-view.tsx:560` | search, colour, order — **no availability**: `filter-rack.tsx:109` mounts `AvailabilityControl` only when `lane === "owned"`, and the tests assert its absence on discover. The order control offers different options here, two of which decide what the lane is ranked on | `rack/colour-control.tsx:27` |
 | `/decks` | **Desktop sidebar column** + mobile sheet — `src/components/decks/deck-filter-column.tsx:135`, `deck-filter-sheet.tsx:114` | search, status, colour, played-window, sort | `deck-filter-column.tsx:107` (`ColourSwatch`) |
 | `/collection` | Horizontal bar — `src/components/collection/filter-bar.tsx:58` | search, Type, Set, Color, **Availability** (`filter-bar.tsx:229-261`), Sort, view toggle | `collection/color-pip.tsx:5` |
 
-**Four routes, three implementations.** `/discover` mounts the same `FilterRack` as `/commanders` but
-drops availability entirely — the control is gated on the owned lane, deliberately, and
-`filter-rack.tsx:107-108` records that discover mounts nothing there rather than a greyed stand-in.
-So the two lanes of one journey already differ before the other surfaces are counted, and the
-difference is a real product decision rather than drift.
+**Four routes, three implementations.** `/commanders` and `/discover` mount one `FilterRack` in one
+control order — search, colour, optionally availability, then order (`filter-rack.tsx:98-120`). What
+differs is the control *set* and the options inside one control: availability is gated on the owned
+lane, deliberately, with `:107-108` recording that discover mounts nothing there rather than a
+greyed stand-in, and the order control offers different options per lane. **Placement is not the
+problem on these two** — they are the one pair in the app that already agrees on where things sit,
+which is why §3.5 asks whether the remaining difference is still worth keeping rather than asking
+Design to reconcile a layout.
 
 **Three colour controls for one concept.** That is the clearest evidence the surfaces were never
 designed as a system.

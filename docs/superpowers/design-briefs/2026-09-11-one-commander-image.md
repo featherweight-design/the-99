@@ -53,9 +53,11 @@ are the two smallest images in the app, the useful low end for §3.1.
 
 **The deck spine renders a different strategy on each breakpoint** — `cover` on mobile,
 `left-portrait` on desktop. One surface, two treatments, decided by viewport. That is the single
-clearest instance of the problem this brief exists to fix, and it is not the only one: the home hero
-covers while the home resume row beside it portraits, and commander detail switches between a washed
-band and a bare card face across the same breakpoint.
+clearest instance of the problem this brief exists to fix, and it is not the only one. Home stacks a
+`cover` hero directly above a `left-portrait` resume row in the same column — `HeroCommander` renders
+inside `ReadyToBuild`, and `dashboard.tsx:111-115` places `ResumeDecks` beneath it — so the two
+treatments meet vertically, with nothing between them to explain why they differ. Commander detail
+switches between a washed band and a bare card face across a single breakpoint.
 
 The wash itself is already parameterised for most of what is being asked: `LabelEdge` is
 `"top" | "bottom"` (`art-wash.tsx:227-248`), and `bottomScrimStops(labelAt)` (`:55`) ramps from
