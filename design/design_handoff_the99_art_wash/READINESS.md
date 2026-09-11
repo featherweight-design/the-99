@@ -1,6 +1,7 @@
 # Readiness Review — Commander art wash · scrim recovery
 
-**Verdict:** 🟢 Green
+**Verdict:** 🟢 Green — **partly superseded, see the errata at the foot of this file
+(2026-09-11): the `.28` / `.22` ambient half of the band lift is no longer drawn.**
 **Audited:** 2026-09-09 (R1 Orange, same day; R2 Green after Design took all three corrections)
 **Related ticket(s):** none filed — the handoff arrived as a direct design drop.
 **Deliverable:** `The 99 - Scrim Recovery.dc.html`. The R6 amendment
@@ -141,3 +142,31 @@ Four PRs. The first two are independent of the lift and fix existing failures.
   390px screen, so it is a redesign of the row rather than a value change.
 - **`--fg-faint` below 4.5:1 in kamigawa and phyrexia.** See ratification 3. App-wide, not
   art-wash-owned.
+
+---
+
+## Errata — the ambient half of the band lift is no longer drawn (2026-09-11)
+
+**What changed.** The band lift this review ratified has two halves per `left-portrait` band:
+a sharp masked portrait, and under it the same `art_crop` drawn `cover` across the whole band —
+`.92/.28` on the 168 and 148 bands, `.95/.22` on the 72. The second half is gone as of PR #517.
+The first is untouched, and so is every ramp and hold this round ratified.
+
+**Why.** Past the portrait's own width, that ambient layer is a second rendering of the same
+picture at a different scale, sitting behind the first. It reads as a double image — reported
+with a DevTools capture showing both layers inside one band, and most visible while a window
+resizes and the two scalings move against each other. The horizontal scrim already closes the
+portrait out into the row's ground, so nothing else rested on it.
+
+**What survives it.** Decision §G of `design_handoff_the99_deck_details_wash` — *identity
+gradient in the ambient layer only* — is preserved exactly: with no crop, the full-bleed layer
+is still what draws that gradient, for the reason §G gives. And the contrast floors this review
+turns on still hold, in the safe direction: removing a lightening layer can only darken the
+ground ink stands on. `wash-contrast.test.ts` passes with its composition model updated to match
+what the component now stacks, and `scripts/probe-art-wash.mjs` fails if any band draws the crop
+twice again.
+
+**Status: pending ratification.** This was taken as the defect exactly as reported, without a
+Design round-trip, so the verdict above is Green on everything except this one value pair. If the
+ambient atmosphere is wanted back, it needs a treatment that does not restate the crop — a blur
+past the mask edge, or a flat tint sampled from the art are the two candidates. Ratify or overturn.

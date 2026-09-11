@@ -166,9 +166,9 @@ export function CommandersView({
   }
 
   // Which list is on screen. Falling back to `results` when the free ranking is
-  // missing keeps the page rendering something true rather than nothing — and
-  // with the reconciliation above it is now a belt to that braces, reachable
-  // only on the render that hands the mode back.
+  // missing keeps the page rendering something true rather than nothing — belt
+  // and braces next to the reconciliation above, and reachable only on the
+  // render that hands the mode back.
   const active = avail === "free" && freeItems ? freeItems : results;
 
   // Search narrows before colour, so the colour counts below describe the list
