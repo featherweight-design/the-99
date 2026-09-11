@@ -18,8 +18,14 @@ costs you horizontal room. This brief asks for one chassis that all three mount.
 | Surface | Chassis | Dimensions | Colour control |
 |---|---|---|---|
 | `/commanders` | Horizontal rack, mobile sheet — `src/components/commanders/rack/filter-rack.tsx:37` | search, colour, availability, order | `rack/colour-control.tsx:27` |
+| `/discover` | **The same `FilterRack`**, mounted by `commanders/discovery-view.tsx:560` | search, colour, availability, order — a different control set and order from `/commanders` | `rack/colour-control.tsx:27` |
 | `/decks` | **Desktop sidebar column** + mobile sheet — `src/components/decks/deck-filter-column.tsx:135`, `deck-filter-sheet.tsx:114` | search, status, colour, played-window, sort | `deck-filter-column.tsx:107` (`ColourSwatch`) |
-| `/collection` | Horizontal bar — `src/components/collection/filter-bar.tsx:58` | search, Type, Set, Color, Sort, view toggle | `collection/color-pip.tsx:5` |
+| `/collection` | Horizontal bar — `src/components/collection/filter-bar.tsx:58` | search, Type, Set, Color, **Availability** (`filter-bar.tsx:229-261`), Sort, view toggle | `collection/color-pip.tsx:5` |
+
+**Four routes, not three.** `/discover` mounts the same `FilterRack` as `/commanders` but hands it a
+different control set and order, so the two lanes of one journey already disagree with each other
+before the other surfaces are counted. Wherever this brief says "all three", read it as the four
+routes above: `/commanders` and `/discover` share a component and still need one answer between them.
 
 **Three colour controls for one concept.** That is the clearest evidence the surfaces were never
 designed as a system.
@@ -34,16 +40,18 @@ filtering, and it spends it on the surface whose content — deck art — most w
 1. **A new chassis, drawn for all three.** Not an adoption of the collection bar or the commanders
    rack. Both were considered and rejected: the bar is a working answer but was drawn for a
    different surface's dimensions, and the rack trades away the horizontal room `/decks` needs.
-2. **Shared chassis and shared controls; per-surface dimensions.** The three surfaces genuinely
+2. **Shared chassis and shared controls; per-surface dimensions.** The surfaces genuinely
    filter different things — status and played-window are deck-only, Type is collection-only. The
    consistency being bought is the frame, the control vocabulary, the panel behaviour and the sort
    affordance, not a forced-identical dimension set.
 3. **Set filtering comes to `/commanders`.** The one dimension being added rather than rearranged.
 4. **The `/decks` sidebar goes.** The width it returns belongs to deck art. See the sibling brief
    `2026-09-11-one-commander-image.md`, which spends it.
-5. **Real mana symbols replace the abstract swatches.** The Mana font / Scryfall symbol SVGs, not a
-   custom-drawn glyph set. Recognisability beat bespoke: these are the symbols the player already
-   reads on the cards in their hand.
+5. **Real mana symbols replace the abstract swatches.** Recognisability beat bespoke: these are the
+   symbols the player already reads on the cards in their hand, so they are not redrawn for this app.
+   **The delivery mechanism is Scryfall's symbol SVGs masked against a token background, not a
+   webfont** — see §4, which is binding. The workshop said "Mana font or Scryfall SVGs" before that
+   constraint was known; the constraint settles it, and a font is out.
 
 ## §3 What Design is being asked to call — open
 
@@ -53,10 +61,14 @@ filtering, and it spends it on the surface whose content — deck art — most w
 - **§3.2 Density at five dimensions.** `/decks` carries the most (search, status, colour,
   played-window, sort). If the chassis reads well there it reads everywhere; the brief asks Design to
   draw `/decks` first and prove the others against it.
-- **§3.3 Result and clear affordances.** `/commanders` has `rack/result-line.tsx`; the other two do
-  not state their result count the same way. One answer, applied three times.
-- **§3.4 Whether sort belongs in the chassis at all.** Sort is not a filter. All three currently mix
-  them. Design may separate them or keep them together, but the same answer has to hold on all three.
+- **§3.3 Result and clear affordances.** `/commanders` and `/discover` have `rack/result-line.tsx`;
+  `/decks` and `/collection` do not state their result count the same way. One answer, applied
+  everywhere.
+- **§3.5 What separates `/commanders` from `/discover`.** They share a component and differ in
+  control set and order. Design calls whether that difference is still meaningful under one chassis,
+  or whether the two lanes converge.
+- **§3.4 Whether sort belongs in the chassis at all.** Sort is not a filter. Every surface currently
+  mixes them. Design may separate them or keep them together, but one answer has to hold everywhere.
 
 ---
 
