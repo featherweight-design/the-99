@@ -411,6 +411,27 @@ export type RoleCounts = Record<"ramp" | "draw" | "removal" | "wipes", number>;
  */
 export const RANK_SCORE_UNWRITTEN = -1;
 
+/**
+ * Which writer produced a `commander_scores` row.
+ *
+ * A second sentinel, of the same shape and for the same reason as
+ * `RANK_SCORE_UNWRITTEN`: the column's DEFAULT is what the *previous*
+ * deployment's inserts land with, because that code does not know the column
+ * exists, and every insert from this schema names it. So a row carrying
+ * anything below `SCORE_WRITER_CURRENT` was written by an older writer, and the
+ * reader can say so without a timestamp or a deploy marker.
+ *
+ * Version 2 is the first writer that scores built commanders. Version 1's sets
+ * have them deleted — `persistScores` removes every row its compute does not
+ * name — and such a set is neither empty nor degraded, so without this the read
+ * would serve it as warm and the commander would never come back. It also closes
+ * the deployment window: migrations run before the new build goes live, so the
+ * old writer can repopulate the table in between, and a one-off `DELETE` would
+ * be undone by it. Rows written in that window carry the default and are refused
+ * like any other stale row.
+ */
+export const SCORE_WRITER_CURRENT = 2;
+
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
@@ -428,6 +449,9 @@ export const commanderScores = pgTable("commander_scores", {
   // it usable as a sentinel. It is negative because a computed rank score cannot be, so
   // `loadScores` can tell a row this code wrote from one it did not.
   rankScore: real("rank_score").notNull().default(RANK_SCORE_UNWRITTEN),
+  // See `SCORE_WRITER_CURRENT`. The default is the sentinel: it is what the
+  // deployment that does not know this column writes.
+  writerVersion: integer("writer_version").notNull().default(1),
   fitPool: real("fit_pool").notNull(),
   fitRoles: real("fit_roles").notNull(),
   // Null iff synergyState !== "ok".

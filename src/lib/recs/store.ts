@@ -1,10 +1,13 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderScores, csvUploads, type RoleCounts } from "../../db/schema";
+import {
+  cards, commanderScores, csvUploads, SCORE_WRITER_CURRENT, type RoleCounts,
+} from "../../db/schema";
 import { receiptsPreview } from "./format";
 import { measurableTotalFor } from "./score";
 import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
+import { notBuiltBy } from "../decks/built";
 
 // Postgres codes meaning the schema is behind the code: 42P01 undefined_table,
 // 42703 undefined_column. commander_scores is a cache and both readers already
@@ -56,6 +59,9 @@ export function toScoreRow(userId: string, r: RankedCommander) {
     receipts: receiptsPreview(r.overlapOwned),
     colorPoolSize: r.colorPoolSize,
     roleCounts: r.roleCounts,
+    // Named on every insert, which is what makes the column's default a sentinel
+    // for rows an older deployment wrote. See `SCORE_WRITER_CURRENT`.
+    writerVersion: SCORE_WRITER_CURRENT,
     computedAt: new Date(),
   };
 }
@@ -183,6 +189,7 @@ export async function loadScores(
         receipts: commanderScores.receipts,
         colorPoolSize: commanderScores.colorPoolSize,
         roleCounts: commanderScores.roleCounts,
+        writerVersion: commanderScores.writerVersion,
         name: cards.name,
         typeLine: cards.typeLine,
         colorIdentity: cards.colorIdentity,
@@ -205,6 +212,17 @@ export async function loadScores(
     // row was written entirely by that deployment, and the rest of it is no more current
     // than the row that gives it away.
     if (rows.some((r) => r.rankScore < 0)) return { items: [], degradedOracleIds: [] };
+
+    // The same rule for the same reason, one sentinel later. A set written before
+    // the writer scored built commanders has those rows deleted out of it, and is
+    // neither empty nor degraded — so serving it would go on hiding a commander
+    // whose deck has since been deleted, for as long as nothing else invalidated
+    // the set. One stale row condemns the set: `persistScores` writes a user's
+    // rows in one transaction, so the rest is no more current than the row that
+    // gives it away.
+    if (rows.some((r) => r.writerVersion < SCORE_WRITER_CURRENT)) {
+      return { items: [], degradedOracleIds: [] };
+    }
 
     return {
       items: rows.map(rowToListItem),
@@ -238,7 +256,29 @@ export async function findScoredCommander(
           anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),
         })
         .from(commanderScores)
-        .where(eq(commanderScores.userId, userId)),
+        // The window runs over the UNBUILT rows, the same population the list
+        // shows. The store holds every scored commander, built ones included —
+        // it is what `persistScores` writes from, and dropping them there is what
+        // used to evict a commander permanently when a deck was built around it
+        // — but a rank counted over rows the list does not draw is a rank that
+        // disagrees with the list: the commander at the top of the page would
+        // read `Rank #2` because a built commander outscored it.
+        //
+        // A built commander therefore resolves nowhere here, which is where it
+        // resolved before this store held it at all: `resolveCommanderSlug` falls
+        // through to the owned list (which excludes it) and then to discovery
+        // (which excludes what the player owns). Its detail page 404s, exactly as
+        // it did before — a separate question from this one, and not one to
+        // settle by handing out a rank no list agrees with.
+        // Stale rows are refused here too, or a slug would resolve to a rank
+        // counted over a set `loadScores` has already condemned.
+        .where(
+          and(
+            eq(commanderScores.userId, userId),
+            eq(commanderScores.writerVersion, SCORE_WRITER_CURRENT),
+            notBuiltBy(userId, commanderScores.oracleId),
+          ),
+        ),
     );
     const [row] = await db
       .with(ranked)

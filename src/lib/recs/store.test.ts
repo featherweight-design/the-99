@@ -14,7 +14,7 @@ import {
   toScoreRow,
 } from "./store";
 import type { RankedCommander } from "./recommend";
-import { RANK_SCORE_UNWRITTEN } from "../../db/schema";
+import { RANK_SCORE_UNWRITTEN, SCORE_WRITER_CURRENT } from "../../db/schema";
 
 const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   oracleId: "11111111-1111-1111-1111-111111111111",
@@ -220,8 +220,10 @@ describe("isSchemaLagError", () => {
 });
 
 describe("loadScores and the rows a mid-deploy write left behind", () => {
-  // The one shape of row this cannot serve: written after 0017 added `rank_score` but
-  // before the deployment that fills it went live, so the column holds only its default.
+  // Two shapes this cannot serve, one sentinel each: a row written after 0017
+  // added `rank_score` but before the deployment that fills it went live, and a
+  // row written by a writer older than `SCORE_WRITER_CURRENT` — which, for
+  // version 1, means a set with its built commanders deleted out of it.
   const row = (over: Record<string, unknown> = {}) => ({
     oracleId: "11111111-1111-1111-1111-111111111111",
     slug: "atraxa-praetors-voice",
@@ -239,6 +241,7 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
     name: "Atraxa, Praetors' Voice",
     colorIdentity: ["W", "U", "B", "G"],
     imageUri: "https://x.test/a.jpg",
+    writerVersion: SCORE_WRITER_CURRENT,
     ...over,
   });
 
@@ -269,6 +272,24 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
     stub.db.select = resolvingSelect([row(), row({ rankScore: RANK_SCORE_UNWRITTEN })]);
     const { items } = await loadScores("user_1");
     expect(items).toEqual([]);
+  });
+
+  // Version 1 is a set written before built commanders were scored, so rows are
+  // missing from it — and it is neither empty nor degraded, so nothing else would
+  // ever mark it stale.
+  it("reads an older writer's rows as a miss", async () => {
+    stub.db.select = resolvingSelect([row({ writerVersion: 1 })]);
+    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+  });
+
+  it("condemns a set where only one row predates the current writer", async () => {
+    stub.db.select = resolvingSelect([row(), row({ writerVersion: 1 })]);
+    const { items } = await loadScores("user_1");
+    expect(items).toEqual([]);
+  });
+
+  it("names the current writer on every row it writes", () => {
+    expect(toScoreRow("user_1", ranked()).writerVersion).toBe(SCORE_WRITER_CURRENT);
   });
 });
 

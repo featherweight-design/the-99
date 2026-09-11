@@ -1,0 +1,14 @@
+-- Which writer produced each `commander_scores` row. See `SCORE_WRITER_CURRENT`
+-- in src/db/schema.ts.
+--
+-- The DEFAULT is the point: migrations run before the new build goes live, so
+-- the previous deployment keeps inserting rows for a window after this lands,
+-- and those inserts do not name this column. They take the 1, and the new reader
+-- refuses them — which is what a one-off `DELETE` could not do, since the old
+-- writer would simply repopulate the table behind it.
+--
+-- Version 1 means "written by a writer that dropped built commanders before
+-- scoring". Those sets have rows missing that `persistScores` deleted, and are
+-- neither empty nor degraded, so the read would otherwise serve them as warm
+-- forever.
+ALTER TABLE "commander_scores" ADD COLUMN "writer_version" integer DEFAULT 1 NOT NULL;

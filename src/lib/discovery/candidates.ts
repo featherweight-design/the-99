@@ -9,6 +9,7 @@ import {
   sets,
 } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
+import { notBuiltBy } from "../decks/built";
 
 export type CandidateSqlRow = {
   oracleId: string;
@@ -378,36 +379,21 @@ export function discoverCandidates(userId: string, collectionOracleIds: string[]
  * param. It also makes an empty collection the harmless case it should be,
  * where the `NOT IN ()` a bare array would emit is a syntax error.
  *
- * The NULL hazard `unbuiltCommanders` documents is out of reach on both sides:
- * `commander_oracle_id` is `notNull()`, and the array is oracle ids read out of
- * the collection rather than a subquery that could yield one.
+ * The NULL hazard `notBuiltBy` documents is out of reach on both sides: this
+ * array is oracle ids read out of the collection rather than a subquery that
+ * could yield one.
  */
 function unownedCommanders(collectionOracleIds: string[]) {
   return sql`${commanderSupport.commanderOracleId} <> all(${sql.param(collectionOracleIds)}::uuid[])`;
 }
 
 function unbuiltCommanders(userId: string) {
-  // BOTH COLUMNS, and `not exists` rather than `NOT IN (subquery)`. The two go
-  // together: a `NOT IN` subquery returns NOTHING — not "all rows" — the moment
-  // it yields a single NULL, and `decks.partner_oracle_id` is nullable, so
-  // adding the partner to a `NOT IN` list would empty this lane for any player
-  // holding one deck without a partner. `not exists` has no such edge: a NULL
-  // partner simply matches nothing.
-  //
-  // The partner has to be here as well as in `loadBuiltCommanderIds`, because
-  // this lane's other exclusion cannot stand in for it. It drops commanders the
-  // player OWNS, and a deck can carry a partner they do not: an import validates
-  // that a declared partner is a legal commander, never that it is in the
-  // collection. Such a partner helms a deck and is unowned, so without this it
-  // was offered as something to discover.
-  const built = sql`not exists (
-    select 1 from ${decks}
-    where ${decks.userId} = ${userId}
-      and (
-        ${decks.commanderOracleId} = ${commanderSupport.commanderOracleId}
-        or ${decks.partnerOracleId} = ${commanderSupport.commanderOracleId}
-      )
-  )`;
-
-  return and(eq(cards.commanderLegal, true), built);
+  // `notBuiltBy` carries the reasoning for both columns and for the `not exists`
+  // form; it is shared with the detail page's rank window, which has to exclude
+  // exactly the same commanders or the two screens disagree about a rank.
+  return and(
+    eq(cards.commanderLegal, true),
+    notBuiltBy(userId, commanderSupport.commanderOracleId),
+  );
 }
+

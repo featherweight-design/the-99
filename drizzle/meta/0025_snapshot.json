@@ -1,5 +1,5 @@
 {
-  "id": "b05d0a8a-c7dc-427c-9d21-9a2162f1082d",
+  "id": "4f8d1452-4517-4eed-b2a0-a7da9d2c380d",
   "prevId": "a6eac463-791b-432b-ac8e-4ab93de570f1",
   "version": "7",
   "dialect": "postgresql",
@@ -39,15 +39,15 @@
         "card_art_preferences_oracle_id_cards_oracle_id_fk": {
           "name": "card_art_preferences_oracle_id_cards_oracle_id_fk",
           "tableFrom": "card_art_preferences",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -173,9 +173,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -245,15 +245,15 @@
         "collection_items_oracle_id_cards_oracle_id_fk": {
           "name": "collection_items_oracle_id_cards_oracle_id_fk",
           "tableFrom": "collection_items",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -312,6 +312,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": -1
+        },
+        "writer_version": {
+          "name": "writer_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
         },
         "fit_pool": {
           "name": "fit_pool",
@@ -399,24 +406,24 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "commander_scores_oracle_id_cards_oracle_id_fk": {
           "name": "commander_scores_oracle_id_cards_oracle_id_fk",
           "tableFrom": "commander_scores",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -543,15 +550,15 @@
         "commander_support_commander_oracle_id_cards_oracle_id_fk": {
           "name": "commander_support_commander_oracle_id_cards_oracle_id_fk",
           "tableFrom": "commander_support",
+          "tableTo": "cards",
           "columnsFrom": [
             "commander_oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -618,37 +625,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "commander_support_cards_commander_oracle_id_commander_support_commander_oracle_id_fk": {
           "name": "commander_support_cards_commander_oracle_id_commander_support_commander_oracle_id_fk",
           "tableFrom": "commander_support_cards",
+          "tableTo": "commander_support",
           "columnsFrom": [
             "commander_oracle_id"
           ],
-          "tableTo": "commander_support",
           "columnsTo": [
             "commander_oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "commander_support_cards_oracle_id_cards_oracle_id_fk": {
           "name": "commander_support_cards_oracle_id_cards_oracle_id_fk",
           "tableFrom": "commander_support_cards",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -764,28 +771,28 @@
         "deck_cards_deck_id_decks_id_fk": {
           "name": "deck_cards_deck_id_decks_id_fk",
           "tableFrom": "deck_cards",
+          "tableTo": "decks",
           "columnsFrom": [
             "deck_id"
           ],
-          "tableTo": "decks",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "deck_cards_oracle_id_cards_oracle_id_fk": {
           "name": "deck_cards_oracle_id_cards_oracle_id_fk",
           "tableFrom": "deck_cards",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -830,15 +837,15 @@
         "deck_game_axes_game_id_deck_games_id_fk": {
           "name": "deck_game_axes_game_id_deck_games_id_fk",
           "tableFrom": "deck_game_axes",
+          "tableTo": "deck_games",
           "columnsFrom": [
             "game_id"
           ],
-          "tableTo": "deck_games",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -934,37 +941,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "deck_games_deck_id_decks_id_fk": {
           "name": "deck_games_deck_id_decks_id_fk",
           "tableFrom": "deck_games",
+          "tableTo": "decks",
           "columnsFrom": [
             "deck_id"
           ],
-          "tableTo": "decks",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "deck_games_version_id_deck_versions_id_fk": {
           "name": "deck_games_version_id_deck_versions_id_fk",
           "tableFrom": "deck_games",
+          "tableTo": "deck_versions",
           "columnsFrom": [
             "version_id"
           ],
-          "tableTo": "deck_versions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1038,24 +1045,24 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "deck_unresolved_rows_deck_id_decks_id_fk": {
           "name": "deck_unresolved_rows_deck_id_decks_id_fk",
           "tableFrom": "deck_unresolved_rows",
+          "tableTo": "decks",
           "columnsFrom": [
             "deck_id"
           ],
-          "tableTo": "decks",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1106,37 +1113,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "deck_version_cards_version_id_deck_versions_id_fk": {
           "name": "deck_version_cards_version_id_deck_versions_id_fk",
           "tableFrom": "deck_version_cards",
+          "tableTo": "deck_versions",
           "columnsFrom": [
             "version_id"
           ],
-          "tableTo": "deck_versions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "deck_version_cards_oracle_id_cards_oracle_id_fk": {
           "name": "deck_version_cards_oracle_id_cards_oracle_id_fk",
           "tableFrom": "deck_version_cards",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1233,61 +1240,61 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "deck_versions_deck_id_decks_id_fk": {
           "name": "deck_versions_deck_id_decks_id_fk",
           "tableFrom": "deck_versions",
+          "tableTo": "decks",
           "columnsFrom": [
             "deck_id"
           ],
-          "tableTo": "decks",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "deck_versions_commander_oracle_id_cards_oracle_id_fk": {
           "name": "deck_versions_commander_oracle_id_cards_oracle_id_fk",
           "tableFrom": "deck_versions",
+          "tableTo": "cards",
           "columnsFrom": [
             "commander_oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "deck_versions_partner_oracle_id_cards_oracle_id_fk": {
           "name": "deck_versions_partner_oracle_id_cards_oracle_id_fk",
           "tableFrom": "deck_versions",
+          "tableTo": "cards",
           "columnsFrom": [
             "partner_oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "deck_versions_deck_number_key": {
           "name": "deck_versions_deck_number_key",
+          "nullsNotDistinct": false,
           "columns": [
             "deck_id",
             "number"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
@@ -1355,28 +1362,28 @@
         "decks_commander_oracle_id_cards_oracle_id_fk": {
           "name": "decks_commander_oracle_id_cards_oracle_id_fk",
           "tableFrom": "decks",
+          "tableTo": "cards",
           "columnsFrom": [
             "commander_oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "decks_partner_oracle_id_cards_oracle_id_fk": {
           "name": "decks_partner_oracle_id_cards_oracle_id_fk",
           "tableFrom": "decks",
+          "tableTo": "cards",
           "columnsFrom": [
             "partner_oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1419,15 +1426,15 @@
         "edhrec_cache_commander_oracle_id_cards_oracle_id_fk": {
           "name": "edhrec_cache_commander_oracle_id_cards_oracle_id_fk",
           "tableFrom": "edhrec_cache",
+          "tableTo": "cards",
           "columnsFrom": [
             "commander_oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1465,28 +1472,28 @@
         "fill_pass_cards_pass_id_fill_passes_id_fk": {
           "name": "fill_pass_cards_pass_id_fill_passes_id_fk",
           "tableFrom": "fill_pass_cards",
+          "tableTo": "fill_passes",
           "columnsFrom": [
             "pass_id"
           ],
-          "tableTo": "fill_passes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "fill_pass_cards_oracle_id_cards_oracle_id_fk": {
           "name": "fill_pass_cards_oracle_id_cards_oracle_id_fk",
           "tableFrom": "fill_pass_cards",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1558,36 +1565,36 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "fill_passes_deck_id_decks_id_fk": {
           "name": "fill_passes_deck_id_decks_id_fk",
           "tableFrom": "fill_passes",
+          "tableTo": "decks",
           "columnsFrom": [
             "deck_id"
           ],
-          "tableTo": "decks",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "fill_passes_deck_kind_ordinal_key": {
           "name": "fill_passes_deck_kind_ordinal_key",
+          "nullsNotDistinct": false,
           "columns": [
             "deck_id",
             "kind",
             "ordinal"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
@@ -1657,15 +1664,15 @@
         "printing_prices_scryfall_id_printings_scryfall_id_fk": {
           "name": "printing_prices_scryfall_id_printings_scryfall_id_fk",
           "tableFrom": "printing_prices",
+          "tableTo": "printings",
           "columnsFrom": [
             "scryfall_id"
           ],
-          "tableTo": "printings",
           "columnsTo": [
             "scryfall_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1759,9 +1766,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "printings_oracle_idx": {
           "name": "printings_oracle_idx",
@@ -1774,9 +1781,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "printings_flavor_name_idx": {
           "name": "printings_flavor_name_idx",
@@ -1789,25 +1796,25 @@
             }
           ],
           "isUnique": false,
-          "with": {},
-          "method": "btree",
           "where": "\"printings\".\"flavor_name\" is not null",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "printings_oracle_id_cards_oracle_id_fk": {
           "name": "printings_oracle_id_cards_oracle_id_fk",
           "tableFrom": "printings",
+          "tableTo": "cards",
           "columnsFrom": [
             "oracle_id"
           ],
-          "tableTo": "cards",
           "columnsTo": [
             "oracle_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1907,10 +1914,10 @@
   },
   "enums": {},
   "schemas": {},
-  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
+  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

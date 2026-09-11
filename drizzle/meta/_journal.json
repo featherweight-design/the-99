@@ -180,8 +180,8 @@
     {
       "idx": 25,
       "version": "7",
-      "when": 1789153211482,
-      "tag": "0025_heal_truncated_commander_scores",
+      "when": 1789153928960,
+      "tag": "0025_commander_scores_writer_version",
       "breakpoints": true
     }
   ]
