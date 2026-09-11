@@ -18,10 +18,14 @@ describe("ColourPips", () => {
     expect(screen.queryByLabelText(/filter by [wubrg]$/i)).toBeNull();
   });
 
-  it("speaks the lit state, because the ring that carries it is not announced", () => {
+  it("leaves the lit state to aria-checked rather than saying it twice", () => {
+    // The handoff specified `Blue, on` when lit. A `role="switch"` already
+    // announces `aria-checked`, so that read "Blue, on … on" while an unlit pip
+    // relied on the ARIA state alone.
     render(<ColourPips value={["u"]} onToggle={() => {}} form="wide" />);
-    expect(screen.getByRole("switch", { name: "Blue, on" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("switch", { name: "Blue" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("switch", { name: "White" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.queryByRole("switch", { name: /, on$/ })).toBeNull();
   });
 
   it("carries no opacity on either state — decision 7, and the shipped defect", () => {
@@ -37,7 +41,7 @@ describe("ColourPips", () => {
 
   it("lights with a 2px accent ring and nothing else", () => {
     render(<ColourPips value={["g"]} onToggle={() => {}} form="wide" />);
-    expect(screen.getByRole("switch", { name: "Green, on" }).className)
+    expect(screen.getByRole("switch", { name: "Green" }).className)
       .toContain("shadow-[0_0_0_2px_var(--accent)]");
   });
 
@@ -66,7 +70,7 @@ describe("ColourPips", () => {
 
   it("reads an uppercase value, since routes store identity either way", () => {
     render(<ColourPips value={["W", "R"]} onToggle={() => {}} form="wide" />);
-    expect(screen.getByRole("switch", { name: "White, on" })).toBeTruthy();
-    expect(screen.getByRole("switch", { name: "Red, on" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "White" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Red" })).toBeTruthy();
   });
 });

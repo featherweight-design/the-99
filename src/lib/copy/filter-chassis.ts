@@ -28,12 +28,17 @@ export const chassisCopy = {
 
   colour: {
     /**
-     * Per-pip accessible name. The hue letter is never the name on its own:
-     * `color-pip.tsx` shipped `Filter by B`, which reads as a letter rather than
-     * a colour. The lit state is spoken because the ring that carries it is the
-     * only visual signal, and a ring is not announced.
+     * Per-pip accessible name: the colour, and nothing else. The hue letter is
+     * never the name on its own — `color-pip.tsx` shipped `Filter by B`, which
+     * reads as a letter rather than a colour.
+     *
+     * The handoff specified `${name}, on` when lit, reasoning that the ring
+     * carrying the state is not announced. The ring is not, but the pip is a
+     * `role="switch"` and `aria-checked` is, so the suffix made a lit pip read
+     * "Blue, on … on" while an unlit one relied on the ARIA state alone. The
+     * state belongs to `aria-checked`; the name stays the colour.
      */
-    pipAria: (name: string, on: boolean) => `${name}${on ? ", on" : ""}`,
+    pipAria: (name: string) => name,
     /** Reused on the commander lanes; stated for the two routes that had none. */
     legend: "Colour",
     /** Chip label past one pip — never one chip per hue. */

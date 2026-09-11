@@ -89,13 +89,11 @@ behaviour: nothing mounts the new components until 1b.
 
 ---
 
-## PR 1 — the frame, the pip, and `/decks`
+## PR 1a — the frame, the pip, and the result line
 
-`/decks` is the route Design drew first and the densest at five dimensions, which is the point:
-if the frame survives there it survives everywhere. It is also the route that gets the visible win —
-deleting the sidebar returns 262px to deck art.
+Primitives only. Nothing mounts them, so this PR changes no behaviour — `/decks` follows in 1b.
 
-### Task 1.1 — the pip assets
+### Task 1a.1 — the pip assets
 
 Fetch the five symbols from `svgs.scryfall.io/card-symbols/{W,U,B,R,G}.svg` and commit them under
 `public/mana/`. They are finished multi-colour illustrations: a filled `<circle>` ground with the
@@ -104,7 +102,7 @@ symbol pathed over it. **Do not strip, recolour, mask or tint them.**
 Verify on arrival that each file's first `fill` matches constraint 2 above. If a value differs,
 stop and re-measure the floor before continuing rather than assuming the headroom absorbs it.
 
-### Task 1.2 — `ColourPips`, the one colour control
+### Task 1a.2 — `ColourPips`, the one colour control
 
 New `src/components/ui/colour-pips.tsx`. Parameterised — never takes a route flag (the same rule
 set collections' Task 9 carries for its own extraction).
@@ -119,7 +117,7 @@ set collections' Task 9 carries for its own extraction).
 **Test:** the lit ring renders at 2px `--accent`; no `opacity` appears in the unlit class list; the
 accessible name is the colour's name rather than its code.
 
-### Task 1.3 — the chassis frame
+### Task 1a.3 — the chassis frame
 
 New `src/components/ui/filter-chassis.tsx`. Three rows, always all three (decision 1):
 
@@ -144,7 +142,15 @@ than a second dialog.
 **Test:** at four dimensions and at five the frame's height is identical; the control row does not
 wrap at 900px or at 1440px; `no filters on` is present in the DOM at rest.
 
-### Task 1.4 — `/decks` mounts it, and the sidebar goes
+---
+
+## PR 1b — `/decks` mounts the chassis, and the sidebar goes
+
+`/decks` is the route Design drew first and the densest at five dimensions, which is the point: if
+the frame survives there it survives everywhere. It is also the route that gets the visible win —
+deleting the sidebar returns 262px to deck art.
+
+### Task 1b.1 — `/decks` mounts it, and the sidebar goes
 
 - Delete `DeckFilterColumn` (`decks-view.tsx:224`). Its `someOn` line is retired (§3.3) and its two
   footer `Clear`s collapse into the three-scope vocabulary of decision 12.

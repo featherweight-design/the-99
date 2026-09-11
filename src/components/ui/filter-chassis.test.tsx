@@ -85,6 +85,16 @@ describe("FilterChassis", () => {
     expect(screen.queryByText("Clear all filters")).toBeNull();
   });
 
+  it("gives a chip's remove a real 44px target without growing the chip", () => {
+    // The chip line's height is the invariant the whole frame rests on, so the
+    // target is an overlay rather than padding — the same treatment
+    // `collection/chip-row.tsx` uses.
+    render(<FilterChassis {...base} controls={null} chips={[chip("a", "3 colours")]} />);
+    const remove = screen.getByRole("button", { name: "Remove filter: 3 colours" });
+    expect(remove.className).toContain("after:h-[44px]");
+    expect(remove.className).toContain("after:min-w-[44px]");
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,

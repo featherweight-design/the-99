@@ -112,7 +112,19 @@ export function FilterChassis({
                 type="button"
                 onClick={chip.onRemove}
                 aria-label={chassisCopy.chips.removeAria(chip.label)}
-                className="inline-flex cursor-pointer items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[8px] py-[3px] font-mono text-[11px] text-[color:var(--fg-body)]"
+                // The chip's drawn size is small and stays small; the touch
+                // target is an `::after` overlay centred on it, the same
+                // treatment `collection/chip-row.tsx:191-203` uses. Growing the
+                // chip itself to 44px would make the chip line three times its
+                // drawn height, and the chip line's height is the invariant the
+                // whole frame rests on.
+                className={[
+                  "relative inline-flex cursor-pointer items-center gap-[6px] rounded-[7px]",
+                  "border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)]",
+                  "px-[8px] py-[3px] font-mono text-[11px] text-[color:var(--fg-body)]",
+                  "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px]",
+                  "after:w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+                ].join(" ")}
               >
                 {chip.label}
                 <span aria-hidden>×</span>
