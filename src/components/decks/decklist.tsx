@@ -12,6 +12,7 @@ import { computeRoleCounts } from "../../lib/decks/mix";
 import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { GroupToggle, type AutoControls, type DeckView } from "./group-toggle";
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
@@ -91,7 +92,20 @@ type DecklistProps = {
   newestAsOf?: Date | null;
   /** Built on the server; see BuilderShell. */
   provenance?: ProvenanceForm | null;
+  /**
+   * The oracle ids this deck's draft added on top of its newest version (#389).
+   * Empty on a brew and on a committed deck with nothing pending, which is why
+   * every note below is gated on the set's size rather than on a second flag.
+   * The rows read the same set through `PendingAddProvider`.
+   */
+  pendingAdds?: Set<string>;
+  /** The newest version's number, for the toolbar note. Null on a brew. */
+  pendingVersion?: number | null;
 };
+
+/** Module-scoped, so the default does not hand a fresh Set to the provider on
+ *  every render and remount the rows under it. */
+const EMPTY_PENDING_ADDS: Set<string> = new Set();
 
 export function Decklist({
   deckId,
@@ -119,12 +133,22 @@ export function Decklist({
   shoppingFigures = {},
   newestAsOf = null,
   provenance = null,
+  pendingAdds = EMPTY_PENDING_ADDS,
+  pendingVersion = null,
 }: DecklistProps) {
   // The view does not persist and does not touch the URL: it is one visit's
   // reading preference, where `/collection`'s `?view=` answers a browse
   // surface's different question. Held here because nothing above the list
   // reads it.
   const [view, setView] = useState<DeckView>("list");
+
+  // The toolbar's right slot while a draft exists. Needs both answers: a deck
+  // with no version has no vN to count against, and a set with nothing in it has
+  // nothing to count. Null in either case, and the kept note keeps the slot.
+  const draftNote =
+    pendingAdds.size > 0 && pendingVersion !== null
+      ? deckVersioningCopy.pending.toolbarNote(pendingAdds.size, pendingVersion)
+      : null;
 
   // undefined = no figure line on the row. That is the All view's answer, and
   // also the outage's: with EDHREC unreachable we know nothing about any of
@@ -305,6 +329,7 @@ export function Decklist({
             keepAllPending={keepAllPending}
             autoControls={autoControls}
             shoppingCards={shoppingList}
+            draftNote={draftNote}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
@@ -369,6 +394,7 @@ export function Decklist({
           priceSummary={priceSummary}
           provenance={provenance}
           shoppingCards={shoppingList}
+          draftNote={draftNote}
         />
 
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
@@ -546,6 +572,7 @@ export function Decklist({
         priceSummary={priceSummary}
         provenance={provenance}
         shoppingCards={shoppingList}
+        draftNote={draftNote}
       />
 
       {/* Grouped card rows */}
@@ -575,18 +602,37 @@ export function Decklist({
             {addPanelCopy.emptyList}
           </p>
         )}
-        {groups.map(([label, groupCards]) => (
-          <DecklistGroup
-            key={label}
-            deckId={deckId}
-            label={label}
-            cards={groupCards}
-            view={view}
-            spentOracleId={spentCard?.oracleId}
-            siblings={orderedIds}
-            newestAsOf={newestAsOf}
-          />
-        ))}
+        {/* Said once for the whole list rather than once per marked row: at
+            nineteen adds the per-row version is nineteen copies of one
+            sentence. Only under All — Shopping shows a subset, and a caption
+            counting rows the reader cannot see is a caption about nothing. */}
+        {pendingAdds.size > 0 && filter === "all" && (
+          <p className="m-0 mb-[8px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+            {deckVersioningCopy.pending.addListCaption(pendingAdds.size)}
+          </p>
+        )}
+        {groups.map(([label, groupCards]) => {
+          // Omitted at zero rather than printed as `0 added in this draft`: a
+          // group the draft did not touch has nothing to say about it.
+          const addedInGroup = groupCards.filter((c) => pendingAdds.has(c.oracleId)).length;
+          return (
+            <DecklistGroup
+              key={label}
+              deckId={deckId}
+              label={label}
+              cards={groupCards}
+              view={view}
+              spentOracleId={spentCard?.oracleId}
+              siblings={orderedIds}
+              newestAsOf={newestAsOf}
+              note={
+                addedInGroup > 0
+                  ? deckVersioningCopy.pending.groupAddNote(addedInGroup)
+                  : undefined
+              }
+            />
+          );
+        })}
 
         {/* Pinned last, after every type or role group. */}
         <UnresolvedGroup

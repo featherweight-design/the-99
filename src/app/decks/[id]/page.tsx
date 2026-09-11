@@ -19,6 +19,8 @@ import { provenanceForm } from "../../../lib/decks/price";
 import { listDeckGames, summarizeGames } from "../../../lib/decks/games";
 import { readFillPasses } from "../../../lib/decks/fill-passes";
 import { deckBodySize } from "../../../lib/decks/deck-size";
+import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks/draft-state";
+import { computeRoleCounts } from "../../../lib/decks/mix";
 
 export default async function DeckBuilderPage({
   params,
@@ -48,7 +50,7 @@ export default async function DeckBuilderPage({
     ]),
   ];
 
-  const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games, fillPasses] =
+  const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games, fillPasses, draft] =
     await Promise.all([
       getDeckSuggestions(id),
       // The move-card picker lists every other deck by name, as it always has.
@@ -71,7 +73,19 @@ export default async function DeckBuilderPage({
       // degrade to a missing ornament; a ledger that quietly vanished would tell
       // the player their passes are gone, which is a lie about deck state.
       readFillPasses(id),
+      // Not swallowed either, and for the stronger version of the same reason: a
+      // failed read would take the banner away, and a deck with pending changes
+      // and no banner offers no route to a commit at all.
+      loadDraftState(id, userId),
     ]);
+
+  // The figures the version held, for the `was n` line in the mix cells. Read
+  // only when there is a draft to compare against, and through the same
+  // `computeRoleCounts` the strip itself uses — two folds would put two
+  // different decks in one cell.
+  const wasCounts = hasChanges(draft) && draft.version
+    ? computeRoleCounts(await loadVersionShape(draft.version.id))
+    : undefined;
 
   // Summarised here rather than in the panel: the function is pure and this is
   // already a server component, so aggregating on the client would ship the
@@ -151,6 +165,8 @@ export default async function DeckBuilderPage({
       commanderIdentity={commanderIdentity}
       candidates={candidates}
       fillPasses={fillPasses}
+      draft={draft}
+      wasCounts={wasCounts}
       games={games}
       gameSummary={gameSummary}
       // Left in the URL rather than swept with a router.replace. Stripping it

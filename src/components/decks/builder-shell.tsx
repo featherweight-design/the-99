@@ -51,6 +51,11 @@ import { topOffCopy } from "../../lib/copy/top-off";
 // reaches for the database.
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { LastSlotsStrip } from "./last-slots-strip";
+import { PendingBanner } from "./pending-banner";
+import { PendingAddProvider } from "./pending-add";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+// `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
+import type { DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -114,6 +119,14 @@ interface BuilderShellProps {
   /** Aggregated on the server — `summarizeGames` is pure, so running it here
       would only ship the work to the browser. */
   gameSummary?: GameSummary;
+  /** What this deck's draft has changed since its newest version (#389). Read on
+      every visit, so it is always present in the app — optional only so the
+      shell's own tests can leave it out. Its absence draws no banner and no row
+      marks, which is the right rendering for a surface that knows nothing. */
+  draft?: DraftState | null;
+  /** The role counts the newest version held, for the mix cells' `was n` line.
+      Derived by the route from the same `computeRoleCounts` the strip uses. */
+  wasCounts?: Record<MixRole, number>;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -143,6 +156,8 @@ export function BuilderShell({
   fillPasses = [],
   games = [],
   gameSummary = NO_GAMES,
+  draft = null,
+  wasCounts,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -212,6 +227,20 @@ export function BuilderShell({
   // take two of the hundred, so its body is 98 and every figure below counts
   // toward that rather than a written-down 99.
   const bodySize = deckBodySize(deck.partner !== null);
+
+  // The draft's added cards, as the rows ask about them: one boolean per row.
+  // Null outside a draft, which is what makes every mark and every note absent
+  // on a deck with nothing pending rather than gated on a second flag.
+  const pendingAdd = useMemo(
+    () =>
+      draft && draft.adds.length > 0
+        ? {
+            oracleIds: new Set(draft.adds.map((a) => a.oracleId)),
+            label: deckVersioningCopy.pending.addMarkA11y,
+          }
+        : null,
+    [draft],
+  );
 
   // The one deliberate exception. Keyed off the SERVER counts because the
   // commitments roll-up below states a fact about other decks' claims, and a
@@ -769,6 +798,18 @@ export function BuilderShell({
                 unresolved lines do not contradict. */}
             {updateArrival && <UpdateStrip arrival={updateArrival} />}
 
+            {/* Surface 1 (#389). Above the unresolved banner: what it says is
+                that this list is not the deck's committed one yet, which every
+                count below it is then read against. */}
+            {draft && (
+              <PendingBanner
+                state={draft}
+                deckId={deck.id}
+                total={counts.total}
+                bodySize={bodySize}
+              />
+            )}
+
             {/* Above the coverage strip and the tabs, because what it says is
                 that both of them are short by this many lines. Not gated on
                 arrival: the lines stay unresolved across visits, and so does
@@ -781,6 +822,7 @@ export function BuilderShell({
               onSeeShelf={seeShelf}
               rolesWithShelves={shelvedRoles}
               justFilled={deck.filled && autoCount > 0}
+              wasCounts={wasCounts}
             />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
@@ -995,6 +1037,10 @@ export function BuilderShell({
               </section>
             ) : (
               /* Task 8: Decklist body */
+              /* The provider wraps the list from out here rather than from
+                 inside it: `Decklist` returns three different trees, and mounted
+                 within it the provider would have to be repeated in each. */
+              <PendingAddProvider value={pendingAdd}>
               <Decklist
                 deckId={deck.id}
                 cards={cards}
@@ -1021,7 +1067,10 @@ export function BuilderShell({
                 shoppingFigures={shoppingFigures}
                 newestAsOf={newestAsOf}
                 provenance={provenance}
+                pendingAdds={pendingAdd?.oracleIds}
+                pendingVersion={draft?.version?.number ?? null}
               />
+              </PendingAddProvider>
             )}
             </div>
             )}

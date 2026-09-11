@@ -68,7 +68,8 @@ export const deckVersioningCopy = {
     addPullHint: (deck: string) => `or pull from ${deck}`,
     removeHint: "back in the pool on commit",
 
-    // The decklist mark is a 3px --accent left rule on the row, not a chip: the
+    // The decklist mark is a 2px --accent left rule on the row — the Component
+    // notes table's width, which overrides §Surfaces' 3px prose — not a chip: the
     // card-rows floor makes horizontal room the binding constraint, and a chip would
     // take ~86px of name width on each of nineteen rows. The rule is absorbed by the
     // row's own padding. This string is the row's ACCESSIBLE NAME only — it is never

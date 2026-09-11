@@ -10,6 +10,7 @@
 
 import { roleCellState } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 
 interface RoleCounterCellProps {
   label: string;
@@ -33,6 +34,11 @@ interface RoleCounterCellProps {
    *  short cell in this state takes `border-border-strong` in place of the
    *  default `border-border`. A met cell is unaffected. */
   justFilled?: boolean;
+  /** The figure this role held in the newest committed version, when a draft has
+   *  moved it. Takes the bottom-left slot the recommendation otherwise holds —
+   *  and only when the figure actually moved, because "was 10" beside a 10 is a
+   *  sentence that says nothing. The strip decides that; the cell just draws. */
+  was?: number;
 }
 
 export function RoleCounterCell({
@@ -42,6 +48,7 @@ export function RoleCounterCell({
   advisory,
   onSeeShelf,
   justFilled = false,
+  was,
 }: RoleCounterCellProps) {
   // A3: `have === null` means count is not yet known — in-flight treatment.
   // `have === 0` is a real known zero and follows the ordinary short path.
@@ -144,7 +151,11 @@ export function RoleCounterCell({
             (inFlight ? "text-border-dashed" : "text-fg-locked md:text-fg-faint")
           }
         >
-          {advisory ? `rec ~${target}` : `rec ${target}`}
+          {was !== undefined
+            ? deckVersioningCopy.pending.mixCellWas(was)
+            : advisory
+              ? `rec ~${target}`
+              : `rec ${target}`}
         </span>
         {onSeeShelf ? (
           <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid">

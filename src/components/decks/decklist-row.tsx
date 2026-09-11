@@ -30,6 +30,8 @@ import {
   useReportRemoveFailure,
 } from "./optimistic-deck";
 import { usePassMark } from "./pass-mark";
+import { usePendingAdd } from "./pending-add";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -191,11 +193,25 @@ export function DecklistRow({
   // the decklist by Tab never leaves focus mode — so the pass that placed the
   // card would go unspoken to exactly the reader the mark is drawn for.
   const markDescriptionId = useId();
-  const describedBy = marked ? markDescriptionId : undefined;
+  // The draft added this card, and the version below it did not hold it (#389,
+  // surface 1). Its own id rather than a share of the pass mark's: a row can be
+  // both a pending add and the marked pass's card, and `aria-describedby` takes
+  // both ids in reading order where one string could only replace the other.
+  const pendingAdd = usePendingAdd();
+  const isPendingAdd = pendingAdd?.oracleIds.has(card.oracleId) ?? false;
+  const pendingDescriptionId = useId();
+  const describedBy =
+    [marked ? markDescriptionId : null, isPendingAdd ? pendingDescriptionId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
   // The mark is an inset edge for the same reason the over tint is an inset
   // ring: 3px of real border would shunt one row's contents sideways.
   const rowEdges: string[] = [];
   if (marked) rowEdges.push("inset 3px 0 0 0 var(--accent)");
+  // 2px, the Component notes table's width, and behind the pass mark's 3px when
+  // a row carries both — the first shadow listed paints on top, and the wider
+  // rule is the one that would otherwise show a seam under the narrower.
+  if (isPendingAdd) rowEdges.push("inset 2px 0 0 0 var(--accent)");
   if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
 
   function handleRemove() {
@@ -434,6 +450,17 @@ export function DecklistRow({
         {markLabel && (
           <span id={markDescriptionId} className="sr-only">
             {topOffCopy.ledger.markedRow(markLabel)}
+          </span>
+        )}
+
+        {/* The pending add's whole visible treatment is the brass rule, which a
+            screen reader cannot see. The word rides the name's accessible
+            description instead — never rendered visually, because the
+            card-rows floor makes name width the binding constraint and a chip
+            would spend ~86px of it on every added row. */}
+        {isPendingAdd && (
+          <span id={pendingDescriptionId} className="sr-only">
+            {deckVersioningCopy.pending.addMarkA11y}
           </span>
         )}
 

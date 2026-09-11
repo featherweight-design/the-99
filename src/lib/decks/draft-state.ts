@@ -10,115 +10,27 @@
 
 import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards } from "../../db/schema";
+import { cards, collectionItems, deckCards, deckVersionCards } from "../../db/schema";
 import {
   bucketAdds, draftDiff,
-  type AddBucket, type BucketedAdd, type CardQty, type DraftChange,
+  type AddBucket, type CardQty, type DraftChange,
 } from "./draft-diff";
+import type { DraftAdd, DraftState } from "./draft-shape";
 import { hardDecks, type Availability, type DeckClaim } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
 import { formatCents, summarisePrices } from "./price";
 import { averageManaValue } from "./mana-value";
-import { newestVersion, versionCards, versionManaValue, type DeckVersion } from "./versions";
+import { newestVersion, versionCards, versionManaValue } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
 
-/**
- * An add as every draft surface reads it.
- *
- * `bucket` is null when the availability read failed, and that is the whole
- * reason this type exists rather than `BucketedAdd`: a card whose claims could
- * not be read is not an unowned card, and `bucketAdds` over an empty claimant
- * map would call it one. A null bucket stands `shortfall` down to zero with it —
- * with nothing known about free copies there is no purchase to quote.
- */
-export type DraftAdd = Omit<BucketedAdd, "bucket"> & { bucket: AddBucket | null };
-
-export type DraftState = {
-  /** Null for a brew. Every pending surface is absent on a brew: there is no
-   *  version for the draft to be pending against. */
-  version: DeckVersion | null;
-  /** Cards the draft added, bucketed, basics excluded. */
-  adds: DraftAdd[];
-  /** The same adds as raw diff entries, index-aligned with `adds`. `DraftAdd`
-   *  carries `needed` and `shortfall` but not the `from`/`to` pair, and both the
-   *  banner and the review row print that pair for a quantity move. */
-  addChanges: DraftChange[];
-  /** Cards the draft cut, basics excluded, each carrying `from` and `to`. */
-  removes: DraftChange[];
-  /** True when the draft differs from the version ONLY in basic lands. Basics are
-   *  outside the availability model, so they are excluded from every list and
-   *  every figure — but a deck whose land count moved has genuinely changed and
-   *  must still be committable. Without this flag `changeCount` is 0, the banner
-   *  takes its clean branch, and a real edit has no route to a commit. */
-  basicsChanged: boolean;
-  /** Oracle name per changed card, both lists — what the banner's inline
-   *  density says at six changes or fewer. */
-  names: Map<string, string>;
-  /**
-   * Whether the claim model could be read at all.
-   *
-   * False only when the availability read failed. Every money figure below is
-   * zero or null in that case and states nothing — NOT "this commit is free",
-   * which is what an empty claimant map would have made them say. A surface with
-   * a false here draws the change lists and no purchase.
-   */
-  claimsKnown: boolean;
-  /** Copies the player must obtain: the shortfall over every unfree add. Not a
-   *  row count — one card wanted three times is three copies. */
-  buyCount: number;
-  /** Rows in `adds` that are not free. The banner's `unfree` figure. */
-  unfreeCount: number;
-  /** Adds a deliberate pull could satisfy: bucket `claimed`, and at least one
-   *  holder that is neither pending nor holding it as a commander. Drawn as a
-   *  count only — which row offers which control is `loadDraftRows`' answer. */
-  pullableCount: number;
-  /**
-   * Formatted, because the figure is only ever printed. Null when NO copy could
-   * be priced, which is not the same as a purchase of nothing: read it beside
-   * `unfreeCount`, and say the free-copy sentence only when that is zero. A real
-   * $0.00 is printed rather than nulled — the feed stocking a card at nothing is
-   * a price, and hiding it would quote the purchase as unpriceable.
-   */
-  total: string | null;
-  /**
-   * Copies of the purchase that carry a price, against `buyCount` copies asked
-   * for. Kept beside `total` because a figure over partial coverage reads as a
-   * complete one: at 4 of 9 the total is real and the purchase is bigger than it,
-   * and the shipped `priceCopy.strip.pricedClause` is how every other surface
-   * says so. Equal to `buyCount` when the feed had a price for everything.
-   */
-  pricedCopies: number;
-  /**
-   * The newest `as_of` in the price table, or null when nothing was read.
-   *
-   * Travels with the state because `PriceFact.asOf` alone cannot decide whether
-   * a price is live — `priceState` compares it to this, and a row equal to the
-   * maximum is the only definition of "stocked now" this codebase has. A drawn
-   * row carries the raw fact, so without this figure beside it a consumer either
-   * repeats the whole price read or prints a sold-out card at its last price.
-   */
-  newestAsOf: Date | null;
-  /** The draft's average, and the version's. Both null on an all-land list. */
-  manaValue: number | null;
-  manaValueBefore: number | null;
-};
-
-/** `adds.length + removes.length` — the figure every count chip is built on.
- *  Basics are not in either list, so this is a count of *nameable* changes and
- *  not a test of whether the draft differs. Use `hasChanges` for that. */
-export function changeCount(state: DraftState): number {
-  return state.adds.length + state.removes.length;
-}
-
-/** Whether the draft differs from the version at all. A basics-only edit counts
- *  here and in no figure, which is the only honest split: the app cannot price
- *  an Island, and it must not tell a player who cut three of them that the deck
- *  is unchanged. */
-export function hasChanges(state: DraftState): boolean {
-  return changeCount(state) > 0 || state.basicsChanged;
-}
+// `DraftState`, `DraftAdd`, `changeCount` and `hasChanges` live in
+// `draft-shape.ts` — the banner is a client component and cannot value-import a
+// module that reaches `db`. Re-exported here so a server caller has one import
+// for the whole model.
+export type { DraftAdd, DraftState } from "./draft-shape";
+export { changeCount, hasChanges } from "./draft-shape";
 
 /**
  * The holders a pull could actually be offered against.
@@ -384,6 +296,36 @@ async function readDraft(
 
 export async function loadDraftState(deckId: string, userId: string): Promise<DraftState> {
   return (await readDraft(deckId, userId, false)).state;
+}
+
+/** The committed list reduced to what the mix strip and the type distribution
+ *  count. `versionCards` returns `oracleId`/`quantity` only, with no role to
+ *  tally, which is why this read exists at all. */
+export type ShapeCard = {
+  role: DeckDetailCard["role"];
+  quantity: number;
+  typeLine: string;
+};
+
+/**
+ * The committed list as the mix strip counts it.
+ *
+ * `role` is derived exactly as `getDeckDetail` derives it — `primaryRole` over
+ * the real oracle text — because a role tallied two ways is two different decks
+ * on one screen, and the deck page draws both figures in the same cell.
+ */
+export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> {
+  const rows = await db.select({
+    quantity: deckVersionCards.quantity,
+    typeLine: cards.typeLine,
+    oracleText: cards.oracleText,
+    keywords: cards.keywords,
+  }).from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(eq(deckVersionCards.versionId, versionId));
+  return rows.map((r) => ({
+    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine,
+  }));
 }
 
 /** One changed card, as the review page draws it. `DeckDetailCard` shaped, so
