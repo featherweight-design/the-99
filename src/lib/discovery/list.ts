@@ -209,6 +209,27 @@ export function assembleDiscovery(input: {
 }
 
 /**
+ * Bumped when a deployment changes what this payload SAYS for unchanged rows.
+ *
+ * It rides in the cache key, so a bump files the answer under a new entry and
+ * the old one is never asked for again. The tag cannot do this job: it is
+ * dropped by the reader's own writes, so an entry assembled before the deploy
+ * goes on being served — for up to the hour ceiling, to a reader who writes
+ * nothing — without this module running at all.
+ *
+ * 2 — the candidate query now excludes a deck's PARTNER as well as its
+ * commander, so a payload assembled by version 1 can still be offering a
+ * commander the player has already built around.
+ */
+const PAYLOAD_VERSION = 2;
+
+/** The cache key a discovery payload is filed under: its sort, and the version
+    of the code that produced it. */
+export function discoveryKey(sort: string): string[] {
+  return ["discovery", sort, `v${PAYLOAD_VERSION}`];
+}
+
+/**
  * The pool a discovery ranking scores against: the whole collection, always.
  *
  * The discover lane has no availability control — availability was documented as
