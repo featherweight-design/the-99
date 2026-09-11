@@ -80,6 +80,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   foreign key's `on delete set null`, which no unit test in this repository can reach. It
   writes a fixture under a per-run `user_id` and deletes it in a `finally`; point it at
   `local-dev` or a scratch Neon branch, **never production**.
+- `pnpm probe:stats` proves the deck-stats loader against a real Postgres by calling the
+  real `loadDeckStats` — a deck the player does not own is refused, both commanders are
+  folded into the curve and the spread despite not being `deck_cards` rows, a grouped game
+  tally comes back as a record, and each deck's cost is its own. The pure half is unit
+  tested; only a database can answer whether the loader assembles the right rows. Same
+  fixture discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed
+  at `local-dev` or a scratch branch, **never production**.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 

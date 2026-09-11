@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CURVE_MAX,
   colourSpread,
+  emptyRecord,
   manaCurve,
   playRecord,
   sumColourSpreads,
@@ -33,6 +34,15 @@ describe("playRecord", () => {
   it("keeps played equal to the three buckets", () => {
     const record = playRecord([{ result: "draw" }, { result: "loss" }]);
     expect(record.wins + record.losses + record.draws).toBe(record.played);
+  });
+});
+
+describe("emptyRecord", () => {
+  it("hands back a fresh object each call, so two decks cannot share one", () => {
+    const a = emptyRecord();
+    const b = emptyRecord();
+    a.wins += 1;
+    expect(b.wins).toBe(0);
   });
 });
 
@@ -144,6 +154,13 @@ describe("manaCurve", () => {
     expect(curve.buckets[0].copies).toBe(0);
     expect(curve.buckets[4].copies).toBe(0);
     expect(curve.average).toBe(2);
+  });
+
+  it("excludes a land creature, which is played as a land and never cast", () => {
+    const curve = manaCurve([curveCard(0, "Land Creature — Forest Dryad")]);
+    expect(curve.lands).toBe(1);
+    expect(curve.copies).toBe(0);
+    expect(curve.buckets[0].copies).toBe(0);
   });
 
   it("keeps a card whose BACK face is a land, because only the front is cast", () => {

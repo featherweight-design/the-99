@@ -6,8 +6,6 @@
 // and Home's roll-up both come through these functions so the two surfaces
 // cannot disagree about what a figure means.
 
-import { cardFacet } from "../cards/facet";
-
 // ---------------------------------------------------------------------------
 // Play record
 // ---------------------------------------------------------------------------
@@ -24,7 +22,9 @@ export type PlayRecord = {
   played: number;
 };
 
-export const EMPTY_RECORD: PlayRecord = { wins: 0, losses: 0, draws: 0, played: 0 };
+/** A FUNCTION, not a shared constant. Handing every gameless deck the same
+ *  object means one caller mutating its record changes the rest of them. */
+export const emptyRecord = (): PlayRecord => ({ wins: 0, losses: 0, draws: 0, played: 0 });
 
 /**
  * Tallies logged games. Takes the result alone, so both a full `DeckGame` with
@@ -44,7 +44,7 @@ export function playRecord(games: readonly { result: GameResult }[]): PlayRecord
  *  every game at once, and it is the one a page holding the per-deck figures
  *  already has the parts for. */
 export function sumPlayRecords(records: Iterable<PlayRecord>): PlayRecord {
-  const total = { ...EMPTY_RECORD };
+  const total = emptyRecord();
   for (const r of records) {
     total.wins += r.wins;
     total.losses += r.losses;
@@ -155,14 +155,25 @@ export type ManaCurve = {
 };
 
 /**
+ * A card played as a land rather than cast. The FRONT FACE only, because that
+ * is the face played from hand — a `Creature // Land` back does not drop a
+ * creature out of the curve.
+ *
+ * Deliberately NOT `cardFacet`, which the synergy strip groups by: that
+ * function checks creature before land, so a land creature — Dryad Arbor, whose
+ * type line is `Land Creature — Forest Dryad` — comes back `creature`. That is
+ * the right bucket for a grouping strip and the wrong answer here, where the
+ * question is "was this cast for mana" and a land creature was not.
+ */
+function isLand(typeLine: string): boolean {
+  return typeLine.split(" // ")[0].toLowerCase().includes("land");
+}
+
+/**
  * LANDS ARE EXCLUDED, as they conventionally are: a land is not cast, so its
  * mana value of zero would pile roughly a third of the deck into the 0 column
- * and flatten every other bar against it.
- *
- * Spotted through `cardFacet`, which reads the FRONT FACE of the type line —
- * the only face played from hand, and the reason a `Creature // Land` back does
- * not drop a creature out of the curve. That is the same land test the synergy
- * panel's facet strip uses, so "is this a land" has one answer in this app.
+ * and flatten every other bar against it. `isLand` above is the test, and a
+ * land creature counts as a land.
  *
  * `cards.cmc` is a `real` because Un-set cards carry half mana values. They are
  * rounded to the nearest whole bucket rather than given fractional columns of
@@ -179,7 +190,7 @@ export function manaCurve(cards: readonly CurveCard[]): ManaCurve {
   let totalCmc = 0;
 
   for (const card of cards) {
-    if (cardFacet(card.typeLine) === "land") {
+    if (isLand(card.typeLine)) {
       lands += card.quantity;
       continue;
     }

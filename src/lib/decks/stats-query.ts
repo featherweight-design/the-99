@@ -27,7 +27,7 @@ import {
   colourSpread,
   manaCurve,
   playRecord,
-  EMPTY_RECORD,
+  emptyRecord,
   type ColourSpread,
   type GameResult,
   type ManaCurve,
@@ -125,7 +125,10 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
       .from(deckGames)
       .where(and(eq(deckGames.userId, input.userId), inArray(deckGames.deckId, ids)))
       .groupBy(deckGames.deckId, deckGames.result),
-    loadShoppingRollup(input.userId),
+    // Narrowed to the decks being answered for: a deck page asking for one deck
+    // should not pay to price the rest of the player's shopping list. The
+    // seniority model behind it stays user-wide — see loadShoppingRollup.
+    loadShoppingRollup(input.userId, ids),
   ]);
 
   type StatCard = { quantity: number; cmc: number; typeLine: string; colorIdentity: string[] };
@@ -169,7 +172,7 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
     const results = resultsByDeck.get(deckId);
     stats.set(deckId, {
       deckId,
-      record: results ? playRecord(results) : EMPTY_RECORD,
+      record: results ? playRecord(results) : emptyRecord(),
       colours: colourSpread(list),
       curve: manaCurve(list),
       cost: rollup.byDeck.get(deckId) ?? null,
