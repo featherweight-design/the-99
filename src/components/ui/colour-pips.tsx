@@ -71,13 +71,21 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
             // an unlit pip is the symbol at full strength, which is what makes it
             // legible on every ground in every theme.
             className={[
-              "cursor-pointer rounded-full border-0 bg-transparent p-0 transition-shadow",
+              "cursor-pointer rounded-full border-0 p-0 transition-shadow",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
             ].join(" ")}
-            style={{ width: size, height: size }}
-          >
-            <img src={PIP_SRC[code]} alt="" width={size} height={size} draggable={false} />
-          </button>
+            // The symbol is a background rather than an `<img>`: it is
+            // decorative here — the button's own `aria-label` names the colour —
+            // and every other art surface in this app draws through
+            // `background` for the same reason. It also keeps the lit ring on
+            // the button itself rather than around a nested element.
+            style={{
+              width: size,
+              height: size,
+              // eslint-disable-next-line no-restricted-syntax -- one of five per-hue URLs; Tailwind cannot compile an interpolated class, and a pip has no hover state for an inline background to outrank
+              background: `center / contain no-repeat url(${PIP_SRC[code]})`,
+            }}
+          />
         );
       })}
     </div>
