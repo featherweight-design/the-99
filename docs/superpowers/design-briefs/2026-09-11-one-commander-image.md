@@ -37,9 +37,13 @@ status or a downstream brief cites a total, it cites this one.
 | 14 | `decks/create-pre-filled.tsx:167` | **none** | `220px` 63/88 card with a drop shadow, inside `hidden md:block` (`:162`) |
 | 15 | `decks/partner-slot.tsx:96` | **none** | The partner commander, `center top/cover` over `--elevated` |
 
-**How this list was built, and the four ways we first got it wrong.** It is a case-insensitive
-sweep of every `url(...)` and `cssUrl(...)` background over `src/components` and `src/app`, filtered
-by hand to the ones showing a *commander* rather than an arbitrary card. The failures are recorded
+**How this list was built, and the four ways we first got it wrong.** It takes **two passes**, and
+neither alone produces the table. A case-insensitive sweep of every `url(...)` and `cssUrl(...)`
+background finds the renders that build their own CSS — which is every unwashed one — but cannot
+see a washed render, because the call site passes `artCropUri` to `ArtWash` and the primitive
+constructs the background itself. So the sweep is run for `artCropUri={` call sites as well, and the
+two results are unioned and filtered by hand to the ones showing a *commander* rather than an
+arbitrary card. The failures are recorded
 because each was a plausible method: enumerating `ArtWash`'s consumers cannot by construction see a
 render that draws commander art *without* the wash; keying on `c.imageUri` missed the pre-filled
 create flow, which names the value bare; a case-sensitive sweep for `imageUri` missed

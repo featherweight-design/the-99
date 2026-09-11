@@ -126,6 +126,13 @@ not happened yet** — it is Task 9 of `docs/superpowers/plans/2026-09-11-set-co
 `filter-bar.tsx` still builds both variants inline today. The plan's own constraint (`:38`) is that
 it must come out parameterised, never taking an `isSetPage` flag.
 
+**Engineering note, not Design's problem — Task 9 cannot pass as written.** Its test expects five
+elements matching `getByRole("button")`, named `/red/i` and `/blue/i`, carrying `aria-pressed`.
+`color-pip.tsx:17-21` emits `role="switch"` with `aria-checked` and an accessible name of
+`Filter by R`, so a verbatim extraction — which the same task requires — fails all three
+assertions. The task needs its test rewritten against the real API before it runs, and this brief
+names it because §5 treats Task 9 as the prerequisite that produces the first shared control.
+
 **This is a collision, and it needs a decision before the chassis is drawn.** The set-collections
 handoff does not merely consume that extracted control — it locks its behaviour. `README.md:345`
 reads "The colour filter is mounted, not forked. Same component, same URL key, same lit/unlit
@@ -136,11 +143,13 @@ So decision 5 — abstract swatches out, Scryfall's full-colour symbols in — c
 four routes. Either the set pages inherit a control whose appearance changed after their handoff
 went Green, or the control forks, which that handoff explicitly forbids. **The brief takes the first
 branch**: there is one colour control in the app, the set pages mount it, and its appearance changes
-for them too. What that costs is a ratification — Design must check the new pip against the set
-pages' drawn states (`STATES-set-grid.md`), where it sits on `--surface-sunken` rather than the
-grounds this brief's four routes use, and where the contrast figures in
-`readiness-set-collections.md` were computed against the swatch it replaces. A fixed cream pip on a
-sunken ground is a different measurement from the one that audit made.
+for them too. What that costs is a ratification, **and a measurement nobody has made yet**. The set
+pages' colour well is drawn in that handoff's own property table; `STATES-set-grid.md` enumerates
+the pages' fifteen states rather than the control's contrast, and `readiness-set-collections.md`
+carries no contrast figure for the swatch at all — its audited figures are for `--fg-locked` and
+`--border-dashed`. So there is no prior number to compare against: a fixed cream pip on
+`--surface-sunken` needs a fresh contrast check in all six themes, and Design should run it as part
+of drawing the pip rather than assuming the set pages inherit a verified result.
 
 **That build goes first.** It is Green and planned (`docs/superpowers/plans/2026-09-11-set-collections.md`)
 while this brief is not yet drawn. The extraction it performs is the first shared control; this
