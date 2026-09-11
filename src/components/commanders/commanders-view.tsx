@@ -203,23 +203,23 @@ export function CommandersView({
     };
   }, []);
 
+  // The event path, and the ONLY path that writes the URL itself.
+  //
+  // The write sits in this callback's body, never inside the state updater: an
+  // updater must be pure, because React may replay or abandon it, and a replayed
+  // `replaceState` would move the URL for a render that never committed. Writing
+  // here is what lets the overlay name exactly one query — the one it wrote —
+  // since by the time anything renders, that is already the live one.
   const setParams = useCallback(
     (next: LaneParams | ((prev: LaneParams) => LaneParams)) => {
       const live = new URLSearchParams(window.location.search);
-      setEdit((prev) => {
-        const base = prev && prev.query === live.toString() ? prev.params : fromUrl(live);
-        const resolved = typeof next === "function" ? next(base) : next;
-        const { written, query } = queryFor(live, resolved);
-        // Written HERE rather than left to the effect below, so the overlay never
-        // has to be valid for a query other than the one it produced. The effect
-        // still runs and finds nothing to do; it is what covers the paths that
-        // change `params` without going through an event, which is the free
-        // mode's climb-down.
-        window.history.replaceState(null, "", `${window.location.pathname}${written}`);
-        return { query, params: resolved };
-      });
+      const base = edit && edit.query === live.toString() ? edit.params : fromUrl(live);
+      const resolved = typeof next === "function" ? next(base) : next;
+      const { written, query } = queryFor(live, resolved);
+      window.history.replaceState(null, "", `${window.location.pathname}${written}`);
+      setEdit({ query, params: resolved });
     },
-    [fromUrl, queryFor],
+    [edit, fromUrl, queryFor],
   );
 
   const { colors: rawColors, avail } = params;
@@ -253,7 +253,16 @@ export function CommandersView({
   // mirror runs off `params`, so the address bar climbs down with it.
   const canRankFree = availOk && freeItems !== null;
   if (avail === "free" && !canRankFree) {
-    setParams((prev) => (prev.avail === "free" ? { ...prev, avail: "all" } : prev));
+    // `setEdit` directly, never `setParams`: this runs during render, and
+    // `setParams` writes the URL. A render-phase update may be replayed or
+    // abandoned, so anything it schedules has to be pure — the address bar
+    // follows from the mirror effect once this commits.
+    //
+    // Keyed to the query that is live NOW rather than the one those params will
+    // serialise to. Keyed to the future one, the overlay would not match until
+    // the effect had written it, the fallback would read `free` off the URL again
+    // in between, and this branch would re-fire on its own output.
+    setEdit({ query: liveQuery, params: { ...params, avail: "all" } });
   }
 
   // Which list is on screen. Falling back to `results` when the free ranking is
