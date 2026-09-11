@@ -1,0 +1,13 @@
+-- One-time repair, not a schema change.
+--
+-- `recommendCommanders` used to drop a built commander before scoring, and
+-- `persistScores` deletes every row the compute does not name — so building a
+-- deck evicted that commander from this table, and a warm store short-circuits
+-- the recompute that would have put it back. Deleting the deck therefore never
+-- restored it. Fixing the writer heals nothing already written: every player is
+-- carrying a score set with those rows missing.
+--
+-- This table is a cache, keyed on collection generation and rebuilt on demand,
+-- so emptying it costs one recompute per player on their next visit to
+-- /commanders and nothing else. Nothing reads it as a source of truth.
+DELETE FROM "commander_scores";

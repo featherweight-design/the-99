@@ -176,6 +176,13 @@
       "when": 1789009018243,
       "tag": "0024_flaky_sharon_ventura",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789153211482,
+      "tag": "0025_heal_truncated_commander_scores",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { and, eq, ilike, inArray, notInArray, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards,
@@ -387,17 +387,27 @@ function unownedCommanders(collectionOracleIds: string[]) {
 }
 
 function unbuiltCommanders(userId: string) {
-  // `notInArray` emits `NOT IN (subquery)`, which returns NOTHING — not "all
-  // rows" — the moment the subquery yields a single NULL. It is safe only
-  // because `decks.commanderOracleId` is `notNull()`. If that column ever
-  // becomes nullable, this query silently returns zero candidates.
-  const built = db
-    .select({ oracleId: decks.commanderOracleId })
-    .from(decks)
-    .where(eq(decks.userId, userId));
+  // BOTH COLUMNS, and `not exists` rather than `NOT IN (subquery)`. The two go
+  // together: a `NOT IN` subquery returns NOTHING — not "all rows" — the moment
+  // it yields a single NULL, and `decks.partner_oracle_id` is nullable, so
+  // adding the partner to a `NOT IN` list would empty this lane for any player
+  // holding one deck without a partner. `not exists` has no such edge: a NULL
+  // partner simply matches nothing.
+  //
+  // The partner has to be here as well as in `loadBuiltCommanderIds`, because
+  // this lane's other exclusion cannot stand in for it. It drops commanders the
+  // player OWNS, and a deck can carry a partner they do not: an import validates
+  // that a declared partner is a legal commander, never that it is in the
+  // collection. Such a partner helms a deck and is unowned, so without this it
+  // was offered as something to discover.
+  const built = sql`not exists (
+    select 1 from ${decks}
+    where ${decks.userId} = ${userId}
+      and (
+        ${decks.commanderOracleId} = ${commanderSupport.commanderOracleId}
+        or ${decks.partnerOracleId} = ${commanderSupport.commanderOracleId}
+      )
+  )`;
 
-  return and(
-    eq(cards.commanderLegal, true),
-    notInArray(commanderSupport.commanderOracleId, built),
-  );
+  return and(eq(cards.commanderLegal, true), built);
 }
