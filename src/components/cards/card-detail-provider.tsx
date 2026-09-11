@@ -42,6 +42,12 @@ type CardDetailContextValue = {
    * happened to be on screen at the moment it was opened.
    */
   setSiblings: (list: string[]) => void;
+  /**
+   * Drop `oracleId` from the cache, so the next open fetches it again. A surface
+   * that writes something the card carries — the art pick is the one that exists —
+   * calls this, or the reader reopens the card and sees their own change undone.
+   */
+  evict: (oracleId: string) => void;
   /** Close the modal, and abandon any fetch still in flight for it. */
   close: () => void;
 };
@@ -126,16 +132,33 @@ export function CardDetailProvider({
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
   // actually asked for second.
   const latest = useRef(0);
+  // Cards already fetched this visit, so reopening one costs nothing. A ref rather
+  // than state because it is read in the click handler and never during render, and
+  // it dies with the provider — a cache that lives one visit needs no invalidation
+  // beyond the write that happens inside the modal itself.
+  const cache = useRef(new Map<string, BrowseCard>());
 
   const load = useCallback(
     async (oracleId: string, list?: string[]) => {
       const request = ++latest.current;
+      if (list !== undefined) setSiblings(list);
+      // A hit lands in the same pass as the click: no pending state is ever set, so
+      // the trigger never flashes its busy affordance for a wait that does not happen.
+      const hit = cache.current.get(oracleId);
+      if (hit) {
+        setPendingOracleId(null);
+        setFailed(false);
+        setCard(hit);
+        return;
+      }
       setPendingOracleId(oracleId);
       setFailed(false);
-      if (list !== undefined) setSiblings(list);
       try {
         const next = await fetchCard(oracleId);
         if (latest.current !== request) return;
+        // A card the server could not find is the one result not worth keeping: it is
+        // rare, and filing it would keep the card missing for the rest of the visit.
+        if (next) cache.current.set(oracleId, next);
         setCard(next);
         setFailed(next === null);
       } catch {
@@ -166,9 +189,20 @@ export function CardDetailProvider({
     setFailed(false);
   }, []);
 
+  const evict = useCallback((oracleId: string) => {
+    cache.current.delete(oracleId);
+  }, []);
+
   const value = useMemo<CardDetailContextValue>(
-    () => ({ open, pendingOracleId, openOracleId: card?.oracleId ?? null, setSiblings, close }),
-    [open, pendingOracleId, card, close],
+    () => ({
+      open,
+      pendingOracleId,
+      openOracleId: card?.oracleId ?? null,
+      setSiblings,
+      evict,
+      close,
+    }),
+    [open, pendingOracleId, card, evict, close],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
@@ -187,6 +221,7 @@ export function CardDetailProvider({
           // optimistic art pick across — same reason the collection browser remounts.
           key={card.oracleId}
           card={card}
+          onArtChange={() => evict(card.oracleId)}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}

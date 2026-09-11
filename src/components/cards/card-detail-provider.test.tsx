@@ -63,6 +63,12 @@ function Closer() {
   return <button type="button" onClick={close}>close</button>;
 }
 
+/** Stands in for the art picker, whose write makes the cached copy stale. */
+function Evicter({ oracleId }: { oracleId: string }) {
+  const { evict } = useCardDetail();
+  return <button type="button" onClick={() => evict(oracleId)}>evict</button>;
+}
+
 describe("CardDetailProvider", () => {
   it("opens the modal for the clicked card", async () => {
     const fetchCard = vi.fn().mockResolvedValue(SIGNET);
@@ -224,5 +230,79 @@ describe("CardDetailProvider", () => {
     await act(async () => { pending.get("o-signet")!(SIGNET); });
 
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring");
+  });
+});
+
+// The cache exists so a card the reader has already opened opens again with no
+// wait at all: served from the click itself, not from a faster fetch.
+describe("CardDetailProvider card cache", () => {
+  it("reopens a card it has already fetched without asking the server again", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(SIGNET);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+      </CardDetailProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+    await click(trigger);
+    await screen.findByRole("dialog");
+    await click(screen.getByRole("button", { name: "close" }));
+
+    await click(trigger);
+    expect(fetchCard).toHaveBeenCalledTimes(1);
+    // Present already, rather than after a tick: a hit is served from the click.
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
+    expect(trigger).toHaveAttribute("aria-busy", "false");
+  });
+
+  it("pages back onto a cached sibling without refetching it", async () => {
+    const fetchCard = vi.fn(async (id: string) => (id === "o-signet" ? SIGNET : SOL));
+    renderTriggers(fetchCard, ["o-signet", "o-sol"]);
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+
+    await click(screen.getByRole("button", { name: "Next card" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
+    await click(screen.getByRole("button", { name: "Previous card" }));
+
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
+    expect(fetchCard).toHaveBeenCalledTimes(2);
+  });
+
+  // A card nobody can find is the one result not worth keeping: it is rare, and
+  // caching it would keep a card missing for the rest of the visit.
+  it("does not cache a card the server could not find", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(null);
+    renderTriggers(fetchCard);
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+    await click(trigger);
+    await screen.findByText(cardDetailCopy.unavailable);
+
+    await click(trigger);
+    expect(fetchCard).toHaveBeenCalledTimes(2);
+  });
+
+  it("refetches a card whose entry was evicted by a write", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(SIGNET);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+    await click(trigger);
+    await screen.findByRole("dialog");
+    await click(screen.getByRole("button", { name: "evict" }));
+    await click(screen.getByRole("button", { name: "close" }));
+
+    await click(trigger);
+    expect(fetchCard).toHaveBeenCalledTimes(2);
   });
 });

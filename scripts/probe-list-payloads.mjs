@@ -196,6 +196,33 @@ async function run(browser) {
     "Previous pages back",
   );
 
+  // The cache: a card opened once this visit opens again off the click, with no
+  // second trip to the server. Server actions are POSTs carrying Next-Action, which
+  // is what separates them from the navigations the same URL also serves.
+  let actionCalls = 0;
+  const countAction = (request) => {
+    if (request.method() === "POST" && request.headers()["next-action"]) actionCalls += 1;
+  };
+  page.on("request", countAction);
+
+  await page.getByRole("button", { name: "Close card details" }).first().click();
+  await page.waitForFunction(() => document.querySelector('[role="dialog"]') === null, null, {
+    timeout: 10_000,
+  }).catch(() => {});
+
+  await page.locator(ROW).nth(1).click();
+  await page.waitForFunction(
+    (want) => (document.querySelector("#card-modal-title")?.textContent ?? "") === want,
+    firstTitle,
+    { timeout: 20_000 },
+  ).catch(() => {});
+  check(
+    (await page.locator("#card-modal-title").textContent().catch(() => null)) === firstTitle,
+    "reopening a card shows it again",
+  );
+  check(actionCalls === 0, "reopening a cached card asks the server nothing", `${actionCalls} calls`);
+  page.off("request", countAction);
+
   // A filter that excludes the open card takes it out of the list the modal is
   // paging, so the modal goes with it — the behaviour the pre-fetch modal got for
   // free by reading its card back out of the sorted list on every render.

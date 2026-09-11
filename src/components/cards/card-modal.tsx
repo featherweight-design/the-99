@@ -245,6 +245,7 @@ export function CardModal({
   onClose,
   onPrev,
   onNext,
+  onArtChange,
 }: {
   card: BrowseCard;
   position: number;
@@ -252,6 +253,12 @@ export function CardModal({
   onClose: () => void;
   onPrev: (() => void) | null;
   onNext: (() => void) | null;
+  /**
+   * Called when the art pick is written, so a caller holding a copy of this card can
+   * drop it. The write changes what the card says about itself, and a stale copy would
+   * show the reader the printing they just replaced.
+   */
+  onArtChange?: () => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -321,6 +328,7 @@ export function CardModal({
 
   function onPick(p: { setCode: string; collectorNumber: string }) {
     setPick({ setCode: p.setCode, collectorNumber: p.collectorNumber });
+    onArtChange?.();
     startWrite(() => {
       void setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
     });
@@ -328,6 +336,7 @@ export function CardModal({
 
   function onClearPick() {
     setPick(null);
+    onArtChange?.();
     startWrite(() => {
       void clearCardArtPreference(card.oracleId);
     });
