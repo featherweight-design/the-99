@@ -1266,7 +1266,16 @@ export async function deleteGame(
 }
 
 export type CommitResult =
-  | { ok: true; number: number; buy: BucketedAdd[]; pull: DraftChange[] }
+  | {
+      ok: true;
+      number: number;
+      /** Rows in the version just written, basics included — the size of the list
+       *  that was snapshotted, not of the shopping decision. The success line
+       *  prints this rather than recounting on the client. */
+      cardCount: number;
+      buy: BucketedAdd[];
+      pull: DraftChange[];
+    }
   | { ok: false; message: string };
 
 /**
@@ -1316,14 +1325,21 @@ export async function commitDeckVersion(
     // `unowned`, putting ten Forests on a shopping list. Dropped here rather
     // than special-cased downstream, because every other Shopping surface in
     // the app already treats basics as unlimited.
+    //
+    // Both sides of the diff, not just the adds. A basic kept in `removes`
+    // renders as a bare `Island` under "back in the pool" — no count, no
+    // movement, and a claim the deck lost its Islands, on a card the player has
+    // thirty of. Neither list has a truthful figure to print for one.
+    const changed = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
     const basics = new Set(
-      diff.adds.length === 0 ? [] : (await tx.select({
+      changed.length === 0 ? [] : (await tx.select({
         oracleId: cards.oracleId, typeLine: cards.typeLine,
-      }).from(cards).where(inArray(cards.oracleId, diff.adds.map((a) => a.oracleId))))
+      }).from(cards).where(inArray(cards.oracleId, changed)))
         .filter((c) => isBasicLand(c.typeLine))
         .map((c) => c.oracleId),
     );
     const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
+    const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
 
     // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim,
     // and the answer wanted is the one that held before this commit landed.
@@ -1339,7 +1355,10 @@ export async function commitDeckVersion(
     const buy = bucketAdds(adds, claimants).filter((a) => a.bucket !== "free");
 
     const { version } = await commitVersion(deckId, note?.trim() || null, tx);
-    return { ok: true, number: version.number, buy, pull: diff.removes };
+    // `draft`, not the diff: this is the whole list, read under the same lock the
+    // snapshot was written from, so the figure and the version agree.
+    const cardCount = draft.reduce((n, c) => n + c.quantity, 0);
+    return { ok: true, number: version.number, cardCount, buy, pull: removes };
   });
   if (!result.ok) return result;
   revalidateClaims(deckId, userId);

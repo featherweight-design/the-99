@@ -415,7 +415,7 @@ describe("Shopping row figure rendering differs by width", () => {
 function spokenForCard(overrides: Partial<DeckDetailCard> & { oracleId: string; name: string }) {
   return makeCard({
     owned: true,
-    availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [{ id: "d2", name: "Atraxa", quantity: 1, mature: true }] },
+    availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [{ id: "d2", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false }] },
     ...overrides,
   });
 }

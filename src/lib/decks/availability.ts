@@ -19,7 +19,26 @@
  * deck has committed is not on this object and never should be — a card's
  * availability has no business knowing a deck's history beyond this one bit.
  */
-export type DeckClaim = { id: string; name: string; quantity: number; mature: boolean };
+export type DeckClaim = {
+  id: string;
+  name: string;
+  quantity: number;
+  mature: boolean;
+  /**
+   * This deck's draft differs from its newest version. A pull would sweep those
+   * pending edits into a version its owner never asked for, so the server
+   * refuses one (`pullCardFromDeck`) — and a control that can only fail must not
+   * be drawn. Always false for a brew: there is no version to differ from.
+   */
+  pending: boolean;
+  /**
+   * The card is this deck's commander or partner. Commander claims are in the
+   * model, so a pull would otherwise be offered on a row where no route can
+   * release it — there is no "go and fix it there" either, which is why this
+   * guard draws no control at all.
+   */
+  commander: boolean;
+};
 
 /** A deck holding a hard claim. The projection every marker string reads. */
 export type HardDeck = { id: string; name: string };

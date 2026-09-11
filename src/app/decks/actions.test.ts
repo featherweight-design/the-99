@@ -942,6 +942,32 @@ describe("commitDeckVersion", () => {
     expect(result.ok && result.buy).toEqual([]);
   });
 
+  // The same exclusion, on the other list. A basic dropped from the buy list but
+  // kept in the pull list renders as a bare `Island` under "back in the pool" —
+  // no count, no movement, and a claim the deck lost its Islands, on a card the
+  // player has thirty of.
+  it("drops basics from the pull list as well as the buy list", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_B, quantity: 9 });
+    stub.state.cards.push({ oracleId: CARD_B, typeLine: "Basic Land — Island" });
+    vi.mocked(versionCards).mockResolvedValue([
+      { oracleId: CARD_B, quantity: 12 },
+      { oracleId: CARD_A, quantity: 1 },
+    ]);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.pull).toEqual([{ oracleId: CARD_A, from: 1, to: 0 }]);
+  });
+
+  // Every draft row, basics included: the count is the size of the list that was
+  // snapshotted, not the size of the shopping decision.
+  it("reports the version's card count", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 }, { oracleId: CARD_B, quantity: 9 });
+    stub.state.cards.push({ oracleId: CARD_B, typeLine: "Basic Land — Island" });
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok && result.cardCount).toBe(10);
+  });
+
   // An empty note is not a note. Storing "" would render a blank line in the
   // history where the player wrote nothing.
   it("stores a whitespace-only note as null", async () => {

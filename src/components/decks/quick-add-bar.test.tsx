@@ -391,7 +391,7 @@ describe("QuickAddBar — availability marker", () => {
     hard: hardDeckNames.length,
     soft: 0,
     free: 0,
-    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true })),
+    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
   });
 
   it("claims an off-list card another finished deck already holds", async () => {

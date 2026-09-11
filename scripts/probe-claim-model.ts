@@ -66,10 +66,20 @@ const free = async (deckId: string) => {
   return availability.get(card)?.free ?? null;
 };
 
+// One deck's claim on one card, read from another deck's vantage — which is the
+// vantage the review page renders from: the asking deck looking at a holder.
+const claim = async (oracleId: string, vantage: string, holder: string) => {
+  const availability = await loadAvailability(USER, {
+    oracleIds: [oracleId],
+    excludeDeckId: vantage,
+  });
+  return availability.get(oracleId)?.claims.find((c) => c.id === holder) ?? null;
+};
+
 try {
   await fixture.execute(sql`
     insert into collection_items (user_id, oracle_id, quantity, set_code)
-    values (${USER}, ${card}, 1, 'probe')
+    values (${USER}, ${card}, 1, 'probe'), (${USER}, ${cmdB}, 1, 'probe')
   `);
   // `older` was REGISTERED first; `newer` actually sleeved the card. Under the
   // old created_at seniority older would win, which is the bug being fixed.
@@ -122,6 +132,16 @@ try {
   // …and it is still the newer deck's own claim, so its own page reads 0 free.
   check("the pending remove is still the holder's own claim", await free(newer.id), 0);
 
+  // 2a. THE PULL GUARDS, which are render-time facts rather than refusals from
+  //     inside a transaction. The newer deck's draft now differs from the
+  //     version it is sleeved as — exactly the state a pull must not be offered
+  //     in, because committing it would sweep an edit its owner never confirmed.
+  check("the holder reads as pending", (await claim(card, older.id, newer.id))?.pending, true);
+  //     …and a list card is not a commander claim, whoever holds it.
+  check("a list card is not a commander claim", (await claim(card, older.id, newer.id))?.commander, false);
+  //     The commander itself is: no route releases it, so no control is drawn.
+  check("the commander claim is flagged", (await claim(cmdB, older.id, newer.id))?.commander, true);
+
   // 3. THE HEADLINE. Between two sleeved versions the earlier `since` holds the
   //    card, whatever the decks' ages. The older deck drafts it and commits
   //    SECOND, so it is told to buy — a negative free — instead of quietly
@@ -146,7 +166,7 @@ try {
   await pool.end();
 }
 
-console.log(failures === 0 ? "\nAll six figures hold." : `\n${failures} FAILED`);
+console.log(failures === 0 ? "\nEvery figure and guard holds." : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
 }
 

@@ -67,35 +67,66 @@ const claimModel = (userId: string) => sql`
   -- A brew's rows carry a null since, and null is the ordering's way of
   -- saying "junior to everything sleeved" — the predicates below test for it
   -- explicitly rather than relying on null comparison semantics.
+  -- is_commander rides along per arm so a row can be recognised downstream as a
+  -- claim no pull can release. It is per ARM rather than per card because the
+  -- same oracle id can be one deck's commander and another deck's list card.
   all_claims as (
-    select nv.deck_id, vc.oracle_id, vc.quantity, vc.since
+    select nv.deck_id, vc.oracle_id, vc.quantity, vc.since, false as is_commander
     from newest_version nv
     join deck_version_cards vc on vc.version_id = nv.version_id
     union all
-    select nv.deck_id, nv.commander_oracle_id, 1, nv.commander_since
+    select nv.deck_id, nv.commander_oracle_id, 1, nv.commander_since, true
     from newest_version nv
     union all
-    select nv.deck_id, nv.partner_oracle_id, 1, nv.partner_since
+    select nv.deck_id, nv.partner_oracle_id, 1, nv.partner_since, true
     from newest_version nv
     where nv.partner_oracle_id is not null
     union all
     -- Brews: no version, so the live list is the only statement of intent
     -- there is. These rows are graded soft below.
-    select dc.deck_id, dc.oracle_id, dc.quantity, null::timestamp
+    select dc.deck_id, dc.oracle_id, dc.quantity, null::timestamp, false
     from deck_cards dc
     join decks d on d.id = dc.deck_id
     where d.user_id = ${userId}
       and not exists (select 1 from newest_version nv where nv.deck_id = dc.deck_id)
     union all
-    select d.id, d.commander_oracle_id, 1, null::timestamp
+    select d.id, d.commander_oracle_id, 1, null::timestamp, true
     from decks d
     where d.user_id = ${userId}
       and not exists (select 1 from newest_version nv where nv.deck_id = d.id)
     union all
-    select d.id, d.partner_oracle_id, 1, null::timestamp
+    select d.id, d.partner_oracle_id, 1, null::timestamp, true
     from decks d
     where d.user_id = ${userId} and d.partner_oracle_id is not null
       and not exists (select 1 from newest_version nv where nv.deck_id = d.id)
+  ),
+  -- Decks whose draft no longer matches the version they are sleeved as. A pull
+  -- from one of these would commit edits its owner never asked to commit, so the
+  -- server refuses it and the surface must not offer it.
+  --
+  -- The difference is symmetric and taken in both directions: one side alone
+  -- misses a pure removal, and the pair of (oracle_id, quantity) rows makes a
+  -- changed count a difference too. except, not except all — the rows are
+  -- already unique per (card, quantity) on both sides.
+  --
+  -- Restricted to newest_version, so a brew never lands here: with no version to
+  -- differ from, there is nothing pending.
+  pending_decks as (
+    select nv.deck_id
+    from newest_version nv
+    where exists (
+      select vc.oracle_id, vc.quantity
+      from deck_version_cards vc where vc.version_id = nv.version_id
+      except
+      select dc.oracle_id, dc.quantity
+      from deck_cards dc where dc.deck_id = nv.deck_id
+    ) or exists (
+      select dc.oracle_id, dc.quantity
+      from deck_cards dc where dc.deck_id = nv.deck_id
+      except
+      select vc.oracle_id, vc.quantity
+      from deck_version_cards vc where vc.version_id = nv.version_id
+    )
   ),
   -- One row per (oracle, claiming deck), carrying that deck's whole ask.
   -- Grouping rather than select distinct is what folds a deck whose commander is
@@ -120,11 +151,17 @@ const claimModel = (userId: string) => sql`
       -- commander carve-out: a committed deck's commander is hard because the
       -- whole version is hard, not because commanders are special.
       (nv.deck_id is not null) as sleeved,
+      (pd.deck_id is not null) as pending,
+      -- bool_or over the arms: a deck whose commander is also on its own list
+      -- folds to one claim, and that claim is a commander claim — releasing the
+      -- list copy still leaves the card in the deck.
+      bool_or(ac.is_commander) as commander,
       sum(ac.quantity)::int as quantity
     from all_claims ac
     join decks d on d.id = ac.deck_id
     left join newest_version nv on nv.deck_id = ac.deck_id
-    group by ac.oracle_id, ac.deck_id, d.name, (nv.deck_id is not null)
+    left join pending_decks pd on pd.deck_id = ac.deck_id
+    group by ac.oracle_id, ac.deck_id, d.name, (nv.deck_id is not null), (pd.deck_id is not null)
   ),
   owned as (
     select ci.oracle_id, sum(ci.quantity)::int as owned
@@ -241,7 +278,11 @@ export async function loadAvailability(
             -- What it MEANS has moved, though: the value is cd.sleeved — the
             -- deck has a committed version — and is no longer a body-size
             -- test. A reader taking it for "has 99 cards" reads it wrong.
-            'quantity', cd.quantity, 'mature', cd.sleeved
+            'quantity', cd.quantity, 'mature', cd.sleeved,
+            -- The two pull guards. Both are render-time facts: a control that
+            -- can only fail must not be drawn, and the refusal string the
+            -- transaction returns arrives far too late to decide that.
+            'pending', cd.pending, 'commander', cd.commander
           )
           order by cd.name, cd.deck_id
         ) as claims
