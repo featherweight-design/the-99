@@ -18,7 +18,13 @@ three weeks ago, and I would rather have that confirmed than discover it in a bu
 - **The chassis.** Three rows, the fixed-height rule, the 34px control rhythm, the panel shape, the
   chip line, the trailing sort slot. Drawn at `/decks`' five dimensions in five desktop states and
   four phone frames, which is the density §3.2 asks the frame to survive.
-- **The pip, and the measurement §5 says nobody has made.** Six themes, two decimals. The floor is
+- **The pip, and the measurement §5 says nobody has made.**
+> ⚠️ **Superseded — the floor is 7.77:1, not 9.51:1.** Three of the five pip hexes were assumed and
+> all three are wrong: `B` is `#CAC5C0`, `R` is `#E49977`, `G` is `#A3C095`. The real values are
+> darker, so the floor moves down — still clearing the 3:1 non-text floor by 4.77. And the shipped
+> defect's 1.38:1 is against `--bg`, on two controls rather than three. See
+> `docs/superpowers/readiness-filter-chassis.md` §6.
+ Six themes, two decimals. The floor is
   **9.51:1** and the treatment's own state carrier (`--accent` ring) floors at **4.42:1**. Both
   clear their floors everywhere.
 - **The dimming defect it uncovers.** The shipped unlit pip measures **1.38:1** against
