@@ -3,6 +3,7 @@ import {
   CURVE_MAX,
   colourSpread,
   emptyRecord,
+  recordFromCounts,
   manaCurve,
   playRecord,
   sumColourSpreads,
@@ -34,6 +35,32 @@ describe("playRecord", () => {
   it("keeps played equal to the three buckets", () => {
     const record = playRecord([{ result: "draw" }, { result: "loss" }]);
     expect(record.wins + record.losses + record.draws).toBe(record.played);
+  });
+});
+
+describe("recordFromCounts", () => {
+  it("tallies grouped counts without expanding them", () => {
+    expect(
+      recordFromCounts([
+        { result: "win", games: 12 },
+        { result: "loss", games: 3 },
+        { result: "draw", games: 1 },
+      ]),
+    ).toEqual({ wins: 12, losses: 3, draws: 1, played: 16 });
+  });
+
+  it("is empty over no rows", () => {
+    expect(recordFromCounts([])).toEqual({ wins: 0, losses: 0, draws: 0, played: 0 });
+  });
+
+  it("agrees with playRecord over the same games", () => {
+    const expanded = playRecord([
+      { result: "win" },
+      { result: "win" },
+      { result: "draw" },
+    ]);
+    expect(recordFromCounts([{ result: "win", games: 2 }, { result: "draw", games: 1 }]))
+      .toEqual(expanded);
   });
 });
 

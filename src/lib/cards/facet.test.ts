@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cardFacet, FACET_TYPE_LABEL } from "./facet";
+import { cardFacet, FACET_TYPE_LABEL, isLandFace } from "./facet";
 
 describe("cardFacet", () => {
   it("buckets the six plain cases", () => {
@@ -48,5 +48,28 @@ describe("FACET_TYPE_LABEL", () => {
     expect(FACET_TYPE_LABEL[cardFacet("Enchantment")]).toBe("Enchantment");
     expect(FACET_TYPE_LABEL[cardFacet("Land")]).toBe("Land");
     expect(FACET_TYPE_LABEL[cardFacet("Planeswalker — Teferi")]).toBe("Other");
+  });
+});
+
+describe("isLandFace", () => {
+  it("is true for a land", () => {
+    expect(isLandFace("Land")).toBe(true);
+    expect(isLandFace("Basic Land — Forest")).toBe(true);
+    expect(isLandFace("Artifact Land")).toBe(true);
+  });
+
+  it("is true for a land creature, which cardFacet buckets as a creature", () => {
+    expect(isLandFace("Land Creature — Forest Dryad")).toBe(true);
+    expect(cardFacet("Land Creature — Forest Dryad")).toBe("creature");
+  });
+
+  it("reads the front face only", () => {
+    expect(isLandFace("Creature — Elf // Land")).toBe(false);
+    expect(isLandFace("Land // Creature — Elf")).toBe(true);
+  });
+
+  it("is false for everything cast from hand", () => {
+    expect(isLandFace("Instant")).toBe(false);
+    expect(isLandFace("Legendary Creature — Human Wizard")).toBe(false);
   });
 });

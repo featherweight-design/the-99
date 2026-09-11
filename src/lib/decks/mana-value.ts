@@ -4,7 +4,7 @@
 // their targets, and this figure has neither: there is no recommended mana
 // value, which is why its cell draws a movement and never a bar.
 
-import { isBasicLand } from "./grouping";
+import { isLandFace } from "../cards/facet";
 
 export type ManaValueCard = { cmc: number; quantity: number; typeLine: string };
 
@@ -16,12 +16,18 @@ export type ManaValueCard = { cmc: number; quantity: number; typeLine: string };
  * averaging 37 zeroes into the figure would report every Commander deck as a
  * cheap one and would move the number when the land count moved, which is the
  * one thing the strip's land cell already says.
+ *
+ * `isLandFace` is the test, shared with the deck's mana curve so the strip's
+ * average and the curve drawn beside it cannot disagree about what a land is.
+ * It reads the front face, so a `Creature // Land` back no longer drops a
+ * creature out of this average — the face played from hand is the one that
+ * carries a cost.
  */
 export function averageManaValue(cards: ManaValueCard[]): number | null {
   let spells = 0;
   let total = 0;
   for (const card of cards) {
-    if (isBasicLand(card.typeLine) || /\bLand\b/.test(card.typeLine)) continue;
+    if (isLandFace(card.typeLine)) continue;
     spells += card.quantity;
     total += card.cmc * card.quantity;
   }

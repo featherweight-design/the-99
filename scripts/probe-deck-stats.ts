@@ -47,14 +47,23 @@ const pickCards = async () => {
     where type_line ~ 'Legendary Creature' and cmc > 0
     order by oracle_id limit 2
   `);
+  // NOT legendary: the two commanders above are picked from the legends, and a
+  // body that came back as one of them would be inserted into deck_cards as
+  // well as sitting in a commander column — every count below would then
+  // describe a fixture other than the one this probe means to build.
   const { rows: bodies } = await fixture.execute<Card>(sql`
     select oracle_id, cmc, type_line, color_identity from cards
-    where type_line ~ 'Creature' and type_line !~ 'Land' and cmc between 1 and 6
+    where type_line ~ 'Creature' and type_line !~ 'Land'
+      and type_line !~ 'Legendary' and cmc between 1 and 6
     order by oracle_id limit 1
   `);
+  // NOT basic: `loadDeckBuyRows` excludes basics from every shopping surface,
+  // so a basic here would leave the cost assertion below expecting copies the
+  // roll-up deliberately never counts.
   const { rows: lands } = await fixture.execute<Card>(sql`
     select oracle_id, cmc, type_line, color_identity from cards
     where type_line ~ '\\mLand\\M' and type_line !~ 'Creature'
+      and type_line !~ '\\mBasic\\M'
     order by oracle_id limit 1
   `);
   if (legends.length < 2 || !bodies[0] || !lands[0]) {

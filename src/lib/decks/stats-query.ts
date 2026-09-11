@@ -26,8 +26,7 @@ import { cards, deckCards, deckGames, decks } from "../../db/schema";
 import {
   colourSpread,
   manaCurve,
-  playRecord,
-  emptyRecord,
+  recordFromCounts,
   type ColourSpread,
   type GameResult,
   type ManaCurve,
@@ -157,22 +156,22 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
     }
   }
 
-  const resultsByDeck = new Map<string, { result: GameResult }[]>();
+  // The grouped counts are tallied as counts. Expanding them back into one
+  // object per game would make this loader's cost grow with a player's whole
+  // game history to produce three numbers.
+  const countsByDeck = new Map<string, { result: GameResult; games: number }[]>();
   for (const row of gameRows) {
-    const list = resultsByDeck.get(row.deckId) ?? [];
-    // One grouped row stands for `games` games. Expanding it back out keeps
-    // `playRecord` the single tally — the alternative is a second, hand-rolled
-    // one here that can disagree with it.
-    for (let i = 0; i < row.games; i += 1) list.push({ result: row.result as GameResult });
-    resultsByDeck.set(row.deckId, list);
+    const list = countsByDeck.get(row.deckId) ?? [];
+    list.push({ result: row.result as GameResult, games: row.games });
+    countsByDeck.set(row.deckId, list);
   }
 
   for (const deckId of ids) {
     const list = listByDeck.get(deckId) ?? [];
-    const results = resultsByDeck.get(deckId);
+    const counts = countsByDeck.get(deckId) ?? [];
     stats.set(deckId, {
       deckId,
-      record: results ? playRecord(results) : emptyRecord(),
+      record: recordFromCounts(counts),
       colours: colourSpread(list),
       curve: manaCurve(list),
       cost: rollup.byDeck.get(deckId) ?? null,
