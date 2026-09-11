@@ -294,7 +294,13 @@ export async function resolveUnresolvedRow(
         partnerOracleId: decks.partnerOracleId,
       })
       .from(decks)
-      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+      // `for update`, because this path adds a card the deck did not hold. Row
+      // locks on `deck_cards` cannot serialize an INSERT of a row that is not
+      // there to lock, so a resolve landing mid-commit would otherwise reach the
+      // version snapshot without reaching the receipt computed beside it. The
+      // deck row is the one lock both paths can share.
+      .for("update");
     if (!deck) throw new Error("deck not found");
 
     // Deleted first, and the delete is what decides whether the rest runs. Read

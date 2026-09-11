@@ -158,7 +158,7 @@ describe("loadCardDetail availability", () => {
     hard: 2,
     soft: 0,
     free: 0,
-    claims: [{ id: "d-1", name: "Atraxa", quantity: 2, mature: true }],
+    claims: [{ id: "d-1", name: "Atraxa", quantity: 2, mature: true, pending: false, commander: false }],
   };
 
   it("joins the owned card's availability at the default vantage", async () => {

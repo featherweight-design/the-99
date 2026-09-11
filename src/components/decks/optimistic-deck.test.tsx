@@ -11,12 +11,12 @@ import { useOptimisticDeckCards } from "./optimistic-deck";
 
 const solRing: DeckDetailCard = {
   oracleId: "sol-ring", name: "Sol Ring", typeLine: "Artifact",
-  cardTypeGroup: "Artifacts", role: "ramp", owned: false, quantity: 1, auto: false,
+  cardTypeGroup: "Artifacts", role: "ramp", cmc: 1, owned: false, quantity: 1, auto: false,
   printedName: null, printedSetCode: null, printedCollectorNumber: null,
 };
 const forest: DeckDetailCard = {
   oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest",
-  cardTypeGroup: "Lands", role: "land", owned: true, quantity: 1, auto: false,
+  cardTypeGroup: "Lands", role: "land", cmc: 0, owned: true, quantity: 1, auto: false,
   printedName: null, printedSetCode: null, printedCollectorNumber: null,
 };
 

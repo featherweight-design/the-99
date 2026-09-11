@@ -78,6 +78,7 @@ function makeDeck(): DeckDetail {
         typeLine: "Basic Land — Forest",
         cardTypeGroup: "Lands",
         role: "land",
+        cmc: 0,
         owned: true,
         quantity: 1,
         auto: false,
