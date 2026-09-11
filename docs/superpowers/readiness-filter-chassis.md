@@ -21,9 +21,9 @@ recomputed from `globals.css` rather than taken on trust.
 | `result-line.tsx` exists and can move rather than be rewritten | `rack/result-line.tsx` | **True** |
 | `printings.setCode` is reachable for `Printed in` | `schema.ts:65` | **True**, and `printings_oracle_set_idx` on `(oracle_id, set_code)` already indexes the join the dimension needs |
 | `color-pip.tsx` emits `Filter by R` | `color-pip.tsx:21` | **True** — the Task 9 test mismatch is real |
-| The rack's pip row grounds on `--surface-sunken` | `filter-rack.tsx:92` | **True** |
+| The rack's wide pip group grounds on `--bg` | `colour-control.tsx:85` | **True.** The rack's own container is `--surface-sunken` (`filter-rack.tsx:92`), but the wide pip group paints its own `--bg` over it; the sheet form is `bg-transparent` and does inherit the rack's ground |
 | The collection pip row grounds on `--surface-sunken` | `filter-bar.tsx:131` | **True** |
-| Shipped unlit pip floors at 1.38:1 | recomputed | **True for the control measured** — see finding 2 |
+| Shipped unlit pip floors at 1.38:1 | recomputed | **Exact.** 1.37:1 at U/phyrexia against `--bg` — the handoff's own figure and pip, to rounding |
 | Scryfall pip floors at 9.51:1 | recomputed | **Method exact, inputs assumed** — see finding 1 |
 
 The pip floor was recomputed independently and returned **9.51:1 at R/kaldheim** from the
@@ -41,9 +41,15 @@ reject every atom those chassis mount. A panel primitive is not a chassis.
 
 Three things make the other reading untenable rather than merely expensive:
 
-1. **Set collections locks it.** Its handoff reads "the colour filter is mounted, not forked", and
-   its Task 9 extracts a control specifically so a second surface can mount it. Discarding the panel
-   mid-build invalidates a Green handoff that is being implemented right now.
+1. **The panel has its own ratification, and it is not the one I first cited.** `FilterPanel` is
+   ratified in `docs/superpowers/design-tables/collection-filter-panel.md` and named "the reference
+   implementation" in `rack/filter-sheet.tsx:4`. Set collections' "mounted, not forked" contract
+   covers the **colour filter** — the row its Task 9 extracts into
+   `collection/color-filter-row.tsx` — not the panel, and an earlier draft of this verdict cited it
+   as though it did. What set collections does establish is weaker but still real: its plan keeps
+   `filter-bar.tsx` working and mounting the extracted row, and `filter-bar.tsx` is five mounts of
+   `FilterPanel`, so a build that retires the panel mid-round destabilises a Green handoff's host
+   file while it is being implemented.
 2. **The brief already resolved this collision in the same direction.** §5 rules that there is one
    colour control in the app and the set pages mount it. Replacing the panel beneath it would
    contradict the ruling one section earlier in the same document.
@@ -62,13 +68,15 @@ Three things make the other reading untenable rather than merely expensive:
    9.51:1 to **7.77:1** (still R, still kaldheim). It clears the 3:1 non-text floor with 4.77 points
    of headroom, so Design's conclusion holds unchanged and no drawing is affected. Build against the
    fetched values, not the table's.
-2. **The 1.38:1 figure is one of two shipped unlit pips, and the other is worse than the handoff
-   implies.** The measurement is of `rack/colour-control.tsx:126`, which dims to `0.34` in its wide
-   form. `collection/color-pip.tsx:28` ships `opacity-40` instead and floors at **1.49:1**. Both
-   fail 3:1 — for the `0.40` control, **24 of 30** theme×pip combinations are under it. Two
-   different unlit opacities for one concept is itself an argument for this round, and the chassis
-   has to pick one value rather than inherit either. The defect is pre-existing and is not caused by
-   this handoff.
+2. **The defect is two controls wide, and the handoff measured the worse of them.**
+   `rack/colour-control.tsx:126` dims to `0.34` in its wide form, over the `--bg` that group paints
+   for itself (`:85`) — floor **1.37:1** at U/phyrexia, and **30 of 30** theme×pip combinations
+   under the 3:1 non-text floor. `collection/color-pip.tsx:28` dims to `0.40` over
+   `--surface-sunken` — floor **1.49:1**, slightly better and still failing, at **24 of 30**.
+   So the handoff's figure is the app's true floor rather than an unrepresentative sample. Two
+   different unlit opacities over two different grounds, for one concept, is itself an argument for
+   this round; the chassis picks one value rather than inheriting either. Pre-existing, and not
+   caused by this handoff.
 3. **Asset delivery, ruled: static assets in the repository.** Design left this open and pushed back
    only on hotlinking. Concur, and going further: hotlinking a third party into the filter chrome of
    four routes plus the set pages makes a network fetch the single carrier of a filter's identity,
