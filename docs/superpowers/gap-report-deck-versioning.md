@@ -7,7 +7,7 @@
 
 ## Verdict — 🟢 Green at R2
 
-**The blocker is answered and every one of the fourteen corrections is taken.** Design corrected the
+**The blocker is answered and every one of the thirteen corrections is taken.** Design corrected the
 canvas rather than the contract: every track now draws `CostPips`' real output — Beast Within reads
 numeral `2` with one green pip, and Thought Erasure has **no disc at all**, verified on the R2 canvas
 at lines 142, 183, 256, 273 and 366. So no fifth atom, the inventory holds at four new plus one
@@ -46,7 +46,7 @@ the reading order when the figure leaves the screen.
    `(name: string, from: number, to: number)` — where the shipped `recountedItem` it is told to reuse
    takes strings (`src/lib/copy/deck-import.ts:506`). The instruction to reuse governs; the drawn
    signature is the one to discard.
-3. **The canvas draws the *proposed* 90px / 76px track, not the shipped 40px** (`PIP_TRACK = 40`,
+3. **The canvas draws the *proposed* 110px / 76px track, not the shipped 40px** (`PIP_TRACK = 40`,
    `decklist-row.tsx:50`). READINESS:46 rules that these rows *"mount `CostPips` as shipped and
    inherit whatever it becomes"*, so that ruling governs the drawn width: build at the shipped
    geometry, pass `track`/`cap` from the shipped constants, and the widened track arrives for free
@@ -72,7 +72,8 @@ and that is the whole inventory"* (READINESS #14). **The canvas draws something 
 The canvas's numeral is the **mana value**, on every row. `CostPips` renders the generic-cost token
 parsed out of the cost string, and nothing when there is none (`src/components/ui/cost-pips.tsx`:
 `numeral = parts.find((p) => /^\d+$/.test(p))`). Two different atoms — and the drawn one is what
-Design's own rationale asks for: *"Mana value is the thing you judge a swap by"* (README:166).
+Design's own rationale asks for: *"Mana value is the thing you judge a swap by"* (README §Surfaces,
+the diff-row rationale).
 
 Three things move with the answer, which is why it goes back rather than being ruled here:
 
@@ -100,7 +101,7 @@ Neither needed a redraw and neither was a design gap:
 
 | Design's blocker | Ruling |
 |---|---|
-| **Ruling 2 — the cost track.** `CostPips` shingles; `COST-TRACK.md` proposes a 90px/76px five-slot track, but the component belongs to card-rows (Q2/R5) | **Closed externally.** Hugh, 2026-09-10: *"We'll be changing the pip overlap for card rows."* The amendment is card-rows' to land, and filing it as a request was right. Versioning is not gated on it either way — and if the blocker above resolves as eng reads it, versioning is not even *connected* to it. Corrections 9–11 are amendments to the request, for card-rows to have before they rule. |
+| **Ruling 2 — the cost track.** `CostPips` shingles; `COST-TRACK.md` proposes a 110px/76px five-slot track, but the component belongs to card-rows (Q2/R5) | **Closed externally.** Hugh, 2026-09-10: *"We'll be changing the pip overlap for card rows."* The amendment is card-rows' to land, and filing it as a request was right. Versioning is not gated on it either way — and if the blocker above resolves as eng reads it, versioning is not even *connected* to it. Corrections 9–11 are amendments to the request, for card-rows to have before they rule. |
 | **`Commit as v1` on a versionless full-body deck** is Design's addition, not the spec's; Design offered three options and preferred option 1 | **Option 1, as drawn.** §Decisions 4 leaves a real hole — the migration stamps existing full-body decks, so a deck *built after this ships* would have no route to a first version. Option 2 (auto-stamp at a full body) makes a deck's claims go hard without anyone asking, which is the class of thing this feature exists to prevent. The brass-**outline** offer at `deckBodySize()` with *locks this list as v1 — nothing about the deck changes* stands. |
 
 Every locked decision is drawn as written, no new token is asked for, and `OVERLAPS.md` answers both
@@ -108,7 +109,7 @@ of the spec's open calls in a way the shipped code supports. What follows are en
 corrections against the handoff's **prose**, plus a class of stale R1 text the canvas settles. None
 needed a Design ruling — they needed Design to *correct the prose* in the same round that answered
 the blocker, because eng following the prose instead of the canvas would have built the pre-R1.2
-layout. **R2 took all fourteen**, as items 21–33 of its `READINESS.md`. They are kept below as the
+layout. **R2 took all thirteen**, as items 21–33 of its `READINESS.md`. They are kept below as the
 build's own checklist: each one names the shipped path a task has to honour, which the handoff's
 summary of it does not.
 
@@ -226,11 +227,12 @@ fold, called twice with different card sets. Gap 9 (no curve histogram) is accep
      30px. Neither figure changes a decision; both are quoted in the amendment request.
 8. **`STATES-pending.md` table A is malformed.** Rows 8 / 9b / 9c / 9 are misaligned, row 8 is
    missing its final cell and that cell appears appended to 9c, and the numbering runs 8, 9b, 9c, 9.
-   Content is legible; the table needs re-laying before it is read as a checklist.
+   Content is legible; the table needs re-laying before it is read as a checklist. **Taken at R2** —
+   the matrix is renumbered coherently and table A's rows now align.
 9. **`COST-TRACK.md`'s "five pips is the ceiling" is wrong, and the no-cap ruling rests on it.**
    Colour *identity* is capped at five; a mana **cost** repeats colour symbols freely. Progenitus is
    a legal commander at `{W}{W}{U}{U}{B}{B}{R}{R}{G}{G}` — ten slots, `10 × 10px + 9 × 2px = 118px`,
-   which overflows both the 90px desktop and the 76px phone track. `cost-pips.test.tsx:101` already
+   which overflows both the 110px desktop and the 76px phone track. `cost-pips.test.tsx:101` already
    asserts against that exact string, so the repo's own tests cover the case the document says
    cannot arise. Whatever card-rows rules, **`cap` cannot be dropped** — and the shingle-free track
    is not the same proposal once it needs an overflow rule.
@@ -253,14 +255,17 @@ fold, called twice with different card sets. Gap 9 (no curve histogram) is accep
     page's two lists, and a per-row type slot on the diff row — all three reversed by READINESS
     3b/3c and by the deletion in item 14. The canvas is right and the prose is R1 residue. This is
     the class the blocker sits in: eng reading the prose instead of the canvas would build the
-    layout Design already withdrew.
+    layout Design already withdrew. **Taken at R2** — the 300px rail is now described in the past
+    tense as R1's error (`README` §Surfaces, the review page), and the buckets are withdrawn from
+    the prose as well as the canvas.
 14. **Two provenance paths do not resolve.** README:4 cites
     `uploads/2026-09-09-deck-versioning-design.md` (the spec is
     `docs/superpowers/specs/2026-09-09-deck-versioning-design.md`), and README:43 borrows the count
     chips and `update-diff-row` from `design_handoff_the99_deck_reimport/`, which does not exist —
     that material is `design/design_handoff_the99_amendments/STATES-reimport.md` plus
     `deck-reimport · copy strings.ts`. Both are citation fixes, not design changes, but a borrowed
-    atom whose source cannot be opened cannot be checked against the shipped component.
+    atom whose source cannot be opened cannot be checked against the shipped component. **Taken at
+    R2** — neither dead path survives in the README.
 
 ## Verified true
 

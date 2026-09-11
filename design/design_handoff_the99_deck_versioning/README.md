@@ -10,6 +10,11 @@ File: `The 99 - Deck Versioning.dc.html` (canvas — pan/zoom). Read
 `STATES-pending.md` for the state matrix across all five surfaces, `OVERLAPS.md` for the two
 calls the spec left open, and `deck-versioning · copy strings.ts` for production-final copy.
 
+**Before implementing from any figure in this bundle, read §Errata at the foot of this file.**
+This handoff was revised in place across three rounds, so several values appear twice — once as
+R2 corrected them and once as R1 left them. The errata table names every such value and says
+which one governs. Where it disagrees with prose anywhere in this bundle, the errata table wins.
+
 ---
 
 ## R2 — the blocker, answered
@@ -641,4 +646,32 @@ mobile ledger are treated as binding.
 - `deck-versioning · copy strings.ts` — the copy block, production-final.
 - `READINESS.md` — self-assessed readiness and what blocks a green.
 - `brand/` — the locked brand sheet + brand README, copied in for self-containment.
-- `support.js` — runtime for the HTML reference; not production code.
+- `support.js` — runtime for the HTML reference. **Local review only, never production code.** It is
+  generated, it evaluates code dynamically and it pulls React from a CDN, so it is read by opening
+  the `.dc.html` file from disk and by nothing else. `design/` is outside `public/` and outside
+  `src/`, so no route serves it and no module imports it; keep it that way.
+
+## Errata — where this bundle contradicts itself, these values govern
+
+This handoff was revised in place, so an earlier figure and its correction both survive in the
+prose. Every row below is the governing value. Implement from this table, not from whichever
+sentence you happened to read first.
+
+| Subject | Governing value | Superseded by it |
+| --- | --- | --- |
+| Pending-add row mark | **2px**, per the Component notes table | the 3px figure in §Surfaces and in `STATES-pending.md` |
+| Row mark and padding | **No padding absorption.** `DecklistRow` draws marks as inset box shadows, which displace nothing | any instruction to absorb the mark's width out of the row's left padding |
+| Review-page grouping | **Card type**, both columns, via the shipped `groupByCardType` | the five availability buckets; `review.bucket*` copy keys are withdrawn |
+| The what-changed strip's figures | **Mana value plus the five `ROLE_ORDER` roles** — ramp, draw, removal, wipes, land | any longer or differently ordered cell list; `body` is not a role |
+| Revalidation after a commit | **`revalidateClaims`** | the `deckSurfaces()` call named later in §Engineering notes |
+| The commit sheet | **Totals only, never a list.** `commit.buyBackLink` points back up at the rows | any drawing of card names inside the sheet |
+| Commit announcement | The server's **`cardCount`** is a requirement of the commit result, not a client recount | any client-side count of the announced list |
+| "Full body" test | **`deckBodySize(hasPartner)`** — 99, or 98 with a partner | a hard-coded 99 |
+| `CostPips` mounting | Pass **`track` and `cap` explicitly**; the component defaults neither | any call relying on defaults |
+| Cost-track geometry | **`COST-TRACK.md`'s own 110px / 76px figures** | the 90px / 76px pair quoted in §Surfaces and in the gap report |
+| Adds-variant row width | **150px** on the adds variants | any narrower figure inherited from the base row |
+| Version history table | **No `ver` header row** — the number is the row's own leading cell | any drawing with a separate version-number column header |
+| Atom inventory | **Four new atoms plus one deletion** | the five-atom count from R1.2, which assumed a mana-value disc |
+| `Commit as v1` | **Settled and kept** — offered on a versionless deck at a full body | open-question 6, which asked whether to delete it |
+| Buy-tag density on the review page | **Ratified: `density="full"`** | the split treatment READINESS called a judgement still to ratify |
+| State numbers | **Section-scoped** — a state's number is unique within its surface, not across the 45 | any reading of the matrix as one flat 1–45 sequence |

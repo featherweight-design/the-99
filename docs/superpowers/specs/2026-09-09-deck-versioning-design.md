@@ -384,7 +384,7 @@ Six items. Each is a prerequisite, not a rendering detail.
 ### Constraints the build inherits
 
 - **`CostPips` is read as shipped, never forked.** Pass `track` / `cap` from the shipped constants
-  (`PIP_TRACK = 40`, `PIP_CAP = 5`). The handoff's canvas draws a 90px / 76px track, which is
+  (`PIP_TRACK = 40`, `PIP_CAP = 5`). The handoff's canvas draws a 110px / 76px track, which is
   `COST-TRACK.md`'s **unshipped proposal to card-rows**; these rows inherit whatever that round
   lands, and versioning is not gated on it.
 - **The buy tag's density is the shipped rule**: `collapsed` on a decklist row, `full` on a

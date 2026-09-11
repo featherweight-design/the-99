@@ -2,6 +2,14 @@
 
 **Self-assessed: 🟢 Green-seeking. No open Design question, no ruling requested, no redraw pending.**
 
+> **Eng note.** Audited 🟢 Green — see `docs/superpowers/gap-report-deck-versioning.md`. This file is
+> kept as Design's own record and is **not** the source of build values: several figures here were
+> superseded in the round that answered the blocker, and the R2 corrections block appears twice.
+> §Errata at the foot of `README.md` names every superseded value and governs over anything below.
+> In particular: the buy-tag density split is **ratified**, not a judgement still open; the
+> pending-add rule is **2px**; the three availability buckets are **withdrawn** as a grouping; and
+> the card-row-parity bullet near the foot is R1 residue — `decklist-row` does mount a pip track.
+
 Both R1.2 Amber items are **closed by the audit**: `Commit as v1` is ruled as drawn (option 1), and
 the cost track is card-rows' (Q2/R5) with Hugh's confirmation that the overlap is changing. Neither
 needs anything further from this handoff.

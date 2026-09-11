@@ -6,6 +6,10 @@ changes there are** (nought, two, thirty-six), **whether the deck has ever commi
 
 The deck throughout is HD Tune — Mutant Menace. `v` is the newest committed version.
 
+> **Eng note.** State numbers are **section-scoped** — a number is unique within its surface, not
+> across all 45. Where a figure here disagrees with §Errata at the foot of `README.md`, the errata
+> table governs; the pending-add rule is **2px**, not 3px.
+
 ---
 
 ## A · The deck page
