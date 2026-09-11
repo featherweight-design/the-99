@@ -52,8 +52,11 @@ vocabulary, the sheet, or the 262px `/decks` regains. The whole consistency win 
    This is what fixes the shipped defect: the rack fails the 3:1 non-text floor in 30 of 30
    theme×pip combinations today, collection in 24 of 30.
 5. **Every control is 34px on desktop** (decision 3) and a real 44px on the phone (decision 8).
-6. **The control row never wraps** (decision 18). Two forms, switching at 900px, search the only
-   shrinking child.
+6. **The control row never wraps** (decision 18). Two forms, switching at **1000px**, search the
+   only shrinking child. Not 900: decision 18's stated 887px total is 987px, so the wide form does
+   not fit at 900 and row 1 wraps — the defect the decision exists to prevent. 1000 is Design's own
+   rule ("the minimums, plus a margin") applied to the correct sum. Decided eng-side; it changes no
+   drawing and the consequence is the one Design already accepted at 900.
 7. **Copy externalises**, and the handoff's `filter-chassis · copy strings.ts` marks which strings
    are reuse from `lanes.ts` / `refresh.ts` / `collection.ts` rather than re-authored. Reuse them.
 8. **Mobile and desktop ship in the same PR**, per `AGENTS.md`.
@@ -201,7 +204,7 @@ an assumption that the four routes' figures carry over.
 
 ## Open, and deliberately not closed here
 
-- **The 900px switch is a judgement, not a measurement** (readiness finding 5). Ship it and watch
+- **The 1000px switch is a judgement, not a measurement** (readiness finding 5). Ship it and watch
   it. A small laptop in a half-width window gets the phone treatment on a pointer device; the
   alternative makes the breakpoint a per-route fact and the chassis stops being one thing.
 - **`bodyOneFix` needs a query nobody has written** (readiness finding 4). The empty state promises

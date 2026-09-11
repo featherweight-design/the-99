@@ -53,18 +53,24 @@ export type FilterChassisProps = {
    */
   resultLine: string;
   /**
-   * `wide` above 900px, `compact` below (decision 18). A judgement rather than a
-   * measurement: `/collection`'s seven controls cannot be honest in the wide
-   * form below 887px, and 900 is that plus a margin. The consequence is that a
-   * small laptop in a half-width window gets the compact treatment on a pointer
-   * device; the alternative makes the breakpoint a per-route fact and the
-   * chassis stops being one thing.
+   * `wide` above 1000px, `compact` below (decision 18, with its arithmetic
+   * corrected). Design's rule is "the minimums, plus a margin"; its stated
+   * total of 887px is wrong — `/collection`'s eight widths sum to 859, its seven
+   * 12px gaps add 84 and its padding adds 44, for **987px**. At 900 the wide
+   * form would wrap, which is the defect decision 18 exists to prevent. 1000 is
+   * that rule applied to the right number.
+   *
+   * The consequence is the one Design already named and accepted at 900: a small
+   * laptop in a half-width window gets the compact treatment on a pointer
+   * device, over a slightly wider band. The alternative — a per-route
+   * breakpoint — makes the switch a per-route fact and the chassis stops being
+   * one thing.
    */
   form: "wide" | "compact";
 };
 
 /** The width at which the control row would have to wrap, so it changes form instead. */
-export const CHASSIS_WIDE_MIN_PX = 900;
+export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form,
