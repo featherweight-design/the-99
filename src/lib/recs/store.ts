@@ -163,6 +163,11 @@ export async function persistScores(
           receipts: sql`excluded.receipts`,
           colorPoolSize: sql`excluded.color_pool_size`,
           roleCounts: sql`excluded.role_counts`,
+          // Load-bearing, not bookkeeping. Most of this set's rows already exist,
+          // so without it a row written by an older writer keeps that version
+          // through the very recompute meant to heal it — `loadScores` condemns
+          // the set again on the next read, and every request recomputes forever.
+          writerVersion: sql`excluded.writer_version`,
           computedAt: sql`excluded.computed_at`,
         },
       });

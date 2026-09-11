@@ -124,16 +124,23 @@ describe("rowToListItem", () => {
 function fakeDb(confirmedAt: Date | null) {
   const inserted: unknown[][] = [];
   let deleted = false;
+  let conflictSet: Record<string, unknown> | null = null;
   const tx = {
     select: () => ({ from: () => ({ where: async () => [{ at: confirmedAt }] }) }),
     delete: () => ({ where: async () => { deleted = true; } }),
     insert: () => ({
-      values: (rows: unknown[]) => ({ onConflictDoUpdate: async () => { inserted.push(rows); } }),
+      values: (rows: unknown[]) => ({
+        onConflictDoUpdate: async (arg: { set: Record<string, unknown> }) => {
+          inserted.push(rows);
+          conflictSet = arg.set;
+        },
+      }),
     }),
   };
   return {
     db: { transaction: (cb: (t: typeof tx) => Promise<void>) => cb(tx) },
     wrote: () => ({ deleted, insertedRows: inserted.flat().length }),
+    conflictSet: () => conflictSet,
   };
 }
 
@@ -165,6 +172,20 @@ describe("persistScores generation guard", () => {
     await persistScores("user_1", [ranked()], null);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // Most of a set's rows already exist, so the conflict path is the one that
+  // runs. A version left out of it survives the recompute meant to heal it, and
+  // `loadScores` condemns the set again on the very next read — a recompute on
+  // every request, for good.
+  it("carries the writer version through the conflict path, not only the insert", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime());
+
+    expect(Object.keys(fake.conflictSet() ?? {})).toContain("writerVersion");
   });
 
   it("drops the write when the first-ever confirm lands mid-compute", async () => {

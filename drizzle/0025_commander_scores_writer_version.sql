@@ -11,4 +11,13 @@
 -- scoring". Those sets have rows missing that `persistScores` deleted, and are
 -- neither empty nor degraded, so the read would otherwise serve them as warm
 -- forever.
+--
+-- What the DEFAULT does NOT cover is a ROLLBACK. Within the deploy window every
+-- row is version 1 — the old writer's inserts take the default and its upserts
+-- leave the existing value alone — so it cannot mint a version 2. After the new
+-- build is live and has written version 2, rolling back to the old one would let
+-- its upserts refresh those rows in place and leave the marker saying current.
+-- The recovery is the same either way: `deleteAllScores`, or any CSV confirm,
+-- and the table rebuilds. Noted rather than engineered around, because the fix
+-- for it is the same fix as for a rollback past any other writer change.
 ALTER TABLE "commander_scores" ADD COLUMN "writer_version" integer DEFAULT 1 NOT NULL;
