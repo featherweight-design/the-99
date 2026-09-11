@@ -2,11 +2,12 @@
 // the detail page's rank window. They read different tables, so only the emitted
 // SQL can show they ask the same question.
 import { describe, expect, it } from "vitest";
+import type { SQLWrapper } from "drizzle-orm";
 import { db } from "../../db";
 import { commanderScores, commanderSupport } from "../../db/schema";
 import { notBuiltBy } from "./built";
 
-const emitted = (column: unknown) =>
+const emitted = (column: SQLWrapper) =>
   db
     .select({ oracleId: commanderScores.oracleId })
     .from(commanderScores)

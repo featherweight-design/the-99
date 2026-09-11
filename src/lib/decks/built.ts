@@ -1,4 +1,4 @@
-import { sql, type SQL } from "drizzle-orm";
+import { sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { decks } from "../../db/schema";
 
 /**
@@ -21,7 +21,7 @@ import { decks } from "../../db/schema";
  * is nullable, so one partnerless deck would empty the list. Here a NULL partner
  * simply matches nothing.
  */
-export function notBuiltBy(userId: string, oracleIdColumn: SQL | unknown): SQL {
+export function notBuiltBy(userId: string, oracleIdColumn: SQLWrapper): SQL {
   return sql`not exists (
     select 1 from ${decks}
     where ${decks.userId} = ${userId}

@@ -117,6 +117,27 @@ export function byScoreThenOracleId(
  * Pure post-processing step: assigns unique slugs in rank order and wraps
  * counts. Exported for unit testing without a live database.
  */
+/**
+ * SLUG STABILITY, and the one migration it cost.
+ *
+ * Suffixes are assigned in rank order over every candidate, BUILT ONES INCLUDED,
+ * which is what decouples a slug from deck state: building a deck around one of
+ * two same-named commanders no longer renumbers the other, and deleting that deck
+ * does not renumber it back. The slug moves only when the score moves.
+ *
+ * The writer before this one excluded built commanders before scoring, so a
+ * collision group's suffixes depended on which of its members had decks. Those
+ * sets are all condemned by `SCORE_WRITER_CURRENT`, so every slug is recomputed
+ * once — and inside a collision group a link made before that recompute can now
+ * name a different member, or a built one, which has no page and 404s.
+ *
+ * MEASURED, because the size of that is the whole question: on the production
+ * catalog there are ZERO commander-legal names carried by more than one oracle
+ * id, and zero inside any collection in the database. The group this can reach is
+ * empty today. It is written down rather than engineered around because a
+ * redirect would have to guess which member of a collision group an old link
+ * meant, and guessing is what the dedup exists to prevent.
+ */
 export function finalizeRecommendations(
   results: (CommanderScore & { synergyState: SynergyState })[],
   uniqueCardsRead: number,
