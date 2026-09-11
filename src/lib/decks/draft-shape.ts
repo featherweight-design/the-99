@@ -43,6 +43,20 @@ export type DraftState = {
   /** Oracle name per changed card, both lists — what the banner's inline
    *  density says at six changes or fewer. */
   names: Map<string, string>;
+  /** Printed mana cost per changed card, both lists, for the cost track the
+   *  inline density draws beside each name. Absent for a card the catalog gives
+   *  no cost, where the track draws nothing rather than a zero. */
+  costs: Map<string, string>;
+  /**
+   * One copy's price, formatted, for the adds that carry a purchase.
+   *
+   * Absent for a free add, for every remove, and for a card the feed could not
+   * price — an absent entry means "no figure to show", never "$0.00". A UNIT
+   * price, matching the shipped buy tag rather than multiplying by the
+   * shortfall, so the banner's tile and the row's tag cannot quote the same
+   * card differently.
+   */
+  prices: Map<string, string>;
   /**
    * Whether the claim model could be read at all.
    *

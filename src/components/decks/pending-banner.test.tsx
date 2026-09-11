@@ -23,6 +23,8 @@ const empty: DraftState = {
   removes: [],
   basicsChanged: false,
   names: new Map(),
+  costs: new Map(),
+  prices: new Map(),
   claimsKnown: true,
   buyCount: 0,
   unfreeCount: 0,
@@ -57,6 +59,13 @@ const withChanges = (adds: number, removes: number): DraftState => ({
     ...Array.from({ length: adds }, (_, i) => [`a${i}`, `Add ${i}`] as const),
     ...Array.from({ length: removes }, (_, i) => [`r${i}`, `Cut ${i}`] as const),
   ]),
+  costs: new Map([
+    ...Array.from({ length: adds }, (_, i) => [`a${i}`, "{2}{U}"] as const),
+    ...Array.from({ length: removes }, (_, i) => [`r${i}`, "{1}{B}"] as const),
+  ]),
+  prices: new Map(
+    Array.from({ length: adds }, (_, i) => [`a${i}`, "$4.00"] as const),
+  ),
   buyCount: adds,
   unfreeCount: adds,
   pullableCount: 0,

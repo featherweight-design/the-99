@@ -19,7 +19,7 @@ import type { DraftAdd, DraftState } from "./draft-shape";
 import { hardDecks, type Availability, type DeckClaim } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
-import { formatCents, summarisePrices } from "./price";
+import { formatCents, priceOf, priceState, summarisePrices } from "./price";
 import { averageManaValue } from "./mana-value";
 import { newestVersion, versionCards, versionManaValue } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
@@ -112,6 +112,7 @@ async function readSnapshot(deckId: string) {
 function loadNameFacts(oracleIds: string[]) {
   return db.select({
     oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
+    manaCost: cards.manaCost,
   }).from(cards).where(inArray(cards.oracleId, oracleIds));
 }
 
@@ -128,7 +129,6 @@ function loadDetailFacts(userId: string, oracleIds: string[]) {
     oracleId: cards.oracleId,
     oracleText: cards.oracleText,
     keywords: cards.keywords,
-    manaCost: cards.manaCost,
     imageUri: cards.imageUri,
     layout: cards.layout,
     // The `ci` alias and the qualified outer column are both load-bearing, and
@@ -181,7 +181,7 @@ async function readDraft(
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [], basicsChanged: false,
-    names: new Map(), claimsKnown: true,
+    names: new Map(), costs: new Map(), prices: new Map(), claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
     pricedCopies: 0, newestAsOf: null,
     manaValue: null, manaValueBefore: null,
@@ -225,6 +225,14 @@ async function readDraft(
   const names = new Map(
     facts.filter((f) => changedSet.has(f.oracleId)).map((f) => [f.oracleId, f.name]),
   );
+  // Same scope as `names`, and the cost track is drawn beside a changed name and
+  // nowhere else. A card the catalog gives no cost stays out of the map rather
+  // than entering it as a null, so its track draws nothing.
+  const costs = new Map(
+    facts
+      .filter((f) => changedSet.has(f.oracleId) && f.manaCost !== null)
+      .map((f) => [f.oracleId, f.manaCost as string]),
+  );
   // Excluding this deck: the question is what OTHER decks hold, which is the
   // same question the commit asks. Scoped to the adds unless a caller is drawing
   // rows, which need the `out` side too.
@@ -251,6 +259,17 @@ async function readDraft(
     prices?.newestAsOf ?? null,
   );
 
+  // Unfree adds only: a free add buys nothing and a remove buys nothing, so
+  // neither carries a figure. `priceOf` answers null for a sold-out or unpriced
+  // card, and those stay out of the map rather than entering it as `$0.00`.
+  const priceTags = new Map<string, string>();
+  for (const add of unfree) {
+    const fact = prices?.prices.get(add.oracleId);
+    if (!fact) continue;
+    const cents = priceOf(fact, priceState(fact, prices?.newestAsOf ?? null));
+    if (cents !== null) priceTags.set(add.oracleId, formatCents(cents));
+  }
+
   const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
   const typeByOracle = new Map(facts.map((f) => [f.oracleId, f.typeLine]));
 
@@ -268,6 +287,8 @@ async function readDraft(
       removes,
       basicsChanged: false,
       names,
+      costs,
+      prices: priceTags,
       claimsKnown,
       buyCount: unfree.reduce((n, a) => n + a.shortfall, 0),
       unfreeCount: unfree.length,
@@ -395,7 +416,7 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
       auto: false,
       availability: read.availability?.get(change.oracleId) ?? null,
       price: read.prices?.prices.get(change.oracleId) ?? null,
-      manaCost: detail.manaCost,
+      manaCost: name.manaCost,
       imageUri: detail.imageUri,
       // Null, all three, and deliberately: a changed-card row names the card
       // the deck is gaining or losing, and there is no owned printing to resolve
