@@ -529,6 +529,91 @@ describe("CardModal printing picker scope", () => {
     expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
     vi.mocked(actions.setCardArtPreference).mockImplementation(async () => true);
   });
+
+  // A write's own re-read can fail, and then the card on screen is older than a pick the
+  // server accepted. Rolling a later refusal back to that card would revert past a choice
+  // that landed — so the rollback goes to what the server last said it holds, not to what
+  // the last read happened to bring back.
+  it("rolls back to the last write that landed, not to a card older than it", async () => {
+    const actions = await import("../../app/collection/actions");
+    vi.mocked(actions.setCardArtPreference)
+      .mockImplementationOnce(async () => true)
+      .mockImplementation(async () => false);
+    const owned = {
+      ...card,
+      quantity: 4,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+        { ...catalogPrinting("M21", "1"), quantity: 1, finishes: { nonfoil: 1 } },
+      ],
+    };
+    render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(3, "RVR · 24 +2 more"),
+      })[0]);
+    });
+    // The first pick lands on the server. No re-read follows it, so the card stays as it was.
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+    // The second is refused, and rolls back to the first — which the server does hold.
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /M21/ })[0]);
+    });
+
+    expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("radio", { name: /ELD/ })[0]).toBeChecked();
+    vi.mocked(actions.setCardArtPreference).mockImplementation(async () => true);
+  });
+
+  // The other way that baseline goes stale: a read taken before a write lands while the write
+  // is still running, carrying the preference as it stood beforehand. Believing it would put
+  // the rollback back where it was two picks ago.
+  it("ignores a read that predates an outstanding write when deciding what to roll back to", async () => {
+    const actions = await import("../../app/collection/actions");
+    let refuse!: () => void;
+    vi.mocked(actions.setCardArtPreference)
+      .mockImplementationOnce(async () => true)
+      .mockImplementationOnce(() => new Promise<boolean>((resolve) => {
+        refuse = () => resolve(false);
+      }));
+    const owned = {
+      ...card,
+      quantity: 4,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+        { ...catalogPrinting("M21", "1"), quantity: 1, finishes: { nonfoil: 1 } },
+      ],
+    };
+    const view = render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(3, "RVR · 24 +2 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /M21/ })[0]);
+    });
+
+    // A read from before either pick lands while the second write is still running.
+    view.rerender(
+      <CardModal card={{ ...owned }} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => { refuse(); });
+
+    expect(screen.getAllByRole("radio", { name: /ELD/ })[0]).toBeChecked();
+    vi.mocked(actions.setCardArtPreference).mockImplementation(async () => true);
+  });
 });
 
 // The printed name (#467 follow-on). The title is what the copy in hand says it

@@ -307,7 +307,21 @@ export function CardModal({
   // seeded on the way out of the write retires it without reconciling, so the pick stands
   // until the read taken after the write answers.
   const arrived = useRef(card);
-  useEffect(() => { arrived.current = card; }, [card]);
+
+  // What the server is known to hold, and the only safe thing to put back when a write does
+  // not take. The card on screen is not that: a write's own re-read can fail, leaving the
+  // reader looking at a card older than a pick the server accepted, and rolling a later
+  // refusal back to it would revert past a choice that landed.
+  const serverPick = useRef<PreferredPrinting | null>(card.preferredPrinting);
+  const writes = useRef(0);
+  const settled = useRef(0);
+
+  useEffect(() => {
+    arrived.current = card;
+    // A read taken while a write is outstanding predates it, so its preference is not what
+    // the server holds — only the write can say that, and it does so when it settles.
+    if (writes.current === settled.current) serverPick.current = card.preferredPrinting;
+  }, [card]);
 
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
@@ -358,22 +372,23 @@ export function CardModal({
     setAnnouncement(next ? pickerCopy.announceOpen(ownedPrintings.length) : "");
   }
 
-  // Nothing stops the reader picking again while a write is still running, and a write that
-  // settles badly rolls the pick back to what the server holds. Without knowing which write it
-  // is rolling back, the first pick's refusal would erase the second pick the reader has
-  // already made and is already looking at. Only the newest write may roll anything back.
-  const writes = useRef(0);
-
   // A write the server refused and a write that never reached it leave the same thing on
   // screen: a printing the reader chose and the server does not hold.
-  function settleWrite(generation: number, wrote: boolean) {
+  //
+  // Only the newest write may roll anything back. Nothing stops the reader picking again while
+  // a write is still running, so an older write can settle with a newer pick already painted,
+  // and rolling back blindly would erase the choice the reader made last.
+  function settleWrite(generation: number, wrote: boolean, written: PreferredPrinting | null) {
+    settled.current++;
     setSeeded(arrived.current);
-    if (!wrote && generation === writes.current) setPick(arrived.current.preferredPrinting);
+    if (wrote) serverPick.current = written;
+    else if (generation === writes.current) setPick(serverPick.current);
     onArtChange?.();
   }
 
   function onPick(p: { setCode: string; collectorNumber: string }) {
-    setPick({ setCode: p.setCode, collectorNumber: p.collectorNumber });
+    const written = { setCode: p.setCode, collectorNumber: p.collectorNumber };
+    setPick(written);
     onArtChange?.();
     const generation = ++writes.current;
     startWrite(async () => {
@@ -383,7 +398,7 @@ export function CardModal({
       } catch {
         wrote = false;
       }
-      settleWrite(generation, wrote);
+      settleWrite(generation, wrote, written);
     });
   }
 
@@ -399,7 +414,7 @@ export function CardModal({
       } catch {
         wrote = false;
       }
-      settleWrite(generation, wrote);
+      settleWrite(generation, wrote, null);
     });
   }
 
