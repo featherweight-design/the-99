@@ -210,6 +210,13 @@ export const decks = pgTable("decks", {
       "decks_partner_distinct",
       sql`${t.partnerOracleId} is null or ${t.partnerOracleId} <> ${t.commanderOracleId}`,
     ),
+    // `notBuiltBy` is a CORRELATED `not exists`, so it is evaluated once per
+    // candidate row — ~3,100 of them on the discover lane, and one per stored
+    // score on the detail page's rank window. Unindexed, each of those probes is
+    // a scan of every user's decks. One index per column the predicate reads,
+    // both led by `user_id` so the probe lands on one player's rows first.
+    index("decks_user_commander_idx").on(t.userId, t.commanderOracleId),
+    index("decks_user_partner_idx").on(t.userId, t.partnerOracleId),
   ],
 );
 

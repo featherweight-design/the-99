@@ -1,0 +1,2 @@
+CREATE INDEX "decks_user_commander_idx" ON "decks" USING btree ("user_id","commander_oracle_id");--> statement-breakpoint
+CREATE INDEX "decks_user_partner_idx" ON "decks" USING btree ("user_id","partner_oracle_id");

@@ -183,6 +183,13 @@
       "when": 1789153928960,
       "tag": "0025_commander_scores_writer_version",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789158316122,
+      "tag": "0026_decks_built_exclusion_indexes",
+      "breakpoints": true
     }
   ]
 }

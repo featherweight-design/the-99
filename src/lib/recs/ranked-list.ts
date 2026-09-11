@@ -38,23 +38,40 @@ export type RankedList = {
 export const getRankedList = cache(async function getRankedList(
   userId: string,
 ): Promise<RankedList> {
-  const [stored, stats] = await Promise.all([loadScores(userId), getCollectionStats(userId)]);
-
-  // An empty collection has nothing to score, so skip both the pool query and the
-  // best-effort write. Checked ahead of the stored-rows path so a leftover row set
-  // can never outlive the collection it was derived from.
+  // Stats first and alone: an empty collection has nothing to score, so it must
+  // reach neither the store nor the decks table. Checked ahead of the stored-rows
+  // path so a leftover row set can never outlive the collection it came from, and
+  // `getCollectionStats` is React-cached, so a caller that already needed stats
+  // pays nothing for this ordering.
+  const stats = await getCollectionStats(userId);
   if (stats.uniqueCards === 0) {
     return { items: [], degraded: false, uniqueCardsRead: 0, candidateCount: 0 };
   }
 
-  const list = await assemble(userId, stored, stats.uniqueCards);
+  // The deck read moves up here, ahead of `assemble`, because the stored set's
+  // usability now depends on it: see the degraded filter below.
+  const [stored, built] = await Promise.all([loadScores(userId), loadBuiltCommanderIds(userId)]);
+
+  // Degradation is a property of the rows this list SHOWS. The store holds built
+  // commanders too, and a degraded row among them is a row nobody is looking at:
+  // left in, a commander EDHREC does not index and whose deck the player keeps
+  // would put the whole set in the recompute branch on every single request, and
+  // that branch is the EDHREC fanout. The built row still repairs — it just waits
+  // for something that reads it. Its deck being deleted is exactly that: `built`
+  // no longer names it, the filter below stops removing it, and this one stops
+  // ignoring its degradation.
+  const visible = {
+    ...stored,
+    degradedOracleIds: stored.degradedOracleIds.filter((id) => !built.has(id)),
+  };
+
+  const list = await assemble(userId, visible, stats.uniqueCards);
 
   // The one exclusion both paths pass through. Nothing to exclude from an empty
-  // list, and a collection can hold cards without supporting a single rankable
-  // commander, so the deck read is skipped rather than asked and discarded.
+  // list — a collection can hold cards without supporting a single rankable
+  // commander.
   if (list.items.length === 0) return { ...list, candidateCount: 0 };
 
-  const built = await loadBuiltCommanderIds(userId);
   const items = list.items.filter((i) => !built.has(i.oracleId));
   return { ...list, items, candidateCount: items.length };
 });
