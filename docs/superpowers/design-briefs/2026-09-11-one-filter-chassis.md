@@ -20,7 +20,7 @@ brief asks for one chassis all four mount.
 |---|---|---|---|
 | `/commanders` | Horizontal rack, mobile sheet — `src/components/commanders/rack/filter-rack.tsx:37` | search, colour, availability, order | `rack/colour-control.tsx:27` |
 | `/discover` | **The same `FilterRack`**, mounted by `commanders/discovery-view.tsx:560` | search, colour, order — **no availability**: `filter-rack.tsx:109` mounts `AvailabilityControl` only when `lane === "owned"`, and the tests assert its absence on discover. The order control offers different options here, two of which decide what the lane is ranked on | `rack/colour-control.tsx:27` |
-| `/decks` | **Desktop sidebar column** + mobile sheet — `src/components/decks/deck-filter-column.tsx:135`, `deck-filter-sheet.tsx:114` | search, status, colour, played-window, sort | `deck-filter-column.tsx:107` (`ColourSwatch`) |
+| `/decks` | **Desktop sidebar column** + mobile sheet — `src/components/decks/deck-filter-column.tsx:135`, `deck-filter-sheet.tsx:114` | search, status, colour, played-window — **sort is not in the column**: desktop mounts `DeckSortMenu` separately in the toolbar (`decks-view.tsx:173`), and only the mobile sheet carries it alongside the filters | `deck-filter-column.tsx:107` (`ColourSwatch`) |
 | `/collection` | Horizontal bar — `src/components/collection/filter-bar.tsx:58` | search, Type, Set, Color, **Availability** (`filter-bar.tsx:229-261`), Sort, view toggle | `collection/color-pip.tsx:5` |
 
 **Four routes, three implementations.** `/commanders` and `/discover` mount one `FilterRack` in one
@@ -57,9 +57,8 @@ surface whose content, deck art, most wants the width.
    `2026-09-11-one-commander-image.md`, which spends it.
 5. **Real mana symbols replace the abstract swatches.** Recognisability beat bespoke: these are the
    symbols the player already reads on the cards in their hand, so they are not redrawn for this app.
-   **The delivery mechanism is Scryfall's symbol SVGs masked against a token background, not a
-   webfont** — see §4, which is binding. The workshop said "Mana font or Scryfall SVGs" before that
-   constraint was known; the constraint settles it, and a font is out.
+   **They ship as Scryfall's own full-colour SVGs, drawn as images** — not masked, and not a webfont.
+   See §4, which was rewritten after opening the endpoint and which changes what Design has to solve.
 
 ## §3 What Design is being asked to call — open
 
@@ -72,35 +71,45 @@ surface whose content, deck art, most wants the width.
 - **§3.3 Result and clear affordances.** `/commanders` and `/discover` have `rack/result-line.tsx`;
   `/decks` and `/collection` do not state their result count the same way. One answer, applied
   everywhere.
-- **§3.4 Whether sort belongs in the chassis at all.** Sort is not a filter. Every surface currently
-  mixes them. Design may separate them or keep them together, but one answer has to hold everywhere.
+- **§3.4 Whether sort belongs in the chassis at all.** Sort is not a filter, and the app currently
+  answers this two ways on one route: `/decks` puts sort in the toolbar on desktop
+  (`decks-view.tsx:173`) and inside the filter sheet on mobile. Design may separate sort from
+  filtering or keep them together, but one answer has to hold on every route and at both widths.
 
-- **§3.5 What separates `/commanders` from `/discover`.** They share a component and differ in
-  control set and order. Design calls whether that difference is still meaningful under one chassis,
-  or whether the two lanes converge.
+- **§3.5 What separates `/commanders` from `/discover`.** They share a component and one control
+  order; what differs is the control *set* (availability is owned-lane only) and the options inside
+  the order control. Design calls whether that difference is still meaningful under one chassis, or
+  whether the two lanes converge. Placement is not at issue on this pair.
 ---
 
-## §4 Constraint — the symbol glyphs have a shipped precedent, and it is not a font
+## §4 Constraint — the symbols are full-colour artwork, and that changes the mechanism
 
-The set-collections handoff (`design/design_handoff_the99_set_collections/`, 🟢 Green, audited
-2026-09-11) hit this problem with **set icons** and its readiness audit settled it:
-`svgs.scryfall.io/sets/*.svg` is a bare `<path>` with no `fill`, so it renders black on every theme.
-The resolution recorded in `docs/superpowers/readiness-set-collections.md` finding 1 is `mask-image`
-with a token background.
+**This section was rewritten after opening the endpoint. The earlier version inferred the answer from
+a neighbouring one and inferred it wrongly.**
 
-**That finding covers Scryfall's set-icon endpoint, and the mana-symbol endpoint is a different one
-that nobody here has opened.** Treat the paragraph below as an inference from a neighbouring
-endpoint, not as a verified fact: it is the likely case and it is cheap to confirm, and engineering
-should confirm it before Design commits to a recolouring approach. If the symbol SVGs turn out to
-carry their own fills, the masking route still works but the assets need stripping first, and if
-they carry multiple paths per symbol — hybrid pips plausibly do — masking may not survive contact
-with a two-colour glyph at all.
+The set-collections audit established that `svgs.scryfall.io/sets/*.svg` is a bare `<path>` with no
+`fill`, renders black on every theme, and needs `mask-image` with a token background
+(`docs/superpowers/readiness-set-collections.md` finding 1). That is true, and it is about **set
+icons**.
 
-**On that assumption, mana symbols inherit the ruling.** Design should draw the pips as token-coloured masks, not as
-inline art with baked fills, or they will be black in all six themes. The colour a pip carries is a
-`var(--*)` value like every other ink in the app.
+**Mana symbols are a different endpoint and a different kind of asset.**
+`svgs.scryfall.io/card-symbols/W.svg` is a `<circle fill='#F8F6D8'>` — the cream mana-pip ground —
+with the symbol drawn over it in a darker path. Hybrid symbols carry two: `WU.svg` opens with a blue
+`#C1D7E9` half and a cream `#F8F6D8` half. These are finished, multi-colour illustrations that
+already carry Magic's own canonical pip colours.
 
----
+**So they are used as images, not as masks.** A single token-coloured mask cannot preserve a
+two-tone hybrid pip, and flattening a white pip to one colour would destroy the thing that makes it
+recognisable. The consequences for Design:
+
+- **These assets are theme-independent.** A white mana symbol is cream in all six themes, because
+  that is what the symbol *is*. This is the one place in the app where ink does not take a `var(--*)`
+  colour, and it is correct here.
+- **The design problem moves to the surround.** Since the pip cannot adapt, the chassis around it
+  must — selected and unselected states, focus rings, and the ground the pip sits on all have to work
+  against a fixed cream-and-black palette in six themes, the darkest and lightest included.
+- **A webfont is still out**, but for a plainer reason than the masking one: these are colour assets,
+  and a font would give monochrome glyphs.
 
 ## §5 Dependency — set collections will extract the colour filter first
 
@@ -119,7 +128,7 @@ treatment lands on.
 
 ---
 
-## §6 Out of scope
+## Out of scope
 
 **`src/components/ui/cost-pips.tsx` is not in this handoff.** It draws mana cost on decklist rows and
 card rows as coloured circles with numerals, and it is being worked in a separate track. Whether the

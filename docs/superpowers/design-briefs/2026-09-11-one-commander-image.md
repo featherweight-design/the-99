@@ -37,14 +37,14 @@ status or a downstream brief cites a total, it cites this one.
 | 14 | `decks/create-pre-filled.tsx:167` | **none** | `220px` 63/88 card with a drop shadow, inside `hidden md:block` (`:162`) |
 | 15 | `decks/partner-slot.tsx:96` | **none** | The partner commander, `center top/cover` over `--elevated` |
 
-**How this list was built, and the four ways it was got wrong first.** It is a case-insensitive
+**How this list was built, and the four ways we first got it wrong.** It is a case-insensitive
 sweep of every `url(...)` and `cssUrl(...)` background over `src/components` and `src/app`, filtered
 by hand to the ones showing a *commander* rather than an arbitrary card. The failures are recorded
 because each was a plausible method: enumerating `ArtWash`'s consumers cannot by construction see a
 render that draws commander art *without* the wash; keying on `c.imageUri` missed the pre-filled
 create flow, which names the value bare; a case-sensitive sweep for `imageUri` missed
-`deck-rail.tsx`, whose field is `commanderImageUri`; and every pass before this one missed the two
-renders that are not the first one in their file.
+`deck-rail.tsx`, whose field is `commanderImageUri`; and every pass before this one missed renders that are not
+the first in their file — there are three such files, holding rows 4–5, 11–12 and 13–14.
 
 **Excluded deliberately** — these draw *a card*, not *a commander*: `collection/grid-view.tsx:60`,
 `decks/hover-preview.tsx:172`, `decks/deck-card-tile.tsx:159`, `decks/suggestion-tile.tsx:251`,
