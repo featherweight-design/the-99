@@ -50,6 +50,7 @@ filtering, and it spends it on the surface whose content — deck art — most w
    consistency being bought is the frame, the control vocabulary, the panel behaviour and the sort
    affordance, not a forced-identical dimension set.
 3. **Set filtering comes to `/commanders`.** The one dimension being added rather than rearranged.
+   **Its matching rule is not yet settled — see §6.**
 4. **The `/decks` sidebar goes.** The width it returns belongs to deck art. See the sibling brief
    `2026-09-11-one-commander-image.md`, which spends it.
 5. **Real mana symbols replace the abstract swatches.** Recognisability beat bespoke: these are the
@@ -115,3 +116,35 @@ card rows as coloured circles with numerals, and it is being worked in a separat
 cost pips adopt the same symbol glyphs is a real question and a good one — it is deferred so the two
 tracks do not collide on one file. Design should draw the filter pips as if that answer will
 eventually be yes, so the two can converge without a redraw.
+
+
+---
+
+## §6 Open — what "filter commanders by set" actually matches
+
+The decision to add set filtering to `/commanders` was locked without a matching rule, and the data
+model does not supply an obvious one. Commander rows come from `cards`, which is **oracle-level** —
+`src/db/schema.ts:56-58` states outright that it holds "one arbitrary printing per oracle_id and
+therefore cannot answer 'which art does this collection actually own?'". Set code lives on
+`printings.setCode` (`:65`), and a commander may have many printings across many sets. So "is this
+commander in Dominaria United?" has at least three defensible answers:
+
+1. **Any printing.** The commander is offered if it was ever printed in the selected set. Widest, and
+   ignores what the player owns.
+2. **An owned printing.** The commander is offered only if a copy the player owns is from that set.
+   Narrowest, and the only one that answers "what can I build from this set's cards".
+3. **The representative printing.** Whatever `cards` happens to carry. Cheapest, and **wrong** — the
+   row is arbitrary by the schema's own admission, so the same commander would appear or vanish based
+   on which printing the ingest happened to pick.
+
+**Engineering's read is that (2) is the answer, and it has a shipped precedent to lean on.** The
+printed-name work (PRs #509–#511) established that the app names and draws a card as *the copy the
+player owns*, not as its oracle record. A set filter that matched printings the player has never
+held would contradict that on the same surface, in the same session.
+
+**This brief does not close it, because the choice is visible.** Under (2) a set filter on
+`/discover` — the lane of commanders you do *not* own — filters on nothing, which is either a
+reason to scope the dimension to the owned lane or a reason to pick (1) there. Design should call
+whether the control appears on both lanes and what it means on each. **There is a second half to the
+same question**: whichever printing satisfies the match is not necessarily the one whose art the row
+draws, and a row that matches on a set while showing another set's art is a visible contradiction.

@@ -7,64 +7,64 @@ source of truth the Claude Design handoff prompt points at.
 that commit, not recalled.
 
 Hugh's words: *"right now we render the 'commander' image differently in several places and it
-doesn't look uniform."* He is right, and the count is thirteen renders across eleven surfaces.
+doesn't look uniform."* He is right, and the count is **fifteen renders across twelve files**.
 
-**This inventory was built by sweeping every `url(...)` and `cssUrl(...)` background across
-`src/components` and `src/app`, not by listing `ArtWash`'s consumers and not by matching a
-particular variable name.** Three passes were needed to get here and each failure is worth knowing:
-enumerating `ArtWash` consumers cannot by construction see a surface that draws commander art
-*without* the wash, and a follow-up sweep keyed on `commanderImageUri`/`c.imageUri` still missed the
-pre-filled create flow, which names the same value bare as `imageUri`.
-
-Two surfaces are deliberately excluded because they draw *a card*, not *a commander*: the collection
-grid (`collection/grid-view.tsx:60`), which tiles everything you own, and the decklist hover preview
-(`decks/hover-preview.tsx:172`), which previews whichever row is under the cursor.
+**The unit is a render, not a surface.** Earlier drafts counted "surfaces" and could not keep the
+number stable, because a route, a component and a breakpoint variant are three different things and
+this brief needs the one Design actually draws: a distinct image box in the code, with its own size
+and treatment. Two renders in one file at two breakpoints are two rows here. Where the pipeline
+status or a downstream brief cites a total, it cites this one.
 
 ---
 
-## §1 Every surface that draws a commander image
+## §1 Every render of a commander's image
 
-`ArtWash` (`src/components/ui/art-wash.tsx:254`) offers two strategies, and the surfaces split
-across them almost evenly:
-
-| Surface | File | Strategy | Treatment today |
+| # | Render | Strategy | Treatment today |
 |---|---|---|---|
-| Home hero | `home/hero-commander.tsx:56` | `cover` | Large cover band |
-| Commander detail — **mobile** | `commanders/detail.tsx:241` | `cover` | Art header band, inside `sm:hidden` (`:236`) |
-| Commander detail — **desktop** | `commanders/detail.tsx:458-475` | **neither** | A full 63/88 card image from `c.imageUri`, in a sticky column — no wash, its own shadow |
-| Deck card | `decks/deck-card.tsx:151` | `cover` | Cover band |
-| Deck spine — **mobile** | `decks/spine-mobile.tsx:122` | `cover` | Cover band |
-| Deck spine — **desktop** | `decks/spine-desktop.tsx:114` | `left-portrait` | Portrait band |
-| Commander rec card | `commanders/rec-card.tsx:145` | `left-portrait` | Band at a hard `height: 148` |
-| Discovery row | `commanders/discovery-row.tsx:347` | `left-portrait` | Row-height band |
-| Home resume row | `home/resume-decks.tsx:97` | `left-portrait` | Portrait at the band's own height |
-| Home deck rail | `home/deck-rail.tsx:131` | **neither** | A `36×26` span carrying its own background, inside a `min-h-[56px]` touch row (`:115`). Phone only — desktop draws no art at all |
-| Deck create picker | `decks/create-picker.tsx:524` | **neither** | A `34×48` thumb on mobile, `40×56` on desktop, with an inset hairline and the shared gradient fallback |
-| Pre-filled create — **mobile** | `decks/create-pre-filled.tsx:138` | **neither** | A `58×81` thumb inside an `md:hidden` block (`:129`) |
-| Pre-filled create — **desktop** | `decks/create-pre-filled.tsx:167` | **neither** | A `220px` 63/88 card with a drop shadow, inside `hidden md:block` (`:162`) |
+| 1 | `home/hero-commander.tsx:58` | `cover` | Large cover band |
+| 2 | `home/resume-decks.tsx:99` | `left-portrait` | Portrait at the band's own height |
+| 3 | `home/deck-rail.tsx:131` | **none** | A `36×26` span with its own background, inside a `min-h-[56px]` touch row (`:115`). Phone only — desktop draws no art |
+| 4 | `commanders/detail.tsx:249` | `cover` | Art header band, inside `sm:hidden` (`:236`) |
+| 5 | `commanders/detail.tsx:469` | **none** | A full 63/88 card face from `c.imageUri` in a sticky desktop column, with its own drop shadow |
+| 6 | `commanders/discovery-row.tsx:349` | `left-portrait` | Row-height band |
+| 7 | `commanders/rec-card.tsx:147` | `left-portrait` | Band at a hard `height: 148` |
+| 8 | `decks/deck-card.tsx:153` | `cover` | Cover band |
+| 9 | `decks/spine-mobile.tsx:128` | `cover` | Cover band |
+| 10 | `decks/spine-desktop.tsx:116` | `left-portrait` | Portrait band |
+| 11 | `decks/create-picker.tsx:524` | **none** | Candidate row thumb, `34×48` mobile / `40×56` desktop |
+| 12 | `decks/create-picker.tsx:644` | **none** | Selected-summary art, `44×62` |
+| 13 | `decks/create-pre-filled.tsx:138` | **none** | `58×81` thumb inside `md:hidden` (`:129`) |
+| 14 | `decks/create-pre-filled.tsx:167` | **none** | `220px` 63/88 card with a drop shadow, inside `hidden md:block` (`:162`) |
+| 15 | `decks/partner-slot.tsx:96` | **none** | The partner commander, `center top/cover` over `--elevated` |
 
-**Five of the thirteen renders draw no wash at all** — the deck rail's phone spine, the create
-picker's thumb, both halves of the pre-filled create flow, and the commander detail page's desktop
-column, which renders a full card face rather than a cropped band. All five are in scope: the
-complaint is that a commander's image looks different from place to place, and these are five of the
-places. **Both deck-creation entry points are among them**, which means the surface where a player
-first commits to a commander is currently the least designed. The picker's thumb and the rail's span
-are the two smallest images in the app, the useful low end for §3.1.
+**How this list was built, and the four ways it was got wrong first.** It is a case-insensitive
+sweep of every `url(...)` and `cssUrl(...)` background over `src/components` and `src/app`, filtered
+by hand to the ones showing a *commander* rather than an arbitrary card. The failures are recorded
+because each was a plausible method: enumerating `ArtWash`'s consumers cannot by construction see a
+render that draws commander art *without* the wash; keying on `c.imageUri` missed the pre-filled
+create flow, which names the value bare; a case-sensitive sweep for `imageUri` missed
+`deck-rail.tsx`, whose field is `commanderImageUri`; and every pass before this one missed the two
+renders that are not the first one in their file.
 
-**The deck spine renders a different strategy on each breakpoint** — `cover` on mobile,
-`left-portrait` on desktop. One surface, two treatments, decided by viewport. That is the single
+**Excluded deliberately** — these draw *a card*, not *a commander*: `collection/grid-view.tsx:60`,
+`decks/hover-preview.tsx:172`, `decks/deck-card-tile.tsx:159`, `decks/suggestion-tile.tsx:251`,
+`decks/card-search-row.tsx:115`, `cards/card-modal.tsx:1026`, `cards/printing-region.tsx:459`.
+`ui/art-wash.tsx` is the shared primitive the table's strategies refer to, not a render of its own.
+
+**Seven of the fifteen draw no wash at all** — nearly half. They are rows 3, 5, 11, 12, 13, 14 and
+15, and the pattern in that list is the finding: **every deck-creation surface is among them.** The
+picker's candidate thumb, the picker's selected summary, both halves of the pre-filled flow and the
+partner slot are the screens where a player chooses and commits to a commander, and not one of them
+has been through the wash system at all. Commander detail's desktop column and the deck rail's phone
+span are the other two.
+
+**The deck spine renders a different strategy on each breakpoint** — `cover` at row 9,
+`left-portrait` at row 10. One component, two treatments, decided by viewport. That is the single
 clearest instance of the problem this brief exists to fix, and it is not the only one. Home stacks a
 `cover` hero directly above a `left-portrait` resume row in the same column — `HeroCommander` renders
 inside `ReadyToBuild`, and `dashboard.tsx:111-115` places `ResumeDecks` beneath it — so the two
 treatments meet vertically, with nothing between them to explain why they differ. Commander detail
 switches between a washed band and a bare card face across a single breakpoint.
-
-The wash itself is already parameterised for most of what is being asked: `LabelEdge` is
-`"top" | "bottom"` (`art-wash.tsx:227-248`), and `bottomScrimStops(labelAt)` (`:55`) ramps from
-wherever the label block starts. The system can express the target; the surfaces just do not agree
-on what to ask it for.
-
----
 
 ## §2 Decisions locked in the workshop
 
@@ -90,8 +90,8 @@ on what to ask it for.
 
 ## §3 What Design is being asked to call — open
 
-- **§3.1 The height, and whether one number serves all thirteen renders.** A single fixed height across a
-  home hero, a 36px rail span, a 34px picker thumb and a 220px 63/88 card face is unlikely. Design should name the smallest set of sizes that still
+- **§3.1 The height, and whether one number serves all fifteen renders.** A single fixed height across a
+  home hero, a 26px-wide rail span, a 34px picker thumb and a 220px 63/88 card face is unlikely. Design should name the smallest set of sizes that still
   reads as one treatment, and say what governs which surface gets which.
 - **§3.2 The label block at the bottom edge, per surface.** What survives the condense at each size:
   which surfaces state the deck's status, which state a count, which state only a name.
@@ -130,5 +130,5 @@ amendments explicitly so the audit can check them one by one rather than re-deri
 
 The home redesign (Group D of the same workshop: "Pick up where you left off" reshaped to 3–4 decks,
 the Your Decks rail removed, a stats block added on both frames) renders commander images in three of
-the thirteen renders above. It is briefed **after** this lands so it draws the new treatment rather than
+the fifteen renders above. It is briefed **after** this lands so it draws the new treatment rather than
 the one being replaced.
