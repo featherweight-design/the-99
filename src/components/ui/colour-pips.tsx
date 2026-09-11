@@ -71,7 +71,11 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
             // an unlit pip is the symbol at full strength, which is what makes it
             // legible on every ground in every theme.
             className={[
-              "cursor-pointer rounded-full border-0 p-0 transition-shadow",
+              // `shrink-0` is load-bearing, not tidiness: these are flex items
+              // in the chassis's control row, which is deliberately allowed to
+              // compress. Without it a narrow row would shrink the inline width
+              // below the 44px the phone form promises as a touch target.
+              "shrink-0 cursor-pointer rounded-full border-0 p-0 transition-shadow",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
             ].join(" ")}
             // The symbol is a background rather than an `<img>`: it is

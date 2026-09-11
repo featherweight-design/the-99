@@ -48,6 +48,15 @@ describe("ColourPips", () => {
     expect(screen.getAllByRole("switch")[0].style.width).toBe("44px");
   });
 
+  it("never shrinks below its promised size in a compressed row", () => {
+    // The pips are flex items in a control row that is allowed to compress.
+    // Default `flex-shrink: 1` would take the phone form under its 44px target.
+    render(<ColourPips value={[]} onToggle={() => {}} form="sheet" />);
+    for (const pip of screen.getAllByRole("switch")) {
+      expect(pip.className).toContain("shrink-0");
+    }
+  });
+
   it("toggles by hue code", () => {
     const onToggle = vi.fn();
     render(<ColourPips value={[]} onToggle={onToggle} form="wide" />);
