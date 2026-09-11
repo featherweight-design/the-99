@@ -163,7 +163,11 @@ const ROUTES = [
   ["home", "/"],
   ["decks", "/decks"],
   ["commanders", "/commanders"],
-  ["discover", "/commanders?lane=discover"],
+  // `/discover`, not `/commanders?lane=discover`. The two lanes became two
+  // routes; that query parameter is not one the app reads, so the entry loaded
+  // `/commanders` a second time and every discovery row went unchecked while the
+  // report named them.
+  ["discover", "/discover"],
 ];
 
 const VIEWPORTS = [
