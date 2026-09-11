@@ -80,7 +80,25 @@ const READ_WASHES = `() => {
 
 // The lift: every opacity a wash is allowed to compute. A value outside this set
 // means one of the two files that carry these numbers moved without the other.
-const LIFTED_OPACITIES = [1, 0.8, 0.92, 0.28, 0.95, 0.22];
+// 0.28 and 0.22 were the `left-portrait` ambient layer's, and that layer is gone
+// — a band-wide second scaling of the crop behind the portrait, which read as a
+// double image. Either value computing again is that layer returning.
+const LIFTED_OPACITIES = [1, 0.8, 0.92, 0.95];
+
+/** Every band on the page, with how many art layers inside it resolved a crop
+    URL. A `left-portrait` band draws exactly one: the masked portrait. Two is
+    the double image this probe now guards against, and it is invisible to the
+    unit tests — jsdom loads no images, so both layers are equally blank there. */
+const READ_ART_LAYERS_PER_BAND = `() => {
+  const bands = new Map();
+  for (const l of document.querySelectorAll('.art-wash-art')) {
+    if (!l.getClientRects().length) continue;
+    if (!/url\\(/.test(getComputedStyle(l).backgroundImage)) continue;
+    const band = l.parentElement;
+    bands.set(band, (bands.get(band) ?? 0) + 1);
+  }
+  return [...bands.values()];
+}`;
 
 // The 148 band's two scrims, as the browser computes them. JSDOM applies no CSS,
 // so this is the only place the ruling is answerable: one vertical ramp at both
@@ -193,6 +211,14 @@ try {
       );
       if (offLift.length) {
         note(`  FAIL art opacity off the lifted set: ${[...new Set(offLift.map((w) => w.opacity))].join(", ")}`);
+      }
+
+      // One picture per band. Two art layers resolving a URL inside one band is
+      // the crop drawn twice at two scalings.
+      const perBand = await page.evaluate(`(${READ_ART_LAYERS_PER_BAND})()`);
+      const doubled = perBand.filter((n) => n > 1);
+      if (doubled.length) {
+        note(`  FAIL ${doubled.length} band(s) draw the crop more than once: ${doubled.join(", ")}`);
       }
 
       for (const g of gradients) {

@@ -6,11 +6,15 @@
 import { useCardDetail } from "../cards/card-detail-provider";
 import { PENDING_OPACITY } from "./pending";
 
-/** The three corners the pill sits in. `hero` is the commander page's mobile
-    art header; the two `deck-*` values are the deck header at its two widths,
-    where the pill moves out of the way of the title and the rename pencil. */
+/** The corners the pill sits in. `hero` is the commander page's mobile art
+    header and `commander-desktop` its desktop card frame; the two `deck-*`
+    values are the deck header at its two widths, where the pill moves out of the
+    way of the title and the rename pencil. */
 const PLACEMENT = {
   hero: { top: 56, right: 16 },
+  // Inside the 63/88 frame's own bottom-left. The frame has no ink of its own —
+  // the name and type line sit below it — so the pill only has the art to clear.
+  "commander-desktop": { left: 12, bottom: 12 },
   "deck-desktop": { left: 16, bottom: 14 },
   "deck-mobile": { top: 13, right: 16 },
 } as const;

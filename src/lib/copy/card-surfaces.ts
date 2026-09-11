@@ -6,6 +6,8 @@
 // draws four pips and a `+N` but speaks every symbol. A reader who cannot see
 // the pips is the one reader for whom truncation is not a trade.
 
+import { frontFaceCost } from "../cards/faces";
+
 const SYMBOL: Record<string, string> = {
   W: "white",
   U: "blue",
@@ -114,7 +116,9 @@ function speakSymbol(symbol: string): string {
  * missing label.
  */
 export function spokenManaCost(cost: string | null | undefined): string {
-  const symbols = [...(cost ?? "").matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+  // The same half the pips draw. A label that spoke both halves of an Adventure
+  // would describe a cost the run beside it does not show.
+  const symbols = [...frontFaceCost(cost ?? "").matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
   if (symbols.length === 0) return manaCopy.costNone;
   return manaCopy.costAria(symbols.map(speakSymbol).join(" "));
 }

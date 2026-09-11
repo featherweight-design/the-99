@@ -114,12 +114,26 @@ export function CommandersView({
   );
 
   // One parameter object for the whole rack, seeded off the URL. `avail` is the
-  // exception: the server decides which ranking it prepared — it forces `all`
-  // when the deck read failed — so the prop wins over the parsed value.
-  const [params, setParams] = useState<LaneParams>(() => ({
-    ...parseLaneParams(search, "owned"),
-    avail: initialAvail,
-  }));
+  // exception, and the rule has two halves: the URL is the reader's request, the
+  // prop is the server's statement of what it could prepare, and a request is
+  // honoured only where the payload can serve it — `availOk` false, or a null
+  // `freeRanking`, means there is no second ranking to switch to.
+  //
+  // The prop cannot be the only input. Flipping to `Free cards only` mirrors
+  // itself into the URL through `history.replaceState`, which Next adopts into
+  // router state without re-rendering the tree — so the cached tree behind that
+  // URL is still the one the server sent for the default lane. Coming back to
+  // this page from a commander restores exactly that tree, and a seed that took
+  // the prop alone put the reader back on `All my cards` while the URL beside it
+  // still read `a=free`.
+  const [params, setParams] = useState<LaneParams>(() => {
+    const parsed = parseLaneParams(search, "owned");
+    const canRankFree = availOk && freeRanking !== null;
+    return {
+      ...parsed,
+      avail: parsed.avail === "free" && canRankFree ? "free" : initialAvail,
+    };
+  });
   const { colors: rawColors, avail } = params;
   const colors = useMemo(() => upper(rawColors), [rawColors]);
 

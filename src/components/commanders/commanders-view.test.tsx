@@ -337,6 +337,34 @@ describe("CommandersView ranking toggle", () => {
     expect(urls().at(-1)).toBe("/commanders?c=r&a=free");
   });
 
+  // Coming back from a commander restores the tree the server sent for the
+  // DEFAULT lane — the flip only ever mirrored itself into the URL, and Next
+  // adopts that URL without re-rendering. So the prop says `all` while the URL
+  // says `a=free`, and the reader's request is the one that has to win.
+  it("opens on the mode the URL asks for, even when the payload's prop disagrees", () => {
+    params.set("a", "free");
+    try {
+      const all = results(3);
+      view(all, { avail: "all", freeItems: [all[2], all[0], all[1]] });
+      for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+      expect(cards()[0]).toHaveTextContent("General 2");
+    } finally {
+      params.delete("a");
+    }
+  });
+
+  // `?a=free` is a request, not a promise — the same rule the flip itself
+  // follows. With no second ranking to switch to there is nothing to honour.
+  it("refuses the URL's request when no free ranking was produced", () => {
+    params.set("a", "free");
+    try {
+      view(results(3), { avail: "all", freeItems: null, availOk: false });
+      for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    } finally {
+      params.delete("a");
+    }
+  });
+
   it("ranks against the free list once the server sends one", () => {
     const all = results(3);
     const free = [all[2], all[0], all[1]];
