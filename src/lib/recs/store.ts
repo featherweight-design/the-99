@@ -262,6 +262,12 @@ export async function loadScores(
  * already thrown away. One stale row refuses the whole set and the caller falls
  * through to the computed list.
  *
+ * BOTH sentinels, for that same reason. `loadScores` condemns a set for an
+ * unwritten `rank_score` as well as for an older writer, and a window that knew
+ * only about one of them would hand a detail page a rank off a set the list is
+ * recomputing — the two surfaces disagreeing about one commander, which is the
+ * failure this whole rule exists to prevent.
+ *
  * The built exclusion is here because the store deliberately HOLDS built
  * commanders — it is what `persistScores` writes from, and dropping them there is
  * what used to evict a commander permanently when a deck was built around it —
@@ -281,7 +287,10 @@ export function rankableScoreRows(userId: string) {
     sql`not exists (
       select 1 from ${commanderScores} stale
       where stale.user_id = ${userId}
-        and stale.writer_version < ${SCORE_WRITER_CURRENT}
+        and (
+          stale.writer_version < ${SCORE_WRITER_CURRENT}
+          or stale.rank_score < ${0}
+        )
     )`,
     notBuiltBy(userId, commanderScores.oracleId),
   );

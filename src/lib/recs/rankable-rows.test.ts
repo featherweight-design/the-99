@@ -30,6 +30,13 @@ describe("rankableScoreRows", () => {
     expect(sql).not.toMatch(/"commander_scores"\."writer_version"\s*=/);
   });
 
+  // `loadScores` condemns a set for an unwritten rank score too — the sentinel
+  // 0017's rollout window could leave behind. A window that knew only about the
+  // writer version would rank off a set the list is recomputing.
+  it("refuses a set holding an unwritten rank score, as the list does", () => {
+    expect(emitted().sql).toContain("rank_score <");
+  });
+
   it("counts the window over unbuilt commanders only", () => {
     const sql = emitted().sql;
     expect(sql).toContain("commander_oracle_id");

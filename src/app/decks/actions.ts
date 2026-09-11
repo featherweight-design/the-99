@@ -820,7 +820,7 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   // Locking the deck row keeps the read and the write atomic, the same way
   // addCardToDeck does — the returned count is what the Undo toast reports, and
   // a hand-add racing it would otherwise make that number a guess.
-  return await db.transaction(async (tx) => {
+  const restored = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     // Only the ids being restored. The read exists to say which of them the
     // insert's conflict clause will skip, and with the cap gone the rest of the
@@ -831,15 +831,20 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     // A card the player re-added by hand before clicking Undo is skipped by the
     // conflict clause, so it is not part of what this restore put back.
     const here = new Set(present.map((r) => r.oracleId));
-    const restored = [...byId]
+    const count = [...byId]
       .filter(([oracleId]) => !here.has(oracleId))
       .reduce((n, [, quantity]) => n + quantity, 0);
     await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing();
-    revalidateClaims(deckId, userId);
-    return restored;
+    return count;
   });
+  // AFTER the commit, never inside it. An invalidation from inside the callback
+  // drops the caches while the write is still uncommitted, and a render arriving
+  // in that window refills them from the rows as they were — leaving exactly the
+  // staleness the invalidation was for, until some later write.
+  revalidateClaims(deckId, userId);
+  return restored;
 }
 
 /** Places exactly the cards the player ticked, as one act.
@@ -913,10 +918,13 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       deckId, kind: "top_off", openSlots: bodySize - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
-    revalidateClaims(deckId, userId);
     return { passId, landed, total: built + landed.length, userId };
   });
 
+  // After the commit. Inside the callback it drops the caches while the write is
+  // still uncommitted, and a render arriving in that window refills them from the
+  // rows as they were.
+  revalidateClaims(deckId, userId);
   return landedIds;
 }
 
@@ -1112,12 +1120,15 @@ export async function undoFillPass(
       .from(deckCards)
       .where(eq(deckCards.deckId, deckId));
 
-    // The shopping list is derived from deck membership, so this is also what
-    // gives the player their money back — nothing separate restores it.
-    revalidateClaims(deckId, userId);
     return { removed: removedCards, built: built?.copies ?? 0 };
   });
 
+  // The shopping list is derived from deck membership, so this is also what
+  // gives the player their money back — nothing separate restores it. After the
+  // commit: from inside the callback it drops the caches while the write is still
+  // uncommitted, and a render arriving in that window refills them from the rows
+  // as they were.
+  revalidateClaims(deckId, userId);
   return result;
 }
 
