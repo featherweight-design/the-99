@@ -108,8 +108,11 @@ route · the desktop trigger is beyond the brief and can be dropped alone.
 
 ## Not blocking, across all four
 
-- **No new token, no new key, no new hex beyond one value, no new motion class, no new modal, no
-  toast, no new empty-state construct, no schema change, and no `--danger` anywhere.**
+- **No new token, no new hex beyond one value, no new motion class, no new modal, no
+  toast, no new empty-state construct, no schema change, and no `--danger` anywhere. No new
+  copy key** — except the one pair added by the errata below.
+- **Errata 2026-09-10:** amendment 2 has since gained exactly one copy key pair,
+  `update.diff.recounted` / `recountedItem`, closing Gap 2 (see STATES-reimport.md).
 - The 36-key theme contract stays at 36 keys.
 - Untouched: `celebration.ts`, `availability.ts`, `fill.ts`, `last-slots.ts`, `suggest.ts`,
   `RollupBands`, the role counter strip, `ColorPip`, `OwnershipDot`, `AvailabilityGlyph`,

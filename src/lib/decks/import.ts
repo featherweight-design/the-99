@@ -70,9 +70,10 @@ export type DeckImport = {
     oracleText: string | null;
   }[];
   /**
-   * Set when the source names its own commander (`*CMDR*`, or a `Commander`
-   * section). When it is set the picker is skipped entirely — a confirmation
-   * step for a fact we already have is friction.
+   * Set when the source names its own commander — `*CMDR*`, a trailing
+   * `(Commander)`, or a `Commander` section. When it is set the picker is
+   * skipped entirely: a confirmation step for a fact we already have is
+   * friction.
    */
   declaredCommander: DeclaredCommander | null;
   /**
@@ -91,7 +92,8 @@ export type DeckImport = {
 };
 
 export type DeckImportInput = { catalog: ImportCatalogCard[]; indexes?: MatchIndexes } & (
-  // Paste and text-file modes, where section markers and *CMDR* are visible.
+  // Paste and text-file modes, where section markers and inline commander
+  // markers are visible.
   | { text: string; rows?: never }
   // CSV mode, already normalised to the parser's row shape. A CSV carries no
   // section markers, so none are looked for.
@@ -114,6 +116,26 @@ const SECTION_MARKERS: { re: RegExp; section: "sideboard" | "maybeboard" | null 
  */
 const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
 const SET_CODE_RE = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★†★-]+)?$/;
+
+/**
+ * The same declaration in round brackets, after the printing identity:
+ * `1 Rootha, Mastering the Moment (SOC) 8 (Commander)`. ManaBox writes decks
+ * this way, and it is the shape a player exporting from their collection app
+ * brings here.
+ *
+ * Missing it costs more than a missed flag. The tag sits past the set code, so
+ * SET_CODE_RE's end anchor fails too and the whole tail stays glued to the
+ * name — the deck's own commander arrives as a line we cannot name, which is
+ * exactly what an update diff should never say about it.
+ *
+ * Narrow on purpose: this word in full, and only in a trailing bracket. Any
+ * parenthetical is a card name's business, and a two-to-six-character one is
+ * already a set code — which is exactly why `(CMDR)` is not read here. The
+ * abbreviation fits the set-code shape, so claiming it would take a printing
+ * identity away from SET_CODE_RE. The asterisk spelling of the abbreviation is
+ * unambiguous and is still read, by ANNOTATION_RE.
+ */
+const COMMANDER_TAG_RE = /\s+\(commander\)$/i;
 
 /**
  * Reduces a candidate header to the bare word the markers match.
@@ -172,9 +194,22 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
 
     let body = trimmed;
     let isCommander = false;
-    for (let m = ANNOTATION_RE.exec(body); m; m = ANNOTATION_RE.exec(body)) {
-      if (m[1].toUpperCase() === "CMDR") isCommander = true;
-      body = body.slice(0, m.index);
+    // One loop over both spellings: a line can carry an asterisk flag and a
+    // bracketed tag, in either order, and stripping one can expose the other.
+    for (;;) {
+      const annotation = ANNOTATION_RE.exec(body);
+      if (annotation) {
+        if (annotation[1].toUpperCase() === "CMDR") isCommander = true;
+        body = body.slice(0, annotation.index);
+        continue;
+      }
+      const tag = COMMANDER_TAG_RE.exec(body);
+      if (tag) {
+        isCommander = true;
+        body = body.slice(0, tag.index);
+        continue;
+      }
+      break;
     }
     body = body.replace(SET_CODE_RE, "");
     lines.push({ text: body, isCommander });
@@ -191,7 +226,8 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
 export function buildDeckImport(input: DeckImportInput): DeckImport {
   let rows: CollectionRow[];
   let notes: ImportNote[] = [];
-  // Lines a `Commander` header or a `*CMDR*` flag marked as the deck's leader.
+  // Lines a `Commander` header, a `*CMDR*` flag or a trailing `(Commander)`
+  // marked as the deck's leader.
   const commanderLines = new Set<number>();
 
   if (input.rows) {

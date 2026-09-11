@@ -134,7 +134,8 @@ export function UpdateDiff({
     .filter((r) => !kept.has(r.oracleId))
     .reduce((n, r) => n + r.quantity, 0);
   const arriving = preview.in.reduce((n, r) => n + r.quantity, 0);
-  const landing = preview.built - leaving + arriving + preview.unchangedDelta;
+  const recountedDelta = preview.recounted.reduce((n, r) => n + (r.to - r.from), 0);
+  const landing = preview.built - leaving + arriving + recountedDelta;
   // Rows, deliberately, and the CTA is the only place the choice is visible:
   // `19 in, 6 out` restates the group headings directly above it, so counting
   // copies here would have the button disagree with the lists it summarises.
@@ -201,6 +202,15 @@ export function UpdateDiff({
         {clamped > 0 && (
           <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
             {deckImportCopy.notes.quantityClamped(clamped)}
+          </p>
+        )}
+        {preview.recounted.length > 0 && (
+          <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+            {copy.recounted(
+              preview.recounted
+                .map((r) => copy.recountedItem(r.name, String(r.from), String(r.to)))
+                .join(", "),
+            )}
           </p>
         )}
         {extraCommanders > 0 && (

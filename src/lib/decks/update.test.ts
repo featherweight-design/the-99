@@ -71,9 +71,10 @@ describe("planDeckUpdate", () => {
     expect(result.in[0].name).toBe("Swords to Plowshares");
   });
 
-  // A real list only changes the count of basics, and a diff announcing "your
-  // Islands went 12 → 9" would bury the cards that actually left the deck.
-  it("reconciles a quantity change silently, as unchanged", () => {
+  // A real list only changes the count of basics, and a diff listing "your
+  // Islands went 12 → 9" among the departures would bury the cards that
+  // actually left the deck.
+  it("reconciles a quantity change as unchanged, not as a departure", () => {
     const result = plan({
       parsed: parsed({ cards: [{ oracleId: "o-island", quantity: 9, sourceLine: 4 }] }),
       deckCards: [card("o-island", { quantity: 12 })],
@@ -88,8 +89,50 @@ describe("planDeckUpdate", () => {
     ]);
   });
 
-  // Silent in the diff, but still a write. Calling it "nothing changed" would
-  // refuse the only change this list asks for.
+  // Not a group of its own, but the copies still have to be accounted for: the
+  // landing figure is compared to 99, and a reader adding the row counts up
+  // otherwise lands somewhere the screen never explains.
+  it("collects the moved counts, with both figures", () => {
+    const result = plan({
+      parsed: parsed({
+        cards: [
+          { oracleId: "o-island", quantity: 9, sourceLine: 4 },
+          { oracleId: "o-sol-ring", quantity: 1, sourceLine: 5 },
+        ],
+      }),
+      deckCards: [card("o-island", { quantity: 12 }), card("o-sol-ring")],
+      commanderOracleId: KORVOLD,
+      deckUnresolved: [],
+      cardFor,
+    });
+    expect(result.recounted).toEqual([
+      { oracleId: "o-island", name: "Island", from: 12, to: 9 },
+    ]);
+  });
+
+  it("counts two lines naming the same card once, against the deck's figure", () => {
+    // `listed` sums the copies before this comparison runs, so four Islands
+    // over two lines is one recount to eight, not two rows saying different
+    // things.
+    const result = plan({
+      parsed: parsed({
+        cards: [
+          { oracleId: "o-island", quantity: 2, sourceLine: 4 },
+          { oracleId: "o-island", quantity: 2, sourceLine: 5 },
+        ],
+      }),
+      deckCards: [card("o-island", { quantity: 8 })],
+      commanderOracleId: KORVOLD,
+      deckUnresolved: [],
+      cardFor,
+    });
+    expect(result.recounted).toEqual([
+      { oracleId: "o-island", name: "Island", from: 8, to: 4 },
+    ]);
+  });
+
+  // Not a group of its own, but still a write. Calling it "nothing changed"
+  // would refuse the only change this list asks for.
   it("does not call a quantity-only list nothing changed", () => {
     const result = plan({
       parsed: parsed({ cards: [{ oracleId: "o-island", quantity: 9, sourceLine: 4 }] }),
@@ -110,6 +153,7 @@ describe("planDeckUpdate", () => {
       cardFor,
     });
     expect(result.noChange).toBe(true);
+    expect(result.recounted).toEqual([]);
   });
 
   // An export writes the commander into its own list. Putting it in the 99 would

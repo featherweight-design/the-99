@@ -111,6 +111,16 @@ export const updateCopy = {
           : `They come across as lines you can resolve on the deck, exactly as an import's do — and they replace the ${existing} unresolved lines this deck is carrying now.`,
 
     // ── Unchanged ─────────────────────────────────────────────────────
+    // Errata 2026-09-10, closing Gap 2 (see STATES-reimport.md). A basic whose
+    // count the list moves stays out of 'Coming out' and 'Going in' — that half
+    // of the ruling is what keeps a 12 → 9 from burying the cards that actually
+    // left. But the chips count rows and the landing figure counts copies, so a
+    // reconciled copy closed the gap between them invisibly: a real paste read
+    // 16 out, 15 in and a deck landing at 99, with nothing on the screen to
+    // account for the extra copy. This note is that account.
+    recounted: (list: string) => `Same cards, new counts: ${list}.`,
+    recountedItem: (name: string, from: string, to: string) => `${name} ${from} → ${to}`,
+
     unchangedDisclosure: (n: string) => `Show the ${n} that do not change`,
     // Every group's overflow disclosure. 'the other N' rather than 'N more':
     // the group header already printed the total, so this names the remainder.

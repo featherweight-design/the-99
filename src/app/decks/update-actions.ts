@@ -49,11 +49,11 @@ export type DeckUpdatePreview = {
   out: DeckUpdateChangedRow[];
   in: DeckUpdateChangedRow[];
   unchanged: DeckUpdateRow[];
-  /** Copies the silently-reconciled quantities add or drop, summed. Nine Islands
-   *  against a deck's twelve is -3, and the landing figure has to carry it: that
-   *  figure is compared to 99, so it is the one number that cannot be off. The
-   *  group counts stay row counts, which is what the diff's chips report. */
-  unchangedDelta: number;
+  /** The cards the list keeps but asks for a different number of, straight from
+   *  the planner. The landing figure has to carry them: it is compared to 99,
+   *  so it is the one number that cannot be off, while the group counts stay
+   *  row counts. */
+  recounted: DeckUpdatePlan["recounted"];
   unresolved: DeckUpdatePlan["unresolved"];
   noChange: boolean;
 };
@@ -177,21 +177,10 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     out: widened.out,
     in: widened.in,
     unchanged: plan.unchanged,
-    unchangedDelta: quantityDelta(rows, plan.unchanged),
+    recounted: plan.recounted,
     unresolved: plan.unresolved,
     noChange: plan.noChange,
   };
-}
-
-/** How many copies the reconciled quantities move the deck by. `unchanged` rows
- *  carry the quantity the list asks for, so this is that against what the deck
- *  holds now — the change the diff makes without narrating it. */
-function quantityDelta(
-  current: { oracleId: string; quantity: number }[],
-  unchanged: DeckUpdateRow[],
-): number {
-  const now = new Map(current.map((r) => [r.oracleId, r.quantity]));
-  return unchanged.reduce((n, r) => n + (r.quantity - (now.get(r.oracleId) ?? 0)), 0);
 }
 
 /**
