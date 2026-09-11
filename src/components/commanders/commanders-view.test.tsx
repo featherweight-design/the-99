@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { CommanderListItem } from "../../lib/recs/recommend";
@@ -403,19 +403,37 @@ describe("CommandersView ranking toggle", () => {
 
   // The primary nav pointing back at `/commanders` while the reader stands in
   // `Free cards only`. Next keeps this instance mounted for that navigation and
-  // restores the tree it already has, so nothing re-seeds — the list stayed in
-  // the free lane under a URL carrying no mode at all.
+  // restores the tree it already has, with identical props and no word from
+  // `useSearchParams` — so this drives it the way the router does, with a
+  // `pushState` and NO re-render of its own. Nothing but the subscription can
+  // notice it.
   it("follows the URL when a navigation lands on this instance", () => {
     const all = results(3);
-    const { again } = view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
     for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
 
-    // What that navigation does to the query this component reads.
-    window.history.replaceState(null, "", "/commanders");
-    again(all, { freeItems: [all[2], all[0], all[1]] });
+    act(() => {
+      window.history.pushState(null, "", "/commanders");
+    });
 
     for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
     expect(cards()[0]).toHaveTextContent("General 0");
+  });
+
+  // And the reason that matters beyond the segment reading wrong: the rack builds
+  // each control's next state from the params it was rendered with. Stale, the
+  // first interaction after the navigation writes the previous lane back into a
+  // URL the navigation had just reset.
+  it("does not write the old lane back on the first interaction after one", () => {
+    const all = results(3, ["R"]);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+
+    act(() => {
+      window.history.pushState(null, "", "/commanders");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+
+    expect(urls().at(-1)).toBe("/commanders?c=r");
   });
 
   // The mirror's effect is keyed on the params object. Derived fresh per render

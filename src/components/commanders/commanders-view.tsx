@@ -9,6 +9,7 @@ import {
   useRef,
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLiveQuery } from "../../lib/commanders/live-query";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { fromFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { filterByColors } from "../../lib/commanders/filter";
@@ -151,39 +152,34 @@ export function CommandersView({
   // face.
   //
   // Any query other than the one the edit wrote means the URL moved for a reason
-  // that is not the rack, and the overlay is dropped so the lane follows the URL
-  // again — on the next render.
+  // that is not the rack, and the overlay is dropped so the lane follows the URL.
   //
-  // MEASURED LIMIT, and it is the router's rather than this rule's. A navigation
-  // landing back on `/commanders` — the primary nav while the reader stands in
-  // `Free cards only` — does not re-render this component at all: Next serves the
-  // tree it already has, the props are identical, and `useSearchParams` does not
-  // fire for it either. Nothing here runs, so the lane stays as it was until the
-  // next render, and then follows the URL. A back navigation, which is the case
-  // that was reported, does re-render and is correct immediately.
+  // That case is reachable BECAUSE of `useLiveQuery`. A navigation landing back
+  // on `/commanders` — the primary nav while the reader stands in
+  // `Free cards only` — gives this route no new instance and no prop change, and
+  // `useSearchParams` stays silent through it. Before the subscription, nothing
+  // here ran: the lane sat in free under a URL with no mode, and the first
+  // control touched afterwards built its next state from those stale params and
+  // wrote `a=free` back into the URL the navigation had just reset. Cosmetic
+  // until it was not.
   //
-  // Two things were tried for the immediate case and neither reaches it. A key on
-  // the server: computed when the page renders, and the tree a navigation
-  // restores is the one whose key was fixed at its first render, so it never
-  // moves. A render-time comparison against `useSearchParams`: that hook is
-  // exactly what does not update here. Catching it would mean subscribing to
-  // history mutations underneath the router — machinery this page's caching rules
-  // would then have to account for, for a URL that is cosmetically behind a list
-  // nobody has touched.
+  // A key on the server was tried first and cannot reach it: the key is fixed
+  // when the tree is first rendered, and that same tree is what the navigation
+  // restores.
   const [edit, setEdit] = useState<{ query: string; params: LaneParams } | null>(null);
 
-  // `window.location`, not `useSearchParams`, for the comparison — with the hook
-  // still read, because it is what re-renders this component when the router
-  // moves. The two are the same thing a moment apart, and the moment is the
-  // whole problem: an edit writes the URL synchronously, and the hook catches up
-  // when Next adopts that write. Comparing against the hook would drop the
-  // overlay for the render in between. On the server there is no `window`, and
-  // the hook carries the request's own query, which is the same URL the client
-  // hydrates against.
-  const liveQuery =
-    typeof window === "undefined"
-      ? search.toString()
-      : new URLSearchParams(window.location.search).toString();
+  // The live query, subscribed rather than read off a hook.
+  //
+  // `useSearchParams` is not enough on its own: a navigation landing back on the
+  // route this component already occupies keeps it mounted with identical props,
+  // and that hook does not fire for it. `useLiveQuery` subscribes to the two
+  // events that actually move the URL, so such a navigation re-renders here and
+  // the lane follows it. Its own header carries why that patch is safe.
+  //
+  // It is also what an edit compares against: the edit writes the URL in the same
+  // tick, and this store reports that write on the same tick too, so the overlay
+  // below never has to be valid for more than the one query it produced.
+  const liveQuery = useLiveQuery(search.toString());
 
   // Memoised on the query it was parsed from, because this object is the URL
   // mirror's dependency: a fresh one per render would re-fire that effect on
