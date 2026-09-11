@@ -93,7 +93,7 @@ describes. A deck with no `deck_versions` row is a brew, and edits to it are liv
 
 ### Migration
 
-Existing decks at a full body (99, or 98 with a partner — `deckBodySize()`) get a v1 stamped from
+Existing decks at a full body (99, or 98 with a partner — `deckBodySize(hasPartner)`) get a v1 stamped from
 their current `deck_cards`. Brews below that get no version and keep behaving exactly as they do
 today. Stamping a brew would make a 40-card list's claims hard overnight, which is a behaviour
 change nobody asked for. Existing games keep a null `version_id`.
@@ -107,7 +107,7 @@ exactly as a brew does today.
 
 **`mature` retires.** The `>= 99 - (partner ? 1 : 0)` threshold was a guess at "is this deck
 sleeved". A committed version answers it outright. This deletes the CTE, deletes the literal that
-has to be kept in step with `deckBodySize()`, and retires the #334 commander carve-out as a
+has to be kept in step with `deckBodySize(hasPartner)`, and retires the #334 commander carve-out as a
 special case: a committed deck's commander claim is hard because the whole version is hard.
 
 **Seniority moves from `decks.created_at` to `deck_versions.committed_at`** — who sleeved the
@@ -318,9 +318,10 @@ handoff's, and the canvas wins wherever its prose and its drawing disagree.
 decklist. Only **adds** can be: a removed card is not in the draft, so it has no row. Struck-through
 ghosts would be hit targets that do nothing, on the surface that most needs to stay scannable at 101
 rows. The mark is a **2px brass left rule** — matching the shipped `border-l-2` on
-`unresolved-row.tsx:66` rather than inventing a third width — absorbed by the row's existing padding
-(`ROW_PADDING` goes `pl-[8px] md:px-[9px]` → 6px phone / 7px desktop). No row's grid template
-changes and no row grows in height. The words live in one caption above the list and in each row's
+`unresolved-row.tsx:66` rather than inventing a third width — and **nothing is absorbed**, because
+`DecklistRow` draws its marks as inset box shadows (`rowEdges`), not borders, and an inset shadow
+displaces no content. The mark is one more entry in that array: no padding, no grid template and no
+row height changes. The words live in one caption above the list and in each row's
 accessible name.
 
 **§Surfaces 2's "splitting the adds three ways" is not a grouping.** Every card list in this app
@@ -357,8 +358,10 @@ Six items. Each is a prerequisite, not a rendering detail.
    the availability model, so `Pull it` would otherwise be offered on a row where it can only ever
    fail. It takes the same mono tag reading `commander` and **no control at all**, because no route
    releases a commander — an `Open →` would lead somewhere that cannot help.
-5. **The grouping UI must be extracted first.** `grouping.ts` exports the pure helpers, but
-   `DecklistGroup` and `GroupToggle` live inside `decklist.tsx`. Three new surfaces mount them.
+5. ~~**The grouping UI must be extracted first.**~~ **Withdrawn — already shipped.**
+   `decklist-group.tsx`, `decklist-group-header.tsx` and `group-toggle.tsx` are separate modules that
+   `decklist.tsx` imports, and `groupByCardType` already sorts alphabetically within each group. The
+   three new surfaces mount them as they stand; nothing is extracted and no task is owed.
 6. **The what-changed strip needs two reads that do not exist.** It must call the deck page's own
    `computeRoleCounts` (`src/lib/decks/mix.ts`) with `ROLE_ORDER`'s shipped five — `ramp, draw,
    removal, wipes, land` — or the two strips disagree one scroll apart; `body` is not a role, and a
@@ -378,7 +381,7 @@ Six items. Each is a prerequisite, not a rendering detail.
   none, and the arrival strip is **suppressed** on a committed deck. Suppression is the caller
   declining to set `UPDATED_PARAM` (`src/lib/decks/arrival.ts:31`), not a new state.
 - **A versionless deck at a full body is offered `Commit as v1`**, brass-outline, appearing at
-  `deckBodySize()` (`src/lib/decks/deck-size.ts:7`). Auto-stamping at a full body was rejected: it
+  `deckBodySize(hasPartner)` (`src/lib/decks/deck-size.ts:7`). Auto-stamping at a full body was rejected: it
   makes a deck's claims go hard without anyone asking, which is what this design exists to prevent.
 
 ### Constraints the build inherits
@@ -387,6 +390,15 @@ Six items. Each is a prerequisite, not a rendering detail.
   (`PIP_TRACK = 40`, `PIP_CAP = 5`). The handoff's canvas draws a 110px / 76px track, which is
   `COST-TRACK.md`'s **unshipped proposal to card-rows**; these rows inherit whatever that round
   lands, and versioning is not gated on it.
+- **`update-diff-row.tsx` is the review page's row, and no second diff row is written.**
+  `OVERLAPS.md` Call 2's first consequence rules *one component, two mountings*, and its mechanical
+  checks 1 and 5 are the test: exactly one definition, both surfaces importing it, and **neither**
+  drawing a per-row type label. So the row's `Keep` button becomes an `action` slot — the update
+  flow passes the toggle, the review page passes `PullControl` — and the `typeLine` span comes off
+  `DiffRowOut`, `DiffRowIn` and `DiffRowUnchanged`, with `update-diff.tsx` grouping by card type in
+  its place. **That last part changes a shipped surface**, and it has to: the check cannot be met by
+  touching only the new page. The freed 120px is what `COST-TRACK.md` spends, and versioning is not
+  gated on that round landing.
 - **The buy tag's density is the shipped rule**: `collapsed` on a decklist row, `full` on a
   purchase-decision surface. `decklist-row.tsx:421` passes
   `density={inShopping ? "full" : "collapsed"}` and `top-off-list.tsx:805` passes `"full"` outside

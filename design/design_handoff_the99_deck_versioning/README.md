@@ -668,7 +668,14 @@ sentence you happened to read first.
 | Commit announcement | The server's **`cardCount`** is a requirement of the commit result, not a client recount | any client-side count of the announced list |
 | "Full body" test | **`deckBodySize(hasPartner)`** — 99, or 98 with a partner | a hard-coded 99 |
 | `CostPips` mounting | Pass **`track` and `cap` explicitly**; the component defaults neither | any call relying on defaults |
-| Cost-track geometry | **`COST-TRACK.md`'s own 110px / 76px figures** | the 90px / 76px pair quoted in §Surfaces and in the gap report |
+| Cost track on versioning's rows | **The shipped row constants — `PIP_TRACK = 40`, `PIP_CAP = 5`.** Versioning mounts `CostPips` as shipped and inherits whatever card-rows lands | any widened track as versioning's geometry |
+| `COST-TRACK.md`'s proposed track, when quoted | **110px desktop / 76px phone**, that document's own arithmetic. It is card-rows' unshipped proposal and governs nothing here | the 90px / 76px pair quoted in §Surfaces and in the gap report |
+| Mana value on a row | **None.** Rows draw `CostPips`' output — a generic-cost disc only when the cost has one. Mana value appears in the what-changed strip alone | §Surfaces' mana-value track, and its five-colour ceiling argument |
+| The pull action | **`pullCardFromDeck`** | `pullFromDeck`, which does not exist |
+| The what-changed strip's inputs | **It needs `cmc` in the detail select and the version's cards joined through `deck_version_cards → cards`** | §Engineering notes' "no new column, and no new query" |
+| Grouping components | **Already shipped as separate modules** — `DecklistGroup`, `DecklistGroupHeader`, `GroupToggle` — and imported by `decklist.tsx`. There is no extraction prerequisite | every instruction to extract them first |
+| The ownership dot's accessible statement | **The row's own accessible name carries the availability word**, because the dot is `aria-hidden` and the bucket headings are withdrawn | the component table's "the bucket heading is the accessible statement" |
+| Commit sheet contents | **Totals only** — no card rows; the review rows stay above it | the component table's "two lists", and state 25's "both lists stay in place" |
 | Adds-variant row width | **150px** on the adds variants | any narrower figure inherited from the base row |
 | Version history table | **No `ver` header row** — the number is the row's own leading cell | any drawing with a separate version-number column header |
 | Atom inventory | **Four new atoms plus one deletion** | the five-atom count from R1.2, which assumed a mana-value disc |

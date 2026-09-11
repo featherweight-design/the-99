@@ -24,7 +24,7 @@
 - Every UI task passes the design-review skill (enumerate → verify → confirm) before `gh pr create`, and ships mobile + desktop parity in the same PR.
 - Copy for these surfaces lives in **one new module**, `src/lib/copy/deck-versioning.ts`. Exactly two shipped strings are edited, both in `deckImportCopy.update`. No other shipped copy is touched.
 - No new token, no new hex, no modal, no toast, no virtualisation. `--danger` appears only on Discard — a removal is not an error. No count of nought is ever drawn.
-- `CostPips` is read as shipped and never forked: pass the row constants `PIP_TRACK = 40` and `PIP_CAP = 5`. The handoff's 90/76px track is `COST-TRACK.md`'s unshipped proposal to card rows; these surfaces inherit whatever that round lands and versioning is not gated on it.
+- `CostPips` is read as shipped and never forked, and it defaults **neither** `track` nor `cap` — both are passed explicitly on every mount. The two figures are `PIP_TRACK = 40` and `PIP_CAP = 5`, today **non-exported locals** in `decklist-row.tsx:50,52`. Task 14 step 1 moves them to `src/components/decks/pip-track.ts` and has `decklist-row.tsx` import them, so the three new row surfaces read one source rather than re-declaring the numbers. The handoff's widened track (110/76px by `COST-TRACK.md`'s own arithmetic) is that document's unshipped proposal to card rows; these surfaces inherit whatever that round lands and versioning is not gated on it.
 - The buy tag's shipped density rule holds: `collapsed` on a decklist row, `full` on a purchase-decision surface. The review page and the commit sheet are purchase-decision surfaces.
 - `revalidateClaims(deckId, userId)` for commit, discard and pull — never `deckSurfaces()`.
 - Focus after each write: the version line after a commit, the deck name after a discard, the row's own control after a pull.
@@ -1634,7 +1634,7 @@ that the card is that deck's commander (offer nothing at all).
 **Files:**
 - Modify: `src/lib/decks/availability.ts` (`DeckClaim`)
 - Modify: `src/lib/decks/availability-query.ts` (`claimModel`'s `all_claims` and `claim_decks_all`, plus a `pending_decks` CTE and the `claims` aggregate)
-- Modify: `scripts/probe-claims.ts`
+- Modify: `scripts/probe-claim-model.ts`
 - Test: none — this is raw SQL no unit test in this repository can reach. `pnpm probe:claims` is the proof, exactly as Task 6 established.
 
 **Interfaces:**
@@ -1743,7 +1743,7 @@ Extend the `jsonb_build_object` in `claims`:
 
 - [ ] **Step 6: Prove it against a real Postgres**
 
-Extend `scripts/probe-claims.ts` with two assertions, in the style its existing
+Extend `scripts/probe-claim-model.ts` with two assertions, in the style its existing
 checks use: after editing the fixture's senior deck's `deck_cards` away from its
 version, `loadAvailability` must report that deck's claim with `pending: true`;
 and the claim naming a deck's commander must report `commander: true`.
@@ -1759,7 +1759,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/lib/decks/availability.ts src/lib/decks/availability-query.ts scripts/probe-claims.ts
+git add src/lib/decks/availability.ts src/lib/decks/availability-query.ts scripts/probe-claim-model.ts
 git commit -m "feat(decks): say in the claim whether a pull can be offered"
 ```
 
@@ -2131,8 +2131,18 @@ export type DraftState = {
   version: DeckVersion | null;
   /** Cards the draft added, bucketed, basics excluded. */
   adds: BucketedAdd[];
+  /** The same adds as raw diff entries, index-aligned with `adds`. `BucketedAdd`
+   *  carries `needed` and `shortfall` but not the `from`/`to` pair, and both the
+   *  banner and the review row print that pair for a quantity move. */
+  addChanges: DraftChange[];
   /** Cards the draft cut, basics excluded, each carrying `from` and `to`. */
   removes: DraftChange[];
+  /** True when the draft differs from the version ONLY in basic lands. Basics are
+   *  outside the availability model, so they are excluded from every list and
+   *  every figure — but a deck whose land count moved has genuinely changed and
+   *  must still be committable. Without this flag `changeCount` is 0, the banner
+   *  takes its clean branch, and a real edit has no route to a commit. */
+  basicsChanged: boolean;
   /** Oracle name per changed card, both lists — what the banner's inline
    *  density says at six changes or fewer. */
   names: Map<string, string>;
@@ -2153,9 +2163,19 @@ export type DraftState = {
   manaValueBefore: number | null;
 };
 
-/** `adds.length + removes.length` — the figure every count chip is built on. */
+/** `adds.length + removes.length` — the figure every count chip is built on.
+ *  Basics are not in either list, so this is a count of *nameable* changes and
+ *  not a test of whether the draft differs. Use `hasChanges` for that. */
 export function changeCount(state: DraftState): number {
   return state.adds.length + state.removes.length;
+}
+
+/** Whether the draft differs from the version at all. A basics-only edit counts
+ *  here and in no figure, which is the only honest split: the app cannot price
+ *  an Island, and it must not tell a player who cut three of them that the deck
+ *  is unchanged. */
+export function hasChanges(state: DraftState): boolean {
+  return changeCount(state) > 0 || state.basicsChanged;
 }
 
 export async function loadDraftState(deckId: string, userId: string): Promise<DraftState> {
@@ -2166,7 +2186,8 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
   }).from(deckCards).where(eq(deckCards.deckId, deckId));
 
   const empty: DraftState = {
-    version, adds: [], removes: [], names: new Map(),
+    version, adds: [], addChanges: [], removes: [], basicsChanged: false,
+    names: new Map(),
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
     manaValue: null, manaValueBefore: null,
   };
@@ -2189,6 +2210,13 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
   const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
   const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
   const names = new Map(facts.map((f) => [f.oracleId, f.name]));
+
+  // A basics-only edit: real, committable, and priceable by nothing. Every list
+  // and every figure stays empty, and `basicsChanged` is the one signal that
+  // says the draft differs — see `hasChanges`.
+  if (adds.length === 0 && removes.length === 0) {
+    return { ...empty, basicsChanged: basics.size > 0 };
+  }
 
   // Scoped to the adds, and excluding this deck: the question is what OTHER
   // decks hold, which is the same question the commit asks.
@@ -2226,7 +2254,11 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
   return {
     version,
     adds: bucketed,
+    // Index-aligned with `bucketed` because `bucketAdds` maps `adds` one to one
+    // and preserves its order — this is the list it was given.
+    addChanges: adds,
     removes,
+    basicsChanged: false,
     names,
     buyCount: unfree.reduce((n, a) => n + a.shortfall, 0),
     unfreeCount: unfree.length,
@@ -2282,7 +2314,23 @@ export type DraftRow = DeckDetailCard & {
   bucket: BucketedAdd["bucket"] | null;
 };
 
-export type DraftRows = { state: DraftState; rows: DraftRow[] };
+/** Split at the source, not in the component. The review page draws two columns
+ *  and every consumer would otherwise filter on `direction` itself — which is
+ *  one `in`/`out` split per surface and a chance for two of them to disagree. */
+export type DraftRows = {
+  state: DraftState;
+  rows: { in: DraftRow[]; out: DraftRow[] };
+};
+
+/** The `from`/`to` pair behind an add. `BucketedAdd` carries `needed` and
+ *  `shortfall` but not the pair, so read it off `addChanges` — the raw diff
+ *  `bucketAdds` was given — rather than recomputing the diff. An oracle id that
+ *  is not an add has no pair, and `0 → 0` is the honest answer for a caller
+ *  that asked the wrong question. */
+function findChange(state: DraftState, oracleId: string): { from: number; to: number } {
+  const change = state.addChanges.find((c) => c.oracleId === oracleId);
+  return { from: change?.from ?? 0, to: change?.to ?? 0 };
+}
 
 /**
  * Every changed card with the facts a row draws.
@@ -2295,7 +2343,7 @@ export type DraftRows = { state: DraftState; rows: DraftRow[] };
 export async function loadDraftRows(deckId: string, userId: string): Promise<DraftRows> {
   const state = await loadDraftState(deckId, userId);
   const changed = [...state.adds, ...state.removes].map((c) => c.oracleId);
-  if (changed.length === 0) return { state, rows: [] };
+  if (changed.length === 0) return { state, rows: { in: [], out: [] } };
 
   const facts = await db.select({
     oracleId: cards.oracleId,
@@ -2314,14 +2362,14 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
   }).catch(() => null);
   const priced = await loadPrices(changed).catch(() => null);
 
-  const rows: DraftRow[] = [];
+  const built: DraftRow[] = [];
   for (const fact of facts) {
     const add = state.adds.find((a) => a.oracleId === fact.oracleId);
     const remove = state.removes.find((r) => r.oracleId === fact.oracleId);
     const change = add
-      ? { from: 0, to: 0, ...findChange(state, fact.oracleId) }
+      ? findChange(state, fact.oracleId)
       : { from: remove!.from, to: remove!.to };
-    rows.push({
+    built.push({
       oracleId: fact.oracleId,
       name: fact.name,
       typeLine: fact.typeLine,
@@ -2351,33 +2399,80 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
       bucket: add ? add.bucket : null,
     });
   }
-  return { state, rows };
+  return {
+    state,
+    rows: {
+      in: built.filter((r) => r.direction === "in"),
+      out: built.filter((r) => r.direction === "out"),
+    },
+  };
 }
 ```
 
-`findChange` is a two-line local helper reading the `from`/`to` off the diff the
-bucketing came from — `BucketedAdd` carries `needed` and `shortfall` but not the
-pair, so hold the raw `DraftDiff` on `DraftState` as `addChanges: DraftChange[]`
-and read it there rather than recomputing the diff.
+`findChange` is defined above, beside `DraftRows`: it reads the pair off
+`state.addChanges`, which `loadDraftState` populates with the same filtered diff
+`bucketAdds` consumed. Nothing recomputes the diff, and no surface needs a
+`DraftDiff` of its own.
 
-- [ ] **Step 3: Verify against the real database**
+- [ ] **Step 3: Test the two pure functions**
 
-There is nothing to unit test here that is not already tested underneath, so the
-proof is the probe plus a browse of the surfaces in Tasks 14 onward. Run the
-claim probe to confirm nothing in it regressed:
+The loaders need a database and are proved by the probe below, but `changeCount`
+and `hasChanges` are pure and one of them decides whether a real edit has any
+route to a commit at all. Create `src/lib/decks/draft-state.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import { changeCount, hasChanges, type DraftState } from "./draft-state";
+
+const state = (over: Partial<DraftState> = {}): DraftState => ({
+  version: null, adds: [], addChanges: [], removes: [], basicsChanged: false,
+  names: new Map(), buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
+  manaValue: null, manaValueBefore: null, ...over,
+});
+
+describe("changeCount / hasChanges", () => {
+  it("counts adds and removes together", () => {
+    expect(changeCount(state({
+      adds: [{ oracleId: "a", needed: 1, shortfall: 1, bucket: "unowned", heldBy: [] }],
+      removes: [{ oracleId: "r", quantity: 1, from: 1, to: 0 }],
+    }))).toBe(2);
+  });
+
+  it("counts a basics-only edit in no figure", () => {
+    expect(changeCount(state({ basicsChanged: true }))).toBe(0);
+  });
+
+  it("still calls a basics-only edit a change — it has to be committable", () => {
+    expect(hasChanges(state({ basicsChanged: true }))).toBe(true);
+  });
+
+  it("calls an untouched draft unchanged", () => {
+    expect(hasChanges(state())).toBe(false);
+  });
+});
+```
+
+Run: `pnpm vitest run src/lib/decks/draft-state.test.ts`
+Expected: PASS, 4 tests.
+
+- [ ] **Step 4: Verify against the real database**
+
+The loaders are raw reads over the claim model, which no unit test in this
+repository reaches, so their proof is the probe plus a browse of the surfaces in
+Tasks 14 onward. Run the claim probe to confirm nothing in it regressed:
 
 Run: `DATABASE_URL=<local-dev> pnpm probe:claims`
 Expected: PASS.
 
-- [ ] **Step 4: Run the suite**
+- [ ] **Step 5: Run the suite**
 
 Run: `pnpm typecheck && pnpm lint && pnpm test`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/lib/decks/draft-state.ts
+git add src/lib/decks/draft-state.ts src/lib/decks/draft-state.test.ts
 git commit -m "feat(decks): one reader for what the draft changed and what it costs"
 ```
 
@@ -2415,13 +2510,25 @@ Create `src/components/decks/pending-banner.test.tsx`:
 ```tsx
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DraftState } from "../../lib/decks/draft-state";
 import { PendingBanner } from "./pending-banner";
 
 const empty: DraftState = {
-  version: { id: "v", number: 2, committedAt: new Date("2026-09-01T00:00:00Z"), note: null },
-  adds: [], addChanges: [], removes: [], names: new Map(),
+  // Every field of `DeckVersion`, not only the four the banner prints: the
+  // fixture is typed, so a partial literal does not compile.
+  version: {
+    id: "v",
+    number: 2,
+    committedAt: new Date("2026-09-01T00:00:00Z"),
+    note: null,
+    commanderOracleId: "cmd",
+    partnerOracleId: null,
+    commanderSince: new Date("2026-08-01T00:00:00Z"),
+    partnerSince: null,
+  },
+  adds: [], addChanges: [], removes: [], basicsChanged: false, names: new Map(),
   buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
   manaValue: 3.1, manaValueBefore: 3.4,
 };
@@ -2429,7 +2536,7 @@ const empty: DraftState = {
 const withChanges = (adds: number, removes: number): DraftState => ({
   ...empty,
   adds: Array.from({ length: adds }, (_, i) => ({
-    oracleId: `a${i}`, needed: 1, shortfall: 1, bucket: "unowned" as const, claimants: [],
+    oracleId: `a${i}`, needed: 1, shortfall: 1, bucket: "unowned" as const, heldBy: [],
   })),
   addChanges: Array.from({ length: adds }, (_, i) => ({
     oracleId: `a${i}`, quantity: 1, from: 0, to: 1,
@@ -2458,9 +2565,11 @@ describe("PendingBanner", () => {
     render(<PendingBanner state={withChanges(2, 1)} deckId="d" total={99} bodySize={99} />);
     expect(screen.getByText("Add 0")).toBeTruthy();
     expect(screen.getByText("Cut 0")).toBeTruthy();
+    // A link, not a button: the sheet is on the review page and the banner
+    // navigates to it with `?commit=1`. One commit surface, two entry points.
     expect(
-      screen.getByRole("button", { name: deckVersioningCopy.pending.commitCta(3) }),
-    ).toBeTruthy();
+      screen.getByRole("link", { name: deckVersioningCopy.pending.commitCta(3) }),
+    ).toHaveProperty("href", expect.stringContaining("/decks/d/changes?commit=1"));
     expect(
       screen.getByRole("link", { name: deckVersioningCopy.pending.reviewLink }),
     ).toBeTruthy();
@@ -2483,7 +2592,7 @@ describe("PendingBanner", () => {
       <PendingBanner state={{ ...empty, version: null }} deckId="d" total={99} bodySize={99} />,
     );
     expect(
-      screen.getByRole("button", { name: deckVersioningCopy.pending.firstCommitCta }),
+      screen.getByRole("link", { name: deckVersioningCopy.pending.firstCommitCta }),
     ).toBeTruthy();
   });
 
@@ -2497,9 +2606,22 @@ describe("PendingBanner", () => {
   it("prints the body count in --warning when the draft is over, and blocks nothing", () => {
     render(<PendingBanner state={withChanges(3, 0)} deckId="d" total={101} bodySize={99} />);
     expect(screen.getByText("101 / 99")).toBeTruthy();
+    // Still offered, and still a live link: an over-size draft is something the
+    // player is mid-way through fixing, and refusing the commit strands them.
     expect(
-      screen.getByRole("button", { name: deckVersioningCopy.pending.commitCta(3) }),
-    ).toHaveProperty("disabled", false);
+      screen.getByRole("link", { name: deckVersioningCopy.pending.commitCta(3) }),
+    ).toBeTruthy();
+  });
+
+  it("prints the from → to pair on a quantity move, not a bare name", () => {
+    const state = withChanges(1, 0);
+    state.addChanges[0] = { oracleId: "a0", quantity: 1, from: 1, to: 2 };
+    render(<PendingBanner state={state} deckId="d" total={99} bodySize={99} />);
+    expect(
+      screen.getByText(
+        deckImportCopy.update.diff.recountedItem("Add 0", "1", "2"),
+      ),
+    ).toBeTruthy();
   });
 });
 ```
@@ -2523,7 +2645,9 @@ for the first-commit offer:
 // than a mode of it.
 
 import Link from "next/link";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy, INLINE_CHANGE_MAX } from "../../lib/copy/deck-versioning";
+import type { DraftChange } from "../../lib/decks/draft-diff";
 import { changeCount, type DraftState } from "../../lib/decks/draft-state";
 import { formatDeckDate } from "../../lib/decks/format";
 
@@ -2536,12 +2660,34 @@ interface PendingBannerProps {
   total: number;
   /** `deckBodySize(detail.partner !== null)`, computed by the page. */
   bodySize: number;
-  onCommit?: () => void;
   onDiscard?: () => void;
 }
 
+// §Surfaces 5: "one commit surface, two entry points" — the sheet lives at the
+// foot of the review page and the banner's CTA *navigates* to it with the sheet
+// already open. So there is no `onCommit`: a second mount would be a second
+// place the buy list is printed, which is the thing that ruling forbids.
+const commitHref = (deckId: string) => `/decks/${deckId}/changes?commit=1`;
+
+/**
+ * What the inline list calls one change.
+ *
+ * A card the deck did not hold, or has cut entirely, is its name. A card whose
+ * count *moved* is `Name 1 → 2` — the shipped `recountedItem`, because "+ Sol
+ * Ring" on a deck that already ran one is a sentence that reads as a duplicate
+ * rather than a second copy. Nothing new is authored for a fact the import diff
+ * already has a string for.
+ */
+function changeLabel(state: DraftState, change: DraftChange): string {
+  const name = state.names.get(change.oracleId) ?? change.oracleId;
+  const moved = change.from > 0 && change.to > 0;
+  return moved
+    ? deckImportCopy.update.diff.recountedItem(name, String(change.from), String(change.to))
+    : name;
+}
+
 export function PendingBanner({
-  state, deckId, total, bodySize, onCommit, onDiscard,
+  state, deckId, total, bodySize, onDiscard,
 }: PendingBannerProps) {
   const n = changeCount(state);
   const next = (state.version?.number ?? 0) + 1;
@@ -2554,9 +2700,11 @@ export function PendingBanner({
         <p className="flex-1 m-0 text-[13.5px] text-[color:var(--fg-body)]">
           {copy.firstCommitNote}
         </p>
-        <button type="button" onClick={onCommit} className={OUTLINE_CTA}>
+        {/* Outline, not solid: making a deck's claims hard is a real
+            consequence and not the app's goal for the player. */}
+        <Link href={commitHref(deckId)} className={OUTLINE_CTA}>
           {copy.firstCommitCta}
-        </button>
+        </Link>
       </div>
     );
   }
@@ -2585,12 +2733,12 @@ export function PendingBanner({
           <ul className="m-0 p-0 list-none flex flex-wrap gap-x-[14px] gap-y-[2px]">
             {state.addChanges.map((c) => (
               <li key={c.oracleId} className="text-[13px] text-[color:var(--fg-body)]">
-                + {state.names.get(c.oracleId) ?? c.oracleId}
+                + {changeLabel(state, c)}
               </li>
             ))}
             {state.removes.map((c) => (
               <li key={c.oracleId} className="text-[13px] text-[color:var(--fg-faint)]">
-                − {state.names.get(c.oracleId) ?? c.oracleId}{" "}
+                − {changeLabel(state, c)}{" "}
                 <span className="font-mono text-[10.5px]">{copy.removeHint}</span>
               </li>
             ))}
@@ -2634,9 +2782,9 @@ export function PendingBanner({
         </Link>
       )}
       {inline && (
-        <button type="button" onClick={onCommit} className={SOLID_CTA}>
+        <Link href={commitHref(deckId)} className={SOLID_CTA}>
           {copy.commitCta(next)}
-        </button>
+        </Link>
       )}
       <button type="button" onClick={onDiscard} className={GHOST_CTA}>
         {copy.discardCta}
@@ -2790,15 +2938,26 @@ git commit -m "feat(decks): the pending-changes banner, and the marks that map i
 - Create: `src/app/decks/[id]/changes/page.tsx`
 - Create: `src/components/decks/review-changes.tsx`
 - Create: `src/components/decks/review-changes.test.tsx`
-- Create: `src/components/decks/review-row.tsx`
+- Modify: `src/components/decks/update-diff-row.tsx` (the shared row gains an
+  action slot and loses its per-row type label)
+- Modify: `src/components/decks/update-diff.tsx` (groups by card type, which is
+  what pays for dropping the label)
+- Modify: `src/components/decks/update-diff.test.tsx`
 - Test: `src/components/decks/review-changes.test.tsx`
 
 **Interfaces:**
 - Consumes: `loadDraftRows`, `DraftRow`, `DraftRows` (Task 13);
-  `deckVersioningCopy.review` (Task 12); `BuyTag` with `density="full"`
-  (`src/components/decks/buy-tag.tsx:168`).
-- Produces: `ReviewChanges({ deckId, rows, state })`;
-  `ReviewRow({ deckId, row, siblings, newestAsOf })`.
+  `deckVersioningCopy.review` (Task 12); `DiffRowIn` / `DiffRowOut` /
+  `DiffRowCard` (`src/components/decks/update-diff-row.tsx`).
+- Produces: `ReviewChanges({ deckId, rows, state, commitOpen })`; `DiffRowOut`'s
+  widened signature, `{ card, action }`, which Task 17 fills with `PullControl`.
+
+**There is no new diff row.** `OVERLAPS.md` Call 2's first consequence is
+explicit — *"Review changes reuses `update-diff-row`, its group headers and its
+count chips verbatim. No new diff row atom exists in this feature"* — and its
+mechanical checks 1 and 5 are the test of it: one definition of
+`update-diff-row`, both surfaces importing it, and **neither** rendering a
+per-row type label. A `review-row.tsx` would fail both.
 
 Two equal columns, `flex: 1` each, gap 22px, `max-width: 1180px`, padding
 `24px 26px`. Type-grouped on both sides, alphabetical within a group — which
@@ -2880,10 +3039,15 @@ Expected: FAIL — `Failed to resolve import "./review-changes"`.
 ```tsx
 const copy = deckVersioningCopy.review;
 
-export function ReviewChanges({ deckId, rows, state }: ReviewChangesProps) {
+export function ReviewChanges({ deckId, rows, state, commitOpen }: ReviewChangesProps) {
   const inGroups = groupByCardType(rows.in);
   const outGroups = groupByCardType(rows.out);
   const siblings = [...rows.in, ...rows.out].map((r) => r.oracleId);
+  // Task 18 mounts `CommitSheet` at the foot and seeds its expanded state from
+  // this flag. Empty columns are drawn as nothing at all rather than as an empty
+  // state: the only way to arrive with none is `?commit=1`, where the sheet is
+  // the page and a "no changes" panel above it would contradict it.
+  const hasRows = rows.in.length + rows.out.length > 0;
 
   return (
     <div className="mx-auto" style={{ maxWidth: 1180, padding: "24px 26px" }}>
@@ -2896,11 +3060,15 @@ export function ReviewChanges({ deckId, rows, state }: ReviewChangesProps) {
 
       {/* Phone: a segmented pair, because two 190px columns put every card name
           on three lines. Desktop: two equal columns, gap 22px. */}
-      <div className="hidden md:flex gap-[22px]">
-        <Column heading={copy.groupIn(rows.in.length)} groups={inGroups} … />
-        <Column heading={copy.groupOut(rows.out.length)} groups={outGroups} … />
-      </div>
-      <Segmented className="md:hidden" … />
+      {hasRows && (
+        <>
+          <div className="hidden md:flex gap-[22px]">
+            <Column heading={copy.groupIn(rows.in.length)} groups={inGroups} … />
+            <Column heading={copy.groupOut(rows.out.length)} groups={outGroups} … />
+          </div>
+          <Segmented className="md:hidden" … />
+        </>
+      )}
     </div>
   );
 }
@@ -2912,47 +3080,132 @@ and the out column prints `copy.outNote(rows.out.length)` once under its
 heading. No `Keep` control on a remove: putting one back is adding it to the
 deck, and the deck page already does that.
 
-- [ ] **Step 4: Write the row**
+- [ ] **Step 4: Widen the shared row, and take its type label off both mountings**
 
-`review-row.tsx` reuses `DecklistRow`'s name button and `BuyTag` with
-`density="full"` — this is a purchase-decision surface, so the full tag, not the
-decklist's collapsed one. Quantity moves print
-`deckImportCopy.update.diff.recountedItem(name, String(from), String(to))`, the
-shipped string, with no second phrasing authored for the same fact. Availability
-is a per-row treatment plus an `sr-only` description carrying the word, so the
-bucket is never colour-only.
+Two edits to `update-diff-row.tsx`, and they are the whole of the row work.
+
+**4a — `DiffRowOut` takes an action slot instead of owning the Keep button.**
+The update flow keeps that button; the review page puts `PullControl` in the same
+place (Task 17). `kept` survives as a plate-and-seam flag because the update
+flow's kept row is tinted, and the review page never sets it.
+
+```tsx
+export function DiffRowOut({
+  card,
+  kept = false,
+  /** Whatever this mounting's decision is. The update flow passes its `Keep`
+   *  toggle; the review page passes `PullControl`; `null` renders no control and
+   *  no reserved box, because a row with nothing to decide should not hold a gap
+   *  where a button would be. */
+  action = null,
+}: {
+  card: DiffRowCard;
+  kept?: boolean;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className={/* unchanged */}>
+      <OwnershipDot owned={card.owned} size={7} />
+      <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
+      <Marker auto={card.auto} />
+      <AvailabilitySlot card={card} seam={kept ? SEAM_KEPT : SEAM_SURFACE} selfClaimed />
+      {action}
+    </div>
+  );
+}
+```
+
+`update-diff.tsx`'s existing mount (line 257) moves its `kept` / `onToggle` pair
+into the slot, and the button's markup moves with it — unchanged ink, unchanged
+`aria-pressed`, unchanged `copy.keepAria`. Nothing about the update flow's
+decision changes; only where the element is written down does.
+
+**4b — the per-row `typeLine` span comes out of `DiffRowOut`, `DiffRowIn` and
+`DiffRowUnchanged`, and `update-diff.tsx` groups by card type in its place.**
+`groupByCardType` is what both mountings call, so the fact the label carried is
+now a heading over the rows that share it, said once instead of per row.
+`DiffRowCard.typeLine` stays on the type — it is what the grouping reads — and
+stops being drawn. `DiffRowUnnamed` is untouched: an unmatched line has no type
+to group under.
+
+This is a change to a **shipped** surface, and it is deliberate. Mechanical check
+5 — *"Both mountings group by type and neither renders a per-row type label. If
+one of them still does, the row has forked"* — cannot be satisfied by touching
+only the new page. It is also what funds the cost track: the freed 120px is
+`COST-TRACK.md`'s, and that round is not gated on this one.
+
+Add to `update-diff.test.tsx`:
+
+```tsx
+it("heads the out group by card type rather than labelling every row", () => {
+  render(<UpdateDiff {...props({ out: [artifact("Sol Ring"), artifact("Mox Opal")] })} />);
+  expect(screen.getAllByText("Artifact")).toHaveLength(1);
+});
+```
+
+The review page's own rows then need no new code: `ReviewChanges` maps each
+`DraftRow` to a `DiffRowCard` and mounts `DiffRowIn` / `DiffRowOut`. Two things
+come with that reuse for free, and both were reasons the fork looked attractive —
+`AvailabilitySlot` already renders `BuyTag variant="row"`, whose `density`
+defaults to `"full"` (`buy-tag.tsx:168`), which is the purchase-decision surface's
+tag; and the row's name is already a `CardDetailTrigger`. What `ReviewChanges`
+adds around them: a quantity move's label via
+`deckImportCopy.update.diff.recountedItem(name, String(from), String(to))` — the
+shipped string, no second phrasing for the same fact — and an `sr-only`
+description carrying the bucket's word, wired with `aria-describedby`, so
+availability is never colour-only.
 
 - [ ] **Step 5: Write the route**
 
 `src/app/decks/[id]/changes/page.tsx`, a server component:
 
 ```tsx
-export default async function ChangesPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ChangesPage({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ commit?: string }>;
+}) {
   const { id } = await params;
+  const { commit } = await searchParams;
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
-  const [state, rows] = await Promise.all([
-    loadDraftState(id, userId),
-    loadDraftRows(id, userId),
-  ]);
-  // A committed or discarded draft leaves this page with nothing to review, and
-  // a bare empty state would read as a bug. The deck page is where the version
-  // line now is, so that is where the reader goes.
-  if (changeCount(state) === 0) redirect(`/decks/${id}`);
-  return <ReviewChanges deckId={id} rows={rows} state={state} />;
+  // The ownership guard every deck route carries. `loadDraftRows` takes a
+  // `userId` to scope availability, NOT to prove the deck is this reader's —
+  // without this line any signed-in account could read another player's draft
+  // by id. Same two lines as `src/app/decks/[id]/page.tsx`.
+  const detail = await getDeckDetail(id, userId);
+  if (!detail) notFound();
+
+  // One read, not two: `loadDraftRows` calls `loadDraftState` itself and returns
+  // it on `state`. Asking for both in a `Promise.all` runs the whole diff,
+  // availability and price chain twice for one page.
+  const { state, rows } = await loadDraftRows(id, userId);
+  // `?commit=1` is the banner's CTA arriving — §Surfaces 5's second entry point
+  // into the one commit surface. It is the one case with a reason to be here
+  // with nothing in the columns: a brew's first commit changes no card, and a
+  // basics-only draft has no nameable row. Both still have a version to cut.
+  const wantsCommit = commit === "1";
+  // Otherwise a committed or discarded draft leaves this page with nothing to
+  // review, and a bare empty state would read as a bug. The deck page is where
+  // the version line now is, so that is where the reader goes.
+  if (changeCount(state) === 0 && !wantsCommit) redirect(`/decks/${id}`);
+  return <ReviewChanges deckId={id} rows={rows} state={state} commitOpen={wantsCommit} />;
 }
 ```
 
+Imports: `auth` from `@clerk/nextjs/server`, `notFound` and `redirect` from
+`next/navigation`, `getDeckDetail` from `../../../../lib/decks/read`.
+
 - [ ] **Step 6: Run the tests**
 
-Run: `pnpm vitest run src/components/decks/review-changes.test.tsx && pnpm typecheck`
-Expected: PASS.
+Run: `pnpm vitest run src/components/decks/review-changes.test.tsx src/components/decks/update-diff.test.tsx && pnpm typecheck`
+Expected: PASS. Both suites, because Step 4 edited the row the shipped flow mounts.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add "src/app/decks/[id]/changes/page.tsx" src/components/decks/review-changes.tsx \
-  src/components/decks/review-changes.test.tsx src/components/decks/review-row.tsx
+  src/components/decks/review-changes.test.tsx src/components/decks/update-diff-row.tsx \
+  src/components/decks/update-diff.tsx src/components/decks/update-diff.test.tsx
 git commit -m "feat(decks): the review page — what comes in, what goes out, what it costs"
 ```
 
@@ -2963,14 +3216,55 @@ git commit -m "feat(decks): the review page — what comes in, what goes out, wh
 **Files:**
 - Create: `src/components/decks/changed-strip.tsx`
 - Create: `src/components/decks/changed-strip.test.tsx`
-- Modify: `src/components/decks/review-changes.tsx` (mount it under the lede)
+- Modify: `src/lib/decks/draft-state.ts` (append `loadVersionShape`, `ShapeCard`)
+- Modify: `src/components/decks/review-changes.tsx` (mount it under the lede;
+  `ReviewChanges` gains `before: ShapeCard[]` and `after: ShapeCard[]` and passes
+  them straight through — the strip's two lists are the route's to read)
+- Modify: `src/app/decks/[id]/changes/page.tsx` (read the two lists)
+- Modify: `src/lib/decks/mix.ts` (lift `ROLE_ORDER` here)
+- Modify: `src/components/decks/role-counter-strip.tsx` (import it from there)
 
 **Interfaces:**
 - Consumes: `computeRoleCounts`, `RECOMMENDED_MIX`, `MixRole`
   (`src/lib/decks/mix.ts`); `RoleCounterCell`; `averageManaValue` (Task 11);
   `deckVersioningCopy.changed` (Task 12).
 - Produces: `ChangedStrip({ before, after, manaValue, manaValueBefore })` where
-  `before`/`after` are `DeckDetailCard[]`.
+  `before`/`after` are `ShapeCard[]` — `{ role, quantity, typeLine }`, the
+  subset `computeRoleCounts` and `cardTypeGroup` between them need;
+  `loadVersionShape(versionId)` appended to `src/lib/decks/draft-state.ts`.
+
+**Where the two lists come from.** The strip reads *whole* lists, not the
+changed rows: a delta per role is the difference between two decks, and the
+changed rows alone cannot say what a role's count was. `after` is
+`detail.cards`, already loaded by the route's ownership guard.
+`before` is new — `versionCards` returns `oracleId`/`quantity` only, with no
+`role` to tally — so append one read:
+
+```ts
+export type ShapeCard = { role: DeckDetailCard["role"]; quantity: number; typeLine: string };
+
+/** The committed list as the mix strip counts it. `role` is derived exactly as
+ *  `getDeckDetail` derives it — through `primaryRole` over the real oracle text
+ *  — because a role tallied two ways is two different decks on one screen. */
+export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> {
+  const rows = await db.select({
+    quantity: deckVersionCards.quantity,
+    typeLine: cards.typeLine,
+    oracleText: cards.oracleText,
+    keywords: cards.keywords,
+  }).from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(eq(deckVersionCards.versionId, versionId));
+  return rows.map((r) => ({
+    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine,
+  }));
+}
+```
+
+The route passes `before={state.version ? await loadVersionShape(state.version.id) : []}`,
+and the strip draws no deltas at an empty `before` — a brew has no previous
+shape, and `+12 ramp` against nothing is a claim about a comparison that does
+not exist.
 
 Six cells: mana value plus the shipped five from `ROLE_ORDER`. `ROLE_ORDER` is
 declared locally at `role-counter-strip.tsx:38` and is not exported — declare
@@ -3014,9 +3308,35 @@ Expected: FAIL — unresolved import.
 
 - [ ] **Step 3: Write the strip**
 
-The five role cells take `RoleCounterCell` unchanged with `was={before[role]}`
-from Task 14's new prop — the same cell, so the review page and the deck page
-cannot draw the same figure two ways. The mana-value cell is a sibling of the
+The five role cells take `RoleCounterCell` unchanged with Task 14's new `was`
+prop — the same cell, so the review page and the deck page cannot draw the same
+figure two ways. `before` and `after` are card *lists*, not count maps, so run
+each through the shipped counter once and index the result:
+
+```tsx
+const beforeCounts = computeRoleCounts(before);
+const afterCounts = computeRoleCounts(after);
+// …
+{ROLE_ORDER.map((role) => (
+  <RoleCounterCell
+    key={role}
+    label={RECOMMENDED_MIX[role].label}
+    have={afterCounts[role]}
+    was={beforeCounts[role]}
+    target={RECOMMENDED_MIX[role].target}
+    advisory={RECOMMENDED_MIX[role].advisory}
+  />
+))}
+```
+
+The prop names are the shipped ones — `label` / `have` / `target` / `advisory`,
+read off `role-counter-strip.tsx:88-93` — plus Task 14's `was`. There is no
+`role` or `count` prop on this cell. `onSeeShelf` is deliberately unpassed: the
+shelf is the deck page's offer, and this strip is a read of what already moved.
+
+`before[role]` would be indexing an array by a role name and is always
+`undefined`; `computeRoleCounts` is the one function that turns a list into the
+five figures, and using it is what keeps the strip honest against the deck page. The mana-value cell is a sibling of the
 same shape with `copy.manaValueDown` / `manaValueUp` under it and `clears(rec)`
 / `under(rec)` where a recommendation exists. Under the six cells, the
 type-distribution block uses `copy.shapeHeading`, `copy.shapeRow(before, after)`
@@ -3043,13 +3363,19 @@ git commit -m "feat(decks): how the deck's shape moves, in the mix strip's own c
 **Files:**
 - Create: `src/components/decks/pull-control.tsx`
 - Create: `src/components/decks/pull-control.test.tsx`
-- Modify: `src/components/decks/review-row.tsx` (mount it in the sleeved arm)
+- Modify: `src/components/decks/review-changes.tsx` (pass it as `DiffRowOut`'s
+  `action` on a sleeved row — the slot Task 15 step 4a opened, not a new row)
 
 **Interfaces:**
 - Consumes: `pullCardFromDeck` (`src/app/decks/actions.ts:1379`);
-  `DeckClaim.pending` and `DeckClaim.commander` (Task 10);
-  `deckVersioningCopy.review.pull*`, `commanderGuard*`, `commit.pullAnnounced`.
-- Produces: `PullControl({ deckId, card, claim, onPulled })`.
+  `loadDraftState` (Task 13); `DeckClaim.pending` and `DeckClaim.commander`
+  (Task 10); `deckVersioningCopy.review.pull*`, `commanderGuard*`,
+  `commit.pullAnnounced`.
+- Produces: `PullControl({ deckId, card, claim, onPulled })`; `PullResult` from
+  `actions.ts`, widening `pullCardFromDeck`'s return past `DeckMutationResult`.
+
+**Files, additionally:**
+- Modify: `src/app/decks/actions.ts` (`pullCardFromDeck` returns `PullResult`)
 
 34px desktop / 44px phone, `1px var(--border)`, `var(--accent)` at 12px/600 —
 **never solid**. A pull takes a card out of somebody else's sleeved deck; a
@@ -3096,7 +3422,30 @@ Expected: FAIL — unresolved import.
 
 - [ ] **Step 3: Write the control**
 
-Three arms, guard order `commander` → `pending` → offer. The commander arm is
+**The action has to return the two figures first.** `pullCardFromDeck` resolves
+to `DeckMutationResult` — `{ ok: true }` and nothing else (`actions.ts:1379-1383`)
+— so `copy.pullAnnounced(card, deck, buy, total)` has no `buy` and no `total` to
+print. Widen it exactly as Task 9 widens `CommitResult`, and for the same reason:
+the figure must be the server's, computed after the write, because a client that
+subtracts one from the number it was rendered with is guessing.
+
+Step 0, in `src/app/decks/actions.ts`:
+
+```ts
+export type PullResult =
+  | { ok: true; buy: number; total: string | null }
+  | { ok: false; message: string };
+```
+
+The success arm reads the asking deck's position after the pull — the same
+`loadDraftState(askingDeckId, userId)` the banner uses — and returns its
+`buyCount` and `total`. It runs after the transaction commits and after
+`revalidateClaims`, so it sees the world the reader is about to be shown. A
+failed read returns `{ ok: true, buy: 0, total: null }` rather than failing the
+pull: the card has moved, and losing the sentence about it is not worth undoing
+that.
+
+Then the control. Three arms, guard order `commander` → `pending` → offer. The commander arm is
 first because it is permanent: a pending deck can be opened and released, a
 commander cannot, so an `Open →` there would lead somewhere that cannot help.
 `pullCardFromDeck` already refuses a commander pull server-side
@@ -3119,7 +3468,7 @@ Expected: PASS, 4 tests.
 
 ```bash
 git add src/components/decks/pull-control.tsx src/components/decks/pull-control.test.tsx \
-  src/components/decks/review-row.tsx
+  src/components/decks/review-changes.tsx src/app/decks/actions.ts
 git commit -m "feat(decks): pull a card back, and say plainly where a pull is not on offer"
 ```
 
@@ -3131,8 +3480,15 @@ git commit -m "feat(decks): pull a card back, and say plainly where a pull is no
 - Create: `src/components/decks/commit-sheet.tsx`
 - Create: `src/components/decks/commit-sheet.test.tsx`
 - Modify: `src/components/decks/review-changes.tsx` (mount it at the foot)
-- Modify: `src/components/decks/pending-banner.tsx` (the inline `Commit as v3`
-  routes to the review page's sheet rather than opening a second one)
+- Modify: `src/components/decks/review-changes.tsx` (honour `commitOpen`, the
+  banner's `?commit=1` arriving with the sheet already expanded)
+
+Nothing to change in `pending-banner.tsx`: Task 14 already draws both commit
+CTAs as links to `?commit=1`, which is this task's only entry point from the
+deck page. On a brew or a basics-only draft the columns are empty and the sheet
+is the whole page — `state.version === null` is where the sheet prints
+`deckVersioningCopy.pending.firstCommitNote`, reusing the banner's line rather
+than authoring a second one for the same fact.
 
 **Interfaces:**
 - Consumes: `commitDeckVersion` and its widened `CommitResult`
@@ -3215,9 +3571,11 @@ not on a shopping list. The link is absent, not disabled, at an empty list —
 which is what `manapoolAddDeckUrl` returning null already means.
 
 On success, focus moves to the version line on the deck page and the
-announcement is `copy.announced(number, cardCount, buy.length)` using the
+announcement is `copy.announced(number, cardCount, state.buyCount)` using the
 server's `cardCount` from Task 9 — never a client-side recount, which is the
-defect Task 9 exists to fix.
+defect Task 9 exists to fix. The third figure is `buyCount`, a sum of
+`shortfall`, and never `buy.length`: "3 to buy" is three copies to buy, so two
+copies of one card is 2 there and one row on the list.
 
 - [ ] **Step 4: Run the test**
 
@@ -3257,9 +3615,12 @@ shape for the same reason, an act with no undo. This is the **only** place
 describe("DiscardDraft", () => {
   it("asks first, with the count in the question and on the button", async () => {
     render(<DiscardDraft deckId="d" state={STATE_36} onDiscarded={noop} />);
-    await act(async () => {
-      screen.getByRole("button", { name: deckVersioningCopy.discard.cancel }); // not yet up
-    }).catch(() => {});
+    // The confirm is not up until it is asked for. `queryByRole`, not a thrown
+    // `getByRole` swallowed by a `.catch` — a swallowed throw passes whether the
+    // control is absent or the query itself was wrong.
+    expect(
+      screen.queryByRole("button", { name: deckVersioningCopy.discard.cancel }),
+    ).toBeNull();
     screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }).click();
     expect(screen.getByText(deckVersioningCopy.discard.question(36))).toBeTruthy();
     expect(screen.getByRole("button", { name: deckVersioningCopy.discard.confirm(36) })).toBeTruthy();
@@ -3317,9 +3678,12 @@ git commit -m "feat(decks): discard a draft behind the confirm the bulk keep alr
 - Create: `src/app/decks/[id]/versions/page.tsx`
 - Create: `src/components/decks/version-history.tsx`
 - Create: `src/components/decks/version-history.test.tsx`
+- Create: `src/components/decks/version-diff.tsx` (one version's detail, expanded
+  in place — the half of surface 4 the rail has no slot for)
+- Create: `src/components/decks/version-diff.test.tsx`
 - Modify: `src/components/decks/builder-tabs.tsx` (a new `links` prop)
 - Modify: `src/components/decks/builder-tabs.test.tsx`
-- Modify: `src/lib/decks/versions.ts` (append `listVersions`)
+- Modify: `src/lib/decks/versions.ts` (append `listVersions`, `loadVersionDiff`)
 
 **Interfaces:**
 - Consumes: `DeckVersion`, `versionCards`, `versionManaValue` (Tasks 4, 11);
@@ -3334,8 +3698,12 @@ git commit -m "feat(decks): discard a draft behind the confirm the bulk keep alr
     gamesHeld: number;
   };
   export async function listVersions(deckId: string): Promise<VersionSummary[]>;
+  export async function loadVersionDiff(
+    versionId: string, previousVersionId: string | null,
+  ): Promise<{ in: string[]; out: string[] }>;
   ```
-  and `VersionHistory({ deckId, versions })`; `BuilderTabs` gains
+  and `VersionHistory({ deckId, versions })`,
+  `VersionDiff({ version, previous })`; `BuilderTabs` gains
   `links?: { href: string; label: string; count?: number }[]`.
 
 **The tab cannot be a `role="tab"`.** `builder-tabs.tsx` is one `role="tablist"`
@@ -3420,10 +3788,58 @@ Expected: FAIL — unresolved import.
 
 `listVersions` reads every version for the deck ordered by `number` descending,
 then per row: its card count and adds/removes against its predecessor (the diff
-is `draftDiff` over two `versionCards` reads — the same pure function, so the
-rail and the review page cannot disagree), its `versionManaValue`, and its games
-count from `deck_games.version_id`. `number: 1` gets `adds: 0, removes: 0` and
-renders `initial`, because it has no predecessor to compare against.
+is `draftDiff` over two card sets — the same pure function, so the rail and the
+review page cannot disagree), its `versionManaValue`, and its games count from
+`deck_games.version_id`. `number: 1` gets `adds: 0, removes: 0` and renders
+`initial`, because it has no predecessor to compare against.
+
+**Four queries total, never four per version.** A ten-version deck read one
+version at a time is forty round trips to Neon for a page that draws ten rows.
+Read the whole history in one pass instead:
+
+```ts
+export async function listVersions(deckId: string): Promise<VersionSummary[]> {
+  const versions = await db.select().from(deckVersions)
+    .where(eq(deckVersions.deckId, deckId)).orderBy(desc(deckVersions.number));
+  if (versions.length === 0) return [];
+  const ids = versions.map((v) => v.id);
+
+  // Every version's cards, with the `cmc` the mana value needs, in one read.
+  const rows = await db.select({
+    versionId: deckVersionCards.versionId,
+    oracleId: deckVersionCards.oracleId,
+    quantity: deckVersionCards.quantity,
+    cmc: cards.cmc,
+    typeLine: cards.typeLine,
+  }).from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(inArray(deckVersionCards.versionId, ids));
+
+  // Games per version, grouped in the database rather than counted per row.
+  const games = await db.select({
+    versionId: deckGames.versionId, n: count(),
+  }).from(deckGames).where(inArray(deckGames.versionId, ids))
+    .groupBy(deckGames.versionId);
+
+  const byVersion = new Map(ids.map((id) => [id, rows.filter((r) => r.versionId === id)]));
+  const gamesBy = new Map(games.map((g) => [g.versionId!, Number(g.n)]));
+  // Ascending, so each version's predecessor is the one before it.
+  const ascending = [...versions].reverse();
+  return ascending.map((v, i) => {
+    const mine = byVersion.get(v.id) ?? [];
+    const previous = i === 0 ? null : byVersion.get(ascending[i - 1]!.id) ?? [];
+    const diff = previous ? draftDiff(mine, previous) : null;
+    return {
+      ...v,
+      cardCount: mine.reduce((n, r) => n + r.quantity, 0),
+      adds: diff?.adds.length ?? 0,
+      removes: diff?.removes.length ?? 0,
+      manaValue: averageManaValue(mine),
+      gamesHeld: gamesBy.get(v.id) ?? 0,
+    };
+  }).reverse();
+}
+```
 
 Each rail row: number, date, note (or `noNote` italic), `manaValue(mv)`,
 `delta(adds, removes)`, `gamesHeld(n)`. **No restore control** — the design
@@ -3431,22 +3847,92 @@ decided against it and `restoreDraftFromVersion` stays unwired from this surface
 
 - [ ] **Step 8: Write the route**
 
-`src/app/decks/[id]/versions/page.tsx`, server component, `listVersions(id)`
-after the ownership check, and `redirect(\`/decks/${id}\`)` on an empty list —
-the same reasoning as the review page's redirect.
+`src/app/decks/[id]/versions/page.tsx`, server component:
 
-- [ ] **Step 9: Run the suites and the gate**
+```tsx
+export default async function VersionsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+  // `listVersions` takes no `userId` — it reads by deck id alone, so this guard
+  // is the only thing standing between a signed-in account and another
+  // player's version history.
+  const detail = await getDeckDetail(id, userId);
+  if (!detail) notFound();
+
+  const versions = await listVersions(id);
+  // A brew has no history, and an empty rail reads as a bug — same reasoning as
+  // the review page's redirect.
+  if (versions.length === 0) redirect(`/decks/${id}`);
+  return <VersionHistory deckId={id} versions={versions} />;
+}
+```
+
+- [ ] **Step 9: Write the per-version detail**
+
+The rail is half of surface 4. Design's copy file carries six strings the rail
+itself has no slot for — `diffIn(n)`, `diffOut(n)`, `diffNote`,
+`initialHeading`, `initialBody`, `initialBrowse(cards)`, plus
+`commanderChange(from, to)` — which are a **detail view of one version**: what
+came in, what went out, and against a v1, why there is nothing to show. Without
+it those strings are transcribed in Task 12 and read by nothing.
+
+It expands **in place** inside the rail row, not on a route of its own: it is a
+read of two lists with no controls, and a route would put a page in the history
+stack for a thing the reader glanced at. `VersionHistory` holds one open row id
+in state and the detail is `version-diff.tsx`:
+
+```tsx
+/** What one version changed, as a pair of name lists.
+ *
+ *  `diffNote` is the whole design of this component: no ownership dot, no price,
+ *  no pull offer. This is what the deck *was*, and a buy tag against a list from
+ *  three months ago would be an offer about a deck that no longer exists. */
+export function VersionDiff({ version, previous }: {
+  version: VersionSummary;
+  previous: VersionSummary | null;
+}) { … }
+```
+
+The names come from one server read per opened row —
+`loadVersionDiff(versionId, previousVersionId)` in `versions.ts`, `draftDiff`
+over two `versionCards` reads joined to `cards` for the name, returning
+`{ in: string[]; out: string[] }`. Fetched on open, not with the rail: a
+ten-version deck would otherwise pay ten diffs to draw ten closed rows.
+
+`previous === null` is the v1 arm: `initialHeading`, `initialBody`, and
+`initialBrowse(cardCount)` linking to the deck page. Never a diff, and never
+`+99` — the migration stamped a list that was already there.
+
+`commanderChange(from, to)` prints only when the two versions' `commanderOracleId`
+or `partnerOracleId` differ, which is why `VersionSummary` extends the whole
+`DeckVersion` rather than a subset.
+
+- [ ] **Step 10: Test the detail**
+
+```tsx
+it("names what came in and what went out, and says the list carries no offers", () => { /* diffIn/diffOut/diffNote */ });
+
+it("draws the initial arm on a v1 — no diff, and a link to browse the list", () => { /* initialHeading/initialBody/initialBrowse */ });
+
+it("states a commander change only when the commander actually changed", () => { /* commanderChange */ });
+
+it("offers no buy tag, no ownership dot and no pull on any detail row", () => { /* diffNote, enforced */ });
+```
+
+- [ ] **Step 11: Run the suites and the gate**
 
 Run: `pnpm vitest run src/components/decks && pnpm typecheck && pnpm lint`
 Expected: PASS.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
 git add "src/app/decks/[id]/versions/page.tsx" src/components/decks/version-history.tsx \
-  src/components/decks/version-history.test.tsx src/components/decks/builder-tabs.tsx \
+  src/components/decks/version-history.test.tsx src/components/decks/version-diff.tsx \
+  src/components/decks/version-diff.test.tsx src/components/decks/builder-tabs.tsx \
   src/components/decks/builder-tabs.test.tsx src/lib/decks/versions.ts
-git commit -m "feat(decks): the version rail, and a routing link the tablist does not own"
+git commit -m "feat(decks): the version rail, and what each version changed"
 ```
 
 ---

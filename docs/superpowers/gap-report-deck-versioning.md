@@ -7,7 +7,7 @@
 
 ## Verdict — 🟢 Green at R2
 
-**The blocker is answered and every one of the thirteen corrections is taken.** Design corrected the
+**The blocker is answered and every one of this audit's fourteen corrections is taken.** Design corrected the
 canvas rather than the contract: every track now draws `CostPips`' real output — Beast Within reads
 numeral `2` with one green pip, and Thought Erasure has **no disc at all**, verified on the R2 canvas
 at lines 142, 183, 256, 273 and 366. So no fifth atom, the inventory holds at four new plus one
@@ -102,14 +102,14 @@ Neither needed a redraw and neither was a design gap:
 | Design's blocker | Ruling |
 |---|---|
 | **Ruling 2 — the cost track.** `CostPips` shingles; `COST-TRACK.md` proposes a 110px/76px five-slot track, but the component belongs to card-rows (Q2/R5) | **Closed externally.** Hugh, 2026-09-10: *"We'll be changing the pip overlap for card rows."* The amendment is card-rows' to land, and filing it as a request was right. Versioning is not gated on it either way — and if the blocker above resolves as eng reads it, versioning is not even *connected* to it. Corrections 9–11 are amendments to the request, for card-rows to have before they rule. |
-| **`Commit as v1` on a versionless full-body deck** is Design's addition, not the spec's; Design offered three options and preferred option 1 | **Option 1, as drawn.** §Decisions 4 leaves a real hole — the migration stamps existing full-body decks, so a deck *built after this ships* would have no route to a first version. Option 2 (auto-stamp at a full body) makes a deck's claims go hard without anyone asking, which is the class of thing this feature exists to prevent. The brass-**outline** offer at `deckBodySize()` with *locks this list as v1 — nothing about the deck changes* stands. |
+| **`Commit as v1` on a versionless full-body deck** is Design's addition, not the spec's; Design offered three options and preferred option 1 | **Option 1, as drawn.** §Decisions 4 leaves a real hole — the migration stamps existing full-body decks, so a deck *built after this ships* would have no route to a first version. Option 2 (auto-stamp at a full body) makes a deck's claims go hard without anyone asking, which is the class of thing this feature exists to prevent. The brass-**outline** offer at `deckBodySize(hasPartner)` with *locks this list as v1 — nothing about the deck changes* stands. |
 
 Every locked decision is drawn as written, no new token is asked for, and `OVERLAPS.md` answers both
 of the spec's open calls in a way the shipped code supports. What follows are engineering
 corrections against the handoff's **prose**, plus a class of stale R1 text the canvas settles. None
 needed a Design ruling — they needed Design to *correct the prose* in the same round that answered
 the blocker, because eng following the prose instead of the canvas would have built the pre-R1.2
-layout. **R2 took all thirteen**, as items 21–33 of its `READINESS.md`. They are kept below as the
+layout. **R2 took all fourteen**, recorded as items 21–33 of its `READINESS.md` — thirteen entries, because two of the fourteen were answered together. They are kept below as the
 build's own checklist: each one names the shipped path a task has to honour, which the handoff's
 summary of it does not.
 
@@ -209,9 +209,12 @@ fold, called twice with different card sets. Gap 9 (no curve histogram) is accep
    and `claimSurfaces()` is what adds `/collection`, `/commanders` and `/discover`
    (`src/lib/decks/revalidate.ts`). Naming `deckSurfaces()` would leave every other deck's
    availability stale after a pull.
-5. **The grouping UI is deck-page-local.** `grouping.ts` exports the pure helpers, but
-   `DecklistGroup` and `GroupToggle` live inside `decklist.tsx`. *"Mount the same grouping"* needs an
-   extraction task before any of the three new surfaces can mount it.
+5. ~~**The grouping UI is deck-page-local**, so *"mount the same grouping"* needs an extraction task
+   first.~~ **Withdrawn — the premise is false against the current tree.** `decklist-group.tsx`,
+   `decklist-group-header.tsx` and `group-toggle.tsx` are three separate modules that `decklist.tsx`
+   imports, and `groupByCardType` already sorts alphabetically within each group. The three new
+   surfaces mount them as they stand; there is no prerequisite. Kept struck through rather than
+   deleted because the handoff and the spec both still state it.
 6. **The game log has no mono column-header row**, so `ver` cannot join one. The row's slots are
    result square 26px → meta `md:w-[132px]` → mark chips `flex-1` → delete 44/30px. The 44px version
    slot is still drawable; the header it was drawn under does not exist.
@@ -247,9 +250,11 @@ fold, called twice with different card sets. Gap 9 (no curve histogram) is accep
     the shipped width nor the shipped breakpoint behaviour.
 12. **`decklist-row`'s padding is 9px/8px, so the 3px left rule cannot be absorbed as drawn.**
     `ROW_PADDING = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]"` (`decklist-row.tsx:41`). READINESS
-    1b says left padding goes 12px → 10px desktop and 11px → 9px phone; the real move is 9px → 6px
-    desktop and 8px → 5px phone. The *ruling* survives — no grid template changes, no row grows —
-    but the numbers quoted describe a row that does not exist.
+    1b says left padding goes 12px → 10px desktop and 11px → 9px phone, which describes a row that
+    does not exist. **Superseded entirely — there is no absorption to compute.** `DecklistRow` draws
+    its marks as inset box shadows (`rowEdges`), which displace nothing, so the 2px mark is one more
+    entry in that array and no padding, grid template or row height changes. The *ruling* survives;
+    the arithmetic under it was never needed.
 13. **The README component table and `STATES-pending.md` states 13/14 still describe the pre-R1.2
     layout.** They carry the 300px stripped removes rail, the commit sheet repeating the review
     page's two lists, and a per-row type slot on the diff row — all three reversed by READINESS
@@ -272,7 +277,7 @@ fold, called twice with different card sets. Gap 9 (no curve histogram) is accep
 - `loadDeckBuyRows` uses the LEFT join R1 asked for (`src/lib/decks/availability-query.ts:390`), so
   a draft-added card is in the buy list the moment it is added. Every figure in the handoff depends
   on this and it is shipped.
-- `deckBodySize()` exists and owns `DECK_TOTAL = 100`, returning 99 or 98
+- `deckBodySize(hasPartner)` exists and owns `DECK_TOTAL = 100`, returning 99 or 98
   (`src/lib/decks/deck-size.ts:7`) — the only place the `Commit as v1` offer learns the number.
 - `deckGames.versionId → deckVersions.id` is nullable with `on delete set null`
   (`src/db/schema.ts:348`), so *"how many games it held"* is answerable and a discarded version
