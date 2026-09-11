@@ -207,8 +207,10 @@ export const deckFolders = pgTable("deck_folders", {
   name: text("name").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
+  // This unique index is also the read index: its leading `user_id` serves the
+  // per-player filter and the name ordering `listFolders` asks for, so a second
+  // index on `user_id` alone would cost writes and storage and buy nothing.
   unique("deck_folders_user_name_key").on(t.userId, t.name),
-  index("deck_folders_user_idx").on(t.userId),
 ]);
 
 export const decks = pgTable("decks", {

@@ -21,6 +21,13 @@ import { db } from "../../db";
 import { deckFolders, decks } from "../../db/schema";
 import { validateFolderName } from "./folder-name";
 
+/** Postgres 23503. The driver hands the SQLSTATE back on the error object; a
+ *  message match would break the first time a locale or a version reworded it. */
+function isForeignKeyViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error
+    && (error as { code?: unknown }).code === "23503";
+}
+
 export type DeckFolder = {
   id: string;
   name: string;
@@ -106,33 +113,45 @@ export async function moveDeck(
   userId: string,
   folderId: string | null,
 ): Promise<boolean> {
-  // ONE STATEMENT, and that is the whole point. A select confirming the folder
-  // is this player's followed by an update is a race: a folder deleted between
-  // the two leaves the update to fail the foreign key and throw 23503, where
-  // the caller asked a question that has a false answer. Inside one statement
-  // the `exists` and the foreign key's own check see the same snapshot, and the
-  // key-share lock the check takes makes a concurrent delete wait rather than
-  // race — so the move either happens or reports false.
+  // ONE STATEMENT, plus one translated error, and both halves are needed.
+  //
+  // The statement replaces a select-then-update pair, which widened the window
+  // in which a folder could be deleted between the two. The `exists` is not a
+  // lock, though, so the window is narrowed rather than closed: a delete that
+  // commits after this statement's snapshot but before the foreign key's own
+  // check raises 23503 on a question whose honest answer is false. That is what
+  // the catch below is for — a folder that no longer exists is a folder there
+  // was nothing to move onto, which is exactly what a false return says. The
+  // alternative, a transaction taking `for key share` on the folder row, buys a
+  // lock and a round trip to report the same answer.
   //
   // The folder's `user_id` is in the `exists`, not merely its id: without it a
   // deck could be filed onto another player's shelf by id, and `decks.folder_id`
   // has no user column of its own to constrain.
   const target = sql.param(folderId);
-  const moved = await db.execute<{ id: string }>(sql`
-    update decks set folder_id = ${target}::uuid
-    where id = ${deckId}::uuid
-      and user_id = ${userId}
-      and (
-        ${target}::uuid is null
-        or exists (
-          select 1 from deck_folders f
-          where f.id = ${target}::uuid and f.user_id = ${userId}
+  try {
+    const moved = await db.execute<{ id: string }>(sql`
+      update decks set folder_id = ${target}::uuid
+      where id = ${deckId}::uuid
+        and user_id = ${userId}
+        and (
+          ${target}::uuid is null
+          or exists (
+            select 1 from deck_folders f
+            where f.id = ${target}::uuid and f.user_id = ${userId}
+          )
         )
-      )
-    returning id
-  `);
+      returning id
+    `);
 
-  return moved.rows.length > 0;
+    return moved.rows.length > 0;
+  } catch (error) {
+    // ONLY the foreign key, and only this one. Anything else is a real failure
+    // and has to keep travelling: a caller told `false` by a connection error
+    // would report "that folder is gone" about a folder that is still there.
+    if (isForeignKeyViolation(error)) return false;
+    throw error;
+  }
 }
 
 /**

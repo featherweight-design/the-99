@@ -7,7 +7,6 @@ CREATE TABLE "deck_folders" (
 );
 --> statement-breakpoint
 ALTER TABLE "decks" ADD COLUMN "folder_id" uuid;--> statement-breakpoint
-CREATE INDEX "deck_folders_user_idx" ON "deck_folders" USING btree ("user_id");--> statement-breakpoint
 ALTER TABLE "decks" ADD CONSTRAINT "decks_folder_id_deck_folders_id_fk" FOREIGN KEY ("folder_id") REFERENCES "public"."deck_folders"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "decks_user_folder_idx" ON "decks" USING btree ("user_id","folder_id");--> statement-breakpoint
 CREATE INDEX "decks_folder_idx" ON "decks" USING btree ("folder_id");

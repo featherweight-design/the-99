@@ -1,5 +1,5 @@
 {
-  "id": "80342079-7684-4fc5-bb44-a022d0b86e18",
+  "id": "af8e9b17-394a-4579-90de-6be3e59e5457",
   "prevId": "a6eac463-791b-432b-ac8e-4ab93de570f1",
   "version": "7",
   "dialect": "postgresql",
@@ -833,23 +833,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "deck_folders_user_idx": {
-          "name": "deck_folders_user_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
