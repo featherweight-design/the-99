@@ -150,6 +150,14 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
     expect(result.unresolved).toEqual([]);
   });
 
+  it("leaves a bracketed (CMDR) to the set-code path", () => {
+    // The abbreviation fits the set-code shape, so reading it as a declaration
+    // would take a printing identity away from a line that meant one.
+    const result = build("1 Sol Ring (CMDR)");
+    expect(result.declaredCommander).toBeNull();
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+  });
+
   it("does not treat a card whose name starts with a marker word as a section header", () => {
     const sideboardish = card({ name: "Sideboard Shenanigans" });
     const result = build("1 Sideboard Shenanigans", [...CATALOG, sideboardish]);

@@ -63,7 +63,7 @@ Twenty-four states across the five steps, at both widths. Canonical numbers thro
 | **The list names the deck's commander in the 99** | Deduped silently, exactly as `buildDeckImport` already does — an export artifact, not intent. |
 | **The list declares a Partner pair** | The extra commander is noted and kept out of the 99, exactly as the importer already does. It is **not** a conflict (state 13) unless the *first* declared commander differs. |
 | **Quantity > 1 on a non-basic** | Clamped to 1 with a note, as the importer already does. The note surfaces in the diff's provenance line. |
-| **A basic land's quantity changes** | Lands in `unchanged` and is reconciled silently. Gap 2 — the diff will not tell you your Islands went 12 → 9. |
+| **A basic land's quantity changes** | Lands in `unchanged` rather than among the departures, and is named in a note. **Gap 2 closed** — see the errata below. |
 | **A kept card that the app placed (`auto`)** | Left exactly as it was, `auto` included. The sweep can still take it. |
 | **`Clear all auto` after an update** | Cannot delete anything the list named — Apply cleared those flags. |
 | **Sideboard / maybeboard in the paste** | Skipped with a note, as the importer already does. Those lines are not removals. |
@@ -78,3 +78,9 @@ Twenty-four states across the five steps, at both widths. Canonical numbers thro
 - No toast anywhere.
 - No modal anywhere — the diff is a page.
 - No `--danger` anywhere in the flow, including the deletions.
+
+## Errata
+
+| date | what changed | why |
+|---|---|---|
+| 2026-09-10 | **Gap 2 closed.** A basic whose count the list moves is still kept out of "Coming out" and "Going in" — that part of the ruling stands, and it is what keeps a 12 → 9 from burying the cards that actually left. What changed is that the diff now prints the moved counts as a note beside the ones it already draws: *"Same cards, new counts: Island 7 → 8."* | Silence about the change turned out to be silence about the arithmetic. The chips count rows and the landing figure counts copies, so a reconciled copy closes the gap between them invisibly: a real paste read 16 out, 15 in, and a deck landing at 99, with nothing on the screen to account for the extra copy. Reported as a reason not to trust the screen enough to press Apply, which is the one thing this diff exists to earn. |

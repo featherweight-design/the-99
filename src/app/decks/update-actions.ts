@@ -49,12 +49,11 @@ export type DeckUpdatePreview = {
   out: DeckUpdateChangedRow[];
   in: DeckUpdateChangedRow[];
   unchanged: DeckUpdateRow[];
-  /** The cards the list keeps but asks for a different number of. The landing
-   *  figure has to carry them: it is compared to 99, so it is the one number
-   *  that cannot be off, while the group counts stay row counts. They are named
-   *  rather than summed because a reader adding the chips up otherwise lands
-   *  somewhere the screen never accounts for. */
-  recounted: { oracleId: string; name: string; from: number; to: number }[];
+  /** The cards the list keeps but asks for a different number of, straight from
+   *  the planner. The landing figure has to carry them: it is compared to 99,
+   *  so it is the one number that cannot be off, while the group counts stay
+   *  row counts. */
+  recounted: DeckUpdatePlan["recounted"];
   unresolved: DeckUpdatePlan["unresolved"];
   noChange: boolean;
 };
@@ -178,29 +177,10 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     out: widened.out,
     in: widened.in,
     unchanged: plan.unchanged,
-    recounted: recounted(rows, plan.unchanged),
+    recounted: plan.recounted,
     unresolved: plan.unresolved,
     noChange: plan.noChange,
   };
-}
-
-/** The reconciled quantities, one entry per card whose count moves. `unchanged`
- *  rows carry the quantity the list asks for, so this is that against what the
- *  deck holds now — the change the diff makes without listing it among the
- *  groups. In practice it is the mana base and nothing else. */
-function recounted(
-  current: { oracleId: string; quantity: number }[],
-  unchanged: DeckUpdateRow[],
-): DeckUpdatePreview["recounted"] {
-  const now = new Map(current.map((r) => [r.oracleId, r.quantity]));
-  return unchanged
-    .map((r) => ({
-      oracleId: r.oracleId,
-      name: r.name,
-      from: now.get(r.oracleId) ?? 0,
-      to: r.quantity,
-    }))
-    .filter((r) => r.from !== r.to);
 }
 
 /**
