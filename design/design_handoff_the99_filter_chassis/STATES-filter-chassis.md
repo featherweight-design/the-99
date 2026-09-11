@@ -59,6 +59,10 @@ Never sort, and never search — both are on the persistent row.
 | `/discover` | search · colour · **printed-in** | Any / Exactly | 5, all glossed |
 | `/collection` | search · colour · type · set · availability | — | 5 × direction, + view toggle |
 
+> ⚠️ **Superseded — `printed-in` is cut from this round. The two commander lanes ship
+> search · colour (· score-against on `/commanders`) and the `printed-in` column above is a
+> later slice. See `docs/superpowers/readiness-filter-chassis.md` §6.**
+
 `printed-in` is the one dimension this round adds. `status` and `played-window` are deck-only;
 `type`, `set` and `availability` are collection-only. Per §2.2 that is correct and not a gap.
 
@@ -102,6 +106,8 @@ lane rather than a ratio.
   back — both shipped surfaces already promise this in comments.
 
 ## 4 · Open panel
+> ⚠️ **Superseded — the wide panel is a dialog containing a listbox of options, not a menu. See `docs/superpowers/readiness-filter-chassis.md` §6.**
+
 
 - Anchored to its trigger, 280px, `--surface-rail` on a `--border-strong` hairline, 16px/40px
   shadow. Opening lands focus on the current value, not the first row.

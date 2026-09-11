@@ -101,7 +101,9 @@ hairline could never have been the carrier.
 rounded square and the column's 7px one would either crop the artwork or float it in a box. The
 phone pip is 44px itself, not a 26px pip inside a 44px hit area.
 
-**9. `Printed in ▾`, matching any printing, on both commander lanes.** §6 option (1).
+**9. `Printed in ▾`, matching any printing, on both commander lanes.**
+> ⚠️ **Superseded — `Printed in` is cut from this round; this decision is a later slice. See `docs/superpowers/readiness-filter-chassis.md` §6.**
+ §6 option (1).
 Option (2) — owned printing — is the better long-term answer and engineering is right that it is
 the direction, but it cannot ship on the surface that needs it: `candidates.ts` partitions
 `/discover` to commanders the player does not own, so an owned-printing filter there matches
@@ -160,7 +162,9 @@ could ask — *what would this control do here?* Score-against on discover has n
 keeps its value, keeps `aria-disabled`, stays focusable. `/decks` and `/collection` AND their
 colours together and mount no modifier, unchanged from today.
 
-**18. The control row never wraps. There are two forms and nothing in between.** Wide above
+**18. The control row never wraps. There are two forms and nothing in between.**
+> ⚠️ **Superseded — the 887px total is 987px, and the switch is 1000px. See `docs/superpowers/readiness-filter-chassis.md` §6.**
+ Wide above
 900px, compact below. Search is the only child that shrinks (`min-width: 132`); every control is
 `flex: none` with `white-space: nowrap`; the trailing sort group is `flex: none` too, so it can
 never be pushed to a second line. The switch is set by `/collection`'s seven controls, not
@@ -234,6 +238,8 @@ the one decision I want confirmed before build.
 ---
 
 ## Measured, to two decimals, in all six themes
+> ⚠️ **Superseded — three pip hexes were assumed and are wrong; the floor is 7.77:1, and the shipped 1.38:1 is against `--bg`. See `docs/superpowers/readiness-filter-chassis.md` §6.**
+
 
 | | Floor | Where |
 |---|---|---|

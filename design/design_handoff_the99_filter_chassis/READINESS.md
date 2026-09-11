@@ -107,7 +107,9 @@ the brief's own ruling, and the pips here are drawn so the two can converge with
 
 ## Not blocking, but I want eyes on it
 
-**The 900px switch is a judgement, not a measurement.** The arithmetic says `/collection` cannot be
+**The 900px switch is a judgement, not a measurement.**
+> ⚠️ **Superseded — the arithmetic behind it is wrong and the switch is 1000px. See `docs/superpowers/readiness-filter-chassis.md` §6.**
+ The arithmetic says `/collection` cannot be
 honest in the wide form below 887px, and 900 is that plus a margin. But it means a small laptop in a
 half-width window gets the phone treatment on a pointer device, where a 44px target row and a bottom
 sheet are both slightly wrong. The alternative — a per-route switch — makes the breakpoint a
@@ -131,6 +133,8 @@ dimensions it is five extra passes over an in-memory list — cheap, but it is n
 currently written.
 
 ## Dependencies
+> ⚠️ **Superseded — `printings.setCode`, `printedIn` and the printing-aware lane belong to the cut `Printed in` slice, not to this round. See `docs/superpowers/readiness-filter-chassis.md` §6.**
+
 
 - **Set collections Task 9** — the extracted colour control this treatment lands on.
 - **`printings.setCode` reachable from the commander lane** — the `Printed in` dimension, option
