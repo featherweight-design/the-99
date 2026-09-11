@@ -408,6 +408,19 @@ describe("CommandersView ranking toggle", () => {
     expect(cards()[0]).toHaveTextContent("General 0");
   });
 
+  // The mirror's effect is keyed on the params object. Derived fresh per render
+  // it re-fired on every unrelated update — revealing a batch of rows, moving the
+  // live announcement — and each of those is a `replaceState` Next adopts into
+  // router state.
+  it("writes the URL once, not on every unrelated render", () => {
+    view(results(60), { freeItems: null });
+    const before = urls().length;
+    fireEvent.click(control()!);
+    fireEvent.click(control()!);
+    // Two reveals, and the query they produce is the same one already in the bar.
+    expect(urls().length - before).toBeLessThanOrEqual(2);
+  });
+
   it("follows the URL on a fresh mount too", () => {
     const all = results(3);
     view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });

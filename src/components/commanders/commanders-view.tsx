@@ -155,8 +155,14 @@ export function CommandersView({
   // navigation restores is the one whose key was fixed at its first render.
   const [edit, setEdit] = useState<{ from: string; to: string; params: LaneParams } | null>(null);
   const liveQuery = search.toString();
+  // Memoised on the query it was parsed from, because this object is the URL
+  // mirror's dependency: a fresh one per render would re-fire that effect — and
+  // so `history.replaceState`, which Next adopts into router state — on every
+  // unrelated update, revealing a batch of rows or moving the live announcement
+  // included.
+  const urlParams = useMemo(() => fromUrl(new URLSearchParams(liveQuery)), [fromUrl, liveQuery]);
   const params =
-    edit && (liveQuery === edit.from || liveQuery === edit.to) ? edit.params : fromUrl(search);
+    edit && (liveQuery === edit.from || liveQuery === edit.to) ? edit.params : urlParams;
 
   const setParams = useCallback(
     (next: LaneParams | ((prev: LaneParams) => LaneParams)) => {
