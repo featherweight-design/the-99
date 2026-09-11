@@ -95,6 +95,25 @@ describe("FilterChassis", () => {
     expect(remove.className).toContain("after:min-w-[44px]");
   });
 
+  it("reserves the chip row's height so toggling the first filter moves nothing", () => {
+    // The invariant the whole frame rests on. `No filters on` is a bare line box
+    // and a chip is 11px over py-[3px] inside a border, so without a floor the
+    // row grows on the first filter and takes row 3 and the list down with it.
+    const { container, rerender } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    const row = () => container.querySelector("[data-chassis-row='chips']") as HTMLElement;
+    const atRest = row().style.minHeight;
+    expect(atRest).toBe("22px");
+    rerender(<FilterChassis {...base} controls={null} chips={[chip("a", "Status · Playing")]} />);
+    expect(row().style.minHeight).toBe(atRest);
+  });
+
+  it("gives clear-all the same 44px target as the chip beside it", () => {
+    render(<FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />);
+    const clear = screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." });
+    expect(clear.className).toContain("after:h-[44px]");
+    expect(clear.className).toContain("after:min-w-[44px]");
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,

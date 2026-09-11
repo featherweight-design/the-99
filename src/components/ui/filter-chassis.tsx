@@ -69,6 +69,15 @@ export type FilterChassisProps = {
   form: "wide" | "compact";
 };
 
+/**
+ * Row 2's reserved height, in px. A chip draws at 11px over `py-[3px]` inside a
+ * 1px border — 22px — while `No filters on` is a bare line box at roughly 16px.
+ * Without a floor the row grows the moment the first filter goes on, which
+ * moves row 3 and the list beneath it: exactly the motion decision 2 exists to
+ * prevent, and the reason the rest state prints a line instead of collapsing.
+ */
+const CHIP_ROW_MIN_PX = 22;
+
 /** The width at which the control row would have to wrap, so it changes form instead. */
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
@@ -105,7 +114,11 @@ export function FilterChassis({
 
       {/* Row 2 — present at rest, which is the invariant. Never conditionally
           rendered: `{chips.length > 0 && …}` is the bug this decision forbids. */}
-      <div className="flex flex-wrap items-center gap-[6px]" data-chassis-row="chips">
+      <div
+        className="flex flex-wrap items-center gap-[6px]"
+        style={{ minHeight: CHIP_ROW_MIN_PX }}
+        data-chassis-row="chips"
+      >
         {chips.length === 0 ? (
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
             {chassisCopy.chips.none}
@@ -140,7 +153,16 @@ export function FilterChassis({
               type="button"
               onClick={onClearAll}
               aria-label={chassisCopy.chips.clearAllAria}
-              className="cursor-pointer border-0 bg-transparent p-0 font-mono text-[11px] text-[color:var(--fg-muted)] underline"
+              // Same hit-area treatment as the chip beside it: an overlay
+              // rather than padding, so the control clears 44px without the
+              // chip line growing. Overlooked when the chips got theirs — one
+              // control in a row is never the whole class.
+              className={[
+                "relative cursor-pointer border-0 bg-transparent p-0",
+                "font-mono text-[11px] text-[color:var(--fg-muted)] underline",
+                "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px]",
+                "after:w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+              ].join(" ")}
             >
               {chassisCopy.chips.clearAll}
             </button>
