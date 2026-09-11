@@ -141,6 +141,10 @@ async function pickFixture() {
         -- preference outranks both. Excluding them here keeps the expected URL
         -- and the resolved one the same thing, rather than failing a route
         -- that is behaving correctly.
+        -- And a printing that HAS a picture: a null one is "distinct from" the
+        -- oracle image and would sort to the front as the subject, but the
+        -- route falls through it to the oracle art and prints no name at all.
+        and p.image_uri is not null
         and ci.scryfall_id is null
         and not exists (
           select 1 from card_art_preferences a
