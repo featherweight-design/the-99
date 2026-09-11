@@ -69,8 +69,11 @@ describe("ColourPips", () => {
   });
 
   it("reads an uppercase value, since routes store identity either way", () => {
+    // Asserting existence alone would pass with the normalisation removed —
+    // the pips render either way. The lit state is what depends on it.
     render(<ColourPips value={["W", "R"]} onToggle={() => {}} form="wide" />);
-    expect(screen.getByRole("switch", { name: "White" })).toBeTruthy();
-    expect(screen.getByRole("switch", { name: "Red" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "White" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("switch", { name: "Red" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("switch", { name: "Blue" })).toHaveAttribute("aria-checked", "false");
   });
 });

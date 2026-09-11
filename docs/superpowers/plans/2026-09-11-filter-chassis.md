@@ -38,7 +38,7 @@ vocabulary, the sheet, or the 262px `/decks` regains. The whole consistency win 
 
    **Parameterised is not "mounted unchanged", and the gap contains a live bug.** The panel picks
    popover versus sheet from `useIsDesktop()` — `(min-width: 768px)`,
-   `src/components/ui/use-is-desktop.ts:8` — while the chassis switches form at 900px. Between those
+   `src/components/ui/use-is-desktop.ts:8` — while the chassis switches form at 1000px. Between those
    widths the compact chassis would open a desktop popover inside the phone frame. **The panel takes
    its form from the caller**, as a prop, defaulting to today's behaviour so the collection panel and
    every other existing mount are unaffected. Desktop option rows are `min-h-[40px]` (`:465`) against
@@ -121,7 +121,7 @@ accessible name is the colour's name rather than its code.
 
 New `src/components/ui/filter-chassis.tsx`. Three rows, always all three (decision 1):
 
-1. Controls — full width, never wraps, two forms switching at 900px (decision 18).
+1. Controls — full width, never wraps, two forms switching at 1000px (decision 18).
 2. The chip line — prints `no filters on` at rest rather than collapsing (decision 2). This is the
    line that makes the frame a fixed height, so it must not be conditionally rendered.
 3. The result line — `rack/result-line.tsx` **moved, not rewritten** (decision 13).
@@ -140,7 +140,7 @@ dialogs and two scrims on screen. It does not arise here — `/decks` has no sea
 than a second dialog.
 
 **Test:** at four dimensions and at five the frame's height is identical; the control row does not
-wrap at 900px or at 1440px; `no filters on` is present in the DOM at rest.
+wrap at 1000px or at 1440px; `no filters on` is present in the DOM at rest.
 
 ---
 

@@ -85,7 +85,13 @@ export function FilterChassis({
           R1's wrapping row was reported as. `min-w-0` on the leading group is
           what makes search the only shrinking child. */}
       <div className="flex items-center gap-[8px]" data-chassis-row="controls">
-        <div className="flex min-w-0 flex-auto items-center gap-[8px] overflow-hidden">
+        {/* No `overflow-hidden` here, ever. `FilterPanel` puts its desktop
+            popover in an absolutely positioned descendant of its own relative
+            root (`filter-panel.tsx:806-874`), so clipping this group hides
+            every panel the chassis opens — and it clips focus outlines with
+            them. `min-w-0` is what lets the group shrink; the shrinking is
+            constrained on the one control that may shrink, not by a clip. */}
+        <div className="flex min-w-0 flex-auto items-center gap-[8px]">
           {controls}
         </div>
         {/* The hairline is the separation, and it is why sort reads as not-a-filter. */}
