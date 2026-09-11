@@ -8,6 +8,7 @@ import type { Availability } from "../../lib/decks/availability";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { printedNameCopy } from "../../lib/copy/card-surfaces";
+import { printingPickerCopy } from "../../lib/copy/collection";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(),
@@ -316,6 +317,37 @@ describe("CardModal printing picker scope", () => {
     });
     // The trigger sets the count beside a chevron, so match the phrase, not the whole node.
     expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+  });
+
+  // The caller can re-read the open card and hand back the same oracle id, which does not
+  // remount this component. A pick seeded once would then keep showing the printing the
+  // preference no longer names, for as long as the reader left the modal open.
+  it("follows a preference that changes under the mounted modal", () => {
+    const owned = {
+      ...card,
+      quantity: 3,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+      ],
+    };
+    const view = render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+
+    view.rerender(
+      <CardModal
+        card={{ ...owned, preferredPrinting: { setCode: "ELD", collectorNumber: "8" } }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(screen.queryByText(/2 printings you own/)).toBeNull();
+    expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
   });
 });
 

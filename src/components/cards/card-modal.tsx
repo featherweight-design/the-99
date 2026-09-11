@@ -32,6 +32,11 @@ import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 
 const pickerCopy = printingPickerCopy.printing;
 
+/** A preference as one comparable value, so two reads of the same pick compare equal. */
+function preferenceOf(p: PreferredPrinting | null): string {
+  return p ? `${p.setCode}/${p.collectorNumber}` : "";
+}
+
 // Renders oracle text with paragraph breaks, italic reminder text, and bolded keywords.
 function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
   const paragraphs = text.split("\n");
@@ -273,12 +278,26 @@ export function CardModal({
   // No reset on card change: the provider keys this component on oracleId, so
   // Prev/Next remounts and a new card starts on its front face by construction.
   const [flipped, setFlipped] = useState(false);
-  const [, startWrite] = useTransition();
+  const [writing, startWrite] = useTransition();
 
   // The pick the user just made, before the server action's revalidate lands. Seeding it from
   // the card is only correct because the caller keys this component on oracleId — paging
   // Prev/Next remounts rather than reusing the state of the card you just left.
   const [pick, setPick] = useState<PreferredPrinting | null>(card.preferredPrinting);
+
+  // A caller can hand this component a re-read of the same card, so the seed above is not
+  // the last word: without this, a preference that moved on the server would be ignored for
+  // as long as the modal stayed open, and the art, caption and selected tile would all keep
+  // showing the printing it replaced. Compared by value rather than identity — a re-read
+  // brings a new object every time, and resetting on that would throw away a live pick.
+  // A write of the reader's own is the exception: its optimistic pick is the thing this
+  // state exists to hold until the write lands.
+  const preferenceKey = preferenceOf(card.preferredPrinting);
+  const [seeded, setSeeded] = useState(preferenceKey);
+  if (!writing && preferenceKey !== seeded) {
+    setSeeded(preferenceKey);
+    setPick(card.preferredPrinting);
+  }
 
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
