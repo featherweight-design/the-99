@@ -372,6 +372,39 @@ describe("CardDetailProvider card cache", () => {
     expect(trigger).toHaveAttribute("aria-busy", "true");
   });
 
+  // The window a bare delete leaves open: the re-ask a reopen starts is already out when
+  // the write lands, so its answer is from before the write. Filing it would put the
+  // replaced printing back in the cache for the rest of the visit.
+  it("drops a read an eviction overtook", async () => {
+    let resolveReask!: (c: BrowseCard) => void;
+    const fetchCard = vi.fn()
+      .mockResolvedValueOnce(SIGNET)
+      .mockImplementationOnce(() => new Promise<BrowseCard>((r) => { resolveReask = r; }));
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+    await click(trigger);
+    await screen.findByRole("dialog");
+    await click(screen.getByRole("button", { name: "close" }));
+
+    await click(trigger);
+    await click(screen.getByRole("button", { name: "evict" }));
+    await act(async () => { resolveReask(SIGNET); });
+    await click(screen.getByRole("button", { name: "close" }));
+
+    fetchCard.mockImplementation(() => new Promise<BrowseCard>(() => {}));
+    await click(trigger);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(trigger).toHaveAttribute("aria-busy", "true");
+  });
+
   // The write the eviction exists for, driven through the real picker rather than a
   // stand-in: a change that stopped calling `onArtChange` would leave every test above
   // passing while the reader reopened the card onto the printing they had replaced.

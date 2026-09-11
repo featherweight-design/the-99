@@ -142,6 +142,11 @@ export function CardDetailProvider({
   // and send no signal a client cache could listen for, so the only honest way to hold
   // a card across them is to re-ask and correct what is already on screen.
   const cache = useRef(new Map<string, BrowseCard>());
+  // How many times each card has been evicted. A read that started before an eviction
+  // answers with what the write it raced has not replaced yet, so the count taken when
+  // the read starts is compared against the count when it lands: a read from the wrong
+  // side of a write is dropped rather than filed as the current answer.
+  const evictions = useRef(new Map<string, number>());
 
   const load = useCallback(
     async (oracleId: string, list?: string[]) => {
@@ -150,6 +155,7 @@ export function CardDetailProvider({
       // A hit lands in the same pass as the click, so no pending state is ever set and
       // the trigger never flashes a busy affordance for a wait that does not happen.
       const hit = cache.current.get(oracleId);
+      const evictedAtStart = evictions.current.get(oracleId) ?? 0;
       if (hit) {
         setPendingOracleId(null);
         setFailed(false);
@@ -161,6 +167,11 @@ export function CardDetailProvider({
       try {
         const next = await fetchCard(oracleId);
         if (latest.current !== request) return;
+        // An eviction landed while this read was out, so the read is from the wrong side
+        // of the write that caused it. Nothing is filed and nothing is painted — the
+        // reader is looking at the change they just made, which is what they should see,
+        // and the next open re-reads from a settled world.
+        if ((evictions.current.get(oracleId) ?? 0) !== evictedAtStart) return;
         if (next) {
           cache.current.set(oracleId, next);
           setCard(next);
@@ -206,6 +217,7 @@ export function CardDetailProvider({
 
   const evict = useCallback((oracleId: string) => {
     cache.current.delete(oracleId);
+    evictions.current.set(oracleId, (evictions.current.get(oracleId) ?? 0) + 1);
   }, []);
 
   const value = useMemo<CardDetailContextValue>(
