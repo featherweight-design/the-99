@@ -590,6 +590,72 @@ describe("CardDetailProvider card cache", () => {
     expect(fetchCard.mock.calls.filter(([id]) => id === "o-signet")).toHaveLength(2);
   });
 
+  // A read that found nothing and a read that threw are the same failure, and neither is
+  // worth emptying the modal the reader already has.
+  it("leaves the card they came from painted when the card they asked for is gone", async () => {
+    const fetchCard = vi.fn(async (oracleId: string) => (oracleId === "o-sol" ? null : SIGNET));
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">
+          Sol Ring
+        </CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
+    await screen.findByText(cardDetailCopy.unavailable);
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET.name);
+  });
+
+  // Nothing is painted, so there is no fallback to leave the reader on.
+  it("opens nothing when the first card asked for is gone", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(null);
+    renderTriggers(fetchCard);
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+
+    await screen.findByText(cardDetailCopy.unavailable);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // A write in the modal still painted behind a read for another card cannot re-read there
+  // and then — that would abandon the read the reader is waiting for. It is owed instead,
+  // and paid once that read is done and the card turns out to still be the one on screen.
+  it("pays a write owed to the card behind a read once that read is done", async () => {
+    let resolveSol!: (c: BrowseCard | null) => void;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-sol") return new Promise<BrowseCard | null>((r) => { resolveSol = r; });
+      return SIGNET;
+    });
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">
+          Sol Ring
+        </CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
+
+    // The art pick the reader makes in the modal still painted behind that read.
+    await click(screen.getByRole("button", { name: "evict" }));
+    expect(fetchCard.mock.calls.filter(([id]) => id === "o-signet")).toHaveLength(1);
+
+    // Sol Ring turns out not to exist, so Arcane Signet is what the reader is left looking at.
+    await act(async () => { resolveSol(null); });
+    await waitFor(() =>
+      expect(fetchCard.mock.calls.filter(([id]) => id === "o-signet")).toHaveLength(2));
+  });
+
   // The write the eviction exists for, driven through the real picker rather than a
   // stand-in: a change that stopped calling `onArtChange` would leave every test above
   // passing while the reader reopened the card onto the printing they had replaced.

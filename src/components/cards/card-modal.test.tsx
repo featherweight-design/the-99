@@ -383,6 +383,46 @@ describe("CardModal printing picker scope", () => {
     );
     expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
   });
+
+  // The eviction a pick fires starts a read straight away, and that read can answer before
+  // the write does — with the preference as it stood before the pick. Nothing waits for the
+  // read taken after the write, so the transition ends first: without retiring the stale
+  // card, the reader watches their pick revert to the printing they just replaced.
+  it("holds the pick when a read from before the write answers first", async () => {
+    const actions = await import("../../app/collection/actions");
+    let settle!: () => void;
+    vi.mocked(actions.setCardArtPreference).mockImplementation(
+      () => new Promise<void>((r) => { settle = () => r(); }),
+    );
+    const owned = {
+      ...card,
+      quantity: 3,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+      ],
+    };
+    const view = render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+
+    // The read from before the write lands while the write is still running.
+    view.rerender(
+      <CardModal card={{ ...owned }} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => { settle(); });
+
+    expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
+    vi.mocked(actions.setCardArtPreference).mockReset();
+  });
 });
 
 // The printed name (#467 follow-on). The title is what the copy in hand says it

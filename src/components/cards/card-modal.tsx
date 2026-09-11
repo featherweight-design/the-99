@@ -6,7 +6,7 @@
 // - Escape closes; focus returns to the previously-focused element on close
 
 import Link from "next/link";
-import React, { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
 import {
   cssUrl,
@@ -299,6 +299,16 @@ export function CardModal({
     setPick(card.preferredPrinting);
   }
 
+  // The read the write's own eviction starts can answer before the write does, and the card
+  // it brings back predates the write. Holding it while the write runs is not enough: the
+  // write's second eviction starts the read that supersedes it, and nothing waits for that
+  // read, so the transition ends first and the stale card reconciles a moment later — the
+  // reader watches their pick revert to the printing they replaced. Marking such a card as
+  // seeded on the way out of the write retires it without reconciling, so the pick stands
+  // until the read taken after the write answers.
+  const arrived = useRef(card);
+  useEffect(() => { arrived.current = card; }, [card]);
+
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
   const preview = useMemo<BrowseCard>(() => ({ ...card, preferredPrinting: pick }), [card, pick]);
@@ -353,6 +363,7 @@ export function CardModal({
     onArtChange?.();
     startWrite(async () => {
       await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+      setSeeded(arrived.current);
       onArtChange?.();
     });
   }
@@ -362,6 +373,7 @@ export function CardModal({
     onArtChange?.();
     startWrite(async () => {
       await clearCardArtPreference(card.oracleId);
+      setSeeded(arrived.current);
       onArtChange?.();
     });
   }

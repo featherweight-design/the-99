@@ -7,7 +7,7 @@
 // cards' printings with the page to open one of them is the alternative.
 
 import {
-  createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -174,12 +174,21 @@ export function CardDetailProvider({
   // cache, because an eviction's own re-read has deleted its entry and is still looking at
   // the card it is re-reading.
   const shownRef = useRef<string | null>(null);
+  // A card a write landed on while a read for a different one was in flight. The modal the
+  // reader wrote in is the one still painted behind that read, and re-reading it there would
+  // abandon the read they are waiting for — so the re-read is owed rather than taken, and
+  // paid once the read in flight is done and that card turns out to still be the one shown.
+  const owed = useRef<string | null>(null);
   const show = useCallback((next: BrowseCard | null) => {
     openRef.current = next?.oracleId ?? null;
     shownRef.current = openRef.current;
     setCard(next);
   }, []);
 
+  // `load` pays the debt above by calling itself, which it cannot do by name without giving
+  // up its own memoization — every surface holds `open` through the context, so rebuilding
+  // it on each render would re-render all of them.
+  const loadRef = useRef<(oracleId: string, list?: string[]) => Promise<void>>(async () => {});
   const load = useCallback(
     async (oracleId: string, list?: string[]) => {
       const request = ++latest.current;
@@ -234,14 +243,12 @@ export function CardDetailProvider({
           // A card the server could not find is the one result not worth keeping: it is
           // rare, and filing it would keep the card missing for the rest of the visit.
           cache.current.delete(oracleId);
-          // The reader is already looking at the card, and a card that has gone missing
-          // between two reads of it is not worth yanking the modal out from under them.
-          if (standing) {
-            giveUp();
-          } else {
-            show(null);
-            setFailed(true);
-          }
+          // A read that found nothing is a read that failed, and is treated exactly like
+          // one that threw: whatever is painted stays painted. The reader is left on the
+          // card they came from rather than on an empty screen, and a card that has gone
+          // missing between two reads of it is not worth yanking out from under them.
+          if (!standing) setFailed(true);
+          giveUp();
         }
       } catch {
         if (latest.current !== request) return;
@@ -252,11 +259,18 @@ export function CardDetailProvider({
         if (latest.current === request) {
           setPendingOracleId(null);
           inFlight.current = null;
+          const debt = owed.current;
+          owed.current = null;
+          // Only if that card is still the one on screen: a write on a card the reader has
+          // since left costs nothing to forget, because its entry is already gone and the
+          // next open pays for the read.
+          if (debt !== null && debt === shownRef.current) void loadRef.current(debt);
         }
       }
     },
     [fetchCard, show],
   );
+  useEffect(() => { loadRef.current = load; }, [load]);
 
   const open = useCallback(
     (oracleId: string, list?: string[]) => {
@@ -272,6 +286,7 @@ export function CardDetailProvider({
   const close = useCallback(() => {
     latest.current++;
     inFlight.current = null;
+    owed.current = null;
     show(null);
     setPendingOracleId(null);
     setFailed(false);
@@ -287,7 +302,9 @@ export function CardDetailProvider({
       // filed and painted as the current answer, and the reader sits on the printing they
       // replaced until they close and reopen. Re-reading here is what ends that window —
       // the read it starts is from after the write, by construction.
-      if (openRef.current === oracleId && inFlight.current !== oracleId) void load(oracleId);
+      if (inFlight.current === oracleId) return;
+      if (openRef.current === oracleId) void load(oracleId);
+      else if (shownRef.current === oracleId) owed.current = oracleId;
     },
     [load],
   );
