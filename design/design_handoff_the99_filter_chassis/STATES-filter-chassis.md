@@ -179,7 +179,7 @@ result line. The sheet holds every other dimension.
 
 ## 7 · The two forms, and the absence of a third
 
-Wide above 900px, compact below. **The control row never wraps at any width.**
+Wide above 1000px, compact below. **The control row never wraps at any width.**
 
 - Search is the only child that shrinks; every control is `flex: none` with `white-space: nowrap`;
   the trailing sort group is `flex: none`, so it can never be pushed to a second line.
@@ -187,7 +187,7 @@ Wide above 900px, compact below. **The control row never wraps at any width.**
   layout bug rather than a trailing slot.
 - **Must not** introduce a third, intermediate form. A route with fewer dimensions has more room at
   the same width; it does not get a different frame.
-- The 900px switch is set by `/collection`'s seven controls, not `/decks`' five — the widest list
+- The 1000px switch is set by `/collection`'s seven controls, not `/decks`' five — the widest list
   in the app decides the breakpoint for all four routes, or the breakpoint is a per-route fact and
   the chassis is not one thing.
 - Row 2 may still wrap at desktop when many filters are on, and the result line follows it down.
@@ -198,6 +198,14 @@ Wide above 900px, compact below. **The control row never wraps at any width.**
 ## What is not drawn, and why
 
 - **Ordered keyboard-walk frames.** The model is stated per state above and matches the four
+> **Corrected by the audit.** The handoff justified this keyboard model as "no new pattern",
+> on the grounds that the shipped panels already share `useDialogA11y`, roving radiogroups and
+> selection-follows-focus. **They do not.** `filter-panel.tsx` has its own panel and listbox key
+> handling and `rack/select.tsx` has its own focus and menu logic, so the shared behaviour is real
+> work rather than an inheritance. The keyboard walk is not drawn anywhere in this handoff and has
+> to be reconciled before the chassis carries it. See `docs/superpowers/readiness-filter-chassis.md`
+> §6.
+
   existing implementations, which already share `useDialogA11y`, roving radiogroups and
   selection-follows-focus. No new pattern is introduced, so there is nothing a walk would settle.
 - **Pending/in-flight.** `/discover`'s sort is the app's only server-answering filter control, and

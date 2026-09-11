@@ -142,8 +142,11 @@ No raster assets. Fonts load from Google Fonts. The logomark and all swatches ar
 CSS/markup and should be rebuilt as SVG/components in the target codebase.
 
 ## Files
-- `The 99 — Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
+- `The 99 - Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
+  Note the ASCII hyphen: an em dash was written here and does not resolve to the file on disk.
 - `The 99 Brand Discovery.dc.html` — the fuller discovery board (tone, palette options, type
+  **— not present in this bundle.** It lives in `design/design_handoff_the99_brand/`; open it there.
+  (original note continues:)
   specimens, logomark concepts) for additional context on how decisions were reached.
 
 Both are single self-contained HTML files; open directly in a browser. They are authored as
