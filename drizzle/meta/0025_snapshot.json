@@ -1,5 +1,5 @@
 {
-  "id": "33233b64-bd05-4c5b-9c0f-341c829f55bf",
+  "id": "80342079-7684-4fc5-bb44-a022d0b86e18",
   "prevId": "a6eac463-791b-432b-ac8e-4ab93de570f1",
   "version": "7",
   "dialect": "postgresql",
@@ -1430,6 +1430,21 @@
               "asc": true,
               "nulls": "last"
             },
+            {
+              "expression": "folder_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "decks_folder_idx": {
+          "name": "decks_folder_idx",
+          "columns": [
             {
               "expression": "folder_id",
               "isExpression": false,

@@ -22,6 +22,7 @@ import {
   listFolders,
   moveDeck,
 } from "../src/lib/decks/folders";
+import { listDecksWithStats } from "../src/lib/decks/read";
 import { validateFolderName } from "../src/lib/decks/folder-name";
 
 neonConfig.webSocketConstructor = ws;
@@ -136,12 +137,25 @@ async function main() {
   check("an empty folder is listed", listed[1]?.id, empty.id);
   check("an empty folder counts zero decks", listed[1]?.deckCount, 0);
 
+  // The deck list's own projection, which the read tests cannot cover: they
+  // mock the database, so a wrong alias on either folder column — or a join
+  // that hides unfiled decks — would pass them.
+  const gridFiled = await listDecksWithStats(USER, "name");
+  check("the deck list carries every deck", gridFiled.length, 2);
+  check("a filed deck names its folder", gridFiled[0]?.folderName, "Commander night");
+  check("and carries its id", gridFiled[0]?.folderId, shelf.id);
+
   // THE RULE THIS PROBE EXISTS FOR.
   check("deleteFolder reports the delete", await deleteFolder(shelf.id, USER), true);
   check("the filed deck survives", await deckExists(deckA), true);
   check("the other filed deck survives", await deckExists(deckB), true);
   check("the filed deck is unfiled", await folderOf(deckA), null);
   check("the other filed deck is unfiled", await folderOf(deckB), null);
+
+  const gridUnfiled = await listDecksWithStats(USER, "name");
+  check("an unfiled deck is still listed", gridUnfiled.length, 2);
+  check("and names no folder", gridUnfiled[0]?.folderName, null);
+  check("and carries no folder id", gridUnfiled[0]?.folderId, null);
 
   check("deleting it twice is not an error", await deleteFolder(shelf.id, USER), false);
   check(

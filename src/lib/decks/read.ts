@@ -491,7 +491,16 @@ export async function listDecksWithStats(
     .leftJoin(partnerCards, eq(decks.partnerOracleId, partnerCards.oracleId))
     // LEFT, because an unfiled deck has no folder row — an inner join here
     // would hide every deck the player has not filed, which today is all of them.
-    .leftJoin(deckFolders, eq(deckFolders.id, decks.folderId))
+    //
+    // Keyed on the OWNER as well as the id. The foreign key constrains only the
+    // id, so a row whose deck and folder belong to different players is a state
+    // the database permits even though `moveDeck` refuses to write it — and on
+    // this join it would print another player's folder name beside this
+    // player's deck.
+    .leftJoin(
+      deckFolders,
+      and(eq(deckFolders.id, decks.folderId), eq(deckFolders.userId, userId)),
+    )
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
     .groupBy(

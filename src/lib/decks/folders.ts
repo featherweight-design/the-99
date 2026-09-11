@@ -16,7 +16,7 @@
 // so a folder id or deck id belonging to someone else fails to match rather
 // than being touched; the id is the narrowing, never the authorisation.
 
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckFolders, decks } from "../../db/schema";
 import { validateFolderName } from "./folder-name";
@@ -47,6 +47,13 @@ export type DeckFolderWithCount = DeckFolder & {
  * `count(decks.id)` rather than `count(*)`: the latter counts the row the outer
  * join manufactures for an empty folder and would report one deck on a shelf
  * holding none.
+ *
+ * The join carries the OWNER as well as the folder id. The foreign key
+ * constrains only the id, so nothing at the database level forbids a row whose
+ * deck and folder belong to different players — `moveDeck` is what prevents it,
+ * and a count that trusted that would inflate the moment anything else wrote
+ * the column. It is also what lets this use the `(user_id, folder_id)` index
+ * rather than scanning every player's decks.
  */
 export async function listFolders(userId: string): Promise<DeckFolderWithCount[]> {
   const rows = await db
@@ -57,7 +64,10 @@ export async function listFolders(userId: string): Promise<DeckFolderWithCount[]
       deckCount: count(decks.id),
     })
     .from(deckFolders)
-    .leftJoin(decks, eq(decks.folderId, deckFolders.id))
+    .leftJoin(
+      decks,
+      and(eq(decks.folderId, deckFolders.id), eq(decks.userId, deckFolders.userId)),
+    )
     .where(eq(deckFolders.userId, userId))
     .groupBy(deckFolders.id, deckFolders.name, deckFolders.createdAt)
     .orderBy(asc(deckFolders.name));
@@ -96,22 +106,33 @@ export async function moveDeck(
   userId: string,
   folderId: string | null,
 ): Promise<boolean> {
-  if (folderId !== null) {
-    const [folder] = await db
-      .select({ id: deckFolders.id })
-      .from(deckFolders)
-      .where(and(eq(deckFolders.id, folderId), eq(deckFolders.userId, userId)))
-      .limit(1);
-    if (!folder) return false;
-  }
+  // ONE STATEMENT, and that is the whole point. A select confirming the folder
+  // is this player's followed by an update is a race: a folder deleted between
+  // the two leaves the update to fail the foreign key and throw 23503, where
+  // the caller asked a question that has a false answer. Inside one statement
+  // the `exists` and the foreign key's own check see the same snapshot, and the
+  // key-share lock the check takes makes a concurrent delete wait rather than
+  // race — so the move either happens or reports false.
+  //
+  // The folder's `user_id` is in the `exists`, not merely its id: without it a
+  // deck could be filed onto another player's shelf by id, and `decks.folder_id`
+  // has no user column of its own to constrain.
+  const target = sql.param(folderId);
+  const moved = await db.execute<{ id: string }>(sql`
+    update decks set folder_id = ${target}::uuid
+    where id = ${deckId}::uuid
+      and user_id = ${userId}
+      and (
+        ${target}::uuid is null
+        or exists (
+          select 1 from deck_folders f
+          where f.id = ${target}::uuid and f.user_id = ${userId}
+        )
+      )
+    returning id
+  `);
 
-  const moved = await db
-    .update(decks)
-    .set({ folderId })
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
-    .returning({ id: decks.id });
-
-  return moved.length > 0;
+  return moved.rows.length > 0;
 }
 
 /**

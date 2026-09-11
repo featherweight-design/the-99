@@ -245,8 +245,12 @@ export const decks = pgTable("decks", {
       sql`${t.partnerOracleId} is null or ${t.partnerOracleId} <> ${t.commanderOracleId}`,
     ),
     // The deck grid groups by folder within one player's decks, which is this
-    // index and not `folder_id` alone.
+    // index.
     index("decks_user_folder_idx").on(t.userId, t.folderId),
+    // And this one, keyed on `folder_id` alone, is for the lookups that have no
+    // user to narrow by: the foreign key's own `on delete set null` scan when a
+    // folder is deleted. A composite index led by `user_id` cannot serve it.
+    index("decks_folder_idx").on(t.folderId),
   ],
 );
 
