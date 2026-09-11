@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy, INLINE_CHANGE_MAX } from "../../lib/copy/deck-versioning";
+import { priceCopy } from "../../lib/copy/price";
 import type { DraftChange } from "../../lib/decks/draft-diff";
 import { changeCount, hasChanges, type DraftState } from "../../lib/decks/draft-shape";
 import { formatDeckDate } from "../../lib/decks/format";
@@ -54,12 +55,20 @@ function changeLabel(state: DraftState, change: DraftChange): string {
  * a genuine zero. When rows are unfree but nothing could be priced, there is a
  * purchase and no figure for it — the honest banner says neither, and the review
  * page one click away names the rows.
+ *
+ * A total over partial coverage carries the shipped `pricedClause`, because a
+ * figure standing alone reads as the whole purchase — the same rule the price
+ * strip follows, and the same words.
  */
 function moneyLine(state: DraftState): string | null {
   if (!state.claimsKnown) return null;
   if (state.unfreeCount === 0) return copy.moneyNone;
   if (state.total === null) return null;
-  return copy.money(state.unfreeCount, state.addChanges.length, state.buyCount, state.total);
+  const partial = state.pricedCopies < state.buyCount;
+  const total = partial
+    ? `${state.total} · ${priceCopy.strip.pricedClause(state.pricedCopies, state.buyCount)}`
+    : state.total;
+  return copy.money(state.unfreeCount, state.addChanges.length, state.buyCount, total);
 }
 
 export function PendingBanner({ state, deckId, total, bodySize, onDiscard }: PendingBannerProps) {
