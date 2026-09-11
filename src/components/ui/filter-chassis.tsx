@@ -135,33 +135,36 @@ export function FilterChassis({
         ) : (
           <>
             {chips.map((chip) => (
-              <button
+              // The chip is a span and the ✕ inside it is the button, which is
+              // how `collection/chip-row.tsx:186-203` does it and why. Making
+              // the whole chip the target and centring a 44px overlay on it
+              // looks equivalent and is not: chips sit 6px apart, so adjacent
+              // overlays overlap and a tap near the boundary removes the
+              // neighbour's filter. Anchored to the ✕, the nearest competing
+              // target is a full chip-width away.
+              <span
                 key={chip.key}
-                type="button"
-                onClick={chip.onRemove}
-                aria-label={chassisCopy.chips.removeAria(chip.label)}
-                // The chip's drawn size is small and stays small; the touch
-                // target is an `::after` overlay centred on it, the same
-                // treatment `collection/chip-row.tsx:191-203` uses. Growing the
-                // chip itself to 44px would make the chip line three times its
-                // drawn height, and the chip line's height is the invariant the
-                // whole frame rests on.
                 className={[
-                  // `shrink-0 whitespace-nowrap` is what keeps the reserved
-                  // height honest: a long set or search label would otherwise
-                  // wrap INSIDE one chip, growing row 2 past 22px even when the
-                  // chip list fits on one line. `rack/chip-line.tsx:171` carries
-                  // the same pair for the same reason.
-                  "relative inline-flex shrink-0 cursor-pointer items-center gap-[6px] whitespace-nowrap rounded-[7px]",
+                  "inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[7px]",
                   "border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)]",
                   "px-[8px] py-[3px] font-mono text-[11px] text-[color:var(--fg-body)]",
-                  "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px]",
-                  "after:w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
                 ].join(" ")}
               >
                 {chip.label}
-                <span aria-hidden>×</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={chip.onRemove}
+                  aria-label={chassisCopy.chips.removeAria(chip.label)}
+                  className={[
+                    "relative cursor-pointer border-0 bg-transparent p-0",
+                    "text-[color:var(--fg-faint)]",
+                    "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
+                    "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+                  ].join(" ")}
+                >
+                  ×
+                </button>
+              </span>
             ))}
             <button
               type="button"

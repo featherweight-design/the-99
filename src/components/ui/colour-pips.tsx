@@ -64,7 +64,7 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
             // the control this replaces.
             role="switch"
             aria-checked={lit}
-            aria-label={chassisCopy.colour.names[code]}
+            aria-label={chassisCopy.colour.pipAria(chassisCopy.colour.names[code])}
             onClick={() => onToggle(code)}
             // The ring is the entire lit treatment. No opacity on either state:
             // an unlit pip is the symbol at full strength, which is what makes it

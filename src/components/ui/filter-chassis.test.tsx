@@ -28,10 +28,12 @@ describe("FilterChassis", () => {
     expect(rowsAtRest).toBe(3);
   });
 
-  it("draws the same three rows at four dimensions and at five", () => {
-    // The height invariant the whole round turns on: a route with five
-    // dimensions and a route with four get the same frame, which is what lets
-    // `Printed in` land later without the chassis changing.
+  it("renders the same row structure at four dimensions and at five", () => {
+    // Structure only. jsdom does not lay out, so the geometry this implies —
+    // that four dimensions and five produce the same frame HEIGHT — is the
+    // browser probe's job, not this file's. Asserting row count here and
+    // calling it the height invariant would be the test claiming more than it
+    // checks.
     const four = <><i>a</i><i>b</i><i>c</i><i>d</i></>;
     const five = <><i>a</i><i>b</i><i>c</i><i>d</i><i>e</i></>;
     const { container, rerender } = render(<FilterChassis {...base} controls={four} chips={[]} />);
@@ -92,7 +94,11 @@ describe("FilterChassis", () => {
     render(<FilterChassis {...base} controls={null} chips={[chip("a", "3 colours")]} />);
     const remove = screen.getByRole("button", { name: "Remove filter: 3 colours" });
     expect(remove.className).toContain("after:h-[44px]");
-    expect(remove.className).toContain("after:min-w-[44px]");
+    expect(remove.className).toContain("after:w-[44px]");
+    // Anchored to the ✕, not to the chip: chips sit 6px apart, so a chip-wide
+    // target would overlap its neighbour's and remove the wrong filter.
+    expect(remove.tagName).toBe("BUTTON");
+    expect(remove.textContent).toBe("×");
   });
 
   it("reserves the chip row's height so toggling the first filter moves nothing", () => {
@@ -123,8 +129,9 @@ describe("FilterChassis", () => {
       />,
     );
     const c = screen.getByRole("button", { name: /^Remove filter: Set/ });
-    expect(c.className).toContain("whitespace-nowrap");
-    expect(c.className).toContain("shrink-0");
+    // The chip is the span; the button inside it is what gets removed.
+    expect(c.closest("span")!.className).toContain("whitespace-nowrap");
+    expect(c.closest("span")!.className).toContain("shrink-0");
   });
 
   it("takes its padding from the form, not from Tailwind's lg", () => {
