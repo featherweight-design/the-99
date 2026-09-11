@@ -73,7 +73,15 @@ export const getRankedList = cache(async function getRankedList(
   if (list.items.length === 0) return { ...list, candidateCount: 0 };
 
   const items = list.items.filter((i) => !built.has(i.oracleId));
-  return { ...list, items, candidateCount: items.length };
+  // And the flag follows the same rule as the row filter above, for the same
+  // reason: `assemble` reports degradation across everything it scored, built
+  // commanders included, so an EDHREC outage touching only a built commander
+  // would raise the outage banner over a list where every visible row is whole.
+  // Read off the rows themselves rather than carried down from the compute —
+  // `synergyState` is per row, and it is what the stored path already derives
+  // its own degraded set from, so both paths now answer this the same way.
+  const degraded = items.some((i) => i.synergyState === "degraded");
+  return { ...list, items, degraded, candidateCount: items.length };
 });
 
 async function assemble(
