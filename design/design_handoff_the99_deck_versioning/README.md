@@ -666,7 +666,7 @@ sentence you happened to read first.
 | Revalidation after a commit | **`revalidateClaims`** | the `deckSurfaces()` call named later in §Engineering notes |
 | The commit sheet | **Totals only, never a list.** `commit.buyBackLink` points back up at the rows | any drawing of card names inside the sheet |
 | Commit announcement | The server's **`cardCount`** is a requirement of the commit result, not a client recount | any client-side count of the announced list |
-| "Full body" test | **`deckBodySize(hasPartner)`** — 99, or 98 with a partner | a hard-coded 99 |
+| "Full body" test | **`deckBodySize(hasPartner)`** — 99, or 98 with a partner | a hard-coded 99, and the bare `deckBodySize()` in §Surfaces 1's second sub-state — the argument is required, and a partnered deck is full at 98 |
 | `CostPips` mounting | Pass **`track` and `cap` explicitly**; the component defaults neither | any call relying on defaults |
 | Cost track on versioning's rows | **The shipped row constants — `PIP_TRACK = 40`, `PIP_CAP = 5`.** Versioning mounts `CostPips` as shipped and inherits whatever card-rows lands | any widened track as versioning's geometry |
 | `COST-TRACK.md`'s proposed track, when quoted | **110px desktop / 76px phone**, that document's own arithmetic. It is card-rows' unshipped proposal and governs nothing here | the 90px / 76px pair quoted in §Surfaces and in the gap report |
