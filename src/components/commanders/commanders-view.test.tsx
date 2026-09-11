@@ -82,8 +82,18 @@ type Over = {
 // setting the parameter the reader's own flip would have written.
 function el(list: CommanderListItem[], over: Over = {}) {
   const { avail = "all", freeItems = null, availOk = true, degraded = false } = over;
-  if (avail === "free") params.set("a", "free");
-  else params.delete("a");
+  // Through the URL, because that is where the view reads the lane from: it
+  // compares against `window.location` and uses the hook only to re-render.
+  // `replaceState` is spied above and feeds the write back into `params`, so
+  // both halves of the mock stay in step the way Next keeps them in step.
+  //
+  // Only the one key it owns, leaving anything a test put there beside it — the
+  // same rule the mirror itself follows.
+  const live = new URLSearchParams(window.location.search);
+  if (avail === "free") live.set("a", "free");
+  else live.delete("a");
+  const qs = live.toString();
+  window.history.replaceState(null, "", qs ? `/commanders?${qs}` : "/commanders");
   return (
     <CommandersView
       results={list}
@@ -382,12 +392,12 @@ describe("CommandersView ranking toggle", () => {
   // `?a=free` is a request, not a promise — the same rule the flip itself
   // follows. With no second ranking to switch to there is nothing to honour.
   it("refuses the URL's request when no free ranking was produced", () => {
-    params.set("a", "free");
+    window.history.replaceState(null, "", "/commanders?a=free");
     try {
       view(results(3), { avail: "all", freeItems: null, availOk: false });
       for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
     } finally {
-      params.delete("a");
+      window.history.replaceState(null, "", "/commanders");
     }
   });
 
@@ -401,7 +411,7 @@ describe("CommandersView ranking toggle", () => {
     for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
 
     // What that navigation does to the query this component reads.
-    params.delete("a");
+    window.history.replaceState(null, "", "/commanders");
     again(all, { freeItems: [all[2], all[0], all[1]] });
 
     for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
@@ -419,6 +429,27 @@ describe("CommandersView ranking toggle", () => {
     fireEvent.click(control()!);
     // Two reveals, and the query they produce is the same one already in the bar.
     expect(urls().length - before).toBeLessThanOrEqual(2);
+  });
+
+  // The sequence that makes the starting query ambiguous: the reader stands on
+  // `/commanders` with no mode, flips to free, and taps `Commanders` in the nav.
+  // The URL returns to EXACTLY the query the flip was made against, so an overlay
+  // honouring its starting query would keep the free lane for good.
+  //
+  // The re-render is explicit here because the real router does not give this
+  // component one for that navigation — see the note in the view. What this pins
+  // is the rule: once anything renders, the URL decides.
+  it("does not mistake a navigation back to the starting query for its own edit", () => {
+    const all = results(3);
+    const { again } = view(all, { freeItems: [all[2], all[0], all[1]] });
+    fireEvent.click(segments(FREE)[0]);
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+
+    window.history.replaceState(null, "", "/commanders");
+    again(all, { freeItems: [all[2], all[0], all[1]] });
+
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 0");
   });
 
   it("follows the URL on a fresh mount too", () => {

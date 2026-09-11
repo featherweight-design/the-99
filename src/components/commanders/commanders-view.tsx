@@ -133,61 +133,93 @@ export function CommandersView({
     [availOk, freeRanking],
   );
 
-  // The reader's edits, and the two queries they are valid for.
+  // The reader's edit, and the ONE query it is valid for.
   //
   // NOT a copy of the URL kept in sync with it. The rack's state IS the URL,
-  // derived every render — an edit is only an overlay, and it survives exactly
-  // as long as the query it was made against. `from` is the query at the moment
-  // of the edit and `to` is the one the mirror below will write for it, and the
-  // overlay holds while the live query is either: `from` covers the gap between
-  // the edit and the effect that writes it, `to` covers every render after Next
-  // adopts that write into router state.
+  // derived every render; an edit is an overlay that lives exactly as long as
+  // the query it wrote. The write happens in the same tick as the edit — see
+  // `setParams` — so by the time anything renders, the live query already is
+  // that one, and there is no window in which the overlay has to be trusted
+  // against some earlier query.
   //
-  // Any other query means the URL moved for a reason that is not the rack — the
-  // primary nav pointing back at `/commanders`, a link elsewhere on the page —
-  // and the overlay is dropped, so the lane follows the URL again. Those
-  // navigations do NOT give this route a new instance: Next serves the tree it
-  // already has, so nothing re-seeds, and the list used to sit in the free lane
-  // under a URL carrying no mode at all.
+  // That matters because the earlier query is not distinguishable from a
+  // navigation back to it. Standing on `/commanders`, flipping to
+  // `Free cards only` and then tapping `Commanders` in the nav returns the URL
+  // to exactly the query the flip was made against — so an overlay that also
+  // honoured its starting query would keep the free lane under a URL with no
+  // mode on it, which is the bug it was meant to prevent, wearing the other
+  // face.
   //
-  // A key on the server was tried and cannot do this job: the key is computed
-  // when the page renders, the flip never re-renders the page, and the tree a
-  // navigation restores is the one whose key was fixed at its first render.
-  const [edit, setEdit] = useState<{ from: string; to: string; params: LaneParams } | null>(null);
-  const liveQuery = search.toString();
+  // Any query other than the one the edit wrote means the URL moved for a reason
+  // that is not the rack, and the overlay is dropped so the lane follows the URL
+  // again — on the next render.
+  //
+  // MEASURED LIMIT, and it is the router's rather than this rule's. A navigation
+  // landing back on `/commanders` — the primary nav while the reader stands in
+  // `Free cards only` — does not re-render this component at all: Next serves the
+  // tree it already has, the props are identical, and `useSearchParams` does not
+  // fire for it either. Nothing here runs, so the lane stays as it was until the
+  // next render, and then follows the URL. A back navigation, which is the case
+  // that was reported, does re-render and is correct immediately.
+  //
+  // Two things were tried for the immediate case and neither reaches it. A key on
+  // the server: computed when the page renders, and the tree a navigation
+  // restores is the one whose key was fixed at its first render, so it never
+  // moves. A render-time comparison against `useSearchParams`: that hook is
+  // exactly what does not update here. Catching it would mean subscribing to
+  // history mutations underneath the router — machinery this page's caching rules
+  // would then have to account for, for a URL that is cosmetically behind a list
+  // nobody has touched.
+  const [edit, setEdit] = useState<{ query: string; params: LaneParams } | null>(null);
+
+  // `window.location`, not `useSearchParams`, for the comparison — with the hook
+  // still read, because it is what re-renders this component when the router
+  // moves. The two are the same thing a moment apart, and the moment is the
+  // whole problem: an edit writes the URL synchronously, and the hook catches up
+  // when Next adopts that write. Comparing against the hook would drop the
+  // overlay for the render in between. On the server there is no `window`, and
+  // the hook carries the request's own query, which is the same URL the client
+  // hydrates against.
+  const liveQuery =
+    typeof window === "undefined"
+      ? search.toString()
+      : new URLSearchParams(window.location.search).toString();
+
   // Memoised on the query it was parsed from, because this object is the URL
-  // mirror's dependency: a fresh one per render would re-fire that effect — and
-  // so `history.replaceState`, which Next adopts into router state — on every
-  // unrelated update, revealing a batch of rows or moving the live announcement
-  // included.
+  // mirror's dependency: a fresh one per render would re-fire that effect on
+  // every unrelated update, revealing a batch of rows or moving the live
+  // announcement included.
   const urlParams = useMemo(() => fromUrl(new URLSearchParams(liveQuery)), [fromUrl, liveQuery]);
-  const params =
-    edit && (liveQuery === edit.from || liveQuery === edit.to) ? edit.params : urlParams;
+  const params = edit && edit.query === liveQuery ? edit.params : urlParams;
+
+  // The query `p` serialises to against the URL as it stands right now, in
+  // `useSearchParams`' spelling — no leading `?`, its key order — so every
+  // comparison here is between two like things.
+  const queryFor = useCallback((live: URLSearchParams, p: LaneParams) => {
+    const written = laneQuery(live, p, "owned");
+    return {
+      written,
+      query: new URLSearchParams(written.replace(/^\?/, "")).toString(),
+    };
+  }, []);
 
   const setParams = useCallback(
     (next: LaneParams | ((prev: LaneParams) => LaneParams)) => {
-      // Both queries come from `window.location`, read HERE rather than from the
-      // last render's `useSearchParams`. The two are the same thing a moment
-      // apart, and the moment matters: a write this component made can land
-      // before React has re-rendered on it, and an edit filed against the render
-      // it can still see would be filed against a query that is already gone —
-      // then dropped on the very next render for looking like a navigation.
-      const liveNow = new URLSearchParams(window.location.search);
-      const from = liveNow.toString();
+      const live = new URLSearchParams(window.location.search);
       setEdit((prev) => {
-        const base = prev && (from === prev.from || from === prev.to) ? prev.params : null;
-        const resolved = typeof next === "function" ? next(base ?? fromUrl(liveNow)) : next;
-        return {
-          from,
-          // What the mirror below will write for it, in `useSearchParams`'
-          // spelling — no leading `?`, its key order — so the comparison during
-          // render is between two like things.
-          to: new URLSearchParams(laneQuery(liveNow, resolved, "owned").replace(/^\?/, "")).toString(),
-          params: resolved,
-        };
+        const base = prev && prev.query === live.toString() ? prev.params : fromUrl(live);
+        const resolved = typeof next === "function" ? next(base) : next;
+        const { written, query } = queryFor(live, resolved);
+        // Written HERE rather than left to the effect below, so the overlay never
+        // has to be valid for a query other than the one it produced. The effect
+        // still runs and finds nothing to do; it is what covers the paths that
+        // change `params` without going through an event, which is the free
+        // mode's climb-down.
+        window.history.replaceState(null, "", `${window.location.pathname}${written}`);
+        return { query, params: resolved };
       });
     },
-    [fromUrl],
+    [fromUrl, queryFor],
   );
 
   const { colors: rawColors, avail } = params;
@@ -202,9 +234,13 @@ export function CommandersView({
     // the keys the lane owns, leaving the path and every foreign parameter
     // exactly as it found them.
     const { pathname, search: live } = window.location;
-    const next = laneQuery(new URLSearchParams(live), params, "owned");
-    window.history.replaceState(null, "", `${pathname}${next}`);
-  }, [params]);
+    const { written, query } = queryFor(new URLSearchParams(live), params);
+    // Idempotent: an edit has already written its own URL, so this finds the bar
+    // already correct and leaves it alone. What it is here for is the render-time
+    // climb-down below, which changes `params` without an event to write from.
+    if (query === new URLSearchParams(live).toString()) return;
+    window.history.replaceState(null, "", `${pathname}${written}`);
+  }, [params, queryFor]);
 
   // The mode and the payload's ability to serve it, reconciled DURING RENDER
   // rather than in an effect. A revalidation can take the free ranking away
