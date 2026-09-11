@@ -1,6 +1,6 @@
 # READINESS — One filter chassis (handoff R2)
 
-**Verdict: 🟢 Green.** Build may start, once the dependency in §4 lands.
+**Verdict: 🟢 Green.** Build starts now. The dependency in §4 gates the `/collection` slice alone — `/decks` and the two commander lanes share no files with it and are not blocked.
 
 - **Handoff:** `design/design_handoff_the99_filter_chassis/` (R2, 2026-09-11)
 - **Brief:** `docs/superpowers/design-briefs/2026-09-11-one-filter-chassis.md` (PR #518)
@@ -66,8 +66,8 @@ are real and one apparent delta is not:
 
 - **The breakpoint is wrong and it is a bug, not a preference.** `FilterPanel` chooses popover
   versus sheet on `useIsDesktop()`, which is `(min-width: 768px)`
-  (`src/components/ui/use-is-desktop.ts:8`). The chassis switches form at 900px (decision 18). **At
-  768–899px the compact chassis would open a desktop popover** — the phone frame with the desktop
+  (`src/components/ui/use-is-desktop.ts:8`). The chassis switches form at 1000px (decision 18, with
+  §7's correction). **At 768–999px the compact chassis would open a desktop popover** — the phone frame with the desktop
   panel inside it. The panel must take its breakpoint from the caller rather than reading its own.
 - **Desktop option rows are `min-h-[40px]`** (`filter-panel.tsx:465`), against the handoff's 34px
   control rhythm. The phone rows are `min-h-[48px]` and already clear the 44px floor, so only the
@@ -109,7 +109,9 @@ than a second dialog.
    unlit opacities over two different grounds, for one concept, is itself an argument for this
    round; the chassis picks one value rather than inheriting either. Pre-existing, and not caused by
    this handoff.
-3. **Asset delivery, ruled: static assets in the repository.** Design left this open and pushed back
+3. **Asset delivery, ruled: five static SVGs committed to the repository — a build deliverable, not
+   yet a fact.** Nothing in this PR adds them; `design/` is reference-only and the canvas's own pip
+   sources are remote Scryfall URLs. The first build PR owns fetching them into `public/mana/`. Design left this open and pushed back
    only on hotlinking. Concur, and going further: hotlinking a third party into the filter chrome of
    four routes plus the set pages makes a network fetch the single carrier of a filter's identity,
    and the canvas hotlinks for convenience only. Five SVGs are a handful of kilobytes and cacheable
@@ -126,14 +128,16 @@ than a second dialog.
 
 ## §4 Dependency — owned by another agent
 
-**Set collections' Task 9 must land, and must land with its test rewritten.** The chassis mounts the
-control that task extracts. The task requires a verbatim extraction while its test expects
+**Set collections' Task 9 must land, and must land with its test rewritten — before the
+`/collection` slice, not before the build.** That route mounts the control the task extracts;
+`/decks` and the commander lanes touch none of the files it does, so they proceed in parallel. The
+plan slices the work by route for exactly this reason. The task requires a verbatim extraction while its test expects
 `getByRole("button")` named `/red/i` carrying `aria-pressed`; `color-pip.tsx:17-21` emits
 `role="switch"` with `aria-checked` and the accessible name `Filter by R`. All three assertions fail
 against the real component.
 
-That plan is not this run's work and is in flight elsewhere. It is recorded here because the chassis
-build cannot start before it, and because the same round supplies a better accessible name —
+That plan is not this run's work and is in flight elsewhere. It is recorded here because the
+`/collection` slice cannot start before it, and because the same round supplies a better accessible name —
 `chassisCopy.colour.pipAria` — for whoever rewrites the test.
 
 ## §5 What the handoff got right that is worth naming
