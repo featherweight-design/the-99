@@ -37,7 +37,7 @@ const preview = {
   ],
   in: [],
   unchanged: [],
-  unchangedDelta: 0,
+  recounted: [],
   unresolved: [],
   noChange: false,
 };

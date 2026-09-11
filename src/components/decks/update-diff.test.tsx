@@ -38,7 +38,7 @@ function preview(over: Partial<DeckUpdatePreview> = {}): DeckUpdatePreview {
     out: [row("out-1"), row("out-2")],
     in: [row("in-1", { sourceLine: 4 })],
     unchanged: [row("same-1")],
-    unchangedDelta: 0,
+    recounted: [],
     unresolved: [],
     noChange: false,
     ...over,
@@ -397,7 +397,7 @@ describe("UpdateDiff provenance", () => {
       out: [row("out-1", { quantity: 12 })],
       in: [row("in-1", { quantity: 4, sourceLine: 4 })],
       unchanged: [],
-      unchangedDelta: 0,
+      recounted: [],
     });
     expect(screen.getByText(copy.landing("91", "83"))).toBeInTheDocument();
   });
@@ -405,8 +405,33 @@ describe("UpdateDiff provenance", () => {
   // A quantity the diff reconciles without naming still moves the deck, and the
   // figure compared to 99 is the one place that has to admit it.
   it("carries the silently reconciled quantities into the landing figure", () => {
-    renderDiff({ built: 91, out: [], in: [], unchangedDelta: -3 });
+    renderDiff({
+      built: 91,
+      out: [],
+      in: [],
+      recounted: [{ oracleId: "same-1", name: "Island", from: 12, to: 9 }],
+    });
     expect(screen.getByText(copy.landing("91", "88"))).toBeInTheDocument();
+  });
+
+  // Without this line the chips cannot be added up: a list that takes one card
+  // out and puts one in while dropping three Islands lands three below where
+  // the groups say it should, and nothing on the screen says why.
+  it("names every count it reconciles, so the landing figure can be checked", () => {
+    renderDiff({
+      recounted: [
+        { oracleId: "same-1", name: "Island", from: 7, to: 8 },
+        { oracleId: "same-2", name: "Mountain", from: 7, to: 6 },
+      ],
+    });
+    expect(
+      screen.getByText(copy.recounted("Island 7 → 8, Mountain 7 → 6")),
+    ).toBeInTheDocument();
+  });
+
+  it("says nothing about counts when none moved", () => {
+    const { container } = renderDiff({ recounted: [] });
+    expect(container.textContent).not.toContain("new counts");
   });
 
   it("names how many unresolved lines the new list replaces", () => {

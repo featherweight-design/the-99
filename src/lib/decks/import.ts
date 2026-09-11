@@ -116,6 +116,23 @@ const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
 const SET_CODE_RE = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★†★-]+)?$/;
 
 /**
+ * The same declaration in round brackets, after the printing identity:
+ * `1 Rootha, Mastering the Moment (SOC) 8 (Commander)`. ManaBox writes decks
+ * this way, and it is the shape a player exporting from their collection app
+ * brings here.
+ *
+ * Missing it costs more than a missed flag. The tag sits past the set code, so
+ * SET_CODE_RE's end anchor fails too and the whole tail stays glued to the
+ * name — the deck's own commander arrives as a line we cannot name, which is
+ * exactly what an update diff should never say about it.
+ *
+ * Narrow on purpose: only this word, and only in a trailing bracket. Any
+ * parenthetical is a card name's business, and a two-to-six-character one is
+ * already a set code.
+ */
+const COMMANDER_TAG_RE = /\s+\((?:commander|cmdr)\)$/i;
+
+/**
  * Reduces a candidate header to the bare word the markers match.
  *
  * Exporters decorate headers with a trailing colon, a count, or both — `Commander (1)`,
@@ -172,9 +189,22 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
 
     let body = trimmed;
     let isCommander = false;
-    for (let m = ANNOTATION_RE.exec(body); m; m = ANNOTATION_RE.exec(body)) {
-      if (m[1].toUpperCase() === "CMDR") isCommander = true;
-      body = body.slice(0, m.index);
+    // One loop over both spellings: a line can carry an asterisk flag and a
+    // bracketed tag, in either order, and stripping one can expose the other.
+    for (;;) {
+      const annotation = ANNOTATION_RE.exec(body);
+      if (annotation) {
+        if (annotation[1].toUpperCase() === "CMDR") isCommander = true;
+        body = body.slice(0, annotation.index);
+        continue;
+      }
+      const tag = COMMANDER_TAG_RE.exec(body);
+      if (tag) {
+        isCommander = true;
+        body = body.slice(0, tag.index);
+        continue;
+      }
+      break;
     }
     body = body.replace(SET_CODE_RE, "");
     lines.push({ text: body, isCommander });

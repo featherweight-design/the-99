@@ -49,11 +49,12 @@ export type DeckUpdatePreview = {
   out: DeckUpdateChangedRow[];
   in: DeckUpdateChangedRow[];
   unchanged: DeckUpdateRow[];
-  /** Copies the silently-reconciled quantities add or drop, summed. Nine Islands
-   *  against a deck's twelve is -3, and the landing figure has to carry it: that
-   *  figure is compared to 99, so it is the one number that cannot be off. The
-   *  group counts stay row counts, which is what the diff's chips report. */
-  unchangedDelta: number;
+  /** The cards the list keeps but asks for a different number of. The landing
+   *  figure has to carry them: it is compared to 99, so it is the one number
+   *  that cannot be off, while the group counts stay row counts. They are named
+   *  rather than summed because a reader adding the chips up otherwise lands
+   *  somewhere the screen never accounts for. */
+  recounted: { oracleId: string; name: string; from: number; to: number }[];
   unresolved: DeckUpdatePlan["unresolved"];
   noChange: boolean;
 };
@@ -177,21 +178,29 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     out: widened.out,
     in: widened.in,
     unchanged: plan.unchanged,
-    unchangedDelta: quantityDelta(rows, plan.unchanged),
+    recounted: recounted(rows, plan.unchanged),
     unresolved: plan.unresolved,
     noChange: plan.noChange,
   };
 }
 
-/** How many copies the reconciled quantities move the deck by. `unchanged` rows
- *  carry the quantity the list asks for, so this is that against what the deck
- *  holds now — the change the diff makes without narrating it. */
-function quantityDelta(
+/** The reconciled quantities, one entry per card whose count moves. `unchanged`
+ *  rows carry the quantity the list asks for, so this is that against what the
+ *  deck holds now — the change the diff makes without listing it among the
+ *  groups. In practice it is the mana base and nothing else. */
+function recounted(
   current: { oracleId: string; quantity: number }[],
   unchanged: DeckUpdateRow[],
-): number {
+): DeckUpdatePreview["recounted"] {
   const now = new Map(current.map((r) => [r.oracleId, r.quantity]));
-  return unchanged.reduce((n, r) => n + (r.quantity - (now.get(r.oracleId) ?? 0)), 0);
+  return unchanged
+    .map((r) => ({
+      oracleId: r.oracleId,
+      name: r.name,
+      from: now.get(r.oracleId) ?? 0,
+      to: r.quantity,
+    }))
+    .filter((r) => r.from !== r.to);
 }
 
 /**

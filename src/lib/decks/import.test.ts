@@ -139,6 +139,17 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
     expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
+  it("reads a trailing (Commander) tag as the declaration", () => {
+    // The shape ManaBox writes: the flag rides after the printing identity, in
+    // round brackets rather than Moxfield's asterisks. Undetected it is not a
+    // dropped flag but a broken name — the tag stays glued to the card, and the
+    // deck's own commander arrives as a line we cannot name.
+    const result = build("1 Atraxa, Praetors' Voice (2X2) 145 (Commander)\n1 Sol Ring (LTC) 284");
+    expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(result.unresolved).toEqual([]);
+  });
+
   it("does not treat a card whose name starts with a marker word as a section header", () => {
     const sideboardish = card({ name: "Sideboard Shenanigans" });
     const result = build("1 Sideboard Shenanigans", [...CATALOG, sideboardish]);
