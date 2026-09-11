@@ -1,8 +1,10 @@
 # Set Collections — design
 
-**Date:** 2026-09-10
-**Status:** design approved, awaiting Design handoff
+**Date:** 2026-09-10 · amended 2026-09-11 after the design round
+**Status:** handoff landed (R3) and audited 🟢 Green — ready to build
 **Routes:** `/collection/sets`, `/collection/sets/[code]`
+**Handoff:** `design/design_handoff_the99_set_collections/`
+**Readiness:** `docs/superpowers/readiness-set-collections.md`
 
 ## The problem
 
@@ -43,9 +45,15 @@ These were settled during brainstorming. Do not reopen them without Hugh.
    "Why not a view mode" below.
 3. **One cell per collector number; any finish fills it.** A foil #42 completes #42. Foil
    ownership is a mark on the cell, not a second cell.
-4. **Holdings with no collector number resolve by `oracle_id` within the set.** Pasted
-   lists and Name/Qty CSVs carry no number; ignoring them would show cards you own as
-   blank, which is the one defect that destroys trust in the figure.
+4. **Holdings with no collector number resolve by `oracle_id` within the set, and the
+   cell says so.** Pasted lists and Name/Qty CSVs carry no number; ignoring them would show
+   cards you own as blank, which is the one defect that destroys trust in the figure.
+   **Amended 2026-09-11 (design R2):** this ruling originally carried no mark on the filled
+   cell. Hugh overruled that during the design round — an unpinned fill is not an error to
+   disclose but the one moment the app can usefully ask which printing you hold. The cell
+   carries an outlined brand diamond and mono `BY NAME`, the unset half of `printing_picker`'s
+   shipped `Your pick` mark (`printing-region.tsx:573`). It never lands on a missing cell, it
+   is a mark and never a control, and it is quieter than `◆ FOIL`. See handoff decision 13.
 5. **The index lists sets you hold cards in, plus a search that reaches any set.** So a
    set can be opened at 0%.
 6. **Missing cells render the real art, dimmed.** We have `image_uri_small` for every card
@@ -189,6 +197,59 @@ ship in the same PR.
 - Price absent (unstocked) versus foil-only.
 
 **`/collection`** — one edit: the entry point into the index. Prominence is Design's call.
+
+## Addendum — the Collection row cost track (§1b)
+
+Added during the design round, and **severable**: it changes `/collection`, not either new
+route, and ships or slips on its own PR.
+
+Every other card row in the app states mana cost; the Collection row states colour identity
+alone (`rows-view.tsx:81` renders `ColorPips` and no mana value). The identity pips move out
+of the leading slot and become a fixed 90px right-aligned track — a 20px mono mana-value disc
+then 13px pips — which is `deck-versioning`'s un-shingled track at the size it already ships.
+Phone: 76px on the meta line.
+
+Consequences, per handoff decision 21: the name column gains ~74px, which matters because
+names truncate today; lands keep an empty disc slot rather than printing `0`, so the track
+never ragged-edges and 37 land rows do not assert a figure where there is an absence.
+
+It is recorded here rather than in its own ticket because it was asked for inside this
+handoff and is drawn in this canvas. It carries no dependency on the two new routes, and
+nothing on the new routes depends on it.
+
+## Findings from the readiness audit
+
+Four things the handoff assumes that the shipped code does not currently support. All are
+engineering-resolvable — none went back to Design.
+
+**The set icon does not inherit `currentColor`.** Handoff decision 24 and gap 4 assume it
+does. It does not: `svgs.scryfall.io/sets/*.svg` is a bare `<path>` with no `fill`, so it
+renders black on every theme, not only at 100%. The fix is not a fetch-and-recolour — a
+`mask-image` on a span with `background: var(--token)` recolours it arbitrarily and serves
+the `--fg-muted` rest state by the same mechanism.
+
+**The colour filter is not a mountable component.** `filter-bar.tsx` builds the desktop pip
+row inline and the mobile Color panel separately, so "mounted verbatim, not forked" needs an
+extraction first. Per decision 15's own rule, it must come out as a genuinely parameterised
+component — a version taking an `isSetPage` flag is the bug that rule exists to prevent.
+
+**Decision 16 names no mechanism.** The stale-page strip requires the page to learn that a
+delta exists — and its copy requires the count — while deliberately not re-rendering.
+Nothing in the app pushes. A lightweight count fetched on window focus delivers both; the
+cost is real and is planned for explicitly.
+
+**Windowing interacts with the strip.** Gap 7 leaves windowing to engineering, which is
+right, but a windowed grid and an unrendered delta strip compete for the same scroll
+container. Whatever approach is chosen has to hold the sticky head, the `extras ↓` jump and
+the strip together.
+
+## Errata against the handoff
+
+- `READINESS.md` says "seven of the nine grid states" are drawn. `STATES-set-grid.md` draws
+  S6–S15 — all ten — plus four edges beyond the spec's list. The line is R2-era, carried
+  into R3.
+- Gap 2 leaves the duplicate-oracle case's copy unsettled. That is copy content, so it goes
+  to `/copy-review` rather than back to Design.
 
 ## Out of scope
 
