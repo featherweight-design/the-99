@@ -31,6 +31,9 @@ const card = (oracleId: string, name: string): BrowseCard => ({
 });
 
 const SIGNET = card("o-signet", "Arcane Signet");
+// The same card as the server answers for it once a write has landed. Only the name
+// differs, because that is what the dialog's accessible name is read off.
+const SIGNET_AFTER_WRITE = { ...SIGNET, name: "Arcane Signet (rewritten)" };
 const SOL = card("o-sol", "Sol Ring");
 
 // The repo has no user-event; a real pointer click focuses its target, so the helper does
@@ -375,11 +378,12 @@ describe("CardDetailProvider card cache", () => {
   // The window a bare delete leaves open: the re-ask a reopen starts is already out when
   // the write lands, so its answer is from before the write. Filing it would put the
   // replaced printing back in the cache for the rest of the visit.
-  it("drops a read an eviction overtook", async () => {
+  it("retakes a read an eviction overtook rather than filing it", async () => {
     let resolveReask!: (c: BrowseCard) => void;
     const fetchCard = vi.fn()
       .mockResolvedValueOnce(SIGNET)
-      .mockImplementationOnce(() => new Promise<BrowseCard>((r) => { resolveReask = r; }));
+      .mockImplementationOnce(() => new Promise<BrowseCard>((r) => { resolveReask = r; }))
+      .mockResolvedValue(SIGNET_AFTER_WRITE);
     render(
       <CardDetailProvider fetchCard={fetchCard}>
         <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
@@ -397,12 +401,58 @@ describe("CardDetailProvider card cache", () => {
     await click(trigger);
     await click(screen.getByRole("button", { name: "evict" }));
     await act(async () => { resolveReask(SIGNET); });
-    await click(screen.getByRole("button", { name: "close" }));
 
-    fetchCard.mockImplementation(() => new Promise<BrowseCard>(() => {}));
-    await click(trigger);
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog).toHaveAccessibleName(SIGNET_AFTER_WRITE.name));
+  });
+
+  // The same race on a miss, where there is nothing already on screen: abandoning the read
+  // would leave the click looking like it did nothing at all.
+  it("opens a card whose first read an eviction overtook", async () => {
+    let resolveFirst!: (c: BrowseCard) => void;
+    const fetchCard = vi.fn()
+      .mockImplementationOnce(() => new Promise<BrowseCard>((r) => { resolveFirst = r; }))
+      .mockResolvedValue(SIGNET_AFTER_WRITE);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await click(screen.getByRole("button", { name: "evict" }));
+    await act(async () => { resolveFirst(SIGNET); });
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+  });
+
+  // A read every attempt of which raced a write never saw a settled world, so it is
+  // reported as a read that failed rather than filed as the current answer.
+  it("gives up on a read that races a write every time", async () => {
+    const evictions: Array<() => void> = [];
+    const fetchCard = vi.fn().mockImplementation(async () => {
+      evictions.pop()?.();
+      return SIGNET;
+    });
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    const evicter = screen.getByRole("button", { name: "evict" });
+    for (let i = 0; i < 3; i++) evictions.push(() => fireEvent.click(evicter));
+
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(3));
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(trigger).toHaveAttribute("aria-busy", "true");
+    await screen.findByText(cardDetailCopy.unavailable);
   });
 
   // The write the eviction exists for, driven through the real picker rather than a

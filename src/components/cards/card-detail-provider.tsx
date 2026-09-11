@@ -55,6 +55,13 @@ type CardDetailContextValue = {
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
 
+/**
+ * How many times a read that raced a write is retaken before it is called a failure.
+ * The writes are the reader's own clicks on the art picker, so they stop; the cap only
+ * exists so a pathological stream of them cannot keep one click reading forever.
+ */
+const READ_ATTEMPTS = 3;
+
 export function useCardDetail(): CardDetailContextValue {
   const ctx = useContext(CardDetailContext);
   if (!ctx) throw new Error("useCardDetail must be used inside a CardDetailProvider");
@@ -155,7 +162,6 @@ export function CardDetailProvider({
       // A hit lands in the same pass as the click, so no pending state is ever set and
       // the trigger never flashes a busy affordance for a wait that does not happen.
       const hit = cache.current.get(oracleId);
-      const evictedAtStart = evictions.current.get(oracleId) ?? 0;
       if (hit) {
         setPendingOracleId(null);
         setFailed(false);
@@ -165,13 +171,25 @@ export function CardDetailProvider({
         setFailed(false);
       }
       try {
-        const next = await fetchCard(oracleId);
-        if (latest.current !== request) return;
-        // An eviction landed while this read was out, so the read is from the wrong side
-        // of the write that caused it. Nothing is filed and nothing is painted — the
-        // reader is looking at the change they just made, which is what they should see,
-        // and the next open re-reads from a settled world.
-        if ((evictions.current.get(oracleId) ?? 0) !== evictedAtStart) return;
+        // A read an eviction overtook is from the wrong side of the write that caused it,
+        // so it is neither filed nor painted — it is taken again, now that the write has
+        // landed. Retried rather than abandoned because a card opened from a miss has
+        // nothing on screen to fall back to, and abandoning the read there would leave
+        // the click looking like it did nothing at all.
+        let next: BrowseCard | null = null;
+        let raced = true;
+        for (let attempt = 0; attempt < READ_ATTEMPTS && raced; attempt++) {
+          const evictedAtStart = evictions.current.get(oracleId) ?? 0;
+          next = await fetchCard(oracleId);
+          if (latest.current !== request) return;
+          raced = (evictions.current.get(oracleId) ?? 0) !== evictedAtStart;
+        }
+        // Every attempt raced a write. Treated as a read that failed rather than filed as
+        // an answer, because it is one: no attempt saw a settled world.
+        if (raced) {
+          if (!hit) setFailed(true);
+          return;
+        }
         if (next) {
           cache.current.set(oracleId, next);
           setCard(next);
