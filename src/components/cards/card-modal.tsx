@@ -362,8 +362,15 @@ export function CardModal({
     setPick({ setCode: p.setCode, collectorNumber: p.collectorNumber });
     onArtChange?.();
     startWrite(async () => {
-      await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
-      setSeeded(arrived.current);
+      try {
+        await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+        setSeeded(arrived.current);
+      } catch {
+        // A write that never landed leaves no optimistic pick worth protecting: the
+        // preference the server holds is the one it held before the reader touched it.
+        setSeeded(arrived.current);
+        setPick(arrived.current.preferredPrinting);
+      }
       onArtChange?.();
     });
   }
@@ -372,8 +379,13 @@ export function CardModal({
     setPick(null);
     onArtChange?.();
     startWrite(async () => {
-      await clearCardArtPreference(card.oracleId);
-      setSeeded(arrived.current);
+      try {
+        await clearCardArtPreference(card.oracleId);
+        setSeeded(arrived.current);
+      } catch {
+        setSeeded(arrived.current);
+        setPick(arrived.current.preferredPrinting);
+      }
       onArtChange?.();
     });
   }

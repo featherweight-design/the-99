@@ -423,6 +423,37 @@ describe("CardModal printing picker scope", () => {
     expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
     vi.mocked(actions.setCardArtPreference).mockReset();
   });
+
+  // A refused write is the one case no re-read corrects: the read the eviction starts can
+  // fail too, and then nothing arrives to replace the optimistic pick. The reader would be
+  // left looking at a printing the server never accepted.
+  it("puts the pick back when the write is refused outright", async () => {
+    const actions = await import("../../app/collection/actions");
+    vi.mocked(actions.setCardArtPreference).mockRejectedValue(new Error("refused"));
+    const owned = {
+      ...card,
+      quantity: 3,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+      ],
+    };
+    render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+
+    // No re-read arrives, and the pick is back where the server left it regardless.
+    expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+    vi.mocked(actions.setCardArtPreference).mockReset();
+  });
 });
 
 // The printed name (#467 follow-on). The title is what the copy in hand says it
