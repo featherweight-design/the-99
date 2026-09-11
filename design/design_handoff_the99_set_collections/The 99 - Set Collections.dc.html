@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+  /* The 37-key contract, transcribed from src/app/globals.css via
+     design_handoff_the99_refresh/tokens.r6.json. Low Sun on :root so the page
+     paints its default before the theme prop resolves. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R3</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Set collections &middot; /collection/sets &middot; two routes, one entry point</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The gaps are the page.</h1>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Two child routes under Collection &mdash; an <b style="color:#EDE6D8;font-weight:600;">index</b> of the sets you hold cards in, with a search that reaches any collectible set, and a <b style="color:#EDE6D8;font-weight:600;">grid</b> of one set's base run with your cells at full strength and everything else dimmed. Drawn on the spec's own worked example: <b style="color:#EDE6D8;font-weight:600;">Edge of Eternities</b>, base run 1&ndash;276, extras 277&ndash;399, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">62 / 276</span> owned and <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">214</span> missing.</p>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Every value in every frame is <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">var(--token)</span>. <b style="color:#EDE6D8;font-weight:600;">There is not one hex literal inside a frame</b>, because the whole feature rests on a dim that must mean the same thing in six palettes &mdash; <a href="#four">&sect;4</a> draws the same six cells in all six and measures the step at 3.15&ndash;3.44:1 in every one.</p>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">R3 &mdash; redrawn on the shipped /collection.</b> &sect;1 is no longer a sketch of that toolbar but the toolbar: the real header, search field, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">COLOR</span> well with round pips, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Type / Set / Sort / Availability</span>, the view well and the card tiles. That surfaced a collision worth the redraw &mdash; <b style="color:#EDE6D8;font-weight:600;">a <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Set &#9662;</span> filter already exists</b>, one word from <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">By set</span>, and &sect;1 now rules on how they stay apart. Also this round: <b style="color:#EDE6D8;font-weight:600;">Collection rows gain the cost track</b> the rest of the app has (<a href="#oneb">&sect;1b</a>), the grid is drawn <b style="color:#EDE6D8;font-weight:600;">at 390px in full</b>, the cell caption spells rarity out in the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">TLA &middot; uncommon</span> format, and three pieces of furniture come off the 100% head.</p>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">R2 &mdash; all three calls ratified, one of them overruled.</b> Ruling 4 now <b style="color:#EDE6D8;font-weight:600;">marks the cell</b> rather than the head, and the mark turns out to be the other half of a pin that already ships (<a href="#three">&sect;3</a>). The entry point is confirmed with its route boundary written down (<a href="#one">&sect;1</a>), and three edges outside the spec's state list are drawn in <a href="#threeb">&sect;3b</a>. Nothing is cut &mdash; the money block ships.</p>
+    <p style="max-width:1060px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the decisions log, <a href="STATES-set-grid.md">STATES-set-grid.md</a> for the state matrix, <a href="DIM-missing.md">DIM-missing.md</a> for the dim and its per-theme measurements, <a href="DENSITY-four-hundred-cells.md">DENSITY-four-hundred-cells.md</a> for the scroll structure, <a href="set-collections · copy strings.ts">copy strings</a>, <a href="READINESS.md">READINESS.md</a>.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#E0913C;margin-bottom:10px;">Every grey disc marked <span style="text-transform:none;letter-spacing:0;">set</span> is the set icon &mdash; written down, not drawn</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.75;">The circular placeholder in the index row (26px), the set head (44px), the phone head (30px) and the 100% head (46px, ringed) is <b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">sets.icon_svg_uri</span> in every case</b> &mdash; the real Wizards set symbol, not a letter, not a disc, and never the set code repeated as a glyph. It is a <b style="color:#EDE6D8;font-weight:600;">single-colour SVG</b>: render it at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">var(--fg-muted)</span> on a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">var(--elevated)</span> disc at rest, and at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">var(--success)</span> inside a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">1.5px var(--success)</span> ring with no fill at 100% &mdash; <b style="color:#EDE6D8;font-weight:600;">which requires the glyph to inherit <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">currentColor</span></b>; if it does not, that is a fetch-and-recolour job and it is the one asset risk in this package. The icon is <b style="color:#EDE6D8;font-weight:600;">decoration, always <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aria-hidden</span></b> &mdash; the set code beside it is the identifier that survives greyscale and a screen reader.</div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:10px;">The eight rulings, drawn as written &mdash; not reopened</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px 26px;">
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">1 &middot; The base numbered run is the figure.</b> Extras below, own count, never folded in. <a href="#three">&sect;3</a></div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">2 &middot; Child routes, not a view mode.</b> Which is why the entry point is not in the view well &mdash; <a href="#one">&sect;1c</a>.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">3 &middot; One cell per collector number, any finish fills it.</b> Foil is a mark, not a second cell. <a href="#three">&sect;3</a></div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">4 &middot; Unpinned holdings resolve by oracle id</b>, lowest unfilled cell, once. Drawn as the duplicate-basics case.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">5 &middot; The index lists sets you hold, and search reaches any set</b> &mdash; so a set can be opened at 0%. <a href="#two">&sect;2</a></div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">6 &middot; Missing cells render the real art, dimmed.</b> The whole feature. <a href="#four">&sect;4</a></div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">7 &middot; Prices, a cost-to-complete total, a cart link-out</b> &mdash; one selector on the page. <a href="#three">&sect;3</a></div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">8 &middot; Three filters: missing-only, rarity, colour.</b> Colour mounted verbatim.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#16131A;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Call 1 &middot; the entry point</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">A hairline <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">By set &rarr;</span> pill in the toolbar's trailing slot</b>, outside the Rows/Grid well &mdash; ruling 2 in pixels. Three options drawn in <a href="#one">&sect;1</a>.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Call 2 &middot; 100% complete</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">The head is what changes, and it changes completely</b> &mdash; the ratio becomes a Cinzel sentence, the cost strip becomes a seal, the grid below is untouched. Distinct, and nothing animates. <a href="#three">&sect;3</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Call 3 &middot; density</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">One density, 116px, no toggle.</b> The 10,000px scroll is paid for by a sticky head and a two-section jump, not by shrinking the card until the name stops reading. <a href="#five">&sect;5</a></div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2600px;">
+
+  <!-- ========== §1 ENTRY POINT ========== -->
+  <div id="one">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;1 &middot; <span style="color:#CF8745;">the one edit to /collection &mdash; three options, one recommended</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1180px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">1a &middot; recommended &mdash; drawn on the shipped /collection chrome, not a sketch of it</span></div>
+          <div style="background:var(--bg);">
+            <div style="padding:20px 24px 0;display:flex;align-items:flex-start;gap:20px;">
+              <div style="flex:1;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:31px;letter-spacing:0.01em;color:var(--fg);">C<span style="font-size:25px;">OLLECTION</span></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);margin-top:7px;">4,320 cards &middot; 2,805 unique &middot; last updated Sep 2</div>
+              </div>
+              <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:var(--fg);border:1px solid var(--border-strong);border-radius:9px;padding:11px 18px;display:flex;align-items:center;gap:9px;flex:none;">&#8635; Replace collection</span>
+            </div>
+            <div style="padding:16px 24px 16px;display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-bottom:1px solid var(--border);">
+              <span style="flex:1;min-width:300px;height:46px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 16px;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981; Search by card name&hellip;</span>
+              <span style="height:46px;display:flex;align-items:center;gap:10px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:10px;padding:0 14px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Color</span>
+                <sc-for list="{{ pipsRound }}" as="p" hint-placeholder-count="5">
+                  <span style="width:19px;height:19px;border-radius:999px;background:{{ p.tok }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+                </sc-for>
+              </span>
+              <span style="height:46px;display:flex;align-items:center;gap:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:10px;padding:0 15px;font-size:14px;color:var(--fg);">Type <span style="color:var(--fg-faint);font-size:11px;">&#9662;</span></span>
+              <span style="height:46px;display:flex;align-items:center;gap:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:10px;padding:0 15px;font-size:14px;color:var(--fg);">Set <span style="color:var(--fg-faint);font-size:11px;">&#9662;</span></span>
+              <span style="height:46px;display:flex;align-items:center;gap:8px;background:var(--surface-sunken);border:1px solid var(--accent);border-radius:10px;padding:0 15px;font-size:14px;color:var(--fg);">Sort: Name &middot; A&ndash;Z <span style="color:var(--fg-faint);font-size:11px;">&#9662;</span></span>
+              <span style="height:46px;display:flex;align-items:center;gap:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:10px;padding:0 15px;font-size:14px;color:var(--fg);">Availability <span style="color:var(--fg-faint);font-size:11px;">&#9662;</span></span>
+              <span style="height:46px;display:flex;align-items:center;gap:9px;border:1px solid var(--accent);border-radius:10px;padding:0 15px;font-size:14px;color:var(--fg);flex:none;"><span style="width:8px;height:8px;background:var(--accent);transform:rotate(45deg);display:inline-block;"></span>By set</span>
+              <span style="display:flex;gap:0;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:10px;padding:3px;flex:none;"><span style="width:38px;height:38px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);font-size:14px;">&#9776;</span><span style="width:38px;height:38px;border-radius:7px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:14px;">&#9638;</span></span>
+            </div>
+            <div style="padding:14px 24px 18px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);text-align:right;margin-bottom:14px;">Showing 2,805 unique &middot; 4,320 total</div>
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;">
+                <sc-for list="{{ collectionTiles }}" as="t" hint-placeholder-count="5">
+                  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+                    <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(155deg, color-mix(in srgb, {{ t.tok }} 40%, var(--surface-sunken)) 0%, var(--surface-sunken) 82%);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">card image</span>
+                      <span style="position:absolute;right:7px;top:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">{{ t.qty }}</span>
+                    </div>
+                    <div style="padding:11px 12px 13px;">
+                      <div style="font-size:13.5px;font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.n }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:6px;">{{ t.meta }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="padding:16px 24px 20px;background:var(--surface-rail);border-top:1px solid var(--border);font-size:13px;color:var(--fg-muted);line-height:1.65;">One <b style="color:var(--fg);font-weight:600;">46px hairline pill</b> in the toolbar's trailing cluster, between <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Availability</span> and the view well &mdash; <b style="color:var(--fg);font-weight:600;">the last control before the well, never inside it</b>. It takes an <span style="color:var(--accent);">--accent</span> hairline and a filled diamond, which on this toolbar reads as <i>a control that is doing something</i> rather than <i>a filter that is on</i>: it is the only trailing item that is a link, and <span style="color:var(--accent);">--accent</span> is already the toolbar's own off-default signal on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sort</span>. ~122px of a row that wraps rather than truncates, so nothing below it moves.</div>
+        </div>
+
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1b &middot; rejected &mdash; a recent-sets strip above the browser</span></div>
+          <div style="padding:18px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your sets</span><span style="flex:1;height:1px;background:var(--border);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">All 34 sets &rarr;</span></div>
+            <div style="display:flex;gap:10px;">
+              <sc-for list="{{ stripSets }}" as="s" hint-placeholder-count="4">
+                <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 12px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--fg-faint);">{{ s.code }}</div>
+                  <div style="font-size:12.5px;color:var(--fg);margin:4px 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.name }}</div>
+                  <div style="height:4px;border-radius:999px;background:var(--elevated);overflow:hidden;"><div style="height:4px;border-radius:999px;background:var(--accent);width:{{ s.pct }}%;"></div></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-top:6px;">{{ s.ratio }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:14px;"><b style="color:var(--fg);font-weight:600;">Rejected:</b> 96px of furniture above the list on every visit to /collection, for a route most visits are not going to. It also invents a ranking nothing in the data defines &mdash; recent by acquisition, by release, by last opened? The index answers that once, properly, with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">released_at desc</span>.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1c &middot; rejected &mdash; a third segment in the view well</span></div>
+          <div style="padding:18px;">
+            <div style="display:flex;align-items:center;gap:10px;"><span style="flex:1;"></span><span style="display:flex;gap:0;background:var(--surface-sunken);border:1px solid var(--border);border-radius:8px;padding:2px;"><span style="width:30px;height:28px;border-radius:6px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:13px;">&#9776;</span><span style="width:30px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);font-size:13px;">&#9638;</span><span style="height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:0 10px;">SET</span></span></div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:14px;"><b style="color:var(--fg);font-weight:600;">Rejected, and it is the tempting one &mdash; it is also ruling 2, redrawn.</b> The well is a <i>view mode</i>: both segments render the same 1,204 rows, keep the same filters, and change no URL but <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?view=</span>. A third segment that navigates away, drops your filters and renders an inverted population is the /commanders defect exactly &mdash; two pipelines behind one toggle.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);">
+        <div style="padding:16px 14px 10px;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);margin-bottom:3px;">Collection</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">1,204 cards &middot; 727 free</div></div>
+        <div style="padding:6px 14px 12px;display:flex;gap:8px;align-items:center;"><span style="flex:1;height:44px;border:1px solid var(--border-strong);border-radius:10px;display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--fg-faint);">&#8981;&ensp;Search your cards</span><span style="width:44px;height:44px;border:1px solid var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:15px;">&#9776;</span></div>
+        <div style="padding:0 14px 12px;display:flex;gap:8px;align-items:center;"><span style="height:44px;flex:1;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:var(--fg);border:1px solid var(--border-strong);border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;"><span style="width:7px;height:7px;background:var(--accent);transform:rotate(45deg);display:inline-block;"></span>By set</span><span style="height:44px;flex:1;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:999px;display:flex;align-items:center;justify-content:center;">Filters</span></div>
+        <div style="padding:0 14px 16px;display:flex;flex-direction:column;gap:6px;">
+          <sc-for list="{{ phoneRows }}" as="r" hint-placeholder-count="5">
+            <div style="min-height:52px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 10px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:var(--success);flex:none;"></span><span style="font-size:13px;color:var(--fg);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.n }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ r.q }}</span></div>
+          </sc-for>
+        </div>
+      </div></div>
+
+      <div style="width:400px;flex:none;background:#161318;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Prominence &mdash; the call, and what it costs</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+          <div><b style="color:#EDE6D8;font-weight:600;">One hairline pill, no fill.</b> The refresh allows one filled button per screen and /collection has not spent it; this is not what to spend it on. Set completion is a second job, not the job &mdash; the entry has to be findable on the second visit, not loud on the first.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Trailing, beside the view well, never inside it.</b> The leading cluster changes <i>what is in the list</i>; the trailing cluster changes <i>what surface you are on</i>. Sets changes the surface.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Phone gets a full 44px pill paired with Filters</b>, because the phone toolbar has no trailing slot and a 44px target cannot hide in one. That is the floor speaking, not emphasis.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">It carries no count.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">By set &middot; 34</span> was drawn and dropped: the number of sets you have touched answers nothing and competes with the two real counts 40px to its left.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">First run: the pill is absent, not disabled.</b> With nothing uploaded the index would have nothing to list and the locked upload surface already owns that moment.</div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid #3A3229;padding-top:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">R2 &middot; what makes it a route and not a toggle</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Ratified with a warning: <i>it has to be more than a toggle, because combining Commanders and Discover caused bugs.</i> So the boundary is written down rather than assumed. <b style="color:#EDE6D8;font-weight:600;">Nothing crosses it in either direction:</b></div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:11px;font-size:12px;color:#A89B84;line-height:1.55;">
+            <div><b style="color:#EDE6D8;font-weight:600;">Filters do not carry.</b> /collection's search, type and availability filters are <b style="color:#EDE6D8;font-weight:600;">not</b> applied to the set page, and the set page's colour / rarity / missing-only are not applied back. Different populations, different params, no shared key names.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">Back is a route change, not a state restore.</b> Leaving returns to /collection with its own filters exactly as they were, because they were never touched.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">Separate loading and empty states.</b> The set page has its own <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">loading.tsx</span> and its own four empty states; none of /collection's are reachable from it.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">One shared component, mounted twice.</b> The colour filter, the card-detail modal and the buy tag &mdash; and each is <i>mounted</i>, never branched on route. If a component needs an <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">isSetPage</span> flag, that is the bug this warning is about, and the answer is two components.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">The pill carries no state</b> &mdash; a plain link to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/collection/sets</span>, no query, no memory of the last set. Same rule the /commanders &rarr; /discover link got.</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid #3A3229;padding-top:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:10px;">R3 &middot; the collision nobody had named: <span style="text-transform:none;letter-spacing:0;font-size:11px;">Set &#9662;</span> already exists</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">The shipped toolbar has a <b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set &#9662;</span> filter</b> six controls to the left of where <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">By set</span> now sits, and the two are one word apart. <b style="color:#EDE6D8;font-weight:600;">They are opposites, and that is the saving grace:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set &#9662;</span> narrows the cards you <i>own</i> to one set; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">By set</span> leaves for a page of the cards you <i>do not</i>. Three things keep them apart, and all three are drawn: <b style="color:#EDE6D8;font-weight:600;">position</b> (leading cluster = narrows the list, trailing = changes the surface), <b style="color:#EDE6D8;font-weight:600;">shape</b> (a chevron menu versus a diamond link &mdash; no dropdown affordance on the pill), and <b style="color:#EDE6D8;font-weight:600;">the words</b> &mdash; a noun that names an axis versus a preposition that names a destination.</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;"><b style="color:#EDE6D8;font-weight:600;">The one thing that must not happen is the obvious convenience:</b> carrying <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set &#9662;</span>'s value into the route so that filtering to EOE and tapping <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">By set</span> lands on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection/sets/eoe</span>. It is exactly the state-sharing that made Commanders and Discover confusing, and it would mean the same pill goes to two different places depending on a control the reader may have set ten minutes ago. <b style="color:#EDE6D8;font-weight:600;">The pill always goes to the index.</b> If a shortcut is wanted later, it belongs <i>in</i> the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set &#9662;</span> menu as an explicit row &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">See EOE completion &rarr;</span> &mdash; which is a different control saying so out loud, and it is not drawn here.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §1b COLLECTION ROWS · CMC PARITY ========== -->
+  <div id="oneb">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #6FA368;padding-top:18px;">&sect;1b &middot; <span style="color:#6FA368;">R3 &mdash; Collection rows get the cost track the rest of the app has</span></div>
+    <p style="max-width:1060px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;">Asked for while we are here, and it is a parity fix rather than a new idea: <b style="color:#EDE6D8;font-weight:600;">every other card row in the app states mana cost</b> &mdash; the decklist row, the builder's search row, the diff row &mdash; and the Collection row states colour identity alone. Two rows for the same card, one of which cannot tell you what it costs to cast.</p>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:1180px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">shipped today &mdash; identity pips, no cost</div>
+        <div style="background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:7px;">
+          <sc-for list="{{ rowsBefore }}" as="r" hint-placeholder-count="4">
+            <div style="min-height:64px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 18px;display:flex;align-items:center;gap:18px;">
+              <span style="width:34px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent);">{{ r.qty }}</span>
+              <span style="width:56px;flex:none;display:flex;gap:5px;">
+                <sc-for list="{{ r.ident }}" as="p" hint-placeholder-count="1">
+                  <span style="width:15px;height:15px;border-radius:999px;background:{{ p.tok }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+                </sc-for>
+              </span>
+              <span style="flex:1;min-width:0;font-size:15px;font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.n }}</span>
+              <span style="width:230px;flex:none;text-align:right;font-size:13.5px;color:var(--fg-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.type }}</span>
+              <span style="width:70px;flex:none;display:flex;align-items:center;justify-content:flex-end;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-muted);"><span style="width:7px;height:7px;border-radius:999px;background:var(--fg-locked);"></span>{{ r.set }}</span>
+              <span style="width:12px;flex:none;text-align:right;color:var(--fg-faint);font-size:14px;">&rsaquo;</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="width:1180px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #6FA368;">
+        <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">proposed &mdash; the deck-side cost track, unmodified</div>
+        <div style="background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:7px;">
+          <sc-for list="{{ rowsAfter }}" as="r" hint-placeholder-count="4">
+            <div style="min-height:64px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 18px;display:flex;align-items:center;gap:18px;">
+              <span style="width:34px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent);">{{ r.qty }}</span>
+              <span style="flex:1;min-width:0;font-size:15px;font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.n }}</span>
+              <span style="width:230px;flex:none;text-align:right;font-size:13.5px;color:var(--fg-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.type }}</span>
+              <span style="width:90px;flex:none;display:flex;align-items:center;justify-content:flex-end;gap:3px;">
+                <span style="width:20px;height:20px;border-radius:999px;background:var(--elevated);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);flex:none;">{{ r.cmc }}</span>
+                <sc-for list="{{ r.ident }}" as="p" hint-placeholder-count="1">
+                  <span style="width:13px;height:13px;border-radius:999px;background:{{ p.tok }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);flex:none;"></span>
+                </sc-for>
+              </span>
+              <span style="width:70px;flex:none;display:flex;align-items:center;justify-content:flex-end;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-muted);"><span style="width:7px;height:7px;border-radius:999px;background:var(--fg-locked);"></span>{{ r.set }}</span>
+              <span style="width:12px;flex:none;text-align:right;color:var(--fg-faint);font-size:14px;">&rsaquo;</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="width:560px;flex:none;background:#161318;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:12px;">What changes, and what it costs</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The identity pips move and become the cost track.</b> They leave the leading slot beside the quantity and join a <b style="color:#EDE6D8;font-weight:600;">fixed 90px right-aligned track</b> &mdash; a 20px mono mana-value disc, then the pips at 13px &mdash; which is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-versioning</span>'s un-shingled track at the size it already ships. Nothing new is invented and no second pip component appears.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The leading 56px comes back to the name.</b> Names on this row truncate today (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Abdel Adrian, Gorion's Ward</span> is close); moving the pips right buys the name column ~74px including the gap.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Cost, not converted cost alone.</b> The disc carries the mana value and the pips carry the colours, which together are what the deck rows show. Full symbol-by-symbol cost is the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ManaPip</span> job already logged in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">commanders_discover</span> &mdash; when it lands, this track is one of the ~6 sweep sites and the geometry does not move.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Lands keep an empty disc slot, not a zero.</b> A land's mana value is 0 and printing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0</span> on 37 rows reads as a figure rather than an absence. The slot holds its width so the track never ragged-edges.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Phone: 76px track, on the meta line</b>, per the same source. The quantity and name keep line one.</div>
+          <div style="color:#8E8269;"><b style="color:#A89B84;font-weight:600;">Scope note:</b> this is a change to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collection/rows-view.tsx</span>, not to the set grid, and it is severable &mdash; it ships or slips on its own. It is in this package because it was asked for here, and because the set page's cells and this row are now the two places Collection states a card's facts.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §2 INDEX ========== -->
+  <div id="two">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;2 &middot; <span style="color:#CF8745;">/collection/sets &mdash; the index, five states</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.5);">
+        <div style="height:38px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">/collection/sets</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">state &middot; populated, with a not-yet-indexed row</span></div>
+        <div style="background:var(--bg);padding:0 0 20px;">
+          <div style="padding:20px 26px 0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-bottom:8px;"><span style="color:var(--accent);">Collection</span> / Sets</div>
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;margin:0 0 6px;color:var(--fg);">Your sets</h2>
+            <p style="font-size:13.5px;color:var(--fg-muted);margin:0 0 16px;line-height:1.55;">34 sets you hold cards in, newest first. Completion counts the base numbered run.</p>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><span style="flex:1;max-width:340px;height:34px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 11px;gap:8px;font-size:13px;color:var(--fg-faint);">&#8981; Find any set</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">34 sets &middot; 1,204 cards</span></div>
+          </div>
+          <div style="padding:0 26px;">
+            <sc-for list="{{ indexRows }}" as="s" hint-placeholder-count="7">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);">
+                <span style="width:26px;height:26px;flex:none;border-radius:999px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">set</span>
+                <span style="width:44px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.08em;color:var(--fg-muted);">{{ s.code }}</span>
+                <span style="flex:1;min-width:0;"><span style="display:block;font-size:14.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.name }}</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-top:3px;">{{ s.released }}</span></span>
+                <span style="width:88px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);text-align:right;">{{ s.extras }}</span>
+                <span style="width:184px;flex:none;">
+                  <span style="display:flex;align-items:baseline;justify-content:flex-end;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:{{ s.figCol }};">{{ s.have }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">/ {{ s.total }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:{{ s.pctCol }};width:46px;text-align:right;">{{ s.pctLabel }}</span></span>
+                  <span style="display:block;height:4px;border-radius:999px;background:var(--elevated);margin-top:7px;overflow:hidden;"><span style="display:block;height:4px;border-radius:999px;background:{{ s.barCol }};width:{{ s.pct }}%;"></span></span>
+                </span>
+                <span style="width:14px;flex:none;text-align:right;color:var(--fg-faint);font-size:13px;">&rsaquo;</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);">
+              <span style="width:26px;height:26px;flex:none;border-radius:999px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">set</span>
+              <span style="width:44px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.08em;color:var(--fg-muted);">HOU</span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:14.5px;color:var(--fg);">Hour of Devastation</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-top:3px;">Jul 2017</span></span>
+              <span style="width:88px;flex:none;"></span>
+              <span style="width:184px;flex:none;display:flex;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);border:1px dashed var(--fg-locked);border-radius:5px;padding:3px 9px;">not indexed yet</span></span>
+              <span style="width:14px;flex:none;text-align:right;color:var(--fg-faint);font-size:13px;">&rsaquo;</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);padding:12px 0 0;">&hellip; 27 more sets. The list is the whole of it &mdash; no paging, no window.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:900px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.5);">
+        <div style="height:38px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">/collection/sets?q=blood</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">state &middot; search active &mdash; reaches sets you hold nothing from</span></div>
+        <div style="background:var(--bg);padding:20px 26px 22px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="flex:1;max-width:340px;height:34px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 11px;gap:8px;font-size:13px;color:var(--fg);">&#8981; blood<span style="margin-left:auto;width:18px;height:18px;border-radius:999px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--fg-muted);">&times;</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">3 collectible sets match &middot; <span style="color:var(--fg-faint);">2 of them are new to you</span></span></div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;margin-bottom:12px;max-width:660px;">Search leaves your 34 and reaches the whole collectible catalogue (ruling 5), so the result list mixes <b style="color:var(--fg);font-weight:600;">sets you hold</b> with <b style="color:var(--fg);font-weight:600;">sets at 0%</b>. The 0% rows are not greyed &mdash; they are openable pages, and a 0% set is a legitimate destination.</div>
+          <sc-for list="{{ searchRows }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);">
+              <span style="width:26px;height:26px;flex:none;border-radius:999px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">set</span>
+              <span style="width:44px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.08em;color:var(--fg-muted);">{{ s.code }}</span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:14.5px;color:var(--fg);">{{ s.name }}</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-top:3px;">{{ s.released }}</span></span>
+              <span style="width:88px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);text-align:right;">{{ s.extras }}</span>
+              <span style="width:184px;flex:none;"><span style="display:flex;align-items:baseline;justify-content:flex-end;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:{{ s.figCol }};">{{ s.have }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">/ {{ s.total }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:{{ s.pctCol }};width:46px;text-align:right;">{{ s.pctLabel }}</span></span><span style="display:block;height:4px;border-radius:999px;background:var(--elevated);margin-top:7px;overflow:hidden;"><span style="display:block;height:4px;border-radius:999px;background:{{ s.barCol }};width:{{ s.pct }}%;"></span></span></span>
+              <span style="width:14px;flex:none;text-align:right;color:var(--fg-faint);font-size:13px;">&rsaquo;</span>
+            </div>
+          </sc-for>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;padding-top:12px;max-width:700px;"><b style="color:var(--fg);font-weight:600;">A 0% row states <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 / 291</span> and draws an empty track</b> &mdash; not a dash, not a blank. The denominator is the fact the reader is here for, and a set they hold nothing from is the one row where the denominator is the whole content.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;">
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.5);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);min-height:640px;">
+          <div style="padding:16px 14px 8px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:6px;"><span style="color:var(--accent);">Collection</span> / Sets</div><div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Your sets</div></div>
+          <div style="padding:8px 14px 12px;"><span style="display:flex;height:44px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface-sunken);align-items:center;padding:0 12px;font-size:14px;color:var(--fg-faint);">&#8981;&ensp;Find any set</span></div>
+          <div style="padding:0 14px;">
+            <sc-for list="{{ phoneSets }}" as="s" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:11px;min-height:64px;padding:11px 0;border-bottom:1px solid var(--border);">
+                <span style="width:24px;height:24px;flex:none;border-radius:999px;background:var(--elevated);"></span>
+                <span style="width:36px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;color:var(--fg-muted);">{{ s.code }}</span>
+                <span style="flex:1;min-width:0;"><span style="display:block;font-size:13.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.name }}</span><span style="display:flex;align-items:center;gap:7px;margin-top:5px;"><span style="flex:1;height:4px;border-radius:999px;background:var(--elevated);overflow:hidden;"><span style="display:block;height:4px;border-radius:999px;background:{{ s.barCol }};width:{{ s.pct }}%;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ s.short }}</span></span></span>
+                <span style="width:10px;flex:none;color:var(--fg-faint);font-size:13px;text-align:right;">&rsaquo;</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);padding:14px;line-height:1.6;">Phone drops the release date and the extras count and keeps the icon. <b style="color:var(--fg-faint);font-weight:400;">The ratio is the row.</b></div>
+        </div></div>
+
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.5);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);min-height:640px;display:flex;flex-direction:column;">
+          <div style="padding:16px 14px 8px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:6px;"><span style="color:var(--accent);">Collection</span> / Sets</div><div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Your sets</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 26px;text-align:center;gap:16px;">
+            <span style="display:flex;gap:9px;"><span style="width:11px;height:11px;background:var(--border-dashed);transform:rotate(45deg);"></span><span style="width:15px;height:15px;background:var(--border-dashed);transform:rotate(45deg);"></span><span style="width:11px;height:11px;background:var(--border-dashed);transform:rotate(45deg);"></span></span>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:var(--fg);line-height:1.3;">Upload your collection and the sets appear</div>
+            <div style="font-size:13.5px;color:var(--fg-muted);line-height:1.6;">This page is built from what you own. Bring a ManaBox or CSV export and every set you have a card from lands here, counted.</div>
+            <span style="width:100%;min-height:48px;font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:var(--bg);background:var(--fg);border-radius:10px;display:flex;align-items:center;justify-content:center;">Upload a collection</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);border-bottom:1px solid var(--border-strong);padding-bottom:2px;">or search a set to browse it at 0%</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);margin-top:6px;">state &middot; first run</span>
+          </div>
+        </div></div>
+
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.5);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);min-height:640px;display:flex;flex-direction:column;">
+          <div style="padding:16px 14px 8px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:6px;"><span style="color:var(--accent);">Collection</span> / Sets</div><div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Your sets</div></div>
+          <div style="padding:8px 14px 12px;"><span style="display:flex;height:44px;border:1px solid var(--accent);border-radius:10px;background:var(--surface-sunken);align-items:center;padding:0 12px;font-size:14px;color:var(--fg);">&#8981;&ensp;qqz<span style="margin-left:auto;width:22px;height:22px;border-radius:999px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg-muted);">&times;</span></span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 26px 60px;text-align:center;gap:14px;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:var(--fg);line-height:1.35;">No set called <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;">qqz</span></div>
+            <div style="font-size:13.5px;color:var(--fg-muted);line-height:1.6;">Search covers every collectible set, not only yours &mdash; so this is a spelling, not a gap in your collection.</div>
+            <span style="min-height:44px;padding:0 20px;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:var(--fg);border:1px solid var(--border-strong);border-radius:999px;display:flex;align-items:center;">Clear the search</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">state &middot; no match</span>
+          </div>
+        </div></div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#161318;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">What the index decides</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Search is one field with two populations behind it.</b> At rest the list is your 34 in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">released_at desc</span>; typing widens it to the collectible catalogue. <b style="color:#EDE6D8;font-weight:600;">No scope control, no two tabs</b> &mdash; the result line says how many matched and how many are new to you, which is the only fact a scope toggle would have carried.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Not-yet-indexed is a dashed <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> tag in the ratio's slot</b>, never <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 / 0</span> and never an empty bar &mdash; the spec's migration order exists precisely so a null denominator cannot be read as a real zero. The row still links; it lands on the grid's loading state.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">0% and not-indexed must never look alike</b>, and they are the two rows most likely to be confused: one draws an empty track under a real <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 / 291</span>, the other draws no track at all and says the words.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The set icon is a 26px disc, not a wordmark.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">icon_svg_uri</span> is a single-colour glyph; it takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-muted</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated</span> and is decoration &mdash; the code beside it is the identifier that survives greyscale and screen readers.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">No cost figure on the index.</b> Cost to complete is a per-set computation over missing priced cells; summing it across 34 sets would print a number nobody intends to spend.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §3 THE GRID ========== -->
+  <div id="three">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;3 &middot; <span style="color:#CF8745;">/collection/sets/eoe &mdash; the grid</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1180px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="width:9px;height:9px;border-radius:999px;background:var(--border-strong);"></span><span style="margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">/collection/sets/eoe</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">state &middot; base run + extras</span></div>
+        <div style="background:var(--bg);">
+
+          <div style="padding:18px 26px 14px;border-bottom:1px solid var(--border);background:var(--surface-rail);">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-bottom:8px;"><span style="color:var(--accent);">Collection</span> / <span style="color:var(--accent);">Sets</span> / EOE</div>
+            <div style="display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:300px;display:flex;align-items:center;gap:14px;">
+                <span style="width:44px;height:44px;flex:none;border-radius:999px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">set</span>
+                <span>
+                  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:27px;margin:0 0 6px;color:var(--fg);">Edge of Eternities</h2>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">EOE &middot; released Aug 2025 &middot; 276 in the base run &middot; 123 extras</div>
+                </span>
+              </div>
+              <div style="width:330px;flex:none;">
+                <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:29px;font-weight:600;color:var(--fg);">62</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">/ 276</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent);">22%</span></div>
+                <div style="height:6px;border-radius:999px;background:var(--elevated);margin-top:9px;overflow:hidden;"><div style="height:6px;border-radius:999px;background:var(--accent);width:22%;"></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);margin-top:7px;text-align:right;">base run only &middot; <span style="color:var(--fg-faint);">extras counted apart</span></div>
+              </div>
+            </div>
+            <div style="margin-top:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface-sunken);border:1px solid var(--border);border-radius:10px;padding:12px 15px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Cost to complete</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--accent);">$1,284.40</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">over <b style="color:var(--fg-body);font-weight:600;">193</b> of the <b style="color:var(--fg-body);font-weight:600;">214</b> missing &middot; <span style="color:var(--fg-locked);">21 have never been stocked and are not in this figure</span></span>
+              <span style="flex:1;"></span>
+              <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:var(--bg);background:var(--fg);border-radius:8px;padding:9px 16px;">Send 193 to ManaPool</span>
+            </div>
+          </div>
+
+          <div style="padding:13px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-sunken);">
+            <span style="display:flex;align-items:center;gap:0;background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;height:34px;padding:0 6px;">
+              <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                <span style="width:22px;height:22px;border-radius:6px;margin:0 2px;background:{{ p.tok }};opacity:{{ p.op }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+              </sc-for>
+            </span>
+            <span style="height:34px;display:flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:8px;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Rarity &middot; all <span style="color:var(--fg-faint);">&#9662;</span></span>
+            <span style="height:34px;display:flex;align-items:center;gap:9px;border:1px solid var(--border-strong);border-radius:8px;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);"><span style="width:28px;height:16px;border-radius:999px;background:var(--elevated);border:1px solid var(--border-strong);display:flex;align-items:center;padding:2px;"><span style="width:10px;height:10px;border-radius:999px;background:var(--fg-locked);"></span></span>Missing only</span>
+            <span style="flex:1;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">276 cells &middot; <b style="color:var(--fg-body);font-weight:600;">62 yours</b>, 214 missing &middot; <span style="color:var(--accent);">extras &darr;</span></span>
+          </div>
+
+          <div style="padding:18px 26px 0;">
+            <div style="display:flex;align-items:baseline;gap:11px;border-bottom:1px solid var(--border-strong);padding-bottom:8px;margin-bottom:14px;">
+              <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;letter-spacing:0.04em;text-transform:uppercase;color:var(--fg);">Base run</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">62 / 276</span>
+              <span style="flex:1;"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">001&ndash;276 &middot; <span style="color:var(--fg-locked);">booster = true</span> &mdash; this is the run the figure counts</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(8,116px);gap:18px 10px;">
+              <sc-for list="{{ baseCells }}" as="c" hint-placeholder-count="24">
+                <div style="width:116px;">
+                  <div style="position:relative;width:116px;height:162px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    <sc-if value="{{ c.foil }}" hint-placeholder-val="{{ false }}">
+                      <span style="position:absolute;right:5px;top:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--fg);background:rgba(0,0,0,0.68);border-radius:4px;padding:2px 5px;">&#9670; FOIL</span>
+                    </sc-if>
+                    <sc-if value="{{ c.byName }}" hint-placeholder-val="{{ false }}">
+                      <span style="position:absolute;left:5px;bottom:5px;display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--fg-body);background:rgba(0,0,0,0.68);border-radius:4px;padding:2px 6px;"><span style="width:6px;height:6px;border:1px solid var(--accent);transform:rotate(45deg);display:inline-block;"></span>BY NAME</span>
+                    </sc-if>
+                  </div>
+                  <div style="font-size:11.5px;line-height:1.3;color:{{ c.nameCol }};margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:4px;min-height:17px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">{{ c.rar }}</span>
+                    <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};border-radius:4px;padding:1px 5px;">{{ c.price }}</span>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);padding:16px 2px 0;line-height:1.6;">This sample runs <b style="color:var(--fg-faint);font-weight:400;">001&ndash;022 in collector-number order and then skips to the two full-art Plains</b> so ruling 4 can be seen: one unpinned holding fills <b style="color:var(--fg-faint);font-weight:400;">#262</b> and stops, leaving <b style="color:var(--fg-faint);font-weight:400;">#268</b> missing. On the real page nothing is skipped &mdash; 276 cells, 001 to 276, 35 rows, then the extras section. Plates are <b style="color:var(--fg-faint);font-weight:400;">art stand-ins</b> &mdash; production renders <span style="color:var(--fg-faint);">image_uri_small</span> at 116&times;162, <span style="color:var(--fg-faint);">object-fit:cover</span>. Only the six card names the spec cites are real; the rest are placeholders.</div>
+          </div>
+
+          <div style="padding:26px 26px 24px;">
+            <div style="display:flex;align-items:baseline;gap:11px;border-bottom:1px solid var(--border-strong);padding-bottom:8px;margin-bottom:8px;">
+              <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;letter-spacing:0.04em;text-transform:uppercase;color:var(--fg);">Extras</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">7 / 123</span>
+              <span style="flex:1;"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">277&ndash;399 &middot; <span style="color:var(--fg-locked);">booster = false</span> &mdash; showcase, borderless, promos. <b style="color:var(--fg-muted);font-weight:400;">Not in the 62 / 276.</b></span>
+            </div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;max-width:780px;margin-bottom:14px;">The extras section carries <b style="color:var(--fg);font-weight:600;">its own <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">N / M</span> and its own noun</b>, in the same Cinzel heading register as a deck's type groups, and it is a section under the same scroll rather than a tab. A tab would let a reader finish the set without ever learning they already hold seven of these &mdash; and the page exists to show what is and is not there. <b style="color:var(--fg);font-weight:600;">Its ratio is deliberately the smaller type</b>: same figures, one step down, so the two can never be misread for each other from across the scroll.</div>
+            <div style="display:grid;grid-template-columns:repeat(8,116px);gap:18px 10px;">
+              <sc-for list="{{ extraCells }}" as="c" hint-placeholder-count="8">
+                <div style="width:116px;">
+                  <div style="position:relative;width:116px;height:162px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    <span style="position:absolute;left:5px;bottom:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-body);background:rgba(0,0,0,0.66);border-radius:4px;padding:2px 5px;">{{ c.treatment }}</span>
+                  </div>
+                  <div style="font-size:11.5px;line-height:1.3;color:{{ c.nameCol }};margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:4px;min-height:17px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">{{ c.rar }}</span>
+                    <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};border-radius:4px;padding:1px 5px;">{{ c.price }}</span>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="background:#161318;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">The cell, and why it is not a disabled control</div>
+          <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+            <div><b style="color:#EDE6D8;font-weight:600;">The dim is on the art, never on the type.</b> That sentence is the whole separation. A disabled control dims its <i>label</i> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> and stops responding; a missing cell keeps its name at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> (9.2&ndash;10:1 in all six), carries a live price, and opens the same card-detail modal. It is <i>absent</i>, not <i>inert</i>.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">Three carriers, not one.</b> Art opacity, a dashed edge, and the price tag that only a missing cell has. Greyscale alone fails the fast scroller; the edge alone is invisible at 1.5:1; the tag alone is 40px of a 196px cell.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">The missing edge is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> dashed, not <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-dashed</span>.</b> Measured, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-dashed</span> runs 1.46&ndash;1.97:1 against the sunken plate in the six and fails the 3:1 non-text floor everywhere. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> clears at 3.16&ndash;3.44:1. Same dashed <i>style</i> &mdash; the app's not-settled vocabulary &mdash; on a token that can be seen. See <a href="#four">&sect;4</a>.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">No quantity anywhere.</b> The spec makes a cell binary and rules playsets out of scope, so the badge this canvas drew at first draft is gone: a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&times;2</span> would assert a count the page has decided not to track.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">Foil is the only mark an owned cell carries</b>, and only when the holding is foil-only. Ruling 3 makes any finish fill the cell, so the mark is a fact about your copy, not about completion &mdash; which is why it sits on the art, not in the caption line where the completion facts live.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">Rarity is a mono letter beside the number</b> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">C U R M</span>. Not a coloured gem: rarity colour is a fifth palette on a page already carrying five colour identities and an accent, and the letter is what the rarity filter is labelled with.</div>
+          </div>
+        </div>
+        <div style="background:#161318;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:12px;">Money &mdash; one figure, one selector</div>
+          <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+            <div><b style="color:#EDE6D8;font-weight:600;">The cost strip states its own gap in the same breath as the total</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$1,284.40 over 193 of the 214 missing</span>, with the 21 unstocked named at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> immediately after. Never a total that silently treats an unpriced card as zero.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">The button is the page's one selector</b> (#330's rule): <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Send 193 to ManaPool</span>, whose count is the same number the sentence just gave. <b style="color:#EDE6D8;font-weight:600;">No per-cell checkbox</b>, at either width &mdash; a checkbox on 214 cells is a second selection mechanism and would also put a 16px control inside a 116px art plate.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">The button follows the filters.</b> Filter to red rares and it becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Send 9 to ManaPool</span> with the strip's total recomputed &mdash; which is how a reader buys part of a set without a selection UI at all. The filters <i>are</i> the selector.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">It is the page's one filled button</b>, and it is filled <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> bone, not accent &mdash; accent is already doing <i>to buy</i> on 193 price tags below it.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">Last-known prices are not marked per cell.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">as_of</span> staleness is a property of the feed, not of a card; if the whole table is stale the strip carries one <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">prices as of 8 Sep</span> line. 214 individually-stamped tags would be noise in place of a fact.</div>
+          </div>
+        </div>
+        <div style="background:#161318;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:12px;">R2 &middot; Ruling 4 gets a mark, and the mark is an invitation</div>
+          <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+            <div><b style="color:#EDE6D8;font-weight:600;">Ruled: mark the cell.</b> R1 proposed one line in the head and nothing on the cell; Product overruled it, and the reason reframes the state &mdash; <i>these cards are cool, and this is the page where you can finally see which one you have</i>. An unpinned fill is not an error to disclose, it is <b style="color:#EDE6D8;font-weight:600;">the one moment the app can ask a question worth asking</b>.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">The mark mirrors the pin it is missing.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">printing_picker</span> already ships <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Your pick</span> as a <b style="color:#EDE6D8;font-weight:600;">filled</b> 7px brand diamond. Unpinned is the same diamond, <b style="color:#EDE6D8;font-weight:600;">outlined</b>, with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BY NAME</span> &mdash; bottom-left of the art, in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#9670; FOIL</span>'s skin at the opposite corner. Not a new mark: the other half of one that exists.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">It never lands on a missing cell</b>, which is what keeps the three carriers of <i>missing</i> intact. Only a filled cell can have been filled by name, so the mark occupies a channel that is otherwise empty &mdash; and full-strength art beneath it is itself the disambiguator.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">It is a mark, not a control.</b> Tapping does what tapping any cell does: opens card detail &mdash; where the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set</span> picker already lives. <b style="color:#EDE6D8;font-weight:600;">No control enters a cell at any width</b>, and the page adds no second write path against <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">card_art_preferences</span>.</div>
+            <div><b style="color:#EDE6D8;font-weight:600;">Pinning from here moves the fill, and the page must show it.</b> The pin key is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">(user_id, oracle_id)</span>, so picking #268 in the modal fills #268 and <b style="color:#EDE6D8;font-weight:600;">empties #262</b> &mdash; two cells changing from one act, the ratio unmoved at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">62 / 276</span>. The set page is the only surface in the app where that swap is legible, which is the argument for the mark in one sentence.</div>
+            <div style="color:#8E8269;"><b style="color:#A89B84;font-weight:600;">Cost accepted:</b> on a collection pasted from a list the mark can appear on hundreds of cells. It is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> on a 68% scrim at 9px, quieter than the foil mark and far quieter than a price tag, and it appears only where the art is at full strength &mdash; a field of them reads as texture on the cells you own, never as a field of errors.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;margin-top:26px;">
+
+      <div style="width:560px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">state &middot; 0% &mdash; opened from search, nothing owned</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:12px;">
+            <div style="flex:1;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Bloomburrow</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);margin-top:4px;">BLB &middot; 261 base &middot; 96 extras</div></div>
+            <div style="width:180px;"><div style="display:flex;align-items:baseline;gap:6px;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--fg-muted);">0</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">/ 261</span></div><div style="height:5px;border-radius:999px;background:var(--elevated);margin-top:7px;"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Cost to complete</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--accent);">$1,902.10</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">over 244 of 261</span></div>
+          <div style="display:grid;grid-template-columns:repeat(5,88px);gap:14px 10px;">
+            <sc-for list="{{ zeroCells }}" as="c" hint-placeholder-count="10">
+              <div style="width:88px;">
+                <div style="position:relative;width:88px;height:123px;border-radius:5px;overflow:hidden;background:var(--surface-sunken);border:1px dashed var(--fg-locked);"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 90%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                <div style="font-size:10.5px;color:var(--fg-body);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;margin-top:14px;"><b style="color:var(--fg);font-weight:600;">Nothing is added and nothing is removed.</b> A zero set is the grid with no lit cells &mdash; no empty state, no illustration, no <i>start collecting</i>. The page is already a picture of what is missing; an empty state on top of 261 dimmed cards would be describing the screen to the person looking at it. <b style="color:var(--fg);font-weight:600;">The cost strip is the one thing that gets louder</b>, because at 0% it is the only figure that has moved, and this is the state a reader most often arrived at from search.</div>
+        </div>
+      </div>
+
+      <div style="width:560px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #6FA368;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">state &middot; 100% &mdash; call 2, the head is the treatment</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="border:1px solid var(--success);border-radius:12px;background:var(--surface-sunken);padding:16px 18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <span style="width:46px;height:46px;flex:none;border-radius:999px;border:1.5px solid var(--success);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);">set</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);line-height:1.2;">Duskmourn, complete</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:5px;">DSK &middot; all <b style="color:var(--success);font-weight:600;">276</b> of the base run</div>
+              </div>
+              <div style="width:120px;flex:none;text-align:right;"><span style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--success);">100%</span></div>
+            </div>
+            <div style="height:6px;border-radius:999px;background:var(--elevated);margin-top:13px;overflow:hidden;"><div style="height:6px;border-radius:999px;background:var(--success);width:100%;"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface-sunken);border:1px solid var(--border);border-radius:10px;padding:12px 15px;margin-bottom:16px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Cost to finish the extras</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--accent);">$412.90</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">over <b style="color:var(--fg-body);font-weight:600;">98</b> of the <b style="color:var(--fg-body);font-weight:600;">105</b> you are missing</span>
+            <span style="flex:1;"></span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:var(--bg);background:var(--fg);border-radius:8px;padding:9px 16px;">Send 98 to ManaPool</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;"><span style="height:30px;display:flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:8px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Extras <b style="color:var(--fg);font-weight:600;">18 / 123</b></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">the only thing left in this set</span></div>
+          <div style="display:grid;grid-template-columns:repeat(5,88px);gap:14px 10px;">
+            <sc-for list="{{ fullCells }}" as="c" hint-placeholder-count="10">
+              <div style="width:88px;">
+                <div style="position:relative;width:88px;height:123px;border-radius:5px;overflow:hidden;background:var(--surface-sunken);border:1px solid var(--border);"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 90%);"></div></div>
+                <div style="font-size:10.5px;color:var(--fg-body);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;margin-top:14px;"><b style="color:var(--fg);font-weight:600;">The head becomes a sealed block and the grid is untouched.</b> A <span style="color:var(--success);">--success</span> hairline around the whole head, the icon ringed rather than discced, and the ratio replaced by a Cinzel sentence &mdash; <i>Duskmourn, complete</i>. <b style="color:var(--fg);font-weight:600;">Nothing animates and no badge lands on the index row</b>: this state is reached by an upload three routes away and revisited later, so a celebration fired on page load celebrates a page load. The distinctness is structural &mdash; a reader opening four sets from their index can tell this one from the top 120px.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;"><b style="color:var(--fg);font-weight:600;">R3 &mdash; three things came off this state, and one replaced a mystery button.</b> <span style="color:var(--fg-locked);">nothing left to buy</span> and <span style="color:var(--fg-locked);">nothing missing to show</span> are both gone: the first restates <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">100%</span> in words, and the second explains a control that should not be there &mdash; so <b style="color:var(--fg);font-weight:600;">the Missing-only toggle is removed outright at 100%</b> rather than greyed. This is the one place the <i>grey in place, never absent</i> rule yields, and the reason is that the rule exists to keep a control's <i>state</i> legible: here there is no state to lose, because the filter's entire population is empty and will stay empty until the reader sells a card. <b style="color:var(--fg);font-weight:600;">And <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Cost the 105 extras</span> is withdrawn as unclear</b> &mdash; it named a verb the app does not otherwise use and did not say what would happen. In its place the page's own cost strip <b style="color:var(--fg);font-weight:600;">re-scopes to the extras</b>: same component, same rules, same one-selector button, with <i>base run</i> swapped for <i>the extras</i> in the label. Nothing new to learn.</div>
+        </div>
+      </div>
+
+      <div style="width:560px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">state &middot; missing-only &mdash; number continuity breaks by design</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <span style="height:30px;display:flex;align-items:center;gap:8px;border:1px solid var(--accent);border-radius:8px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:26px;height:15px;border-radius:999px;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:flex-end;padding:2px;"><span style="width:9px;height:9px;border-radius:999px;background:var(--accent);"></span></span>Missing only</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">214 of 276 &middot; <span style="color:var(--fg-locked);">numbers skip &mdash; the 62 you own are hidden</span></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(5,88px);gap:14px 10px;">
+            <sc-for list="{{ missingOnly }}" as="c" hint-placeholder-count="10">
+              <div style="width:88px;">
+                <div style="position:relative;width:88px;height:123px;border-radius:5px;overflow:hidden;background:var(--surface-sunken);border:1px dashed var(--fg-locked);"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 90%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                <div style="font-size:10.5px;color:var(--fg-body);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{ c.numCol }};">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;margin-top:14px;"><b style="color:var(--fg);font-weight:600;">The skip is stated once, in the result line, and never marked in the grid.</b> A gap glyph between #014 and #017 would be a cell for a card the reader chose not to see. What the grid does instead is <b style="color:var(--fg);font-weight:600;">brighten the collector number to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-muted</span> in this mode</b> &mdash; when the sequence stops being continuous the number stops being decoration and becomes the thing you read, and it is also what a reader types into a shop.</div>
+        </div>
+      </div>
+
+      <div style="width:560px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">state &middot; three filters combined to zero</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:center;background:var(--bg);border:1px solid var(--accent);border-radius:9px;height:30px;padding:0 5px;">
+              <sc-for list="{{ pipsFiltered }}" as="p" hint-placeholder-count="5">
+                <span style="width:19px;height:19px;border-radius:5px;margin:0 2px;background:{{ p.tok }};opacity:{{ p.op }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+              </sc-for>
+            </span>
+            <span style="height:30px;display:flex;align-items:center;gap:7px;border:1px solid var(--accent);border-radius:8px;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Rarity &middot; mythic</span>
+            <span style="height:30px;display:flex;align-items:center;gap:8px;border:1px solid var(--accent);border-radius:8px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:26px;height:15px;border-radius:999px;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:flex-end;padding:2px;"><span style="width:9px;height:9px;border-radius:999px;background:var(--accent);"></span></span>Missing only</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:13px;padding:22px 30px 26px;">
+            <span style="display:flex;gap:8px;"><span style="width:10px;height:10px;background:var(--border-dashed);transform:rotate(45deg);"></span><span style="width:14px;height:14px;background:var(--border-dashed);transform:rotate(45deg);"></span><span style="width:10px;height:10px;background:var(--border-dashed);transform:rotate(45deg);"></span></span>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:var(--fg);line-height:1.3;">You are not missing any white mythics</div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;max-width:400px;">There are <span style="color:var(--fg-body);">4</span> in Edge of Eternities and you hold all four. Turn off <span style="color:var(--fg-body);">Missing only</span> to see them, or widen the filters.</div>
+            <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center;"><span style="min-height:34px;padding:0 16px;font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:var(--bg);background:var(--fg);border-radius:8px;display:flex;align-items:center;">Show all 4</span><span style="min-height:34px;padding:0 16px;font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:var(--fg);border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;">Clear filters</span></div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:13px;"><b style="color:var(--fg);font-weight:600;">Zero here is usually good news, and the sentence has to say so.</b> With missing-only on, an empty result means you own everything that matched &mdash; the opposite of the /commanders zero state, where empty means nothing qualified. The correction offered first is therefore <b style="color:var(--fg);font-weight:600;">the cheapest one that shows the cards you do own</b>, not <i>clear everything</i>. The rack holds its height, per the lanes ruling, and the cost strip above reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$0.00 over 0 of 0</span> rather than disappearing.</div>
+        </div>
+      </div>
+
+      <div style="width:560px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">state &middot; unknown or non-collectible set code</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-bottom:18px;"><span style="color:var(--accent);">Collection</span> / <span style="color:var(--accent);">Sets</span> / <span style="color:var(--fg-faint);">sld</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:13px;padding:16px 30px 26px;">
+            <span style="display:flex;gap:8px;"><span style="width:10px;height:10px;background:var(--border-dashed);transform:rotate(45deg);"></span><span style="width:14px;height:14px;background:var(--border-dashed);transform:rotate(45deg);"></span><span style="width:10px;height:10px;background:var(--border-dashed);transform:rotate(45deg);"></span></span>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:var(--fg);line-height:1.3;">Secret Lair Drop has no set to complete</div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;max-width:420px;">It has no fixed numbered run, so there is no denominator and nothing to be missing from. Your <span style="color:var(--fg-body);">11</span> cards from it are all in your collection.</div>
+            <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center;"><span style="min-height:34px;padding:0 16px;font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:var(--bg);background:var(--fg);border-radius:8px;display:flex;align-items:center;">See those 11 in Collection</span><span style="min-height:34px;padding:0 16px;font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:var(--fg);border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;">Back to your sets</span></div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:13px;"><b style="color:var(--fg);font-weight:600;">Two failures, two sentences, one layout.</b> A non-collectible code (above) is answered with the reason and a route to the cards you hold from it; an <b style="color:var(--fg);font-weight:600;">unknown code</b> gets <i>No set with the code ZZZ</i> and only the second button. <b style="color:var(--fg);font-weight:600;">Neither is a 404 route</b> &mdash; the breadcrumb survives so the reader is visibly still inside Collection &mdash; and neither offers a search field, because the index is one tap away and already has one. Distinguish both from <i>not indexed yet</i>, which is a real set with a real page that is merely early.</div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.5);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);min-height:980px;">
+        <div style="padding:14px 14px 10px;border-bottom:1px solid var(--border);background:var(--surface-rail);">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:6px;"><span style="color:var(--accent);">Collection</span> / <span style="color:var(--accent);">Sets</span> / EOE</div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:30px;height:30px;flex:none;border-radius:999px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">set</span><span style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:var(--fg);line-height:1.25;">Edge of Eternities</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-top:7px;">EOE &middot; Aug 2025 &middot; 276 base &middot; 123 extras</div>
+          <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--fg);">62</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">/ 276</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">22%</span></div>
+          <div style="height:5px;border-radius:999px;background:var(--elevated);margin-top:7px;overflow:hidden;"><div style="height:5px;border-radius:999px;background:var(--accent);width:22%;"></div></div>
+          <div style="margin-top:11px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;padding:10px 12px;">
+            <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--accent);">$1,284.40</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">over 193 of 214</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);margin-top:4px;">21 never stocked &middot; not in this figure</div>
+            <span style="display:flex;min-height:44px;margin-top:10px;font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:var(--bg);background:var(--fg);border-radius:9px;align-items:center;justify-content:center;">Send 193 to ManaPool</span>
+          </div>
+        </div>
+        <div style="padding:10px 14px;display:flex;gap:8px;border-bottom:1px solid var(--border);background:var(--surface-sunken);">
+          <span style="height:44px;flex:1;border:1px solid var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:var(--fg);">Filters</span>
+          <span style="height:44px;flex:1.2;border:1px solid var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);"><span style="width:26px;height:15px;border-radius:999px;background:var(--elevated);border:1px solid var(--border-strong);display:flex;align-items:center;padding:2px;"><span style="width:9px;height:9px;border-radius:999px;background:var(--fg-locked);"></span></span>Missing</span>
+        </div>
+        <div style="padding:12px 14px 16px;">
+          <div style="display:flex;align-items:baseline;gap:9px;border-bottom:1px solid var(--border-strong);padding-bottom:7px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:var(--fg);">Base run</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">62 / 276</span><span style="flex:1;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">extras &darr;</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,108px);gap:14px 9px;">
+            <sc-for list="{{ phoneBase }}" as="c" hint-placeholder-count="9">
+              <div style="width:108px;">
+                <div style="position:relative;width:108px;height:151px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                  <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                  <sc-if value="{{ c.foil }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;right:4px;top:4px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;color:var(--fg);background:rgba(0,0,0,0.68);border-radius:4px;padding:2px 5px;">&#9670; FOIL</span>
+                  </sc-if>
+                  <sc-if value="{{ c.byName }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;left:4px;bottom:4px;display:flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;color:var(--fg-body);background:rgba(0,0,0,0.68);border-radius:4px;padding:2px 5px;"><span style="width:5px;height:5px;border:1px solid var(--accent);transform:rotate(45deg);display:inline-block;"></span>BY NAME</span>
+                  </sc-if>
+                </div>
+                <div style="font-size:11px;line-height:1.3;color:{{ c.nameCol }};margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:3px;min-height:15px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">{{ c.num }}</span>
+                  <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};border-radius:4px;padding:0 4px;">{{ c.priceShort }}</span>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);padding-top:14px;line-height:1.65;">state &middot; the base run at 390px, all cells. <b style="color:var(--fg-faint);font-weight:400;">Three columns at 108px, and the caption drops the rarity</b> &mdash; number and price only, because rarity is a filter you set rather than a fact you scan and the phone caption has room for two things. Both marks survive at 8.5px; the extras section follows under the same scroll, reached by the same <span style="color:var(--fg-muted);">extras &darr;</span> in the section head.</div>
+        </div>
+      </div></div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.5);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);min-height:760px;">
+        <div style="padding:14px 14px 10px;border-bottom:1px solid var(--border);background:var(--surface-rail);">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:6px;"><span style="color:var(--accent);">Sets</span> / EOE</div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:30px;height:30px;flex:none;border-radius:999px;background:var(--elevated);"></span><span style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:var(--fg);line-height:1.25;">Edge of Eternities</span></div>
+          <div style="display:flex;align-items:baseline;gap:7px;margin-top:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--fg);">62</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">/ 276</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">22%</span></div>
+          <div style="height:5px;border-radius:999px;background:var(--elevated);margin-top:7px;overflow:hidden;"><div style="height:5px;border-radius:999px;background:var(--accent);width:22%;"></div></div>
+          <div style="margin-top:11px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;padding:10px 12px;">
+            <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--accent);">$1,284.40</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">over 193 of 214</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);margin-top:4px;">21 never stocked &middot; not in this figure</div>
+            <span style="display:flex;min-height:44px;margin-top:10px;font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:var(--bg);background:var(--fg);border-radius:9px;align-items:center;justify-content:center;">Send 193 to ManaPool</span>
+          </div>
+        </div>
+        <div style="padding:10px 14px;display:flex;gap:8px;border-bottom:1px solid var(--border);background:var(--surface-sunken);">
+          <span style="height:44px;flex:1;border:1px solid var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:var(--fg);">Filters <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:999px;padding:1px 6px;">2</span></span>
+          <span style="height:44px;flex:1.2;border:1px solid var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);"><span style="width:26px;height:15px;border-radius:999px;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:flex-end;padding:2px;"><span style="width:9px;height:9px;border-radius:999px;background:var(--accent);"></span></span>Missing</span>
+        </div>
+        <div style="padding:12px 14px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);margin-bottom:10px;">214 missing &middot; base run &middot; <span style="color:var(--fg-locked);">numbers skip</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,108px);gap:14px 9px;">
+            <sc-for list="{{ phoneCells }}" as="c" hint-placeholder-count="12">
+              <div style="width:108px;">
+                <div style="position:relative;width:108px;height:151px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px dashed var(--fg-locked);"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                <div style="font-size:11px;line-height:1.3;color:var(--fg-body);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};border-radius:4px;padding:0 4px;">{{ c.priceShort }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);padding-top:14px;line-height:1.6;">state &middot; missing-only at 390px. Three columns at 108px; the whole cell is the target (108&times;151 clears 44 twice over). <b style="color:var(--fg-faint);font-weight:400;">The rarity letter drops</b> &mdash; the phone caption holds the number and the price, and rarity is a filter you set rather than a fact you scan.</div>
+        </div>
+      </div></div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.5);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);min-height:760px;">
+        <div style="padding:14px 14px 10px;border-bottom:1px solid var(--border);background:var(--surface-rail);">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:6px;"><span style="color:var(--accent);">Sets</span> / EOE</div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:30px;height:30px;flex:none;border-radius:999px;background:var(--elevated);"></span><span style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:var(--fg);line-height:1.25;">Edge of Eternities</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:11px;"><span style="width:86px;height:16px;border-radius:5px;background:var(--elevated);"></span><span style="width:52px;height:16px;border-radius:5px;background:var(--surface-inset);"></span></div>
+          <div style="height:5px;border-radius:999px;background:var(--elevated);margin-top:9px;"></div>
+          <div style="height:74px;border-radius:9px;background:var(--surface-sunken);border:1px solid var(--border);margin-top:11px;"></div>
+        </div>
+        <div style="padding:12px 14px 16px;">
+          <div style="width:150px;height:11px;border-radius:4px;background:var(--elevated);margin-bottom:12px;"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,108px);gap:14px 9px;">
+            <sc-for list="{{ skeleton }}" as="s" hint-placeholder-count="12">
+              <div style="width:108px;">
+                <div style="width:108px;height:151px;border-radius:6px;background:var(--surface-inset);border:1px solid var(--border);"></div>
+                <div style="width:{{ s.w }}px;height:9px;border-radius:3px;background:var(--elevated);margin-top:8px;"></div>
+                <div style="width:34px;height:8px;border-radius:3px;background:var(--surface-inset);margin-top:5px;"></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);padding-top:14px;line-height:1.6;">state &middot; loading &mdash; the route's own <span style="color:var(--fg-faint);">loading.tsx</span>. <b style="color:var(--fg-faint);font-weight:400;">The pending plate is <span style="color:var(--fg-muted);">--surface-inset</span>, solid-edged, never the missing dim and never a spinner</b> &mdash; a cell that is still arriving must not be mistakable for a card you do not own. The name and icon render immediately from the index row; the ratio, the cost strip and the grid are what wait.</div>
+        </div>
+      </div></div>
+
+      <div style="width:620px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">the price slot &mdash; five cases, one skin</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="display:grid;grid-template-columns:repeat(5,110px);gap:18px 8px;">
+            <sc-for list="{{ priceCells }}" as="c" hint-placeholder-count="5">
+              <div style="width:110px;">
+                <div style="position:relative;width:110px;height:154px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                  <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 88%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                  <sc-if value="{{ c.foil }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;right:5px;top:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--fg);background:rgba(0,0,0,0.68);border-radius:4px;padding:2px 5px;">&#9670; FOIL</span>
+                  </sc-if>
+                </div>
+                <div style="font-size:11px;color:{{ c.nameCol }};margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:4px;min-height:17px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};border-radius:4px;padding:1px 4px;">{{ c.price }}</span></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);margin-top:6px;line-height:1.45;">{{ c.caption }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;margin-top:16px;"><b style="color:var(--fg);font-weight:600;">One skin, four fills, and an owned cell has no tag at all.</b> Priced takes the deck-side buy tag verbatim &mdash; <span style="color:var(--accent);">--accent</span> ink on a hairline of the same hue, because <i>to buy</i> is what accent means here. <b style="color:var(--fg);font-weight:600;">Unstocked is not $0 and not blank</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no stock</span> in <span style="color:var(--fg-locked);">--fg-locked</span> on a dashed hairline, holding the slot's height so the grid does not shuffle &mdash; and it is <i>excluded from the cost figure and named in the sentence that states it</i>. <b style="color:var(--fg);font-weight:600;">Foil-only says so before it says the number</b>, because a foil price read as a normal price is the one error here that costs money. The last owned cell shows the <b style="color:var(--fg);font-weight:600;">foil mark on a filled cell</b>: ruling 3 in one picture &mdash; a foil #42 completes #42, and the mark is about your copy, not the cell.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §3b R2 STATES ========== -->
+  <div id="threeb">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #6FA368;padding-top:18px;">&sect;3b &middot; <span style="color:#6FA368;">R2 &mdash; three edges the spec does not list, drawn on request</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:620px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">state &middot; an upload finishes while this page is open</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="background:var(--surface-rail);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px;">
+            <div style="display:flex;align-items:flex-end;gap:20px;">
+              <div style="flex:1;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Edge of Eternities</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);margin-top:4px;">EOE &middot; 276 in the base run</div></div>
+              <div style="width:200px;"><div style="display:flex;align-items:baseline;gap:6px;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--fg);">62</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">/ 276</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">22%</span></div><div style="height:5px;border-radius:999px;background:var(--elevated);margin-top:7px;overflow:hidden;"><div style="height:5px;border-radius:999px;background:var(--accent);width:22%;"></div></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;margin-top:13px;background:var(--surface-sunken);border:1px solid var(--accent);border-radius:9px;padding:10px 13px;">
+              <span style="width:7px;height:7px;background:var(--accent);transform:rotate(45deg);flex:none;"></span>
+              <span style="font-size:12.5px;color:var(--fg-body);line-height:1.5;flex:1;">Your upload finished. <b style="color:var(--fg);font-weight:600;">17 more cards from this set</b> are in your collection now.</span>
+              <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:var(--bg);background:var(--fg);border-radius:7px;padding:8px 14px;flex:none;">Refresh the grid</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(6,88px);gap:14px 10px;">
+            <sc-for list="{{ staleCells }}" as="c" hint-placeholder-count="6">
+              <div style="width:88px;">
+                <div style="position:relative;width:88px;height:123px;border-radius:5px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 90%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                <div style="font-size:10.5px;color:var(--fg-body);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;margin-top:14px;"><b style="color:var(--fg);font-weight:600;">The page never re-renders under the reader.</b> A grid that silently relights cells while someone is reading it destroys the one thing this surface sells &mdash; that what you see is what you own. So the stale page <b style="color:var(--fg);font-weight:600;">holds every figure it was serving</b> and offers the update as an act: one accent-edged strip inside the head, naming the delta for <i>this set</i> rather than the upload as a whole. <b style="color:var(--fg);font-weight:600;">Not a toast</b> &mdash; a toast expires, and a reader who scrolled past it would keep reading a page they had been told was wrong. <b style="color:var(--fg);font-weight:600;">Not dismissible</b>, for the same reason: it leaves when the grid is right. If the delta is zero the strip never appears.</div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#070608;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.5);"><div style="border-radius:34px;overflow:hidden;background:var(--bg);min-height:620px;">
+        <div style="padding:14px 14px 10px;border-bottom:1px solid var(--border);background:var(--surface-rail);">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:6px;"><span style="color:var(--accent);">Sets</span> / OTJ</div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:30px;height:30px;flex:none;border-radius:999px;background:var(--elevated);"></span><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:var(--fg);line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">Outlaws of Thunder Junction: Breaking News</span></div>
+          <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--fg);">88</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">/ 271</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">32%</span></div>
+          <div style="height:5px;border-radius:999px;background:var(--elevated);margin-top:7px;overflow:hidden;"><div style="height:5px;border-radius:999px;background:var(--accent);width:32%;"></div></div>
+        </div>
+        <div style="padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface-sunken);display:flex;gap:8px;"><span style="height:40px;flex:1;border:1px solid var(--border-strong);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:var(--fg);">Filters</span><span style="height:40px;flex:1.2;border:1px solid var(--border-strong);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Missing 183</span></div>
+        <div style="padding:12px 14px;">
+          <div style="display:grid;grid-template-columns:repeat(3,108px);gap:14px 9px;">
+            <sc-for list="{{ wrapCells }}" as="c" hint-placeholder-count="6">
+              <div style="width:108px;">
+                <div style="position:relative;width:108px;height:151px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 90%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                <div style="font-size:11px;color:var(--fg-body);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);padding-top:14px;line-height:1.65;">state &middot; the longest set name in the catalogue, 390px. <b style="color:var(--fg-faint);font-weight:400;">The name clamps to two lines and the head grows once</b> &mdash; 96 &rarr; 118px &mdash; rather than truncating a name the reader navigated here by. <b style="color:var(--fg-faint);font-weight:400;">The cost strip is what yields:</b> above two lines of title it collapses to the total and the button, and the priced-of-missing sentence moves under the grid's result line. Clipping a title is worse than growing a header (deck-details ruling); clipping a figure is worse than moving one.</div>
+        </div>
+      </div></div>
+
+      <div style="width:560px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #6FA368;">
+        <div style="padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">state &middot; 100% with extras present and none owned &mdash; and the no-extras branch</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="border:1px solid var(--success);border-radius:12px;background:var(--surface-sunken);padding:16px 18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <span style="width:46px;height:46px;flex:none;border-radius:999px;border:1.5px solid var(--success);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);">set</span>
+              <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);line-height:1.2;">Bloomburrow, complete</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:5px;">BLB &middot; all <b style="color:var(--success);font-weight:600;">261</b> of the base run</div></div>
+              <div style="width:120px;flex:none;text-align:right;"><span style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--success);">100%</span></div>
+            </div>
+            <div style="height:6px;border-radius:999px;background:var(--elevated);margin-top:13px;overflow:hidden;"><div style="height:6px;border-radius:999px;background:var(--success);width:100%;"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface-sunken);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:16px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Cost to finish the extras</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--accent);">$389.20</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">over 91 of the 96 you are missing</span>
+            <span style="flex:1;"></span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:var(--bg);background:var(--fg);border-radius:8px;padding:8px 14px;">Send 91 to ManaPool</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><span style="height:28px;display:flex;align-items:center;border:1px solid var(--border-strong);border-radius:8px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Extras <b style="color:var(--fg);font-weight:600;">0 / 96</b></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">the only thing left in this set</span></div>
+          <div style="border:1px solid var(--success);border-radius:12px;background:var(--surface-sunken);padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <span style="width:46px;height:46px;flex:none;border-radius:999px;border:1.5px solid var(--success);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);">set</span>
+              <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);line-height:1.2;">Jumpstart: Historic Horizons, complete</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:5px;">J21 &middot; all <b style="color:var(--success);font-weight:600;">48</b> of the base run</div></div>
+              <div style="width:120px;flex:none;text-align:right;"><span style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--success);">100%</span></div>
+            </div>
+            <div style="height:6px;border-radius:999px;background:var(--elevated);margin-top:13px;overflow:hidden;"><div style="height:6px;border-radius:999px;background:var(--success);width:100%;"></div></div>
+            <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--success);">Nothing left in this set</div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;margin-top:14px;"><b style="color:var(--fg);font-weight:600;">Three branches, and the cost strip is what distinguishes them.</b> Extras owned &rarr; the strip re-scopes to the extras and the count line reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Extras 18 / 123</span>. <b style="color:var(--fg);font-weight:600;">Extras present, none owned</b> &rarr; identical, at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 / 96</span> &mdash; not a sad zero but the clearest thing the page can say next, and the strip still prices them. <b style="color:var(--fg);font-weight:600;">No extras at all</b> &rarr; <b style="color:var(--fg);font-weight:600;">the strip does not render</b> and one <span style="color:var(--success);">--success</span> mono line closes the block. The head never shows <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 / 0</span>, never restates 100% in words, and never ends on an affordance for a list that does not exist.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §4 SIX THEMES ========== -->
+  <div id="four">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;4 &middot; <span style="color:#CF8745;">the dim in all six &mdash; the same six cells, six palettes</span></div>
+    <p style="max-width:1060px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;">Three owned, three missing, in each theme. <b style="color:#EDE6D8;font-weight:600;">Nothing here is a chosen colour:</b> the missing plate is the art at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">opacity .28</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">saturate(.55)</span> over <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--surface-sunken</span>, so the theme supplies the floor and the step self-corrects. Measured against a mid-luminance art sample the <b style="color:#EDE6D8;font-weight:600;">owned-to-missing step is 3.15&ndash;3.44:1 across the six</b> &mdash; a 0.29 spread, always above the 3:1 non-text floor, never so large that the art stops being art.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,452px);justify-content:start;gap:18px;max-width:1400px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div data-theme="{{ t.key }}" style="border:1px solid #3A3229;border-radius:12px;overflow:hidden;">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--fg);">{{ t.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ t.key }}</span><span style="flex:1;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">step {{ t.step }}:1</span></div>
+          <div style="background:var(--bg);padding:14px;">
+            <div style="display:grid;grid-template-columns:repeat(6,64px);justify-content:space-between;gap:9px;">
+              <sc-for list="{{ t.cells }}" as="c" hint-placeholder-count="6">
+                <div style="width:64px;">
+                  <div style="position:relative;width:64px;height:89px;border-radius:5px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                  <div style="font-size:9.5px;color:var(--fg-body);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);"><span>edge <span style="color:var(--fg-body);">{{ t.edgeRatio }}:1</span></span><span>name <span style="color:var(--fg-body);">{{ t.nameRatio }}:1</span></span><span>price <span style="color:var(--fg-body);">{{ t.priceRatio }}:1</span></span><span style="color:var(--fg-locked);">--border-dashed would be {{ t.dashedRatio }}:1</span></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="max-width:1400px;margin-top:18px;background:#161318;border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:14px;padding:20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:10px;">The finding that changed the design</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.75;max-width:1080px;"><b style="color:#EDE6D8;font-weight:600;">The first draft edged the missing cell in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--border-dashed</span></b>, reasoning that dashed is already this app's <i>not settled</i> vocabulary &mdash; the empty partner plate, the import proposal, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Building</span> status pill. Measured, that token runs <b style="color:#EDE6D8;font-weight:600;">1.46:1 on Oil Haze and 1.97:1 on Canopy</b> against the sunken plate: correct as a whisper beside a filled shape, useless as the second carrier of a state. Every other dashed line in the app <i>decorates</i> something the reader has already found. This one has to be found. <b style="color:#EDE6D8;font-weight:600;">The style stays and the token changes</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">1px dashed var(--fg-locked)</span>, 3.16&ndash;3.44:1 in the six &mdash; and it generalises: <i>a dashed line that carries state takes a foreground token, not a border token</i>.</div>
+    </div>
+  </div>
+
+  <!-- ========== §5 DENSITY ========== -->
+  <div id="five">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;5 &middot; <span style="color:#CF8745;">density &mdash; 399 cells on one page</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:700px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #6FA368;">
+        <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">recommended &middot; 116px &middot; 8 columns at 1180</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="display:grid;grid-template-columns:repeat(5,116px);gap:18px 10px;">
+            <sc-for list="{{ denseA }}" as="c" hint-placeholder-count="5">
+              <div style="width:116px;">
+                <div style="position:relative;width:116px;height:162px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 88%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                <div style="font-size:11.5px;color:var(--fg-body);margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-top:4px;">{{ c.num }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);margin-top:16px;line-height:1.8;">cell 116&times;196 &middot; gap 10/18 &middot; <b style="color:var(--fg);font-weight:600;">8 cols</b> at 1180, 9 at 1280, 3 at 390<br>base run 35 rows &middot; <b style="color:var(--fg);font-weight:600;">6,860px</b> &middot; extras 16 rows &middot; 3,136px<br>whole page <b style="color:var(--fg);font-weight:600;">&asymp;10,300px &asymp; 11 screens</b> at 900px</div>
+        </div>
+      </div>
+      <div style="width:700px;flex:none;border-radius:12px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">rejected &middot; 88px &middot; 11 columns at 1180</div>
+        <div style="background:var(--bg);padding:18px;">
+          <div style="display:grid;grid-template-columns:repeat(7,88px);gap:14px 8px;">
+            <sc-for list="{{ denseB }}" as="c" hint-placeholder-count="7">
+              <div style="width:88px;">
+                <div style="position:relative;width:88px;height:123px;border-radius:5px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};"><div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, var(--surface-sunken) 88%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div></div>
+                <div style="font-size:10px;color:var(--fg-body);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:16px;line-height:1.8;">cell 88&times;153 &middot; <b style="color:var(--fg-body);font-weight:600;">11 cols</b> &middot; base 26 rows &middot; 3,978px<br>whole page <b style="color:var(--fg-body);font-weight:600;">&asymp;5,700px</b> &mdash; 45% shorter<br><span style="color:var(--danger);">names truncate at ~13 chars &middot; 5 of the 7 drawn here are cut</span></div>
+        </div>
+      </div>
+      <div style="width:460px;flex:none;background:#161318;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Call 3 &mdash; and the three things that pay for the scroll</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+          <div><b style="color:#EDE6D8;font-weight:600;">One density, and it is the larger one.</b> Compact saves 4,600px and costs the card name, which is the only thing in a dimmed cell a reader can search their memory against &mdash; the art is at 28% and the number means nothing to anyone who has not memorised a checklist.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">No density toggle.</b> A second view control on a page whose sibling route already has one, saving a scroll nobody performs end to end &mdash; readers jump, they do not scroll 276 cells looking for one.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">1 &middot; The head sticks.</b> Ratio, cost strip and the three filters pin at the top of the viewport &mdash; 108px desktop, 96px phone &mdash; so the figure the page exists for is never scrolled away from, and the filters that change it are always reachable.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">2 &middot; Two sections, one jump.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">extras &darr;</span> in the sticky result line is the page's only in-page nav. No A&ndash;Z rail, no number scrubber: collector-number order is already the reader's index.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">3 &middot; Missing-only is the real density control.</b> It removes 62 cells here and far more on a well-collected set, and unlike a toggle that shrinks everything it removes the cells the reader is <i>done with</i>.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Windowing is an engineering call, not a design one</b>, and the design does not depend on it: 399 cells of <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">image_uri_small</span> want <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">loading="lazy"</span> at minimum. Whatever is chosen must not break the sticky head or the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">extras &darr;</span> jump.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §6 CONTRACT ========== -->
+  <div id="six">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;6 &middot; <span style="color:#CF8745;">the contract</span></div>
+    <div style="max-width:1400px;border:1px solid #2A241D;border-radius:14px;overflow:hidden;">
+      <sc-for list="{{ contract }}" as="c" hint-placeholder-count="12">
+        <div style="display:flex;gap:20px;padding:13px 20px;border-bottom:1px solid #241F26;background:#141218;">
+          <span style="width:190px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;color:#EDE6D8;">{{ c.k }}</span>
+          <span style="flex:1;font-size:12.5px;color:#A89B84;line-height:1.6;">{{ c.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1480,&quot;height&quot;:1000},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;ixalan&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Audit&quot;}}">
+const TOK = ["var(--w)","var(--u)","var(--b)","var(--r)","var(--g)"];
+const OWNED = { owned:true, missing:false, edge:"solid", edgeCol:"var(--border)", dim:"1", sat:"1", nameCol:"var(--fg)" };
+const MISS  = { owned:false, missing:true, edge:"dashed", edgeCol:"var(--fg-locked)", dim:".28", sat:".55", nameCol:"var(--fg-body)" };
+
+function pad(n){ return String(n).padStart(3,"0"); }
+
+// Rarity is spelled out, lowercase, after a middot — the caption format the
+// shipped collection tile already uses (`UNF · uncommon`). On a set page the
+// set code is constant, so the collector number takes its slot.
+const RAR = { C:"\u00b7 common", U:"\u00b7 uncommon", R:"\u00b7 rare", M:"\u00b7 mythic" };
+
+function cell(n, num, ti, opts){
+  const o = opts || {};
+  const base = o.own ? OWNED : MISS;
+  const c = Object.assign({ n, num: pad(num), tok: TOK[ti % 5], rar: RAR[o.rar || "C"], foil: !!o.foil, byName: !!o.byName, treatment: o.treatment || "" }, base);
+  if (o.own) { c.price = ""; c.priceCol = "transparent"; c.priceEdge = "transparent"; c.priceEdgeStyle = "solid"; c.priceShort = ""; }
+  else if (o.unstocked) { c.price = "no stock"; c.priceShort = "no stock"; c.priceCol = "var(--fg-locked)"; c.priceEdge = "var(--fg-locked)"; c.priceEdgeStyle = "dashed"; }
+  else if (o.foilOnly) { c.price = "\u25C6 foil $" + o.p; c.priceShort = "\u25C6 $" + o.p; c.priceCol = "var(--accent)"; c.priceEdge = "var(--accent-dim)"; c.priceEdgeStyle = "solid"; }
+  else { c.price = "$" + o.p; c.priceShort = "$" + o.p; c.priceCol = "var(--accent)"; c.priceEdge = "var(--accent-dim)"; c.priceEdgeStyle = "solid"; }
+  c.numCol = "var(--fg-muted)";
+  c.caption = o.caption || "";
+  return c;
+}
+
+const NAMES = ["Faller's Faithful","Singularity Rupture","Void Pilgrim","Hollow Sun Ascetic","Starfall Reliquary","Drifting Habitat","Quantum Shepherd","Rimeforge Gunner","Orbital Lattice","Deepfield Surveyor","Cinder Voyager","Mag-Lev Sentinel","Photic Bloom","Wreck of the Iolaus","Gravity Well","Salvage Runner","Nebula Herald","Terminus Beacon","Ion Storm","Tidal Cartographer","Ashfall Courier","Sacred Foundry","Cryo-Ballast","Silent Armada"];
+
+class Component extends DCLogic {
+  renderVals(){
+    const theme = this.props.theme ?? "amonkhet";
+
+    // ---- base run sample: 001–022 in collector-number order, then the sample skips
+    // to the two full-art Plains so the ruling-4 unpinned case can be shown.
+    const ownSet = { 1:1, 4:1, 5:1, 9:1, 12:1, 16:1, 22:1 };
+    const baseCells = [];
+    const rars  = ["C","C","U","C","R","C","U","M","C","C","U","R","C","C","U","C","M","C","R","U","C","R"];
+    const pxs   = [1.2,0.35,0.9,4.10,12.40,0.25,1.80,28.60,0.40,0.55,2.10,6.30,0.30,0.75,1.40,0.35,34.90,0.60,8.20,1.10,0.80,9.40];
+    for (let i=0;i<22;i++){
+      const opts = { own: !!ownSet[i+1], rar: rars[i], p: pxs[i].toFixed(2) };
+      if (i===3 || i===11) opts.byName = true;
+      if (i===16) opts.unstocked = true;
+      if (i===18) opts.foilOnly = true;
+      if (i===4) opts.foil = true;
+      baseCells.push(cell(NAMES[i], i+1, i, opts));
+    }
+    // ruling 4: one unpinned holding fills the lowest unfilled cell for that oracle.
+    baseCells.push(cell("Plains", 262, 0, { own:true, rar:"C", byName:true }));
+    baseCells.push(cell("Plains", 268, 4, { rar:"C", p:"0.35" }));
+
+    const TREAT = ["showcase","borderless","extended","promo","showcase","borderless","promo","extended"];
+    const extraCells = [];
+    const eNames = ["Adagia, Windswept Bastion","Mm'menon, the Right Hand","Void Pilgrim","Starfall Reliquary","Emissary Escort","Nebula Herald","Ion Storm","Gravity Well"];
+    for (let i=0;i<8;i++){
+      const own = (i===0 || i===4);
+      extraCells.push(cell(eNames[i], 277+i*7, i+2, { own, rar:["M","M","R","R","R","M","R","U"][i], p:[38.4,22.1,6.4,11.9,4.2,17.3,9.8,3.6][i].toFixed(2), treatment: TREAT[i] }));
+    }
+
+    const zeroCells = [];
+    for (let i=0;i<10;i++) zeroCells.push(cell(["Mabel, Heir","Hugs, Grisly Guardian","Bakersbane Duo","Innkeeper's Talent","Valley Mightcaller","Fountainport","Heartfire Hero","Season of Loss","Camellia, Seedmiser","Coiling Rebirth"][i], i+1, i, { rar:"C", p:(2+i).toFixed(2) }));
+
+    const fullCells = [];
+    for (let i=0;i<10;i++) fullCells.push(cell(["Overlord of the Hauntwoods","Enduring Curiosity","Unstoppable Slasher","Marina Vendrell","Valgavoth","Ghostly Keybearer","The Wandering Rescuer","Cursed Recording","Fear of Missing Out","Screaming Nemesis"][i], i+1, i, { own:true, rar:"R" }));
+
+    const missingOnly = [];
+    const moNums = [2,3,6,7,8,10,11,13,14,15];
+    for (let i=0;i<10;i++){
+      const c = cell(NAMES[i+1], moNums[i], i+1, { rar:["C","U","C","U","M","C","U","C","C","U"][i], p:"1.20" });
+      c.numCol = "var(--fg-muted)";
+      missingOnly.push(c);
+    }
+
+    const phoneCells = [];
+    for (let i=0;i<12;i++){
+      const opts = { rar:"C", p:[1.2,0.35,4.1,12.4,0.25,1.8,0.4,2.1,6.3,0.3,0.75,1.4][i].toFixed(2) };
+      if (i===7) opts.unstocked = true;
+      if (i===3) opts.foilOnly = true;
+      phoneCells.push(cell(NAMES[i+1], i*2+2, i, opts));
+    }
+
+    const priceCells = [
+      Object.assign(cell("Singularity Rupture", 7, 1, { p:"4.10", rar:"R" }), { caption:"priced \u00b7 in the total" }),
+      Object.assign(cell("Void Pilgrim", 34, 2, { unstocked:true, rar:"U" }), { caption:"never stocked \u00b7 excluded, and named" }),
+      Object.assign(cell("Starfall Reliquary", 91, 3, { foilOnly:true, p:"14.10", rar:"M" }), { caption:"foil only \u00b7 finish before figure" }),
+      Object.assign(cell("Hollow Sun Ascetic", 118, 4, { p:"0.35", rar:"C" }), { caption:"bulk \u00b7 same skin, no special case" }),
+      Object.assign(cell("Rimeforge Gunner", 42, 0, { own:true, foil:true, rar:"R" }), { caption:"owned in foil \u00b7 ruling 3 \u2014 any finish fills the cell" })
+    ];
+
+    const denseA = [];
+    for (let i=0;i<5;i++) denseA.push(cell(["Hollow Sun Ascetic","Wreck of the Iolaus","Deepfield Surveyor","Plains","Quantum Shepherd"][i], i+40, i, { own: i===1, rar:"C", p:"1.20" }));
+    const denseB = [];
+    for (let i=0;i<7;i++) denseB.push(cell(["Hollow Sun Ascetic","Wreck of the Iolaus","Deepfield Surveyor","Plains","Quantum Shepherd","Mag-Lev Sentinel","Ion Storm"][i], i+40, i, { own: i===1, rar:"C", p:"1.20" }));
+
+    const phoneBase = [];
+    for (let i=0;i<9;i++){
+      const opts = { own: i===0||i===3||i===7, rar:"C", p:[1.2,0.35,4.1,12.4,0.25,1.8,0.4,2.1,6.3][i].toFixed(2) };
+      if (i===3) opts.foil = true;
+      if (i===7) opts.byName = true;
+      if (i===5) opts.unstocked = true;
+      phoneBase.push(cell(NAMES[i], i+1, i, opts));
+    }
+
+    const pipsRound = TOK.map(tok => ({ tok }));
+    const collectionTiles = [
+      { n:"Aang, the Last Airbender", meta:"TLA \u00b7 uncommon", qty:"\u00d71", tok:"var(--w)" },
+      { n:"Aang's Journey",           meta:"TLA \u00b7 common",   qty:"\u00d71", tok:"var(--u)" },
+      { n:"Abandon Attachments",      meta:"TLA \u00b7 common",   qty:"\u00d72", tok:"var(--r)" },
+      { n:"Abandoned Outpost",        meta:"ODY \u00b7 common",   qty:"\u00d71", tok:"var(--w)" },
+      { n:"Aberrant Manawurm",        meta:"SOS \u00b7 common",   qty:"\u00d71", tok:"var(--g)" }
+    ];
+    const ROWS = [
+      { qty:"\u00d71", n:"Aang, the Last Airbender", type:"Legendary Creature \u2014 Human Avatar Ally", set:"TLA", cmc:"3", ident:[{tok:"var(--w)"}] },
+      { qty:"\u00d72", n:"Abandon Attachments",      type:"Instant \u2014 Lesson",                        set:"TLA", cmc:"2", ident:[{tok:"var(--r)"},{tok:"var(--u)"}] },
+      { qty:"\u00d71", n:"Abandoned Outpost",        type:"Land",                                        set:"ODY", cmc:"",  ident:[{tok:"var(--w)"}] },
+      { qty:"\u00d71", n:"Abdel Adrian, Gorion's Ward", type:"Legendary Creature \u2014 Human Soldier",   set:"CLB", cmc:"3", ident:[{tok:"var(--w)"}] }
+    ];
+    const rowsBefore = ROWS;
+    const rowsAfter = ROWS;
+
+    const staleCells = [];
+    for (let i=0;i<6;i++) staleCells.push(cell(NAMES[i+2], i+23, i, { own: i===1||i===4, rar:"C", p:"1.20" }));
+    const wrapCells = [];
+    for (let i=0;i<6;i++) wrapCells.push(cell(["Slickshot Show-Off","Vraska, the Silencer","Bristly Bill","Kellan, Planar Trailblazer","Fblthp, Lost on the Range","Insatiable Avarice"][i], i+1, i, { own: i===0||i===3, rar:"R", p:"3.40" }));
+
+    const skeleton = [];
+    for (let i=0;i<12;i++) skeleton.push({ w: [74,58,86,66,80,52,72,90,62,78,56,84][i] });
+
+    const pips = TOK.map((tok,i)=>({ tok, op: i===0||i===3 ? "1" : ".34" }));
+    const pipsFiltered = TOK.map((tok,i)=>({ tok, op: i===0 ? "1" : ".34" }));
+
+    const THEMES = [
+      { key:"amonkhet", name:"Low Sun",       step:"3.22", edgeRatio:"3.22", nameRatio:"9.29", priceRatio:"6.29", dashedRatio:"1.81" },
+      { key:"kamigawa", name:"Neon Rain",     step:"3.30", edgeRatio:"3.19", nameRatio:"9.25", priceRatio:"6.04", dashedRatio:"1.60" },
+      { key:"phyrexia", name:"Oil Haze",      step:"3.42", edgeRatio:"3.16", nameRatio:"9.19", priceRatio:"4.42", dashedRatio:"1.46" },
+      { key:"kaldheim", name:"First Frost",   step:"3.15", edgeRatio:"3.32", nameRatio:"9.57", priceRatio:"4.86", dashedRatio:"1.93" },
+      { key:"ixalan",   name:"Canopy",        step:"3.25", edgeRatio:"3.44", nameRatio:"9.98", priceRatio:"9.26", dashedRatio:"1.97" },
+      { key:"eldraine", name:"Witching Hour", step:"3.35", edgeRatio:"3.31", nameRatio:"9.18", priceRatio:"6.69", dashedRatio:"1.81" }
+    ];
+    const sixNames = ["Faller's Faithful","Void Pilgrim","Plains","Ion Storm","Nebula Herald","Gravity Well"];
+    const themes = THEMES.map(t => Object.assign({}, t, {
+      cells: sixNames.map((n,i) => cell(n, i+1, i, { own: i<3, rar:"C", p:"1.20" }))
+    }));
+
+    const indexRows = [
+      { code:"EOE", name:"Edge of Eternities",            released:"Aug 2025", extras:"123 extras", have:"62",  total:"276", pct:22,  pctLabel:"22%",  figCol:"var(--fg)", pctCol:"var(--accent)", barCol:"var(--accent)" },
+      { code:"DSK", name:"Duskmourn: House of Horror",    released:"Sep 2024", extras:"123 extras", have:"276", total:"276", pct:100, pctLabel:"100%", figCol:"var(--success)", pctCol:"var(--success)", barCol:"var(--success)" },
+      { code:"BLB", name:"Bloomburrow",                   released:"Aug 2024", extras:"96 extras",  have:"131", total:"261", pct:50,  pctLabel:"50%",  figCol:"var(--fg)", pctCol:"var(--accent)", barCol:"var(--accent)" },
+      { code:"OTJ", name:"Outlaws of Thunder Junction",   released:"Apr 2024", extras:"105 extras", have:"88",  total:"271", pct:32,  pctLabel:"32%",  figCol:"var(--fg)", pctCol:"var(--accent)", barCol:"var(--accent)" },
+      { code:"MKM", name:"Murders at Karlov Manor",       released:"Feb 2024", extras:"90 extras",  have:"41",  total:"286", pct:14,  pctLabel:"14%",  figCol:"var(--fg)", pctCol:"var(--accent)", barCol:"var(--accent)" },
+      { code:"LCI", name:"The Lost Caverns of Ixalan",    released:"Nov 2023", extras:"111 extras", have:"9",   total:"291", pct:3,   pctLabel:"3%",   figCol:"var(--fg)", pctCol:"var(--accent)", barCol:"var(--accent)" },
+      { code:"WOE", name:"Wilds of Eldraine",             released:"Sep 2023", extras:"84 extras",  have:"166", total:"266", pct:62,  pctLabel:"62%",  figCol:"var(--fg)", pctCol:"var(--accent)", barCol:"var(--accent)" }
+    ];
+    const searchRows = [
+      { code:"VOW", name:"Innistrad: Crimson Vow",   released:"Nov 2021", extras:"110 extras", have:"37", total:"277", pct:13, pctLabel:"13%", figCol:"var(--fg)", pctCol:"var(--accent)", barCol:"var(--accent)" },
+      { code:"BRO", name:"The Brothers' War",        released:"Nov 2022", extras:"93 extras",  have:"0",  total:"287", pct:0,  pctLabel:"0%",  figCol:"var(--fg-muted)", pctCol:"var(--fg-muted)", barCol:"var(--accent)" },
+      { code:"BLC", name:"Bloomburrow Commander",    released:"Aug 2024", extras:"24 extras",  have:"0",  total:"125", pct:0,  pctLabel:"0%",  figCol:"var(--fg-muted)", pctCol:"var(--fg-muted)", barCol:"var(--accent)" }
+    ];
+    const phoneSets = [
+      { code:"EOE", name:"Edge of Eternities",         pct:22,  short:"62/276",  barCol:"var(--accent)" },
+      { code:"DSK", name:"Duskmourn: House of Horror", pct:100, short:"276/276", barCol:"var(--success)" },
+      { code:"BLB", name:"Bloomburrow",                pct:50,  short:"131/261", barCol:"var(--accent)" },
+      { code:"OTJ", name:"Outlaws of Thunder Junction",pct:32,  short:"88/271",  barCol:"var(--accent)" },
+      { code:"MKM", name:"Murders at Karlov Manor",    pct:14,  short:"41/286",  barCol:"var(--accent)" }
+    ];
+    const stripSets = [
+      { code:"EOE", name:"Edge of Eternities", pct:22, ratio:"62 / 276" },
+      { code:"DSK", name:"Duskmourn",          pct:100, ratio:"276 / 276" },
+      { code:"BLB", name:"Bloomburrow",        pct:50, ratio:"131 / 261" },
+      { code:"OTJ", name:"Thunder Junction",   pct:32, ratio:"88 / 271" }
+    ];
+    const phoneRows = [
+      { n:"Arcane Signet", q:"\u00d74" }, { n:"Beast Within", q:"\u00d72" },
+      { n:"Cultivate", q:"\u00d73" }, { n:"Cyclonic Rift", q:"\u00d71" }, { n:"Demonic Tutor", q:"\u00d71" }
+    ];
+
+    const contract = [
+      { k:"Cell", v:"116\u00d7162 art (63/88), radius 6, on --surface-sunken. Owned: art at opacity 1, 1px solid --border. Missing: art at opacity .28 + saturate(.55), 1px dashed --fg-locked. No other difference in geometry \u2014 the grid never reflows between states." },
+      { k:"Cell caption", v:"Name 11.5px --fg-body (--fg when owned), one line, ellipsis. Then a 17px min-height row: mono 10px collector number --fg-muted, mono 9.5px rarity letter --fg-locked, and the price tag on missing cells only. The row keeps its height when empty." },
+      { k:"By-name mark", v:"Owned cells whose fill resolved by oracle id, not collector number. Bottom-left of the art in the foil mark's skin: a 6px OUTLINED brand diamond in --accent + mono 9px BY NAME in --fg-body on rgba(0,0,0,.68). The filled diamond is printing_picker's shipped Your pick; this is its unset half. Never on a missing cell. Not a control \u2014 the cell's existing target opens card detail, where the Set picker already lives." },
+      { k:"Foil mark", v:"Mono 9px \u25C6 FOIL on rgba(0,0,0,.68), top-right of the art, owned cells whose only holding is foil. Never on a missing cell \u2014 the price tag carries foil-only there." },
+      { k:"Price tag", v:"Deck-side buy tag, verbatim: mono 10px --accent on 1px solid --accent-dim, radius 4. Foil-only prefixes \u25C6 foil. Unstocked is the word no stock in --fg-locked on 1px dashed --fg-locked. Never $0.00, never blank." },
+      { k:"Grid", v:"display:grid, repeat(auto-fill, 116px), gap 10px column / 18px row, justify-content:start. 8 columns at 1180, 9 at 1280, 3 at 390 (108px cells). One grid per section; the two sections never share a grid." },
+      { k:"Section head", v:"Cinzel 700 16px uppercase + mono 11.5px N / M + a trailing mono 10.5px note, over 1px --border-strong. Base run's note names the range and the booster flag; extras' note names the range and that it is not in the figure." },
+      { k:"Set head", v:"44px icon disc on --elevated, Cinzel 27px name, mono 11.5px code \u00b7 released \u00b7 base \u00b7 extras. Ratio block right: mono 29px figure, /M at 14px --fg-faint, percent at 14px --accent. 6px bar on --elevated. Sticks at 108px desktop / 96px phone." },
+      { k:"Cost strip", v:"--surface-sunken inside the head, 1px --border, radius 10. Mono 19px --accent total, then the sentence naming priced-of-missing and the unstocked count at --fg-locked. Trailing: the page's one filled button, --fg bone, label carries the same count as the sentence." },
+      { k:"Filters", v:"Colour = filter-bar.tsx's pip row, mounted verbatim, no join-mode modifier. Rarity = 34px hairline single-select menu, --accent border off default. Missing only = a 28\u00d716 switch, --accent-dim track + --accent knob when on. All three are URL params; all three render at all times, greyed rather than absent." },
+      { k:"Result line", v:"Mono 11px --fg-muted, one per page, in the sticky head. States cells, yours, missing, plus the extras jump. With missing-only on it also states that numbers skip. The page's only live region, polite, debounced 300ms." },
+      { k:"100%", v:"Head only: 1px --success around the whole head block, icon ringed in --success rather than filled disc, Cinzel \"<Set>, complete\", 100% in --success, bar full --success, and the cost strip replaced by the extras count plus one hairline button. Grid, cells and filters unchanged. No animation, no index badge." },
+      { k:"Empty states", v:"Three diamonds in --border-dashed, Cinzel 19px heading, 13px --fg-muted body naming the offending value in --fg-body, one filled specific correction + one hairline escape. Phone stacks them full-width at 48px." },
+      { k:"Loading", v:"Route-level loading.tsx. Plates are --surface-inset with 1px solid --border \u2014 never the dashed missing edge, never a spinner. Head name and icon render from the index row; ratio, cost strip and grid are skeletons." },
+      { k:"Target", v:"The whole cell is the hit target and opens the existing card-detail modal (src/lib/collection/card-detail.ts). 108\u00d7151 at phone. No control inside a cell at any width." }
+    ];
+
+    return { theme, baseCells, extraCells, zeroCells, fullCells, missingOnly, phoneCells, priceCells, denseA, denseB, skeleton, staleCells, wrapCells, phoneBase, pipsRound, collectionTiles, rowsBefore, rowsAfter, pips, pipsFiltered, themes, indexRows, searchRows, phoneSets, stripSets, phoneRows, contract };
+  }
+}
+
+</script>
+</body>
+</html>
