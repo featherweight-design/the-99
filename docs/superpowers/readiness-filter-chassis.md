@@ -59,6 +59,35 @@ Three things make the other reading untenable rather than merely expensive:
 
 **No Design round-trip.** Nothing is redrawn; the handoff stands as delivered.
 
+### What "parameterised" actually costs, stated so the build does not discover it
+
+Keeping the panel is the ruling, but "mount it unchanged" would not satisfy the handoff. Two deltas
+are real and one apparent delta is not:
+
+- **The breakpoint is wrong and it is a bug, not a preference.** `FilterPanel` chooses popover
+  versus sheet on `useIsDesktop()`, which is `(min-width: 768px)`
+  (`src/components/ui/use-is-desktop.ts:8`). The chassis switches form at 900px (decision 18). **At
+  768–899px the compact chassis would open a desktop popover** — the phone frame with the desktop
+  panel inside it. The panel must take its breakpoint from the caller rather than reading its own.
+- **Desktop option rows are `min-h-[40px]`** (`filter-panel.tsx:465`), against the handoff's 34px
+  control rhythm. The phone rows are `min-h-[48px]` and already clear the 44px floor, so only the
+  desktop figure is in question, and it is a parameter rather than a redraw.
+- **Width is not a delta.** `widthPx` is already a prop (`:99,:127`) — `Set` passes 340 and `Type`
+  passes 300 today. Decision 4's 280px is a call-site argument, so the ratified collection panel is
+  not touched by it.
+
+### One composition problem, deferred with its route
+
+`FilterPanel`'s compact branch is itself a fixed `aria-modal` sheet with its own scrim
+(`filter-panel.tsx:879-894`). The chassis phone form is also a sheet. Mounting one inside the other
+puts two modal dialogs and two scrims on screen, which no focus contract survives.
+
+**This does not arise in PR 1 or PR 2.** `/decks` has no searchable dimension — its five are a
+field, two chip groups, pips and sort — and `Printed in`, the only new searchable one, is cut from
+this round. It arises on `/collection`, whose `Set ▾` needs the search field, and that route is PR 3
+and blocked on other work regardless. Resolve it there, as a nested-list mode on the panel rather
+than a second dialog.
+
 ## §3 Findings — five, all engineering-resolvable
 
 1. **Three pip hexes were assumed and all three are wrong.** The handoff assumes `B` `#CBC2BF`,
@@ -114,3 +143,16 @@ argument for merging a brief before the prompt goes out.
 
 They also found a shipped accessibility defect while measuring their own work, and filed it against
 the app rather than folding it into their round.
+
+
+## §6 Errata against the handoff, carried here rather than sent back
+
+Four corrections. None changes a drawing, so none is worth a Design round-trip; they are recorded
+here because the handoff is the document an implementer reads.
+
+| Handoff says | Correct | Why it matters |
+|---|---|---|
+| The shipped pip floors at 1.38:1 against `--surface-sunken` | **1.37:1 against `--bg`** — the rack's wide pip group paints its own ground (`colour-control.tsx:85`). The `--surface-sunken` figure is collection's, at 1.49:1 | Building toward the wrong ground preserves the wrong floor |
+| Decision 4's panel is "what `FilterPanel` already does" | True of width, false of the breakpoint and the desktop row height | See the section above; the 768px/900px gap is a live bug at 768–899px |
+| `STATES` §181: the shipped panels share `useDialogA11y`, roving radiogroups and selection-follows-focus | They do not. `filter-panel.tsx` has its own panel and listbox key handling; `rack/select.tsx` has its own focus and menu logic | The "no new pattern" justification is what makes the a11y work look free. It is not free — the shared behaviour has to be written |
+| `STATES` §104 lists only `Set` as searchable | `Printed in` is searchable too, per the canvas | Moot this round — `Printed in` is cut — but it must be settled before that dimension lands |
