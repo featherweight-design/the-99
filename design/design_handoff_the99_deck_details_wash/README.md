@@ -411,3 +411,26 @@ never built.
 6. **Shipped deck header diverges from the spine spec** independently of this amendment — larger
    card and title at both widths. Moot for the header itself now the thumbnail is gone, but
    `design_handoff_the99_deck_reimport/` still specs the type sizes.
+
+## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, pending ratification)
+
+**Every `left-portrait` band shipped two copies of the art**, not one: the masked portrait at `.80`
+sharp, and under it the same `art_crop` drawn `cover` across the whole band at the `.20` ambient this
+document specifies for the 168 band (the code shipped `.92`/`.28` after the lift round). Past the
+portrait's own width that ambient copy is a second rendering of the same picture at a different
+scale — and it reads as one. It is plainest while a window resizes, when the two scalings move
+against each other.
+
+Removed in PR #517 (bug report with a DevTools capture of both layers inside one band). The
+horizontal scrim already closes the portrait out into the row's ground, so nothing else depended on
+it. **Decision §G above is preserved**: with no crop, the full-bleed layer is still what draws the
+identity gradient, for exactly the reason §G gives — a gradient inside the masked 230px box
+compresses the ramp and seams at the mask edge.
+
+Contrast is unaffected in the direction that matters: removing a lightening layer can only darken the
+ground ink stands on, and `wash-contrast.test.ts` passes every floor with its composition model
+updated to match.
+
+**This has not been through Design.** It was taken as the defect exactly as reported. Ratify or
+overturn; if the ambient atmosphere is wanted back, it needs a treatment that does not restate the
+crop — the two candidates are a blur past the mask edge, or a flat tint sampled from the art.

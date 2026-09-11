@@ -60,8 +60,12 @@ type Over = {
   degraded?: boolean;
 };
 
+// The mode is the URL's alone now, so a test that opens in `free` says so by
+// setting the parameter the reader's own flip would have written.
 function el(list: CommanderListItem[], over: Over = {}) {
   const { avail = "all", freeItems = null, availOk = true, degraded = false } = over;
+  if (avail === "free") params.set("a", "free");
+  else params.delete("a");
   return (
     <CommandersView
       results={list}
@@ -69,7 +73,6 @@ function el(list: CommanderListItem[], over: Over = {}) {
       uniqueCardsRead={1418}
       candidateCount={list.length}
       firstRun={false}
-      avail={avail}
       // The tests state the free ranking as the list it is, and it reaches the
       // view the way the server sends it — through the diff. Every free-mode
       // assertion below therefore also asserts the round-trip.
@@ -337,20 +340,25 @@ describe("CommandersView ranking toggle", () => {
     expect(urls().at(-1)).toBe("/commanders?c=r&a=free");
   });
 
-  // Coming back from a commander restores the tree the server sent for the
-  // DEFAULT lane — the flip only ever mirrored itself into the URL, and Next
-  // adopts that URL without re-rendering. So the prop says `all` while the URL
-  // says `a=free`, and the reader's request is the one that has to win.
-  it("opens on the mode the URL asks for, even when the payload's prop disagrees", () => {
-    params.set("a", "free");
-    try {
-      const all = results(3);
-      view(all, { avail: "all", freeItems: [all[2], all[0], all[1]] });
-      for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
-      expect(cards()[0]).toHaveTextContent("General 2");
-    } finally {
-      params.delete("a");
-    }
+  // Coming back from a commander restores the tree the server rendered before
+  // the flip — the flip only ever mirrored itself into the URL, and Next adopts
+  // that URL without re-rendering. The URL is therefore the only thing that still
+  // knows what the reader chose, and the seed reads it in both directions.
+  it("opens on free when the URL asks for it, whatever the payload was rendered for", () => {
+    const all = results(3);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 2");
+  });
+
+  // The other direction, and it is the same defect: a reader who flipped BACK to
+  // `All my cards` left a URL with no mode on it, over a tree the server had
+  // rendered in free mode. A seed that preferred the payload reopened free.
+  it("opens on all when the URL carries no mode, even with a free ranking present", () => {
+    const all = results(3);
+    view(all, { avail: "all", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 0");
   });
 
   // `?a=free` is a request, not a promise — the same rule the flip itself

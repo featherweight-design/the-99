@@ -75,12 +75,6 @@ export type CommandersViewProps = {
   uniqueCardsRead: number;
   candidateCount: number;
   firstRun: boolean;
-  /**
-   * Which ranking to open on, parsed from `?avail=`. Only the initial mode: both
-   * rankings arrive in the same render, so the toggle switches between two lists
-   * already on the client and this component owns the mode from mount on.
-   */
-  avail: AvailMode;
   /** The same commanders re-scored against the free pool, as a diff against
       `results` — the two lists share most of their bytes. Null when unreadable. */
   freeRanking: FreeRankingDelta | null;
@@ -98,7 +92,6 @@ export function CommandersView({
   uniqueCardsRead,
   candidateCount,
   firstRun,
-  avail: initialAvail,
   freeRanking,
   availOk,
   receiptCounts,
@@ -130,10 +123,16 @@ export function CommandersView({
     const parsed = parseLaneParams(search, "owned");
     return {
       ...parsed,
-      // Requested free, and the payload can serve it. The same question is asked
-      // again on every render below, because a later payload can withdraw the
-      // answer this one gave.
-      avail: parsed.avail === "free" && availOk && freeRanking !== null ? "free" : initialAvail,
+      // The URL decides, in BOTH directions, gated only on whether the payload
+      // can serve what it asks for. The server used to state the mode as a prop
+      // as well, and the two could disagree: the flip mirrors itself into the URL
+      // through `history.replaceState`, which Next adopts without re-rendering,
+      // so a cached tree carries the mode that was live when the server rendered
+      // it while the URL carries the one the reader left on. Whichever of those
+      // two won, the other was wrong half the time — the prop reopened `Free
+      // cards only` over a URL asking for `All my cards` just as readily as the
+      // reverse. One source, and the disagreement has nowhere to live.
+      avail: parsed.avail === "free" && availOk && freeRanking !== null ? "free" : "all",
     };
   });
   const { colors: rawColors, avail } = params;
