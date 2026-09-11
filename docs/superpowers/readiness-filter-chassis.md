@@ -121,9 +121,9 @@ than a second dialog.
    dropping one control would return, which is one extra pass per active filter. The commander lanes
    compute this already; `/collection` does not, and at 2,472 cards × five dimensions it is five
    passes over an in-memory list. Cheap, but it must be built rather than assumed.
-5. **The 900px switch is a judgement, and it should ship as one.** Design flagged it rather than
+5. **The 1000px switch is a judgement, and it should ship as one.** Design flagged it rather than
    measuring it, and the alternative — a per-route breakpoint — would make the chassis stop being
-   one thing. Ship 900 and watch it. Recorded so the first report of a half-width laptop getting the
+   one thing. Ship 1000 — see §7 for why not 900 — and watch it. Recorded so the first report of a half-width laptop getting the
    phone treatment is recognised as a known trade rather than a bug.
 
 ## §4 Dependency — owned by another agent
@@ -160,7 +160,7 @@ here because the handoff is the document an implementer reads.
 | Handoff says | Correct | Why it matters |
 |---|---|---|
 | The shipped pip floors at 1.38:1 against `--surface-sunken` | **1.37:1 against `--bg`** — the rack's wide pip group paints its own ground (`colour-control.tsx:85`). The `--surface-sunken` figure is collection's, at 1.49:1 | Building toward the wrong ground preserves the wrong floor |
-| Decision 4's panel is "what `FilterPanel` already does" | True of width, false of the breakpoint and the desktop row height | See the section above; the 768px/900px gap is a live bug at 768–899px |
+| Decision 4's panel is "what `FilterPanel` already does" | True of width, false of the breakpoint and the desktop row height | See the section above; the 768px/1000px gap is a live bug at 768–999px |
 | `STATES` §181: the shipped panels share `useDialogA11y`, roving radiogroups and selection-follows-focus | They do not. `filter-panel.tsx` has its own panel and listbox key handling; `rack/select.tsx` has its own focus and menu logic | The "no new pattern" justification is what makes the a11y work look free. It is not free — the shared behaviour has to be written |
 | `STATES` §104 lists only `Set` as searchable | `Printed in` is searchable too, per the canvas | Moot this round — `Printed in` is cut — but it must be settled before that dimension lands |
 | Decision 18 derives the 900px switch from a 887px total | **The stated minimums total 987px**, and the switch moves to **1000px** — see §7 | At 900 the wide form wraps, which is the defect the decision exists to prevent |
