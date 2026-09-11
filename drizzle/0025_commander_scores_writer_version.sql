@@ -20,10 +20,7 @@
 -- version-2 set exists, its DELETE takes the built commanders back out while its
 -- upsert leaves the survivors at 2.
 --
--- Both are one request's worth of one player's cache, and both recover the same
--- way: `deleteAllScores`, or any CSV confirm, and the table rebuilds. Closing
--- them properly means serialising writers across a deploy — an advisory lock or
--- an epoch row every write checks — which is a coordination mechanism for a
--- table whose entire purpose is to be rebuildable from the collection. Noted
--- here so the next reader knows it was weighed rather than missed.
+-- Both are closed by migration 0027, which stamps the column from a
+-- transaction-local setting the current writer announces: a writer that says
+-- nothing marks every row it touches stale, whatever value was there before.
 ALTER TABLE "commander_scores" ADD COLUMN "writer_version" integer DEFAULT 1 NOT NULL;

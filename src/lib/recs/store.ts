@@ -136,6 +136,15 @@ export async function persistScores(
   const rows = ranked.map((r) => toScoreRow(userId, r));
   const keep = rows.map((r) => r.oracleId);
   await db.transaction(async (tx) => {
+    // Announce which writer this is, transaction-locally. The trigger added in
+    // 0027 stamps every row this transaction touches as version 1 unless it sees
+    // this — which is how an older deployment's upsert is stopped from leaving a
+    // truncated set marked current, whether it arrives by rollback or as a
+    // compute that was already in flight at cutover. A writer that says nothing
+    // is, by definition, one that predates the marker.
+    await tx.execute(
+      sql`select set_config('app.writer_version', ${String(SCORE_WRITER_CURRENT)}, true)`,
+    );
     const [gen] = await tx
       .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
       .from(csvUploads)

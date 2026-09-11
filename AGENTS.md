@@ -74,6 +74,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   point it at `local-dev` or a scratch Neon branch, **never production**. On a deck's own page
   `free` is a surplus, not a count of copies: 0 means "holds what it needs and no spare", and a
   negative figure is the number of copies that deck has to buy.
+- `pnpm probe:writer-version` proves the `commander_scores` writer stamp against a real Postgres:
+  a writer that announces `app.writer_version` keeps it, one that says nothing has every row it
+  touches marked stale, and the announcement does not outlive its transaction. That last one is
+  the point — the column exists so a reader can tell a set written before built commanders were
+  scored (rows deleted out of it, otherwise indistinguishable from a whole one) from a current
+  one, and an older deployment's UPDATE would otherwise leave its truncated set marked current.
+  A trigger is unreachable from any unit test, so this script is the only proof it behaves. Same
+  rules as `probe:claims`: per-run `user_id`, deleted in a `finally`, **never production**.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 

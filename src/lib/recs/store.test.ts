@@ -125,7 +125,11 @@ function fakeDb(confirmedAt: Date | null) {
   const inserted: unknown[][] = [];
   let deleted = false;
   let conflictSet: Record<string, unknown> | null = null;
+  const executed: string[] = [];
   const tx = {
+    execute: async (q: unknown) => {
+      executed.push(JSON.stringify(q));
+    },
     select: () => ({ from: () => ({ where: async () => [{ at: confirmedAt }] }) }),
     delete: () => ({ where: async () => { deleted = true; } }),
     insert: () => ({
@@ -141,6 +145,7 @@ function fakeDb(confirmedAt: Date | null) {
     db: { transaction: (cb: (t: typeof tx) => Promise<void>) => cb(tx) },
     wrote: () => ({ deleted, insertedRows: inserted.flat().length }),
     conflictSet: () => conflictSet,
+    executed: () => executed,
   };
 }
 
@@ -186,6 +191,23 @@ describe("persistScores generation guard", () => {
     await persistScores("user_1", [ranked()], at.getTime());
 
     expect(Object.keys(fake.conflictSet() ?? {})).toContain("writerVersion");
+  });
+
+  // The trigger in 0027 stamps every row a transaction touches as stale unless it
+  // sees this setting, which is what stops an older deployment's upsert leaving a
+  // truncated set marked current. `scripts/probe-writer-version.mjs` proves the
+  // trigger itself; this proves the announcement is made.
+  it("announces its writer version inside the transaction", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime());
+
+    const announced = fake.executed().join(" ");
+    expect(announced).toContain("set_config");
+    expect(announced).toContain("app.writer_version");
+    expect(announced).toContain(String(SCORE_WRITER_CURRENT));
   });
 
   it("drops the write when the first-ever confirm lands mid-compute", async () => {
