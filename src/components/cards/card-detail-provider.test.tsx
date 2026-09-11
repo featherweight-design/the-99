@@ -534,6 +534,62 @@ describe("CardDetailProvider card cache", () => {
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring");
   });
 
+  // The re-read a write starts has no cache entry to fall back on — the write deleted it —
+  // but the card it re-reads is on screen. A server that cannot find it must not empty the
+  // modal the reader is using.
+  it("leaves the open card standing when the write's own re-read finds nothing", async () => {
+    const fetchCard = vi.fn()
+      .mockResolvedValueOnce(SIGNET)
+      .mockResolvedValue(null);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+
+    await click(screen.getByRole("button", { name: "evict" }));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET.name);
+    // Nor is a correction the reader never asked for announced as a wait or a failure.
+    expect(screen.queryByText(cardDetailCopy.unavailable)).not.toBeInTheDocument();
+    expect(screen.queryByText(cardDetailCopy.loading)).not.toBeInTheDocument();
+  });
+
+  // A read that fails leaves the card the reader came from on screen. That modal is still
+  // theirs to use, so a write made in it has to reach the card it names.
+  it("re-reads the card left standing after a read for another one failed", async () => {
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-sol") throw new Error("nope");
+      return SIGNET;
+    });
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">
+          Sol Ring
+        </CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
+    await screen.findByText(cardDetailCopy.unavailable);
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET.name);
+
+    // The art pick the reader makes in that still-open modal.
+    await click(screen.getByRole("button", { name: "evict" }));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-signet"));
+    expect(fetchCard.mock.calls.filter(([id]) => id === "o-signet")).toHaveLength(2);
+  });
+
   // The write the eviction exists for, driven through the real picker rather than a
   // stand-in: a change that stopped calling `onArtChange` would leave every test above
   // passing while the reader reopened the card onto the printing they had replaced.

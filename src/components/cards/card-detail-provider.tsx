@@ -168,8 +168,15 @@ export function CardDetailProvider({
   // attempt count, so a steady stream of writes could keep one click reading forever —
   // exactly what the cap above exists to prevent.
   const inFlight = useRef<string | null>(null);
+  // The card actually on screen, which is not always the one that was asked for: a read the
+  // reader is waiting on leaves the card they came from painted until it answers. Every
+  // decision about whether there is something to fall back to reads this rather than the
+  // cache, because an eviction's own re-read has deleted its entry and is still looking at
+  // the card it is re-reading.
+  const shownRef = useRef<string | null>(null);
   const show = useCallback((next: BrowseCard | null) => {
     openRef.current = next?.oracleId ?? null;
+    shownRef.current = openRef.current;
     setCard(next);
   }, []);
 
@@ -182,13 +189,22 @@ export function CardDetailProvider({
       // A hit lands in the same pass as the click, so no pending state is ever set and
       // the trigger never flashes a busy affordance for a wait that does not happen.
       const hit = cache.current.get(oracleId);
+      // Whether this read has anything on screen behind it. A hit paints one; an eviction's
+      // re-read has no entry left but is looking at the card it re-reads. Either way the
+      // read is a correction rather than a wait, so it announces nothing and a failure
+      // leaves what is painted alone instead of emptying the modal under the reader.
+      const standing = hit !== undefined || shownRef.current === oracleId;
+      // The read is over and painted nothing, so the card the reader is looking at is the
+      // open one again. Without this the modal left standing is one no write can reach: an
+      // art pick made in it would evict a card `evict` no longer believes is open, and the
+      // pick would sit there uncorrected.
+      const giveUp = () => { openRef.current = shownRef.current; };
+      setFailed(false);
       if (hit) {
         setPendingOracleId(null);
-        setFailed(false);
         show(hit);
-      } else {
+      } else if (!standing) {
         setPendingOracleId(oracleId);
-        setFailed(false);
       }
       try {
         // A read an eviction overtook is from the wrong side of the write that caused it,
@@ -207,7 +223,8 @@ export function CardDetailProvider({
         // Every attempt raced a write. Treated as a read that failed rather than filed as
         // an answer, because it is one: no attempt saw a settled world.
         if (raced) {
-          if (!hit) setFailed(true);
+          if (!standing) setFailed(true);
+          giveUp();
           return;
         }
         if (next) {
@@ -217,9 +234,11 @@ export function CardDetailProvider({
           // A card the server could not find is the one result not worth keeping: it is
           // rare, and filing it would keep the card missing for the rest of the visit.
           cache.current.delete(oracleId);
-          // On a hit the reader is already looking at the card, and a card that has gone
-          // missing between two opens is not worth yanking the modal out from under them.
-          if (!hit) {
+          // The reader is already looking at the card, and a card that has gone missing
+          // between two reads of it is not worth yanking the modal out from under them.
+          if (standing) {
+            giveUp();
+          } else {
             show(null);
             setFailed(true);
           }
@@ -227,7 +246,8 @@ export function CardDetailProvider({
       } catch {
         if (latest.current !== request) return;
         // Same reasoning: a failed re-ask leaves what is on screen alone.
-        if (!hit) setFailed(true);
+        if (!standing) setFailed(true);
+        giveUp();
       } finally {
         if (latest.current === request) {
           setPendingOracleId(null);
