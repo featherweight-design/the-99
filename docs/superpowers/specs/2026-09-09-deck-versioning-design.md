@@ -305,6 +305,109 @@ Two consequences for the surfaces:
   are then two diffs for the same deck — that preview, and pending changes. Same overlap class as
   the top-off buy list in §Surfaces, and it goes to Design with it.
 
+## Addendum R3 — the five surfaces, as designed and audited
+
+`design/design_handoff_the99_deck_versioning/` reached **🟢 Green at R2** on 2026-09-11
+(`docs/superpowers/gap-report-deck-versioning.md`). The surfaces above are no longer gated. This
+addendum records only what the handoff **changed or fixed** in the spec — the drawing is the
+handoff's, and the canvas wins wherever its prose and its drawing disagree.
+
+### Two corrections to §Surfaces
+
+**§Surfaces 1 overstates what can be marked.** It asks for the affected rows marked in the
+decklist. Only **adds** can be: a removed card is not in the draft, so it has no row. Struck-through
+ghosts would be hit targets that do nothing, on the surface that most needs to stay scannable at 101
+rows. The mark is a **2px brass left rule** — matching the shipped `border-l-2` on
+`unresolved-row.tsx:66` rather than inventing a third width — absorbed by the row's existing padding
+(`ROW_PADDING` goes `pl-[8px] md:px-[9px]` → 6px phone / 7px desktop). No row's grid template
+changes and no row grows in height. The words live in one caption above the list and in each row's
+accessible name.
+
+**§Surfaces 2's "splitting the adds three ways" is not a grouping.** Every card list in this app
+groups by type, and the review page does too — alphabetical within a group, both columns
+symmetrical, availability carried **per row** by the ownership dot, `AvailabilityMarker` and
+`BuyTag`. There are no availability headings. Three things follow:
+
+- `bucketAdds`'s ordering is moot for rendering. It orders by oracle UUID, which would have handed
+  the player an arbitrary sequence; it stays the buy list's partition and is not a render order.
+- The availability word moves into **each row's accessible name**, because `OwnershipDot` is
+  `aria-hidden` and the heading that was to carry the word does not exist.
+- The three buckets remain real as *counts* — the count chips carry them.
+
+### Behaviour the surfaces need that does not exist yet
+
+Six items. Each is a prerequisite, not a rendering detail.
+
+1. **A quantity change is one row reading `{name} {from} → {to}`, never a bare name.** `draftDiff`
+   already files it as one entry carrying `from` and `to`. Reuse `recountedItem` from
+   `src/lib/copy/deck-import.ts:506` (shipped by #513) rather than authoring a second phrasing for
+   the same fact; it takes **strings**, and the handoff's `recounted(name, from: number, to: number)`
+   is to be discarded.
+2. **`commitVersion` must filter basic lands out of `removes` exactly as it filters `adds`.**
+   `src/app/decks/actions.ts:1320-1342` filters `adds` only and returns `pull: diff.removes` raw, so
+   cutting 3 of 12 Islands renders a bare `Island` under *back in the pool* — no count, no movement,
+   and a claim the deck lost its Islands. **This is a defect in shipped code, not a new surface's
+   problem**, and the fix belongs with the first UI task that reads the list.
+3. **`commitVersion` must return the version's card count.** The success line prints it, and the
+   client prints rather than computes. One extra field.
+4. **The pull guard needs a server flag.** Every guard today is a post-hoc refusal string inside the
+   transaction (`actions.ts:1379-1450`), which cannot be rendered before the attempt. The
+   availability payload gains a per-holding-deck *has pending changes* read. And there is **a third
+   guard the design did not draw**: the card is that deck's **commander**. Commander claims are in
+   the availability model, so `Pull it` would otherwise be offered on a row where it can only ever
+   fail. It takes the same mono tag reading `commander` and **no control at all**, because no route
+   releases a commander — an `Open →` would lead somewhere that cannot help.
+5. **The grouping UI must be extracted first.** `grouping.ts` exports the pure helpers, but
+   `DecklistGroup` and `GroupToggle` live inside `decklist.tsx`. Three new surfaces mount them.
+6. **The what-changed strip needs two reads that do not exist.** It must call the deck page's own
+   `computeRoleCounts` (`src/lib/decks/mix.ts`) with `ROLE_ORDER`'s shipped five — `ramp, draw,
+   removal, wipes, land` — or the two strips disagree one scroll apart; `body` is not a role, and a
+   creature count already sits in the type block beside it. Its sixth cell is **mana value**, and
+   `DeckDetailCard` carries none: the detail select needs `cards.cmc` (`schema.ts:30`, already
+   there) and the before-figure needs a `deck_version_cards → cards` join. A select and a join — no
+   migration, but planned rather than assumed. Mana value appears **only** here, as a deck-level
+   statistic; no row carries one.
+
+### Rulings that close the spec's open questions
+
+- **§Surfaces' *Open for Design*** — two surfaces making a purchase claim — is answered **one list,
+  three appearances**: signed deltas in top-off, the deck's bare total in the banner, and the list
+  plus the **only** Mana Pool link-out in the commit sheet.
+- **R2's second consequence** — two diffs for one deck — is answered **different operands, one
+  component**: the update preview keeps its `Keep` toggles and gains one line, pending changes has
+  none, and the arrival strip is **suppressed** on a committed deck. Suppression is the caller
+  declining to set `UPDATED_PARAM` (`src/lib/decks/arrival.ts:31`), not a new state.
+- **A versionless deck at a full body is offered `Commit as v1`**, brass-outline, appearing at
+  `deckBodySize()` (`src/lib/decks/deck-size.ts:7`). Auto-stamping at a full body was rejected: it
+  makes a deck's claims go hard without anyone asking, which is what this design exists to prevent.
+
+### Constraints the build inherits
+
+- **`CostPips` is read as shipped, never forked.** Pass `track` / `cap` from the shipped constants
+  (`PIP_TRACK = 40`, `PIP_CAP = 5`). The handoff's canvas draws a 90px / 76px track, which is
+  `COST-TRACK.md`'s **unshipped proposal to card-rows**; these rows inherit whatever that round
+  lands, and versioning is not gated on it.
+- **The buy tag's density is the shipped rule**: `collapsed` on a decklist row, `full` on a
+  purchase-decision surface. `decklist-row.tsx:421` passes
+  `density={inShopping ? "full" : "collapsed"}` and `top-off-list.tsx:805` passes `"full"` outside
+  Shopping. The review page is a purchase-decision surface, so it takes the full tag.
+- **`revalidateClaims(deckId, userId)`** for commit, discard and pull — never `deckSurfaces()`.
+  These are claim writes; the wrong helper leaves every other deck's availability stale after a
+  pull.
+- **Copy lives in a new `src/lib/copy/deck-versioning.ts`.** Two shipped strings are edited, both in
+  `deckImportCopy.update`. Nothing else shipped is touched.
+- **`INLINE_CHANGE_MAX = 6`** is one exported constant read only by the banner, which states counts
+  above it and names cards below it.
+- **Review changes is a page** at `/decks/[id]/changes` — its own URL, no focus trap, because the
+  diff is longer than a modal should be. Reaching it once the draft has been committed redirects to
+  the deck page.
+- **Focus after each write**: the version line after a commit, the deck name after a discard, the
+  row's own control after a pull.
+- **Discard confirms first**, on #476's bar, and `Keep editing` takes the brass fill in both
+  confirms — on phone it is the **top** of the two buttons. Discard is never the primary.
+- No new token, no new hex, no modal, no toast, no virtualisation. `--danger` appears only on
+  Discard: a removal is not an error. No count of nought is ever drawn.
+
 ## Out of scope
 
 Per-version win-rate figures, inference over version history, versioning the deck intent field
