@@ -5,9 +5,10 @@
 // WUBRG:      design palette bg + --bg glyph (§Mana Pip WUBRG colored).
 
 import { WUBRG_COLOR } from "../../lib/collection/browse";
-// One parser for both pip treatments. This file carried its own copy, and the
-// two then disagreed about the front-face rule: the row's run drew one half of
-// an Adventure's cost while the modal beside it drew both.
+// One parser for both pip treatments. This file carried a second copy of the
+// same regex — the two never disagreed, they simply had no reason not to — and a
+// rule like the front-face one then has to be written twice to hold. Importing
+// it is what makes that impossible to half-do.
 import { parseManaCost } from "../ui/cost-pips";
 
 export function ManaCost({ cost }: { cost: string | null }) {

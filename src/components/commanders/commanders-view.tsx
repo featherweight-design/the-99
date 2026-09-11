@@ -119,22 +119,71 @@ export function CommandersView({
   // this page from a commander restores exactly that tree, and a seed that took
   // the prop alone put the reader back on `All my cards` while the URL beside it
   // still read `a=free`.
-  const [params, setParams] = useState<LaneParams>(() => {
-    const parsed = parseLaneParams(search, "owned");
-    return {
-      ...parsed,
-      // The URL decides, in BOTH directions, gated only on whether the payload
-      // can serve what it asks for. The server used to state the mode as a prop
-      // as well, and the two could disagree: the flip mirrors itself into the URL
-      // through `history.replaceState`, which Next adopts without re-rendering,
-      // so a cached tree carries the mode that was live when the server rendered
-      // it while the URL carries the one the reader left on. Whichever of those
-      // two won, the other was wrong half the time — the prop reopened `Free
-      // cards only` over a URL asking for `All my cards` just as readily as the
-      // reverse. One source, and the disagreement has nowhere to live.
-      avail: parsed.avail === "free" && availOk && freeRanking !== null ? "free" : "all",
-    };
-  });
+  // What the URL asks for, gated on what this payload can actually serve.
+  // `?a=free` is a request, not a promise: with no free ranking there is nothing
+  // to switch to, and the seed refuses it exactly as the flip does.
+  const fromUrl = useCallback(
+    (query: URLSearchParams): LaneParams => {
+      const parsed = parseLaneParams(query, "owned");
+      return {
+        ...parsed,
+        avail: parsed.avail === "free" && availOk && freeRanking !== null ? "free" : "all",
+      };
+    },
+    [availOk, freeRanking],
+  );
+
+  // The reader's edits, and the two queries they are valid for.
+  //
+  // NOT a copy of the URL kept in sync with it. The rack's state IS the URL,
+  // derived every render — an edit is only an overlay, and it survives exactly
+  // as long as the query it was made against. `from` is the query at the moment
+  // of the edit and `to` is the one the mirror below will write for it, and the
+  // overlay holds while the live query is either: `from` covers the gap between
+  // the edit and the effect that writes it, `to` covers every render after Next
+  // adopts that write into router state.
+  //
+  // Any other query means the URL moved for a reason that is not the rack — the
+  // primary nav pointing back at `/commanders`, a link elsewhere on the page —
+  // and the overlay is dropped, so the lane follows the URL again. Those
+  // navigations do NOT give this route a new instance: Next serves the tree it
+  // already has, so nothing re-seeds, and the list used to sit in the free lane
+  // under a URL carrying no mode at all.
+  //
+  // A key on the server was tried and cannot do this job: the key is computed
+  // when the page renders, the flip never re-renders the page, and the tree a
+  // navigation restores is the one whose key was fixed at its first render.
+  const [edit, setEdit] = useState<{ from: string; to: string; params: LaneParams } | null>(null);
+  const liveQuery = search.toString();
+  const params =
+    edit && (liveQuery === edit.from || liveQuery === edit.to) ? edit.params : fromUrl(search);
+
+  const setParams = useCallback(
+    (next: LaneParams | ((prev: LaneParams) => LaneParams)) => {
+      // Both queries come from `window.location`, read HERE rather than from the
+      // last render's `useSearchParams`. The two are the same thing a moment
+      // apart, and the moment matters: a write this component made can land
+      // before React has re-rendered on it, and an edit filed against the render
+      // it can still see would be filed against a query that is already gone —
+      // then dropped on the very next render for looking like a navigation.
+      const liveNow = new URLSearchParams(window.location.search);
+      const from = liveNow.toString();
+      setEdit((prev) => {
+        const base = prev && (from === prev.from || from === prev.to) ? prev.params : null;
+        const resolved = typeof next === "function" ? next(base ?? fromUrl(liveNow)) : next;
+        return {
+          from,
+          // What the mirror below will write for it, in `useSearchParams`'
+          // spelling — no leading `?`, its key order — so the comparison during
+          // render is between two like things.
+          to: new URLSearchParams(laneQuery(liveNow, resolved, "owned").replace(/^\?/, "")).toString(),
+          params: resolved,
+        };
+      });
+    },
+    [fromUrl],
+  );
+
   const { colors: rawColors, avail } = params;
   const colors = useMemo(() => upper(rawColors), [rawColors]);
 
@@ -248,7 +297,11 @@ export function CommandersView({
       // one of these changes which commanders occupy the revealed range.
       setShown(REVEAL_STEP);
     },
-    [freeItems],
+    // `setParams` is not a plain setter — it records which queries the edit is
+    // valid for, so it changes whenever the live query does. Left out, this
+    // callback would keep the first render's copy and file every later edit
+    // against the query the page opened on, which drops it.
+    [freeItems, setParams],
   );
 
   // The zero state's wholesale escape says `Clear all filters`, so it means the

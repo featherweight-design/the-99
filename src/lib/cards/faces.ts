@@ -46,11 +46,16 @@ export function faceNames(name: string): { front: string; back: string } {
  * run has no way to say `//`, so drawing that string put the Adventure's pip in
  * the same run as the creature's and the row read as a four-pip card.
  *
- * The front half is what a reader matches against the name the row prints, which
- * is also the front face's (`printedFaceName`). A split card's second cost is
- * therefore not drawn anywhere today — a real loss, and the reason this lives in
- * one function rather than inline in each pip renderer: a design that wants both
- * halves drawn has one place to start from.
+ * The front half is simply the first run the pip treatment can represent: a run
+ * of symbols has no way to say `//`, so one of the two halves is all it can
+ * honestly draw, and the front is the one a reader casts from hand. It does NOT
+ * follow the name beside it — `printedFaceName` splits only what `isTwoFaced`
+ * recognises, which is `transform` and `modal_dfc`, so an `adventure` or `split`
+ * row still prints both halves of its name next to one half of its cost.
+ *
+ * A split card's second cost is therefore drawn nowhere today — a real loss, and
+ * the reason this lives in one function rather than inline in each pip renderer:
+ * a treatment that wants both halves has one place to start from.
  *
  * A cost with no separator is returned whole, so this is safe on every card.
  */

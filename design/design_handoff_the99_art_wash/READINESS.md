@@ -1,7 +1,8 @@
 # Readiness Review — Commander art wash · scrim recovery
 
-**Verdict:** 🟢 Green — **partly superseded, see the errata at the foot of this file
-(2026-09-11): the `.28` / `.22` ambient half of the band lift is no longer drawn.**
+**Verdict:** 🟢 Green on everything except one value pair, which is 🟡 **pending
+re-ratification (2026-09-11): the `.28` / `.22` ambient half of the band lift is no longer
+drawn.** See the errata at the foot of this file; nothing else in this review is affected.
 **Audited:** 2026-09-09 (R1 Orange, same day; R2 Green after Design took all three corrections)
 **Related ticket(s):** none filed — the handoff arrived as a direct design drop.
 **Deliverable:** `The 99 - Scrim Recovery.dc.html`. The R6 amendment

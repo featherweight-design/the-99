@@ -1,8 +1,9 @@
 # READINESS — Art wash on detail surfaces
 
-**Verdict: GREEN.** Ready to build. **Partly superseded (2026-09-11): the `left-portrait`
-ambient layer this handoff specs at `.20` is no longer drawn — see the errata at the foot of
-this handoff's README. Decision §G survives it; the change is pending Design ratification.**
+**Verdict: GREEN on everything except one value, which is 🟡 PENDING RE-RATIFICATION
+(2026-09-11):** the `left-portrait` ambient layer this handoff specs at `.20` is no longer
+drawn — see the errata at the foot of this handoff's README. Decision §G survives it. Nothing
+else in this review is affected, and the rest remains ready to build.
 
 Handoff: `design/design_handoff_the99_deck_details_wash/` (R5 — `README.md`, `The 99 - Deck
 Details Art Wash.dc.html`, `brand/`). Extends the shipped amendment in

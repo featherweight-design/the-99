@@ -24,7 +24,25 @@ vi.mock("next/navigation", () => ({
 
 // The availability and reveal controls mirror to the URL through the History
 // API — no navigation, so there is no router call left to assert on.
-const replaceState = vi.spyOn(window.history, "replaceState");
+//
+// The spy also feeds the write back into `params`, which is what the mocked
+// `useSearchParams` reads. That is not test convenience: Next ADOPTS a
+// `replaceState` URL into router state, so the hook agrees with the write a
+// moment later, and the view now compares the live query against what it last
+// wrote to tell an arriving navigation from the reader's own flip. A mock where
+// the URL never moves cannot exercise that at all — it makes every flip look
+// like a navigation, which is precisely the bug the comparison exists to avoid.
+const realReplaceState = window.history.replaceState.bind(window.history);
+const replaceState = vi
+  .spyOn(window.history, "replaceState")
+  .mockImplementation((state, title, url) => {
+    // Still a real write: the mirror reads `window.location` to carry over the
+    // parameters the lane does not own.
+    realReplaceState(state, title, url ?? null);
+    const query = String(url ?? "").split("?")[1] ?? "";
+    for (const k of [...params.keys()]) params.delete(k);
+    for (const [k, v] of new URLSearchParams(query)) params.append(k, v);
+  });
 const urls = () => replaceState.mock.calls.map((c) => c[2]);
 
 vi.mock("../../app/commanders/actions", () => ({ retryRecs: vi.fn() }));
@@ -371,6 +389,41 @@ describe("CommandersView ranking toggle", () => {
     } finally {
       params.delete("a");
     }
+  });
+
+  // The primary nav pointing back at `/commanders` while the reader stands in
+  // `Free cards only`. Next keeps this instance mounted for that navigation and
+  // restores the tree it already has, so nothing re-seeds — the list stayed in
+  // the free lane under a URL carrying no mode at all.
+  it("follows the URL when a navigation lands on this instance", () => {
+    const all = results(3);
+    const { again } = view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+
+    // What that navigation does to the query this component reads.
+    params.delete("a");
+    again(all, { freeItems: [all[2], all[0], all[1]] });
+
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 0");
+  });
+
+  it("follows the URL on a fresh mount too", () => {
+    const all = results(3);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+  });
+
+  // The reader's own flip must never be mistaken for one of those navigations:
+  // it changes state first and the URL a moment later, and a reconciliation
+  // comparing against the params rather than against what was written would
+  // revert it inside that gap.
+  it("does not undo the reader's own flip before the URL catches up", () => {
+    const all = results(3);
+    view(all, { freeItems: [all[2], all[0], all[1]] });
+    fireEvent.click(segments(FREE)[0]);
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 2");
   });
 
   // A revalidation can take the ranking away under a reader already standing in
