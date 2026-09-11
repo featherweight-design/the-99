@@ -19,26 +19,29 @@ The deck throughout is HD Tune — Mutant Menace. `v` is the newest committed ve
 | 5 | **Committed, 7+ changes** | **counts** | adds marked | `+19 / −17`, `36 changes since v2`, one sentence of money, and `Review 36 changes` as the primary. The names are not shown at all. |
 | 6 | **Committed, over the cap** | counts | adds marked | `101 / 99 · 2 over` in `--warning`, beside the deck name, in the shipped over-99 treatment. **Nothing is blocked** and the banner says nothing extra about it. |
 | 7 | **Committed, under the cap** | counts | adds marked | `94 / 99` in `--warning` as shipped. Commit is not disabled: a deck below 99 is a deck being built, and the version records what was true. |
-| 8 | **Adds only** | `+19` | adds ruled |
-| 9b | **Draft with no type changed** | counts | adds ruled | The what-changed strip's type block renders only the types whose count moved. A row of zeroes is a table explaining it has nothing in it. |
-| 9c | **Draft that moves no mix figure** | counts | adds ruled | The mix cells keep `rec n` in their bottom-left slot instead of `was n`. `was 7` on a figure that is still 7 is a delta claiming to be one. | The `−` figure and the `/` are **absent**, not `−0`. Same in reverse for removes only. |
-| 9 | **Draft equals the version again** | absent | unchanged | Cutting a card you had added returns the deck to state 3 with no announcement. The banner is derived, so it simply is not there. |
+| 8 | **Adds only** | `+19` | adds ruled | The `−` figure and the `/` are **absent**, not `−0`. Same in reverse for removes only. |
+| 9 | **Draft with no type changed** | counts | adds ruled | The what-changed strip's type block renders only the types whose count moved. A row of zeroes is a table explaining it has nothing in it. |
+| 10 | **Draft that moves no mix figure** | counts | adds ruled | The mix cells keep `rec n` in their bottom-left slot instead of `was n`. `was 7` on a figure that is still 7 is a delta claiming to be one. |
+| 11 | **A quantity changed only** | `+1 / −1` | the row is ruled | `draftDiff` files it as **one** entry carrying `from` and `to`. The row reads `Swamp 9 → 7` in `recountedItem`'s shape — never a bare name, which would assert the card left the deck. |
+| 12 | **Draft equals the version again** | absent | unchanged | Cutting a card you had added returns the deck to state 3 with no announcement. The banner is derived, so it simply is not there. |
 
 ## B · Review changes (`/decks/[id]/changes`)
 
 | # | State | What the player sees |
 |---|---|---|
-| 10 | **All three buckets populated** | The drawn case. 11 free · 5 sleeved · 3 unowned, four count chips, 17 in the removes rail. |
-| 11 | **Only free adds** | The sleeved and unowned headings are **absent**, not empty. The to-buy chip is absent. No money anywhere on the page — which is the whole answer to "what does this cost". |
-| 12 | **Only unowned adds** | Free and sleeved headings absent. The to-buy chip carries the full count and total. |
-| 13 | **No adds** | `Coming in` is absent entirely; the removes rail becomes the page's single column, full width, and keeps its 300px rows' shape. |
-| 14 | **No removes** | `Going out` absent; adds take the full width and the bucket rows get their type line back. |
-| 15 | **A pull is available** | `Pull it` beside the full buy tag, and the holding deck named on the row's second line. One per card. |
-| 16 | **A pull is guarded** | No `Pull it`. The deck name gains a mono `pending` tag and the action slot holds `Open →` at the same geometry. The price stays — buying is still the other option. The full sentence is the control's accessible name. |
-| 17 | **A pull in flight** | The row's control reads `Pulling…`, disabled, **in place**. The row does not move and nothing unmounts. |
-| 18 | **A pull succeeded** | The card leaves the sleeved bucket and joins the free bucket, both counts change, the to-buy chip and total re-print. Announced once. **No animation on the figures.** |
-| 19 | **A pull was refused** | Shipped `MutationError` beneath the row's control; the row stays pullable. A failed pull must not look like a taken one. |
-| 20 | **Reached by a stale link** (draft already committed) | The route redirects to the deck page. There are no changes to review, and an empty review page is a page explaining it has nothing on it. |
+| 13 | **Every availability present** | The drawn case. 11 free · 5 sleeved · 3 unowned, spread across the type groups they fall in, four count chips, 17 out. **Availability is per-row, not a grouping** — there are no bucket headings. |
+| 14 | **Only free adds** | Nothing announces it. No markers, no prices, no to-buy chip, no money anywhere on the page — which is the whole answer to "what does this cost". |
+| 15 | **Only unowned adds** | Every add row carries `BuyTag`; the to-buy chip carries the full count and total. |
+| 16 | **No adds** | `Coming in` is absent entirely and the removes column takes the full width, **keeping its row anatomy unchanged** — same dot, name and cost track. |
+| 17 | **No removes** | `Going out` absent; adds take the full width. Nothing about the row changes. |
+| 18 | **A type group is empty on one side** | The heading is absent on that side only. The two columns do **not** align their groups — each column groups its own rows, and a spacer to line them up would be a table pretending to be a diff. |
+| 19 | **A pull is available** | `Pull it` in the action slot, the holding deck named beside the name, the price beside that. One per card. |
+| 20 | **A pull is guarded — the deck has pending changes** | No `Pull it`. The deck name gains a mono `pending` tag and the action slot holds `Open →` at the same geometry. The price stays — buying is still the other option. The full sentence is the control's accessible name. **Needs a server flag that does not exist yet.** |
+| 21 | **A pull is guarded — the card is that deck's commander** | The same tag, reading `commander`, and **no control at all**: there is no route that releases it, so an `Open →` would lead somewhere that cannot help. The price stays. |
+| 22 | **A pull in flight** | The row's control reads `Pulling…`, disabled, **in place**. The row does not move and nothing unmounts. |
+| 23 | **A pull succeeded** | The row's dot goes to free, the marker and price leave it, the pullable chip and the to-buy chip and total re-print. **The row does not move** — it is already in its type group. Announced once, no animation on the figures. |
+| 24 | **A pull was refused** | Shipped `MutationError` beneath the row's control; the row stays pullable. A failed pull must not look like a taken one. |
+| 25 | **Reached by a stale link** (draft already committed) | The route redirects to the deck page. There are no changes to review, and an empty review page is a page explaining it has nothing on it. |
 
 ## C · The commit sheet
 
@@ -71,10 +74,11 @@ The deck throughout is HD Tune — Mutant Menace. `v` is the newest committed ve
 |---|---|---|
 | 36 | **One version** | A rail of one row, reading `initial`. No diff view is reachable; opening it gives the `Initial` panel and a route into the 99 cards. |
 | 37 | **Many versions** | The rail. Newest first, current marked `current`, each row carrying date, card count and mana value. Plain list, no filter, no search. |
-| 37b | **No versions** | **The Versions tab does not render.** Not an empty tab, not a disabled one. |
+| 37b | **No versions at all** | **The Versions tab does not render.** Not an empty tab, not a disabled one. |
 | 38 | **A version with no note** | `no note` in italic `--fg-faint`. Not an empty line, not a prompt. |
 | 39 | **v1 opened** | **No columns.** `Initial` + one sentence + `Browse the 99 cards →`. Never `+99`. |
-| 40 | **A later version opened** | Two equal name-only columns. No dot, no price, no marker, no action — this is what the deck was. |
+| 40 | **A later version opened** | Two equal columns, **grouped by type with the cost track**, like every other card list in the app. No dot, no price, no marker, no action — this is what the deck *was*, not what it needs. |
+| 40b | **A version diff with a quantity change** | The row reads `{name} {from} → {to}`, same as the draft diff. A version that changed 12 Islands to 9 did not lose Islands. |
 | 41 | **A version that changed commander** | The right-hand block names both: `The Mimeoplasm → Muldrotha`. A commander change is a version boundary like any other and needs no special construct. |
 | 42 | **Game stamped** | `v2` in the 44px slot, bare mono `--fg-faint`. |
 | 43 | **Game stamped with an older version** | `v1` on a game **played** 11 Mar and logged the following week. The stamp follows the play date. |
@@ -94,11 +98,16 @@ The deck throughout is HD Tune — Mutant Menace. `v` is the newest committed ve
 4. **Nothing unmounts mid-write.** Pulls, commits and discards disable in place.
 5. **A refusal preserves the note.** It is the only thing in the feature the player typed.
 6. **The pull is offered, never taken for them** — and where it cannot be one click, the offer
-   becomes a route, never a disabled control.
+   becomes a route, never a disabled control. Where there is **no** route that helps (the card is
+   another deck's commander) the control is absent rather than dead.
 7. **Removes are never drawn in the decklist.** They are not in the deck.
 8. **Nothing this feature adds to a card row takes width from the name.** The pending mark is a
-   border, the pull control reuses `Keep`'s slot, the marker joins a meta line. Per the card-rows
-   mobile ledger, an addition that cannot name what it displaced does not ship.
+   border, the pull control reuses `Keep`'s slot, and the cost track is paid for by the type slot
+   the type grouping deletes. Per the card-rows mobile ledger, an addition that cannot name what
+   it displaced does not ship.
+8b. **Availability is a row treatment, never a grouping.** Rows group by type and sort
+   alphabetically within a group, on every surface this handoff draws.
+8c. **A quantity move is one row carrying `from → to`**, never a bare name on either side.
 9. **Money appears three times at most and only one of them is a commitment.** See `OVERLAPS.md`.
 
 ## Copy, per state
@@ -117,9 +126,12 @@ The deck throughout is HD Tune — Mutant Menace. `v` is the newest committed ve
 | Group heading note | `{n} added in this draft` |
 | Toolbar note, pending | `{n} of these are not in v2 yet` |
 | Mix cell, pending | `was {n}` replaces `rec {n}` |
-| Guard tag | `pending` |
-| Guard action | `Open →` |
+| Guard tag | `pending` · `commander` |
+| Guard action | `Open →` (absent on the commander variant) |
+| Quantity move | `{name} {from} → {to}` — `recountedItem`, shared with the update preview |
 | Buy breakdown | `{n} not owned · {n} still sleeved elsewhere` |
+| Buy tag, decklist row | `$` — the collapsed tile, no figure |
+| Buy tag, Shopping + review page | `buy │ {price}` — the split tag |
 | Review lede | `Nothing here is a decision except the pulls. The list on the deck page is already this list — this page exists to show you what it costs before you lock it in as v{n}.` |
 | Buckets | `Free in your collection · {n}` · `Sleeved in another deck · {n}` · `Not owned · {n}` |
 | Bucket notes | `nothing to do — these are in the box already` · `buy, or pull it deliberately` |

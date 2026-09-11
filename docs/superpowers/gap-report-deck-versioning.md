@@ -1,19 +1,64 @@
-# Gap report — Deck versioning (R1.2)
+# Readiness — Deck versioning (R2)
 
-**Handoff:** `design/design_handoff_the99_deck_versioning/` (R1.2)
+**Handoff:** `design/design_handoff_the99_deck_versioning/` (R2)
 **Issue:** #389
 **Spec:** `docs/superpowers/specs/2026-09-09-deck-versioning-design.md` (incl. Addendum R1, R2)
-**Date:** 2026-09-10
+**Date:** 2026-09-11 (R1.2 audited 2026-09-10)
 
-## Verdict — 🟠 Orange · one Design blocker
+## Verdict — 🟢 Green at R2
 
-Not either of the two Design flagged — **both of those close**, below — and every locked decision
-audits clean. The blocker is a contract the handoff asserts and the canvas contradicts, and it is
-the one finding eng cannot close without inventing a design decision.
+**The blocker is answered and every one of the fourteen corrections is taken.** Design corrected the
+canvas rather than the contract: every track now draws `CostPips`' real output — Beast Within reads
+numeral `2` with one green pip, and Thought Erasure has **no disc at all**, verified on the R2 canvas
+at lines 142, 183, 256, 273 and 366. So no fifth atom, the inventory holds at four new plus one
+deletion, and `COST-TRACK.md` is card-rows' business start to finish with versioning not connected
+to it.
 
-No readiness doc is filed at Orange. This report is the round's record; the verdict follows at R2.
+R2 also reversed the argument it had for dropping the cap, restored it at 5 desktop / 3 phone with
+`+n` overflow, and corrected the blast radius from two surfaces to five. It renumbered
+`STATES-pending.md` coherently (8 → 12, then 13 → 25 for the review page), withdrew the availability
+buckets from the prose as well as the canvas, fixed both provenance paths, and corrected the
+left-rule and padding figures to the shipped `border-l-2` and `pl-[8px] md:px-[9px]`.
 
-## The blocker — the mana track on a diff row is not `CostPips`
+The one judgement R2 asks eng to ratify is **settled by shipped code and needs no further round** —
+see *Ratified at R2* below. Four mechanical errata are listed after it. None blocks a task.
+
+## Ratified at R2 — the buy tag's density
+
+R2 correction 33 collapses the buy tag to a bare `$` on a decklist row, keeps the full tag on the
+review page, and asks eng to ratify the split. **Ratified as drawn**, because it is already the
+shipped rule rather than a new one: `decklist-row.tsx:421` passes
+`density={inShopping ? "full" : "collapsed"}`, and `top-off-list.tsx:805` passes `"full"` on a
+surface that is not Shopping either. So the shipped distinction is *purchase-decision surface takes
+the figure, scanning list collapses it* — not *rows collapse and panels do not*. The review page is a
+purchase-decision surface by that test, which is the reason R2 gives, so the drawn split needs no
+change and the collapse is not universal on rows.
+
+`BuyTag`'s own `density` prop already carries the behaviour and its doc comment already states the
+accessibility contract — the drawn content becomes the accessible name unchanged, so nothing leaves
+the reading order when the figure leaves the screen.
+
+## Errata — carried into the plan, no round required
+
+1. **`READINESS.md` carries its R2 corrections block twice**, at lines 125 and 207, byte-identical
+   (items 21–33). No content conflict; the second copy is a paste. Read either.
+2. **`deck-versioning · copy strings.ts`'s `recounted` takes numbers** —
+   `(name: string, from: number, to: number)` — where the shipped `recountedItem` it is told to reuse
+   takes strings (`src/lib/copy/deck-import.ts:506`). The instruction to reuse governs; the drawn
+   signature is the one to discard.
+3. **The canvas draws the *proposed* 90px / 76px track, not the shipped 40px** (`PIP_TRACK = 40`,
+   `decklist-row.tsx:50`). READINESS:46 rules that these rows *"mount `CostPips` as shipped and
+   inherit whatever it becomes"*, so that ruling governs the drawn width: build at the shipped
+   geometry, pass `track`/`cap` from the shipped constants, and the widened track arrives for free
+   when card-rows lands. The drawn slot is illustrative.
+4. **READINESS's card-row-parity bullet is R1 residue** and is now false twice: it says this feature
+   *"draws on `decklist-row` and `update-diff-row`, neither of which has a pip track"* — `decklist-row`
+   has one (`PIP_TRACK`, `PIP_CAP`, `CostPips` at line 346), and adding one to `update-diff-row` is
+   the whole of `COST-TRACK.md`. It also still says "the sleeved bucket's". The blocker section and
+   `COST-TRACK.md` in the same file both contradict it, so it misleads nobody who reads the document
+   through; it is noted so the plan does not cite it.
+
+## R1.2's blocker, for the record — the mana track on a diff row was not `CostPips`
 
 The handoff says twice that no new mana atom exists: *"`CostPips` is read, not forked. The diff and
 version rows mount the shipped component"* (README §Notes) and *"Four new atoms and one deletion,
@@ -40,7 +85,14 @@ Three things move with the answer, which is why it goes back rather than being r
 
 Eng's reading, offered rather than assumed: **a mana-value numeral plus distinct colour pips, at most
 five, no cap and no overflow.** It is what is drawn, it is what the rationale asks for, and it makes
-the ceiling claim true rather than nearly true. Design to confirm or overrule.
+the ceiling claim true rather than nearly true.
+
+**R2 overruled it, the other way.** Design called the canvas an error rather than an unstated mode —
+*"I drew the figure a reviewer wants to compare in a slot that already means something else"* — and
+corrected every track to `CostPips`' output. Mana value survives in exactly one place, the
+what-changed strip, where it is a deck-level statistic. **This is the better answer than eng's**: it
+adds no atom, and a reader reconciling a row against the strip finds no per-row mana value because
+the row honestly carries none.
 
 ## Design's two self-flagged blockers, both closed
 
@@ -54,9 +106,11 @@ Neither needed a redraw and neither was a design gap:
 Every locked decision is drawn as written, no new token is asked for, and `OVERLAPS.md` answers both
 of the spec's open calls in a way the shipped code supports. What follows are engineering
 corrections against the handoff's **prose**, plus a class of stale R1 text the canvas settles. None
-of these needs a Design ruling — they need Design to *correct the prose* in the same round that
-answers the blocker, because eng following the prose instead of the canvas would build the
-pre-R1.2 layout.
+needed a Design ruling — they needed Design to *correct the prose* in the same round that answered
+the blocker, because eng following the prose instead of the canvas would have built the pre-R1.2
+layout. **R2 took all fourteen**, as items 21–33 of its `READINESS.md`. They are kept below as the
+build's own checklist: each one names the shipped path a task has to honour, which the handoff's
+summary of it does not.
 
 ## The consistency check Hugh asked for
 

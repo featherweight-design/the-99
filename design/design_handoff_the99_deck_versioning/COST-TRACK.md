@@ -1,9 +1,14 @@
 # The cost track — an amendment request to card-rows
 
-**Not this handoff's component.** `CostPips` belongs to `design_handoff_the99_card_rows/` (Q2)
-and R5's pip rules. This file is the proposal, the arithmetic and the blast radius; the ruling is
-theirs. **Deck versioning does not depend on it** — the new surfaces inherit whatever `CostPips`
-is on the day they ship.
+**Not this handoff's component, and — as of R2 — not this handoff's dependency either.** `CostPips`
+belongs to `design_handoff_the99_card_rows/` (Q2) and R5's pip rules. Hugh has confirmed the
+overlap is changing for card rows; this file is material for that round.
+
+**R2 correction, stated first, because it changes what this document is.** R1.2 claimed versioning
+mounted `CostPips` on two new surfaces and so surfaced the shingling. The canvas did not actually
+draw `CostPips` — it drew a mana-value numeral, which is a different figure (see the gap report's
+blocker). **The canvas is corrected to `CostPips`' real output**, which means versioning's rows are
+untouched by whatever card-rows decides. This request stands on its own merits, not on versioning's.
 
 ## The complaint
 
@@ -13,65 +18,82 @@ one cosmetic and one not:
 
 1. **The numeral is clipped**, so a 5-drop and a 6-drop are distinguished by the sliver of glyph
    the first pip leaves visible.
-2. **Two pips of the same colour read as one.** `1U` and `1UU` are the same picture. That is not
-   polish — those are two different costs, and the track exists to tell them apart.
+2. **Two pips of the same colour read as one.** `Mana Drain` (`{U}{U}`) and a hypothetical `{U}`
+   are the same picture. That is not polish — those are two different costs, and the track exists
+   to tell them apart.
+
+**Only the second is load-bearing**, and no cap rule affects it.
 
 ## The proposal
 
 | | Shipped | Proposed |
 |---|---|---|
-| Track width | 40px fixed | **90px desktop / 76px phone**, fixed, right-aligned |
-| Pip size | 12px | **11px desktop / 10px phone** |
+| Track width | 40px fixed (34px on `card-search-row`) | **110px desktop / 76px phone**, fixed, right-aligned |
+| Pip size | **12px desktop, 13px phone meta line** | **11px desktop / 10px phone** |
 | Pip spacing | −5px (shingled from the third) | **+3px desktop / +2px phone** |
-| Numeral | inside the stack, cropped | **first, then a 4px gap**, then the pips |
-| Cap | five slots, then a generic `+n` | **no cap needed** |
-| Overflow | shingle | **cannot occur** |
+| Numeral | inside the stack, cropped | **first, then a 4px gap** — and **conditional**: absent when the cost has no generic component |
+| Cap | a `cap` prop | **kept** — 5 desktop, 3 phone |
+| Overflow | shingle | a mono `+n` in `--fg-faint` — a count, never a pip |
 
-### Why no cap and no overflow rule
+Note the phone pip **shrinks** (13px → 10px). The phone change is not a widening; it trades pip
+size for separation.
 
-A Commander deck's colour identity is **at most five colours, by the rules of the format**, and a
-card in it cannot carry a coloured symbol outside that identity. So five pips is not a common case
-to design around — it is the **ceiling**. The widest row that can exist is a five-colour card with
-no generic cost:
+## The cap — R1.2 was wrong, and the no-cap ruling rested on it
+
+R1.2 argued that five pips is the ceiling "by the rules of the format", so no overflow behaviour
+needed specifying. **That confused colour identity with symbols in a cost.** Identity caps at five;
+a mana cost repeats colour symbols freely. Progenitus is a legal commander at
+`{W}{W}{U}{U}{B}{B}{R}{R}{G}{G}` — ten slots:
 
 ```
-5 × 11px + 4 × 3px = 67px   (inside a 90px track)
-5 × 10px + 4 × 2px = 58px   (inside a 76px phone track)
+10 × 11px + 9 × 3px = 137px   (desktop, uncapped — overflows a 110px track)
+10 × 10px +  9 × 2px = 118px  (phone, uncapped — overflows a 76px track)
 ```
 
-The shingle was a solution to a constraint (fit five slots into 40px). Remove the constraint and
-the shingle has no job.
+`cost-pips.test.tsx:101` already asserts against that exact string, so the repo's own tests cover
+the case the previous draft said could not arise. **`cap` cannot be dropped**, and the shingle-free
+track is not the same proposal once it needs an overflow rule.
 
-### Where the width came from
+### Capped arithmetic
 
-**The type column.** Grouping rows by type — which this handoff adopts from the deck page for
-every diff and version surface — deletes a 120px per-row type label from `update-diff-row` and
-never introduces one on the version row. Net furniture on those rows is **−30px**, and the name is
-wider than it was.
+```
+desktop, cap 5:  18 + 4 + (5 × 11) + (4 × 3) + 3 + 14  =  106px  →  110px track
+phone,   cap 3:  17 + 4 + (3 × 10) + (2 × 2) + 3 + 13  =   71px  →   76px track
+```
 
-On `decklist-row` the 50px is whitespace the two-column layout already has: at 1180px each column
-is ~560px against names that rarely exceed 200px.
+(numeral disc + gap + pips + inter-pip gaps + gap + `+n`.) Progenitus renders five pips and `+5`
+on desktop, three and `+7` on phone. **The cap is read from the shipped prop, not re-declared by
+this document** — if card-rows prefers 4 desktop, the track narrows accordingly and nothing else
+in the proposal moves.
 
-## Blast radius
+## Blast radius — five surfaces, not two
 
-`CostPips` ships in two places (per card-rows Q2):
+R1.2's table named two. `CostPips` also mounts in three more:
 
 | Surface | Effect |
 |---|---|
-| `decks/card-search-row.tsx` | Track widens 40px → 90px. At 375px this is the row the floor called tightest: it carries `×1 owned` / `not owned` in words. **Check this one first** — if the phone search row cannot afford 36px, the phone track stays shingled and the desktop track widens alone. That is an acceptable split because the desktop row is where the ambiguity is actually read. |
 | `decks/decklist-row.tsx` | Track widens into existing whitespace at both widths. |
-| `collection/rows-view.tsx` | **Untouched.** That is identity pips on a grid, a different affordance, and R5's ring rules are not in scope. |
+| `decks/card-search-row.tsx` | **Desktop slot is 34px, not 40px**, and it is `hidden md:flex` — **there is no phone track to un-shingle**. R1.2's before/after described neither the shipped width nor the shipped breakpoint. Widening 34px → 110px on the row the floor called tightest is the one that needs measuring first. |
+| `decks/top-off-list.tsx:138` | A row; same trade as the decklist. |
+| `decks/suggestion-tile.tsx` | **A tile, not a row.** |
+| `decks/deck-card-tile.tsx` | **A tile, not a row.** |
+| `collection/rows-view.tsx` | **Untouched.** Identity pips on a grid, a different affordance; R5's ring rules are not in scope. |
+
+**Two of the five are tiles**, whose width budget is not the deck page's whitespace. Card-rows
+should rule with that in front of them.
+
+## Where the width came from, corrected
+
+The type column, on the diff surfaces — but the figure differs per variant: `DiffRowOut` is
+`w-[120px]` and `DiffRowIn` / `DiffRowUnnamed` are `w-[150px]`. So R1.2's "net −30px" is right for
+the removes column and **understates the adds column by 30px**. Neither figure changes a decision.
 
 ## What this handoff needs, either way
 
-Nothing. The versioning surfaces draw a cost track because the feedback asked for mana cost on
-diff and version rows, and they draw it at whatever metrics `CostPips` carries. If card-rows
-declines the amendment, the new rows shingle like the old ones and every other decision in this
-handoff stands.
+**Nothing.** Versioning's rows mount `CostPips` exactly as shipped and inherit whatever it becomes.
 
 ## One traced value to settle
 
 The screenshot's black pip reads as a **dusty pink**, where the brand sheet's B is `#5B5566`. The
-canvas draws the screenshot's hue in the "shipped" column and the brand value in the "proposed"
-column, so the difference is visible side by side. If the shipped pink is deliberate, **the brand
-sheet is what needs correcting** — the WUBRG table is supposed to be final.
+canvas draws the brand value throughout. If the shipped pink is deliberate, **the brand sheet's
+WUBRG table is what needs correcting** — it is supposed to be final.

@@ -1,6 +1,10 @@
-# READINESS — Deck versioning (R1.2)
+# READINESS — Deck versioning (R2)
 
-**Self-assessed: 🟡 Amber. Two rulings requested, one spec-adjacent addition, no redraw pending.**
+**Self-assessed: 🟢 Green-seeking. No open Design question, no ruling requested, no redraw pending.**
+
+Both R1.2 Amber items are **closed by the audit**: `Commit as v1` is ruled as drawn (option 1), and
+the cost track is card-rows' (Q2/R5) with Hugh's confirmation that the overlap is changing. Neither
+needs anything further from this handoff.
 
 **R1.2 redraws every frame against the shipped deck page.** R1 traced the chrome from the game-log
 handoff's canvas rather than the live product and invented pill tabs, brass-solid primaries, a
@@ -10,33 +14,40 @@ is at the top of `README.md`. No decision changed as a result — the chrome did
 The audit against the spec's locked decisions is what settles this. Amber rather than green for
 one reason, stated first.
 
-## What blocks a green
+## The blocker, answered
 
-**Ruling 2 — the cost track.** Putting mana on diff and version rows mounts `CostPips` on two new
-surfaces, and it shingles: the numeral is cropped by the first pip and two same-coloured pips read
-as one. `COST-TRACK.md` proposes a 90px / 76px five-slot track with no overlap, paid for by the
-type column that grouping deletes. **That component is card-rows' (Q2/R5), and widening it changes
-`card-search-row` and `decklist-row` too**, so the ruling is theirs. Versioning does not depend on
-it — the new rows inherit whatever ships. Amber because it is an open request, not because anything
-here waits on it.
+**The rows mount `CostPips`. The canvas was corrected to its real output.** R1.2 drew the *mana
+value* in the numeral disc; `CostPips` renders the **generic-cost token** and nothing when there is
+none. Beast Within `{2}{G}` now reads `2 · G`; Thought Erasure `{U}{B}` has **no disc at all**.
 
+It was an error, not an unstated mode — I drew the figure a reviewer wants to compare in a slot
+that already means something else. Consequences, all taken:
 
-**The `Commit as v1` offer on a versionless full-body deck is Design's addition, not the spec's.**
-§Decisions 4 says a deck with no version edits live, and the migration stamps existing full-body
-decks — which leaves no route to a first version for a deck built *after* this ships. Design drew
-a brass-**outline** `Commit as v1` in the spine, appearing at `deckBodySize()`, with the line
-*locks this list as v1 — nothing about the deck changes*.
+- **No fifth atom.** The inventory holds at four new and one deletion.
+- **`COST-TRACK.md` is card-rows' business start to finish**, and now stands on its own merits
+  rather than on a connection to versioning that did not exist.
+- **The disc is conditional**, so it is not a fixed leading element — the track's geometry and
+  every row's accessible name vary with the cost.
+- **Mana value survives in exactly one place**, the what-changed strip, where it is a deck-level
+  statistic. Recorded so a reader reconciling a row against the strip does not read its absence as
+  a gap.
 
-Three ways this could go and all three are cheap:
+**And the cap comes back.** R1.2's "five is the ceiling" confused colour identity with symbols in a
+cost. Progenitus is ten symbols, 137px desktop uncapped, and `cost-pips.test.tsx:101` already
+asserts against that string. `COST-TRACK.md` is rewritten around a wider track **and** a cap
+(5 desktop / 3 phone, `+n` overflow), with the blast radius corrected from two surfaces to five —
+two of which are tiles.
 
-1. **Keep it as drawn.** The player chooses when their claims go hard.
-2. **Stamp v1 automatically at a full body.** Consistent with the migration, and it makes a
-   deck's claims go hard without anyone asking — the class of thing this design exists to
-   prevent.
-3. **Neither, and a deck gets its first version some other way.** Then this is a delete, not a
-   redraw.
+## Closed, needing nothing
 
-Design's preference is 1. **Whichever way the audit rules, nothing else in the handoff moves.**
+**The cost track.** Card-rows' component (Q2/R5), and Hugh has confirmed the overlap is changing
+for card rows. `COST-TRACK.md` is rewritten as material for that round — corrected cap, corrected
+blast radius, corrected shipped metrics. **Versioning is not connected to it**: these rows mount
+`CostPips` as shipped and inherit whatever it becomes.
+
+**`Commit as v1` on a versionless full-body deck** — ruled **option 1, as drawn**. The
+brass-outline offer at `deckBodySize()` with *locks this list as v1 — nothing about the deck
+changes* stands.
 
 ## The two open calls, both called
 
@@ -67,12 +78,15 @@ Two places Design put something the spec left open, both reversible:
    adds can be marked, because a removed card is not in the draft. Seventeen strikethrough ghosts
    would be seventeen hit targets that do nothing, on the surface that most needs to stay
    scannable at 101 rows.
-1b. **The pending mark is a 3px brass left rule, and it spends no row width.** Corrected in R1
+1b. **The pending mark is a 2px brass left rule, and it spends no row width.** Corrected in R1
     review against `FLOOR-what-every-card-row-carries.md`: the first draft used a `pending add`
     chip, which displaced roughly 86px of name on nineteen rows at both widths and named nothing
-    it displaced. The rule is absorbed by the row's existing padding — left padding 12px → 10px
-    desktop, 11px → 9px phone — and the words move to one caption above the list plus the row's
-    accessible name. **No row's grid template changes and no row grows in height.**
+    it displaced. The words moved to one caption above the list plus the row's accessible name.
+    **Two figures corrected in R2**: the rule is **2px**, matching `unresolved-row`'s shipped
+    `border-l-2` rather than inventing a third left-rule width; and `ROW_PADDING` is
+    `pl-[8px] md:px-[9px]`, so the absorb is **9px → 7px desktop and 8px → 6px phone**, not the
+    12px/11px R1.2 quoted — those described a row that does not exist. **The ruling survives
+    unchanged: no row's grid template changes and no row grows in height.**
 2. **The banner has two densities behind one constant**, and it is the handoff's direct answer to
    R2: at 36 rows it states counts, at 2 it names the cards. A single density would either be
    useless at forty or wasteful at two.
@@ -108,11 +122,62 @@ Two places Design put something the spec left open, both reversible:
 13. **The pull guard is a link, never a disabled button.** The one-click pull is withheld by the
     server, per §Pulling a card, and the client renders whichever affordance the flag names.
 
+## Corrections taken in R2, beyond the blocker
+
+21. **Quantity moves are drawn.** Handoff gap 5 said a quantity change is invisible in both diffs;
+    it was wrong twice. `draftDiff` files it as **one** entry carrying `from` and `to` (unlabelled,
+    not absent), and #513 already prints reconciled counts by name in the update preview. Every
+    diff and version row now renders `{name} {from} → {to}`, **reusing `recountedItem`**. The real
+    defect is downstream: `commitDeckVersion` filters basics out of `adds` only, so cutting 3 of 12
+    Islands renders a bare **Island** under *back in the pool* — **the pull list must be filtered
+    exactly as the buy list is.**
+22. **The availability buckets are withdrawn in prose as well as in the canvas.** README §3 and the
+    `Bucket` component row were R1 residue; grouping is by type, sorting is alphabetical within a
+    group, and `bucket` is a per-row treatment. The accessible statement the bucket heading used to
+    carry **moves into the row's accessible name**.
+23. **The mix strip is mana value plus the shipped five roles** — `ramp, draw, removal, wipes,
+    land`. `body` is not a role in `computeRoleCounts`, and a creature count already sits in the
+    type block beside it. **One fold, called twice**, or the two strips disagree on the same screen.
+24. **"No new column, and no new query" was true of the schema and false of the reads.** `cards.cmc`
+    exists but `DeckDetailCard` carries no mana value, so the strip needs `cmc` in the detail select
+    *and* a `deck_version_cards → cards` join for the before-figure. A select and a join, not a
+    migration — but planned, not assumed.
+25. **`revalidateClaims(deckId, userId)`, not `deckSurfaces()`.** Commit, discard and pull are claim
+    writes. The wrong helper would leave every other deck's availability stale after a pull.
+26. **`commitDeckVersion` must return the card count** it is asked to print, or the success line
+    drops it. One field.
+27. **The grouping UI needs extracting first.** `DecklistGroup` and `GroupToggle` live inside
+    `decklist.tsx`; "mount the same grouping" is a prerequisite task, not a free reuse.
+28. **The pull guard needs a server flag that does not exist**, and there is **a third guard** —
+    the card is another deck's commander, which takes the same tag and **no control**, because no
+    route releases it.
+29. **The game log has no mono column-header row.** The `ver` slot is still drawable; the header
+    R1.2 drew it under is removed from the canvas.
+30. **Three traced metrics corrected** in `COST-TRACK.md`: the pip is **12px desktop / 13px phone**
+    (so the phone proposal *shrinks* it); `card-search-row`'s slot is **34px and `hidden md:flex`**,
+    with no phone track at all; and the freed type slot is **120px on the removes variant, 150px on
+    the adds**, so "net −30px" understated the adds column.
+31. **Two provenance paths fixed.** The spec is `docs/superpowers/specs/…`, and the reimport
+    material is `design/design_handoff_the99_amendments/STATES-reimport.md` plus
+    `deck-reimport · copy strings.ts`.
+32. **`STATES-pending.md` table A re-laid.** Rows renumbered 8 → 12 in sequence, row 8's missing
+    cell restored from where it had been appended to 9c.
+
+33. **The buy tag collapses to `$` on a decklist row.** Corrected in R2 from a screenshot: the
+    deck card row shows a bare `$` tile and the figure lives under `Shopping` in the split
+    `buy │ $65.64` tag. R1.2's "full form everywhere in this feature" was wrong on the surface with
+    the least room. **One judgement to ratify:** the review page keeps the full tag, because it is
+    the Shopping-equivalent surface for a draft and the price is what `Pull it` is weighed
+    against. If the collapse is meant to be universal on rows, that row loses its price and the
+    money lives only in the count chips and the commit sheet.
+
 ## Not blocking, and worth reading before estimating
 
 14. **Four new atoms and one deletion, and that is the whole inventory**: the pending-add **left
-    rule**, the `Pull it` control, the guard's `pending` tag + `Open →`, the 44px version slot in
-    the log row — and the **deletion** of the per-row type label from `update-diff-row`.
+    rule**, the `Pull it` control, the guard's tag + `Open →` (in two variants — `pending` with a
+    route, `commander` without), the 44px version slot in the log row — and the **deletion** of the
+    per-row type label from `update-diff-row`. **`CostPips` is not among them**: it is read as
+    shipped.
 14b. **The chrome is all shipped**: cream primary, ghost secondary, text tabs with the brass
     underline, the Cinzel group heading, the mix cell, the count chips, the ownership dot,
     `BuyTag`, `AvailabilityMarker`, the danger button, the textarea, the inline-form container.
@@ -138,6 +203,55 @@ Two places Design put something the spec left open, both reversible:
     known numbers.
 20. **Focus after each write** is named: the version line after a commit, the deck name after a
     discard, the row's own control after a pull.
+
+## Corrections taken in R2, beyond the blocker
+
+21. **Quantity moves are drawn.** Handoff gap 5 said a quantity change is invisible in both diffs;
+    it was wrong twice. `draftDiff` files it as **one** entry carrying `from` and `to` (unlabelled,
+    not absent), and #513 already prints reconciled counts by name in the update preview. Every
+    diff and version row now renders `{name} {from} → {to}`, **reusing `recountedItem`**. The real
+    defect is downstream: `commitDeckVersion` filters basics out of `adds` only, so cutting 3 of 12
+    Islands renders a bare **Island** under *back in the pool* — **the pull list must be filtered
+    exactly as the buy list is.**
+22. **The availability buckets are withdrawn in prose as well as in the canvas.** README §3 and the
+    `Bucket` component row were R1 residue; grouping is by type, sorting is alphabetical within a
+    group, and `bucket` is a per-row treatment. The accessible statement the bucket heading used to
+    carry **moves into the row's accessible name**.
+23. **The mix strip is mana value plus the shipped five roles** — `ramp, draw, removal, wipes,
+    land`. `body` is not a role in `computeRoleCounts`, and a creature count already sits in the
+    type block beside it. **One fold, called twice**, or the two strips disagree on the same screen.
+24. **"No new column, and no new query" was true of the schema and false of the reads.** `cards.cmc`
+    exists but `DeckDetailCard` carries no mana value, so the strip needs `cmc` in the detail select
+    *and* a `deck_version_cards → cards` join for the before-figure. A select and a join, not a
+    migration — but planned, not assumed.
+25. **`revalidateClaims(deckId, userId)`, not `deckSurfaces()`.** Commit, discard and pull are claim
+    writes. The wrong helper would leave every other deck's availability stale after a pull.
+26. **`commitDeckVersion` must return the card count** it is asked to print, or the success line
+    drops it. One field.
+27. **The grouping UI needs extracting first.** `DecklistGroup` and `GroupToggle` live inside
+    `decklist.tsx`; "mount the same grouping" is a prerequisite task, not a free reuse.
+28. **The pull guard needs a server flag that does not exist**, and there is **a third guard** —
+    the card is another deck's commander, which takes the same tag and **no control**, because no
+    route releases it.
+29. **The game log has no mono column-header row.** The `ver` slot is still drawable; the header
+    R1.2 drew it under is removed from the canvas.
+30. **Three traced metrics corrected** in `COST-TRACK.md`: the pip is **12px desktop / 13px phone**
+    (so the phone proposal *shrinks* it); `card-search-row`'s slot is **34px and `hidden md:flex`**,
+    with no phone track at all; and the freed type slot is **120px on the removes variant, 150px on
+    the adds**, so "net −30px" understated the adds column.
+31. **Two provenance paths fixed.** The spec is `docs/superpowers/specs/…`, and the reimport
+    material is `design/design_handoff_the99_amendments/STATES-reimport.md` plus
+    `deck-reimport · copy strings.ts`.
+32. **`STATES-pending.md` table A re-laid.** Rows renumbered 8 → 12 in sequence, row 8's missing
+    cell restored from where it had been appended to 9c.
+
+33. **The buy tag collapses to `$` on a decklist row.** Corrected in R2 from a screenshot: the
+    deck card row shows a bare `$` tile and the figure lives under `Shopping` in the split
+    `buy │ $65.64` tag. R1.2's "full form everywhere in this feature" was wrong on the surface with
+    the least room. **One judgement to ratify:** the review page keeps the full tag, because it is
+    the Shopping-equivalent surface for a draft and the price is what `Pull it` is weighed
+    against. If the collapse is meant to be universal on rows, that row loses its price and the
+    money lives only in the count chips and the commit sheet.
 
 ## Not blocking
 

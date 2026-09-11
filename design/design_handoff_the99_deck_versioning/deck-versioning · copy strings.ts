@@ -103,6 +103,16 @@ export const deckVersioningCopy = {
     // Never rendered — the action's accessible name.
     pullGuardA11y: (deck: string, card: string) =>
       `${deck} has pending changes of its own. Open it to release ${card}.`,
+    // Third guard: commander claims are in the availability model, so `Pull it` would
+    // otherwise be offered on a row where it can only ever fail. Same tag shape, NO
+    // action — no route releases it, so an "Open →" would lead somewhere that cannot help.
+    commanderGuardTag: 'commander',
+    commanderGuardA11y: (deck: string, card: string) =>
+      `${card} is ${deck}'s commander. It cannot be pulled.`,
+    // A quantity move is ONE row carrying from → to — never a bare name, which would
+    // assert the card left the deck. Reuse deck-import.ts's recountedItem rather than
+    // authoring a second phrasing for the same fact (#513 ships it).
+    recounted: (name: string, from: number, to: number) => `${name} ${from} → ${to}`,
 
     outNote: (n: number) =>
       `all ${n} go back in the pool when you commit. No per-row toggle: putting one back ` +
@@ -201,6 +211,9 @@ export const deckVersioningCopy = {
   },
 
   /* ---- §Surfaces 2 · the what-changed strip ----
+   * SIX cells: mana value plus the shipped five roles from ROLE_ORDER
+   * (ramp, draw, removal, wipes, land). "body" is NOT a role in computeRoleCounts,
+   * and a creature count already sits in the type-distribution block beside this.
    * Derived from draft-diff's two card sets plus the version's cards. No new column
    * and no new query — and it MUST be the same fold the deck page's mix strip uses,
    * or the two disagree on the same screen, one scroll apart. */
@@ -212,6 +225,8 @@ export const deckVersioningCopy = {
     under: (rec: number) => `still under rec ${rec}`,
     body: 'Body',
     bodyOver: (n: number) => `${n} over, not blocked`,
+    // The six cells, in order. `body` above is the hero's over-cap line, NOT a strip cell.
+    cells: ['manaValue', 'ramp', 'draw', 'removal', 'wipes', 'land'] as const,
     shapeHeading: "How the deck's shape moves",
     shapeRow: (before: number, after: number) => `${before} → ${after}`,
     delta: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0'),
