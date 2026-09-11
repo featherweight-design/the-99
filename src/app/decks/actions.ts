@@ -930,41 +930,54 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
 }
 
 export async function commitTopOff(deckId: string, oracleIds: string[]): Promise<TopOffResult> {
-  let result: TopOffResult;
-  let committedBy: string;
+  let committed: Awaited<ReturnType<typeof runTopOff>>;
   try {
-    const r = await runTopOff(deckId, oracleIds);
-    // The shopping figure the commit row promised: cards this act placed that
-    // the player does not own, not the deck's whole unowned count. Read outside
-    // the transaction — collection_items is untouched by the deck write.
-    const owned = r.landed.length === 0
-      ? new Set<string>()
-      : new Set(
-          (await db.select({ oracleId: collectionItems.oracleId })
-            .from(collectionItems)
-            .where(and(
-              eq(collectionItems.userId, r.userId),
-              inArray(collectionItems.oracleId, r.landed),
-            )))
-            .map((c) => c.oracleId),
-        );
-    const boughtDelta = r.landed.filter((oracleId) => !owned.has(oracleId)).length;
-    result = { ok: true, passId: r.passId, added: r.landed.length, total: r.total, boughtDelta };
-    // `runTopOff` resolves the reader; this is the same id it wrote under.
-    committedBy = r.userId;
+    committed = await runTopOff(deckId, oracleIds);
   } catch (err) {
     console.error("commitTopOff failed", err);
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
   }
 
-  // After the commit, and OUTSIDE the failure boundary above. Inside the
-  // transaction it would drop the caches while the write was still uncommitted,
-  // and a render arriving in that window would refill them from the rows as they
-  // were. Inside the `catch`, an invalidation that threw would report a commit
-  // that landed as `topUpFailed` — the reader told nothing happened, and free to
-  // retry against rows that are already there.
-  revalidateClaims(deckId, committedBy);
-  return result;
+  // The deck rows and the fill pass are committed from here on, so the caches
+  // are wrong until this runs and nothing below may be allowed to skip it.
+  // Inside the transaction it would drop them while the write was still
+  // uncommitted, and a render arriving in that window would refill them from the
+  // rows as they were; inside a `catch` that reports failure, a throw would leave
+  // a landed commit behind stale lists.
+  revalidateClaims(deckId, committed.userId);
+
+  try {
+    // The shopping figure the commit row promised: cards this act placed that
+    // the player does not own, not the deck's whole unowned count. Read outside
+    // the transaction — collection_items is untouched by the deck write.
+    const owned = committed.landed.length === 0
+      ? new Set<string>()
+      : new Set(
+          (await db.select({ oracleId: collectionItems.oracleId })
+            .from(collectionItems)
+            .where(and(
+              eq(collectionItems.userId, committed.userId),
+              inArray(collectionItems.oracleId, committed.landed),
+            )))
+            .map((c) => c.oracleId),
+        );
+    const boughtDelta = committed.landed.filter((oracleId) => !owned.has(oracleId)).length;
+    return {
+      ok: true,
+      passId: committed.passId,
+      added: committed.landed.length,
+      total: committed.total,
+      boughtDelta,
+    };
+  } catch (err) {
+    // The write landed and the caches know it; only the receipt's shopping
+    // figure is unknown. Reported as a refusal rather than as a success with an
+    // invented `boughtDelta`, because `0` is the one value this surface reads as
+    // "nothing to buy" and it would be a claim nothing measured. The list the
+    // reader returns to shows the cards, which is the correction.
+    console.error("commitTopOff receipt failed after the commit landed", err);
+    return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+  }
 }
 
 /** The inverse of one top-off, at any age.
