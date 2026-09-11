@@ -455,6 +455,53 @@ describe("CardDetailProvider card cache", () => {
     await screen.findByText(cardDetailCopy.unavailable);
   });
 
+  // The window the eviction counter alone does not close: a card reopened inside a write's
+  // own window is read before the write lands, so nothing about that read looks raced and
+  // it is filed and painted. The reader is then sitting on the replaced printing, and only
+  // the write landing can tell them otherwise.
+  it("re-reads the card on screen when a write lands on it", async () => {
+    const fetchCard = vi.fn()
+      .mockResolvedValueOnce(SIGNET)
+      .mockResolvedValue(SIGNET_AFTER_WRITE);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    // The reopen inside the window: it answers with the card as it was before the write.
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAccessibleName(SIGNET.name);
+
+    // The write lands.
+    await click(screen.getByRole("button", { name: "evict" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name));
+  });
+
+  // A write landing on a card nobody is looking at costs no read — the entry is dropped and
+  // the next open pays for it, which is the whole point of the cache.
+  it("does not re-read a card the write landed on while it was closed", async () => {
+    const fetchCard = vi.fn().mockResolvedValue(SIGNET);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+    await click(screen.getByRole("button", { name: "close" }));
+
+    await click(screen.getByRole("button", { name: "evict" }));
+    expect(fetchCard).toHaveBeenCalledTimes(1);
+  });
+
   // The write the eviction exists for, driven through the real picker rather than a
   // stand-in: a change that stopped calling `onArtChange` would leave every test above
   // passing while the reader reopened the card onto the printing they had replaced.
@@ -481,11 +528,9 @@ describe("CardDetailProvider card cache", () => {
         <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
           Arcane Signet
         </CardDetailTrigger>
-        <Closer />
       </CardDetailProvider>,
     );
-    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
-    await click(trigger);
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
     // Both breakpoint trees render the picker; either one drives the same write.
@@ -493,12 +538,9 @@ describe("CardDetailProvider card cache", () => {
       name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
     })[0]);
     await click(screen.getAllByRole("radio", { name: /Throne of Eldraine/ })[0]);
-    await click(screen.getByRole("button", { name: "close" }));
 
-    // The card is gone from the cache, so its next open has to wait for the server.
-    fetchCard.mockImplementation(() => new Promise<BrowseCard>(() => {}));
-    await click(trigger);
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(trigger).toHaveAttribute("aria-busy", "true");
+    // The write reached the provider: the entry it held is gone, and the card on screen is
+    // being re-read rather than left on the printing the reader just replaced.
+    await waitFor(() => expect(fetchCard.mock.calls.length).toBeGreaterThan(1));
   });
 });

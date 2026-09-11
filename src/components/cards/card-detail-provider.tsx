@@ -154,6 +154,14 @@ export function CardDetailProvider({
   // the read starts is compared against the count when it lands: a read from the wrong
   // side of a write is dropped rather than filed as the current answer.
   const evictions = useRef(new Map<string, number>());
+  // The card on screen, for `evict` to compare against without being rebuilt every time the
+  // open card changes — it is handed to every trigger through the context. Written through
+  // `show` rather than read off `card`, which would be a ref written during render.
+  const openRef = useRef<string | null>(null);
+  const show = useCallback((next: BrowseCard | null) => {
+    openRef.current = next?.oracleId ?? null;
+    setCard(next);
+  }, []);
 
   const load = useCallback(
     async (oracleId: string, list?: string[]) => {
@@ -165,7 +173,7 @@ export function CardDetailProvider({
       if (hit) {
         setPendingOracleId(null);
         setFailed(false);
-        setCard(hit);
+        show(hit);
       } else {
         setPendingOracleId(oracleId);
         setFailed(false);
@@ -192,7 +200,7 @@ export function CardDetailProvider({
         }
         if (next) {
           cache.current.set(oracleId, next);
-          setCard(next);
+          show(next);
         } else {
           // A card the server could not find is the one result not worth keeping: it is
           // rare, and filing it would keep the card missing for the rest of the visit.
@@ -200,7 +208,7 @@ export function CardDetailProvider({
           // On a hit the reader is already looking at the card, and a card that has gone
           // missing between two opens is not worth yanking the modal out from under them.
           if (!hit) {
-            setCard(null);
+            show(null);
             setFailed(true);
           }
         }
@@ -212,7 +220,7 @@ export function CardDetailProvider({
         if (latest.current === request) setPendingOracleId(null);
       }
     },
-    [fetchCard],
+    [fetchCard, show],
   );
 
   const open = useCallback(
@@ -228,15 +236,25 @@ export function CardDetailProvider({
   // reader has already dismissed.
   const close = useCallback(() => {
     latest.current++;
-    setCard(null);
+    show(null);
     setPendingOracleId(null);
     setFailed(false);
-  }, []);
+  }, [show]);
 
-  const evict = useCallback((oracleId: string) => {
-    cache.current.delete(oracleId);
-    evictions.current.set(oracleId, (evictions.current.get(oracleId) ?? 0) + 1);
-  }, []);
+  const evict = useCallback(
+    (oracleId: string) => {
+      cache.current.delete(oracleId);
+      evictions.current.set(oracleId, (evictions.current.get(oracleId) ?? 0) + 1);
+      // Dropping the entry is not enough when the evicted card is the one on screen. A read
+      // taken inside the write's own window answers with what the write has not replaced
+      // yet, and if it lands before the write does, nothing about it looks raced: it is
+      // filed and painted as the current answer, and the reader sits on the printing they
+      // replaced until they close and reopen. Re-reading here is what ends that window —
+      // the read it starts is from after the write, by construction.
+      if (openRef.current === oracleId) void load(oracleId);
+    },
+    [load],
+  );
 
   const value = useMemo<CardDetailContextValue>(
     () => ({
