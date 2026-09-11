@@ -11,7 +11,10 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards } from "../../db/schema";
-import { bucketAdds, draftDiff, type AddBucket, type BucketedAdd, type DraftChange } from "./draft-diff";
+import {
+  bucketAdds, draftDiff,
+  type AddBucket, type BucketedAdd, type CardQty, type DraftChange,
+} from "./draft-diff";
 import { hardDecks, type Availability, type DeckClaim } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
@@ -114,6 +117,33 @@ export function releasableClaims(a: Availability | undefined): DeckClaim[] {
   return a.claims.filter((c) => c.mature && !c.pending && !c.commander);
 }
 
+/**
+ * The newest version, its cards and the deck's own rows as of one instant.
+ *
+ * One read-only `repeatable read` transaction, because these three reads ARE the
+ * comparison. Read separately, a commit landing between them pairs v1's snapshot
+ * with the draft that has already become v2, and the deck page tells a player
+ * with nothing pending that every card in their newest version is a pending
+ * change. Under one snapshot that pairing cannot happen, which is a stronger
+ * guarantee than re-reading the version id and retrying.
+ *
+ * A brew stops at the first query: with no version there is nothing to compare,
+ * so the two further reads are never issued.
+ */
+async function readSnapshot(deckId: string) {
+  return db.transaction(async (tx) => {
+    const version = await newestVersion(deckId, tx);
+    if (!version) return { version, before: [] as CardQty[], draft: [] as CardQty[] };
+    // Sequential, not `Promise.all`: a transaction is one connection, and two
+    // statements racing down it buy nothing but a queue.
+    const before = await versionCards(version.id, tx);
+    const draft = await tx.select({
+      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
+    }).from(deckCards).where(eq(deckCards.deckId, deckId));
+    return { version, before, draft };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+
 /** Name, type line and mana value per card — the columns every draft figure is
  *  built from, read over the whole draft because the mana value averages it. */
 function loadNameFacts(oracleIds: string[]) {
@@ -175,7 +205,7 @@ async function readDraft(
   userId: string,
   detailed: boolean,
 ): Promise<DraftRead> {
-  const version = await newestVersion(deckId);
+  const { version, before, draft } = await readSnapshot(deckId);
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [], basicsChanged: false,
@@ -188,16 +218,8 @@ async function readDraft(
   });
 
   // A brew has no version to differ from, so it has no draft state at all — not
-  // an empty one. Returning before the version's cards and the deck's own rows is
-  // what makes this the one query a never-committed deck's page load pays for.
+  // an empty one, and the snapshot above stopped at the one query that proved it.
   if (!version) return bare(empty);
-
-  const [before, draft] = await Promise.all([
-    versionCards(version.id),
-    db.select({
-      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-    }).from(deckCards).where(eq(deckCards.deckId, deckId)),
-  ]);
 
   const diff = draftDiff(draft, before);
   const changedIds = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
