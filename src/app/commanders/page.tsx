@@ -1,7 +1,7 @@
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
 import { cacheForUser } from "../../lib/cache/user-lists";
-import { loadCommanderRankings } from "../../lib/commanders/rankings";
+import { commanderRankingsKey, loadCommanderRankings } from "../../lib/commanders/rankings";
 import { permanentRedirect } from "next/navigation";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
@@ -70,7 +70,7 @@ export default async function CommandersPage({
   // Fetch recommendations and recent decks in parallel.
   // decks is used only for the firstRun flag (no confirmed deck yet).
   const [rankings, decks] = await Promise.all([
-    cacheForUser(userId, ["commander-rankings"], () => loadCommanderRankings(userId)),
+    cacheForUser(userId, commanderRankingsKey, () => loadCommanderRankings(userId)),
     listRecentDecks(userId, 1),
   ]);
 

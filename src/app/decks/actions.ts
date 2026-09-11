@@ -921,14 +921,12 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
     return { passId, landed, total: built + landed.length, userId };
   });
 
-  // After the commit. Inside the callback it drops the caches while the write is
-  // still uncommitted, and a render arriving in that window refills them from the
-  // rows as they were.
-  revalidateClaims(deckId, userId);
   return landedIds;
 }
 
 export async function commitTopOff(deckId: string, oracleIds: string[]): Promise<TopOffResult> {
+  let result: TopOffResult;
+  let committedBy: string;
   try {
     const r = await runTopOff(deckId, oracleIds);
     // The shopping figure the commit row promised: cards this act placed that
@@ -946,11 +944,22 @@ export async function commitTopOff(deckId: string, oracleIds: string[]): Promise
             .map((c) => c.oracleId),
         );
     const boughtDelta = r.landed.filter((oracleId) => !owned.has(oracleId)).length;
-    return { ok: true, passId: r.passId, added: r.landed.length, total: r.total, boughtDelta };
+    result = { ok: true, passId: r.passId, added: r.landed.length, total: r.total, boughtDelta };
+    // `runTopOff` resolves the reader; this is the same id it wrote under.
+    committedBy = r.userId;
   } catch (err) {
     console.error("commitTopOff failed", err);
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
   }
+
+  // After the commit, and OUTSIDE the failure boundary above. Inside the
+  // transaction it would drop the caches while the write was still uncommitted,
+  // and a render arriving in that window would refill them from the rows as they
+  // were. Inside the `catch`, an invalidation that threw would report a commit
+  // that landed as `topUpFailed` — the reader told nothing happened, and free to
+  // retry against rows that are already there.
+  revalidateClaims(deckId, committedBy);
+  return result;
 }
 
 /** The inverse of one top-off, at any age.
