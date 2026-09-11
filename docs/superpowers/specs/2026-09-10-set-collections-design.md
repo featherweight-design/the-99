@@ -45,9 +45,14 @@ These were settled during brainstorming. Do not reopen them without Hugh.
    "Why not a view mode" below.
 3. **One cell per collector number; any finish fills it.** A foil #42 completes #42. Foil
    ownership is a mark on the cell, not a second cell.
-4. **Holdings with no collector number resolve by `oracle_id` within the set, and the
-   cell says so.** Pasted lists and Name/Qty CSVs carry no number; ignoring them would show
-   cards you own as blank, which is the one defect that destroys trust in the figure.
+4. **Holdings with a set but no collector number resolve by `oracle_id` within that set,
+   and the cell says so.** A CSV lacking a collector-number column still names the set, and
+   ignoring those rows would show cards you own as blank — the one defect that destroys
+   trust in the figure. **A pasted list is different and cannot be rescued:**
+   `parsePasteList` writes `setCode: ""` as well as an empty collector number
+   (`src/lib/manabox/paste.ts:49`), so a pasted holding names no set and belongs to no set
+   page. That is a property of paste entry, not of this feature; a reader whose collection
+   is entirely pasted sees an empty index and the first-run copy explains why.
    **Amended 2026-09-11 (design R2):** this ruling originally carried no mark on the filled
    cell. Hugh overruled that during the design round — an unpinned fill is not an error to
    disclose but the one moment the app can usefully ask which printing you hold. The cell
@@ -59,8 +64,9 @@ These were settled during brainstorming. Do not reopen them without Hugh.
 6. **Missing cells render the real art, dimmed.** We have `image_uri_small` for every card
    whether owned or not, which the Pokémon app does not — seeing what you are missing
    beats reading a number.
-7. **Prices, a cost-to-complete total, and a cart link-out**, all reusing the deck-side
-   ManaPool work (#288, #330).
+7. **Prices, a cost-to-complete total, and a Mass Entry link-out**, all reusing the
+   deck-side ManaPool work (#288, #330). #330 ships no cart — its affordance is
+   `manapool.com/add-deck`, and that is what this page reuses.
 8. **Three filters: missing-only, rarity, colour.** The colour filter reuses the component
    built for `/collection`.
 
@@ -98,8 +104,23 @@ Scryfall's `booster` flag is the clean line. Verified against EOE:
 | 290 | Mm'menon, the Right Hand (showcase) | false |
 | 399 | Emissary Escort (promo) | false |
 
-Base run 1–276, extras 277–399 — exactly ruling 1's split. The field is on the same
-`default_cards` objects `transform-printings.ts` already parses.
+Base run 1–276, extras 277–399 — exactly ruling 1's split. The field rides on the same
+`default_cards` entries `transform-printings.ts` already parses, but is **not read today**:
+`PrintingRow` carries no `booster`, so the ingest has to be extended before the column can
+hold anything.
+
+**`booster` alone is not sufficient, and a set type proves it.** Cards in a Commander
+product are not booster-eligible: every printing in `c21` and `otc` carries
+`booster: false`, checked live. Taken literally the rule would give every Commander set a
+`base_set_size` of 0 and file the entire product under extras — on a page whose search scope
+deliberately includes `set_type = commander`. So the boundary is:
+
+> The base run is a set's `booster = true` printings. **When a set has none, the base run is
+> its non-variant printings instead** and its extras are the variant ones.
+
+The fallback reuses `is_variant`, which is a poor boundary for a booster set (it flags
+full-art basics inside the base run) and a serviceable one for a product that never had a
+booster to be in.
 
 ### `printings.rarity` — because rarity is per printing, not per card
 
@@ -116,14 +137,23 @@ waste. Filled by a post-load pass during the catalog refresh, the same pattern
 ## The completion model
 
 - A **cell** is a printing, identified by collector number within the set.
-- The **denominator** is `base_set_size` — the count of `booster = true` printings.
-  EOE: 276.
+- The **denominator** is `base_set_size` — the count of base-run printings under the rule
+  above. EOE: 276.
+- **`(set_code, collector_number)` is unique**, so counting printings and counting distinct
+  collector numbers are the same count. Verified against the catalog: zero groups of more
+  than one across every printing in the table. Recorded because "a cell is a collector
+  number but the denominator counts rows" reads like a units mismatch and is not one.
 - A cell is **owned** when the reader holds a matching printing in any finish.
 - **Pinned** holdings match on collector number. **Unpinned** holdings (ruling 4) match on
   `oracle_id` within the set.
 - Base runs contain duplicate oracle ids — EOE has Plains at both #262 and #268. An
   unpinned holding cannot tell them apart, so it fills the **lowest-numbered unfilled cell**
-  for that oracle and stops. One holding, one cell; quantity is ignored.
+  for that oracle and stops.
+- **Unpinned holdings collapse by `oracle_id` before they are placed.** `finish` is in
+  `collection_items`' primary key, so one unpinned card can arrive as a foil row and a
+  nonfoil row; letting each claim a cell would fill #262 *and* #268 off a holding that says
+  nothing about which printing is owned. Collapsing under-claims when someone really does
+  own both, and over-claiming is the worse error on a page that exists to say what you have.
 - **Extras** (`booster = false`) are counted and displayed separately and never folded into
   the headline figure.
 
@@ -131,8 +161,13 @@ waste. Filled by a post-load pass during the catalog refresh, the same pattern
 
 **Index (`/collection/sets`)** — two queries:
 
-1. Sets held: `distinct set_code` from the reader's `collection_items`, joined to `sets`,
-   owned-cell counts grouped by set, ordered by `released_at` descending.
+1. Sets held: the reader's `collection_items` joined to `printings` and `sets`. It is not
+   a count over `collection_items` alone — foil and nonfoil rows collapse to one cell, and
+   number-less rows need the same `oracle_id` resolution the grid uses, so the index runs
+   the same placement rule rather than a second approximation of it. Ordered by
+   `released_at` **descending with nulls last**, then by `code`: the column is nullable
+   (`schema.ts:19`) and Postgres sorts nulls first under `desc`, which would lead a
+   newest-first list with undated promo sets. `set-filter.ts:93` already orders this way.
 2. Search: `sets` by name or code, restricted to collectible `set_type`s (expansion, core,
    commander, draft innovation, masters) and `digital = false`.
 
@@ -145,11 +180,18 @@ well inside the limits established by the payload-shrink work.
 cost figure are pure functions over those rows. That keeps the model unit-testable rather
 than needing a live-Postgres probe the way the claim model does.
 
-**Caching:** the page's data changes only on collection upload, so it can sit behind the
-same per-reader tag as the other list routes. Never Next's `staleTimes`.
+**Caching:** the page is **not** a function of the reader's collection alone. It also reads
+catalog columns (`booster`, `rarity`, `base_set_size`) and ManaPool prices, and both of
+those are written by workflows that never call `revalidateUserLists` — the weekly catalog
+refresh and the weekly price refresh. The per-reader tag is still the right cache for the
+holdings half, and the freshness bound on the other half is stated rather than assumed: a
+set re-indexed or re-priced between visits shows its previous figures until the tag's TTL
+expires. Both inputs move weekly, so the bound is well inside the cadence. Never Next's
+`staleTimes`.
 
-**Card detail:** tapping a cell opens the existing modal
-(`src/lib/collection/card-detail.ts`) rather than a new surface.
+**Card detail:** tapping a cell opens the existing modal — `card-modal.tsx` wired through
+`CardDetailProvider` in `src/components/cards/` — rather than a new surface.
+`src/lib/collection/card-detail.ts` is that modal's server-side loader, not its trigger.
 
 ## Prices
 
@@ -161,13 +203,19 @@ same per-reader tag as the other list routes. Never Next's `staleTimes`.
 - A row whose `as_of` trails the newest `as_of` in the table is a **last known** price, not
   a live one.
 
-**Cost to complete** sums `price_cents` over missing base-run cells that have a price row,
-and states its own gap — "$X over 214 of 276 missing cards". The figure never silently
-treats an unpriced card as zero.
+**Cost to complete** reuses the shipped price model rather than restating it:
+`priceState` and `priceOf` in `src/lib/decks/price.ts:80,98` already classify a fact as
+`priced`, `foilOnly`, `soldOut` or `absent`. Only `priced` and `foilOnly` are summed —
+a `soldOut` row is a last-known price for something nobody is selling, and "has a price row"
+would have quoted it. The figure states its own gap: "$X over 193 of the 214 missing", with
+the remainder named. It never silently treats an unpriced card as zero, and never drops a
+foil-only card it could have costed.
 
-**Cart link-out** reuses the #330 checkout builder. The one-selector rule from that work
-applies: exactly one selection mechanism on the page, not a per-cell checkbox *and* a
-"send everything missing" button.
+**The link-out is Mass Entry, not a cart.** #330 adds no cart, order or checkout: its
+whole-list affordance is a `manapool.com/add-deck` link built in `src/lib/manapool/links.ts`
+and fed by `src/lib/decks/shopping.ts`. This page reuses that builder over the missing
+cells. The one-selector rule from that work applies: exactly one selection mechanism on the
+page, not a per-cell checkbox *and* a "send everything missing" button.
 
 ## Surfaces and states
 
@@ -286,6 +334,14 @@ contaminate every figure.
 
 So all three columns land **nullable**. A set whose `base_set_size` is null is not yet
 indexed and the index says so rather than showing 0%.
+
+**Nullability only protects the first migration.** `seedPrintings` writes in independent
+batches and the post-load pass runs after a complete stream, so a refresh that dies halfway
+leaves a partially rewritten mix of `booster` values beside the *previous* run's non-null
+`base_set_size` — a denominator that no longer describes its numerator, presented as a
+percentage. The pass therefore **nulls every denominator before the ingest starts and
+repopulates only after the stream completes**. A failed refresh leaves sets reading "not
+indexed yet", which is true, instead of a wrong percentage, which is worse.
 
 1. Migration adds `printings.booster`, `printings.rarity`, `sets.base_set_size` — all
    nullable.

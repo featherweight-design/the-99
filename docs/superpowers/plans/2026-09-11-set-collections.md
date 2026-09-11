@@ -25,11 +25,16 @@
 - **Mobile and desktop parity ship in the same PR**, and every UI PR passes the design-review skill before `gh pr create`.
 - **The dim is on the art, never on the type.** Missing art is `opacity: .28; filter: saturate(.55)`; the name stays `--fg-body`. A missing cell's edge is `1px dashed var(--fg-locked)` — **never `--border-dashed`**, which measures 1.46:1 (Oil Haze) to 1.97:1 (Canopy) against `--surface-sunken` and fails the 3:1 non-text floor in all six themes. `--fg-locked` clears at 3.16 to 3.44:1.
 - **Owned and missing cells have identical geometry.** The grid must not reflow when a filter flips.
-- **No control inside a cell at any width.** Tapping a cell opens the existing card-detail modal.
+- **No control inside a cell at any width.** Tapping a cell opens the existing card modal — `src/components/cards/card-modal.tsx`, wired through `CardDetailProvider`. `src/lib/collection/card-detail.ts` is that modal's loader, not its trigger.
 - **Every control is a URL parameter:** `c` (comma-joined colours), `r` (rarity), `m=1` (missing only) on the grid; `q` on the index.
 - **One count function.** The result line, the `Send N to ManaPool` label and the cost strip's denominator are three readings of one filtered-cell computation.
 - **Findings from the readiness audit that change the build:**
   - Scryfall set icons do **not** inherit `currentColor` — they are bare `<path>` with no `fill`. Recolour with `mask-image` plus a token background.
+  - **`booster` alone is not the boundary.** Every printing in a Commander product carries `booster: false` (checked live on `c21` and `otc`), so the literal rule would give every Commander set a `base_set_size` of 0. The base run is a set's `booster = true` printings, and **when a set has none, its non-variant printings instead**.
+  - **A pasted list carries no set code** (`paste.ts:49` writes `setCode: ""`), so pasted holdings reach no set page at all. Ruling 4 rescues set-bearing rows that lack a collector number, and nothing more.
+  - **The link-out is Mass Entry, not a cart.** #330 ships `manapool.com/add-deck` via `src/lib/manapool/links.ts` and `src/lib/decks/shopping.ts`.
+  - **The card modal is `src/components/cards/card-modal.tsx`** wired through `CardDetailProvider`. `src/lib/collection/card-detail.ts` is its loader, not its trigger.
+  - **Reuse the shipped price model** — `priceState` and `priceOf` in `src/lib/decks/price.ts:80,98`. Do not restate the four price cases.
   - The colour filter is **not** a mountable component today; Task 9 extracts it. It must come out parameterised, never taking an `isSetPage` flag.
   - Decision 16's delta strip has no push mechanism; Task 16 fetches a count on window focus.
 
@@ -42,7 +47,7 @@
 | File | Responsibility |
 |---|---|
 | `src/lib/sets/completion.ts` | Pure cell placement and counting. No DB imports. |
-| `src/lib/sets/cost.ts` | Pure cost-to-complete arithmetic and price cases. |
+| `src/lib/sets/cost.ts` | Cost-to-complete arithmetic over the shipped price model. |
 | `src/lib/sets/filters.ts` | Pure filter application and URL parameter serialisation. |
 | `src/lib/sets/read.ts` | The two queries. Fetches rows; computes nothing. |
 | `src/lib/copy/sets.ts` | `setsIndexCopy`, `setPageCopy`, `setFilterCopy`. |
@@ -53,7 +58,7 @@
 | `src/components/sets/set-grid-view.tsx` | Grid, sticky head, two sections. |
 | `src/components/sets/set-cell.tsx` | One cell: art, edge, caption, price tag, marks. |
 | `src/components/sets/set-filters.tsx` | The three filters, mounting the extracted colour row. |
-| `src/components/sets/cost-strip.tsx` | Cost figure, its stated gap, the cart button. |
+| `src/components/sets/cost-strip.tsx` | Cost figure, its stated gap, the Mass Entry button. |
 | `src/components/sets/set-icon.tsx` | `icon_svg_uri` as a masked, token-coloured disc. |
 | `src/components/sets/delta-strip.tsx` | The upload-while-open strip. |
 | `src/components/collection/color-filter-row.tsx` | Extracted from `filter-bar.tsx`; mounted by both surfaces. |
@@ -65,7 +70,7 @@
 |---|---|
 | `src/db/schema.ts` | `printings.booster`, `printings.rarity`, `sets.baseSetSize` |
 | `src/lib/scryfall/transform-printings.ts` | Populate the two new printing fields |
-| `src/lib/scryfall/seed-printings.ts` | Upsert them; add the base-set-size pass |
+| `src/lib/scryfall/seed-printings.ts` | Upsert them; clear and repopulate `base_set_size` |
 | `src/app/collection/actions.ts` | Extend `revalidatePath` to the set page |
 | `src/components/collection/filter-bar.tsx` | Mount the extracted colour row |
 | `src/components/collection/rows-view.tsx` | §1b cost track (severable) |
@@ -116,6 +121,14 @@ describe("booster and rarity", () => {
 
   it("defaults a missing booster key to false rather than throwing", () => {
     const result = classifyPrinting(raw({}));
+    expect((result as { row: PrintingRow }).row.booster).toBe(false);
+  });
+
+  it("carries booster false for a Commander product, which the set-level fallback handles", () => {
+    // c21 and otc carry booster:false on every card. The transform records the fact
+    // faithfully; setBaseSetSizes is where the fallback lives, because it is a property
+    // of the set and not of any one printing.
+    const result = classifyPrinting(raw({ set: "c21", booster: false }));
     expect((result as { row: PrintingRow }).row.booster).toBe(false);
   });
 
@@ -251,9 +264,26 @@ describe("baseSetSizeOf", () => {
 
   it("returns null when no printing has been classified yet", () => {
     expect(baseSetSizeOf([
-      { collectorNumber: "1", booster: null },
-      { collectorNumber: "2", booster: null },
+      { collectorNumber: "1", booster: null, isVariant: false },
+      { collectorNumber: "2", booster: null, isVariant: false },
     ])).toBeNull();
+  });
+
+  it("falls back to non-variant printings for a set with no booster cards at all", () => {
+    // Every printing in a Commander product is booster:false. Without this the whole
+    // product lands in extras with a denominator of zero.
+    expect(baseSetSizeOf([
+      { collectorNumber: "1", booster: false, isVariant: false },
+      { collectorNumber: "2", booster: false, isVariant: false },
+      { collectorNumber: "3", booster: false, isVariant: true },
+    ])).toBe(2);
+  });
+
+  it("does not apply the fallback to a set that has booster cards", () => {
+    expect(baseSetSizeOf([
+      { collectorNumber: "1", booster: true, isVariant: false },
+      { collectorNumber: "277", booster: false, isVariant: false },
+    ])).toBe(1);
   });
 
   it("counts a partially classified set from what it knows rather than returning null", () => {
@@ -276,7 +306,9 @@ Create `src/lib/sets/completion.ts`:
 
 ```ts
 /** The minimum a printing must carry for the base-run count. */
-export type BoosterFlagged = { collectorNumber: string; booster: boolean | null };
+export type BoosterFlagged = {
+  collectorNumber: string; booster: boolean | null; isVariant: boolean;
+};
 
 /**
  * Reference implementation of the base-set-size count. The ingest applies this in SQL
@@ -293,7 +325,13 @@ export type BoosterFlagged = { collectorNumber: string; booster: boolean | null 
  */
 export function baseSetSizeOf(rows: BoosterFlagged[]): number | null {
   if (rows.every((r) => r.booster === null)) return null;
-  return rows.filter((r) => r.booster === true).length;
+  const inBooster = rows.filter((r) => r.booster === true);
+  // A Commander product has no booster-eligible printing at all, so the literal rule
+  // would file the whole set under extras with a denominator of zero. `is_variant` is a
+  // poor boundary for a booster set and a serviceable one for a product that never had
+  // a booster to be in.
+  if (inBooster.length > 0) return inBooster.length;
+  return rows.filter((r) => !r.isVariant).length;
 }
 ```
 
@@ -312,29 +350,39 @@ In `seed-printings.ts`, beside `setRepresentativePrintings`:
  * pass, so a set that loses printings does not keep a stale denominator. Mirrors
  * baseSetSizeOf in src/lib/sets/completion.ts, which is where it is unit-tested.
  */
+export async function clearBaseSetSizes(): Promise<void> {
+  await db.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
+}
+
 export async function setBaseSetSizes(): Promise<number> {
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`update sets set base_set_size = null where base_set_size is not null`);
-    const updated = await tx.execute(sql`
-      update sets s
-         set base_set_size = c.n
-        from (
-          select set_code, count(*)::int as n
-            from printings
-           where booster is true
-           group by set_code
-        ) c
-       where s.code = c.set_code
-      returning s.code
-    `);
-    return updated.rows.length;
-  });
+  const updated = await db.execute(sql`
+    with counts as (
+      select set_code,
+             count(*) filter (where booster is true)::int                       as in_booster,
+             count(*) filter (where booster is not null and not is_variant)::int as non_variant
+        from printings
+       group by set_code
+    )
+    update sets s
+       set base_set_size = case when c.in_booster > 0 then c.in_booster else c.non_variant end
+      from counts c
+     where s.code = c.set_code
+    returning s.code
+  `);
+  return updated.rows.length;
 }
 ```
 
-- [ ] **Step 7: Call it from the seed entry point**
+- [ ] **Step 7: Call both halves from the seed entry point, in the right order**
 
-In `src/lib/scryfall/seed.ts`, immediately after the `setRepresentativePrintings()` call, add `await setBaseSetSizes();` and include its count in whatever the script logs.
+Nullability protects the first migration and nothing after it. `seedPrintings` writes in
+independent batches, so a refresh that dies halfway leaves a partly rewritten mix of
+`booster` values beside the previous run's non-null denominator — a figure that no longer
+describes its numerator, rendered as a percentage.
+
+In `src/lib/scryfall/seed.ts`: call `await clearBaseSetSizes()` **before** `seedPrintings()`,
+and `await setBaseSetSizes()` after `setRepresentativePrintings()`. A failed refresh then
+leaves sets reading "not indexed yet", which is true, rather than a wrong percentage.
 
 - [ ] **Step 8: Generate the migration and run the gate**
 
@@ -413,13 +461,24 @@ describe("placeCells", () => {
     expect(cells.map((c) => c.owned)).toEqual([true, false]);
   });
 
-  it("ignores quantity — two unpinned holdings of one oracle still fill one cell each", () => {
+  it("collapses unpinned rows of one oracle so two finishes fill one cell, not two", () => {
+    // `finish` is in collection_items' primary key, so an unpinned card arrives as a foil
+    // row and a nonfoil row. Letting each claim a cell would fill #262 AND #268 off a
+    // holding that says nothing about which printing is owned. Under-claiming is the
+    // better error on a page that exists to say what you have.
     const printings = [p("262", { oracleId: "o-p" }), p("268", { oracleId: "o-p" })];
     const cells = placeCells(printings, [
       { oracleId: "o-p", collectorNumber: "", finish: "nonfoil" },
-      { oracleId: "o-p", collectorNumber: "", finish: "nonfoil" },
+      { oracleId: "o-p", collectorNumber: "", finish: "foil" },
     ]);
-    expect(cells.map((c) => c.owned)).toEqual([true, true]);
+    expect(cells.map((c) => c.owned)).toEqual([true, false]);
+    expect(cells[0].foilOnly).toBe(false);
+  });
+
+  it("ignores a holding whose set the paste never recorded", () => {
+    // parsePasteList writes setCode "" as well as an empty collector number, so a pasted
+    // holding belongs to no set and reaches this function for no set.
+    expect(placeCells([p("1")], []).every((c) => !c.owned)).toBe(true);
   });
 
   it("lets a pinned holding win its own cell before an unpinned one takes it", () => {
@@ -495,7 +554,11 @@ export function placeCells(printings: SetPrinting[], holdings: Holding[]): Cell[
   };
 
   const pinned = holdings.filter((h) => h.collectorNumber !== "");
-  const unpinned = holdings.filter((h) => h.collectorNumber === "");
+  // Collapsed by oracle id: `finish` is in the primary key, so one unpinned card can
+  // arrive as two rows, and each claiming a cell would over-claim ownership.
+  const unpinned = [...new Map(
+    holdings.filter((h) => h.collectorNumber === "").map((h) => [h.oracleId, h]),
+  ).values()];
 
   for (const h of pinned) {
     const i = cells.findIndex(
@@ -719,20 +782,18 @@ git commit -m "feat(sets): the three filters, and their URL parameters"
 - Create: `src/lib/sets/cost.ts`, `src/lib/sets/cost.test.ts`
 
 **Interfaces:**
-- Consumes: `Cell` from Task 3.
+- Consumes: `Cell` from Task 3, and **`priceState` / `priceOf` from `src/lib/decks/price.ts:80,98`** — the shipped model, which already classifies a fact as `priced`, `foilOnly`, `soldOut` or `absent`. Do not restate those four cases here; a second classifier is a second source of truth about what a null price means.
 - Produces:
 
 ```ts
 export type CellPrice = {
   priceCents: number | null; priceCentsFoil: number | null; asOf: string | null;
 };
-export type PriceCase = "priced" | "foil-only" | "unstocked";
 export type CostToComplete = {
   totalCents: number; pricedCount: number; missingCount: number; unstockedCount: number;
   /** True when any contributing row's as_of trails `newestAsOf`. Page fact, not cell fact. */
   stale: boolean; asOf: string | null;
 };
-export function priceCaseOf(p: CellPrice | undefined): PriceCase;
 export function costToComplete(
   missing: Array<{ price?: CellPrice }>, newestAsOf: string | null,
 ): CostToComplete;
@@ -741,25 +802,17 @@ export function costToComplete(
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
-describe("priceCaseOf", () => {
-  it("reads an absent row as unstocked, never as free", () => {
-    expect(priceCaseOf(undefined)).toBe("unstocked");
-  });
-  it("reads a null nonfoil price with a foil price as foil-only", () => {
-    expect(priceCaseOf({ priceCents: null, priceCentsFoil: 420, asOf: "2026-09-08" }))
-      .toBe("foil-only");
-  });
-  it("reads a null on both sides as unstocked", () => {
-    expect(priceCaseOf({ priceCents: null, priceCentsFoil: null, asOf: "2026-09-08" }))
-      .toBe("unstocked");
-  });
-  it("reads a set price as priced", () => {
-    expect(priceCaseOf({ priceCents: 120, priceCentsFoil: null, asOf: "2026-09-08" }))
-      .toBe("priced");
-  });
-});
-
 describe("costToComplete", () => {
+  it("sums only what priceState calls live, never a soldOut last-known price", () => {
+    // A row whose as_of trails the table's newest is soldOut: a last known price for
+    // something nobody is selling. "Has a price row" would have quoted it.
+    const result = costToComplete(
+      [{ price: { priceCents: 100, priceCentsFoil: null, asOf: "2026-09-01" } }], "2026-09-08");
+    expect(result.totalCents).toBe(0);
+    expect(result.pricedCount).toBe(0);
+    expect(result.unstockedCount).toBe(1);
+  });
+
   it("sums only priced cards and states the gap", () => {
     const result = costToComplete([
       { price: { priceCents: 100, priceCentsFoil: null, asOf: "2026-09-08" } },
@@ -787,13 +840,6 @@ describe("costToComplete", () => {
     expect(result.unstockedCount).toBe(2);
   });
 
-  it("marks the page stale when a contributing row trails the newest as_of", () => {
-    const result = costToComplete(
-      [{ price: { priceCents: 100, priceCentsFoil: null, asOf: "2026-09-01" } }], "2026-09-08");
-    expect(result.stale).toBe(true);
-    expect(result.asOf).toBe("2026-09-01");
-  });
-
   it("is not stale when every row is on the newest as_of", () => {
     const result = costToComplete(
       [{ price: { priceCents: 100, priceCentsFoil: null, asOf: "2026-09-08" } }], "2026-09-08");
@@ -808,7 +854,9 @@ Run: `pnpm test src/lib/sets/cost.test.ts`
 
 - [ ] **Step 3: Implement**
 
-A foil-only card contributes `priceCentsFoil`. Staleness is the oldest contributing `asOf` compared against `newestAsOf`, reported once for the page.
+Classify each cell with `priceState` from `src/lib/decks/price.ts` and take its value from
+`priceOf`. Sum `priced` and `foilOnly`; everything else — `soldOut` and `absent` — lands in
+the stated gap. Staleness is reported once for the page, never per cell.
 
 - [ ] **Step 4: Run and confirm they pass**
 
@@ -852,7 +900,19 @@ export function loadSetGrid(userId: string, code: string): Promise<{
 
 - [ ] **Step 1: Write the queries**
 
-Collectible set types for the search: `expansion`, `core`, `commander`, `draft_innovation`, `masters`. Exclude `digital = true`. `loadOwnedSets` starts from the reader's `collection_items` so a set they hold nothing from never appears.
+Collectible set types for the search: `expansion`, `core`, `commander`, `draft_innovation`,
+`masters`. Exclude `digital = true`. `loadOwnedSets` starts from the reader's
+`collection_items` so a set they hold nothing from never appears.
+
+**The index runs the same placement rule the grid does, not an approximation of it.** An
+owned-cell count cannot come from `collection_items` alone: foil and nonfoil rows collapse
+to one cell, and number-less rows need the `oracle_id` resolution from Task 3. Load the
+catalog and holding rows per held set and run `placeCells` plus `sectionsOf` over them.
+There is exactly one placement rule in this feature.
+
+**Order by `released_at desc nulls last, code asc`.** The column is nullable
+(`schema.ts:19`) and Postgres sorts nulls *first* under `desc`, which would put undated
+promo sets at the head of a newest-first list. `set-filter.ts:93` already orders this way.
 
 - [ ] **Step 2: Typecheck**
 
@@ -1100,7 +1160,7 @@ git commit -m "feat(sets): the grid, its extras section and its sticky head"
 - Modify: `src/components/sets/set-grid-view.tsx`
 
 **Interfaces:**
-- Consumes: `costToComplete` (Task 6), the #330 checkout builder.
+- Consumes: `costToComplete` (Task 6), and the #330 **Mass Entry** builder — `MANAPOOL_ADD_DECK_URL` in `src/lib/manapool/links.ts` fed by `src/lib/decks/shopping.ts`. #330 ships no cart, order or checkout; the affordance is a `manapool.com/add-deck` link over a list.
 
 **The filters are the selector.** There is no per-cell control; `Send N to ManaPool` follows the filters, so filtering to red rares makes it `Send 9` with the total recomputed. The result line, the button label and the strip's denominator are three readings of **one** count.
 

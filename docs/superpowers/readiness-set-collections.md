@@ -49,6 +49,38 @@ implementer reads them.
    but the chosen approach has to hold the sticky head, the `extras ↓` jump and the delta
    strip in one scroll container.
 
+## Findings from the first review round
+
+Copilot's round on the spec produced ten valid findings beyond the four above, all fixed in
+the same push. Four are worth recording because each would have shipped a wrong number:
+
+- **`booster` alone files every Commander product under extras.** Cards in a Commander deck
+  are not booster-eligible — `c21` and `otc` carry `booster: false` throughout, checked live
+  — so the literal rule gives them a `base_set_size` of 0, on a page whose search scope
+  deliberately includes `set_type = commander`. The boundary now falls back to non-variant
+  printings for a set with no booster cards at all.
+- **A pasted list carries no set code.** `parsePasteList` writes `setCode: ""` as well as an
+  empty collector number (`paste.ts:49`), so a pasted holding belongs to no set page. The
+  spec claimed ruling 4 rescued pasted lists; it rescues set-bearing rows that lack a
+  collector number, and nothing more.
+- **#330 ships no cart.** Its affordance is a `manapool.com/add-deck` Mass Entry link
+  (`src/lib/manapool/links.ts`). "Cart link-out" named a thing that does not exist.
+- **A failed refresh can outlive the nullability guard.** `seedPrintings` writes in
+  independent batches, so a partial run leaves a rewritten mix of `booster` values beside the
+  previous run's denominator. The denominator is now cleared before the ingest and
+  repopulated only after it completes.
+
+Also fixed: reuse `priceState`/`priceOf` rather than restating the four price cases, so a
+`soldOut` last-known price is never quoted as live; collapse unpinned holdings by
+`oracle_id` before placement, since `finish` is in the primary key; order the index
+`nulls last`; and point the modal reference at `card-modal.tsx` rather than at its loader.
+
+**One finding was pushed back.** The review read the denominator as a units mismatch — a
+cell is a collector number, but `base_set_size` counts printing rows. `(set_code,
+collector_number)` is unique across the catalog: zero groups of more than one, checked. The
+two counts are the same count, and the spec now records the invariant so it is not raised
+again.
+
 ## Errata
 
 - `READINESS.md` claims "seven of the nine grid states" are drawn. Ten are. The line is
