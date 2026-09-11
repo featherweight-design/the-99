@@ -6,7 +6,7 @@
 // - Escape closes; focus returns to the previously-focused element on close
 
 import Link from "next/link";
-import React, { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
 import {
   cssUrl,
@@ -245,6 +245,7 @@ export function CardModal({
   onClose,
   onPrev,
   onNext,
+  onArtChange,
 }: {
   card: BrowseCard;
   position: number;
@@ -252,6 +253,15 @@ export function CardModal({
   onClose: () => void;
   onPrev: (() => void) | null;
   onNext: (() => void) | null;
+  /**
+   * Called when the art pick is written, so a caller holding a copy of this card can
+   * drop it. The write changes what the card says about itself, and a stale copy would
+   * show the reader the printing they just replaced. Called twice per write, on purpose:
+   * once as the write starts, and once when it lands. A card re-read during the overlap
+   * answers with the preference the write has not replaced yet, so dropping the entry
+   * only up front would let that pre-write answer be filed as the current one.
+   */
+  onArtChange?: () => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -263,12 +273,55 @@ export function CardModal({
   // No reset on card change: the provider keys this component on oracleId, so
   // Prev/Next remounts and a new card starts on its front face by construction.
   const [flipped, setFlipped] = useState(false);
-  const [, startWrite] = useTransition();
+  const [writing, startWrite] = useTransition();
 
   // The pick the user just made, before the server action's revalidate lands. Seeding it from
   // the card is only correct because the caller keys this component on oracleId — paging
   // Prev/Next remounts rather than reusing the state of the card you just left.
   const [pick, setPick] = useState<PreferredPrinting | null>(card.preferredPrinting);
+
+  // A caller can hand this component a re-read of the same card, so the seed above is not
+  // the last word: without this, a preference that moved on the server would be ignored for
+  // as long as the modal stayed open, and the art, caption and selected tile would all keep
+  // showing the printing it replaced.
+  //
+  // Every arriving read reconciles, not only one that reports a different printing. A write
+  // can be refused — `setCardArtPreference` returns without writing when the chosen printing
+  // is no longer one the reader owns — and a refusal reads back exactly the preference that
+  // was already there. Reconciling on the value alone would take that for "nothing changed"
+  // and leave the refused pick on screen as though it had taken.
+  //
+  // A write of the reader's own is the exception: its optimistic pick is the thing this state
+  // exists to hold, and it is held until the write settles either way.
+  const [seeded, setSeeded] = useState(card);
+  if (!writing && seeded !== card) {
+    setSeeded(card);
+    setPick(card.preferredPrinting);
+  }
+
+  // The read the write's own eviction starts can answer before the write does, and the card
+  // it brings back predates the write. Holding it while the write runs is not enough: the
+  // write's second eviction starts the read that supersedes it, and nothing waits for that
+  // read, so the transition ends first and the stale card reconciles a moment later — the
+  // reader watches their pick revert to the printing they replaced. Marking such a card as
+  // seeded on the way out of the write retires it without reconciling, so the pick stands
+  // until the read taken after the write answers.
+  const arrived = useRef(card);
+
+  // What the server is known to hold, and the only safe thing to put back when a write does
+  // not take. The card on screen is not that: a write's own re-read can fail, leaving the
+  // reader looking at a card older than a pick the server accepted, and rolling a later
+  // refusal back to it would revert past a choice that landed.
+  const serverPick = useRef<PreferredPrinting | null>(card.preferredPrinting);
+  const writes = useRef(0);
+  const settled = useRef(0);
+
+  useEffect(() => {
+    arrived.current = card;
+    // A read taken while a write is outstanding predates it, so its preference is not what
+    // the server holds — only the write can say that, and it does so when it settles.
+    if (writes.current === settled.current) serverPick.current = card.preferredPrinting;
+  }, [card]);
 
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
@@ -319,17 +372,49 @@ export function CardModal({
     setAnnouncement(next ? pickerCopy.announceOpen(ownedPrintings.length) : "");
   }
 
+  // A write the server refused and a write that never reached it leave the same thing on
+  // screen: a printing the reader chose and the server does not hold.
+  //
+  // Only the newest write may roll anything back. Nothing stops the reader picking again while
+  // a write is still running, so an older write can settle with a newer pick already painted,
+  // and rolling back blindly would erase the choice the reader made last.
+  function settleWrite(generation: number, wrote: boolean, written: PreferredPrinting | null) {
+    settled.current++;
+    setSeeded(arrived.current);
+    if (wrote) serverPick.current = written;
+    else if (generation === writes.current) setPick(serverPick.current);
+    onArtChange?.();
+  }
+
   function onPick(p: { setCode: string; collectorNumber: string }) {
-    setPick({ setCode: p.setCode, collectorNumber: p.collectorNumber });
-    startWrite(() => {
-      void setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+    const written = { setCode: p.setCode, collectorNumber: p.collectorNumber };
+    setPick(written);
+    onArtChange?.();
+    const generation = ++writes.current;
+    startWrite(async () => {
+      let wrote = false;
+      try {
+        wrote = await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+      } catch {
+        wrote = false;
+      }
+      settleWrite(generation, wrote, written);
     });
   }
 
   function onClearPick() {
     setPick(null);
-    startWrite(() => {
-      void clearCardArtPreference(card.oracleId);
+    onArtChange?.();
+    const generation = ++writes.current;
+    startWrite(async () => {
+      let wrote = false;
+      try {
+        await clearCardArtPreference(card.oracleId);
+        wrote = true;
+      } catch {
+        wrote = false;
+      }
+      settleWrite(generation, wrote, null);
     });
   }
 

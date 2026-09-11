@@ -7,7 +7,7 @@
 // cards' printings with the page to open one of them is the alternative.
 
 import {
-  createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -42,11 +42,25 @@ type CardDetailContextValue = {
    * happened to be on screen at the moment it was opened.
    */
   setSiblings: (list: string[]) => void;
+  /**
+   * Drop `oracleId` from the cache, so the next open has nothing to paint before its
+   * fetch answers. A surface that writes something the card carries — the art pick is
+   * the one that exists — calls this, or the reader reopens the card and is shown the
+   * change they just made being undone before the re-read corrects it.
+   */
+  evict: (oracleId: string) => void;
   /** Close the modal, and abandon any fetch still in flight for it. */
   close: () => void;
 };
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
+
+/**
+ * How many times a read that raced a write is retaken before it is called a failure.
+ * The writes are the reader's own clicks on the art picker, so they stop; the cap only
+ * exists so a pathological stream of them cannot keep one click reading forever.
+ */
+const READ_ATTEMPTS = 3;
 
 export function useCardDetail(): CardDetailContextValue {
   const ctx = useContext(CardDetailContext);
@@ -126,27 +140,137 @@ export function CardDetailProvider({
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
   // actually asked for second.
   const latest = useRef(0);
+  // Cards already fetched this visit, so reopening one paints with no wait. A ref
+  // rather than state because it is read in the click handler and never during render.
+  //
+  // A cached card is shown and then checked, never shown and trusted: a card carries
+  // its availability, and the deck builder keeps this provider mounted while adding
+  // and removing cards changes exactly that. Those mutations revalidate on the server
+  // and send no signal a client cache could listen for, so the only honest way to hold
+  // a card across them is to re-ask and correct what is already on screen.
+  const cache = useRef(new Map<string, BrowseCard>());
+  // How many times each card has been evicted. A read that started before an eviction
+  // answers with what the write it raced has not replaced yet, so the count taken when
+  // the read starts is compared against the count when it lands: a read from the wrong
+  // side of a write is dropped rather than filed as the current answer.
+  const evictions = useRef(new Map<string, number>());
+  // The card the reader has asked for, for `evict` to compare against without being rebuilt
+  // every time that changes — it is handed to every trigger through the context. Written
+  // through `load` and `show` rather than read off `card`, both because a ref must not be
+  // written during render and because `card` lags: it is the card on screen, and a reader
+  // who has paged on to an uncached card is waiting on one that is not there yet. A write
+  // settling on the card they left would otherwise re-read it and abandon the read they are
+  // actually waiting for.
+  const openRef = useRef<string | null>(null);
+  // The card a read is in flight for, or null when none is. A write landing on a card that
+  // is already being read needs no read of its own: the read in flight sees the eviction
+  // and takes itself again. Starting a second one would abandon the first and reset its
+  // attempt count, so a steady stream of writes could keep one click reading forever —
+  // exactly what the cap above exists to prevent.
+  const inFlight = useRef<string | null>(null);
+  // The card actually on screen, which is not always the one that was asked for: a read the
+  // reader is waiting on leaves the card they came from painted until it answers. Every
+  // decision about whether there is something to fall back to reads this rather than the
+  // cache, because an eviction's own re-read has deleted its entry and is still looking at
+  // the card it is re-reading.
+  const shownRef = useRef<string | null>(null);
+  // A card a write landed on while a read for a different one was in flight. The modal the
+  // reader wrote in is the one still painted behind that read, and re-reading it there would
+  // abandon the read they are waiting for — so the re-read is owed rather than taken, and
+  // paid once the read in flight is done and that card turns out to still be the one shown.
+  const owed = useRef<string | null>(null);
+  const show = useCallback((next: BrowseCard | null) => {
+    openRef.current = next?.oracleId ?? null;
+    shownRef.current = openRef.current;
+    setCard(next);
+  }, []);
 
+  // `load` pays the debt above by calling itself, which it cannot do by name without giving
+  // up its own memoization — every surface holds `open` through the context, so rebuilding
+  // it on each render would re-render all of them.
+  const loadRef = useRef<(oracleId: string, list?: string[]) => Promise<void>>(async () => {});
   const load = useCallback(
     async (oracleId: string, list?: string[]) => {
       const request = ++latest.current;
-      setPendingOracleId(oracleId);
-      setFailed(false);
+      openRef.current = oracleId;
+      inFlight.current = oracleId;
       if (list !== undefined) setSiblings(list);
+      // A hit lands in the same pass as the click, so no pending state is ever set and
+      // the trigger never flashes a busy affordance for a wait that does not happen.
+      const hit = cache.current.get(oracleId);
+      // Whether this read has anything on screen behind it. A hit paints one; an eviction's
+      // re-read has no entry left but is looking at the card it re-reads. Either way the
+      // read is a correction rather than a wait, so it announces nothing and a failure
+      // leaves what is painted alone instead of emptying the modal under the reader.
+      const standing = hit !== undefined || shownRef.current === oracleId;
+      // The read is over and painted nothing, so the card the reader is looking at is the
+      // open one again. Without this the modal left standing is one no write can reach: an
+      // art pick made in it would evict a card `evict` no longer believes is open, and the
+      // pick would sit there uncorrected.
+      const giveUp = () => { openRef.current = shownRef.current; };
+      setFailed(false);
+      if (hit) {
+        setPendingOracleId(null);
+        show(hit);
+      } else if (!standing) {
+        setPendingOracleId(oracleId);
+      }
       try {
-        const next = await fetchCard(oracleId);
-        if (latest.current !== request) return;
-        setCard(next);
-        setFailed(next === null);
+        // A read an eviction overtook is from the wrong side of the write that caused it,
+        // so it is neither filed nor painted — it is taken again, now that the write has
+        // landed. Retried rather than abandoned because a card opened from a miss has
+        // nothing on screen to fall back to, and abandoning the read there would leave
+        // the click looking like it did nothing at all.
+        let next: BrowseCard | null = null;
+        let raced = true;
+        for (let attempt = 0; attempt < READ_ATTEMPTS && raced; attempt++) {
+          const evictedAtStart = evictions.current.get(oracleId) ?? 0;
+          next = await fetchCard(oracleId);
+          if (latest.current !== request) return;
+          raced = (evictions.current.get(oracleId) ?? 0) !== evictedAtStart;
+        }
+        // Every attempt raced a write. Treated as a read that failed rather than filed as
+        // an answer, because it is one: no attempt saw a settled world.
+        if (raced) {
+          if (!standing) setFailed(true);
+          giveUp();
+          return;
+        }
+        if (next) {
+          cache.current.set(oracleId, next);
+          show(next);
+        } else {
+          // A card the server could not find is the one result not worth keeping: it is
+          // rare, and filing it would keep the card missing for the rest of the visit.
+          cache.current.delete(oracleId);
+          // A read that found nothing is a read that failed, and is treated exactly like
+          // one that threw: whatever is painted stays painted. The reader is left on the
+          // card they came from rather than on an empty screen, and a card that has gone
+          // missing between two reads of it is not worth yanking out from under them.
+          if (!standing) setFailed(true);
+          giveUp();
+        }
       } catch {
         if (latest.current !== request) return;
-        setFailed(true);
+        // Same reasoning: a failed re-ask leaves what is on screen alone.
+        if (!standing) setFailed(true);
+        giveUp();
       } finally {
-        if (latest.current === request) setPendingOracleId(null);
+        if (latest.current === request) {
+          setPendingOracleId(null);
+          inFlight.current = null;
+          const debt = owed.current;
+          owed.current = null;
+          // Only if that card is still the one on screen: a write on a card the reader has
+          // since left costs nothing to forget, because its entry is already gone and the
+          // next open pays for the read.
+          if (debt !== null && debt === shownRef.current) void loadRef.current(debt);
+        }
       }
     },
-    [fetchCard],
+    [fetchCard, show],
   );
+  useEffect(() => { loadRef.current = load; }, [load]);
 
   const open = useCallback(
     (oracleId: string, list?: string[]) => {
@@ -161,14 +285,40 @@ export function CardDetailProvider({
   // reader has already dismissed.
   const close = useCallback(() => {
     latest.current++;
-    setCard(null);
+    inFlight.current = null;
+    owed.current = null;
+    show(null);
     setPendingOracleId(null);
     setFailed(false);
-  }, []);
+  }, [show]);
+
+  const evict = useCallback(
+    (oracleId: string) => {
+      cache.current.delete(oracleId);
+      evictions.current.set(oracleId, (evictions.current.get(oracleId) ?? 0) + 1);
+      // Dropping the entry is not enough when the evicted card is the one on screen. A read
+      // taken inside the write's own window answers with what the write has not replaced
+      // yet, and if it lands before the write does, nothing about it looks raced: it is
+      // filed and painted as the current answer, and the reader sits on the printing they
+      // replaced until they close and reopen. Re-reading here is what ends that window —
+      // the read it starts is from after the write, by construction.
+      if (inFlight.current === oracleId) return;
+      if (openRef.current === oracleId) void load(oracleId);
+      else if (shownRef.current === oracleId) owed.current = oracleId;
+    },
+    [load],
+  );
 
   const value = useMemo<CardDetailContextValue>(
-    () => ({ open, pendingOracleId, openOracleId: card?.oracleId ?? null, setSiblings, close }),
-    [open, pendingOracleId, card, close],
+    () => ({
+      open,
+      pendingOracleId,
+      openOracleId: card?.oracleId ?? null,
+      setSiblings,
+      evict,
+      close,
+    }),
+    [open, pendingOracleId, card, evict, close],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
@@ -187,6 +337,7 @@ export function CardDetailProvider({
           // optimistic art pick across — same reason the collection browser remounts.
           key={card.oracleId}
           card={card}
+          onArtChange={() => evict(card.oracleId)}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}

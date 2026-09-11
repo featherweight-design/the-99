@@ -62,6 +62,17 @@ describe("setCardArtPreference", () => {
     expect(stub.calls.revalidated).toHaveLength(0);
   });
 
+  // The picker paints the pick before the answer arrives, and a refusal reads back exactly the
+  // preference already on screen — so the answer is the only thing that can tell it apart.
+  it("reports the refusal to the caller", async () => {
+    expect(await setCardArtPreference(ORACLE, "LEA", "270")).toBe(false);
+  });
+
+  it("reports a write that landed", async () => {
+    stub.calls.owned.push({ one: 1 });
+    expect(await setCardArtPreference(ORACLE, "LEA", "270")).toBe(true);
+  });
+
   it("lowercases the set code on write (§3.3)", async () => {
     stub.calls.owned.push({ one: 1 });
     await setCardArtPreference(ORACLE, "LEA", "270");
