@@ -32,11 +32,6 @@ import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 
 const pickerCopy = printingPickerCopy.printing;
 
-/** A preference as one comparable value, so two reads of the same pick compare equal. */
-function preferenceOf(p: PreferredPrinting | null): string {
-  return p ? `${p.setCode}/${p.collectorNumber}` : "";
-}
-
 // Renders oracle text with paragraph breaks, italic reminder text, and bolded keywords.
 function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
   const paragraphs = text.split("\n");
@@ -288,14 +283,19 @@ export function CardModal({
   // A caller can hand this component a re-read of the same card, so the seed above is not
   // the last word: without this, a preference that moved on the server would be ignored for
   // as long as the modal stayed open, and the art, caption and selected tile would all keep
-  // showing the printing it replaced. Compared by value rather than identity — a re-read
-  // brings a new object every time, and resetting on that would throw away a live pick.
-  // A write of the reader's own is the exception: its optimistic pick is the thing this
-  // state exists to hold until the write lands.
-  const preferenceKey = preferenceOf(card.preferredPrinting);
-  const [seeded, setSeeded] = useState(preferenceKey);
-  if (!writing && preferenceKey !== seeded) {
-    setSeeded(preferenceKey);
+  // showing the printing it replaced.
+  //
+  // Every arriving read reconciles, not only one that reports a different printing. A write
+  // can be refused — `setCardArtPreference` returns without writing when the chosen printing
+  // is no longer one the reader owns — and a refusal reads back exactly the preference that
+  // was already there. Reconciling on the value alone would take that for "nothing changed"
+  // and leave the refused pick on screen as though it had taken.
+  //
+  // A write of the reader's own is the exception: its optimistic pick is the thing this state
+  // exists to hold, and it is held until the write settles either way.
+  const [seeded, setSeeded] = useState(card);
+  if (!writing && seeded !== card) {
+    setSeeded(card);
     setPick(card.preferredPrinting);
   }
 

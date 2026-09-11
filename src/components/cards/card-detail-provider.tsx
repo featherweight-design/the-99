@@ -154,10 +154,20 @@ export function CardDetailProvider({
   // the read starts is compared against the count when it lands: a read from the wrong
   // side of a write is dropped rather than filed as the current answer.
   const evictions = useRef(new Map<string, number>());
-  // The card on screen, for `evict` to compare against without being rebuilt every time the
-  // open card changes — it is handed to every trigger through the context. Written through
-  // `show` rather than read off `card`, which would be a ref written during render.
+  // The card the reader has asked for, for `evict` to compare against without being rebuilt
+  // every time that changes — it is handed to every trigger through the context. Written
+  // through `load` and `show` rather than read off `card`, both because a ref must not be
+  // written during render and because `card` lags: it is the card on screen, and a reader
+  // who has paged on to an uncached card is waiting on one that is not there yet. A write
+  // settling on the card they left would otherwise re-read it and abandon the read they are
+  // actually waiting for.
   const openRef = useRef<string | null>(null);
+  // The card a read is in flight for, or null when none is. A write landing on a card that
+  // is already being read needs no read of its own: the read in flight sees the eviction
+  // and takes itself again. Starting a second one would abandon the first and reset its
+  // attempt count, so a steady stream of writes could keep one click reading forever —
+  // exactly what the cap above exists to prevent.
+  const inFlight = useRef<string | null>(null);
   const show = useCallback((next: BrowseCard | null) => {
     openRef.current = next?.oracleId ?? null;
     setCard(next);
@@ -166,6 +176,8 @@ export function CardDetailProvider({
   const load = useCallback(
     async (oracleId: string, list?: string[]) => {
       const request = ++latest.current;
+      openRef.current = oracleId;
+      inFlight.current = oracleId;
       if (list !== undefined) setSiblings(list);
       // A hit lands in the same pass as the click, so no pending state is ever set and
       // the trigger never flashes a busy affordance for a wait that does not happen.
@@ -217,7 +229,10 @@ export function CardDetailProvider({
         // Same reasoning: a failed re-ask leaves what is on screen alone.
         if (!hit) setFailed(true);
       } finally {
-        if (latest.current === request) setPendingOracleId(null);
+        if (latest.current === request) {
+          setPendingOracleId(null);
+          inFlight.current = null;
+        }
       }
     },
     [fetchCard, show],
@@ -236,6 +251,7 @@ export function CardDetailProvider({
   // reader has already dismissed.
   const close = useCallback(() => {
     latest.current++;
+    inFlight.current = null;
     show(null);
     setPendingOracleId(null);
     setFailed(false);
@@ -251,7 +267,7 @@ export function CardDetailProvider({
       // filed and painted as the current answer, and the reader sits on the printing they
       // replaced until they close and reopen. Re-reading here is what ends that window —
       // the read it starts is from after the write, by construction.
-      if (openRef.current === oracleId) void load(oracleId);
+      if (openRef.current === oracleId && inFlight.current !== oracleId) void load(oracleId);
     },
     [load],
   );

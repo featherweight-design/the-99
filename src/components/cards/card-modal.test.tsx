@@ -3,7 +3,7 @@
 // rule that governs rows and tiles stops here — and the claiming deck's status
 // pill is deliberately absent rather than guessed.
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -348,6 +348,40 @@ describe("CardModal printing picker scope", () => {
     );
     expect(screen.queryByText(/2 printings you own/)).toBeNull();
     expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
+  });
+
+  // A write can be refused: `setCardArtPreference` returns without writing when the chosen
+  // printing is no longer one the reader owns, and the re-read that follows carries exactly
+  // the preference that was already there. Holding the optimistic pick because the value did
+  // not move would leave the refused choice on screen as though it had taken.
+  it("drops an optimistic pick the write did not take", async () => {
+    const owned = {
+      ...card,
+      quantity: 3,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+      ],
+    };
+    const view = render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    // Both breakpoint trees render the picker; either one drives the same write.
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+    expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
+
+    // The re-read after the refusal: a new card, same preference as before the pick.
+    view.rerender(
+      <CardModal card={{ ...owned }} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
   });
 });
 

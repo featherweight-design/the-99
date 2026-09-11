@@ -502,6 +502,38 @@ describe("CardDetailProvider card cache", () => {
     expect(fetchCard).toHaveBeenCalledTimes(1);
   });
 
+  // A write settles after the reader has moved on. The card it names is not the one they
+  // are waiting for, so re-reading it would cancel the read that is actually in flight and
+  // leave the click they just made looking like it did nothing.
+  it("leaves a pending read alone when a write settles on the card behind it", async () => {
+    let resolveSol!: (c: BrowseCard) => void;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-sol") return new Promise<BrowseCard>((r) => { resolveSol = r; });
+      return SIGNET;
+    });
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">
+          Sol Ring
+        </CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+
+    // The reader moves on to a card that is not cached, and the earlier card's write lands
+    // while they are still waiting for it.
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
+    await click(screen.getByRole("button", { name: "evict" }));
+
+    await act(async () => { resolveSol(SOL); });
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring");
+  });
+
   // The write the eviction exists for, driven through the real picker rather than a
   // stand-in: a change that stopped calling `onArtChange` would leave every test above
   // passing while the reader reopened the card onto the printing they had replaced.
