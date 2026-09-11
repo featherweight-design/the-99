@@ -23,19 +23,22 @@
 // 1. The Navigation API. `navigation.currententrychange` fires for every way the
 //    URL moves — a router's `pushState`, a back, a replace — and asking the
 //    platform costs nothing and patches nothing. Chromium and Safari have it.
-// 2. `popstate` alone, where it does not (Firefox, today). That covers back and
-//    forward, which is the case the bug report named, and leaves the same-route
-//    link navigation reading stale until the next render — which is what the
-//    whole app did before this file existed.
+// 2. Where it does not (Firefox, today): `popstate`, plus a plain delegating
+//    wrapper around `pushState` and `replaceState`. `popstate` alone would miss
+//    the case this file exists for — browsers do not emit it for a same-document
+//    push, which is exactly what the nav link's reset is — so the wrapper is the
+//    only notification available there.
 //
-// What it does NOT do is wrap `history.pushState`. That was written first and is
-// the obvious approach, and it is wrong here: Next's router installs its own
-// wrappers around the same two methods, and a patch that composes with a patch
-// composes badly. An assignment landing after this one replaces it silently and
-// every navigation afterwards goes unobserved; an accessor that captures a later
-// assignment instead RECURSES, because the code installing that patch reads the
-// current method first — getting this wrapper — and then delegates to it. The
-// test that proved this blew the stack. Two patchers cannot both be outermost.
+// THE WRAPPER IS THE FALLBACK, NOT THE MECHANISM, and the difference is the
+// point. Next's router patches the same two methods, so two patchers are
+// competing for outermost: an assignment landing after this one replaces it
+// silently and later navigations go unobserved, which degrades to the behaviour
+// this file was written to fix and never to something worse. The alternative was
+// tried and is worse than the disease — an accessor that captures a later
+// assignment RECURSES, because the code installing that patch reads the current
+// method first, gets this wrapper, and delegates to it; the test for it blew the
+// stack. So: ask the platform where the platform can answer, and fall back to the
+// patch that degrades quietly where it cannot.
 
 import { useSyncExternalStore } from "react";
 
@@ -58,17 +61,36 @@ function navigationApi(): NavigationLike | null {
   return candidate && typeof candidate.addEventListener === "function" ? candidate : null;
 }
 
+/** The fallback's half of the job: a same-document push or replace, which emits
+    no event of its own. Installed only where the Navigation API is absent, and
+    only once — see this file's header for why it delegates rather than composes,
+    and what it costs if something patches over it later. */
+function wrapHistory() {
+  for (const name of ["pushState", "replaceState"] as const) {
+    const original = window.history[name];
+    window.history[name] = function observed(
+      this: History,
+      ...args: Parameters<History[typeof name]>
+    ) {
+      const result = original.apply(this, args);
+      notify();
+      return result;
+    };
+  }
+}
+
 function subscribe(listener: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   listeners.add(listener);
   if (!installed) {
     installed = true;
+    // Back and forward, in every browser and under either mechanism. With the
+    // Navigation API this is redundant and harmless — `notify` only re-reads the
+    // URL — and it is what the fallback leans on for a traversal.
+    window.addEventListener("popstate", notify);
     const navigation = navigationApi();
     if (navigation) navigation.addEventListener("currententrychange", notify);
-    // `popstate` either way. With the Navigation API it is redundant and
-    // harmless — `notify` only ever re-reads the URL — and without it, it is the
-    // whole of what this store can see.
-    window.addEventListener("popstate", notify);
+    else wrapHistory();
   }
   return () => listeners.delete(listener);
 }

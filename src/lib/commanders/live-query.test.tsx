@@ -26,7 +26,17 @@ function stubNavigation() {
   };
 }
 
+// The fallback installs a wrapper per module instance, and each test imports a
+// fresh one — so the pristine methods are put back between them, the way a real
+// document only ever has one store.
+const pristine = {
+  pushState: window.history.pushState,
+  replaceState: window.history.replaceState,
+};
+
 afterEach(() => {
+  window.history.pushState = pristine.pushState;
+  window.history.replaceState = pristine.replaceState;
   window.history.replaceState(null, "", "/commanders");
   Reflect.deleteProperty(window, "navigation");
   vi.resetModules();
@@ -75,6 +85,31 @@ describe("useLiveQuery", () => {
     expect(shown()).toBe("c=r");
   });
 
+  // The fallback path, which is what a browser without the Navigation API takes.
+  // `popstate` alone would miss this: browsers emit none for a same-document
+  // push, and that is exactly what the nav link's reset is.
+  it("follows a same-document push with no Navigation API", async () => {
+    window.history.replaceState(null, "", "/commanders?a=free");
+    const shown = await mountProbe();
+
+    act(() => {
+      window.history.pushState(null, "", "/commanders");
+    });
+
+    expect(shown()).toBe("(empty)");
+  });
+
+  // And it delegates: whatever was installed before still runs, and still
+  // returns what it returned.
+  it("leaves the write it wraps working", async () => {
+    await mountProbe();
+    act(() => {
+      window.history.replaceState({ marker: 1 }, "", "/commanders?q=krenko");
+    });
+    expect(window.location.search).toBe("?q=krenko");
+    expect(window.history.state).toEqual({ marker: 1 });
+  });
+
   // The fallback, and the case the bug report actually named. jsdom fires
   // `popstate` on a task of its own, so this awaits it.
   it("follows a back navigation with no Navigation API at all", async () => {
@@ -91,9 +126,11 @@ describe("useLiveQuery", () => {
     expect(shown()).toBe("(empty)");
   });
 
-  // Nothing is patched, so a router that installs its own history wrappers is
-  // neither replaced by this nor tangled with it.
-  it("leaves history itself alone", async () => {
+  // Where the platform can answer, nothing is patched at all — so a router that
+  // installs its own history wrappers is neither replaced by this nor tangled
+  // with it.
+  it("leaves history alone when the Navigation API is there", async () => {
+    stubNavigation();
     const before = window.history.pushState;
     await mountProbe();
     expect(window.history.pushState).toBe(before);

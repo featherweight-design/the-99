@@ -392,13 +392,24 @@ describe("CommandersView ranking toggle", () => {
   // `?a=free` is a request, not a promise — the same rule the flip itself
   // follows. With no second ranking to switch to there is nothing to honour.
   it("refuses the URL's request when no free ranking was produced", () => {
-    window.history.replaceState(null, "", "/commanders?a=free");
-    try {
-      view(results(3), { avail: "all", freeItems: null, availOk: false });
-      for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
-    } finally {
-      window.history.replaceState(null, "", "/commanders");
-    }
+    // `avail: "free"` is what puts `a=free` ON the URL — the helper writes the
+    // lane key rather than passing a prop, because that is where the view reads
+    // it. Seeding the URL by hand and then passing `all` deleted the very
+    // request this is here to exercise.
+    // `el` writes the lane key onto the URL, because that is where the view reads
+    // it — so the request is made before the render rather than passed as a prop.
+    // Seeding it by hand and then passing `all` deleted the very request this is
+    // here to exercise.
+    const element = el(results(3), { avail: "free", freeItems: null, availOk: false });
+    expect(window.location.search).toBe("?a=free");
+
+    render(element);
+
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
+    // And the refusal reaches the URL as well as the control: a request the
+    // payload cannot serve is not left standing in the address bar.
+    expect(window.location.search).toBe("");
   });
 
   // The primary nav pointing back at `/commanders` while the reader stands in
