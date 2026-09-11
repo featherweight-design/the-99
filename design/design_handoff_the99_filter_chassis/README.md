@@ -3,6 +3,14 @@
 > **Errata — read `docs/superpowers/readiness-filter-chassis.md` §6 before implementing.**
 > The engineering audit corrected several figures in this document and closed two decisions it
 > leaves open. In particular: the shipped pip's 1.38:1 floor is against `--bg`, not
+
+> **Corrected: the defect is two controls wide, not three, and the floor is against `--bg`.**
+> `rack/colour-control.tsx:126` dims to 0.34 over the `--bg` its own group paints — 1.37:1, failing
+> in 30 of 30 theme-and-hue combinations. `collection/color-pip.tsx:28` dims to 0.40 over
+> `--surface-sunken` — 1.49:1, failing in 24 of 30. **`/decks` is not affected**:
+> `deck-filter-column.tsx:119-130`'s `ColourSwatch` carries no opacity at all and signals state with
+> its border, which is what this round's no-opacity rule generalises. See
+> `docs/superpowers/readiness-filter-chassis.md` §6.
 > `--surface-sunken`; the Scryfall floor is 7.77:1, not 9.51:1, because three assumed hexes were
 > wrong and have since been fetched; decision 18's 887px total is 987px, so the switch moves to 1000px; asset delivery is ruled as
 > five static SVGs; and `Printed in` is cut from this round. This document is kept as delivered —

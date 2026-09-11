@@ -102,10 +102,13 @@ than a second dialog.
    for itself (`:85`) — floor **1.37:1** at U/phyrexia, and **30 of 30** theme×pip combinations
    under the 3:1 non-text floor. `collection/color-pip.tsx:28` dims to `0.40` over
    `--surface-sunken` — floor **1.49:1**, slightly better and still failing, at **24 of 30**.
-   So the handoff's figure is the app's true floor rather than an unrepresentative sample. Two
-   different unlit opacities over two different grounds, for one concept, is itself an argument for
-   this round; the chassis picks one value rather than inheriting either. Pre-existing, and not
-   caused by this handoff.
+   So the handoff's figure is the app's true floor rather than an unrepresentative sample. **The
+   handoff's "three live surfaces" is two**: `deck-filter-column.tsx:119-130`'s `ColourSwatch`
+   carries no opacity at all and signals state with its border — `/decks` already does what this
+   round's no-opacity rule generalises, which is a useful precedent rather than a gap. Two different
+   unlit opacities over two different grounds, for one concept, is itself an argument for this
+   round; the chassis picks one value rather than inheriting either. Pre-existing, and not caused by
+   this handoff.
 3. **Asset delivery, ruled: static assets in the repository.** Design left this open and pushed back
    only on hotlinking. Concur, and going further: hotlinking a third party into the filter chrome of
    four routes plus the set pages makes a network fetch the single carrier of a filter's identity,
