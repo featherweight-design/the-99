@@ -272,6 +272,21 @@ describe("applying", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?updated=19-6-1"));
   });
 
+  // A committed deck keeps its own account of what is pending, so the transient
+  // arrival strip would be the second diff on one screen (OVERLAPS.md, call 2).
+  it("carries no counts back to a versioned deck", async () => {
+    updateDeckFromList.mockResolvedValue({ in: 19, out: 6, kept: 1, versioned: true });
+    renderEntry();
+    paste();
+    compare();
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: deckImportCopy.update.diff.applyAria("0", "1", "Kykar, Wind's Fury"),
+      }),
+    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+  });
+
   // State 18. A refused write is not a failed parse: its copy promises the deck
   // is exactly as it was, which only a transaction can make true.
   it("says the deck is untouched when the write is refused", async () => {

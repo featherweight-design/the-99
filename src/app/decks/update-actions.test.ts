@@ -13,6 +13,21 @@ const stub = vi.hoisted(() => {
       { oracleId: "o-sol-ring", quantity: 1, auto: true, name: "Sol Ring", typeLine: "Artifact" },
       { oracleId: "o-island", quantity: 12, auto: true, name: "Island", typeLine: "Basic Land" },
     ],
+    // Enough catalog for the real matcher to resolve the list the success-path
+    // test pastes. `detailed: true` is what the apply asks for, so the type line
+    // travels with each entry.
+    catalog: [
+      {
+        oracleId: "o-sol-ring", scryfallId: "s-sol-ring", name: "Sol Ring",
+        typeLine: "Artifact", oracleText: "", commanderLegal: true,
+        colorIdentity: [], imageUri: null,
+      },
+      {
+        oracleId: "o-island", scryfallId: "s-island", name: "Island",
+        typeLine: "Basic Land — Island", oracleText: "", commanderLegal: true,
+        colorIdentity: ["U"], imageUri: null,
+      },
+    ],
     transactions: 0,
   };
 
@@ -25,27 +40,46 @@ const stub = vi.hoisted(() => {
     }),
   });
 
+  // The apply path's writes. The success-path test pastes the list the deck
+  // already holds, so nothing is deleted or inserted — but the unresolved rows
+  // are replaced wholesale on every apply, and the named cards lose `auto`.
+  const tx = {
+    execute: async () => undefined,
+    select,
+    delete: () => ({ where: async () => undefined }),
+    update: () => ({ set: () => ({ where: async () => undefined }) }),
+  };
+
   const db = {
     select,
     transaction: async (fn: (t: unknown) => Promise<unknown>) => {
       state.transactions += 1;
-      return fn({});
+      return fn(tx);
     },
   };
-  return { db, state };
+  return { db, state, tx };
 });
 
 vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {}, updateTag: () => {} }));
 vi.mock("../../lib/collection/import", () => ({
-  loadMatchInputs: async () => ({ catalog: [], indexes: {} }),
+  loadMatchInputs: async () => ({ catalog: stub.state.catalog, indexes: {} }),
 }));
+
+// The only stub on the success path. The question that test asks is which
+// `versioned` comes back and whether the read that decides it ran inside the
+// transaction, and the real reader would need a drizzle chain stub to answer
+// either. Parsing and planning stay real, so the guard tests above keep proving
+// what they were written to prove.
+const newest = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/decks/versions", () => ({ newestVersion: newest }));
 
 const { updateDeckFromList } = await import("./update-actions");
 
 beforeEach(() => {
   stub.state.transactions = 0;
+  newest.mockReset();
 });
 
 describe("updateDeckFromList input guards", () => {
@@ -71,5 +105,36 @@ describe("updateDeckFromList input guards", () => {
       }),
     ).rejects.toThrow(/matched/);
     expect(stub.state.transactions).toBe(0);
+  });
+});
+
+describe("updateDeckFromList and the deck's version", () => {
+  const list = "1 Sol Ring\n12 Island";
+
+  // The caller declines the transient arrival strip on a versioned deck, because
+  // that deck's own pending account says the same thing one scroll below.
+  it("reports a deck that has committed a version", async () => {
+    newest.mockResolvedValue({ id: "v-1", number: 2 });
+    const result = await updateDeckFromList({
+      deckId: "deck-1", text: list, source: "paste", keep: [],
+    });
+    expect(result.versioned).toBe(true);
+  });
+
+  it("reports a brew as unversioned", async () => {
+    newest.mockResolvedValue(null);
+    const result = await updateDeckFromList({
+      deckId: "deck-1", text: list, source: "paste", keep: [],
+    });
+    expect(result.versioned).toBe(false);
+  });
+
+  // The read used to sit after the commit. A failure there rejected an action
+  // whose rows were already written, so the player saw "your deck is exactly as
+  // it was" over a deck that had changed — and a retry applied the list twice.
+  it("reads the version inside the write transaction", async () => {
+    newest.mockResolvedValue(null);
+    await updateDeckFromList({ deckId: "deck-1", text: list, source: "paste", keep: [] });
+    expect(newest).toHaveBeenCalledWith("deck-1", stub.tx);
   });
 });

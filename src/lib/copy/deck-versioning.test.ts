@@ -29,6 +29,13 @@ describe("deckVersioningCopy", () => {
     expect(INLINE_CHANGE_MAX).toBe(6);
   });
 
+  it("counts rows and copies separately in the money line", () => {
+    // One card wanted three times is one unfree row and three copies to buy.
+    expect(copy.pending.money(1, 4, 3, "$6.00")).toBe(
+      "1 of the 4 have no free copy, so this commit will ask for 3 to buy · $6.00.",
+    );
+  });
+
   it("has no bucket headings and no second recount phrasing", () => {
     // R2 made availability a per-row treatment; Addendum R3 kept one phrasing
     // for "{name} {from} → {to}". Both deletions are load-bearing.

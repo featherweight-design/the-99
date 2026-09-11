@@ -4,29 +4,41 @@
 // The banner, the review page's chips and the commit sheet's buy block all state
 // the same purchase. Addendum R3 rules that one list with three appearances, so
 // the arithmetic lives here and no surface repeats it. `loadDraftState` is the
-// cheap read every visit to the deck page pays for; `loadDraftRows` adds the
-// per-card facts only the review page draws.
+// cheap read every visit to the deck page pays for; `loadDraftRows` asks the same
+// loader for the per-card detail only the review page draws, so the two never
+// repeat a read between them.
 
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, deckCards } from "../../db/schema";
-import { bucketAdds, draftDiff, type BucketedAdd, type DraftChange } from "./draft-diff";
+import { cards, collectionItems, deckCards } from "../../db/schema";
+import { bucketAdds, draftDiff, type AddBucket, type BucketedAdd, type DraftChange } from "./draft-diff";
 import { hardDecks, type Availability, type DeckClaim } from "./availability";
 import { loadAvailability } from "./availability-query";
-import { loadPrices } from "./price-query";
+import { loadPrices, type PriceRead } from "./price-query";
 import { formatCents, summarisePrices } from "./price";
 import { averageManaValue } from "./mana-value";
 import { newestVersion, versionCards, versionManaValue, type DeckVersion } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
 
+/**
+ * An add as every draft surface reads it.
+ *
+ * `bucket` is null when the availability read failed, and that is the whole
+ * reason this type exists rather than `BucketedAdd`: a card whose claims could
+ * not be read is not an unowned card, and `bucketAdds` over an empty claimant
+ * map would call it one. A null bucket stands `shortfall` down to zero with it —
+ * with nothing known about free copies there is no purchase to quote.
+ */
+export type DraftAdd = Omit<BucketedAdd, "bucket"> & { bucket: AddBucket | null };
+
 export type DraftState = {
   /** Null for a brew. Every pending surface is absent on a brew: there is no
    *  version for the draft to be pending against. */
   version: DeckVersion | null;
   /** Cards the draft added, bucketed, basics excluded. */
-  adds: BucketedAdd[];
-  /** The same adds as raw diff entries, index-aligned with `adds`. `BucketedAdd`
+  adds: DraftAdd[];
+  /** The same adds as raw diff entries, index-aligned with `adds`. `DraftAdd`
    *  carries `needed` and `shortfall` but not the `from`/`to` pair, and both the
    *  banner and the review row print that pair for a quantity move. */
   addChanges: DraftChange[];
@@ -41,6 +53,15 @@ export type DraftState = {
   /** Oracle name per changed card, both lists — what the banner's inline
    *  density says at six changes or fewer. */
   names: Map<string, string>;
+  /**
+   * Whether the claim model could be read at all.
+   *
+   * False only when the availability read failed. Every money figure below is
+   * zero or null in that case and states nothing — NOT "this commit is free",
+   * which is what an empty claimant map would have made them say. A surface with
+   * a false here draws the change lists and no purchase.
+   */
+  claimsKnown: boolean;
   /** Copies the player must obtain: the shortfall over every unfree add. Not a
    *  row count — one card wanted three times is three copies. */
   buyCount: number;
@@ -50,8 +71,13 @@ export type DraftState = {
    *  holder that is neither pending nor holding it as a commander. Drawn as a
    *  count only — which row offers which control is `loadDraftRows`' answer. */
   pullableCount: number;
-  /** Formatted, because the figure is only ever printed. Null when nothing
-   *  priced — never "$0.00", which would claim the purchase is free. */
+  /**
+   * Formatted, because the figure is only ever printed. Null when NO copy could
+   * be priced, which is not the same as a purchase of nothing: read it beside
+   * `unfreeCount`, and say the free-copy sentence only when that is zero. A real
+   * $0.00 is printed rather than nulled — the feed stocking a card at nothing is
+   * a price, and hiding it would quote the purchase as unpriceable.
+   */
   total: string | null;
   /** The draft's average, and the version's. Both null on an all-land list. */
   manaValue: number | null;
@@ -88,39 +114,103 @@ export function releasableClaims(a: Availability | undefined): DeckClaim[] {
   return a.claims.filter((c) => c.mature && !c.pending && !c.commander);
 }
 
-export async function loadDraftState(deckId: string, userId: string): Promise<DraftState> {
+/** Name, type line and mana value per card — the columns every draft figure is
+ *  built from, read over the whole draft because the mana value averages it. */
+function loadNameFacts(oracleIds: string[]) {
+  return db.select({
+    oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
+  }).from(cards).where(inArray(cards.oracleId, oracleIds));
+}
+
+/**
+ * The wider columns only a drawn row needs, over the changed cards alone.
+ *
+ * `owned` is an `exists` against the collection, exactly as `getDeckDetail`
+ * derives it, rather than being inferred from the availability rollup: that
+ * rollup can fail, and a failed read must not become "the player owns none of
+ * these" on a row that draws an ownership dot and a buy tag.
+ */
+function loadDetailFacts(userId: string, oracleIds: string[]) {
+  return db.select({
+    oracleId: cards.oracleId,
+    oracleText: cards.oracleText,
+    keywords: cards.keywords,
+    manaCost: cards.manaCost,
+    imageUri: cards.imageUri,
+    layout: cards.layout,
+    owned: sql<boolean>`exists (
+      select 1 from ${collectionItems}
+      where ${collectionItems.oracleId} = ${cards.oracleId}
+      and ${collectionItems.userId} = ${userId}
+    )`,
+  }).from(cards).where(inArray(cards.oracleId, oracleIds));
+}
+
+type NameFact = Awaited<ReturnType<typeof loadNameFacts>>[number];
+type DetailFact = Awaited<ReturnType<typeof loadDetailFacts>>[number];
+
+/** The state plus the reads it was built from, so a caller needing rows does not
+ *  ask the same three questions a second time. */
+type DraftRead = {
+  state: DraftState;
+  /** Null when the read FAILED — never an empty map, which would mean "nothing
+   *  competes for any of them". Mirrors `state.claimsKnown`. */
+  availability: Map<string, Availability> | null;
+  prices: PriceRead | null;
+  names: Map<string, NameFact>;
+  /** Empty unless the caller asked for detail. */
+  detail: Map<string, DetailFact>;
+};
+
+/**
+ * Everything both readers need, in one pass.
+ *
+ * `detailed` widens two of the reads rather than adding any: the row columns come
+ * back for the changed cards, and availability and prices are scoped to both
+ * change lists instead of the adds alone, because a drawn `out` row carries the
+ * same markers an `in` row does.
+ */
+async function readDraft(
+  deckId: string,
+  userId: string,
+  detailed: boolean,
+): Promise<DraftRead> {
   const version = await newestVersion(deckId);
-  const before = version ? await versionCards(version.id) : [];
-  const draft = await db.select({
-    oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-  }).from(deckCards).where(eq(deckCards.deckId, deckId));
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [], basicsChanged: false,
-    names: new Map(),
+    names: new Map(), claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
     manaValue: null, manaValueBefore: null,
   };
-  // A brew has no version to differ from, so it has no draft state at all —
-  // not an empty one. Returning early also keeps every query below off the
-  // page load of a deck that has never been committed.
-  if (!version) return empty;
+  const bare = (state: DraftState): DraftRead => ({
+    state, availability: null, prices: null, names: new Map(), detail: new Map(),
+  });
+
+  // A brew has no version to differ from, so it has no draft state at all — not
+  // an empty one. Returning before the version's cards and the deck's own rows is
+  // what makes this the one query a never-committed deck's page load pays for.
+  if (!version) return bare(empty);
+
+  const [before, draft] = await Promise.all([
+    versionCards(version.id),
+    db.select({
+      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
+    }).from(deckCards).where(eq(deckCards.deckId, deckId)),
+  ]);
 
   const diff = draftDiff(draft, before);
-  const changed = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
-  if (changed.length === 0) return { ...empty, version };
+  const changedIds = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
+  if (changedIds.length === 0) return bare(empty);
 
-  // Names and type lines in one read, over the WHOLE draft rather than only the
-  // changed cards: the mana value below averages every row the draft holds, and
-  // a row whose cmc was missing from this map would average as a zero. Basics
-  // come out of both lists for the reason the commit receipt drops them: they
-  // are outside the availability model, so neither list has a figure to print.
-  const facts = await db.select({
-    oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
-  }).from(cards).where(inArray(
-    cards.oracleId,
-    [...new Set([...changed, ...draft.map((c) => c.oracleId)])],
-  ));
+  // Over the WHOLE draft rather than only the changed cards: the mana value below
+  // averages every row the draft holds, and a row whose cmc was missing from this
+  // map would average as a zero. Basics come out of both lists for the reason the
+  // commit receipt drops them: they are outside the availability model, so
+  // neither list has a figure to print.
+  const facts = await loadNameFacts([
+    ...new Set([...changedIds, ...draft.map((c) => c.oracleId)]),
+  ]);
   const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
   const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
   const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
@@ -130,64 +220,93 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
   // and every figure stays empty, and `basicsChanged` is the one signal that
   // says the draft differs — see `hasChanges`.
   if (adds.length === 0 && removes.length === 0) {
-    return { ...empty, basicsChanged: true };
+    return bare({ ...empty, basicsChanged: true });
   }
 
-  // Scoped to the adds, and excluding this deck: the question is what OTHER
-  // decks hold, which is the same question the commit asks.
-  const availability = adds.length > 0
-    ? await loadAvailability(userId, {
-        oracleIds: adds.map((a) => a.oracleId), excludeDeckId: deckId,
-      }).catch(() => null)
-    : null;
-  const claimants = new Map(
-    [...(availability ?? new Map<string, Availability>())].map(([oracleId, a]) => [
-      oracleId,
-      // hardDecks, not the raw claims: a brew "holding" a card holds nothing.
-      { free: a.free, claims: hardDecks(a) },
-    ]),
-  );
-  const bucketed = bucketAdds(adds, claimants);
+  const changed = [...adds, ...removes].map((c) => c.oracleId);
+  // Excluding this deck: the question is what OTHER decks hold, which is the
+  // same question the commit asks. Scoped to the adds unless a caller is drawing
+  // rows, which need the `out` side too.
+  const asked = detailed ? changed : adds.map((a) => a.oracleId);
+  const availability = asked.length > 0
+    ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId })
+        .catch(() => null)
+    : new Map<string, Availability>();
 
-  const unfree = bucketed.filter((a) => a.bucket !== "free");
-  const priced = unfree.length > 0
-    ? await loadPrices(unfree.map((a) => a.oracleId)).catch(() => null)
+  const claimsKnown = availability !== null;
+  const bucketed: DraftAdd[] = availability
+    ? bucketAdds(adds, new Map(
+        [...availability].map(([oracleId, a]) => [
+          oracleId,
+          // hardDecks, not the raw claims: a brew "holding" a card holds nothing.
+          { free: a.free, claims: hardDecks(a) },
+        ]),
+      ))
+    // No claim model, so no answer: every add keeps its place in the list and
+    // makes no statement about what it costs.
+    : adds.map((c) => ({
+        oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
+        bucket: null, heldBy: [],
+      }));
+
+  const unfree = bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
+  const priceAsked = detailed ? changed : unfree.map((a) => a.oracleId);
+  const prices = priceAsked.length > 0
+    ? await loadPrices(priceAsked).catch(() => null)
     : null;
   // `shortfall`, never `needed`: one free copy against an ask of three is a
   // purchase of two, and charging for three quotes a card already on the table.
   const summary = summarisePrices(
     unfree.map((a) => ({
       quantity: a.shortfall,
-      price: priced?.prices.get(a.oracleId) ?? null,
+      price: prices?.prices.get(a.oracleId) ?? null,
     })),
-    priced?.newestAsOf ?? null,
+    prices?.newestAsOf ?? null,
   );
 
   const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
   const typeByOracle = new Map(facts.map((f) => [f.oracleId, f.typeLine]));
 
+  const detail = detailed
+    ? new Map((await loadDetailFacts(userId, changed)).map((d) => [d.oracleId, d]))
+    : new Map<string, DetailFact>();
+
   return {
-    version,
-    adds: bucketed,
-    // Index-aligned with `bucketed` because `bucketAdds` maps `adds` one to one
-    // and preserves its order — this is the list it was given.
-    addChanges: adds,
-    removes,
-    basicsChanged: false,
-    names,
-    buyCount: unfree.reduce((n, a) => n + a.shortfall, 0),
-    unfreeCount: unfree.length,
-    pullableCount: bucketed.filter((a) =>
-      a.bucket === "claimed" && releasableClaims(availability?.get(a.oracleId)).length > 0,
-    ).length,
-    total: summary.totalCents > 0 ? formatCents(summary.totalCents) : null,
-    manaValue: averageManaValue(draft.map((c) => ({
-      cmc: cmcByOracle.get(c.oracleId) ?? 0,
-      quantity: c.quantity,
-      typeLine: typeByOracle.get(c.oracleId) ?? "",
-    }))),
-    manaValueBefore: await versionManaValue(version.id),
+    state: {
+      version,
+      adds: bucketed,
+      // Index-aligned with `bucketed` because both branches above map `adds` one
+      // to one and preserve its order — this is the list they were given.
+      addChanges: adds,
+      removes,
+      basicsChanged: false,
+      names,
+      claimsKnown,
+      buyCount: unfree.reduce((n, a) => n + a.shortfall, 0),
+      unfreeCount: unfree.length,
+      pullableCount: bucketed.filter((a) =>
+        a.bucket === "claimed" && releasableClaims(availability?.get(a.oracleId)).length > 0,
+      ).length,
+      // `pricedCopies`, not a positive total: the feed can stock a card at
+      // nothing, and a real $0.00 is a price the player should see rather than a
+      // purchase the app claims it cannot quote.
+      total: summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
+      manaValue: averageManaValue(draft.map((c) => ({
+        cmc: cmcByOracle.get(c.oracleId) ?? 0,
+        quantity: c.quantity,
+        typeLine: typeByOracle.get(c.oracleId) ?? "",
+      }))),
+      manaValueBefore: await versionManaValue(version.id),
+    },
+    availability,
+    prices,
+    names: new Map(facts.map((f) => [f.oracleId, f])),
+    detail,
   };
+}
+
+export async function loadDraftState(deckId: string, userId: string): Promise<DraftState> {
+  return (await readDraft(deckId, userId, false)).state;
 }
 
 /** One changed card, as the review page draws it. `DeckDetailCard` shaped, so
@@ -200,9 +319,10 @@ export type DraftRow = DeckDetailCard & {
    *  impossible: `draftDiff` files a change only when they differ. */
   from: number;
   to: number;
-  /** Which of the three answers this add got. Null on an `out` row: a card
-   *  leaving makes no purchase decision. */
-  bucket: BucketedAdd["bucket"] | null;
+  /** Which of the three answers this add got. Null on an `out` row — a card
+   *  leaving makes no purchase decision — and null on every `in` row when
+   *  `state.claimsKnown` is false, where it means the answer is unknown. */
+  bucket: AddBucket | null;
 };
 
 /** Split at the source, not in the component. The review page draws two columns
@@ -213,16 +333,6 @@ export type DraftRows = {
   rows: { in: DraftRow[]; out: DraftRow[] };
 };
 
-/** The `from`/`to` pair behind an add. `BucketedAdd` carries `needed` and
- *  `shortfall` but not the pair, so read it off `addChanges` — the raw diff
- *  `bucketAdds` was given — rather than recomputing the diff. An oracle id that
- *  is not an add has no pair, and `0 → 0` is the honest answer for a caller
- *  that asked the wrong question. */
-function findChange(state: DraftState, oracleId: string): { from: number; to: number } {
-  const change = state.addChanges.find((c) => c.oracleId === oracleId);
-  return { from: change?.from ?? 0, to: change?.to ?? 0 };
-}
-
 /**
  * Every changed card with the facts a row draws.
  *
@@ -232,64 +342,57 @@ function findChange(state: DraftState, oracleId: string): { from: number; to: nu
  * — `3 → 1` is one row that lost two copies, never a row for two copies.
  */
 export async function loadDraftRows(deckId: string, userId: string): Promise<DraftRows> {
-  const state = await loadDraftState(deckId, userId);
-  const changed = [...state.adds, ...state.removes].map((c) => c.oracleId);
-  if (changed.length === 0) return { state, rows: { in: [], out: [] } };
-
-  const facts = await db.select({
-    oracleId: cards.oracleId,
-    name: cards.name,
-    typeLine: cards.typeLine,
-    oracleText: cards.oracleText,
-    keywords: cards.keywords,
-    manaCost: cards.manaCost,
-    cmc: cards.cmc,
-    imageUri: cards.imageUri,
-    layout: cards.layout,
-  }).from(cards).where(inArray(cards.oracleId, changed));
-
-  const availability = await loadAvailability(userId, {
-    oracleIds: changed, excludeDeckId: deckId,
-  }).catch(() => null);
-  const priced = await loadPrices(changed).catch(() => null);
+  const read = await readDraft(deckId, userId, true);
+  const { state } = read;
 
   const built: DraftRow[] = [];
-  for (const fact of facts) {
-    const add = state.adds.find((a) => a.oracleId === fact.oracleId);
-    const remove = state.removes.find((r) => r.oracleId === fact.oracleId);
-    const change = add
-      ? findChange(state, fact.oracleId)
-      : { from: remove!.from, to: remove!.to };
+  // Driven by the state's own two lists, in their order, rather than by the rows
+  // a query happened to return: `draftDiff` sorts both lists, and adopting DB
+  // order here would let the drawn rows drift out of step with every count and
+  // every name the other surfaces print.
+  for (const change of [...state.adds, ...state.removes]) {
+    const name = read.names.get(change.oracleId);
+    const detail = read.detail.get(change.oracleId);
+    // A changed card the catalog cannot describe. Dropping it is the only
+    // honest option — a row with no name and no type is not a row.
+    if (!name || !detail) continue;
+
+    const add = "bucket" in change ? (change as DraftAdd) : null;
+    const pair = add
+      ? state.addChanges.find((c) => c.oracleId === change.oracleId)
+      : (change as DraftChange);
+    const from = pair?.from ?? 0;
+    const to = pair?.to ?? 0;
+
     built.push({
-      oracleId: fact.oracleId,
-      name: fact.name,
-      typeLine: fact.typeLine,
-      cardTypeGroup: cardTypeGroup(fact.typeLine),
-      role: primaryRole(fact),
-      cmc: fact.cmc,
-      // Whether the player has a copy at all, which is what the dot draws. The
-      // availability map is driven by the collection, so absence is the answer.
-      owned: availability?.has(fact.oracleId) ?? false,
-      quantity: Math.abs(change.to - change.from),
+      oracleId: change.oracleId,
+      name: name.name,
+      typeLine: name.typeLine,
+      cardTypeGroup: cardTypeGroup(name.typeLine),
+      role: primaryRole({ ...detail, typeLine: name.typeLine }),
+      cmc: name.cmc,
+      owned: detail.owned,
+      quantity: Math.abs(to - from),
       auto: false,
-      availability: availability?.get(fact.oracleId) ?? null,
-      price: priced?.prices.get(fact.oracleId) ?? null,
-      manaCost: fact.manaCost,
-      imageUri: fact.imageUri,
-      // Null, both of them, and deliberately: a changed-card row names the card
+      availability: read.availability?.get(change.oracleId) ?? null,
+      price: read.prices?.prices.get(change.oracleId) ?? null,
+      manaCost: detail.manaCost,
+      imageUri: detail.imageUri,
+      // Null, all three, and deliberately: a changed-card row names the card
       // the deck is gaining or losing, and there is no owned printing to resolve
       // for a card being bought. The shipped `printedNameOf` reads null as "use
       // the oracle name", which is the right rendering here.
       printedName: null,
       printedSetCode: null,
       printedCollectorNumber: null,
-      layout: fact.layout,
+      layout: detail.layout,
       direction: add ? "in" : "out",
-      from: change.from,
-      to: change.to,
+      from,
+      to,
       bucket: add ? add.bucket : null,
     });
   }
+
   return {
     state,
     rows: {

@@ -40,9 +40,13 @@ export const deckVersioningCopy = {
       `${n} ${n === 1 ? "change" : "changes"} since v${version}`,
 
     // The one figure that decides whether the review page is worth opening.
-    money: (unfree: number, adds: number, total: string) =>
+    //
+    // `unfree` counts ROWS and `buy` counts COPIES, and they are not the same
+    // number: one card wanted three times with no free copy is one row and three
+    // copies. The sentence says both, so it takes both.
+    money: (unfree: number, adds: number, buy: number, total: string) =>
       `${unfree} of the ${adds} have no free copy, so this commit will ask for ` +
-      `${unfree} to buy · ${total}.`,
+      `${buy} to buy · ${total}.`,
     moneyPulls: (n: number) =>
       `${n} of those are sleeved in other decks and can be pulled instead.`,
     moneyNone: "Every card coming in has a free copy, so this commit asks for nothing.",
