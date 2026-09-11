@@ -13,12 +13,16 @@
 // local-dev or a scratch branch, never production.
 //
 //   node scripts/probe-writer-version.mjs
+import { randomUUID } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { requireEnv } from "./lib/env.mjs";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const sql = neon(DATABASE_URL);
-const USER = `probe-writer-version-${process.pid}`;
+// A UUID, not the pid: two runs in separate containers commonly share pid 1, and
+// this fixture's `finally` deletes every row under its own user id. A collision
+// would have one run delete the other's rows mid-assertion.
+const USER = `probe-writer-version-${randomUUID()}`;
 
 const findings = [];
 const note = (line) => {
