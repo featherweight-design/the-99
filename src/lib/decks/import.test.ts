@@ -150,6 +150,19 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
     expect(result.unresolved).toEqual([]);
   });
 
+  // The loop is what promises both spellings in either order, so both orders
+  // are tested. A regression in either branch leaves one marker glued to the
+  // name, which is the whole failure this fix exists to stop.
+  it.each([
+    ["1 Atraxa, Praetors' Voice (2X2) 145 *CMDR* (Commander)"],
+    ["1 Atraxa, Praetors' Voice (2X2) 145 (Commander) *CMDR*"],
+  ])("reads both commander markers on one line: %s", (line) => {
+    const result = build(`${line}\n1 Sol Ring (LTC) 284`);
+    expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(result.unresolved).toEqual([]);
+  });
+
   it("leaves a bracketed (CMDR) to the set-code path", () => {
     // The abbreviation fits the set-code shape, so reading it as a declaration
     // would take a printing identity away from a line that meant one.
