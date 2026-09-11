@@ -1,5 +1,13 @@
 # READINESS — the filter chassis (R2)
 
+> **Errata — read `docs/superpowers/readiness-filter-chassis.md` §6 before implementing.**
+> The engineering audit corrected several figures in this document and closed two decisions it
+> leaves open. In particular: the shipped pip's 1.38:1 floor is against `--bg`, not
+> `--surface-sunken`; the Scryfall floor is 7.77:1, not 9.51:1, because three assumed hexes were
+> wrong and have since been fetched; decision 18's 887px total is 987px; asset delivery is ruled as
+> five static SVGs; and `Printed in` is cut from this round. This document is kept as delivered —
+> the errata table is the correction of record.
+
 **Self-assessed: 🟡 amber, with one decision blocking and one dependency sequenced ahead of it.**
 Everything §3 asks Design to call is called, drawn and measured. What keeps this off green is not a
 drawing gap — it is that §2.1's locked decision, read literally, retires a component that shipped

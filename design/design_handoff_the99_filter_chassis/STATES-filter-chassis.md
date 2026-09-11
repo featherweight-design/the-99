@@ -1,5 +1,13 @@
 # STATES — the filter chassis
 
+> **Errata — read `docs/superpowers/readiness-filter-chassis.md` §6 before implementing.**
+> The engineering audit corrected several figures in this document and closed two decisions it
+> leaves open. In particular: the shipped pip's 1.38:1 floor is against `--bg`, not
+> `--surface-sunken`; the Scryfall floor is 7.77:1, not 9.51:1, because three assumed hexes were
+> wrong and have since been fetched; decision 18's 887px total is 987px; asset delivery is ruled as
+> five static SVGs; and `Printed in` is cut from this round. This document is kept as delivered —
+> the errata table is the correction of record.
+
 Six states × four routes × two widths. The chassis is one component, so most cells are the same
 drawing with a different dimension list; this file exists to say which cells differ and **what each
 state must not do**, which is where the shipped surfaces disagree with each other today.

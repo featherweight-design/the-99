@@ -156,3 +156,33 @@ here because the handoff is the document an implementer reads.
 | Decision 4's panel is "what `FilterPanel` already does" | True of width, false of the breakpoint and the desktop row height | See the section above; the 768px/900px gap is a live bug at 768–899px |
 | `STATES` §181: the shipped panels share `useDialogA11y`, roving radiogroups and selection-follows-focus | They do not. `filter-panel.tsx` has its own panel and listbox key handling; `rack/select.tsx` has its own focus and menu logic | The "no new pattern" justification is what makes the a11y work look free. It is not free — the shared behaviour has to be written |
 | `STATES` §104 lists only `Set` as searchable | `Printed in` is searchable too, per the canvas | Moot this round — `Printed in` is cut — but it must be settled before that dimension lands |
+| Decision 18 derives the 900px switch from a 887px total | **The stated minimums total 987px.** 132 + 148 + 150 + 78 + 120 + 1 + 160 + 70 = 859, plus seven 12px gaps (84), plus 44px padding = 987 | See §7 — this is the one finding that is not eng-resolvable |
+| `STATES` §112 gives the wide panel `role="menu"` | `FilterPanel` renders `role="dialog"` containing a `role="listbox"` of `role="option"` rows (`filter-panel.tsx:546,863-877`) | A `menu` wrapper is invalid around those descendants. The shipped semantics stand; the contract in STATES does not |
+| Asset delivery left open — "static assets, a sprite or a hotlink are all viable" | Ruled in finding 3: five static SVGs in the repository | The handoff reopens a decision this audit closed |
+| `Printed in` drawn and specified as this round's new dimension | Cut from the round, on Design's own recommendation | Tracker, plan and this verdict all say cut; the handoff is the only document that still says otherwise |
+
+
+## §7 One finding that is not engineering-resolvable: the 900px switch cannot hold
+
+Decision 18 sets the wide/compact switch at 900px and derives it from `/collection`'s seven
+controls: "132 + 148 + 150 + 78 + 120 + 1 + 160 + 70 + seven 12px gaps + 44px padding = **887px**".
+
+**That sum is 987px.** The eight widths total 859, the seven gaps add 84, and the padding adds 44.
+So at 900px — and anywhere up to 987 — the wide form does not fit, and row 1 wraps. Decision 18
+exists precisely to stop row 1 wrapping, and R1's wrapping row was reported as a layout bug, so the
+rule as drawn produces the defect it was written to prevent.
+
+Three ways out, and all three are Design's rather than engineering's, because each changes something
+drawn:
+
+1. **Move the switch to 1000px.** Cheapest, and it widens the band of laptops that get the compact
+   treatment on a pointer device — the trade Design already flagged and accepted at 900.
+2. **Narrow a control.** The 160 and the 150 are the two largest; either could give up the 87px.
+3. **Let search shrink below its 132px minimum.** It is already the only shrinking child, so this
+   costs the least layout change and the most legibility at the bottom of the range.
+
+**This does not block the build, and it does not block this verdict.** The figure is derived from
+`/collection`'s seven controls; `/decks` has five and `/commanders` four, so PRs 1b and 2 are not at
+risk. `/collection` is PR 3, which waits on set collections' Task 9 regardless. The question needs an
+answer before that PR, not before this one — which is why the verdict stays 🟢 and this section names
+the deadline instead of holding the round.
