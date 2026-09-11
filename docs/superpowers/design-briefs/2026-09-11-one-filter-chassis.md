@@ -44,9 +44,15 @@ surface whose content, deck art, most wants the width.
 
 ## §2 Decisions locked in the workshop
 
-1. **A new chassis, drawn for all four routes.** Not an adoption of the collection bar or the commanders
-   rack. Both were considered and rejected: the bar is a working answer but was drawn for a
-   different surface's dimensions, and the rack trades away the horizontal room `/decks` needs.
+1. **A new chassis, drawn for all four routes.** Not an adoption of the collection bar or the
+   commanders rack. Both are working answers drawn for their own surface's dimensions, and neither
+   was drawn against `/decks`'s five, which is the density the shared frame has to survive. **The
+   rejection is about dimensions, not layout**: an earlier draft said the rack costs `/decks` its
+   horizontal room, and that was wrong — `FilterRack` is a full-width wrapping row
+   (`filter-rack.tsx:91-121`) and would cost vertical space, not width. The width on `/decks` is lost
+   because `DeckFilterColumn` is a **sibling of the deck content** inside a `sm:flex-row`
+   (`decks-view.tsx:223-231`); that is what decision 4 removes, and any chassis mounted above the
+   content returns it.
 2. **Shared chassis and shared controls; per-surface dimensions.** The surfaces genuinely
    filter different things — status and played-window are deck-only, Type is collection-only. The
    consistency being bought is the frame, the control vocabulary, the panel behaviour and the sort
@@ -111,7 +117,7 @@ recognisable. The consequences for Design:
 - **A webfont is still out**, but for a plainer reason than the masking one: these are colour assets,
   and a font would give monochrome glyphs.
 
-## §5 Dependency — set collections will extract the colour filter first
+## §5 Dependency — set collections owns the colour control first, and this brief changes it under them
 
 `docs/superpowers/readiness-set-collections.md` finding 2 records that `filter-bar.tsx` builds the
 desktop pip row inline and the mobile Color panel separately, and that the set-collections build
@@ -119,6 +125,22 @@ must extract a parameterised colour control to mount it on a second surface. **T
 not happened yet** — it is Task 9 of `docs/superpowers/plans/2026-09-11-set-collections.md:967`, and
 `filter-bar.tsx` still builds both variants inline today. The plan's own constraint (`:38`) is that
 it must come out parameterised, never taking an `isSetPage` flag.
+
+**This is a collision, and it needs a decision before the chassis is drawn.** The set-collections
+handoff does not merely consume that extracted control — it locks its behaviour. `README.md:345`
+reads "The colour filter is mounted, not forked. Same component, same URL key, same lit/unlit
+rule", and `:55` specifies the set pages' colour filter as "`filter-bar.tsx`'s pip row mounted
+verbatim". Those set pages are **not** among this brief's four routes.
+
+So decision 5 — abstract swatches out, Scryfall's full-colour symbols in — cannot be contained to
+four routes. Either the set pages inherit a control whose appearance changed after their handoff
+went Green, or the control forks, which that handoff explicitly forbids. **The brief takes the first
+branch**: there is one colour control in the app, the set pages mount it, and its appearance changes
+for them too. What that costs is a ratification — Design must check the new pip against the set
+pages' drawn states (`STATES-set-grid.md`), where it sits on `--surface-sunken` rather than the
+grounds this brief's four routes use, and where the contrast figures in
+`readiness-set-collections.md` were computed against the swatch it replaces. A fixed cream pip on a
+sunken ground is a different measurement from the one that audit made.
 
 **That build goes first.** It is Green and planned (`docs/superpowers/plans/2026-09-11-set-collections.md`)
 while this brief is not yet drawn. The extraction it performs is the first shared control; this
@@ -167,8 +189,11 @@ the row then draws and names. That is a larger change than "add a filter", and i
 this section is open rather than decided.
 
 **This brief does not close it, because the choice is visible.** Under (2) a set filter on
-`/discover` — the lane of commanders you do *not* own — filters on nothing, which is either a
-reason to scope the dimension to the owned lane or a reason to pick (1) there. Design should call
+`/discover` — whose population is every indexed commander the player has **neither built around nor
+owns**, the two exclusions together partitioning the index with `/commanders`
+(`src/lib/discovery/candidates.ts:362-364`) — can never match on an owned printing, because by
+definition it holds none. That is either a reason to scope the dimension to the owned lane or a
+reason to pick (1) there. Design should call
 whether the control appears on both lanes and what it means on each. **There is a second half to the
 same question**: whichever printing satisfies the match is not necessarily the one whose art the row
 draws, and a row that matches on a set while showing another set's art is a visible contradiction.
