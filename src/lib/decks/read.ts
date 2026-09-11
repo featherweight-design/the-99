@@ -5,6 +5,7 @@ import {
   cards,
   collectionItems,
   deckCards,
+  deckFolders,
   deckGames,
   deckUnresolvedRows,
   decks,
@@ -350,6 +351,14 @@ export type DeckListItem = {
    */
   partnerName: string | null;
   partnerColorIdentity: string[] | null;
+  /**
+   * The folder this deck is filed on, or null for unfiled. Both fields ride
+   * along together so a grid can group by folder and label the group without a
+   * second lookup; null on both is the unfiled bucket, which is where every
+   * deck starts and where one returns when its folder is deleted.
+   */
+  folderId: string | null;
+  folderName: string | null;
   built: number;
   ownedCount: number;
   toBuyCount: number;
@@ -467,6 +476,8 @@ export async function listDecksWithStats(
       commanderArtCropUri: cards.artCropUri,
       partnerName: partnerCards.name,
       partnerColorIdentity: partnerCards.colorIdentity,
+      folderId: decks.folderId,
+      folderName: deckFolders.name,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
@@ -478,6 +489,9 @@ export async function listDecksWithStats(
     // have no partner — an inner join would drop every single-commander deck
     // from the list.
     .leftJoin(partnerCards, eq(decks.partnerOracleId, partnerCards.oracleId))
+    // LEFT, because an unfiled deck has no folder row — an inner join here
+    // would hide every deck the player has not filed, which today is all of them.
+    .leftJoin(deckFolders, eq(deckFolders.id, decks.folderId))
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
     .groupBy(
@@ -490,6 +504,8 @@ export async function listDecksWithStats(
       cards.artCropUri,
       partnerCards.name,
       partnerCards.colorIdentity,
+      decks.folderId,
+      deckFolders.name,
     )
     .orderBy(...order);
 
@@ -557,6 +573,8 @@ export async function listDecksWithStats(
       commanderArtCropUri: row.commanderArtCropUri,
       partnerName: row.partnerName,
       partnerColorIdentity: row.partnerColorIdentity,
+      folderId: row.folderId,
+      folderName: row.folderName,
       built: row.built,
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,

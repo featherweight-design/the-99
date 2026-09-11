@@ -20,6 +20,8 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderArtCropUri: "https://example.test/atraxa-crop.jpg",
   partnerName: null,
   partnerColorIdentity: null,
+  folderId: null,
+  folderName: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,

@@ -74,6 +74,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   point it at `local-dev` or a scratch Neon branch, **never production**. On a deck's own page
   `free` is a surplus, not a count of copies: 0 means "holds what it needs and no spare", and a
   negative figure is the number of copies that deck has to buy.
+- `pnpm probe:folders` proves deck folders against a real Postgres by calling the real
+  queries — a deck files and unfiles, a cross-user move is refused from either side, and
+  deleting a folder unfiles its decks without deleting any of them. That last rule is the
+  foreign key's `on delete set null`, which no unit test in this repository can reach. It
+  writes a fixture under a per-run `user_id` and deletes it in a `finally`; point it at
+  `local-dev` or a scratch Neon branch, **never production**.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 

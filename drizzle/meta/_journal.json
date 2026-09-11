@@ -176,6 +176,13 @@
       "when": 1789009018243,
       "tag": "0024_flaky_sharon_ventura",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789167782106,
+      "tag": "0025_common_cyclops",
+      "breakpoints": true
     }
   ]
 }
