@@ -358,35 +358,48 @@ export function CardModal({
     setAnnouncement(next ? pickerCopy.announceOpen(ownedPrintings.length) : "");
   }
 
+  // Nothing stops the reader picking again while a write is still running, and a write that
+  // settles badly rolls the pick back to what the server holds. Without knowing which write it
+  // is rolling back, the first pick's refusal would erase the second pick the reader has
+  // already made and is already looking at. Only the newest write may roll anything back.
+  const writes = useRef(0);
+
+  // A write the server refused and a write that never reached it leave the same thing on
+  // screen: a printing the reader chose and the server does not hold.
+  function settleWrite(generation: number, wrote: boolean) {
+    setSeeded(arrived.current);
+    if (!wrote && generation === writes.current) setPick(arrived.current.preferredPrinting);
+    onArtChange?.();
+  }
+
   function onPick(p: { setCode: string; collectorNumber: string }) {
     setPick({ setCode: p.setCode, collectorNumber: p.collectorNumber });
     onArtChange?.();
+    const generation = ++writes.current;
     startWrite(async () => {
+      let wrote = false;
       try {
-        await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
-        setSeeded(arrived.current);
+        wrote = await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
       } catch {
-        // A write that never landed leaves no optimistic pick worth protecting: the
-        // preference the server holds is the one it held before the reader touched it.
-        setSeeded(arrived.current);
-        setPick(arrived.current.preferredPrinting);
+        wrote = false;
       }
-      onArtChange?.();
+      settleWrite(generation, wrote);
     });
   }
 
   function onClearPick() {
     setPick(null);
     onArtChange?.();
+    const generation = ++writes.current;
     startWrite(async () => {
+      let wrote = false;
       try {
         await clearCardArtPreference(card.oracleId);
-        setSeeded(arrived.current);
+        wrote = true;
       } catch {
-        setSeeded(arrived.current);
-        setPick(arrived.current.preferredPrinting);
+        wrote = false;
       }
-      onArtChange?.();
+      settleWrite(generation, wrote);
     });
   }
 

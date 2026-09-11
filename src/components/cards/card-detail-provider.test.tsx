@@ -4,7 +4,7 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import { printingPickerCopy } from "../../lib/copy/collection";
 
 vi.mock("../../app/collection/actions", () => ({
-  setCardArtPreference: vi.fn(async () => {}),
+  setCardArtPreference: vi.fn(async () => true),
   clearCardArtPreference: vi.fn(async () => {}),
 }));
 

@@ -11,8 +11,10 @@ import { printedNameCopy } from "../../lib/copy/card-surfaces";
 import { printingPickerCopy } from "../../lib/copy/collection";
 
 vi.mock("../../app/collection/actions", () => ({
-  setCardArtPreference: vi.fn(),
-  clearCardArtPreference: vi.fn(),
+  // The real action reports whether it wrote; a bare `vi.fn()` would resolve undefined and
+  // read as a refusal.
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
 }));
 
 const { CardModal } = await import("./card-modal");
@@ -392,7 +394,7 @@ describe("CardModal printing picker scope", () => {
     const actions = await import("../../app/collection/actions");
     let settle!: () => void;
     vi.mocked(actions.setCardArtPreference).mockImplementation(
-      () => new Promise<void>((r) => { settle = () => r(); }),
+      () => new Promise<boolean>((r) => { settle = () => r(true); }),
     );
     const owned = {
       ...card,
@@ -421,7 +423,7 @@ describe("CardModal printing picker scope", () => {
     await act(async () => { settle(); });
 
     expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
-    vi.mocked(actions.setCardArtPreference).mockReset();
+    vi.mocked(actions.setCardArtPreference).mockImplementation(async () => true);
   });
 
   // A refused write is the one case no re-read corrects: the read the eviction starts can
@@ -452,7 +454,80 @@ describe("CardModal printing picker scope", () => {
 
     // No re-read arrives, and the pick is back where the server left it regardless.
     expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
-    vi.mocked(actions.setCardArtPreference).mockReset();
+    vi.mocked(actions.setCardArtPreference).mockImplementation(async () => true);
+  });
+
+  // The action refuses a printing the reader no longer owns by returning without writing, and
+  // a refusal reads back exactly the preference already on screen. Only the action can say
+  // which of the two happened, so a refusal is reconciled from its answer rather than waiting
+  // on a re-read that cannot tell the difference — and may not arrive at all.
+  it("puts the pick back when the server declines to write it", async () => {
+    const actions = await import("../../app/collection/actions");
+    vi.mocked(actions.setCardArtPreference).mockImplementation(async () => false);
+    const owned = {
+      ...card,
+      quantity: 3,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+      ],
+    };
+    render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+
+    expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+    vi.mocked(actions.setCardArtPreference).mockImplementation(async () => true);
+  });
+
+  // Nothing stops a second pick while the first write is still running, and a write that
+  // settles badly rolls the pick back to what the server holds. Rolled back blindly, that
+  // erases the second pick — the one the reader made last and is looking at.
+  it("leaves a newer pick alone when an older write settles badly", async () => {
+    const actions = await import("../../app/collection/actions");
+    let refuse!: () => void;
+    vi.mocked(actions.setCardArtPreference)
+      .mockImplementationOnce(() => new Promise<boolean>((_resolve, reject) => {
+        refuse = () => reject(new Error("refused"));
+      }))
+      .mockImplementation(async () => true);
+    const owned = {
+      ...card,
+      quantity: 4,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+        { ...catalogPrinting("M21", "1"), quantity: 1, finishes: { nonfoil: 1 } },
+      ],
+    };
+    render(
+      <CardModal card={owned} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: printingPickerCopy.printing.triggerAria(3, "RVR · 24 +2 more"),
+      })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /M21/ })[0]);
+    });
+
+    // The first write refuses only now, with the second pick already on screen.
+    await act(async () => { refuse(); });
+
+    expect(screen.getAllByText(printingPickerCopy.printing.triggerPicked).length).toBeGreaterThan(0);
+    vi.mocked(actions.setCardArtPreference).mockImplementation(async () => true);
   });
 });
 

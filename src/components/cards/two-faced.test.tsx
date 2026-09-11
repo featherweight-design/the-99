@@ -10,7 +10,7 @@ import { twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { TwoFacedMark } from "./two-faced-mark";
 
 vi.mock("../../app/collection/actions", () => ({
-  setCardArtPreference: vi.fn(),
+  setCardArtPreference: vi.fn(async () => true),
   clearCardArtPreference: vi.fn(),
 }));
 

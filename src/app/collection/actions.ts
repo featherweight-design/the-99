@@ -161,12 +161,16 @@ export async function confirmUpload(uploadId: string): Promise<void> {
  * Reachable outside the picker, which only ever offers printings the user owns — so the holding
  * is verified here rather than trusted. Silently returning on a miss keeps the action from
  * leaking whether some other user owns that printing.
+ *
+ * Reports whether it wrote. The caller paints the pick optimistically and has no other way to
+ * tell a refusal from a write — a refusal reads back exactly the preference already on screen.
+ * Saying so reveals nothing but the caller's own holdings.
  */
 export async function setCardArtPreference(
   oracleId: string,
   setCode: string,
   collectorNumber: string,
-): Promise<void> {
+): Promise<boolean> {
   const userId = await requireUserId();
   // Normalize on write (§3.3) — every set code in the database is lowercase, and the picker
   // hands back the uppercased display value.
@@ -181,7 +185,7 @@ export async function setCardArtPreference(
       eq(collectionItems.collectorNumber, collectorNumber),
     ))
     .limit(1);
-  if (!owned) return;
+  if (!owned) return false;
 
   await db.insert(cardArtPreferences)
     .values({ userId, oracleId, setCode: normalizedSetCode, collectorNumber })
@@ -192,6 +196,7 @@ export async function setCardArtPreference(
   // The browse payload carries the chosen printing's art, so it is stale now.
   revalidateUserLists(userId);
   revalidatePath("/collection");
+  return true;
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */
