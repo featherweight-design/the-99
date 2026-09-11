@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, decks } from "../../db/schema";
+import { cards, collectionItems } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
@@ -195,22 +195,18 @@ export async function recommendCommanders(
 ): Promise<RecommendResult> {
   const { collection, uniqueCardsRead } = await loadCollectionPool(userId);
 
-  // A commander you have already built a deck around is not a recommendation —
-  // the page's whole question is "what should I build next", and answering it
-  // with a deck the user is already holding wastes the top of the list. The
-  // detail page deliberately does not filter: arriving there from a deck link
-  // should still render.
-  const built = new Set(
-    (await db
-      .select({ oracleId: decks.commanderOracleId })
-      .from(decks)
-      .where(eq(decks.userId, userId))
-    ).map((d) => d.oracleId),
-  );
-
-  const candidates = collection.filter(
-    (c) => isCommanderCandidate(c) && !built.has(c.oracleId),
-  );
+  // EVERY commander candidate the collection holds, built ones included. The
+  // "what should I build next" exclusion is the READ's, in `getRankedList`, and
+  // it must not be applied here: this result is what `persistScores` writes, and
+  // that write deletes every row it does not name. Filtering first therefore
+  // evicted a commander from `commander_scores` the moment a deck was built
+  // around it — and because a warm store short-circuits the recompute, deleting
+  // that deck never brought it back. Only a fresh CSV upload, which clears the
+  // table outright, did.
+  //
+  // Scoring a handful of built commanders costs their EDHREC resolves, and those
+  // are already in the same cache read below.
+  const candidates = collection.filter(isCommanderCandidate);
 
   // One cache read for the whole fanout — a per-commander SELECT here meant
   // ~196 round-trips on every compute, warm or cold.

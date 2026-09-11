@@ -25,11 +25,15 @@ export type RankedList = {
  * needed stats costs no extra query.
  *
  * This is the list a player picks their *next* commander from, so a commander
- * already helming a deck is excluded. The exclusion applies to the read, after
- * the stored and recomputed paths have converged — filtering the recompute alone
- * would leave a warm commander_scores cache serving built commanders forever.
- * The persisted scores stay whole for the same reason: building a deck must not
- * invalidate the cache.
+ * already helming a deck is excluded. The exclusion applies HERE, at the read,
+ * after the stored and recomputed paths have converged, and `recommendCommanders`
+ * applies none of its own — the two halves of one rule, and both are load-bearing.
+ * Filtering the recompute alone would leave a warm commander_scores cache serving
+ * built commanders forever; filtering it as WELL is what shipped, and it deleted
+ * the built commander from the store (`persistScores` drops every row the compute
+ * does not name) so that deleting the deck never brought it back. The persisted
+ * scores stay whole: building a deck must not invalidate the cache, and must not
+ * evict from it either.
  */
 export const getRankedList = cache(async function getRankedList(
   userId: string,

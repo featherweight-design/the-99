@@ -1,7 +1,11 @@
-// A commander the user has already built shouldn't be offered as something to
-// build. The bug was a missing join, so the property worth pinning is the
-// wiring — recommendCommanders reading the decks table at all — which a test of
-// the filter in isolation would not have caught.
+// The compute scores EVERY commander candidate, built ones included, because its
+// result is what `persistScores` writes and that write deletes every row it does
+// not name. The "already built" exclusion is the read's alone — see
+// `ranked-list.test.ts`, which pins the other half of the same rule.
+//
+// Filtering here as well is what shipped, and it evicted a commander from
+// `commander_scores` the moment a deck was built around it: a warm store
+// short-circuits the recompute, so deleting that deck never brought it back.
 import { describe, expect, it, vi } from "vitest";
 
 const pool = [
@@ -28,7 +32,7 @@ vi.mock("../../db", () => ({
         innerJoin: () => ({ where: () => ({ orderBy: async () => pool }) }),
       }),
     }),
-    // the decks lookup under test
+    // Any deck read this function might make. It should make none.
     select: () => ({
       from: () => ({ where: async () => builtCommanderIds.map((oracleId) => ({ oracleId })) }),
     }),
@@ -42,20 +46,20 @@ vi.mock("../edhrec/client", () => ({
 
 const { recommendCommanders } = await import("./recommend");
 
-describe("recommendCommanders — already-built commanders", () => {
-  it("recommends every candidate when the user has no decks", async () => {
+describe("recommendCommanders — what the persisted store is written from", () => {
+  it("scores every candidate when the user has no decks", async () => {
     builtCommanderIds.length = 0;
     const { results } = await recommendCommanders("user-1");
     expect(results.map((r) => r.oracleId).sort()).toEqual(["atraxa", "korvold"]);
   });
 
-  it("drops a commander the user has already built a deck around", async () => {
+  it("keeps a commander the user has already built a deck around", async () => {
     builtCommanderIds.length = 0;
     builtCommanderIds.push("korvold");
     const { results, candidateCount } = await recommendCommanders("user-1");
-    expect(results.map((r) => r.oracleId)).toEqual(["atraxa"]);
-    // The count under the list is "N candidates", so it has to shrink with the
-    // list — otherwise the page claims a recommendation it isn't showing.
-    expect(candidateCount).toBe(1);
+    expect(results.map((r) => r.oracleId).sort()).toEqual(["atraxa", "korvold"]);
+    // The figure the page prints is `getRankedList`'s, counted after the read's
+    // exclusion. This one counts what was scored, which is what the store holds.
+    expect(candidateCount).toBe(2);
   });
 });
