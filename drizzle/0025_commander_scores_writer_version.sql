@@ -12,12 +12,18 @@
 -- neither empty nor degraded, so the read would otherwise serve them as warm
 -- forever.
 --
--- What the DEFAULT does NOT cover is a ROLLBACK. Within the deploy window every
--- row is version 1 — the old writer's inserts take the default and its upserts
--- leave the existing value alone — so it cannot mint a version 2. After the new
--- build is live and has written version 2, rolling back to the old one would let
--- its upserts refresh those rows in place and leave the marker saying current.
--- The recovery is the same either way: `deleteAllScores`, or any CSV confirm,
--- and the table rebuilds. Noted rather than engineered around, because the fix
--- for it is the same fix as for a rollback past any other writer change.
+-- What the DEFAULT does NOT cover is an old writer MUTATING a version-2 row,
+-- which takes two forms. A rollback: after the new build has written version 2,
+-- reverting to the old one lets its upserts refresh those rows in place, and
+-- they keep a marker that says current. And a compute already in flight at
+-- cutover: it reads its pool under the old code, and if its write lands after a
+-- version-2 set exists, its DELETE takes the built commanders back out while its
+-- upsert leaves the survivors at 2.
+--
+-- Both are one request's worth of one player's cache, and both recover the same
+-- way: `deleteAllScores`, or any CSV confirm, and the table rebuilds. Closing
+-- them properly means serialising writers across a deploy — an advisory lock or
+-- an epoch row every write checks — which is a coordination mechanism for a
+-- table whose entire purpose is to be rebuildable from the collection. Noted
+-- here so the next reader knows it was weighed rather than missed.
 ALTER TABLE "commander_scores" ADD COLUMN "writer_version" integer DEFAULT 1 NOT NULL;

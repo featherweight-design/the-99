@@ -240,6 +240,45 @@ export async function loadScores(
 }
 
 /**
+ * The rows a rank may be counted over: this user's, from a set no older writer
+ * touched, minus the commanders that already helm a deck.
+ *
+ * Exported so the emitted SQL is assertable — every clause here is a rule stated
+ * somewhere else as well, and the failure mode of each is a number on one screen
+ * disagreeing with the same number on another.
+ *
+ * Staleness is a property of the SET, not of the row, which is the same rule
+ * `loadScores` applies and has to be: a row-level filter would quietly rank the
+ * current rows of a mixed set, and that is a rank counted over a set the list has
+ * already thrown away. One stale row refuses the whole set and the caller falls
+ * through to the computed list.
+ *
+ * The built exclusion is here because the store deliberately HOLDS built
+ * commanders — it is what `persistScores` writes from, and dropping them there is
+ * what used to evict a commander permanently when a deck was built around it —
+ * while the list deliberately does not draw them. A window counted over rows the
+ * list does not show is a rank that disagrees with it: the commander at the top
+ * of the page would read `Rank #2` because a built commander outscored it.
+ *
+ * A built commander therefore resolves nowhere through this query, which is where
+ * it resolved before the store held it at all: `resolveCommanderSlug` falls
+ * through to the owned list (which excludes it) and then to discovery (which
+ * excludes what the player owns), and its detail page 404s. That is a separate
+ * question, and not one to settle by handing out a rank no list agrees with.
+ */
+export function rankableScoreRows(userId: string) {
+  return and(
+    eq(commanderScores.userId, userId),
+    sql`not exists (
+      select 1 from ${commanderScores} stale
+      where stale.user_id = ${userId}
+        and stale.writer_version < ${SCORE_WRITER_CURRENT}
+    )`,
+    notBuiltBy(userId, commanderScores.oracleId),
+  );
+}
+
+/**
  * Resolves a persisted slug to its commander and rank in one query, returning a
  * single row rather than pulling the user's whole scored list into memory.
  * Rank comes from the stored ordering, so it matches the list the user clicked
@@ -275,15 +314,7 @@ export async function findScoredCommander(
         // (which excludes what the player owns). Its detail page 404s, exactly as
         // it did before — a separate question from this one, and not one to
         // settle by handing out a rank no list agrees with.
-        // Stale rows are refused here too, or a slug would resolve to a rank
-        // counted over a set `loadScores` has already condemned.
-        .where(
-          and(
-            eq(commanderScores.userId, userId),
-            eq(commanderScores.writerVersion, SCORE_WRITER_CURRENT),
-            notBuiltBy(userId, commanderScores.oracleId),
-          ),
-        ),
+        .where(rankableScoreRows(userId)),
     );
     const [row] = await db
       .with(ranked)
