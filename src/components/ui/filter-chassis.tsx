@@ -86,7 +86,16 @@ export function FilterChassis({
 }: FilterChassisProps) {
   return (
     <div
-      className="flex flex-col gap-[10px] border-0 border-b border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] pt-[12px] pb-[10px] lg:px-[22px]"
+      // The horizontal padding follows the chassis's own form, not a Tailwind
+      // breakpoint. `lg:` is 1024px while the chassis switches at 1000, so a
+      // `lg:` padding would give 1000-1023px a third geometry: the wide form
+      // with the compact frame's padding.
+      className={[
+        "flex flex-col gap-[10px] border-0 border-b border-solid",
+        "border-[color:var(--border)] bg-[color:var(--surface-sunken)]",
+        "pt-[12px] pb-[10px]",
+        form === "wide" ? "px-[22px]" : "px-[16px]",
+      ].join(" ")}
       data-chassis-form={form}
     >
       {/* Row 1 — never wraps (decision 18). There are two forms and nothing in
@@ -138,7 +147,12 @@ export function FilterChassis({
                 // drawn height, and the chip line's height is the invariant the
                 // whole frame rests on.
                 className={[
-                  "relative inline-flex cursor-pointer items-center gap-[6px] rounded-[7px]",
+                  // `shrink-0 whitespace-nowrap` is what keeps the reserved
+                  // height honest: a long set or search label would otherwise
+                  // wrap INSIDE one chip, growing row 2 past 22px even when the
+                  // chip list fits on one line. `rack/chip-line.tsx:171` carries
+                  // the same pair for the same reason.
+                  "relative inline-flex shrink-0 cursor-pointer items-center gap-[6px] whitespace-nowrap rounded-[7px]",
                   "border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)]",
                   "px-[8px] py-[3px] font-mono text-[11px] text-[color:var(--fg-body)]",
                   "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px]",

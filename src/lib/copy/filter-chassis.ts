@@ -22,7 +22,7 @@ export const chassisCopy = {
      * The only control that touches every dimension. "filters" is load-bearing:
      * it deliberately does not touch the sort.
      */
-    clearAll: "Clear all filters",
+    clearAll: filterCopy.chips.clearAll,
     clearAllAria: "Clear all filters. The sort is unchanged.",
   },
 

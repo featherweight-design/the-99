@@ -114,6 +114,30 @@ describe("FilterChassis", () => {
     expect(clear.className).toContain("after:min-w-[44px]");
   });
 
+  it("keeps a long chip label on one line, so the reserved height holds", () => {
+    render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[chip("s", "Set · Adventures in the Forgotten Realms Commander")]}
+      />,
+    );
+    const c = screen.getByRole("button", { name: /^Remove filter: Set/ });
+    expect(c.className).toContain("whitespace-nowrap");
+    expect(c.className).toContain("shrink-0");
+  });
+
+  it("takes its padding from the form, not from Tailwind's lg", () => {
+    // lg: is 1024px and the chassis switches at 1000, so a lg: padding would
+    // give 1000-1023px the wide form inside the compact frame.
+    const { container, rerender } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    const frame = () => container.querySelector("[data-chassis-form]")!;
+    expect(frame().className).toContain("px-[22px]");
+    expect(frame().className).not.toMatch(/lg:px-/);
+    rerender(<FilterChassis {...base} form="compact" controls={null} chips={[]} />);
+    expect(frame().className).toContain("px-[16px]");
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,
