@@ -71,9 +71,11 @@ async function ownedDeckIds({ userId, deckIds }: DeckIds): Promise<string[]> {
 /**
  * Every deck's stats, or the stats of the decks named.
  *
- * Three reads, not one per deck: the decklist join, the game tally and the
- * shopping roll-up each answer for the whole set at once, so Home's roll-up
- * costs the same number of round trips as a single deck page.
+ * A FIXED NUMBER OF READS, not one per deck. The ownership narrowing runs
+ * first, then the decklist join, the commander read, the grouped game tally and
+ * the shopping roll-up — itself a buy-row query and a price query — each answer
+ * for the whole set at once and the four run in parallel. Home's roll-up over
+ * every deck therefore costs the same round trips as a single deck page.
  *
  * A deck with no cards, no games and nothing to buy still gets an entry — the
  * zero state is a real answer and a caller should not have to distinguish
