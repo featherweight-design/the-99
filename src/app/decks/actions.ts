@@ -739,9 +739,14 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   await requireDeck(deckId, userId);
   const trimmed = validateDeckName(name);
   await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
-  // No claim changes, so the availability surfaces are untouched — but the home
-  // dashboard names the three most recent decks and would keep the old one.
-  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  // A rename moves no card, so no claim changes — and it still reaches every
+  // surface a claim does, because those surfaces print the deck's NAME. A card's
+  // availability marker says `none free — in <deck>` on /collection, /commanders
+  // and /discover; the commander detail page names the deck under Why this
+  // commander and again on each committed card. Left to `deckSurfaces` alone,
+  // all of them went on showing the old name until something else invalidated
+  // them.
+  revalidateClaims(deckId, userId);
 }
 
 /** One removed row, carried so Undo can restore a stacked basic at the exact
