@@ -70,9 +70,10 @@ export type DeckImport = {
     oracleText: string | null;
   }[];
   /**
-   * Set when the source names its own commander (`*CMDR*`, or a `Commander`
-   * section). When it is set the picker is skipped entirely — a confirmation
-   * step for a fact we already have is friction.
+   * Set when the source names its own commander — `*CMDR*`, a trailing
+   * `(Commander)`, or a `Commander` section. When it is set the picker is
+   * skipped entirely: a confirmation step for a fact we already have is
+   * friction.
    */
   declaredCommander: DeclaredCommander | null;
   /**
@@ -91,7 +92,8 @@ export type DeckImport = {
 };
 
 export type DeckImportInput = { catalog: ImportCatalogCard[]; indexes?: MatchIndexes } & (
-  // Paste and text-file modes, where section markers and *CMDR* are visible.
+  // Paste and text-file modes, where section markers and inline commander
+  // markers are visible.
   | { text: string; rows?: never }
   // CSV mode, already normalised to the parser's row shape. A CSV carries no
   // section markers, so none are looked for.
@@ -224,7 +226,8 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
 export function buildDeckImport(input: DeckImportInput): DeckImport {
   let rows: CollectionRow[];
   let notes: ImportNote[] = [];
-  // Lines a `Commander` header or a `*CMDR*` flag marked as the deck's leader.
+  // Lines a `Commander` header, a `*CMDR*` flag or a trailing `(Commander)`
+  // marked as the deck's leader.
   const commanderLines = new Set<number>();
 
   if (input.rows) {

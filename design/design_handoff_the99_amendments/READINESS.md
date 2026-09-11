@@ -108,6 +108,8 @@ route · the desktop trigger is beyond the brief and can be dropped alone.
 
 ## Not blocking, across all four
 
+- **Errata 2026-09-10:** amendment 2 has since gained exactly one new copy key pair,
+  `update.diff.recounted` / `recountedItem`, closing Gap 2. The rest of the line below stands.
 - **No new token, no new key, no new hex beyond one value, no new motion class, no new modal, no
   toast, no new empty-state construct, no schema change, and no `--danger` anywhere.**
 - The 36-key theme contract stays at 36 keys.
