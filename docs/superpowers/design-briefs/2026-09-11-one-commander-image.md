@@ -7,13 +7,18 @@ source of truth the Claude Design handoff prompt points at.
 that commit, not recalled.
 
 Hugh's words: *"right now we render the 'commander' image differently in several places and it
-doesn't look uniform."* He is right, and the count is eleven.
+doesn't look uniform."* He is right, and the count is thirteen renders across eleven surfaces.
 
-**This inventory was built by sweeping every render of `commanderImageUri`, `c.imageUri` and
-`artCropUri` across `src/components` and `src/app`, not by listing `ArtWash`'s consumers.** The
-first two passes did the latter and missed three surfaces, all of which draw commander art without
-the wash. The collection grid (`collection/grid-view.tsx:60`) is deliberately excluded: it draws
-every card you own, not a commander.
+**This inventory was built by sweeping every `url(...)` and `cssUrl(...)` background across
+`src/components` and `src/app`, not by listing `ArtWash`'s consumers and not by matching a
+particular variable name.** Three passes were needed to get here and each failure is worth knowing:
+enumerating `ArtWash` consumers cannot by construction see a surface that draws commander art
+*without* the wash, and a follow-up sweep keyed on `commanderImageUri`/`c.imageUri` still missed the
+pre-filled create flow, which names the same value bare as `imageUri`.
+
+Two surfaces are deliberately excluded because they draw *a card*, not *a commander*: the collection
+grid (`collection/grid-view.tsx:60`), which tiles everything you own, and the decklist hover preview
+(`decks/hover-preview.tsx:172`), which previews whichever row is under the cursor.
 
 ---
 
@@ -35,12 +40,16 @@ across them almost evenly:
 | Home resume row | `home/resume-decks.tsx:97` | `left-portrait` | Portrait at the band's own height |
 | Home deck rail | `home/deck-rail.tsx:131` | **neither** | A `36×26` span carrying its own background, inside a `min-h-[56px]` touch row (`:115`). Phone only — desktop draws no art at all |
 | Deck create picker | `decks/create-picker.tsx:524` | **neither** | A `34×48` thumb on mobile, `40×56` on desktop, with an inset hairline and the shared gradient fallback |
+| Pre-filled create — **mobile** | `decks/create-pre-filled.tsx:138` | **neither** | A `58×81` thumb inside an `md:hidden` block (`:129`) |
+| Pre-filled create — **desktop** | `decks/create-pre-filled.tsx:167` | **neither** | A `220px` 63/88 card with a drop shadow, inside `hidden md:block` (`:162`) |
 
-**Three of the eleven draw no wash at all** — the deck rail's phone spine, the create picker's
-thumb, and the commander detail page's desktop column, which renders a full card face rather than a
-cropped band. All three are in scope: the complaint is that a commander's image looks different from
-place to place, and these are three of the places. The picker's thumb and the rail's span are also
-the two smallest images in the app, which is the useful end of the range for §3.1.
+**Five of the thirteen renders draw no wash at all** — the deck rail's phone spine, the create
+picker's thumb, both halves of the pre-filled create flow, and the commander detail page's desktop
+column, which renders a full card face rather than a cropped band. All five are in scope: the
+complaint is that a commander's image looks different from place to place, and these are five of the
+places. **Both deck-creation entry points are among them**, which means the surface where a player
+first commits to a commander is currently the least designed. The picker's thumb and the rail's span
+are the two smallest images in the app, the useful low end for §3.1.
 
 **The deck spine renders a different strategy on each breakpoint** — `cover` on mobile,
 `left-portrait` on desktop. One surface, two treatments, decided by viewport. That is the single
@@ -79,8 +88,8 @@ on what to ask it for.
 
 ## §3 What Design is being asked to call — open
 
-- **§3.1 The height, and whether one number serves all eleven.** A single fixed height across a home
-  hero, a 36px rail span, a 34px picker thumb and a full 63/88 card face is unlikely. Design should name the smallest set of sizes that still
+- **§3.1 The height, and whether one number serves all thirteen renders.** A single fixed height across a
+  home hero, a 36px rail span, a 34px picker thumb and a 220px 63/88 card face is unlikely. Design should name the smallest set of sizes that still
   reads as one treatment, and say what governs which surface gets which.
 - **§3.2 The label block at the bottom edge, per surface.** What survives the condense at each size:
   which surfaces state the deck's status, which state a count, which state only a name.
@@ -90,7 +99,7 @@ on what to ask it for.
 - **§3.4 The plate's size and weight** against a 0.8-opacity cover crop (`COVER_ART_OPACITY`,
   `art-wash.tsx:69`), in all six themes. **Two different plates exist today and they are not
   interchangeable**: `OVER_ART_PLATE` (`art-wash.tsx:79`) is `72` — a percentage of `--bg` measured
-  for the `⛶ Card details` pill and verified across six themes in `wash-contrast.test.ts`, consumed
+  for the `⛶ Card details` pill and verified across all six themes in `src/lib/theme/wash-contrast.test.ts` (`:188` asserts `THEMES.size === 6`), consumed
   only by `commanders/full-card-trigger.tsx`. The deck overflow button is a different treatment
   entirely: a 26px `rounded-[7px]` square on desktop with an opaque `var(--bg)` and a
   `--border-strong` hairline (`decks/deck-card-overflow.tsx:96-104`, its own decision 3). Design
@@ -119,5 +128,5 @@ amendments explicitly so the audit can check them one by one rather than re-deri
 
 The home redesign (Group D of the same workshop: "Pick up where you left off" reshaped to 3–4 decks,
 the Your Decks rail removed, a stats block added on both frames) renders commander images in three of
-the nine surfaces above. It is briefed **after** this lands so it draws the new treatment rather than
+the thirteen renders above. It is briefed **after** this lands so it draws the new treatment rather than
 the one being replaced.

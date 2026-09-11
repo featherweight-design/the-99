@@ -14,19 +14,20 @@ different order. This brief asks for one chassis all four mount.
 
 ---
 
-## §1 The three surfaces, as they stand
+## §1 The four routes, as they stand
 
 | Surface | Chassis | Dimensions | Colour control |
 |---|---|---|---|
 | `/commanders` | Horizontal rack, mobile sheet — `src/components/commanders/rack/filter-rack.tsx:37` | search, colour, availability, order | `rack/colour-control.tsx:27` |
-| `/discover` | **The same `FilterRack`**, mounted by `commanders/discovery-view.tsx:560` | search, colour, availability, order — a different control set and order from `/commanders` | `rack/colour-control.tsx:27` |
+| `/discover` | **The same `FilterRack`**, mounted by `commanders/discovery-view.tsx:560` | search, colour, order — **no availability**: `filter-rack.tsx:109` mounts `AvailabilityControl` only when `lane === "owned"`, and the tests assert its absence on discover | `rack/colour-control.tsx:27` |
 | `/decks` | **Desktop sidebar column** + mobile sheet — `src/components/decks/deck-filter-column.tsx:135`, `deck-filter-sheet.tsx:114` | search, status, colour, played-window, sort | `deck-filter-column.tsx:107` (`ColourSwatch`) |
 | `/collection` | Horizontal bar — `src/components/collection/filter-bar.tsx:58` | search, Type, Set, Color, **Availability** (`filter-bar.tsx:229-261`), Sort, view toggle | `collection/color-pip.tsx:5` |
 
-**Four routes, not three.** `/discover` mounts the same `FilterRack` as `/commanders` but hands it a
-different control set and order, so the two lanes of one journey already disagree with each other
-before the other surfaces are counted. Wherever this brief says "all three", read it as the four
-routes above: `/commanders` and `/discover` share a component and still need one answer between them.
+**Four routes, three implementations.** `/discover` mounts the same `FilterRack` as `/commanders` but
+drops availability entirely — the control is gated on the owned lane, deliberately, and
+`filter-rack.tsx:107-108` records that discover mounts nothing there rather than a greyed stand-in.
+So the two lanes of one journey already differ before the other surfaces are counted, and the
+difference is a real product decision rather than drift.
 
 **Three colour controls for one concept.** That is the clearest evidence the surfaces were never
 designed as a system.
@@ -38,7 +39,7 @@ filtering, and it spends it on the surface whose content — deck art — most w
 
 ## §2 Decisions locked in the workshop
 
-1. **A new chassis, drawn for all three.** Not an adoption of the collection bar or the commanders
+1. **A new chassis, drawn for all four routes.** Not an adoption of the collection bar or the commanders
    rack. Both were considered and rejected: the bar is a working answer but was drawn for a
    different surface's dimensions, and the rack trades away the horizontal room `/decks` needs.
 2. **Shared chassis and shared controls; per-surface dimensions.** The surfaces genuinely
@@ -87,11 +88,14 @@ inline art with baked fills, or they will be black in all six themes. The colour
 
 ---
 
-## §5 Dependency — set collections is already extracting the colour filter
+## §5 Dependency — set collections will extract the colour filter first
 
 `docs/superpowers/readiness-set-collections.md` finding 2 records that `filter-bar.tsx` builds the
 desktop pip row inline and the mobile Color panel separately, and that the set-collections build
-must extract a parameterised colour control to mount it on a second surface.
+must extract a parameterised colour control to mount it on a second surface. **That extraction has
+not happened yet** — it is Task 9 of `docs/superpowers/plans/2026-09-11-set-collections.md:967`, and
+`filter-bar.tsx` still builds both variants inline today. The plan's own constraint (`:38`) is that
+it must come out parameterised, never taking an `isSetPage` flag.
 
 **That build goes first.** It is Green and planned (`docs/superpowers/plans/2026-09-11-set-collections.md`)
 while this brief is not yet drawn. The extraction it performs is the first shared control; this
