@@ -11,6 +11,7 @@ import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
+import { newestVersion } from "../../lib/decks/versions";
 import {
   deckImportMaxBytes,
   deckImportTooLargeMessage,
@@ -242,7 +243,13 @@ export type ApplyDeckUpdateInput = UpdateDeckInput & {
   keep: string[];
 };
 
-export type ApplyDeckUpdateResult = { in: number; out: number; kept: number };
+export type ApplyDeckUpdateResult = {
+  in: number;
+  out: number;
+  kept: number;
+  /** The deck has a version, so the caller declines the arrival param. */
+  versioned: boolean;
+};
 
 /**
  * Applies an update in one transaction. The refusal copy says "your deck is
@@ -382,5 +389,10 @@ export async function updateDeckFromList(
   });
 
   revalidateClaims(input.deckId, userId);
-  return { in: plan.in.length, out: removing.length, kept };
+  // A committed deck has its own account of what is pending, one scroll below
+  // where this strip would sit — and that account survives the next navigation
+  // while the strip does not. Two diffs for one deck, one of them transient, is
+  // the overlap R2 ruled on: the strip is the one that goes.
+  const versioned = (await newestVersion(input.deckId)) !== null;
+  return { in: plan.in.length, out: removing.length, kept, versioned };
 }
