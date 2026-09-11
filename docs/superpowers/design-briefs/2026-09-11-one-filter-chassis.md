@@ -7,9 +7,10 @@ points at.
 **Verified against `origin/main` at `a461112` on 2026-09-11.** Every `file:line` below was read on
 that commit, not recalled.
 
-The app ships three filter surfaces that were designed independently and look it. They disagree on
-chassis, on where the controls sit, on what a colour selector looks like, and on whether filtering
-costs you horizontal room. This brief asks for one chassis that all three mount.
+The app filters on four routes across three implementations. They disagree on chassis, on where the
+controls sit, on what a colour selector looks like, and on whether filtering costs you horizontal
+room — and the two routes that share an implementation still hand it different controls in a
+different order. This brief asks for one chassis all four mount.
 
 ---
 
@@ -64,12 +65,12 @@ filtering, and it spends it on the surface whose content — deck art — most w
 - **§3.3 Result and clear affordances.** `/commanders` and `/discover` have `rack/result-line.tsx`;
   `/decks` and `/collection` do not state their result count the same way. One answer, applied
   everywhere.
-- **§3.5 What separates `/commanders` from `/discover`.** They share a component and differ in
-  control set and order. Design calls whether that difference is still meaningful under one chassis,
-  or whether the two lanes converge.
 - **§3.4 Whether sort belongs in the chassis at all.** Sort is not a filter. Every surface currently
   mixes them. Design may separate them or keep them together, but one answer has to hold everywhere.
 
+- **§3.5 What separates `/commanders` from `/discover`.** They share a component and differ in
+  control set and order. Design calls whether that difference is still meaningful under one chassis,
+  or whether the two lanes converge.
 ---
 
 ## §4 Constraint — the symbol glyphs have a shipped precedent, and it is not a font

@@ -7,7 +7,13 @@ source of truth the Claude Design handoff prompt points at.
 that commit, not recalled.
 
 Hugh's words: *"right now we render the 'commander' image differently in several places and it
-doesn't look uniform."* He is right, and the count is ten.
+doesn't look uniform."* He is right, and the count is eleven.
+
+**This inventory was built by sweeping every render of `commanderImageUri`, `c.imageUri` and
+`artCropUri` across `src/components` and `src/app`, not by listing `ArtWash`'s consumers.** The
+first two passes did the latter and missed three surfaces, all of which draw commander art without
+the wash. The collection grid (`collection/grid-view.tsx:60`) is deliberately excluded: it draws
+every card you own, not a commander.
 
 ---
 
@@ -27,12 +33,14 @@ across them almost evenly:
 | Commander rec card | `commanders/rec-card.tsx:145` | `left-portrait` | Band at a hard `height: 148` |
 | Discovery row | `commanders/discovery-row.tsx:347` | `left-portrait` | Row-height band |
 | Home resume row | `home/resume-decks.tsx:97` | `left-portrait` | Portrait at the band's own height |
-| Home deck rail | `home/deck-rail.tsx:122` | **neither** | Draws its own 56px background, phone only; desktop draws no art at all |
+| Home deck rail | `home/deck-rail.tsx:131` | **neither** | A `36×26` span carrying its own background, inside a `min-h-[56px]` touch row (`:115`). Phone only — desktop draws no art at all |
+| Deck create picker | `decks/create-picker.tsx:524` | **neither** | A `34×48` thumb on mobile, `40×56` on desktop, with an inset hairline and the shared gradient fallback |
 
-**Two of the ten draw no wash at all.** The deck rail's phone spine sets its own background, and the
-commander detail page's desktop column renders a full card face rather than a cropped band. They are
-in scope: the complaint is that a commander's image looks different from place to place, and these
-are two of the places.
+**Three of the eleven draw no wash at all** — the deck rail's phone spine, the create picker's
+thumb, and the commander detail page's desktop column, which renders a full card face rather than a
+cropped band. All three are in scope: the complaint is that a commander's image looks different from
+place to place, and these are three of the places. The picker's thumb and the rail's span are also
+the two smallest images in the app, which is the useful end of the range for §3.1.
 
 **The deck spine renders a different strategy on each breakpoint** — `cover` on mobile,
 `left-portrait` on desktop. One surface, two treatments, decided by viewport. That is the single
@@ -71,8 +79,8 @@ on what to ask it for.
 
 ## §3 What Design is being asked to call — open
 
-- **§3.1 The height, and whether one number serves all ten.** A single fixed height across a home
-  hero, a 56px rail spine and a full 63/88 card face is unlikely. Design should name the smallest set of sizes that still
+- **§3.1 The height, and whether one number serves all eleven.** A single fixed height across a home
+  hero, a 36px rail span, a 34px picker thumb and a full 63/88 card face is unlikely. Design should name the smallest set of sizes that still
   reads as one treatment, and say what governs which surface gets which.
 - **§3.2 The label block at the bottom edge, per surface.** What survives the condense at each size:
   which surfaces state the deck's status, which state a count, which state only a name.
