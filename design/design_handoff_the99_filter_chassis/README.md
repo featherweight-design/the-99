@@ -171,6 +171,12 @@ never be pushed to a second line. The switch is set by `/collection`'s seven con
 `/decks`' five: 132 + 148 + 150 + 78 + 120 + 1 + 160 + 70 + seven 12px gaps + 44px padding =
 **887px**.
 
+> **Corrected: that sum is 987px, and the switch is 1000px.** The eight widths total 859, the seven
+> gaps add 84, the padding adds 44. At 900 the wide form does not fit and row 1 wraps — the defect
+> this decision exists to prevent. 1000 is this decision's own rule ("the minimums, plus a margin")
+> applied to the right number; nothing else in the decision changes. See
+> `docs/superpowers/readiness-filter-chassis.md` §7.
+
 R1 allowed row 1 to wrap and the sort landed on its own line. That read as a layout bug rather
 than a trailing slot — correctly, because a trailing slot that is not trailing is not a slot.
 This also retires R1's "768–868px wraps to two lines" open item, which was the same defect
@@ -221,7 +227,15 @@ Real symbols are their own label, and a mono caption inside a 34px well is furni
 
 ---
 
-## Flagged, not decided
+## Flagged, not decided — RULED, and no longer blocking
+
+> **The audit ruled this. `FilterPanel` is kept, parameterised and mounted — not retired, not
+> forked.** The section below is preserved as Design wrote it, and its question is answered: the
+> brief rejects adopting an existing *chassis*, not every atom those chassis mount, and the panel
+> has its own ratification in `design-tables/collection-filter-panel.md`. There is no Design
+> round-trip and nothing here blocks the build. What "parameterised" costs — a caller-supplied
+> breakpoint, because the panel's own 768px would open a desktop popover inside the compact chassis
+> — is in `docs/superpowers/readiness-filter-chassis.md` §2.
 
 **§2.1's locked "new chassis, not an adoption" retires a component that landed three weeks ago.**
 Drawn as locked. But the brief's rejection names "the collection bar", and the collection bar *is*

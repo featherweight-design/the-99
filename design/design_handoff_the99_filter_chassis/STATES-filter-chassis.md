@@ -63,7 +63,8 @@ Never sort, and never search — both are on the persistent row.
 > search · colour (· score-against on `/commanders`) and the `printed-in` column above is a
 > later slice. See `docs/superpowers/readiness-filter-chassis.md` §6.**
 
-`printed-in` is the one dimension this round adds. `status` and `played-window` are deck-only;
+`printed-in` is **cut from this round** — it was the one dimension this round would have added, and
+it is deferred to a later slice with the whole matrix above otherwise intact. `status` and `played-window` are deck-only;
 `type`, `set` and `availability` are collection-only. Per §2.2 that is correct and not a gap.
 
 ---
@@ -122,8 +123,14 @@ lane rather than a ratio.
   down on every open; that is the defect this shape exists to avoid.
 - **Must not** be a hidden duplicate. One treatment per width — a closed panel renders nothing, so
   no second copy of any radiogroup reaches the accessibility tree.
-- **Must not** trap focus. It is a menu, not a dialog: `Escape` closes it and hands focus back to
-  the trigger; a click outside dismisses on `pointerdown`.
+- **Corrected by the audit — build the shipped semantics, not this bullet.** The handoff wrote:
+  *"**Must not** trap focus. It is a menu, not a dialog: `Escape` closes it and hands focus back to
+  the trigger; a click outside dismisses on `pointerdown`."* `FilterPanel` renders `role="dialog"`
+  containing a `role="listbox"` of `role="option"` rows (`filter-panel.tsx:546,863-877`), and its
+  compact branch is an `aria-modal` sheet that traps Tab by design. A `menu` wrapper is invalid
+  around those descendants. **Keep the shipped dialog/listbox semantics; keep the compact sheet's
+  focus trap.** `Escape`-closes-and-restores-focus and outside-dismiss-on-`pointerdown` are both
+  correct and already implemented. See `docs/superpowers/readiness-filter-chassis.md` §6.
 
 ## 5 · Empty result
 
