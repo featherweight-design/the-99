@@ -43,9 +43,10 @@ type CardDetailContextValue = {
    */
   setSiblings: (list: string[]) => void;
   /**
-   * Drop `oracleId` from the cache, so the next open fetches it again. A surface
-   * that writes something the card carries — the art pick is the one that exists —
-   * calls this, or the reader reopens the card and sees their own change undone.
+   * Drop `oracleId` from the cache, so the next open has nothing to paint before its
+   * fetch answers. A surface that writes something the card carries — the art pick is
+   * the one that exists — calls this, or the reader reopens the card and is shown the
+   * change they just made being undone before the re-read corrects it.
    */
   evict: (oracleId: string) => void;
   /** Close the modal, and abandon any fetch still in flight for it. */
@@ -132,38 +133,52 @@ export function CardDetailProvider({
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
   // actually asked for second.
   const latest = useRef(0);
-  // Cards already fetched this visit, so reopening one costs nothing. A ref rather
-  // than state because it is read in the click handler and never during render, and
-  // it dies with the provider — a cache that lives one visit needs no invalidation
-  // beyond the write that happens inside the modal itself.
+  // Cards already fetched this visit, so reopening one paints with no wait. A ref
+  // rather than state because it is read in the click handler and never during render.
+  //
+  // A cached card is shown and then checked, never shown and trusted: a card carries
+  // its availability, and the deck builder keeps this provider mounted while adding
+  // and removing cards changes exactly that. Those mutations revalidate on the server
+  // and send no signal a client cache could listen for, so the only honest way to hold
+  // a card across them is to re-ask and correct what is already on screen.
   const cache = useRef(new Map<string, BrowseCard>());
 
   const load = useCallback(
     async (oracleId: string, list?: string[]) => {
       const request = ++latest.current;
       if (list !== undefined) setSiblings(list);
-      // A hit lands in the same pass as the click: no pending state is ever set, so
-      // the trigger never flashes its busy affordance for a wait that does not happen.
+      // A hit lands in the same pass as the click, so no pending state is ever set and
+      // the trigger never flashes a busy affordance for a wait that does not happen.
       const hit = cache.current.get(oracleId);
       if (hit) {
         setPendingOracleId(null);
         setFailed(false);
         setCard(hit);
-        return;
+      } else {
+        setPendingOracleId(oracleId);
+        setFailed(false);
       }
-      setPendingOracleId(oracleId);
-      setFailed(false);
       try {
         const next = await fetchCard(oracleId);
         if (latest.current !== request) return;
-        // A card the server could not find is the one result not worth keeping: it is
-        // rare, and filing it would keep the card missing for the rest of the visit.
-        if (next) cache.current.set(oracleId, next);
-        setCard(next);
-        setFailed(next === null);
+        if (next) {
+          cache.current.set(oracleId, next);
+          setCard(next);
+        } else {
+          // A card the server could not find is the one result not worth keeping: it is
+          // rare, and filing it would keep the card missing for the rest of the visit.
+          cache.current.delete(oracleId);
+          // On a hit the reader is already looking at the card, and a card that has gone
+          // missing between two opens is not worth yanking the modal out from under them.
+          if (!hit) {
+            setCard(null);
+            setFailed(true);
+          }
+        }
       } catch {
         if (latest.current !== request) return;
-        setFailed(true);
+        // Same reasoning: a failed re-ask leaves what is on screen alone.
+        if (!hit) setFailed(true);
       } finally {
         if (latest.current === request) setPendingOracleId(null);
       }

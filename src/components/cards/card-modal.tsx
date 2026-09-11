@@ -256,7 +256,10 @@ export function CardModal({
   /**
    * Called when the art pick is written, so a caller holding a copy of this card can
    * drop it. The write changes what the card says about itself, and a stale copy would
-   * show the reader the printing they just replaced.
+   * show the reader the printing they just replaced. Called twice per write, on purpose:
+   * once as the write starts, and once when it lands. A card re-read during the overlap
+   * answers with the preference the write has not replaced yet, so dropping the entry
+   * only up front would let that pre-write answer be filed as the current one.
    */
   onArtChange?: () => void;
 }) {
@@ -329,16 +332,18 @@ export function CardModal({
   function onPick(p: { setCode: string; collectorNumber: string }) {
     setPick({ setCode: p.setCode, collectorNumber: p.collectorNumber });
     onArtChange?.();
-    startWrite(() => {
-      void setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+    startWrite(async () => {
+      await setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+      onArtChange?.();
     });
   }
 
   function onClearPick() {
     setPick(null);
     onArtChange?.();
-    startWrite(() => {
-      void clearCardArtPreference(card.oracleId);
+    startWrite(async () => {
+      await clearCardArtPreference(card.oracleId);
+      onArtChange?.();
     });
   }
 

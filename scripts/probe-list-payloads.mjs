@@ -196,14 +196,25 @@ async function run(browser) {
     "Previous pages back",
   );
 
-  // The cache: a card opened once this visit opens again off the click, with no
-  // second trip to the server. Server actions are POSTs carrying Next-Action, which
-  // is what separates them from the navigations the same URL also serves.
+  // The cache: a card opened once this visit opens again off the click itself, and is
+  // re-asked about afterwards rather than trusted. Every server action is held for three
+  // seconds here, so a modal that paints inside one cannot have waited for the server —
+  // the delay is the measurement, not a timing guess. Server actions are POSTs carrying
+  // Next-Action, which is what separates them from the navigations the same URL serves.
   let actionCalls = 0;
   const countAction = (request) => {
     if (request.method() === "POST" && request.headers()["next-action"]) actionCalls += 1;
   };
   page.on("request", countAction);
+  const holdActions = async (route, request) => {
+    if (request.method() === "POST" && request.headers()["next-action"]) {
+      await new Promise((r) => setTimeout(r, 3_000));
+    }
+    // The held request outlives the unroute below, and resuming a route the page has
+    // already moved past throws rather than being a no-op.
+    await route.continue().catch(() => {});
+  };
+  await page.route("**/*", holdActions);
 
   await page.getByRole("button", { name: "Close card details" }).first().click();
   await page.waitForFunction(() => document.querySelector('[role="dialog"]') === null, null, {
@@ -211,17 +222,18 @@ async function run(browser) {
   }).catch(() => {});
 
   await page.locator(ROW).nth(1).click();
-  await page.waitForFunction(
+  const paintedFast = await page.waitForFunction(
     (want) => (document.querySelector("#card-modal-title")?.textContent ?? "") === want,
     firstTitle,
-    { timeout: 20_000 },
-  ).catch(() => {});
-  check(
-    (await page.locator("#card-modal-title").textContent().catch(() => null)) === firstTitle,
-    "reopening a card shows it again",
-  );
-  check(actionCalls === 0, "reopening a cached card asks the server nothing", `${actionCalls} calls`);
+    { timeout: 1_000 },
+  ).then(() => true, () => false);
+  check(paintedFast, "reopening a cached card paints before the server answers");
+
+  // And is corrected by a re-ask: the cache holds a card across deck writes it cannot
+  // see, so a hit it never re-checked would show stale availability for the visit.
+  check(actionCalls >= 1, "reopening a cached card still re-asks the server", `${actionCalls} calls`);
   page.off("request", countAction);
+  await page.unroute("**/*", holdActions);
 
   // A filter that excludes the open card takes it out of the list the modal is
   // paging, so the modal goes with it — the behaviour the pre-fetch modal got for

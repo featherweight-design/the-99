@@ -1,9 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
-import {
+import { printingPickerCopy } from "../../lib/copy/collection";
+
+vi.mock("../../app/collection/actions", () => ({
+  setCardArtPreference: vi.fn(async () => {}),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
+
+const {
   CardDetailProvider, CardDetailTrigger, cardDetailCopy, useCardDetail,
-} from "./card-detail-provider";
+} = await import("./card-detail-provider");
 
 const card = (oracleId: string, name: string): BrowseCard => ({
   oracleId,
@@ -236,8 +243,52 @@ describe("CardDetailProvider", () => {
 // The cache exists so a card the reader has already opened opens again with no
 // wait at all: served from the click itself, not from a faster fetch.
 describe("CardDetailProvider card cache", () => {
-  it("reopens a card it has already fetched without asking the server again", async () => {
-    const fetchCard = vi.fn().mockResolvedValue(SIGNET);
+  it("reopens a card it has already fetched with nothing to wait for", async () => {
+    let resolve!: (c: BrowseCard) => void;
+    const fetchCard = vi.fn(() => new Promise<BrowseCard>((r) => { resolve = r; }));
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+      </CardDetailProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+    await click(trigger);
+    await act(async () => { resolve(SIGNET); });
+    await click(screen.getByRole("button", { name: "close" }));
+
+    // The re-ask is left unresolved on purpose: everything below has to be true while
+    // the server has answered nothing, which is what "no wait" means.
+    await click(trigger);
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
+    expect(trigger).toHaveAttribute("aria-busy", "false");
+    expect(screen.queryByText(cardDetailCopy.loading)).not.toBeInTheDocument();
+  });
+
+  it("pages back onto a cached sibling with nothing to wait for", async () => {
+    const fetchCard = vi.fn(async (id: string) => (id === "o-signet" ? SIGNET : SOL));
+    renderTriggers(fetchCard, ["o-signet", "o-sol"]);
+    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+    await screen.findByRole("dialog");
+
+    await click(screen.getByRole("button", { name: "Next card" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
+    await click(screen.getByRole("button", { name: "Previous card" }));
+
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
+    expect(screen.queryByText(cardDetailCopy.loading)).not.toBeInTheDocument();
+  });
+
+  // The cache holds a card across writes it cannot see — adding the card to a deck in the
+  // builder changes the availability the card carries, and revalidating on the server sends
+  // the client nothing to listen for. So a hit is shown and then checked.
+  it("corrects a cached card with what the re-ask returns", async () => {
+    const moved = { ...SIGNET, quantity: 4 };
+    const fetchCard = vi.fn()
+      .mockResolvedValueOnce(SIGNET)
+      .mockResolvedValueOnce(moved);
     render(
       <CardDetailProvider fetchCard={fetchCard}>
         <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
@@ -252,24 +303,34 @@ describe("CardDetailProvider card cache", () => {
     await click(screen.getByRole("button", { name: "close" }));
 
     await click(trigger);
-    expect(fetchCard).toHaveBeenCalledTimes(1);
-    // Present already, rather than after a tick: a hit is served from the click.
-    expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
-    expect(trigger).toHaveAttribute("aria-busy", "false");
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
+    // Both breakpoint trees render, so the count is asserted as present, not as unique.
+    await waitFor(() => expect(screen.getAllByText(/×4/).length).toBeGreaterThan(0));
   });
 
-  it("pages back onto a cached sibling without refetching it", async () => {
-    const fetchCard = vi.fn(async (id: string) => (id === "o-signet" ? SIGNET : SOL));
-    renderTriggers(fetchCard, ["o-signet", "o-sol"]);
-    await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+  // The reader is already looking at the card; a re-ask that fails is not a reason to
+  // pull the modal out from under them.
+  it("leaves a shown card alone when its re-ask fails", async () => {
+    const fetchCard = vi.fn()
+      .mockResolvedValueOnce(SIGNET)
+      .mockRejectedValueOnce(new Error("offline"));
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+      </CardDetailProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+    await click(trigger);
     await screen.findByRole("dialog");
+    await click(screen.getByRole("button", { name: "close" }));
 
-    await click(screen.getByRole("button", { name: "Next card" }));
-    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
-    await click(screen.getByRole("button", { name: "Previous card" }));
-
+    await click(trigger);
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
-    expect(fetchCard).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(cardDetailCopy.unavailable)).not.toBeInTheDocument();
   });
 
   // A card nobody can find is the one result not worth keeping: it is rare, and
@@ -285,8 +346,12 @@ describe("CardDetailProvider card cache", () => {
     expect(fetchCard).toHaveBeenCalledTimes(2);
   });
 
-  it("refetches a card whose entry was evicted by a write", async () => {
-    const fetchCard = vi.fn().mockResolvedValue(SIGNET);
+  // An evicted card has nothing to paint, so its next open waits like a first open —
+  // which is the point: what it would have painted is the change the reader just made,
+  // undone.
+  it("waits again for a card whose entry was evicted by a write", async () => {
+    let resolve!: (c: BrowseCard) => void;
+    const fetchCard = vi.fn(() => new Promise<BrowseCard>((r) => { resolve = r; }));
     render(
       <CardDetailProvider fetchCard={fetchCard}>
         <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
@@ -298,11 +363,59 @@ describe("CardDetailProvider card cache", () => {
     );
     const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
     await click(trigger);
-    await screen.findByRole("dialog");
+    await act(async () => { resolve(SIGNET); });
     await click(screen.getByRole("button", { name: "evict" }));
     await click(screen.getByRole("button", { name: "close" }));
 
     await click(trigger);
-    expect(fetchCard).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(trigger).toHaveAttribute("aria-busy", "true");
+  });
+
+  // The write the eviction exists for, driven through the real picker rather than a
+  // stand-in: a change that stopped calling `onArtChange` would leave every test above
+  // passing while the reader reopened the card onto the printing they had replaced.
+  it("evicts a card whose art pick was changed in the modal", async () => {
+    const owned = {
+      ...SIGNET,
+      quantity: 3,
+      printings: [
+        {
+          setCode: "RVR", setName: "Ravnica Remastered", collectorNumber: "24",
+          releasedAt: "2024-01-12", quantity: 1, finishes: { nonfoil: 1 },
+          imageUri: null, flavorName: null,
+        },
+        {
+          setCode: "ELD", setName: "Throne of Eldraine", collectorNumber: "8",
+          releasedAt: "2019-10-04", quantity: 2, finishes: { nonfoil: 2 },
+          imageUri: null, flavorName: null,
+        },
+      ],
+    };
+    const fetchCard = vi.fn().mockResolvedValue(owned);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">
+          Arcane Signet
+        </CardDetailTrigger>
+        <Closer />
+      </CardDetailProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+    await click(trigger);
+    await screen.findByRole("dialog");
+
+    // Both breakpoint trees render the picker; either one drives the same write.
+    await click(screen.getAllByRole("button", {
+      name: printingPickerCopy.printing.triggerAria(2, "RVR · 24 +1 more"),
+    })[0]);
+    await click(screen.getAllByRole("radio", { name: /Throne of Eldraine/ })[0]);
+    await click(screen.getByRole("button", { name: "close" }));
+
+    // The card is gone from the cache, so its next open has to wait for the server.
+    fetchCard.mockImplementation(() => new Promise<BrowseCard>(() => {}));
+    await click(trigger);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(trigger).toHaveAttribute("aria-busy", "true");
   });
 });
