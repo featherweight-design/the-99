@@ -35,8 +35,10 @@ Design to reconcile a layout.
 **Three colour controls for one concept.** That is the clearest evidence the surfaces were never
 designed as a system.
 
-**The `/decks` sidebar is the layout cost.** It is the only surface that spends horizontal room on
-filtering, and it spends it on the surface whose content — deck art — most wants the width.
+**The `/decks` sidebar is the layout cost.** Every surface spends *some* room on filtering — the
+collection bar takes a horizontal strip above its content — but `/decks` is the only one with a
+dedicated sidebar, so it is the only one paying in **width** rather than height. It pays it on the
+surface whose content, deck art, most wants the width.
 
 ---
 
@@ -81,12 +83,20 @@ filtering, and it spends it on the surface whose content — deck art — most w
 ## §4 Constraint — the symbol glyphs have a shipped precedent, and it is not a font
 
 The set-collections handoff (`design/design_handoff_the99_set_collections/`, 🟢 Green, audited
-2026-09-11) hit exactly this problem with set icons and its readiness audit settled it:
+2026-09-11) hit this problem with **set icons** and its readiness audit settled it:
 `svgs.scryfall.io/sets/*.svg` is a bare `<path>` with no `fill`, so it renders black on every theme.
 The resolution recorded in `docs/superpowers/readiness-set-collections.md` finding 1 is `mask-image`
 with a token background.
 
-**Mana symbols inherit that ruling.** Design should draw the pips as token-coloured masks, not as
+**That finding covers Scryfall's set-icon endpoint, and the mana-symbol endpoint is a different one
+that nobody here has opened.** Treat the paragraph below as an inference from a neighbouring
+endpoint, not as a verified fact: it is the likely case and it is cheap to confirm, and engineering
+should confirm it before Design commits to a recolouring approach. If the symbol SVGs turn out to
+carry their own fills, the masking route still works but the assets need stripping first, and if
+they carry multiple paths per symbol — hybrid pips plausibly do — masking may not survive contact
+with a two-colour glyph at all.
+
+**On that assumption, mana symbols inherit the ruling.** Design should draw the pips as token-coloured masks, not as
 inline art with baked fills, or they will be black in all six themes. The colour a pip carries is a
 `var(--*)` value like every other ink in the app.
 
@@ -137,10 +147,15 @@ commander in Dominaria United?" has at least three defensible answers:
    row is arbitrary by the schema's own admission, so the same commander would appear or vanish based
    on which printing the ingest happened to pick.
 
-**Engineering's read is that (2) is the answer, and it has a shipped precedent to lean on.** The
-printed-name work (PRs #509–#511) established that the app names and draws a card as *the copy the
-player owns*, not as its oracle record. A set filter that matched printings the player has never
-held would contradict that on the same surface, in the same session.
+**Engineering's read is that (2) is the direction, but it is a new rule for this surface rather than
+an established one.** The printed-name work (PRs #509–#511) established that the app names and draws
+a card as *the copy the player owns* — on deck and collection surfaces. It did **not** reach the
+commander list: `src/lib/recs/recommend.ts:153,175` still selects `cards.imageUri` and
+`cards.artCropUri`, which are oracle-level by construction. So every render in the commander lane
+today shows an arbitrary printing's art, and an owned-printing set filter would be the first
+printing-aware behaviour on that surface — needing a printing-aware query, and an answer for what
+the row then draws and names. That is a larger change than "add a filter", and it is the reason
+this section is open rather than decided.
 
 **This brief does not close it, because the choice is visible.** Under (2) a set filter on
 `/discover` — the lane of commanders you do *not* own — filters on nothing, which is either a
