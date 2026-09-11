@@ -476,7 +476,13 @@ export async function listDecksWithStats(
       commanderArtCropUri: cards.artCropUri,
       partnerName: partnerCards.name,
       partnerColorIdentity: partnerCards.colorIdentity,
-      folderId: decks.folderId,
+      // The JOINED id, not `decks.folder_id`. The join is scoped to the owner,
+      // so a row pointing at another player's folder — a state the foreign key
+      // permits even though nothing writes it — matches nothing here. Reading
+      // the raw column would then pair a foreign id with a null name, which
+      // both breaks the documented pair and hands a grouping consumer a
+      // phantom unlabelled folder to draw.
+      folderId: deckFolders.id,
       folderName: deckFolders.name,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
@@ -513,7 +519,7 @@ export async function listDecksWithStats(
       cards.artCropUri,
       partnerCards.name,
       partnerCards.colorIdentity,
-      decks.folderId,
+      deckFolders.id,
       deckFolders.name,
     )
     .orderBy(...order);
