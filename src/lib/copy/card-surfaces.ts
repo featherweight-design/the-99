@@ -3,8 +3,11 @@
 // From `design/design_handoff_the99_card_surfaces/card-surfaces · copy strings.ts`.
 // The mana mapper lives here rather than in `CostPips` because it is words, and
 // because the pip cap must never reach the spoken form: a six-plus-symbol cost
-// draws four pips and a `+N` but speaks every symbol. A reader who cannot see
-// the pips is the one reader for whom truncation is not a trade.
+// draws four pips and a `+N` but speaks every symbol OF THE FACE IT DRAWS. The
+// cap is the thing that must not reach it; the front-face rule is not a
+// truncation but the same face the pips show, and a label describing a cost no
+// run on screen carries would be its own defect. A reader who cannot see the
+// pips is the one reader for whom truncation is not a trade.
 
 import { frontFaceCost } from "../cards/faces";
 

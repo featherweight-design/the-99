@@ -18,12 +18,24 @@
 // So the URL is read the way any other outside-React value is: through
 // `useSyncExternalStore`, over the two events that can move it.
 //
-// THE PATCH IS DELIBERATE, AND IT DELEGATES. `pushState` and `replaceState` fire
-// no event, and Next's router uses them for client navigations — including the
-// one this exists to catch. The wrapper calls through to whatever it found,
-// which is Next's own patched version, so it observes rather than intercepts. It
-// is installed once per document and never removed: restoring the original would
-// clobber any patch installed after it, and there is nothing to reclaim.
+// HOW IT NOTICES, in the order it prefers.
+//
+// 1. The Navigation API. `navigation.currententrychange` fires for every way the
+//    URL moves — a router's `pushState`, a back, a replace — and asking the
+//    platform costs nothing and patches nothing. Chromium and Safari have it.
+// 2. `popstate` alone, where it does not (Firefox, today). That covers back and
+//    forward, which is the case the bug report named, and leaves the same-route
+//    link navigation reading stale until the next render — which is what the
+//    whole app did before this file existed.
+//
+// What it does NOT do is wrap `history.pushState`. That was written first and is
+// the obvious approach, and it is wrong here: Next's router installs its own
+// wrappers around the same two methods, and a patch that composes with a patch
+// composes badly. An assignment landing after this one replaces it silently and
+// every navigation afterwards goes unobserved; an accessor that captures a later
+// assignment instead RECURSES, because the code installing that patch reads the
+// current method first — getting this wrapper — and then delegates to it. The
+// test that proved this blew the stack. Two patchers cannot both be outermost.
 
 import { useSyncExternalStore } from "react";
 
@@ -34,23 +46,30 @@ function notify() {
   for (const listener of listeners) listener();
 }
 
-function install() {
-  if (installed || typeof window === "undefined") return;
-  installed = true;
-  window.addEventListener("popstate", notify);
-  for (const name of ["pushState", "replaceState"] as const) {
-    const original = window.history[name];
-    window.history[name] = function patched(this: History, ...args: Parameters<History[typeof name]>) {
-      const result = original.apply(this, args);
-      notify();
-      return result;
-    };
-  }
+type NavigationLike = {
+  addEventListener: (type: string, listener: () => void) => void;
+  removeEventListener: (type: string, listener: () => void) => void;
+};
+
+/** The Navigation API, where the browser has it. Typed locally because
+    `lib.dom` does not carry it yet. */
+function navigationApi(): NavigationLike | null {
+  const candidate = (window as unknown as { navigation?: NavigationLike }).navigation;
+  return candidate && typeof candidate.addEventListener === "function" ? candidate : null;
 }
 
 function subscribe(listener: () => void): () => void {
-  install();
+  if (typeof window === "undefined") return () => {};
   listeners.add(listener);
+  if (!installed) {
+    installed = true;
+    const navigation = navigationApi();
+    if (navigation) navigation.addEventListener("currententrychange", notify);
+    // `popstate` either way. With the Navigation API it is redundant and
+    // harmless — `notify` only ever re-reads the URL — and without it, it is the
+    // whole of what this store can see.
+    window.addEventListener("popstate", notify);
+  }
   return () => listeners.delete(listener);
 }
 
