@@ -1,0 +1,133 @@
+"use client";
+// The app's one filter frame, per `design/design_handoff_the99_filter_chassis/`.
+//
+// Four routes filtered through three implementations before this: the commander
+// rack (shared by `/commanders` and `/discover`), `/decks`'s desktop sidebar
+// column, and `/collection`'s horizontal bar. They disagreed on where controls
+// sit, on what a colour selector looks like, and — only on `/decks` — on
+// whether filtering costs the reader horizontal room.
+//
+// This owns the frame and nothing else. Decision 19: the chassis has SLOTS, not
+// a dimension list, and a route fills the slots it has. That is what lets four
+// routes with genuinely different dimensions — status and last-played are
+// `/decks` alone, type is `/collection` alone — share one frame without any of
+// them carrying a control that means nothing to it.
+//
+// Three rows, always all three (decision 1). Row 2 prints `No filters on` at
+// rest rather than collapsing (decision 2), which is the whole reason the frame
+// is a fixed height: a chassis that shrank when you cleared a filter would move
+// the list under the reader's eye at the exact moment they were reading it.
+
+import React from "react";
+import { chassisCopy } from "../../lib/copy/filter-chassis";
+import { ResultLine } from "./result-line";
+
+/** One removable value on the chip line. */
+export type FilterChip = {
+  /** Stable across renders — the dimension and value, not the index. */
+  key: string;
+  /** What the chip reads. `Status · Playing`, `3 colours`. */
+  label: string;
+  onRemove: () => void;
+};
+
+export type FilterChassisProps = {
+  /**
+   * Row 1. The route's controls in order, already built — fields, triggers,
+   * segmented controls, pips. The chassis does not know what they are.
+   */
+  controls: React.ReactNode;
+  /**
+   * Row 1's trailing slot, past a hairline (decision 11). Sort is not a filter
+   * and the separation says so, on every route and at both widths. A list is
+   * always in some order, so this slot is never empty.
+   */
+  sort: React.ReactNode;
+  /** Row 2. Empty renders `No filters on` rather than collapsing. */
+  chips: readonly FilterChip[];
+  onClearAll: () => void;
+  /**
+   * Row 3's sentence, finished by the route. Four routes word their counts
+   * differently and none of them is a lane, so the chassis takes the sentence
+   * rather than the state that produces it.
+   */
+  resultLine: string;
+  /**
+   * `wide` above 900px, `compact` below (decision 18). A judgement rather than a
+   * measurement: `/collection`'s seven controls cannot be honest in the wide
+   * form below 887px, and 900 is that plus a margin. The consequence is that a
+   * small laptop in a half-width window gets the compact treatment on a pointer
+   * device; the alternative makes the breakpoint a per-route fact and the
+   * chassis stops being one thing.
+   */
+  form: "wide" | "compact";
+};
+
+/** The width at which the control row would have to wrap, so it changes form instead. */
+export const CHASSIS_WIDE_MIN_PX = 900;
+
+export function FilterChassis({
+  controls, sort, chips, onClearAll, resultLine, form,
+}: FilterChassisProps) {
+  return (
+    <div
+      className="flex flex-col gap-[10px] border-0 border-b border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] pt-[12px] pb-[10px] lg:px-[22px]"
+      data-chassis-form={form}
+    >
+      {/* Row 1 — never wraps (decision 18). There are two forms and nothing in
+          between: a sort landing on its own line reads as a bug, which is what
+          R1's wrapping row was reported as. `min-w-0` on the leading group is
+          what makes search the only shrinking child. */}
+      <div className="flex items-center gap-[8px]" data-chassis-row="controls">
+        <div className="flex min-w-0 flex-auto items-center gap-[8px] overflow-hidden">
+          {controls}
+        </div>
+        {/* The hairline is the separation, and it is why sort reads as not-a-filter. */}
+        <div
+          aria-hidden
+          className="h-[20px] w-px flex-none bg-[color:var(--border)]"
+          data-chassis-hairline
+        />
+        <div className="flex flex-none items-center">{sort}</div>
+      </div>
+
+      {/* Row 2 — present at rest, which is the invariant. Never conditionally
+          rendered: `{chips.length > 0 && …}` is the bug this decision forbids. */}
+      <div className="flex flex-wrap items-center gap-[6px]" data-chassis-row="chips">
+        {chips.length === 0 ? (
+          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {chassisCopy.chips.none}
+          </span>
+        ) : (
+          <>
+            {chips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={chip.onRemove}
+                aria-label={chassisCopy.chips.removeAria(chip.label)}
+                className="inline-flex cursor-pointer items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[8px] py-[3px] font-mono text-[11px] text-[color:var(--fg-body)]"
+              >
+                {chip.label}
+                <span aria-hidden>×</span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={onClearAll}
+              aria-label={chassisCopy.chips.clearAllAria}
+              className="cursor-pointer border-0 bg-transparent p-0 font-mono text-[11px] text-[color:var(--fg-muted)] underline"
+            >
+              {chassisCopy.chips.clearAll}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Row 3 — the chassis's only live region. */}
+      <div data-chassis-row="result">
+        <ResultLine line={resultLine} />
+      </div>
+    </div>
+  );
+}
