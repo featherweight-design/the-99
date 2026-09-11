@@ -151,7 +151,9 @@ const PORTRAIT_INK: readonly {
   { surface: "discovery and rec rows, block top", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 55 },
   { surface: "discovery and rec rows, block foot", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 92 },
   // The resume row's type starts at the 116px inset, past the 99px portrait but
-  // short of the 138px flat stop, so the ambient crop is still under it.
+  // short of the 138px flat stop — so it stands on the row's own ground under a
+  // scrim that has not closed to opaque yet, which is the thinnest ground any
+  // ink on that band gets.
   { surface: "resume row", band: 72, x: 116, y: 0 },
   // The deck spine's `⛶ Card details` pill: 16px in, 14px off the foot, 26px
   // tall, and the one thing on that band whose ink sits over the crop. Its band

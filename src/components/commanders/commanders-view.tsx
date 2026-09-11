@@ -128,10 +128,12 @@ export function CommandersView({
   // still read `a=free`.
   const [params, setParams] = useState<LaneParams>(() => {
     const parsed = parseLaneParams(search, "owned");
-    const canRankFree = availOk && freeRanking !== null;
     return {
       ...parsed,
-      avail: parsed.avail === "free" && canRankFree ? "free" : initialAvail,
+      // Requested free, and the payload can serve it. The same question is asked
+      // again on every render below, because a later payload can withdraw the
+      // answer this one gave.
+      avail: parsed.avail === "free" && availOk && freeRanking !== null ? "free" : initialAvail,
     };
   });
   const { colors: rawColors, avail } = params;
@@ -150,8 +152,24 @@ export function CommandersView({
     window.history.replaceState(null, "", `${pathname}${next}`);
   }, [params]);
 
+  // The mode and the payload's ability to serve it, reconciled DURING RENDER
+  // rather than in an effect. A revalidation can take the free ranking away
+  // under a reader already standing in it — an availability rollup that fails on
+  // the next read arrives as `availOk: false` with a null `freeRanking` — and
+  // nothing else would climb down: the list would quietly fall back to the
+  // canonical one while the segment, the receipts, the detail links and the URL
+  // all went on saying `free`. Adjusting here rather than in an effect is what
+  // keeps the wrong list from painting once before being corrected, and the URL
+  // mirror runs off `params`, so the address bar climbs down with it.
+  const canRankFree = availOk && freeItems !== null;
+  if (avail === "free" && !canRankFree) {
+    setParams((prev) => (prev.avail === "free" ? { ...prev, avail: "all" } : prev));
+  }
+
   // Which list is on screen. Falling back to `results` when the free ranking is
-  // missing keeps the page rendering something true rather than nothing.
+  // missing keeps the page rendering something true rather than nothing — and
+  // with the reconciliation above it is now a belt to that braces, reachable
+  // only on the render that hands the mode back.
   const active = avail === "free" && freeItems ? freeItems : results;
 
   // Search narrows before colour, so the colour counts below describe the list

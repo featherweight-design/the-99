@@ -101,8 +101,10 @@ export const COVER_INK_SHADOW = "0 1px 4px rgba(0,0,0,0.85)";
 export const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's
-    art at `.58`; applied flat it would make a `left-portrait` row's ambient copy
-    *more* prominent under a preference that asks for less. */
+    art at `.58`; applied flat it would raise any layer already drawn below it,
+    answering a preference that asks for less art by showing more. It was the
+    `left-portrait` ambient copy that made the distinction matter; that layer is
+    gone, and the rule stays because it is the honest way to apply a ceiling. */
 const REDUCED_ART_OPACITY = 0.3;
 
 /** `art: false` is the identity gradient, which is ground rather than

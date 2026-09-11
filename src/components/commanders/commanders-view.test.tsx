@@ -365,6 +365,25 @@ describe("CommandersView ranking toggle", () => {
     }
   });
 
+  // A revalidation can take the ranking away under a reader already standing in
+  // it: an availability rollup that fails on the next read arrives as
+  // `availOk: false` with no free ranking. Without a climb-down the list falls
+  // back to the canonical one while the segment and the URL still say `free`.
+  it("hands the mode back when a later payload cannot serve it", () => {
+    const all = results(3);
+    const { again } = view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+
+    again(all, { avail: "all", freeItems: null, availOk: false });
+
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
+    expect(cards()[0]).toHaveTextContent("General 0");
+    // The URL climbs down with the control: `all` is the lane's default, so the
+    // mode leaves the query string rather than being written out.
+    expect(urls().at(-1)).not.toContain("a=free");
+  });
+
   it("ranks against the free list once the server sends one", () => {
     const all = results(3);
     const free = [all[2], all[0], all[1]];

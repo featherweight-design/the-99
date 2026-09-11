@@ -109,7 +109,15 @@ function speakSymbol(symbol: string): string {
 }
 
 /**
- * Every symbol in the cost, in order and never capped.
+ * Every symbol of the FRONT FACE's cost, in order and never capped.
+ *
+ * Front face because that is what the pips beside it draw: an `adventure`,
+ * `split` or `prepare` card carries both halves in one string, and a label that
+ * spoke both would describe a cost no run on screen shows. `frontFaceCost` holds
+ * that rule for both.
+ *
+ * Never capped, though — the pip run caps at four and a `+N`, and a reader who
+ * cannot see the pips is the one reader for whom truncation is not a trade.
  *
  * Returns `costNone` for a card with no cost at all, so a land reads as having
  * no cost rather than falling silent — silence is indistinguishable from a
