@@ -1354,10 +1354,11 @@ export async function commitDeckVersion(
     );
     const buy = bucketAdds(adds, claimants).filter((a) => a.bucket !== "free");
 
-    const { version } = await commitVersion(deckId, note?.trim() || null, tx);
-    // `draft`, not the diff: this is the whole list, read under the same lock the
-    // snapshot was written from, so the figure and the version agree.
-    const cardCount = draft.reduce((n, c) => n + c.quantity, 0);
+    // `cardCount` comes back off the rows the snapshot was written from, rather
+    // than being counted here from `draft`: a path that inserts a card the deck
+    // did not hold takes no row lock this transaction holds, so the two reads can
+    // legitimately differ and only the snapshot's is the version's own figure.
+    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx);
     return { ok: true, number: version.number, cardCount, buy, pull: removes };
   });
   if (!result.ok) return result;

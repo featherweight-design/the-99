@@ -883,6 +883,7 @@ describe("commitDeckVersion", () => {
     vi.mocked(loadAvailability).mockResolvedValue(new Map());
     vi.mocked(commitVersion).mockResolvedValue({
       version: { ...aVersion(), number: 2 },
+      cardCount: 0,
     });
   });
 
@@ -958,12 +959,20 @@ describe("commitDeckVersion", () => {
     expect(result.ok && result.pull).toEqual([{ oracleId: CARD_A, from: 1, to: 0 }]);
   });
 
-  // Every draft row, basics included: the count is the size of the list that was
-  // snapshotted, not the size of the shopping decision.
-  it("reports the version's card count", async () => {
+  // Every row the snapshot took, basics included: the count is the size of the
+  // list that was committed, not the size of the shopping decision — and it comes
+  // back from the snapshot rather than from this transaction's own read of the
+  // draft. A resolve inserting a card the deck did not hold takes no row lock the
+  // commit holds, so the two reads can legitimately differ, and only the
+  // snapshot's figure describes the version. The 10 against a draft of 1 is that
+  // disagreement made deliberate.
+  it("reports the card count the snapshot took, not its own read of the draft", async () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
-    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 }, { oracleId: CARD_B, quantity: 9 });
-    stub.state.cards.push({ oracleId: CARD_B, typeLine: "Basic Land — Island" });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(commitVersion).mockResolvedValue({
+      version: { ...aVersion(), number: 2 },
+      cardCount: 10,
+    });
     const result = await commitDeckVersion(DECK_ID, null);
     expect(result.ok && result.cardCount).toBe(10);
   });
@@ -1020,7 +1029,7 @@ describe("pullCardFromDeck", () => {
       { id: ASKING_ID, userId: USER_ID, commanderOracleId: CMD },
     );
     vi.mocked(newestVersion).mockResolvedValue(aVersion());
-    vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 } });
+    vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 }, cardCount: 0 });
   });
 
   // The guard that stops a pull sweeping somebody else's half-finished

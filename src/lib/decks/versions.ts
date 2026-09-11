@@ -97,7 +97,7 @@ export async function commitVersion(
   deckId: string,
   note: string | null,
   tx?: Tx,
-): Promise<{ version: DeckVersion }> {
+): Promise<{ version: DeckVersion; cardCount: number }> {
   return tx
     ? commitVersionIn(tx, deckId, note)
     : db.transaction((t) => commitVersionIn(t, deckId, note));
@@ -107,7 +107,7 @@ async function commitVersionIn(
   tx: Tx,
   deckId: string,
   note: string | null,
-): Promise<{ version: DeckVersion }> {
+): Promise<{ version: DeckVersion; cardCount: number }> {
   const [deck] = await tx.select().from(decks)
     .where(eq(decks.id, deckId))
     .for("update");
@@ -174,7 +174,15 @@ async function commitVersionIn(
       })),
     );
   }
-  return { version: { ...inserted, commanderSince, partnerSince } };
+  // Counted off the rows this just snapshotted, and returned rather than left to
+  // the caller's own read of `deck_cards`. A path that INSERTS a card the deck
+  // did not hold cannot be serialized by row locks — there is no row to lock —
+  // so a caller counting its own earlier read could print a figure the version
+  // does not hold.
+  return {
+    version: { ...inserted, commanderSince, partnerSince },
+    cardCount: rows.reduce((n, r) => n + r.quantity, 0),
+  };
 }
 
 /**
