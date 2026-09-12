@@ -426,6 +426,15 @@ async function run() {
         Math.abs(phoneMissing.width - 174) <= 1,
         `${phoneMissing.width}x${phoneMissing.height}`,
       );
+      // The same derived-height contract as the desktop check. A regression that kept the
+      // width and lost `aspect-ratio: 63/88` would otherwise pass here, and the height is
+      // half of what "no size literal at any width" means.
+      failures += !report(
+        "and its height is that width at 63/88, not a literal",
+        Math.abs(phoneMissing.height - (phoneMissing.width * 88) / 63) <= 1.5,
+        `${phoneMissing.width}x${phoneMissing.height}, `
+          + `expected height ${Math.round((phoneMissing.width * 88) / 63)}`,
+      );
     }
 
     // Counted from the rendered rows rather than from the arithmetic, which is how the old
