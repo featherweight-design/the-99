@@ -136,7 +136,10 @@ vocabulary.
 - [ ] **Step 1 — Copy.** Reuse `chassisCopy.chips.none` (`No filters on`) and
   `filterCopy.chips.clearAll` (`Clear all filters`) rather than adding the addendum's
   lowercase variants — the addendum's own note says to do this once the chassis lands, and
-  it has. Add the page's own `clearAllAria` (`Clear every filter and the search`), the chip
+  it has. Add the page's own `clearAllAria` — **`Clear all filters` in this PR, which is
+  all it can clear; PR 4 extends it to `Clear all filters and the search` when there is one.
+  Shipping the longer label here would be a false promise in an independently releasable
+  PR.** It must also CONTAIN the visible label either way (WCAG 2.5.3). Then the chip
   labels, and a `FilterPanelCopy` block for rarity that READS `setFilterCopy.rarity.all`
   and `.value` rather than restating them — one source, or a later copy edit makes the
   trigger disagree with the chips beside it. `FilterPanel` hands `triggerOne` the option's
@@ -200,7 +203,10 @@ vocabulary.
 **Files:** Modify `src/lib/sets/filters.ts`, `src/components/sets/set-grid-view.tsx`,
 `src/lib/copy/set-collections.ts`. **Test:** `filters.test.ts`, `set-grid-view.test.tsx`.
 
-- [ ] **Step 1 — Failing tests on the pure model.** `SetGridFilters` gains `query: string`.
+- [ ] **Step 1 — Failing tests on the pure model.** `SetGridFilters` gains `query: string` —
+  **not the handoff's `name: string`**: `name` already means the card's name on every type in
+  that module, and a filter field sharing it reads as the thing being matched. The URL
+  parameter is `q` either way. See the readiness doc.
   `applyFilters` matches a case-insensitive, diacritic-folded substring of the printed name
   (`aether` finds Æther, `jotun` finds Jötun), matching **either half of a `//` name**.
   Not the type line, not oracle text, not the collector number. `serialiseFilters` writes

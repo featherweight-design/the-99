@@ -17,7 +17,7 @@ Every load-bearing claim was checked against the tree, not against the document.
 
 | Claim | Source | Result |
 |---|---|---|
-| The shipped unlit pip is a dimmed token, measuring 1.38:1 | `collection/color-pip.tsx:28` | **True** — `opacity-40` |
+| The shipped unlit pip is a dimmed token | `collection/color-pip.tsx:28` | **True** — `opacity-40`, which `ui/colour-pips.tsx:8` measures at **1.49:1** over `--surface-sunken`. §28's 1.38 is the RACK's figure (1.37 over `--bg`); both fail 3:1, and collection is the control this page mounts |
 | The chassis rules pips as undimmed full-colour symbols | `ui/colour-pips.tsx:21-23` | **True, and already built.** Its own comment: "never masked, tinted or given an opacity … an opacity is what the shipped controls did wrong" |
 | The symbol assets exist | `public/mana/` | **True** — `W U B R G .svg` |
 | `filter-panel.tsx` mounts with `searchable={false}` | `ui/filter-panel.tsx:6` | **True**, and that is its documented rule |
@@ -61,6 +61,14 @@ So the addendum's open item 2 is closed, not open, and the figure the build shou
 of headroom, and the ruling was never sensitive to which side of 9 the number landed on. But
 the contract should not overstate its own margin, and a reader comparing this package against
 the chassis package should not find two floors for one asset.
+
+## The search field's name
+
+The handoff's `lib/sets/filters.ts` contract calls the new field `name: string`
+(`The 99 - Set Collections Addendum.dc.html`). The build takes **`query`**: `name` already
+means the card's name on every type in that module — `Cell.name`, `SetPrinting.name` — and a
+filter field sharing it reads as the thing being matched rather than the thing matching. The
+URL parameter is `q` either way, which is what §29 rules and what a reader sees.
 
 ## Three smaller errata, none touching a ruling
 
