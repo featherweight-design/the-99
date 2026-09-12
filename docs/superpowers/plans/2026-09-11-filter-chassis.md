@@ -203,9 +203,10 @@ document, which its author corrected. Nothing is waiting.
 ```
 // src/components/collection/color-filter-row.tsx
 export function ColorFilterRow({
-  selected,   // string[]
-  onToggle,   // (color: string) => void
-  className = "hidden md:flex",   // visibility only
+  selected,      // string[]
+  onToggle,      // (color: string) => void
+  className = "hidden md:flex",  // visibility only; every other property is fixed
+  containerRef,  // somewhere for focus to land — the set grid hands focus here
 })
 ```
 
@@ -224,6 +225,28 @@ starts. Neither is negotiable from this side.
 2. **`rows-view.tsx` changed shape (§1b).** The identity pips moved out of the leading slot into a
    76/90px cost track, and the phone grid template went from `38px 1fr auto` to
    `38px 1fr 76px auto`. `BrowseCard` gained `cmc`.
+
+### The `By set` pill moves with the view toggle, and keeps its own treatment
+
+`/collection`'s toolbar gained a `By set →` pill in #519 — an `--accent` hairline with a 7px filled
+diamond, a plain `<Link href="/collection/sets">` with no count and no state, sitting between
+`Availability ▾` and the view well. It renders only when `hasCollection` is true.
+
+**It goes to `resultTrailing`, beside the view toggle.** Its own rationale is the reason: the
+leading cluster changes *what is in the list* and the trailing cluster changes *what surface you are
+on*, which is the same distinction decision 21 moves the view toggle on. Leaving it in the control
+row would also collide — once the toggle leaves, the pill becomes the row's last item, and decision
+11 has already given that position to sort, past a hairline, on every route at both widths. A
+surface link and the sort competing for one slot puts the hairline somewhere that says the wrong
+thing about both.
+
+**Its drawn treatment does not change in this round.** It is ratified by the set-collections
+handoff, and the chassis defines four control types — field, trigger+panel, segmented, pips
+(decision 19). A link is a fifth, and a migration PR is the wrong place to invent one.
+
+**Ratification for Design, not blocking:** the result line's trailing edge now carries two non-filter
+controls, and whether they share a treatment — and what a fifth "link" control type looks like — is
+a real question for the chassis handoff's next iteration.
 
 ### The accessible-name ruling this PR carries
 
