@@ -9,8 +9,11 @@
 //
 // Run by hand with the dev server up:
 //   PROBE_CARD="<card name>" node scripts/probe-card-detail-price.mjs
-// Point PROBE_CARD at a card the signed-in account owns in SEVERAL printings —
-// thirteen or more to reach the compact header, which is what a basic land is for.
+// Point PROBE_CARD at a card the signed-in account owns in MORE THAN TWELVE
+// printings — `OVERFLOW_THRESHOLD` is 12 and the header collapses only past it, so
+// a card owned in two opens the picker and never reaches the compact state. A basic
+// land is the reliable choice. The probe fails rather than passes quietly if the
+// card it is pointed at cannot reach that state.
 // Not part of `pnpm test`: it needs a browser and a signed-in session.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -159,12 +162,24 @@ try {
     const compact = await readPrice(phonePage);
     console.log("\n── phone · printing region open (compact header past 12 entries) ──");
     console.log(JSON.stringify(compact, null, 2));
-    if (compact.compact?.hiddenFromScreenReaders) {
+    // A missing compact result is a failure, not a pass. The header collapses only
+    // past OVERFLOW_THRESHOLD entries, so a null here means either the card has too
+    // few printings to reach the state — in which case the probe was pointed at the
+    // wrong card and proves nothing — or the placement did not render at all.
+    if (!compact.compact) {
+      console.log(
+        "\nFAIL: no compact price. Either the tag did not render, or PROBE_CARD is owned" +
+          " in too few printings to collapse the header (it needs more than 12).",
+      );
+      process.exitCode = 1;
+    } else if (compact.compact.hiddenFromScreenReaders) {
       console.log("\nFAIL: the figure is inside the aria-hidden heading (erratum E10).");
       process.exitCode = 1;
     }
   } else {
-    console.log("\n(no printing picker — the compact header needs a card owned in 2+ printings)");
+    console.log("\nFAIL: no printing picker. PROBE_CARD must be owned in several printings —" +
+      " more than twelve to reach the compact header, which is what a basic land is for.");
+    process.exitCode = 1;
   }
   await phone.close();
 } finally {
