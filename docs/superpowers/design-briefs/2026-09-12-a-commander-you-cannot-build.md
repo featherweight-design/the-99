@@ -113,6 +113,15 @@ a naive four-state mapping would do: no map, no claim, no marker, and a commande
 on no evidence. Say nothing at all in that case — no marker, and the lane's existing degraded banner
 already explains why — or draw an explicit unknown. Design's call, and it is question 8.
 
+**The two surfaces fail differently, and only one of them currently fails at all.** `/commanders`
+loads the rollup and already has the vocabulary for losing it — `availOk: false` disables
+`Free cards only` and draws its struck segment with a banner saying why. **`/commanders/[slug]` does
+not read availability at all today** (it scores one commander and reads synergy cards; there is no
+`loadAvailability`, no `availOk`, no banner). So the hero's marker is new data on that route, and its
+failure path has to be designed rather than inherited: if the rollup throws there, the hero has
+nothing to fall back on and would silently look free — the exact outcome this section forbids. Design
+should rule on the hero's degraded state as its own question, not as "the same as the list".
+
 The row and the hero each need to say one of:
 
 - **Sleeved** — the player owns at least one copy AND committed claims match the owned copies

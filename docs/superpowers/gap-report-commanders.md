@@ -23,7 +23,7 @@
 10. Empty-state XCIX seal: 96/110px circle, `#C9A24B`.
 11. Empty-state container padding `24px 30px` / `60px 40px`, min-height 520px desktop.
 12–14. Empty-state heading/body/button values corrected per table.
-15. Mana pip text colors per table (B `#0E0C10`, R `#1a0b08`, G `#0c1608`) in detail + lightbox.
+15. Mana pip text colors per table (B `#0E0C10`, R `#1a0b08`, G `#0c1608`) in detail + ~~lightbox~~ the shared card modal (renamed 2026-09-12; see State Coverage).
 16. Degraded receipts-hidden note now shows whenever `fitSynergy === null` (global scope included).
 
 ## State reachability

@@ -44,6 +44,10 @@ the 3.16:1 top-labelled subtitle, and the 148 row at phone width, whose upper tw
    `left-portrait` carries no vertical ramp was true of exactly one of the three.
 3. **The 72px resume row ships `.85 / .14`**, not `.80 / .20`.
 
+  > **Historical as of 2026-09-12.** That sentence describes the pre-lift implementation. The row
+  > ships `.95` sharp and no ambient layer at all — the lift took the sharp half and the errata at
+  > the foot of this file removed the other.
+
 ### The one surface the lift cannot pay for
 
 At phone width the 148 row prints its type 13px from the edge, on the sharp portrait, spanning the

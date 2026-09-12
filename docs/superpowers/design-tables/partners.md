@@ -25,10 +25,13 @@ a single-commander caption is unchanged at both widths.
 
 ### Wash container (#473 — context for the caption's insets)
 
-> **Errata (2026-09-12):** the `ambient layer` row below is the `cover` strategy's full-bleed art,
-> which is untouched — `cover` bands draw plate, art and scrim, and always did. Only the
-> **`left-portrait`** ambient copy was removed (PR #517, ratified the same day); that one is in this
-> file's band-72 section further down, struck there.
+> **Errata (2026-09-12), per column — this table's two columns use different strategies.** Mobile is
+> `cover`, whose full-bleed art is its only art layer and is untouched. Desktop is `left-portrait`,
+> so its `ambient layer` cell IS the removed copy (PR #517, ratified the same day) — struck below.
+> The desktop `sharp portrait layer` opacity is **`.92`**, not the `.8` this table predates
+> (`PORTRAIT_BANDS[168].sharpOpacity`). The band-72 section further down is the same story, struck
+> there. An earlier version of this note called the whole row untouched; it was reading one strategy
+> across both columns.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -39,8 +42,8 @@ a single-commander caption is unchanged at both widths.
 | border | 1px solid var(--border) | 1px solid var(--border) |
 | border-radius | 14 | 14 |
 | background | color-mix(in srgb, var(--bg) 86%, black) | var(--bg) |
-| ambient layer | position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity 0.58 | position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity 0.2 |
-| sharp portrait layer | — | position absolute; top 0; bottom 0; left 0; width 230; background-size auto 100%; background-position left center; background-repeat no-repeat; opacity 0.8; mask-image linear-gradient(90deg,#000 0 58%,transparent 100%) |
+| ambient layer | position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity 0.58 — **the `cover` strategy's own art layer, untouched** | ~~position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity 0.2~~ — **REMOVED 2026-09-12, see the errata above** |
+| sharp portrait layer | — | position absolute; top 0; bottom 0; left 0; width 230; background-size auto 100%; background-position left center; background-repeat no-repeat; opacity ~~0.8~~ **0.92** (the lift; `PORTRAIT_BANDS[168]`); mask-image linear-gradient(90deg,#000 0 58%,transparent 100%) |
 | horizontal scrim | — | position absolute; inset 0; linear-gradient(90deg, color-mix(in oklab, var(--bg) 30%, transparent) 0px, color-mix(in oklab, var(--bg) 26%, transparent) 134px, color-mix(in oklab, var(--bg) 78%, transparent) 230px, var(--bg) 240px) |
 | vertical scrim | position absolute; inset 0; linear-gradient(180deg, color-mix(in oklab, var(--bg) 66%, transparent) 0%, color-mix(in oklab, var(--bg) 22%, transparent) 26%, color-mix(in oklab, var(--bg) 62%, transparent) 50%, color-mix(in oklab, var(--bg) 90%, transparent) 100%) | position absolute; inset 0; linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, color-mix(in oklab, var(--bg) 10%, transparent) 46%, color-mix(in oklab, var(--bg) 42%, transparent) 100%) |
 | type block | position absolute; left 18; right 18; bottom 12; display flex; flex-direction column; align-items center; gap 6 | position relative; display flex; align-items center; min-height 168; padding 0 24px 0 254px; gap 18 |
