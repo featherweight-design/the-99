@@ -52,6 +52,12 @@ describe("the review page's mounting", () => {
     const held = screen.getByText(deckVersioningCopy.review.heldBy("Kess Storm"));
     expect(held.className).toContain("flex-1");
     expect(held.className).toContain("md:flex-none");
+    // `flex-none` at desktop takes its max-content width, so `truncate` needs a
+    // ceiling to act against: a deck name is accepted up to 120 characters, and
+    // without the cap one would push the cost and the control off the row.
+    expect(held.className).toContain("md:max-w-[220px]");
+    expect(held.className).toContain("truncate");
+    expect(held.className).toContain("min-w-0");
     // Two lines on the phone, one flat flex line above it — the wrappers
     // dissolve at `md`, so the desktop row keeps every other row's anatomy.
     expect(row.className).toContain("flex-col");

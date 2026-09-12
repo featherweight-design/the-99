@@ -141,6 +141,16 @@ export const deckVersioningCopy = {
       "freezes the list exactly as it stands and starts claiming its cards against your " +
       "other decks.",
 
+    // The third case the two lines at the top cannot describe: a draft that
+    // moved only basic lands. It has a version to cut and no nameable row, so
+    // `heading` reads "0 changes since v1" over an open commit sheet — a zero
+    // standing for a real edit. Same reasoning as `firstHeading` above, and the
+    // page is reachable in this state only as the banner's `?commit=1`.
+    basicsHeading: (version: number) => `Mana base only, since v${version}`,
+    basicsLede: (version: number) =>
+      "This draft moved basic lands and nothing else, so no card is coming in or going out and " +
+      `there is nothing to buy. Committing freezes the new mana base as v${version}.`,
+
     chipIn: "in",
     chipOut: "out",
     chipBuy: "to buy",

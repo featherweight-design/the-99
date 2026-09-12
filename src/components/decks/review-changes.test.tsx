@@ -611,6 +611,45 @@ describe("ReviewChanges", () => {
     expect(screen.queryByText(deckVersioningCopy.review.heading(0, 1))).toBeNull();
   });
 
+  // A draft that moved only basic lands has a version to cut and no row either
+  // column can draw, so counting changes prints a nought standing for a real
+  // edit — "0 changes since v1" over an open sheet offering v2. The page is
+  // reachable in this state only as the banner's `?commit=1`, which is why the
+  // sheet is what the pair is read above.
+  it("names the mana base rather than counting changes on a basics-only draft", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [] }}
+        state={{ ...STATE, basicsChanged: true }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: deckVersioningCopy.review.basicsHeading(1) }),
+    ).toBeTruthy();
+    expect(screen.getByText(deckVersioningCopy.review.basicsLede(2))).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.heading(0, 1))).toBeNull();
+  });
+
+  // Nothing moved at all: not a state the route admits, and the heading stays the
+  // diff's rather than borrowing the basics-only line — that line would claim an
+  // edit to the mana base nobody made.
+  it("keeps the diff heading when a clean draft is rendered anyway", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: deckVersioningCopy.review.heading(0, 1) })).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.basicsHeading(1))).toBeNull();
+  });
+
   // A failed claim read leaves every add's bucket null, so all three terms of the
   // breakdown come back at nought. Printed as themselves they read "nothing to
   // buy" — the one thing the page must not say about a read it could not make.

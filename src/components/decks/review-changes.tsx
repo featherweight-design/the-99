@@ -400,6 +400,11 @@ export function ReviewChanges({
   // one only when it can actually cut v1 — see its own guard.
   const firstCommit = state.version === null;
 
+  // A draft that moved only basic lands: a version to cut, and no row either
+  // column can draw. Counting changes on it would print a nought standing for a
+  // real edit, so the heading and the lede name the edit instead.
+  const basicsOnly = !firstCommit && inCount === 0 && outCount === 0 && state.basicsChanged;
+
   // Copies going back in the pool, never rows: one remove of `3 → 1` releases
   // two, and this figure is printed beside `buyCount`, which counts copies.
   const released = releasedCopies(state);
@@ -447,13 +452,19 @@ export function ReviewChanges({
           <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
             {firstCommit
               ? copy.firstHeading(cardCount)
-              : copy.heading(inCount + outCount, state.version?.number ?? 1)}
+              : basicsOnly
+                ? copy.basicsHeading(state.version?.number ?? 1)
+                : copy.heading(inCount + outCount, state.version?.number ?? 1)}
           </h1>
           {/* Desktop only. At 390px the sentence is five lines above a list the
               reader came here to read, and the pulls it describes are on that
               list with their own controls. */}
           <p className="hidden md:block mt-0 mb-[18px] max-w-[680px] text-[14px] leading-[1.6] text-[color:var(--fg-body)]">
-            {firstCommit ? copy.firstLede : copy.lede((state.version?.number ?? 0) + 1)}
+            {firstCommit
+              ? copy.firstLede
+              : basicsOnly
+                ? copy.basicsLede((state.version?.number ?? 0) + 1)
+                : copy.lede((state.version?.number ?? 0) + 1)}
           </p>
         </header>
 

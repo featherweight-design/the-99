@@ -285,10 +285,16 @@ function useRowOpen(
  *
  *  It takes the phone's second line, so the tag and the control beside it sit at
  *  the row's right edge rather than bunching against the deck name; above that
- *  width the line dissolves and the name is an inline item like every other. */
+ *  width the line dissolves and the name is an inline item like every other.
+ *
+ *  `flex-none` is the design table's desktop rule, and it is what needs the cap
+ *  beside it: at max-content width `truncate` has nothing to act on, and a deck
+ *  name is accepted up to `DECK_NAME_MAX` — 120 characters, which would push the
+ *  cost and the control off the row rather than ellipsize. 220px holds every
+ *  ordinary name whole, so the cap is only ever reached by an extreme one. */
 function HeldBy({ deck }: { deck: string }) {
   return (
-    <span className="flex-1 md:flex-none min-w-0 truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
+    <span className="flex-1 md:flex-none md:max-w-[220px] min-w-0 truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
       {deckVersioningCopy.review.heldBy(deck)}
     </span>
   );

@@ -262,10 +262,12 @@ describe("CommitSheet", () => {
     expect(region.textContent).not.toContain("to buy");
   });
 
-  // The write decides the purchase inside its own transaction, under the deck's
-  // row lock, and that decision is the one the version was written against. A
-  // copy freed between this page's read and the click leaves the rendered figure
-  // describing a commit nobody made.
+  // The figure announced is the one the WRITE read, not the one this page was
+  // rendered with: a copy freed between the page's read and the click leaves the
+  // rendered figure describing a commit nobody made. It is a receipt read beside
+  // the write rather than inside it — see `commitDeckVersion`, which reads claims
+  // on `db` deliberately — so what it promises is "newer than the page", never
+  // "identical to the snapshot".
   it("announces the purchase the write decided, not the one the page rendered", async () => {
     vi.mocked(commitDeckVersion).mockResolvedValue({
       ok: true,

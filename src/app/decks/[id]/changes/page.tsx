@@ -52,19 +52,21 @@ export default async function ChangesPage({
   // under a heading counting changes against a version it does not have, over a
   // bar offering a commit the server then refused.
   //
-  // `?commit=1` is deliberately NOT an exception to this test: a stale or
-  // hand-typed link would otherwise open the sheet over a 63-card brew.
+  // `?commit=1` is the banner's CTA arriving — §Surfaces 5's second entry point
+  // into the one commit surface — or, on a brew, the spine's `Commit as v1`.
+  const wantsCommit = commit === "1";
+
+  // Both empty-column cases are admitted ONLY as that arrival. There is nothing
+  // to review on either — no named row to read, no cost to weigh — so a reader
+  // who did not ask for the sheet is being shown two blank columns, which is
+  // what the banner already promises they will not be (`pending-banner.tsx`).
+  // The link is still not a skeleton key: a brew has to pass the readiness test
+  // to open the sheet, or a hand-typed `?commit=1` would offer a commit over a
+  // 63-card list that the server then refuses.
   const hasSomethingToCommit =
     changeCount(state) > 0 ||
-    state.basicsChanged ||
-    (state.version === null && firstCommitReady);
+    (wantsCommit && (state.basicsChanged || (state.version === null && firstCommitReady)));
   if (!hasSomethingToCommit) redirect(`/decks/${id}`);
-
-  // `?commit=1` is the banner's CTA arriving — §Surfaces 5's second entry point
-  // into the one commit surface — or, on a brew, the spine's `Commit as v1`. No
-  // further test of its own: the guard above already refused every deck this page
-  // would open the sheet over in error.
-  const wantsCommit = commit === "1";
 
   return (
     <ReviewChanges
