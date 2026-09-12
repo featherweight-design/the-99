@@ -23,6 +23,7 @@ import { deckBodySize } from "./deck-size";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
+  cardTypeGroup,
   deckCounts,
   unresolvedCardCount,
   type CardTypeGroup,
@@ -70,17 +71,10 @@ export function poolCountFromMaskTally(
 // Pure helpers (tested)
 // ---------------------------------------------------------------------------
 
-export function cardTypeGroup(typeLine: string): CardTypeGroup {
-  const t = typeLine.toLowerCase();
-  if (t.includes("land")) return "Lands";
-  if (t.includes("creature")) return "Creatures";
-  if (t.includes("planeswalker")) return "Planeswalkers";
-  if (t.includes("instant")) return "Instants";
-  if (t.includes("sorcery")) return "Sorceries";
-  if (t.includes("artifact")) return "Artifacts";
-  if (t.includes("enchantment")) return "Enchantments";
-  return "Other";
-}
+// Re-exported rather than moved outright: this module is where every server
+// caller already reaches for it, and the function itself now lives in the
+// db-free `grouping.ts` so client components can group by type too.
+export { cardTypeGroup };
 
 export function primaryRole(input: { typeLine: string; oracleText: string | null; keywords: string[] }): "ramp" | "draw" | "removal" | "wipes" | "land" | "other" {
   const roles = classifyRoles(input);

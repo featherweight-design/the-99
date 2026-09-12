@@ -79,6 +79,27 @@ export type DeckDetailCard = {
 };
 
 /**
+ * Which group a type line belongs to. Lives here rather than beside the query
+ * that first used it, because the review page's diff rows group by type in a
+ * `"use client"` component — and `read.ts` imports `db`, which throws at module
+ * init in the browser bundle.
+ *
+ * Order matters: a card is filed under the first word that matches, so a
+ * "Land Creature" is a land.
+ */
+export function cardTypeGroup(typeLine: string): CardTypeGroup {
+  const t = typeLine.toLowerCase();
+  if (t.includes("land")) return "Lands";
+  if (t.includes("creature")) return "Creatures";
+  if (t.includes("planeswalker")) return "Planeswalkers";
+  if (t.includes("instant")) return "Instants";
+  if (t.includes("sorcery")) return "Sorceries";
+  if (t.includes("artifact")) return "Artifacts";
+  if (t.includes("enchantment")) return "Enchantments";
+  return "Other";
+}
+
+/**
  * Basic lands are the only multi-copy exception this app supports. Commander's
  * rules also exempt cards that name themselves ("A deck can have any number of
  * cards named…"), which we do not read — so this is a deliberate implementation
@@ -171,13 +192,18 @@ const ROLE_GROUP_LABELS = Object.fromEntries(
   ROLE_GROUP_ORDER.map((r) => [r, addPanelCopy.shelf.labels[r]]),
 ) as Record<(typeof ROLE_GROUP_ORDER)[number], string>;
 
-export function groupByCardType(cards: DeckDetailCard[]): [CardTypeGroup, DeckDetailCard[]][] {
-  const map = new Map<CardTypeGroup, DeckDetailCard[]>();
+// Generic over the row so a caller grouping a richer shape — a draft row
+// carrying its direction and quantity move — gets that shape back rather than
+// the narrowed card.
+export function groupByCardType<T extends Pick<DeckDetailCard, "cardTypeGroup" | "name">>(
+  cards: T[],
+): [CardTypeGroup, T[]][] {
+  const map = new Map<CardTypeGroup, T[]>();
   for (const g of CARD_TYPE_GROUP_ORDER) map.set(g, []);
   for (const c of cards) {
     map.get(c.cardTypeGroup)!.push(c);
   }
-  const result: [CardTypeGroup, DeckDetailCard[]][] = [];
+  const result: [CardTypeGroup, T[]][] = [];
   for (const g of CARD_TYPE_GROUP_ORDER) {
     const group = map.get(g)!;
     if (group.length > 0) {
