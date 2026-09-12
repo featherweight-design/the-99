@@ -50,14 +50,20 @@ export const deckVersioningCopy = {
     // `unfree` counts ROWS and `buy` counts COPIES, and they are not the same
     // number: one card wanted three times with no free copy is one row and three
     // copies. The sentence says both, so it takes both.
+    //
+    // "short of spare copies", never "has no free copy": a row wanting five with
+    // one spare in the collection is unfree and is not uncovered, and the
+    // narrower sentence would tell that player their own copy does not exist.
     money: (unfree: number, adds: number, buy: number, total: string) =>
-      `${unfree} of the ${adds} ${unfree === 1 ? "has" : "have"} no free copy, so this commit ` +
-      `will ask for ${buy} to buy · ${total}.`,
+      `${unfree} of the ${adds} ${unfree === 1 ? "is" : "are"} short of spare copies, ` +
+      `so this commit will ask for ${buy} to buy · ${total}.`,
     moneyPulls: (n: number) =>
       n === 1
         ? "1 of those is sleeved in another deck and can be pulled instead."
         : `${n} of those are sleeved in other decks and can be pulled instead.`,
-    moneyNone: "Every card coming in has a free copy, so this commit asks for nothing.",
+    // The positive counterpart of `money`, in the same words: covered means spare
+    // copies enough for what the row asks, not one copy owned.
+    moneyNone: "Every card coming in has spare copies enough, so this commit asks for nothing.",
 
     reviewCta: (n: number) => `Review ${plural(n, "change")}`,
     reviewLink: "review changes",
@@ -168,14 +174,19 @@ export const deckVersioningCopy = {
     lede: (version: number, unfree: number, removed: number) => {
       const head = `v${version} becomes the deck's list immediately.`;
       // A first commit, an all-free draft and a basics-only draft each leave one of
-      // these figures at zero, and "The 0 cards with no free copy" explains a
+      // these figures at zero, and "The 0 cards short of spare copies" explains a
       // consequence nobody is facing. Only the halves that moved are named, and a
       // draft with neither says nothing further — the lede alone is the whole fact.
+      //
+      // "short of spare copies" is the banner's own wording, for the banner's own
+      // reason: `unfree` counts a row a player holds one copy of and wants five,
+      // and that row is not a card they own none of.
       const clauses = [
         unfree === 1
-          ? "the one card with no free copy keeps its buy tag until you actually buy it"
+          ? "the one card short of spare copies keeps its buy tag until you actually buy it"
           : unfree > 1
-            ? `the ${unfree} cards with no free copy keep their buy tags until you actually buy them`
+            ? `the ${unfree} cards short of spare copies keep their buy tags until you ` +
+              "actually buy them"
             : null,
         removed > 0
           ? `the ${removed} you cut ${removed === 1 ? "is" : "are"} back in the pool the moment ` +

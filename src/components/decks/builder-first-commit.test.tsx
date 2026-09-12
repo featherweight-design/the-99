@@ -36,6 +36,7 @@ function makeDeck(
   size: number,
   partner: typeof PARTNER | null = null,
   unresolved = 0,
+  built = size,
 ): DeckDetail {
   const cards = Array.from({ length: size }, (_, i) => ({
     oracleId: `card-${i}`,
@@ -61,7 +62,7 @@ function makeDeck(
     },
     partner,
     cards,
-    built: size,
+    built,
     ownedCount: size,
     toBuyCount: 0,
     total: size + unresolved,
@@ -164,6 +165,15 @@ describe("BuilderShell — the gate on Commit as v1", () => {
   // here would freeze 98 cards under an offer that called the list complete.
   it("withholds it at 98 matched cards plus an unresolved line", async () => {
     await mount(makeDeck(98, null, 1), BREW);
+    expect(offers()).toHaveLength(0);
+  });
+
+  // A card list ahead of the server's own count is what the builder holds for as
+  // long as the add that filled the last slot is in flight. `commitVersion`
+  // snapshots the database, so an offer taken in that window would cut a v1
+  // without the card — and a version cannot be uncut.
+  it("withholds it while the list is full but the server count is not", async () => {
+    await mount(makeDeck(99, null, 0, 98), BREW);
     expect(offers()).toHaveLength(0);
   });
 

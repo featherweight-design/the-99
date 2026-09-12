@@ -279,9 +279,16 @@ export function PendingBanner({ state, deckId, onDiscard }: PendingBannerProps) 
                     {copy.discardCta}
                   </button>
                 )}
-                <Link href={reviewHref(deckId)} className={REVIEW_LINK}>
-                  {copy.reviewLink}
-                </Link>
+                {/* Absent on a basics-only draft. That draft has changes —
+                    `basicsChanged` is what keeps the banner up — and it has no
+                    named card, so the review page has two empty columns and
+                    redirects anything but `?commit=1` straight back here. The
+                    commit link beside it is the whole offer. */}
+                {n > 0 && (
+                  <Link href={reviewHref(deckId)} className={REVIEW_LINK}>
+                    {copy.reviewLink}
+                  </Link>
+                )}
               </div>
             </>
           ) : (

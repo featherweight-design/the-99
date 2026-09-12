@@ -269,5 +269,8 @@ describe("PendingBanner", () => {
     );
     expect(screen.getByText(copy.label)).toBeTruthy();
     expect(screen.getByRole("link", { name: copy.commitCta(3) })).toBeTruthy();
+    // And offers no review of it: the page names cards, this draft names none,
+    // and the route sends a changeless visit back here unless it asked to commit.
+    expect(screen.queryByRole("link", { name: copy.reviewLink })).toBeNull();
   });
 });

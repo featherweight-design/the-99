@@ -684,14 +684,24 @@ export function BuilderShell({
               // around it mid-edit.
               status={serverStatus}
               // State 2: a list that has never been committed and has reached a
-              // full body. `counts` is the optimistic list, so the offer appears
-              // on the add that completes the deck rather than on the next load.
+              // full body.
+              //
+              // The SERVER count, like `serverStatus` above and for a sharper
+              // reason: this offer leads to a commit, and `commitVersion`
+              // snapshots `deck_cards` as the database holds them. Read off the
+              // optimistic list, the link appears the instant the add that fills
+              // the last slot is dispatched — and a player who follows it inside
+              // that window can cut a v1 missing the card the page just said
+              // completed the deck. A version cannot be uncut, so the offer
+              // waits for the write it would freeze. Revalidation brings the
+              // server figure with it, which is the same click, not a reload.
+              //
               // `built`, the matched count, and never `total`: the status
               // contract is explicit that unresolved lines never push a deck to
-              // its body size, and `commitVersion` snapshots `deck_cards` rows —
-              // so a deck at 98 matched plus one unnamed line would cut a v1 of
-              // 98 cards under an offer that called the list complete.
-              offerFirstCommit={draft?.version === null && counts.built >= bodySize}
+              // its body size, so a deck at 98 matched plus one unnamed line
+              // would cut a v1 of 98 cards under an offer that called the list
+              // complete.
+              offerFirstCommit={draft?.version === null && deck.built >= bodySize}
               {...commitments}
               // No link while the Shopping list is what the player is looking
               // at: it would point at the screen they are already on. Called
