@@ -116,9 +116,12 @@ async function walkSurface(page, label, vpName, slug, { expectFlip = false } = {
     fail(`expected exactly one visible control at this width, got ${triggers.length}`);
     return;
   }
-  // 26px is the chip's own height; anything smaller shipped clipped.
+  // 44 square is the target now, and the floor is the target rather than the
+  // drawing: the control lost its words, so its box went from a ~90px wide chip
+  // to a 44px square holding a 26px plate. A `w < 60` floor was measuring the
+  // label's width, and the label is what the plate replaced.
   for (const t of triggers) {
-    if (t.h < 24 || t.w < 60) fail(`control measures ${t.w}×${t.h}, too small to hit`);
+    if (t.h < 44 || t.w < 44) fail(`control measures ${t.w}×${t.h}, under the 44px target floor`);
   }
 
   const hit = await page.evaluate(`(${READ_HIT_TEST})()`);

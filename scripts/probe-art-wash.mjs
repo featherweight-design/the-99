@@ -182,7 +182,13 @@ const READ_STATED_BANDS = `() => {
         // A left-portrait band whose ink starts past the flat stop draws no ramp
         // at all and reports one scrim rather than two: a band with nothing to
         // check rather than a band that failed.
-        ramped: scrims.length > 1 || image.includes('180deg'),
+        //
+        // Testing for 180deg would be worse than not testing: the browser omits
+        // a gradient's default angle from the computed value, so every stated
+        // cover band — which draws exactly one scrim, its ramp — would report
+        // itself flat and skip the hold checks silently. The horizontal scrim is
+        // the one that states an angle, so the ramp is anything that does not.
+        ramped: scrims.length > 1 || !/^linear-gradient\(\s*90deg/.test(image),
         stops,
       };
     });
