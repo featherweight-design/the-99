@@ -266,6 +266,23 @@ describe("FilterChassis", () => {
     expect(screen.getByTestId("marker")).toBeTruthy();
   });
 
+  it("scrolls the compact row only when a route asks, and never when wide", () => {
+    // /collection has no compact filter surface, so its five controls stay
+    // inline; without this they run off a 390px screen, because the row cannot
+    // wrap by design.
+    const { container, rerender } = render(
+      <FilterChassis {...base} form="compact" scrollCompactControls controls={null} chips={[]} />,
+    );
+    const row = () => container.querySelector("[data-chassis-row='controls']")!.firstElementChild!;
+    expect(row().className).toContain("overflow-x-auto");
+    rerender(
+      <FilterChassis {...base} form="wide" scrollCompactControls controls={null} chips={[]} />,
+    );
+    expect(row().className).not.toContain("overflow-x-auto");
+    rerender(<FilterChassis {...base} form="compact" controls={null} chips={[]} />);
+    expect(row().className).not.toContain("overflow-x-auto");
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,

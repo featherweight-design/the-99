@@ -139,6 +139,10 @@ export function FilterBar({
     <div className="md:sticky md:top-0 md:z-[2]" style={{ background: "var(--bg)" }}>
       <FilterChassis
         form={isDesktop ? "wide" : "compact"}
+        // This route has no compact filter surface, so its controls stay inline
+        // and scroll — which is what it shipped before the chassis. Without it
+        // the pips plus four triggers run off a 390px screen.
+        scrollCompactControls
         chips={chips}
         onClearAll={onClearAll}
         resultLine={resultLine}
