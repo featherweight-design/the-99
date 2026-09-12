@@ -347,7 +347,7 @@ async function run() {
 
     // The flush edge IS the ruling — a fixed-width row strands its remainder beside a grid
     // whose left edge is aligned to the head, the section heading and the result line.
-    const edge = await page.evaluate(() => {
+    const READ_EDGE = () => {
       const grid = document.querySelector("[data-set-grid]");
       if (!grid) return null;
       const cells = [...grid.children].filter((c) => c.getClientRects().length > 0);
@@ -370,7 +370,8 @@ async function run() {
         ),
         template: getComputedStyle(grid).gridTemplateColumns,
       };
-    });
+    };
+    const edge = await page.evaluate(READ_EDGE);
     failures += !report(
       "the grid's last track reaches its own right edge",
       edge !== null && Math.abs(edge.stranded) <= 1,
@@ -429,6 +430,20 @@ async function run() {
       // The same derived-height contract as the desktop check. A regression that kept the
       // width and lost `aspect-ratio: 63/88` would otherwise pass here, and the height is
       // half of what "no size literal at any width" means.
+      // The same track and flush-edge assertions as desktop, re-measured here: a sampled
+      // cell's size says nothing about the track list or about what `auto-fill` did with
+      // the empty tracks, so a phone-only regression in either would otherwise pass.
+      const phoneEdge = await page.evaluate(READ_EDGE);
+      failures += !report(
+        "two tracks at 390, measured off the track list",
+        phoneEdge !== null && phoneEdge.columns === 2,
+        phoneEdge === null ? "no grid found" : `${phoneEdge.columns} tracks, ${phoneEdge.template}`,
+      );
+      failures += !report(
+        "and the last one still reaches the grid's right edge",
+        phoneEdge !== null && Math.abs(phoneEdge.stranded) <= 1,
+        phoneEdge === null ? "no grid found" : `${phoneEdge.stranded}px stranded`,
+      );
       failures += !report(
         "and its height is that width at 63/88, not a literal",
         Math.abs(phoneMissing.height - (phoneMissing.width * 88) / 63) <= 1.5,
