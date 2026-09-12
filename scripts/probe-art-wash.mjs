@@ -132,23 +132,6 @@ const READ_148_SCRIMS = `() => {
     for stops that survive in sRGB. */
 const CLEAR_STOPS = /\/\s*0\)\s*\S+,\s*\S+\(\s*[^)]*\/\s*0\)/;
 
-/** A cover scrim's stops, as `{ alpha, position }`, read off the computed value.
-    An omitted `/ alpha` is alpha 1 — the browser drops it, exactly as it drops a
-    gradient's default 180deg. */
-const READ_COVER_STOPS = `(edge) => {
-  ${PARSE_STOPS}
-  // Laid-out bands only. The commander detail hero's band is wrapped in
-  // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
-  // selector while drawing nothing — counting it would report a phone-only
-  // treatment as shipping on both widths.
-  return [...document.querySelectorAll('.art-wash-scrim-cover-' + edge)]
-    .filter((s) => s.getClientRects().length)
-    .map((s) => {
-      const image = getComputedStyle(s).backgroundImage;
-      return parseStops(image);
-    });
-}`;
-
 /** Split a computed gradient into its TOP-LEVEL stops. Shared as a string
     because every reader in this file travels to the browser as one, and this is
     the third time the same parse has been got wrong: a `[^()]*` pattern cannot
@@ -191,6 +174,24 @@ const PARSE_STOPS = `
       .filter(Boolean);
   };
 `;
+
+/** A cover scrim's stops, as `{ alpha, position }`, read off the computed value.
+    An omitted `/ alpha` is alpha 1 — the browser drops it, exactly as it drops a
+    gradient's default 180deg. */
+const READ_COVER_STOPS = `(edge) => {
+  ${PARSE_STOPS}
+  // Laid-out bands only. The commander detail hero's band is wrapped in
+  // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
+  // selector while drawing nothing — counting it would report a phone-only
+  // treatment as shipping on both widths.
+  return [...document.querySelectorAll('.art-wash-scrim-cover-' + edge)]
+    .filter((s) => s.getClientRects().length)
+    .map((s) => {
+      const image = getComputedStyle(s).backgroundImage;
+      return parseStops(image);
+    });
+}`;
+
 
 /** Every band that has taken a stated height, with the ramp it draws. Selected by
     `data-art-wash-band` on the wash's own root rather than by a scrim class: the
