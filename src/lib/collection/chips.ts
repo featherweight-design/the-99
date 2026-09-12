@@ -76,10 +76,10 @@ export function collectionChips(
       // The swatches say which hues with colour alone, and they are
       // `aria-hidden`. The row this replaces named each one, so the names go
       // here rather than being lost to a count.
-      spoken:
-        filters.colors.length > 1
-          ? filters.colors.map((c) => colourName(c)).join(", ")
-          : undefined,
+      // Colours are named at EVERY count, unlike sets and types. Their label is
+      // `1 colour` even at one — a count, never the name — where a single set
+      // or type renders as itself and a spoken copy would say it twice.
+      spoken: filters.colors.map((c) => colourName(c)).join(", "),
       dots: filters.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
       next: { ...filters, colors: [] },
     });

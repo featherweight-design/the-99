@@ -227,6 +227,26 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
   });
 
+  it("drops a held message when the list changed but the count did not", () => {
+    // Two filters can leave the same number of rows, so the count cannot tell
+    // whether the sentence still describes what is on screen.
+    const { rerender, container } = render(<ResultLine line="9 of 41" revision="a" silent />);
+    rerender(
+      <ResultLine line="9 of 41" revision="a" announce="EOE added." announceId={1} silent />,
+    );
+    act(() => vi.advanceTimersByTime(50));
+    rerender(
+      <ResultLine line="9 of 41" revision="b" announce="EOE added." announceId={1} silent />,
+    );
+    act(() => vi.advanceTimersByTime(50));
+    rerender(<ResultLine line="9 of 41" revision="b" announce="EOE added." announceId={1} />);
+    act(() => vi.advanceTimersByTime(300));
+    // Nothing is announced: the sentence describes a list the reader has left,
+    // and the count itself has not moved so there is no new number to give.
+    // The wrong outcome here is "EOE added." against the newer list.
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

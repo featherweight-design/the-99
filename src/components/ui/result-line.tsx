@@ -25,6 +25,7 @@ export function ResultLine({
   line,
   announce,
   announceId,
+  revision,
   silent,
 }: {
   line: string;
@@ -43,6 +44,17 @@ export function ResultLine({
    * same sentence speaks again.
    */
   announceId?: string | number;
+  /**
+   * A value the surface changes whenever the list changes, used to tell whether
+   * a message held through a silence still describes what is on screen.
+   *
+   * The count alone cannot answer that: two filters can leave the same number
+   * of rows, so a sentence composed for the first would be announced against
+   * the second with nothing looking different. Pass the filter state, a
+   * revision counter, or anything that moves when the list does. Omitted, the
+   * count is used and this edge stays open.
+   */
+  revision?: string | number;
   /**
    * Stop announcing while another surface owns the region. The compact sheet is
    * `aria-modal` and carries its own, so with both live a filter change is
@@ -71,7 +83,7 @@ export function ResultLine({
   // would suppress a count nobody had said.
   const silentSince = useRef<number | null>(null);
   // The line a custom message was queued against while silent, or null.
-  const queuedFor = useRef<string | null>(null);
+  const queuedFor = useRef<string | number | null>(null);
   // The identity of the queued message, so a genuinely NEW one can be told from
   // the same one still sitting there while the list moves under it.
   const queuedId = useRef<string | number | undefined>(undefined);
@@ -127,9 +139,9 @@ export function ResultLine({
         // mistaken for it. Dropping it as stale stamped its identity as
         // delivered, so when silence ended nothing read fresh and the current
         // sentence was never spoken.
-        queuedFor.current = line;
+        queuedFor.current = revision ?? line;
         queuedId.current = identity;
-      } else if (queuedFor.current !== null && queuedFor.current !== line) {
+      } else if (queuedFor.current !== null && queuedFor.current !== (revision ?? line)) {
         // The same message still sitting there while the list moved under it:
         // it describes a state the reader has left.
         lastAnnounce.current = identity;
@@ -182,7 +194,7 @@ export function ResultLine({
       setAnnouncement((a) => ({ text: message, seq: a.seq + 1 }));
     }, ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
-  }, [line, announce, announceId, silent]);
+  }, [line, announce, announceId, revision, silent]);
 
   return (
     <>

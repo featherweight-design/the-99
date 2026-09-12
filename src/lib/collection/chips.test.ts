@@ -58,10 +58,18 @@ describe("collectionChips", () => {
       .toBe("Edge of Eternities, Duskmourn");
   });
 
-  it("leaves a single value unspoken, since the label already names it", () => {
+  it("leaves a single set or type unspoken, since the label already names it", () => {
     const chip = collectionChips({ ...EMPTY, setCodes: ["EOE"] }, options)[0];
     expect(chip.label).toBe("Edge of Eternities");
     expect(chip.spoken).toBeUndefined();
+  });
+
+  it("names a single colour, because its label is a count and not a name", () => {
+    // "1 colour" with an aria-hidden swatch leaves a screen reader unable to
+    // say which hue — unlike a set, which renders as its own name.
+    const chip = collectionChips({ ...EMPTY, colors: ["G"] }, options)[0];
+    expect(chip.label).toBe("1 colour");
+    expect(chip.spoken).toBe("Green");
   });
 
   it("names the colours for a reader who cannot see the swatches", () => {
