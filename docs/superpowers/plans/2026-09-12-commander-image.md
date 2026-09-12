@@ -18,9 +18,14 @@ invented one, and an empty top edge everywhere.
 ## Slicing
 
 Six PRs, by surface, so no single one rewrites nine files. The primitive goes first and stays
-**backward compatible** through the middle four: it gains `height`, a pixel `labelAt` and a
-band-aware ramp while `labelEdge: "top"` keeps working, so each surface migrates on its own PR and
-the last one deletes the old path. That ordering is what lets the deck tile's phone overflow gain its
+**backward compatible** through the middle four, and the compatibility is structural rather than a
+promise: the props union keeps its `band`, `labelEdge` and percentage-`labelAt` arms, each marked
+`@deprecated` with the file that retires it, and the percentage ramp survives as a separate named
+export — `legacyBottomScrimStops(pct)` — rather than as a second meaning for one argument. **The new
+prop is `labelAtPx`, not a repurposed `labelAt`**, so no call site can express a unit it does not
+mean and the highest-severity risk in the handoff's register cannot be reintroduced by an edit that
+forgets which shape it is in. Each surface then migrates on its own PR and the last one deletes the
+old path. That ordering is what lets the deck tile's phone overflow gain its
 plate in the same PR that removes the scrim carrying it today — the handoff's highest-severity risk,
 and non-negotiable.
 
@@ -41,22 +46,39 @@ moved from 📐 to 🟢. No code.
    `[[0,0], [0,(band−1.48·at)/band×100], [73,(band−at)/band×100], [73,100]]`. The one-argument
    percentage signature does not survive this PR in any form; leaving it callable is how the round
    ships inverted.
-3. `PORTRAIT_BANDS` is **re-keyed by portrait width** — 230 / 285 / 340 / 560 — per verdict §2. Every
-   column in it is a function of width, and one 288px band needs two portraits. `clearTo` becomes
-   derived (`maskEnd% × width`) rather than a column; `vertical` goes, since one ramp function now
-   serves both strategies. New rows: 285 → `flatStop 300`, 340 → `356`, 560 → `584`; 230 keeps its
-   shipped 240; every row is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`.
+3. `PORTRAIT_BANDS` becomes `PORTRAITS`, **keyed by portrait width** — 230 / 285 / 340 / 560 — per
+   verdict §2. Every column in it is a function of width, and one 288px band needs two portraits.
+   **The width is an explicit prop** (`portrait`), not derived from the band: `height × 1.37` gives
+   three of the four, and the desktop deck header inverts the rule by choosing 560 first. Render 10
+   selects between its two geometries the way `SpineMobile` and `SpineDesktop` already select between
+   themselves — **both wash layers mounted, one shown by a `min-[1200px]` class** — because the stops
+   are inline gradients no media query can rewrite. That mount is PR 5's work; PR 2 only has to make
+   both geometries expressible. `clearTo` becomes derived (`maskEnd% × width`) rather than a column,
+   with an override kept only on the one legacy row whose shipped value disagrees with its own rule;
+   `vertical` becomes an override too, kept only on width 203, since one ramp function now serves both
+   strategies. New rows: 285 → `flatStop 300`, 340 → `356`, 560 → `584`; 230 keeps its shipped 240;
+   every row is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`.
 4. **THE PLATE**: `background: var(--bg)`, `1px solid var(--border-strong)`, radius 7, no
-   `backdrop-filter`, icon only, a 26–32px box centred in a 44px target, `aria-label` required.
+   `backdrop-filter`, icon only, a 26px box centred in a 44px target, `aria-label` required.
    `full-card-trigger.tsx` loses its words and its `72%` class, and its `hero` placement moves to the
-   bottom corner the block does not reach. `OVER_ART_PLATE` and its assertion are deleted.
+   bottom corner the block does not reach. `OVER_ART_PLATE` and its assertion are deleted, which
+   takes `full-card-trigger.test.tsx` with it: that file asserts the old top-right placement, the
+   visible words and the 72% class, so it migrates in the same PR. `z-[2]` (PR #534) is kept — it is
+   what makes the control clickable rather than merely visible — and the 44px target is pulled 9px
+   inward rather than overhung, because every band it sits on is `overflow-hidden` and an overhanging
+   target loses that 9px out of its own hit area.
 5. `wash-contrast.test.ts` moves with it, as the handoff requires: the two top-ramp tests retire with
    the top scrim, `BOTTOM_SURFACES` becomes `(labelAtPx, band)` pairs for all six values, the plate
    test becomes the opaque assertion (`--fg` on `--bg`, 12.06–15.65:1 measured), and the vertical-ramp
    helper goes. `THEMES.size === 6` is untouched.
-6. `scripts/probe-art-wash.mjs` is **extended, never duplicated**: a check per band that the wash root
-   states its height, and a check that no `.art-wash-scrim-cover-top` element exists on any route once
-   PR 6 lands. Anchored to structure — `data-` hooks and computed styles — never to pixel positions.
+6. `scripts/probe-art-wash.mjs` is **extended, never duplicated**: each stated band's declared height
+   against its laid-out height, the ramp's hold position (below half the band is the signature of a px
+   value read as a percentage), a **census** of bands that have not migrated, and per card-details
+   control its target size, its drawn size, whether the fill resolves opaque and whether
+   `elementFromPoint` returns it at the centre and both far corners. The census is a count in PR 2 —
+   the top-labelled path is still supported, so asserting its absence here would fail against the
+   build's own contract — and becomes the assertion that it stayed at zero in PR 6. Anchored to
+   structure and computed styles, never to pixel positions.
 
 ### PR 3 — the thumb plate, five renders, no data
 
@@ -73,8 +95,13 @@ independent of PR 2.
 
 `detail.tsx` (render 04 → 288, `IdentityPips` retired from the band into the block, `Card details` to
 the bottom corner, `labelAt` **measured at 288** rather than inherited from 248 — the handoff's own
-open item 2), `rec-card.tsx` and `discovery-row.tsx` (148 → **208**, `labelAt 46`, the literal `148`
+open item 2), `rec-card.tsx` and `discovery-row.tsx` (148 → **208**, `labelAtPx 46`, the literal `148`
 retires). Render 06's "inset frame" is a no-op: there is no frame (verdict finding 5).
+
+**Tests migrate with their surface, in the same PR**, because each asserts the number being changed:
+`detail.test.tsx`, `rec-card.test.tsx` and `discovery-row.test.tsx` here. The primitive's legacy arm
+is what keeps the other surfaces' tests green in the meantime; a surface PR that leaves its own test
+asserting the old band is not a slice, it is a red gate.
 
 ### PR 5 — the deck surfaces
 
@@ -85,7 +112,12 @@ carrying that glyph today. Then `spine-mobile.tsx` and `spine-desktop.tsx` in on
 separated by CSS and not by a branch: both to **288**, mobile at `labelAt 83` measured off the
 three-line wrap, desktop to the 560 portrait at a 592 inset above ~1200px of row and the 340 portrait
 at a 364 inset below it, and the rename pencil to the inline unplated glyph on both frames — `--fg-muted`
-as drawn, asserted at 3:1 with the reason in the test (verdict finding 9).
+as drawn, asserted at 3:1 with the reason in the test (verdict finding 9). The desktop header mounts
+both wash geometries and lets a `min-[1200px]` class choose, since the stops are inline gradients no
+media query can reach; the title column's inset switches on the same breakpoint.
+
+Tests in the same PR: `deck-card.test.tsx`, `deck-card-overflow.test.tsx` where it asserts the bare
+phone control, `spine-mobile.test.tsx` and `spine-desktop.test.tsx`.
 
 ### PR 6 — home, and the old path deleted
 
@@ -95,8 +127,12 @@ as drawn, asserted at 3:1 with the reason in the test (verdict finding 9).
 resume row's commander name is cut **on single-commander rows only**; a pair's band shows one of two
 commanders, so the shortened pair line stays (verdict finding 6). The to-buy clause is cut outright.
 
+Tests in the same PR: `hero-commander.test.tsx` and `resume-decks.test.tsx`, both of which assert the
+`aspect-[2.2/1] min-h-[104px]` shape the round retires.
+
 With the last consumer migrated, this PR deletes `COVER_SCRIM_STOPS.top`, the `labelEdge` prop and its
-class hook, `.art-wash-scrim-cover-top` and its reduced-transparency override in `globals.css`, the
+class hook, `legacyBottomScrimStops`, the `203` and `99` portrait rows with their `clearTo` and
+`vertical` overrides, `.art-wash-scrim-cover-top` and its reduced-transparency override in `globals.css`, the
 `148` and `72` height arms, and the `min-h-[104px]` floors in `hero-commander.tsx` and `deck-card.tsx`
 (verdict finding 4). `.art-wash-art { opacity: … !important }` **stays**, and
 `--art-wash-reduced-opacity` stays a ceiling published per layer through `Math.min` — never applied
