@@ -82,6 +82,24 @@ export type DraftState = {
    * a price, and hiding it would quote the purchase as unpriceable.
    */
   total: string | null;
+  /**
+   * Copies of the purchase that carry a price, against `buyCount` copies asked
+   * for. Kept beside `total` because a figure over partial coverage reads as a
+   * complete one: at 4 of 9 the total is real and the purchase is bigger than it,
+   * and the shipped `priceCopy.strip.pricedClause` is how every other surface
+   * says so. Equal to `buyCount` when the feed had a price for everything.
+   */
+  pricedCopies: number;
+  /**
+   * The newest `as_of` in the price table, or null when nothing was read.
+   *
+   * Travels with the state because `PriceFact.asOf` alone cannot decide whether
+   * a price is live — `priceState` compares it to this, and a row equal to the
+   * maximum is the only definition of "stocked now" this codebase has. A drawn
+   * row carries the raw fact, so without this figure beside it a consumer either
+   * repeats the whole price read or prints a sold-out card at its last price.
+   */
+  newestAsOf: Date | null;
   /** The draft's average, and the version's. Both null on an all-land list. */
   manaValue: number | null;
   manaValueBefore: number | null;
@@ -211,6 +229,7 @@ async function readDraft(
     version, adds: [], addChanges: [], removes: [], basicsChanged: false,
     names: new Map(), claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
+    pricedCopies: 0, newestAsOf: null,
     manaValue: null, manaValueBefore: null,
   };
   const bare = (state: DraftState): DraftRead => ({
@@ -313,6 +332,8 @@ async function readDraft(
       // nothing, and a real $0.00 is a price the player should see rather than a
       // purchase the app claims it cannot quote.
       total: summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
+      pricedCopies: summary.pricedCopies,
+      newestAsOf: prices?.newestAsOf ?? null,
       manaValue: averageManaValue(draft.map((c) => ({
         cmc: cmcByOracle.get(c.oracleId) ?? 0,
         quantity: c.quantity,

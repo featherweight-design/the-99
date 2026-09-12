@@ -5,6 +5,7 @@ import { changeCount, hasChanges, releasableClaims, type DraftState } from "./dr
 const state = (over: Partial<DraftState> = {}): DraftState => ({
   version: null, adds: [], addChanges: [], removes: [], basicsChanged: false,
   names: new Map(), claimsKnown: true, buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
+  pricedCopies: 0, newestAsOf: null,
   manaValue: null, manaValueBefore: null, ...over,
 });
 
