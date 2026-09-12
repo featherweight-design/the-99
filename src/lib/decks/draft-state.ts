@@ -219,10 +219,19 @@ function loadDetailFacts(userId: string, oracleIds: string[]) {
     manaCost: cards.manaCost,
     imageUri: cards.imageUri,
     layout: cards.layout,
+    // The `ci` alias and the qualified outer column are both load-bearing, and
+    // `pnpm probe:draft` is what proved it: drizzle omits table prefixes
+    // entirely on a single-table select, so column references written through
+    // the schema objects render as a bare `"oracle_id" = "oracle_id"` that
+    // Postgres resolves to the SUBQUERY's column twice. The `exists` stops
+    // correlating and answers "does this player own anything at all", which is
+    // `true` for every changed card the moment the collection is not empty.
+    // `read.ts` writes the same clause safely only because its join makes
+    // drizzle qualify; nothing here does.
     owned: sql<boolean>`exists (
-      select 1 from ${collectionItems}
-      where ${collectionItems.oracleId} = ${cards.oracleId}
-      and ${collectionItems.userId} = ${userId}
+      select 1 from ${collectionItems} ci
+      where ci.oracle_id = ${cards}.oracle_id
+      and ci.user_id = ${userId}
     )`,
   }).from(cards).where(inArray(cards.oracleId, oracleIds));
 }

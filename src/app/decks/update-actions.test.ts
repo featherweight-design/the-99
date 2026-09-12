@@ -137,4 +137,16 @@ describe("updateDeckFromList and the deck's version", () => {
     await updateDeckFromList({ deckId: "deck-1", text: list, source: "paste", keep: [] });
     expect(newest).toHaveBeenCalledWith("deck-1", stub.tx);
   });
+
+  // The other half of that invariant, and the half this code owns: the rollback
+  // itself is Postgres's, but it only happens if the rejection leaves the
+  // transaction callback instead of being caught and reported as a success. A
+  // swallowed failure would answer `versioned: false` over a deck whose rows
+  // were written and never rolled back.
+  it("lets a failed version read reject the whole action", async () => {
+    newest.mockRejectedValue(new Error("connection lost"));
+    await expect(
+      updateDeckFromList({ deckId: "deck-1", text: list, source: "paste", keep: [] }),
+    ).rejects.toThrow(/connection lost/);
+  });
 });
