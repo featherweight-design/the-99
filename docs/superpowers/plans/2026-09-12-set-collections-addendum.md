@@ -1,0 +1,184 @@
+# Set collections addendum (R2) — implementation plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or
+> superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
+
+**Goal:** Land the addendum's four Design-owned findings on `/collection/sets` and
+`/collection/sets/[code]`.
+
+**Architecture:** Four PRs, each independently testable and independently rejectable.
+Findings 1+2 and 5 touch one file each and depend on nothing. Finding 3 is one
+conformance change across the rack — Design ruled it explicitly indivisible — and finding 4
+lands in it or after it, never before.
+
+**Tech stack:** Next.js 16 App Router, React 19, Tailwind 4, Vitest, Playwright-free
+browser probes via `scripts/probe-sets.mjs`.
+
+**Spec:** `design/design_handoff_the99_set_collections/ADDENDUM-README.md`,
+`ADDENDUM-STATES.md`, `addendum copy strings.ts`.
+**Readiness:** `docs/superpowers/readiness-set-collections-addendum.md` (🟢 Green).
+
+## Global constraints
+
+- **The grid minimum is `146`.** The README's `F = 116 at md and up, 160 below it` is stale
+  R1 text; see the readiness doc's erratum.
+- **`auto-fill`, never `auto-fit`.** One keyword decides the no-reflow constraint.
+- **The cell carries no width or height literal at any width.** Track sets width,
+  `aspect-ratio: 63/88` sets height.
+- **Mount `ui/colour-pips.tsx` and `ui/filter-panel.tsx`; never fork either.**
+- **The rack is three fixed rows** — controls, chips, result — and its height never depends
+  on the filter state. It lives inside a sticky head.
+- **The query is a fourth field on `SetGridFilters` and goes through `applyFilters`.**
+  Never a second pass over `shown`. The result line, the `Send N` label, the cost
+  denominator and the rarity panel's per-row counts are four readings of one computation.
+- **`Clear all filters` clears the query too.**
+- **Every visible figure on the index row is in the row's `aria-label`**, which is explicit
+  and replaces everything its descendants contribute.
+- Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test`, the stub-DB build,
+  then `git fetch origin && git rebase origin/main`.
+
+---
+
+## PR 1 — Findings 1+2: one grid declaration
+
+**Files:** Modify `src/components/sets/set-grid-view.tsx` (the grid container),
+`src/components/sets/set-cell.tsx` (delete every size literal).
+**Test:** `set-cell.test.tsx`, `set-grid-view.test.tsx`, `scripts/probe-sets.mjs`.
+
+- [ ] **Step 1 — Failing test.** In `set-cell.test.tsx`, assert the cell's root class list
+  carries no `w-[…]` or `h-[…]` literal and does carry `aspect-[63/88]`. In
+  `set-grid-view.test.tsx`, assert the grid's `gridTemplateColumns` is
+  `repeat(auto-fill, minmax(146px, 1fr))` and that the string contains no `auto-fit`.
+- [ ] **Step 2 — Run, verify failure.** `pnpm vitest run src/components/sets`
+- [ ] **Step 3 — Implement.** Replace the fixed-width grid with the one declaration.
+  Delete `set-cell.tsx`'s width/height literals; the art keeps `aspect-[63/88]`.
+- [ ] **Step 4 — Retire `hidden md:inline` on the rarity word.** At 174px the caption holds
+  three things, so `042 · uncommon` is one format at every width.
+- [ ] **Step 5 — Probe.** Extend `scripts/probe-sets.mjs`: at 1180 assert 7 tracks and a
+  flush right edge (grid content width equals the container's); at 390 assert 2 tracks at
+  174px; assert owned and missing cells report identical `getBoundingClientRect` geometry;
+  assert the filtered grid keeps the same track count.
+- [ ] **Step 6 — Gate and commit.**
+
+**Watch for:** the one-column case below ~330px of content falls out of the declaration
+already — assert it, do not add a breakpoint for it.
+
+---
+
+## PR 2 — Finding 5: the extras figure becomes a figure
+
+**Files:** Modify `src/components/sets/set-index-view.tsx`,
+`src/lib/copy/set-collections.ts`. **Test:** `set-index-view.test.tsx`.
+
+- [ ] **Step 1 — Copy.** Add `setsIndexCopy.row.extrasLine(have, total)` →
+  `` `${have} / ${total} extras` `` and `extrasAria(have, total)` →
+  `` `, and ${have} of ${total} extras` ``.
+- [ ] **Step 2 — Failing tests**, one per case in ADDENDUM-STATES' four-case table:
+  extras owned, extras none owned, complete with extras outstanding (base ratio
+  `--success`, extras line stays `--fg-muted`), not indexed (no second line at all).
+  Plus: never `0 / 0 extras`, and the `aria-label` carries the appended clause.
+- [ ] **Step 3 — Run, verify failure.**
+- [ ] **Step 4 — Implement.** Move the figure out of the `CODE · YEAR · n/m extras` line and
+  under the base ratio, one type step down, at `--fg-muted`. Brighten the base ratio to
+  `--fg-body`. Carry the existing `extrasTotal > 0` guard with it. Append the clause to
+  both `ratioAria` and `zeroAria`.
+- [ ] **Step 5 — Run, verify pass. Gate and commit.**
+
+**Watch for:** `--fg-locked` is wrong here — the figure is text and owes 4.5:1.
+
+---
+
+## PR 3 — Finding 3: the rack conforms
+
+**Files:** Modify `src/components/sets/set-grid-view.tsx`, `src/lib/copy/set-collections.ts`.
+Delete `src/components/collection/color-filter-row.tsx`'s use on this route.
+**Test:** `set-grid-view.test.tsx`, `scripts/probe-sets.mjs`.
+
+Indivisible by Design's ruling: the pips, the rarity trigger, the chip line and the
+three-row bar are one conformance change, and splitting them leaves the page in neither
+vocabulary.
+
+- [ ] **Step 1 — Copy.** Reuse `chassisCopy.chips.none` (`No filters on`) and
+  `filterCopy.chips.clearAll` (`Clear all filters`) rather than adding the addendum's
+  lowercase variants — the addendum's own note says to do this once the chassis lands, and
+  it has. Add the page's own `clearAllAria` (`Clear every filter and the search`), the chip
+  labels, and a `FilterPanelCopy` block for rarity whose `triggerLabel` is
+  `setFilterCopy.rarity.all` and whose `triggerOne` produces `Rarity · uncommon`.
+  Retire `setFilterCopy.rarity.letters`.
+- [ ] **Step 2 — Failing tests**, one per state in ADDENDUM-STATES §1–5, each asserting the
+  must-nots as well: row 2 present at rest; no phone badge at zero; no opacity on an unlit
+  pip; no `Clear all filters` at one filter; chips in dimension order; colour collapsing
+  past one pip; the panel carrying no search field and refusing two values.
+- [ ] **Step 3 — Run, verify failure.**
+- [ ] **Step 4 — Pips.** Replace `ColorFilterRow` with `ColourPips`, `form="wide"` on the
+  control row and `form="sheet"` in the phone sheet.
+- [ ] **Step 5 — Rarity.** Replace the four letter buttons with `FilterPanel`,
+  `searchable={false}`, `widthPx={280}`, `selectionMode="multi"` with a caller-enforced
+  single-select `onToggle` (picking the lit value clears it). The phone sheet gets a 44px
+  chip group from `rarity.options`, after the pips.
+- [ ] **Step 6 — Chips.** Clear leaves the control row for the chip line's trailing edge,
+  past one active control. Row 2 prints the rest line rather than collapsing. Desktop never
+  wraps; phone scrolls horizontally from its trailing edge and never wraps, chip target
+  34px.
+- [ ] **Step 7 — Probe.** Assert the head's height is identical at rest, at one filter and at
+  three; assert no unlit pip has an `opacity` below 1; assert the panel is absolutely
+  positioned rather than in flow.
+- [ ] **Step 8 — Gate and commit.**
+
+**Watch for:**
+- `FilterPanel`'s marker is its own square-and-tick, not the addendum's rotated diamond.
+  Mounting unforked is the harder rule and Design named it as the dependency; the marker
+  is the panel's to change, in the chassis package.
+- Do **not** mount `FilterChassis` itself. Its `sort` slot is documented as never empty and
+  this page has no sort. The page adopts the chassis's rows and vocabulary, which is what
+  §28 rules; §28's named dependency is the pip and the panel, and those two only.
+- `/collection` still mounts the dimmed `ColorFilterRow`. That is the chassis package's
+  migration, not this one — but the two routes will differ visibly until it lands.
+
+---
+
+## PR 4 — Finding 4: the name search
+
+**Files:** Modify `src/lib/sets/filters.ts`, `src/components/sets/set-grid-view.tsx`,
+`src/lib/copy/set-collections.ts`. **Test:** `filters.test.ts`, `set-grid-view.test.tsx`.
+
+- [ ] **Step 1 — Failing tests on the pure model.** `SetGridFilters` gains `query: string`.
+  `applyFilters` matches a case-insensitive, diacritic-folded substring of the printed name
+  (`aether` finds Æther, `jotun` finds Jötun), matching **either half of a `//` name**.
+  Not the type line, not oracle text, not the collector number. `serialiseFilters` writes
+  `q` and omits it when empty; `parseFilters` reads it back.
+- [ ] **Step 2 — Run, verify failure.**
+- [ ] **Step 3 — Implement in `filters.ts`.** Fold with
+  `s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()`.
+- [ ] **Step 4 — Failing tests on the view.** The field is first in the control row and the
+  only shrinking child; it is on the phone's persistent row and never in the sheet; the
+  badge does not count it; `Clear all filters` clears it; the cost strip and `Send N`
+  re-scope with it; the zero-with-a-query branch names the query and offers
+  `Clear the search` before `Clear all filters`; with missing-only on and every match owned,
+  the shipped `headingOwnsAll("cards matching “plains”")` branch carries it.
+- [ ] **Step 5 — Implement.** `SearchField` from `ui/text-field.tsx`, placeholder
+  `Find a card in this set` (`Find a card` on phone), accessible name
+  `Search cards in {setName}`. 150ms debounce, `history.replaceState`, no request, no
+  router, no dropdown, no Enter to submit.
+- [ ] **Step 6 — Rarity panel counts.** The panel's per-row counts read the same filtered
+  computation, so a query narrows them too.
+- [ ] **Step 7 — Gate and commit.**
+
+**Watch for:** a second field behind `Filters` would be two controls with one accessible
+name — the defect `MissingOnlyToggle` already exists to avoid on this page.
+
+---
+
+## Self-review
+
+- **Spec coverage.** README §27 → PR 1. §28 + the three chassis amendments → PR 3
+  (amendment 1's "Clear clears the search" lands in PR 4, which is where a query exists to
+  clear). §29 → PR 4. §30 → PR 2. ADDENDUM-STATES' rack states → PR 3 and PR 4; grid states
+  → PR 1; index-row table → PR 2.
+- **Not covered, deliberately.** The addendum's three open items: the 1.21× upscale (a
+  review observation, no change until review finds the cell soft); B/R/G pip colours (the
+  chassis package's assets, already committed); the chip line's skin (the chassis wins if it
+  specs them differently).
+- **Type consistency.** `SetGridFilters` gains exactly one field, `query: string`, and
+  `EMPTY_FILTERS` gains `query: ""`. Every caller of `applyFilters` already passes a whole
+  `SetGridFilters`, so no call site changes shape.
