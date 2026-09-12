@@ -18,7 +18,7 @@ three weeks ago, and I would rather have that confirmed than discover it in a bu
 - **The chassis.** Three rows, the fixed-height rule, the 34px control rhythm, the panel shape, the
   chip line, the trailing sort slot. Drawn at `/decks`' five dimensions in five desktop states and
   four phone frames, which is the density §3.2 asks the frame to survive.
-- **The pip, and the measurement §5 says nobody has made.**
+- **The pip, and the measurement §5 says nobody has made.** Floor **7.77:1** (not 9.51 — three hexes were assumed and all three are wrong).
 > ⚠️ **Superseded — the floor is 7.77:1, not 9.51:1.** Three of the five pip hexes were assumed and
 > all three are wrong: `B` is `#CAC5C0`, `R` is `#E49977`, `G` is `#A3C095`. The real values are
 > darker, so the floor moves down — still clearing the 3:1 non-text floor by 4.77. And the shipped
@@ -27,9 +27,10 @@ three weeks ago, and I would rather have that confirmed than discover it in a bu
  Six themes, two decimals. The floor is
   **9.51:1** and the treatment's own state carrier (`--accent` ring) floors at **4.42:1**. Both
   clear their floors everywhere.
-- **The dimming defect it uncovers.** The shipped unlit pip measures **1.38:1** against
-  `--surface-sunken`. That is three live surfaces under the 3:1 non-text floor today, and it is not
-  a consequence of this round — it ships already. Filed as a finding regardless of what happens to
+- **The dimming defect it uncovers.** The shipped unlit pip measures **1.37:1** against **`--bg`**
+  on the rack and **1.49:1** against `--surface-sunken` on collection — **two** live controls under
+  the 3:1 non-text floor today, not three: `/decks`' `ColourSwatch` carries no opacity at all. Not a
+  consequence of this round — it ships already. Filed as a finding regardless of what happens to
   the chassis.
 - **§3.3, §3.4, §3.5 and §6**, each ruled with its consequence named rather than left implied —
   including the three retirements (§3.4's deck-sheet sort group, §3.3's two footer Clears and the
@@ -77,7 +78,7 @@ independently of this round, and `chassisCopy.colour.pipAria` replaces it.
 - **The wrapping control row.** R1 let row 1 wrap and listed the 768–868px two-line band as
   "not blocking, want eyes on it". Review called it what it was — the sort landing on its own line
   reads as a bug — so it is now a rule: two forms, no wrapping at any width, search the only
-  shrinking child, switch at 900px set by `/collection`'s seven controls. That open item is closed
+  shrinking child, switch at **1000px** set by `/collection`'s seven controls, whose minimums total 987 rather than the 887 first stated. That open item is closed
   by removal rather than by measurement.
 - **Every shipped filter is inventoried** (§1b): twelve live controls across four routes, each
   mapped to one of four control types, with what changes for it. The chassis has slots, and a route

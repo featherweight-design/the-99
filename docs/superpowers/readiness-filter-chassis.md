@@ -69,9 +69,12 @@ are real and one apparent delta is not:
   (`src/components/ui/use-is-desktop.ts:8`). The chassis switches form at 1000px (decision 18, with
   §7's correction). **At 768–999px the compact chassis would open a desktop popover** — the phone frame with the desktop
   panel inside it. The panel must take its breakpoint from the caller rather than reading its own.
-- **Desktop option rows are `min-h-[40px]`** (`filter-panel.tsx:465`), against the handoff's 34px
-  control rhythm. The phone rows are `min-h-[48px]` and already clear the 44px floor, so only the
-  desktop figure is in question, and it is a parameter rather than a redraw.
+- **Desktop option rows are `min-h-[40px]`** (`filter-panel.tsx:465`) and the chassis needs
+  **44px** — `STATES-filter-chassis.md:85-87` specifies the panel's rows, and the handoff's 34px
+  figure is the *control* rhythm for triggers and fields, not the rows inside a panel. An earlier
+  draft of this section compared the two and called it a rhythm mismatch, which would have let an
+  implementer keep 40px. It is a parameter rather than a redraw, but the target is 44. The phone
+  rows are `min-h-[48px]` and already clear it.
 - **Width is not a delta.** `widthPx` is already a prop (`:99,:127`) — `Set` passes 340 and `Type`
   passes 300 today. Decision 4's 280px is a call-site argument, so the ratified collection panel is
   not touched by it.
