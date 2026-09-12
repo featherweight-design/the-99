@@ -895,4 +895,50 @@ describe("CardDetailProvider open-at-printing scope", () => {
     await act(async () => { release?.(); });
     await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
   });
+
+  // A pending printing belongs to ONE read. Held by oracle id alone, a failed open sat
+  // waiting and committed its cell's printing the next time the reader paged onto that
+  // card — a page that supplied no printing at all.
+  it("drops a pending printing whose read never landed", async () => {
+    let failNext = true;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-sol" && failNext) throw new Error("read failed");
+      return oracleId === "o-signet" ? SIGNET : SOL;
+    });
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => open("o-sol", [], {
+              setCode: "M21", collectorNumber: "268",
+              imageUri: "https://cards.scryfall.io/normal/m21-268.jpg",
+            })}
+          >
+            open sol at M21
+          </button>
+          <button type="button" onClick={() => open("o-sol", [])}>open sol plain</button>
+        </>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    // The open fails, so nothing is painted and its printing is owed to a read that is over.
+    await click(screen.getByRole("button", { name: "open sol at M21" }));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+
+    // The same card, opened again with NO printing. It must arrive wearing none.
+    failNext = false;
+    await click(screen.getByRole("button", { name: "open sol plain" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("m21-268"))).toBe(false);
+  });
 });

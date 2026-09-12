@@ -262,8 +262,20 @@ export function CardDetailProvider({
   // it on each render would re-render all of them.
   const loadRef = useRef<(oracleId: string, list?: string[]) => Promise<void>>(async () => {});
   const load = useCallback(
-    async (oracleId: string, list?: string[]) => {
+    async (
+      oracleId: string,
+      list?: string[],
+      at?: (PreferredPrinting & { imageUri?: string | null }) | null,
+    ) => {
       const request = ++latest.current;
+      // EVERY read decides the pending printing, including the reads that have none: paging,
+      // a re-read and an owed re-read all pass nothing, which clears whatever an earlier
+      // open left behind. That is what binds the value to a read rather than to an oracle
+      // id — held by id, an open whose read failed would sit waiting and commit its cell's
+      // printing the next time the reader paged onto that card, a page that supplied no
+      // printing at all. One place owns this value's whole life, which is why there is no
+      // second guard on the way out.
+      pendingAt.current = at ? { oracleId, printing: at } : null;
       openRef.current = oracleId;
       inFlight.current = oracleId;
       if (list !== undefined) setSiblings(list);
@@ -353,9 +365,9 @@ export function CardDetailProvider({
       // PENDING, not committed. A second open while the first card is still painted must
       // not take the first card's printing away from it: the read may fail, and `load`
       // deliberately leaves that card standing. The printing commits in `show`, when the
-      // card it describes actually arrives.
-      pendingAt.current = { oracleId, printing: atPrinting ?? null };
-      void load(oracleId, list ?? []);
+      // card it describes actually arrives — and only if the read that asked for it is
+      // still the current one.
+      void load(oracleId, list ?? [], atPrinting ?? null);
     },
     [load],
   );
