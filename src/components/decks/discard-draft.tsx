@@ -159,6 +159,13 @@ export function DiscardConfirm({
   // whichever consequence the document happened to hold first.
   const whyId = useId();
   const safeRef = useRef<HTMLButtonElement>(null);
+  // `disabled={pending}` only lands once the transition has re-rendered, and
+  // transition updates are low-priority — two clicks in the same tick both reach
+  // the handler and fire the discard twice. A ref settles it synchronously, as
+  // `useDeckMutation` does. It matters more here than on an add: the second
+  // request carries the same expected version, so a commit landing between the
+  // two is the one case where the guard passes for a discard nobody asked for.
+  const inFlightRef = useRef(false);
 
   // The question took the host's body with it, so the focus the trigger held is
   // gone from the document. It goes to the way out, never to the destructive
@@ -234,9 +241,14 @@ export function DiscardConfirm({
           disabled={pending}
           aria-describedby={whyId}
           onClick={() => {
+            if (inFlightRef.current) return;
+            inFlightRef.current = true;
             setError(null);
             startTransition(async () => {
               let result: DeckMutationResult;
+              // `finally`, not a `.catch`: a synchronous throw would escape a
+              // promise-level catch and leave the latch stuck, killing the
+              // control for the rest of the page's life.
               try {
                 // The version the sentence above named, sent along so the
                 // server can refuse rather than land the discard on a version
@@ -248,6 +260,8 @@ export function DiscardConfirm({
                 // the commit sheet makes about its own write.
                 setError(copy.refused);
                 return;
+              } finally {
+                inFlightRef.current = false;
               }
               if (!result.ok) {
                 // The server's own message is dropped deliberately. Every way this

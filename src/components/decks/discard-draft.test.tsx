@@ -222,6 +222,22 @@ describe("the discard confirm", () => {
     expect(onDiscarded).toHaveBeenCalled();
   });
 
+  // `disabled={pending}` lands a render later, so two clicks in one tick both
+  // reach the handler. The second carries the same expected version, which means
+  // a commit landing between the two would satisfy the server's guard for a
+  // discard nobody asked for.
+  it("sends one discard however fast the button is pressed twice", async () => {
+    vi.mocked(discardDeckDraft).mockResolvedValue({ ok: true });
+    discard({ onDiscarded: vi.fn() });
+    act(raise);
+    const go = screen.getByRole("button", { name: copy.confirm(36) });
+    await act(async () => {
+      go.click();
+      go.click();
+    });
+    expect(discardDeckDraft).toHaveBeenCalledTimes(1);
+  });
+
   // A host that navigates takes this surface and the deck name beside it with
   // it, so only a host staying put gets the handoff below.
   it("hands focus to the deck name when the host stays put", async () => {
