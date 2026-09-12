@@ -640,3 +640,122 @@ describe("CardModal oracle-name line", () => {
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Battle of Olympus");
   });
 });
+
+describe("CardModal opened at a particular printing", () => {
+  const printing = (setCode: string, collectorNumber: string, imageUri: string) => ({
+    setCode,
+    setName: setCode,
+    collectorNumber,
+    releasedAt: "2024-01-12",
+    quantity: 0,
+    finishes: {},
+    imageUri,
+    flavorName: null,
+  });
+
+  const twoPrintings: BrowseCard = {
+    ...card,
+    quantity: 0,
+    printings: [
+      printing("HOB", "96", "https://cards.scryfall.io/normal/hob-96.jpg"),
+      printing("HOB", "239", "https://cards.scryfall.io/normal/hob-239.jpg"),
+    ],
+  };
+
+  // The face is a CSS background, not an <img>, so this reads the style the modal set.
+  const artOf = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+      .map((el) => el.style.backgroundImage);
+
+  it("shows the printing it was opened at, not the one the resolver would choose", () => {
+    // A set cell IS a printing: clicking the dashed #239 must show #239. Without this the
+    // modal resolved to the first printing with art and showed a different card face.
+    const { container } = render(
+      <CardModal
+        card={twoPrintings}
+        openAtPrinting={{ setCode: "HOB", collectorNumber: "239" }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(artOf(container).some((src) => src?.includes("hob-239"))).toBe(true);
+  });
+
+  it("falls back to the resolver when it was opened at no printing in particular", () => {
+    const { container } = render(
+      <CardModal
+        card={twoPrintings}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(artOf(container).some((src) => src?.includes("hob-96"))).toBe(true);
+  });
+
+  it("does not claim the viewed printing as the reader's pick", () => {
+    // Looking at a cell writes nothing and asserts nothing about preference: the picker
+    // must still mark whatever the reader actually chose, which here is nothing.
+    render(
+      <CardModal
+        card={twoPrintings}
+        openAtPrinting={{ setCode: "HOB", collectorNumber: "239" }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(screen.queryByText(/Your pick/)).toBeNull();
+  });
+});
+
+describe("CardModal opened at a printing it does not own", () => {
+  // The case the first fix missed. For an OWNED card `card.printings` is what the reader
+  // owns, and a holding matched by name carries no collector number — so the printing the
+  // set cell stands for is absent, and the resolver fell back to an unrelated set.
+  const ownedElsewhere: BrowseCard = {
+    ...card,
+    quantity: 90,
+    printings: [{
+      setCode: "ARC",
+      setName: "ARC",
+      collectorNumber: "",
+      releasedAt: "2010-06-18",
+      quantity: 90,
+      finishes: {},
+      imageUri: "https://cards.scryfall.io/normal/arc.jpg",
+      flavorName: null,
+    }],
+  };
+
+  const backgrounds = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+      .map((el) => el.style.backgroundImage);
+
+  it("shows the art the caller handed it", () => {
+    const { container } = render(
+      <CardModal
+        card={ownedElsewhere}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(backgrounds(container).some((b) => b.includes("tla-282"))).toBe(true);
+    expect(backgrounds(container).some((b) => b.includes("arc.jpg"))).toBe(false);
+  });
+});

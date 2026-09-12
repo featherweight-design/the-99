@@ -10,7 +10,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import { twMerge } from "tailwind-merge";
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { CardModal } from "./card-modal";
 
@@ -25,8 +25,17 @@ type CardDetailContextValue = {
    * Open the modal for `oracleId`. `siblings` is the ordered oracle-id list the card belongs
    * to, which is what Prev/Next page through; omit it where there is no list (the commander,
    * a suggestion) and the modal renders "1 of 1" with both arrows disabled.
+   *
+   * `atPrinting` opens the card AT one printing — the set grid's cells each ARE a printing,
+   * so clicking the dashed #239 must show #239 rather than whichever printing the resolver
+   * would otherwise choose. It is a view, never a pick: nothing is written, and the picker
+   * still marks the reader's own preference wherever that is.
    */
-  open: (oracleId: string, siblings?: string[]) => void;
+  open: (
+    oracleId: string,
+    siblings?: string[],
+    atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
+  ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
   /**
@@ -151,6 +160,10 @@ export function CardDetailProvider({
 }) {
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
+  // The printing the caller asked to open at, cleared when the card changes under paging:
+  // Prev/Next moves to a different card, and this belongs to the one that was clicked.
+  const [openAt, setOpenAt] =
+    useState<(PreferredPrinting & { imageUri?: string | null }) | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
@@ -289,7 +302,12 @@ export function CardDetailProvider({
   useEffect(() => { loadRef.current = load; }, [load]);
 
   const open = useCallback(
-    (oracleId: string, list?: string[]) => {
+    (
+      oracleId: string,
+      list?: string[],
+      atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
+    ) => {
+      setOpenAt(atPrinting ?? null);
       void load(oracleId, list ?? []);
     },
     [load],
@@ -353,13 +371,18 @@ export function CardDetailProvider({
           // optimistic art pick across — same reason the collection browser remounts.
           key={card.oracleId}
           card={card}
+          openAtPrinting={openAt}
           onArtChange={() => { evict(card.oracleId); onArtChange?.(card.oracleId); }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
-          onPrev={paging && index > 0 ? () => void load(siblings[index - 1]) : null}
+          onPrev={paging && index > 0
+            ? () => { setOpenAt(null); void load(siblings[index - 1]); }
+            : null}
           onNext={
-            paging && index < siblings.length - 1 ? () => void load(siblings[index + 1]) : null
+            paging && index < siblings.length - 1
+              ? () => { setOpenAt(null); void load(siblings[index + 1]); }
+              : null
           }
         />
       )}

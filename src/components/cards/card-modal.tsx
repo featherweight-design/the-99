@@ -12,6 +12,7 @@ import {
   cssUrl,
   printedNameOf,
   printingCaption,
+  matchesPreference,
   resolvedPrinting,
   WUBRG_COLOR,
 } from "../../lib/collection/browse";
@@ -246,6 +247,7 @@ export function CardModal({
   onPrev,
   onNext,
   onArtChange,
+  openAtPrinting = null,
 }: {
   card: BrowseCard;
   position: number;
@@ -262,6 +264,17 @@ export function CardModal({
    * only up front would let that pre-write answer be filed as the current one.
    */
   onArtChange?: () => void;
+  /**
+   * The printing this card was opened AT, when the surface that opened it was showing one
+   * in particular. The set grid's cells each ARE a printing, so clicking the dashed #239
+   * has to show #239 — not whichever printing the resolver would pick for the card.
+   *
+   * A VIEW, never a pick. It decides the art, the caption and the shown-now badge, and it
+   * does not touch `pick`: the picker still marks the reader's own preference where it is,
+   * and nothing is written by looking. The moment the reader picks something in this modal,
+   * their choice takes over.
+   */
+  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -279,6 +292,9 @@ export function CardModal({
   // the card is only correct because the caller keys this component on oracleId — paging
   // Prev/Next remounts rather than reusing the state of the card you just left.
   const [pick, setPick] = useState<PreferredPrinting | null>(card.preferredPrinting);
+  // Whether the reader has chosen a printing in THIS modal. Until they do, a card opened at
+  // a particular printing shows that one; afterwards their choice wins.
+  const [picked, setPicked] = useState(false);
 
   // A caller can hand this component a re-read of the same card, so the seed above is not
   // the last word: without this, a preference that moved on the server would be ignored for
@@ -325,7 +341,26 @@ export function CardModal({
 
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
-  const preview = useMemo<BrowseCard>(() => ({ ...card, preferredPrinting: pick }), [card, pick]);
+  const preview = useMemo<BrowseCard>(() => {
+    const at = picked ? null : openAtPrinting;
+    if (!at) return { ...card, preferredPrinting: pick };
+    // For an OWNED card `card.printings` is what the reader owns, and a holding matched by
+    // name carries no collector number — so the printing the caller is showing is often
+    // absent and the resolver would fall back to an unrelated set. Injected at quantity 0
+    // so it resolves; the picker reads `card.printings`, not this, and never sees it.
+    const known = card.printings.some((p) => matchesPreference(p, at));
+    const printings = known ? card.printings : [...card.printings, {
+      setCode: at.setCode,
+      setName: at.setCode,
+      collectorNumber: at.collectorNumber,
+      releasedAt: null,
+      quantity: 0,
+      finishes: {},
+      imageUri: at.imageUri ?? null,
+      flavorName: null,
+    }];
+    return { ...card, printings, preferredPrinting: at };
+  }, [card, pick, picked, openAtPrinting]);
   const resolved = resolvedPrinting(preview);
   // The picker is about the printings you OWN — every string it renders says so, and picking
   // one only decides which of your copies represents the card. `card.printings` is not that
@@ -389,6 +424,7 @@ export function CardModal({
   function onPick(p: { setCode: string; collectorNumber: string }) {
     const written = { setCode: p.setCode, collectorNumber: p.collectorNumber };
     setPick(written);
+    setPicked(true);
     onArtChange?.();
     const generation = ++writes.current;
     startWrite(async () => {
@@ -404,6 +440,7 @@ export function CardModal({
 
   function onClearPick() {
     setPick(null);
+    setPicked(true);
     onArtChange?.();
     const generation = ++writes.current;
     startWrite(async () => {

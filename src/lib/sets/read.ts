@@ -105,6 +105,7 @@ function catalogFor(code: string) {
       collectorNumber: printings.collectorNumber,
       name: cards.name,
       imageUriSmall: printings.imageUriSmall,
+      imageUri: printings.imageUri,
       colorIdentity: cards.colorIdentity,
       rarity: printings.rarity,
       booster: printings.booster,

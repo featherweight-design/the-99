@@ -42,6 +42,17 @@ export type SetPrinting = {
   collectorNumber: string;
   name: string;
   imageUriSmall: string | null;
+  /**
+   * The full-size art for THIS printing, which the grid hands to the card modal when a cell
+   * is opened. The modal cannot always resolve it itself: for an owned card its printing
+   * list is the ones the reader owns, and a holding matched by name carries no collector
+   * number, so the printing the cell is standing for is not in that list.
+   *
+   * Optional because only the GRID query selects it. The index places and counts the same
+   * cells without drawing any, and ~34 sets' worth of full-size URLs is payload nobody
+   * would render.
+   */
+  imageUri?: string | null;
   colorIdentity: string[];
   rarity: string | null;
   booster: boolean | null;
