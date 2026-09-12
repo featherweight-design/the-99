@@ -6,7 +6,7 @@
  * Never "committed cards" — src/lib/decks/committed.ts owns that phrase and means
  * something else ("which deck is this card already in").
  *
- * Six strings the handoff carries are deliberately absent, each because a
+ * Seven strings the handoff carries are deliberately absent, each because a
  * surface that would have said it does not exist:
  *
  * - `review.recounted`. Callers pass `String(n)` to the shipped
@@ -28,6 +28,13 @@
 /** The banner names the changes up to this many, and states counts beyond it. */
 export const INLINE_CHANGE_MAX = 6;
 
+/**
+ * `1 card` / `2 cards`. Every figure in this module is a row or a copy count, so
+ * one is an ordinary value for all of them and not an edge case: a draft with a
+ * single add is the commonest draft there is.
+ */
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
 export const deckVersioningCopy = {
   /* ---- §Surfaces 1 · pending state on the deck page ---- */
   pending: {
@@ -36,8 +43,7 @@ export const deckVersioningCopy = {
       [adds > 0 ? `+${adds}` : null, removes > 0 ? `−${removes}` : null]
         .filter(Boolean)
         .join(" / "),
-    since: (n: number, version: number) =>
-      `${n} ${n === 1 ? "change" : "changes"} since v${version}`,
+    since: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
 
     // The one figure that decides whether the review page is worth opening.
     //
@@ -45,13 +51,15 @@ export const deckVersioningCopy = {
     // number: one card wanted three times with no free copy is one row and three
     // copies. The sentence says both, so it takes both.
     money: (unfree: number, adds: number, buy: number, total: string) =>
-      `${unfree} of the ${adds} have no free copy, so this commit will ask for ` +
-      `${buy} to buy · ${total}.`,
+      `${unfree} of the ${adds} ${unfree === 1 ? "has" : "have"} no free copy, so this commit ` +
+      `will ask for ${buy} to buy · ${total}.`,
     moneyPulls: (n: number) =>
-      `${n} of those are sleeved in other decks and can be pulled instead.`,
+      n === 1
+        ? "1 of those is sleeved in another deck and can be pulled instead."
+        : `${n} of those are sleeved in other decks and can be pulled instead.`,
     moneyNone: "Every card coming in has a free copy, so this commit asks for nothing.",
 
-    reviewCta: (n: number) => `Review ${n} changes`,
+    reviewCta: (n: number) => `Review ${plural(n, "change")}`,
     reviewLink: "review changes",
     commitCta: (version: number) => `Commit as v${version}`,
     discardCta: "Discard",
@@ -68,11 +76,12 @@ export const deckVersioningCopy = {
     addMarkA11y: "pending add",
     // Said once above the list instead of once per row.
     addListCaption: (n: number) =>
-      `the brass rule marks the ${n} ${n === 1 ? "row" : "rows"} this draft added`,
+      `the brass rule marks the ${plural(n, "row")} this draft added`,
     // On the group heading, so grouping by type also maps where the draft happened.
     groupAddNote: (n: number) => `${n} added in this draft`,
     // The list toolbar's right slot, replacing "n cards are yours now" while a draft exists.
-    toolbarNote: (n: number, version: number) => `${n} of these are not in v${version} yet`,
+    toolbarNote: (n: number, version: number) =>
+      `${n} of these ${n === 1 ? "is" : "are"} not in v${version} yet`,
     // The mix cell's bottom-left slot takes the previous figure instead of the
     // recommendation while a draft exists — but ONLY when the figure actually moved.
     mixCellWas: (n: number) => `was ${n}`,
@@ -87,7 +96,7 @@ export const deckVersioningCopy = {
 
   /* ---- §Surfaces 2 · review changes ---- */
   review: {
-    heading: (n: number, version: number) => `${n} changes since v${version}`,
+    heading: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
     lede: (version: number) =>
       "Nothing here is a decision except the pulls. The list on the deck page is already " +
       `this list — this page exists to show you what it costs before you lock it in as v${version}.`,
@@ -123,20 +132,23 @@ export const deckVersioningCopy = {
       `${card} is ${deck}'s commander. It cannot be pulled.`,
 
     outNote: (n: number) =>
-      `all ${n} go back in the pool when you commit. No per-row toggle: putting one back ` +
-      "is adding it to the deck, and the deck page already does that.",
+      `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit. No per-row ` +
+      "toggle: putting one back is adding it to the deck, and the deck page already does that.",
 
     footer: (cards: number, buy: number, released: number) =>
-      `${cards} cards · ${buy} to buy · ${released} back in the pool`,
+      `${plural(cards, "card")} · ${buy} to buy · ${released} back in the pool`,
   },
 
   /* ---- §Surfaces 3 · commit ---- */
   commit: {
     heading: (version: number) => `Commit this list as v${version}`,
     lede: (version: number, unfree: number, removed: number) =>
-      `v${version} becomes the deck's list immediately. The ${unfree} cards with no free copy ` +
-      `keep their buy tags until you actually buy them, and the ${removed} you cut are back in ` +
-      "the pool the moment you commit.",
+      `v${version} becomes the deck's list immediately. ` +
+      (unfree === 1
+        ? "The one card with no free copy keeps its buy tag until you actually buy it"
+        : `The ${unfree} cards with no free copy keep their buy tags until you actually buy them`) +
+      `, and the ${removed} you cut ${removed === 1 ? "is" : "are"} back in the pool the moment ` +
+      "you commit.",
 
     noteLabel: "Why this version exists — optional",
     // Offered at commit time precisely because it is unrecoverable afterwards (§Surfaces 3).
@@ -151,7 +163,8 @@ export const deckVersioningCopy = {
       [unowned > 0 ? `${unowned} not owned` : null,
        sleeved > 0 ? `${sleeved} still sleeved elsewhere` : null]
         .filter(Boolean).join(" · "),
-    buyBackLink: (n: number) => `the ${n} rows are on the review page ↑`,
+    buyBackLink: (n: number) =>
+      `the ${plural(n, "row")} ${n === 1 ? "is" : "are"} on the review page ↑`,
     // The only link-out in this feature. See OVERLAPS.md, call 1.
     linkOut: "Open in Mana Pool",
 
@@ -164,11 +177,11 @@ export const deckVersioningCopy = {
     ctaPending: "Committing…",
     cancel: "Cancel",
     footer: (cards: number, buy: number, released: number) =>
-      `${cards} cards · ${buy} to buy · ${released} released`,
+      `${plural(cards, "card")} · ${buy} to buy · ${released} released`,
 
     refused: "We couldn't commit that version. Your changes are still here.",
     announced: (version: number, cards: number, buy: number) =>
-      `Committed v${version}. ${cards} cards, ${buy} to buy.`,
+      `Committed v${version}. ${plural(cards, "card")}, ${buy} to buy.`,
     pullAnnounced: (card: string, deck: string, buy: number, total: string) =>
       `${card} pulled from ${deck}. ${buy} to buy, ${total}.`,
   },
@@ -177,14 +190,30 @@ export const deckVersioningCopy = {
   discard: {
     // The number is in the question AND on the button: two changes and thirty-six
     // are different acts behind one word.
-    question: (n: number) => `Discard ${n} changes?`,
-    consequence: (version: number, date: string, cards: number, adds: number, removes: number) =>
-      `The deck goes back to v${version} as committed on ${date} — ${cards} cards. The ${adds} ` +
-      `you added and the ${removes} you cut are not stored anywhere, so this cannot be undone.`,
-    confirm: (n: number) => `Discard ${n} changes`,
+    question: (n: number) => `Discard ${plural(n, "change")}?`,
+    consequence: (version: number, date: string, cards: number, adds: number, removes: number) => {
+      const back = `The deck goes back to v${version} as committed on ${date} — ` +
+        `${plural(cards, "card")}. `;
+      // A draft can be adds-only, cuts-only, or basics-only, and "the 0 you cut" is
+      // a figure nobody moved. Only the halves that exist are named, and the verb
+      // follows what is left: two clauses are always plural, one is plural unless
+      // it counts a single card.
+      const lost = [
+        adds > 0 ? `the ${adds} you added` : null,
+        removes > 0 ? `the ${removes} you cut` : null,
+      ].filter(Boolean).join(" and ");
+      if (!lost) {
+        return `${back}Nothing in this draft is stored anywhere, so this cannot be undone.`;
+      }
+      const single = adds > 0 && removes > 0 ? null : adds || removes;
+      return `${back}${lost.charAt(0).toUpperCase()}${lost.slice(1)} ` +
+        `${single === 1 ? "is" : "are"} not stored anywhere, so this cannot be undone.`;
+    },
+    confirm: (n: number) => `Discard ${plural(n, "change")}`,
     cancel: "Keep editing",
     pending: "Discarding…",
-    announced: (n: number, version: number) => `${n} changes discarded. Back to v${version}.`,
+    announced: (n: number, version: number) =>
+      `${plural(n, "change")} discarded. Back to v${version}.`,
     refused: "We couldn't discard those changes. Nothing has changed.",
   },
 
@@ -193,16 +222,17 @@ export const deckVersioningCopy = {
     // The tab. Count absent at zero — and at zero the TAB is absent too, because a
     // deck with no version has no history (§Decisions 4).
     tab: "Versions",
-    heading: (n: number) => `${n} ${n === 1 ? "version" : "versions"}`,
+    heading: (n: number) => plural(n, "version"),
     manaValue: (mv: string) => `mv ${mv}`,
     current: "current",
-    committed: (date: string, cards: number) => `committed ${date} · ${cards} cards`,
+    committed: (date: string, cards: number) =>
+      `committed ${date} · ${plural(cards, "card")}`,
     delta: (adds: number, removes: number) => `+${adds} / −${removes}`,
     // A v1 has no predecessor. Never "+99" — the migration stamped a list that
     // was already there; ninety-nine decisions were not taken that day.
     initial: "initial",
     noNote: "no note",
-    gamesHeld: (n: number) => `held ${n} ${n === 1 ? "game" : "games"}`,
+    gamesHeld: (n: number) => `held ${plural(n, "game")}`,
 
     diffIn: (n: number) => `In · ${n}`,
     diffOut: (n: number) => `Out · ${n}`,
@@ -213,7 +243,7 @@ export const deckVersioningCopy = {
     initialBody:
       "the list as it stood when versioning arrived. There is nothing before it to compare " +
       "against, so there is no diff to show.",
-    initialBrowse: (cards: number) => `Browse the ${cards} cards →`,
+    initialBrowse: (cards: number) => `Browse the ${plural(cards, "card")} →`,
 
     commanderChange: (from: string, to: string) => `${from} → ${to}`,
   },

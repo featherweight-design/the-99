@@ -24,6 +24,45 @@ describe("deckVersioningCopy", () => {
     expect(copy.history.gamesHeld(1)).toContain("1 game");
   });
 
+  // A one-card draft is the commonest draft there is, so every count-carrying
+  // string agrees with its own figure — noun and verb both.
+  it("agrees with a figure of one across the module", () => {
+    expect(copy.pending.since(1, 2)).toBe("1 change since v2");
+    expect(copy.pending.reviewCta(1)).toBe("Review 1 change");
+    expect(copy.pending.money(1, 4, 1, "$2.00")).toContain("1 of the 4 has no free copy");
+    expect(copy.pending.moneyPulls(1)).toBe(
+      "1 of those is sleeved in another deck and can be pulled instead.",
+    );
+    expect(copy.pending.toolbarNote(1, 3)).toBe("1 of these is not in v3 yet");
+    expect(copy.review.heading(1, 2)).toBe("1 change since v2");
+    expect(copy.review.outNote(1)).toMatch(/^it goes back in the pool/);
+    expect(copy.review.footer(1, 0, 0)).toContain("1 card ·");
+    expect(copy.commit.lede(2, 1, 1)).toContain(
+      "The one card with no free copy keeps its buy tag until you actually buy it",
+    );
+    expect(copy.commit.lede(2, 1, 1)).toContain("the 1 you cut is back in the pool");
+    expect(copy.commit.buyBackLink(1)).toBe("the 1 row is on the review page ↑");
+    expect(copy.discard.question(1)).toBe("Discard 1 change?");
+  });
+
+  // The discard consequence names only the halves that moved: a cuts-only draft
+  // saying "the 0 you added" states a change nobody made.
+  it("names only the halves a discard actually loses", () => {
+    const both = copy.discard.consequence(1, "12 Sep", 99, 2, 3);
+    expect(both).toContain("The 2 you added and the 3 you cut are not stored anywhere");
+
+    expect(copy.discard.consequence(1, "12 Sep", 99, 0, 3)).toContain(
+      "The 3 you cut are not stored anywhere",
+    );
+    expect(copy.discard.consequence(1, "12 Sep", 99, 1, 0)).toContain(
+      "The 1 you added is not stored anywhere",
+    );
+    // A basics-only draft is a real, committable change that names no card.
+    expect(copy.discard.consequence(1, "12 Sep", 99, 0, 0)).toContain(
+      "Nothing in this draft is stored anywhere",
+    );
+  });
+
   it("caps the inline density at six", () => {
     // The banner's two densities hinge on this and nothing else reads it.
     expect(INLINE_CHANGE_MAX).toBe(6);
@@ -32,7 +71,7 @@ describe("deckVersioningCopy", () => {
   it("counts rows and copies separately in the money line", () => {
     // One card wanted three times is one unfree row and three copies to buy.
     expect(copy.pending.money(1, 4, 3, "$6.00")).toBe(
-      "1 of the 4 have no free copy, so this commit will ask for 3 to buy · $6.00.",
+      "1 of the 4 has no free copy, so this commit will ask for 3 to buy · $6.00.",
     );
   });
 
