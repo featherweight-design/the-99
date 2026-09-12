@@ -71,6 +71,14 @@ export const setsIndexCopy = {
       `${name}: you have ${have} of ${total} in the base run`,
     zeroAria: (total: number, name: string) =>
       `${name}: you have none of ${total} in the base run`,
+    // Visible, under the base ratio, one type step down. Lowercase, so it reads as a unit
+    // on a figure rather than as a heading.
+    extrasLine: (have: number, total: number) => `${have} / ${total} extras`,
+    // MANDATORY, not optional. The row is one <Link> with an explicit aria-label, which
+    // REPLACES everything its descendants contribute — so a second visible figure that is
+    // not in the label is announced to nobody. Appended to ratioAria / zeroAria, never
+    // rendered on its own.
+    extrasAria: (have: number, total: number) => `, and ${have} of ${total} extras`,
   },
 
   firstRun: {

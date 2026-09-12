@@ -46,13 +46,21 @@ function Row({ set }: { set: SetIndexRow }) {
   // simultaneously rendering "not indexed yet", which would put a success ring beside it.
   const complete = counted && indexed
     && set.baseSetSize !== null && set.baseSetSize > 0 && set.owned === set.baseSetSize;
-  const ratioAria = counted && indexed
+  // Addendum R2 §30. Never `0 / 0 extras`, and an unindexed row has no ratio so it has no
+  // second line either — the tag stands alone.
+  const showExtras = counted && indexed && set.extrasTotal > 0;
+  const baseAria = counted && indexed
     ? set.owned === 0
       ? setsIndexCopy.row.zeroAria(set.baseSetSize as number, set.name)
       : setsIndexCopy.row.ratioAria(set.owned, set.baseSetSize as number, set.name)
     : counted
       ? `${set.name}: ${setsIndexCopy.notIndexed.aria}`
       : set.name;
+  // The label is explicit, so it replaces every descendant: a visible figure missing from
+  // it is announced to nobody. Same defect `set-cell.tsx` already fixed for its price tag.
+  const ratioAria = showExtras
+    ? baseAria + setsIndexCopy.row.extrasAria(set.extrasOwned, set.extrasTotal)
+    : baseAria;
 
   return (
     <li>
@@ -80,11 +88,6 @@ function Row({ set }: { set: SetIndexRow }) {
             >
               {set.code.toUpperCase()}
               {set.releasedAt ? ` · ${set.releasedAt.slice(0, 4)}` : ""}
-              {/* Extras counted apart, so the row says out loud that the ratio beside it
-                  does not include them. */}
-              {counted && set.extrasTotal > 0
-                ? ` · ${set.extrasOwned}/${set.extrasTotal} extras`
-                : ""}
             </span>
           </span>
           {counted && indexed ? (
@@ -96,9 +99,31 @@ function Row({ set }: { set: SetIndexRow }) {
 
         <span className="shrink-0 text-right font-mono text-[11px]">
           {counted && indexed ? (
-            <span style={{ color: complete ? "var(--success)" : "var(--fg-muted)" }}>
-              {set.owned} / {set.baseSetSize} · {set.percent}%
-            </span>
+            <>
+              {/* Brightened from --fg-muted: with the extras line below it at --fg-muted
+                  too, the only ranking left between the two figures would be 1px of type
+                  size. A complete row keeps --success here and leaves the line below it
+                  muted — a finished base run with extras outstanding must not read as a
+                  finished set. */}
+              <span
+                className="block"
+                style={{ color: complete ? "var(--success)" : "var(--fg-body)" }}
+              >
+                {set.owned} / {set.baseSetSize} · {set.percent}%
+              </span>
+              {/* A figure of the same kind as the one above it, so it ranks under it rather
+                  than sitting beside a year at --fg-faint. --fg-muted and never
+                  --fg-locked: this is text and owes 4.5:1, where --fg-locked measures
+                  3.16-3.44 and is only legitimate on the cell's rarity word. */}
+              {showExtras ? (
+                <span
+                  className="mt-[2px] block text-[10px]"
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  {setsIndexCopy.row.extrasLine(set.extrasOwned, set.extrasTotal)}
+                </span>
+              ) : null}
+            </>
           ) : counted ? (
             // Never a percentage. There is no denominator to divide by yet.
             <span style={{ color: "var(--fg-locked)" }}>{setsIndexCopy.notIndexed.tag}</span>
