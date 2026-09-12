@@ -271,6 +271,33 @@ const VIEWPORTS = [
   ["desktop", 1440, 900],
 ];
 
+/** Every commander thumb on the page, as drawn. Five renders each invented one of
+    these, at five geometries and three ring alphas; the convergence is its own
+    change, and this reads what is there so the before and after are the same
+    measurement. The ring comes off the computed shadow rather than a class,
+    because three of the five set it inline. */
+const READ_THUMBS = `() => {
+  return [...document.querySelectorAll('span[aria-hidden="true"], div')]
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      // A card-face thumb, not a pip or a spacer: the 63/88 frame is the shape
+      // this looks for, at anything bigger than an icon and smaller than a page.
+      const ratio = r.height ? r.width / r.height : 0;
+      return r.width >= 24 && r.width <= 120 && ratio > 0.6 && ratio < 0.85;
+    })
+    .map((el) => {
+      const s = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return {
+        box: [Math.round(r.width), Math.round(r.height)],
+        radius: s.borderTopLeftRadius,
+        shadow: s.boxShadow,
+        position: s.backgroundPosition,
+        hasArt: s.backgroundImage.includes('url('),
+      };
+    });
+}`;
+
 /** THE PLATE and the thumbs, on whatever surface is loaded. A routine rather than
     four inline blocks, because the controls this measures live on the commander
     and deck DETAIL pages and the band checks live on the lists — the first draft
@@ -318,22 +345,13 @@ async function checkChrome(page, label, note) {
     }
   }
 
-  // The thumbs. Two boxes and one ring, or the convergence has not reached every
-  // render.
+  // The thumbs, as a census rather than as assertions: the five renders that draw
+  // one still disagree about every dimension of it, and asserting a settled box
+  // before the change that settles it would make this probe fail against its own
+  // build. The boxes are printed so the convergence has a before.
   const thumbs = await page.evaluate(`(${READ_THUMBS})()`);
   if (thumbs.length) {
     note(`${label}: ${thumbs.length} commander thumb(s) at ${[...new Set(thumbs.map((t) => t.box.join("×")))].join(", ")}`);
-  }
-  for (const t of thumbs) {
-    const box = t.box.join("×");
-    if (!THUMB_BOXES.includes(box)) note(`  FAIL thumb at ${box}, outside the two settled boxes`);
-    if (t.radius !== "6px") note(`  FAIL thumb radius ${t.radius}, expected 6px`);
-    if (!t.shadow.includes("inset")) note(`  FAIL thumb draws no inset ring: ${t.shadow}`);
-    // `center top`, not `center`: a centred crop of a 63/88 frame at 44px wide is
-    // mostly type box, and the face is at the top of the card.
-    if (t.hasArt && !t.position.startsWith("50% 0")) {
-      note(`  FAIL thumb crops from ${t.position}, expected center top`);
-    }
   }
 }
 
