@@ -6,7 +6,9 @@
 **Goal:** Land the addendum's Design-owned findings on `/collection/sets` and
 `/collection/sets/[code]` — four from R2, plus R3's sixth.
 
-**Architecture:** Four PRs, each independently testable and independently rejectable.
+**Architecture:** **Five PRs** — R2's four, plus R3's finding 6 as PR 5 (itself split 5a/5b).
+Each is independently testable and independently rejectable, and each is cut from `main`
+after the previous merges: no stacking.
 Findings 1+2 touch the grid container and the cell; finding 5 touches the index row and the
 copy module. Neither depends on anything. Finding 3 is one conformance change across the
 rack — Design ruled it explicitly indivisible — and finding 4 lands in it or after it, never
@@ -289,6 +291,11 @@ read against `main`, is 22px stale before this starts. **Re-measure first**, wit
 
 ### PR 5b — the cost line and the collapse
 
+- [ ] **Unit coverage, in `cost-strip.test.tsx`** — the suite already exists, and this is the
+  one PR in the set whose behaviour is a state machine rather than a layout: the collapsed
+  and expanded forms, each caveat branch (`unpriced`, `noFigure`, `soldOut`, `stale`), the
+  hysteresis band's two thresholds, and the desktop form proving it did not move. The probe
+  covers overlay-not-reflow, which is the part only a browser can answer.
 - [ ] **`CostStrip` becomes one 44px row** that expands in place on tap. The caveat count is
   the reason truncation is not enough: a strip whose height depends on how many pricing
   facts are true is an unpredictable sticky head — the same class as §28's ghost Clear.
