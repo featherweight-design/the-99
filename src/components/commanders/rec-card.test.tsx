@@ -226,7 +226,9 @@ describe("RecCard band and data zone", () => {
   // `auto 100%` against it, so a row grown by a long tag sentence would
   // over-scale the crop.
   it("confines the wash to a 208px band", () => {
-    const { container } = card();
+    // With a crop, because the portrait's own width is asserted below and the
+    // gradient fallback draws no sharp layer to measure.
+    const { container } = card({ commander: item({ artCropUri: "https://example.test/crop.jpg" }) });
     const bands = container.querySelectorAll<HTMLElement>(".rec-band");
     // One band holding both responsive subtrees, so the wash renders once.
     expect(bands).toHaveLength(1);
@@ -237,6 +239,10 @@ describe("RecCard band and data zone", () => {
     // 63, not discovery's 56: this row's block carries a type line under its
     // name. Pinned so the two rows cannot quietly converge on one figure again.
     expect(bands[0].firstElementChild).toHaveAttribute("data-art-wash-label-at", "63");
+    // Same width as discovery, and pinned for the same reason: the band and the
+    // label figure both survive a change to another valid `PortraitWidth`.
+    const sharp = bands[0].querySelector<HTMLElement>(".art-wash-art")!;
+    expect(sharp.style.width).toBe("285px");
   });
 
   it("keeps the data zone off the art", () => {

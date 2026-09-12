@@ -48,7 +48,9 @@ describe("DiscoveryRow", () => {
   // `auto 100%` against it, so a row grown by a long tag sentence would
   // over-scale the crop.
   it("confines the wash to a 208px band", () => {
-    const { container } = row();
+    // With a crop, because the portrait's own width is asserted below and the
+    // gradient fallback draws no sharp layer to measure.
+    const { container } = row({ artCropUri: "https://example.test/crop.jpg" });
     const band = container.querySelector<HTMLElement>(".discovery-band")!;
     // On the BAND, which is what would carry a floor — the row wrapper never had
     // one, so asserting there passed whatever the band did. And no floor at all
@@ -61,6 +63,11 @@ describe("DiscoveryRow", () => {
     // Pinned for the same reason the band is: the probe validates the hold
     // against this number rather than deciding it.
     expect(band.firstElementChild).toHaveAttribute("data-art-wash-label-at", "56");
+    // The portrait's own width, which is the crop this row settles. Nothing else
+    // pins it: the band and the label figure would both survive a change to 230
+    // or 340, and the reader would get a different crop with every check green.
+    const sharp = band.querySelector<HTMLElement>(".art-wash-art")!;
+    expect(sharp.style.width).toBe("285px");
   });
 
   it("keeps the data zone off the art", () => {

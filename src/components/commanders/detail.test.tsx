@@ -354,6 +354,30 @@ describe("commander detail — the art header band", () => {
     expect(band!.firstElementChild).toHaveAttribute("data-art-wash-label-at", "109");
   });
 
+  // The 109px figure is only true while the name is two lines at most, and the
+  // clamp is what makes the ceiling a ceiling. A long name has to keep it: a
+  // third line grows the block past 109 and prints the first line on a ramp
+  // still climbing, which is this round's own failure from the other direction.
+  it("clamps even a very long name to two lines, so the block keeps its height", () => {
+    const { container } = render(
+      <CommanderDetail
+        commander={commander({
+          name: "Rograkh, Son of Rohgahh and Silas Renn, Seeker Adept of the Tenth District",
+        })}
+        rank={1}
+        isBestFit
+        synergyCards={noSynergyCards}
+      />,
+    );
+    const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none")!;
+    const heading = band.querySelector<HTMLElement>("h1")!;
+    expect(heading.style.display).toBe("-webkit-box");
+    expect(heading.style.webkitLineClamp).toBe("2");
+    expect(heading.style.overflow).toBe("hidden");
+    // And the figure the ramp is keyed to has not moved for the long name.
+    expect(band.firstElementChild).toHaveAttribute("data-art-wash-label-at", "109");
+  });
+
   // The pips leave the band's top edge for the block. Five plated swatches in a
   // corner would be five plates for a decorative read, and every other band in
   // the app already draws them beside the name — so moving them is both cheaper
