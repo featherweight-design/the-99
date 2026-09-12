@@ -65,8 +65,14 @@ differently.
 
 **Gap 17 — the phone stamp riding the meta line rather than taking its own slot.** Discrepancy 46
 is prose-only in the handoff; no canvas draws it. The shipped answer keeps one slot at both widths,
-which is what makes every row's marks land on one vertical — the reason the slot is drawn even
-when a game has no version.
+which is what makes every row's marks land on one vertical above `md` — the reason the slot is drawn
+even when a game has no version.
+
+The probe measured the phone honestly: the two stamps sit at left 191 and 197, not on one vertical,
+because the meta cell to their left has a fixed width only at `md:` and so sizes to its own date
+text below it. That is the game log's existing behaviour at that width — every cell after the date
+already shifts with it — and it is outside this property table, so the stamp inherits it rather than
+restyling shipped chrome. Desktop is aligned: both stamps at left 293.
 
 **Gap 4 — the active Versions-tab treatment is unreachable.** The `/versions` route draws its own
 header rather than the builder shell's tab strip, exactly as the sibling `/changes` route does.

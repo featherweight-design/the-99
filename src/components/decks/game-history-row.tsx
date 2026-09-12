@@ -85,8 +85,11 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
       </span>
 
       {/* The version that was on the table. A fixed slot, drawn even when the
-          game has none: the dash keeps every row's marks on one vertical, and an
-          absent stamp is history rather than a gap. */}
+          game has none: the dash keeps the marks that follow it on one vertical,
+          and an absent stamp is history rather than a gap. On the phone the meta
+          cell to its left sizes to its own text, so the whole sequence shifts
+          with the date's width — that is the log's existing behaviour at that
+          width and the stamp inherits it rather than fixing it. */}
       <span
         className={
           "flex-none w-[44px] font-mono text-[10.5px] tabular-nums " +
