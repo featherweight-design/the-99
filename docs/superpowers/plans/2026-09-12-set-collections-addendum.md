@@ -137,7 +137,9 @@ vocabulary.
   `label`, which is Title Case (`Uncommon`), so lowercase it on the way in: the trigger
   reads `Rarity · uncommon`, matching the `042 · uncommon` caption below it, while the
   sheet's chips stay Title Case because a chip is a control and not a caption.
-  Retire `setFilterCopy.rarity.letters`.
+  Retire `setFilterCopy.rarity.letters` — and with it the shipped test that iterates it
+  (`set-collections.test.ts`), which is replaced by one asserting the trigger's two labels
+  and one asserting every rarity has a chip.
 - [ ] **Step 2 — Failing tests**, one per state in ADDENDUM-STATES §1–5, each asserting the
   must-nots as well: row 2 present at rest; no phone badge at zero; no opacity on an unlit
   pip; no `Clear all filters` at one filter; chips in dimension order; colour collapsing
@@ -151,7 +153,11 @@ vocabulary.
   caller's: `onToggle` returns an empty selection when the lit value is picked again, which
   is how *all* is reached. `single` also drops the desktop footer Design drew (`n of 4 on`
   beside `Clear rarity`); that is the accepted cost of not forking the shared panel, and
-  the chip line carries the same removal one row down. Mount it **on the breakpoint, never
+  the chip line carries the same removal one row down. **Two ADDENDUM-STATES §4 clauses are
+  therefore knowingly unmet and are NOT to be tested for**: that footer, and "opening lands
+  focus on the current value" — the panel's non-searchable path calls `openPanel(false)`
+  and leaves `activeCode` null. Both are one-line changes in the shared panel and belong to
+  the chassis package, where four routes get them. The readiness doc records all three. Mount it **on the breakpoint, never
   CSS-hidden** — the panel holds
   its own open state and picks popover or sheet off the same hook. The phone sheet gets a
   44px chip group from `rarity.options`, after the pips.
@@ -220,10 +226,10 @@ name — the defect `MissingOnlyToggle` already exists to avoid on this page.
   (amendment 1's "Clear clears the search" lands in PR 4, which is where a query exists to
   clear). §29 → PR 4. §30 → PR 2. ADDENDUM-STATES' rack states → PR 3 and PR 4; grid states
   → PR 1; index-row table → PR 2.
-- **Not covered, deliberately.** The addendum's three open items: the upscale — whose real
-  bound is **~1.35× at a ~645px viewport, on the three-column grid**, not the addendum's
-  1.21× on the two-column one (see the readiness doc) — where the item is conditional and
-  nothing is done until review finds the cell soft; B/R/G pip colours (the
+- **Not covered, deliberately.** The addendum's three open items: the upscale — which is a
+  **curve, not a number**: 1.15× at seven tracks rising to 1.53× at two and 2.06× at one,
+  where the addendum's 1.21× is the five-track case (see the readiness doc) — and the item
+  is conditional, so nothing is done until review finds the cell soft; B/R/G pip colours (the
   chassis package's assets, already committed); the chip line's skin (the chassis wins if it
   specs them differently).
 - **Type consistency.** `SetGridFilters` gains exactly one field, `query: string`, and

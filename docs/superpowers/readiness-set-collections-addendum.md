@@ -112,19 +112,33 @@ declaration at every width, which is the point of there being one.
 - §27's "124–129px across 1024–1440" is a canvas figure. The route's track runs
   **146–172px** over that range, in two counts rather than one.
 
-## The upscale bound, corrected twice
+## The upscale is a function of the column count, not a number
 
 Open item 1 states *"the worst upscale in the system is 1.21×, at 736px of content"* and
 offers, if review finds the cell soft, *"a larger source **for the two-column grid only**"*.
 
-1.21× is one sampled width, not a bound. The worst track at each count sits just below the
-next count's threshold, and the upscale climbs as the count falls. **The worst reachable is
-~1.35×, at a ~645px viewport — and it lands on the THREE-column grid**, which the named
-remedy explicitly does not cover.
+**1.21× is one sampled width.** The worst track at each count sits just below the next
+count's threshold, and the upscale climbs as the count falls — so the answer depends
+entirely on how narrow a viewport is in scope:
 
-This does not move the verdict: open item 1 is conditional, and nothing is done unless
-review finds the cell soft. But the bound is wrong by a third and the remedy is scoped to
-the wrong grid. **Design to ratify.**
+| tracks | worst content | ≈viewport | track | upscale |
+|---|---|---|---|---|
+| 7 | 1237 | 1367 | 168.1 | 1.15× |
+| 6 | 1081 | 1211 | 171.8 | 1.18× |
+| 5 | 925 | 1055 | 177.0 | **1.21× ← the quoted figure** |
+| 4 | 769 | 899 | 184.8 | 1.27× |
+| 3 | 613 | 645 | 197.7 | 1.35× |
+| 2 | 457 | 489 | 223.5 | 1.53× |
+| 1 | 301 | 333 | 301.0 | 2.06× |
+
+1.21× is the five-column maximum. Every count below it is worse, and the two-column band —
+the one the remedy names — reaches **1.53×**, not 1.21×.
+
+**This does not move the verdict.** Open item 1 is conditional: nothing is done unless
+review finds the cell soft, and `image_uri_small` is 146px wide, so any upscale at all is
+the ask's arithmetic consequence rather than a defect. But the item should be reasoned from
+the curve rather than from one sample, and the remedy should name the count it is scoped
+to. **Design to ratify.**
 
 ## What was NOT done, and why
 
