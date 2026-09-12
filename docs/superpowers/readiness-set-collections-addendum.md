@@ -142,9 +142,16 @@ to. **Design to ratify.**
 
 ## What was NOT done, and why
 
-`ADDENDUM-README.md` §27 still contains the stale `F = 116 … 160` line, and
-`ADDENDUM-READINESS.md` still offers `116 → 8 columns, 160 → 6` and claims "one open item"
-above a list of four. **Design handoffs are reference material and are not edited by
+Four inaccuracies remain in the handoff files. `ADDENDUM-README.md` §27 still contains the
+stale `F = 116 … 160` line; `ADDENDUM-READINESS.md` still offers `116 → 8 columns, 160 → 6`
+and claims "one open item" above a list of four; §28's Clear rationale says *"This page has
+no panels"* two paragraphs after specifying one, where the real reason it gets two scopes
+rather than three is that the unforked `single` mount drops the panel footer; and
+`addendum copy strings.ts`'s `bodyWithFilters` names colour and rarity whichever filter is
+actually on, and diagnoses every empty intersection as a typo. **That last one is already
+resolved in the implementation**: PR 4 fires the search branch only when the query is the
+sole narrowing control, because `q=plains&c=U` returns nothing in a set that plainly
+contains Plains — so the string was deleted rather than reworded. **Design handoffs are reference material and are not edited by
 engineering** — the R3 files were locked and unedited on the first round for the same
 reason, and the addendum itself names that precedent. Every contradiction is resolved here
 instead, and this document is what the plan's global constraints are written from.
