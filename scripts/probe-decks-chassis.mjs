@@ -124,6 +124,15 @@ for (const vp of WIDTHS) {
   if (!before) { failures.push(`${vp.name}: no chassis on /decks`); continue; }
 
   check(!before.hasColumn, `${vp.name}: the filter sidebar is still in the DOM`);
+  // The width reclamation is the round's visible promise, and "no column in the
+  // DOM" does not prove it: a 262px spacer, or a stale max-width, would pass
+  // every other check here while the grid stayed exactly as narrow as before.
+  // The grid should now span the viewport less its own padding.
+  const slack = vp.width - before.gridWidth;
+  check(
+    before.gridWidth !== null && slack < 120,
+    `${vp.name}: the grid is ${before.gridWidth}px inside a ${vp.width}px viewport — ${slack}px unaccounted for, which is the sidebar's width back again`,
+  );
   check(before.hasHairline, `${vp.name}: sort is not separated by a hairline`);
   check(before.lines === 1, `${vp.name}: the control row wrapped onto ${before.lines} lines`);
   check(

@@ -301,6 +301,23 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
             chips={chassisChips}
             onClearAll={() => onFilters(EMPTY_FILTERS)}
             resultLine={deckChassisCopy.result(shown.length, decks.length)}
+            after={
+              /* Unmounted when wide, never merely hidden. Resizing from compact
+                 to wide with the sheet open would otherwise leave an
+                 `aria-modal` dialog holding the scroll lock and the focus trap
+                 with nothing on screen to close it. */
+              !wide && (
+          <DeckFilterSheet
+            filters={state.filters}
+            onChange={onFilters}
+            shown={shown.length}
+            total={decks.length}
+            open={sheet.open}
+            onDismiss={() => setSheet({ open: false, focusSearch: false })}
+            autoFocusSearch={sheet.focusSearch}
+          />
+              )
+            }
           />
 
           {shown.length === 0 ? (
@@ -330,15 +347,6 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
             </ul>
           )}
 
-          <DeckFilterSheet
-            filters={state.filters}
-            onChange={onFilters}
-            shown={shown.length}
-            total={decks.length}
-            open={sheet.open}
-            onDismiss={() => setSheet({ open: false, focusSearch: false })}
-            autoFocusSearch={sheet.focusSearch}
-          />
         </div>
       )}
     </div>

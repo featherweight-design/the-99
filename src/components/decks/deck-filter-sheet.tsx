@@ -23,13 +23,13 @@ import {
 } from "../../lib/decks/filter";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
 import {
-  ColourSwatch,
   PLAYED_LABEL,
   STATUS_COPY_KEY,
   SearchField,
   toggleIn,
 } from "./deck-filter-column";
 import type { DeckFilters } from "../../lib/decks/filter";
+import { ColourPips } from "../ui/colour-pips";
 
 /**
  * Filters only. The sheet carried the sort until §3.4 retired that group — the
@@ -195,6 +195,20 @@ function SheetBody({
         />
 
 
+        <Group heading={c.colourHeading}>
+          {/* The same control the wide form draws. It was `ColourSwatch`, which
+              made the phone a different visual AND a different role — checkbox
+              against the pips' switch — for one filter. Decision 22 also puts
+              the pips first in the sheet. */}
+          <ColourPips
+            form="sheet"
+            value={filters.colours}
+            onToggle={(code) =>
+              onChange({ ...filters, colours: toggleIn(COLOUR_ORDER, filters.colours, code) })
+            }
+          />
+        </Group>
+
         <Group heading={c.statusHeading}>
           <div className="flex flex-wrap gap-[8px]">
             {STATUS_ORDER.map((status) => (
@@ -214,21 +228,6 @@ function SheetBody({
           </div>
         </Group>
 
-        <Group heading={c.colourHeading}>
-          <div className="flex gap-[8px]">
-            {COLOUR_ORDER.map((code) => (
-              <ColourSwatch
-                key={code}
-                code={code}
-                size="sheet"
-                on={filters.colours.includes(code)}
-                onToggle={() =>
-                  onChange({ ...filters, colours: toggleIn(COLOUR_ORDER, filters.colours, code) })
-                }
-              />
-            ))}
-          </div>
-        </Group>
 
         <Group heading={c.lastPlayedHeading}>
           <div className="flex flex-wrap gap-[8px]">

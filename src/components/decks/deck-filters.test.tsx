@@ -69,10 +69,13 @@ describe("Deck filters — the sheet the chassis opens on the phone", () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ statuses: [] }));
   });
 
-  it("gives every colour swatch an accessible name", () => {
+  // The sheet draws `ColourPips` now, the same control the wide form uses —
+  // a `switch` rather than the old swatch's `checkbox`, so the phone and the
+  // desktop stop disagreeing about what this filter even is.
+  it("gives every colour pip an accessible name", () => {
     render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
-    expect(screen.getByRole("checkbox", { name: "White" })).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Green" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "White" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Green" })).toBeInTheDocument();
   });
 
   it("clears every filter but never the sort", () => {

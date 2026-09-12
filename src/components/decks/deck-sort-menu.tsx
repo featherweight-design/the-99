@@ -95,10 +95,12 @@ export function DeckSortMenu({
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((o) => !o)}
-        // 44px on the compact form, 32 on the desktop one: this is now the
-        // only route to the sort at either width, so the phone target cannot
-        // sit under the floor the way a desktop-only control could.
-        className="flex h-[44px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] py-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] sm:h-[32px]"
+        // 44px on the compact form, 32 on the wide one, switching at the
+        // CHASSIS breakpoint rather than Tailwind's `sm`. `sm:` is 640 and the
+        // chassis is compact to 999, so an `sm:h-[32px]` would drop the target
+        // through the floor across the whole 640-999 band — where this is the
+        // only route to the sort.
+        className="flex h-[44px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] py-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] min-[1000px]:h-[32px]"
       >
         {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
       </button>
