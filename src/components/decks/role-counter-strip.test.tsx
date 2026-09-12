@@ -321,7 +321,9 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   // other case here holds `wasCounts` equal to the counts, so without this pair
   // a strip that drew `was` unconditionally would still pass them all.
   it("says nothing on a role the draft left where it was", () => {
-    render(<RoleCounterStrip cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
+    // Both figures 0, which is what unmoved means here. The fixture above holds
+    // a role that moved 3 → 0, where `was 0` was never the string in question.
+    render(<RoleCounterStrip cards={[]} wasCounts={ZERO} />);
     expect(
       screen.queryByText(deckVersioningCopy.pending.mixCellWas(0)),
     ).toBeNull();

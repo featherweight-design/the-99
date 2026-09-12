@@ -116,7 +116,7 @@ export function formatCents(cents: number): string {
 }
 
 /**
- * `foil` / `etched` names which printing the figure belongs to, so the figure is
+ * `foil` and `etched` each name which printing the figure belongs to, so the figure is
  * incomplete without it: a foil-only `$9.40` stated bare is the normal
  * printing's price, which is a figure the feed never gave.
  *

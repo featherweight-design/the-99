@@ -703,3 +703,36 @@ Load-bearing notes:
 table itself marks "unchanged by the feature".
 
 VERDICT: 0 in-scope gaps remain
+
+## Browser walk — `scripts/probe-pending-banner.mjs`
+
+The density switch is a fact about a real diff, not a prop, so it is proved out of a real database
+and a real browser rather than only in jsdom. The probe builds its own 99-row deck under the
+account it signs in as, commits it as v1, then edits `deck_cards` to land either side of
+`INLINE_CHANGE_MAX` and reads the rendered banner at 390px and 1300px. It deletes the deck in a
+`finally`, so nothing it writes survives the run.
+
+It has to own its fixture: the probe account is not the account that owns local-dev's 99-card
+decks, and a deck page the signed-in player does not own is a 404 — a run pointed at those decks
+reports the banner absent at every stage and makes a working feature look dead.
+
+Walked 2026-09-12 against local-dev:
+
+| Stage | Phone 390px | Desktop 1300px |
+|-------|-------------|----------------|
+| Clean (0 changes) | no banner; one line, `v1 · committed 12 Sep 2026` | same |
+| 6 changes (inline) | `+3 / −3`, no `since`, 6 name lines, price tile `$0.15` on the add, no money sentence | same, card 1186px |
+| 7 changes (counts) | `+4 / −3`, `7 changes since v1`, 0 name lines, money sentence with its `$2.41` figure | same |
+
+Controls, read as computed fill and measured box:
+
+- 6 changes: `Commit as v2` is the bone fill (`rgb(237, 230, 216)`) and `review changes` is
+  transparent. Phone gives the primary its own full-width row — 330px wide at y=715 with the link
+  at y=767 — and desktop puts both on one line (y=476 and y=487).
+- 7 changes: the hierarchy inverts. `Review 7 changes` takes the bone fill, `Commit as v2` is the
+  transparent secondary, and the phone rows stack the same way (y=538, y=590) while desktop shares
+  one line (y=267, y=266).
+- Both breakpoints hold the 44px touch floor on the phone and drop it on desktop, per the table.
+
+`Discard` is absent at every stage, which is the state this PR ships: `onDiscard` has no call site
+until PR 5.
