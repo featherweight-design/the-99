@@ -71,9 +71,10 @@ Set collections is being built right now by another agent. Its plan touches
 `collection/rows-view.tsx`. It touches **none** of `deck-filter-column.tsx`,
 `deck-filter-sheet.tsx`, `decks-view.tsx` or `rack/*`.
 
-So PR 1 and PR 2 have no file overlap with that build and start immediately. PR 3 waits for its
-Task 9, which also needs its test rewritten before it can pass — handed off separately, and not
-this run's work.
+So PR 1 and PR 2 have no file overlap with that build and start immediately. **PR 3 waited for that
+build's Task 9 and no longer does** — the task is built and its shipped test always matched the real
+component; only its plan document carried the broken assertions, and its author corrected them. See
+the PR 3 section below.
 
 | PR | Scope | Blocked by |
 |---|---|---|

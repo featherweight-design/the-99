@@ -222,6 +222,5 @@ The two alternatives, recorded so the choice is legible rather than because they
 
 **This never blocked the build or this verdict.** The figure is derived from
 `/collection`'s seven controls; `/decks` has five and `/commanders` four, so PRs 1b and 2 are not at
-risk. `/collection` is PR 3, which waits on set collections' Task 9 regardless. The question needs an
-answer before that PR, not before this one — which is why the verdict stays 🟢 and this section names
+risk. `/collection` is PR 3. The question needs an answer before that PR, not before this one — which is why the verdict stays 🟢 and this section names
 the deadline instead of holding the round.

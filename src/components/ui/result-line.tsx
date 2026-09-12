@@ -44,8 +44,14 @@ export function ResultLine({
       announced.current = line;
       return;
     }
-    announced.current = line;
+    // Stamped only when the announcement is actually scheduled. Stamping
+    // before the silent return marked a change as announced that never was, so
+    // a reader who toggled a filter inside the sheet and dismissed it before
+    // the sheet's own 300ms fired heard nothing at all: the line matched
+    // `announced.current`, and the region stayed quiet for a change it had
+    // never spoken.
     if (silent) return;
+    announced.current = line;
     const t = setTimeout(() => setAnnouncement(line), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
   }, [line, silent]);

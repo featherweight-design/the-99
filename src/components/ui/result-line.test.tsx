@@ -39,6 +39,19 @@ describe("ResultLine", () => {
     expect(screen.getByText("12 of 41 decks")).toBeTruthy();
   });
 
+  it("still announces a change made while it was silent, once it is not", () => {
+    // The sheet is silent while open. A reader who toggles a filter and then
+    // dismisses the sheet before its own announcement fires must still hear the
+    // count — stamping the line as announced during the silence lost it.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+    rerender(<ResultLine line="12 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");
