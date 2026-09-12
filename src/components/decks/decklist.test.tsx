@@ -635,6 +635,36 @@ describe("the pending-change notes are the row view's, because the mark is", () 
     ).toBeInTheDocument();
   });
 
+  // Shopping's rows are the same `DecklistRow`, so they carry the same brass
+  // rule and need the same sentence. The figure is the marks on screen, not the
+  // whole draft: this list is a subset, and a caption counting rows the reader
+  // cannot see would be a caption about nothing.
+  it("captions Shopping over the marked rows it actually shows", () => {
+    renderDecklist([rampUnowned, drawUnowned], {
+      filter: "shopping",
+      pendingChanges: new Map([
+        [rampUnowned.oracleId, { from: 0, to: 1 }],
+        // In the draft, not in this list — an owned add is nothing to buy.
+        ["sol-ring", { from: 0, to: 1 }],
+      ]),
+    });
+
+    expect(
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).toBeInTheDocument();
+  });
+
+  it("says nothing in Shopping when none of its rows is a changed one", () => {
+    renderDecklist([rampUnowned, drawUnowned], {
+      filter: "shopping",
+      pendingChanges: new Map([["sol-ring", { from: 0, to: 1 }]]),
+    });
+
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).not.toBeInTheDocument();
+  });
+
   it("says neither in card view, where no tile draws the rule", () => {
     renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
 

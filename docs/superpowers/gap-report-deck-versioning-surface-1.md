@@ -679,10 +679,13 @@ Load-bearing notes:
   uses for a bone fill. Scored on token identity, per the Hex-vs-token note above.
 - Gap 18 moved the offer out of the banner entirely: `first-commit-offer.tsx`, mounted beside
   `Export` in **both** spine widths, gated by `offerFirstCommit` threaded from `builder-shell.tsx`.
-  The gate reads `counts.built >= bodySize` rather than `===`, so an over-size brew is still offered
-  its v1 — an over-cap list is committable, and withholding the offer would strand it. `built`
-  rather than `total`, per the status contract: an unresolved line never pushes a deck to its
-  body size, so it cannot conjure the offer either.
+  The gate is an exact `=== bodySize` against both the server and the optimistic count: past its
+  body size the deck is `Over`, whose one next action is to cut the excess, and `commitDeckVersion`
+  does not check the count — a `>=` gate would offer to freeze an illegal list as v1. Both counts,
+  because the server figure alone keeps the offer up through a pending removal and the optimistic
+  figure alone raises it before the add it describes has landed. `built` rather than `total`, per
+  the status contract: an unresolved line never pushes a deck to its body size, so it cannot
+  conjure the offer either.
 - Gap 31 retired the banner's `total`/`bodySize` props with the figure they fed. The body count is
   the hero's, and the first-commit gate that also read them now lives in the shell.
 

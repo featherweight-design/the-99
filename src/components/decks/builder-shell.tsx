@@ -707,7 +707,16 @@ export function BuilderShell({
               // edit can leave a brew above its commander-specific ceiling, and
               // `commitDeckVersion` does not check the count, so a `>=` gate
               // would offer to freeze an illegal list as v1.
-              offerFirstCommit={draft?.version === null && deck.built === bodySize}
+              //
+              // BOTH counts, and the conjunction is the point. The server count
+              // alone holds the offer back until an add has landed, but it also
+              // keeps it up through a pending removal — and following it there
+              // freezes the shortened list the player is looking at. The
+              // optimistic count alone has the opposite hole. A commit is
+              // offered only where the two agree the deck is whole.
+              offerFirstCommit={
+                draft?.version === null && deck.built === bodySize && built === bodySize
+              }
               {...commitments}
               // No link while the Shopping list is what the player is looking
               // at: it would point at the screen they are already on. Called

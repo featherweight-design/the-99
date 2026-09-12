@@ -245,6 +245,18 @@ export function Decklist({
     const spokenForCards = listedCards.filter(isSpokenFor);
     const missingCards = listedCards.filter((c) => !c.owned);
 
+    // The marked rows this branch actually draws — the three groups below hold
+    // every row it has. The rows carry the brass rule here exactly as they do
+    // under All, so the caption has to come with them; what changes is the
+    // figure, which counts the marks on screen rather than the whole draft. A
+    // caption counting rows the reader cannot see would be a caption about
+    // nothing, and no caption at all leaves the rule unexplained.
+    const markedOnScreen = new Set(
+      [...missingCards, ...spokenForCards]
+        .filter((c) => pendingChanges.has(c.oracleId))
+        .map((c) => c.oracleId),
+    ).size;
+
     // Build shopping groups: only roles that have ROLE_TARGETS (no land or other).
     const shoppingGroups = SHOPPING_ROLE_ORDER.flatMap((role) => {
       const roleCards = missingCards.filter((c) => c.role === role);
@@ -425,6 +437,12 @@ export function Decklist({
                     String(spokenForN),
                   )}
           </p>
+
+          {markedOnScreen > 0 && (
+            <p className="m-0 mb-[14px] font-mono text-[10px] text-[color:var(--fg-faint)]">
+              {deckVersioningCopy.pending.changeListCaption(markedOnScreen)}
+            </p>
+          )}
 
           {/* Role groups */}
           {shoppingGroups.map(({ role, label, cards: groupCards, gapClause }) => (
@@ -607,13 +625,14 @@ export function Decklist({
         )}
         {/* Said once for the whole list rather than once per marked row: at
             nineteen adds the per-row version is nineteen copies of one
-            sentence. Only under All — Shopping shows a subset, and a caption
-            counting rows the reader cannot see is a caption about nothing. List
+            sentence. The whole draft's figure here, because this list holds
+            every changed row; Shopping draws its own caption over the subset it
+            shows. List
             view only, with `groupChangeNote` below it, for the same reason: the
             brass rule lives on the row, and the card view draws tiles that carry
             no mark at all. A sentence pointing at a marker nobody can see is
             worse than silence. */}
-        {pendingChanges.size > 0 && filter === "all" && view === "list" && (
+        {pendingChanges.size > 0 && view === "list" && (
           <p className="m-0 mb-[8px] font-mono text-[10px] text-[color:var(--fg-faint)]">
             {deckVersioningCopy.pending.changeListCaption(pendingChanges.size)}
           </p>

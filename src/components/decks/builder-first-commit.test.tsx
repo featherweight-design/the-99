@@ -192,6 +192,15 @@ describe("BuilderShell — the gate on Commit as v1", () => {
     expect(offers()).toHaveLength(0);
   });
 
+  // The same window from the other side: a removal in flight leaves the rendered
+  // list one card short while the server still counts a full body. The offer has
+  // to go with the list the player is looking at, or following it freezes a v1 of
+  // 98 cards under a control that called the deck whole.
+  it("withholds it while the server count is full but the list is not", async () => {
+    await mount(makeDeck(98, null, 0, 99), BREW);
+    expect(offers()).toHaveLength(0);
+  });
+
   // A page that could not read the draft knows neither whether a version exists
   // nor what it held, so it offers nothing rather than guessing at a brew.
   it("withholds it when there is no draft to read", async () => {
