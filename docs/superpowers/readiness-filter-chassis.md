@@ -131,19 +131,24 @@ than a second dialog.
    one thing. Ship 1000 — see §7 for why not 900 — and watch it. Recorded so the first report of a half-width laptop getting the
    phone treatment is recognised as a known trade rather than a bug.
 
-## §4 Dependency — owned by another agent
+## §4 Dependency — resolved, and the blocker was never real
 
-**Set collections' Task 9 must land, and must land with its test rewritten — before the
-`/collection` slice, not before the build.** That route mounts the control the task extracts;
-`/decks` and the commander lanes touch none of the files it does, so they proceed in parallel. The
-plan slices the work by route for exactly this reason. The task requires a verbatim extraction while its test expects
-`getByRole("button")` named `/red/i` carrying `aria-pressed`; `color-pip.tsx:17-21` emits
-`role="switch"` with `aria-checked` and the accessible name `Filter by R`. All three assertions fail
-against the real component.
+**Corrected 2026-09-12.** This section said set collections' Task 9 could not pass as written and
+that the `/collection` slice waited on it. Both halves were wrong.
 
-That plan is not this run's work and is in flight elsewhere. It is recorded here because the
-`/collection` slice cannot start before it, and because the same round supplies a better accessible name —
-`chassisCopy.colour.pipAria` — for whoever rewrites the test.
+Task 9 is built. Its shipped test is
+`src/components/collection/color-filter-row.test.tsx`, and it asserts
+`getAllByRole("switch")`, `{ name: "Filter by R" }` and `toBeChecked()` — the real component's
+contract, from that task's first commit. The failing assertions I quoted (`getByRole("button")`,
+`/red/i`, `aria-pressed`) existed only in the plan document, which its author hit, recognised as
+a contradiction, and wrote around; the doc itself is fixed on `feat/set-collections` at `4bcade9`.
+
+**The error was mine and it is worth naming.** I read the plan's test block and concluded the task
+could not pass without checking whether a test file existed. A plan is a statement of intent; the
+tree is the fact. That is the same failure as citing a document for something it does not say, which
+this audit has now made three times.
+
+**`/collection` is therefore unblocked**, and PR 3 can start whenever the chassis lands.
 
 ## §5 What the handoff got right that is worth naming
 
