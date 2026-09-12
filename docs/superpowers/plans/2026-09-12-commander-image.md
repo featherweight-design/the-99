@@ -32,10 +32,11 @@ old path. That ordering is what lets the deck tile's phone overflow gain its
 plate in the same PR that removes the scrim carrying it today — the handoff's highest-severity risk,
 and non-negotiable.
 
-### PR 1 — the record (this PR)
+### PR 1 — the record (#537)
 
 The patched brief, the handoff committed into the tree, the verdict, the plan, and the tracker row
-moved from 📐 to 🟢. No code.
+moved from 📐 to 🟢. No code. Every slice below carries this file, so it names its own PR rather than
+saying "this one".
 
 ### PR 2 — the primitive and THE PLATE
 

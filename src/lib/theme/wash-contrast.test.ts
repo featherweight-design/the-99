@@ -81,12 +81,20 @@ const STATED_BANDS: readonly {
   /** The portrait a `left-portrait` row draws, for composing its own ground. */
   portrait?: keyof typeof PORTRAITS;
 }[] = [
-  { surface: "home hero", labelAtPx: 38, band: 288, strategy: "cover" },
-  { surface: "commander detail mobile", labelAtPx: 57, band: 288, strategy: "cover" },
-  { surface: "deck spine, phone", labelAtPx: 83, band: 288, strategy: "cover" },
+  // The SETTLED figures, from the verdict's §5c — not the handoff's estimates,
+  // five of which describe blocks that do not ship. This suite is about the ramp
+  // function rather than about which surface has migrated, so it holds the
+  // numbers the round ends with from the moment the function exists.
+  { surface: "home hero", labelAtPx: 46, band: 288, strategy: "cover" },
+  { surface: "commander detail mobile", labelAtPx: 109, band: 288, strategy: "cover" },
+  { surface: "deck spine, phone", labelAtPx: 90, band: 288, strategy: "cover" },
   { surface: "deck tile", labelAtPx: 46, band: 248, strategy: "cover" },
-  { surface: "commander rows", labelAtPx: 46, band: 208, strategy: "left-portrait", portrait: 285 },
-  { surface: "resume row", labelAtPx: 40, band: 168, strategy: "cover" },
+  // The two rows differ: one wash under two breakpoint subtrees on each, and the
+  // desktop block is the taller — discovery's is its rank column, the owned
+  // lane's its identity column with a type line under the name.
+  { surface: "discovery row", labelAtPx: 56, band: 208, strategy: "left-portrait", portrait: 285 },
+  { surface: "owned-lane row", labelAtPx: 63, band: 208, strategy: "left-portrait", portrait: 285 },
+  { surface: "resume row", labelAtPx: 53, band: 168, strategy: "cover" },
 ];
 
 const over = (fg: string, bg: string, alpha: number): string => {

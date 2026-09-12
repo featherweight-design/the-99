@@ -26,6 +26,14 @@ const PLACEMENT = {
   // Inside the 63/88 frame's own bottom-left. The frame has no ink of its own —
   // the name and type line sit below it — so the control only has the art to
   // clear.
+  //
+  // That frame is `rounded-[14px] overflow-hidden`, so the corner of a 44px
+  // target inset to 3px falls inside the curve and is clipped. The plate itself
+  // is unclipped and the rest of the target is live — and this is the one
+  // placement whose whole frame is ALSO a tap layer (`bandTapTarget`), so the
+  // clipped corner is the one part of this control a reader cannot miss with.
+  // Recorded rather than redrawn: moving the plate to clear the radius would move
+  // a drawn inset for a corner that already answers.
   "commander-desktop": { left: 12, bottom: 12 },
   "deck-desktop": { left: 16, bottom: 14 },
   "deck-mobile": { top: 13, right: 16 },
