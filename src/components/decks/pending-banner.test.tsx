@@ -235,6 +235,20 @@ describe("PendingBanner", () => {
     expect(screen.getByText(copy.moneyNone, { exact: false })).toBeTruthy();
   });
 
+  // Both money sentences are about the cards coming in, so a cut with none says
+  // neither — `moneyNone` over an empty add list is vacuously true and reads as
+  // an account of a purchase that was never on the table.
+  it("says no money sentence on a removals-only draft, however long", () => {
+    render(<PendingBanner state={withChanges(0, 17)} deckId="d" />);
+    expect(screen.queryByText(copy.moneyNone, { exact: false })).toBeNull();
+    expect(screen.getByText(copy.counts(0, 17))).toBeTruthy();
+  });
+
+  it("says no money sentence on a basics-only draft either", () => {
+    render(<PendingBanner state={{ ...empty, basicsChanged: true }} deckId="d" />);
+    expect(screen.queryByText(copy.moneyNone, { exact: false })).toBeNull();
+  });
+
   // `Commit as v1` is drawn in the spine beside `Export`, so a deck with no
   // version leaves this banner with nothing to say.
   it("says nothing at all on a versionless deck", () => {

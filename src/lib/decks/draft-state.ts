@@ -19,7 +19,7 @@ import type { DraftAdd, DraftState } from "./draft-shape";
 import { hardDecks, type Availability, type DeckClaim } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
-import { formatCents, priceOf, priceState, summarisePrices } from "./price";
+import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./price";
 import { averageManaValue } from "./mana-value";
 import { newestVersion, versionCards, versionManaValue } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
@@ -285,14 +285,19 @@ async function readDraft(
   );
 
   // Unfree adds only: a free add buys nothing and a remove buys nothing, so
-  // neither carries a figure. `priceOf` answers null for a sold-out or unpriced
-  // card, and those stay out of the map rather than entering it as `$0.00`.
+  // neither carries a figure. `formatPriceFigure` answers null for a sold-out or
+  // unpriced card, and those stay out of the map rather than entering it as
+  // `$0.00`.
+  //
+  // Formatted by the one formatter `BuyTag` uses, so the figure carries its
+  // `foil` / `etched` qualifier: a foil-only price stated bare is the normal
+  // printing's price, which is a figure the feed never gave.
   const priceTags = new Map<string, string>();
   for (const add of unfree) {
     const fact = prices?.prices.get(add.oracleId);
     if (!fact) continue;
-    const cents = priceOf(fact, priceState(fact, prices?.newestAsOf ?? null));
-    if (cents !== null) priceTags.set(add.oracleId, formatCents(cents));
+    const figure = formatPriceFigure(fact, priceState(fact, prices?.newestAsOf ?? null));
+    if (figure !== null) priceTags.set(add.oracleId, figure);
   }
 
   // The releasable holder, not the first mature one: `heldBy` includes the decks

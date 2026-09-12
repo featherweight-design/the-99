@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   PRICE_STALE_AFTER_DAYS,
   formatCents,
+  formatPriceFigure,
   parseAsOf,
   priceState,
   provenanceForm,
@@ -77,6 +78,24 @@ describe("formatCents", () => {
   // one and hydrate mismatched.
   it("separates thousands in a fixed locale", () => {
     expect(formatCents(123450)).toBe("$1,234.50");
+  });
+});
+
+describe("formatPriceFigure", () => {
+  // A foil-only figure stated bare is the normal printing's price, which is a
+  // figure the feed never gave. Every surface that prints a price prints this.
+  it("qualifies a foil-only figure, and leaves a normal one bare", () => {
+    const foil = fact({ foilCents: 940 });
+    expect(formatPriceFigure(foil, priceState(foil, NEWEST))).toBe("$9.40 foil");
+    const etched = fact({ etchedCents: 1200 });
+    expect(formatPriceFigure(etched, priceState(etched, NEWEST))).toBe("$12.00 etched");
+    const plain = fact({ cents: 250, foilCents: 940 });
+    expect(formatPriceFigure(plain, priceState(plain, NEWEST))).toBe("$2.50");
+  });
+
+  it("is null when there is no figure to print", () => {
+    const soldOut = fact({ asOf: OLDER });
+    expect(formatPriceFigure(soldOut, priceState(soldOut, NEWEST))).toBeNull();
   });
 });
 

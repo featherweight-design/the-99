@@ -61,9 +61,9 @@ export const deckVersioningCopy = {
       n === 1
         ? "1 of those is sleeved in another deck and can be pulled instead."
         : `${n} of those are sleeved in other decks and can be pulled instead.`,
-    // The positive counterpart of `money`, in the same words: covered means spare
-    // copies enough for what the row asks, not one copy owned.
-    moneyNone: "Every card coming in has spare copies enough, so this commit asks for nothing.",
+    // The positive counterpart of `money`, in the same words: covered means
+    // enough spare copies for what the row asks, not one copy owned.
+    moneyNone: "Every card coming in has enough spare copies, so this commit asks for nothing.",
 
     reviewCta: (n: number) => `Review ${plural(n, "change")}`,
     reviewLink: "review changes",

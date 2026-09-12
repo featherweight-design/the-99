@@ -67,6 +67,11 @@ const MONEY_SLOT = "\u0000";
  */
 function moneyLine(state: DraftState): ReactNode | null {
   if (!state.claimsKnown) return null;
+  // Both sentences are about the cards coming in, so a draft with none — a
+  // removals-only cut, or a basics-only edit — says neither. "Every card coming
+  // in has enough spare copies" over an empty add list is vacuously true and
+  // reads as an account of a purchase that was never on the table.
+  if (state.addChanges.length === 0) return null;
   if (state.unfreeCount === 0) return copy.moneyNone;
   if (state.total === null) return null;
   const partial = state.pricedCopies < state.buyCount;
