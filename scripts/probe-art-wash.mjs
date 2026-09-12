@@ -868,10 +868,24 @@ try {
         await page.waitForTimeout(400);
         await page.screenshot({ path: `/tmp/art-wash-${vpName}-picker-paired.png` });
         const paired = await page.evaluate(`(${READ_THUMBS})()`);
-        const pairedBoxes = new Set(paired.map((t) => t.box.join("×")));
-        note(`${vpName} the picker, partner chosen: ${paired.length} thumb(s) at ${[...pairedBoxes].join(", ")}`);
-        if (!pairedBoxes.has("44×62")) {
-          note(`  FAIL the filled partner slot draws no 44×62 thumb`);
+        note(`${vpName} the picker, partner chosen: ${paired.length} thumb(s) at ${[...new Set(paired.map((t) => t.box.join("×")))].join(", ")}`);
+        // Scoped to the slot's own group, not to the page's box set: the picker
+        // still draws its candidate rows after pairing and those are 44×62 too,
+        // so a set membership test stays true even if the filled slot stops
+        // drawing its thumb entirely. The row thumbs are what would have made
+        // this pass while measuring nothing.
+        const slotThumb = await page.evaluate(
+          `(() => {
+            const el = document.querySelector('[role="group"] [data-commander-thumb]');
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return [Math.round(r.width), Math.round(r.height)];
+          })()`,
+        );
+        if (!slotThumb) {
+          note(`  FAIL the filled partner slot draws no thumb of its own`);
+        } else if (slotThumb.join("×") !== "44×62") {
+          note(`  FAIL the filled partner slot's thumb is ${slotThumb.join("×")}, expected 44×62`);
         }
         await checkChrome(page, `${vpName} the picker, paired`, note);
         pairing = true;
