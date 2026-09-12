@@ -35,6 +35,35 @@ describe("collectionChips", () => {
     expect(chip.dots).toHaveLength(2);
   });
 
+  it("names every collapsed value, not just colours", () => {
+    // Types, sets and availability all collapse to a count too, and the row
+    // this replaces named each one.
+    const opts = {
+      types: [
+        { code: "Creature", label: "Creature" },
+        { code: "Land", label: "Land" },
+      ],
+      sets: [
+        { code: "EOE", label: "Edge of Eternities" },
+        { code: "DSK", label: "Duskmourn" },
+      ],
+      availability: [
+        { code: "free", label: "Free" },
+        { code: "spoken", label: "Spoken for" },
+      ],
+    };
+    expect(collectionChips({ ...EMPTY, types: ["Creature", "Land"] }, opts)[0].spoken)
+      .toBe("Creature, Land");
+    expect(collectionChips({ ...EMPTY, setCodes: ["EOE", "DSK"] }, opts)[0].spoken)
+      .toBe("Edge of Eternities, Duskmourn");
+  });
+
+  it("leaves a single value unspoken, since the label already names it", () => {
+    const chip = collectionChips({ ...EMPTY, setCodes: ["EOE"] }, options)[0];
+    expect(chip.label).toBe("Edge of Eternities");
+    expect(chip.spoken).toBeUndefined();
+  });
+
   it("names the colours for a reader who cannot see the swatches", () => {
     // The dots are aria-hidden, so "2 colours" is all a screen reader would get
     // — the row this replaces named each one.

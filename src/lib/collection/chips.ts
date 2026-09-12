@@ -41,6 +41,17 @@ type Named = { code: string; label: string };
 const nameOf = (options: readonly Named[], code: string) =>
   options.find((o) => o.code === code)?.label ?? code;
 
+/**
+ * Every selected value, named, for the chip's accessible text.
+ *
+ * A chip collapses past one value — "2 types", "5 sets" — and that count is all
+ * a screen reader would otherwise get, where the `ChipRow` this replaces named
+ * each one. Returns undefined at a single value, because the label already IS
+ * the name and a duplicate spoken string would say it twice.
+ */
+const spokenNames = (codes: readonly string[], options: readonly Named[]) =>
+  codes.length > 1 ? codes.map((c) => nameOf(options, c)).join(", ") : undefined;
+
 export function collectionChips(
   filters: BrowseFilters,
   options: { types: readonly Named[]; sets: readonly Named[]; availability: readonly Named[] },
@@ -65,7 +76,10 @@ export function collectionChips(
       // The swatches say which hues with colour alone, and they are
       // `aria-hidden`. The row this replaces named each one, so the names go
       // here rather than being lost to a count.
-      spoken: filters.colors.map((c) => colourName(c)).join(", "),
+      spoken:
+        filters.colors.length > 1
+          ? filters.colors.map((c) => colourName(c)).join(", ")
+          : undefined,
       dots: filters.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
       next: { ...filters, colors: [] },
     });
@@ -75,6 +89,7 @@ export function collectionChips(
     chips.push({
       key: "types",
       label: copy.types(filters.types.length, nameOf(options.types, filters.types[0])),
+      spoken: spokenNames(filters.types, options.types),
       next: { ...filters, types: [] },
     });
   }
@@ -83,6 +98,7 @@ export function collectionChips(
     chips.push({
       key: "sets",
       label: copy.sets(filters.setCodes.length, nameOf(options.sets, filters.setCodes[0])),
+      spoken: spokenNames(filters.setCodes, options.sets),
       next: { ...filters, setCodes: [] },
     });
   }
@@ -91,6 +107,7 @@ export function collectionChips(
     chips.push({
       key: "avail",
       label: copy.availability(avail.length, nameOf(options.availability, avail[0])),
+      spoken: spokenNames(avail, options.availability),
       next: { ...filters, availability: [] as AvailabilityState[] },
     });
   }
