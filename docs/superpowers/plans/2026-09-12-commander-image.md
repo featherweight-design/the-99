@@ -104,6 +104,15 @@ to **44×62**; 12 and 13 to **64×89**. The partner slot's dashed border stays o
 only (verdict §6). The card faces converge on `0 20px 50px rgba(0,0,0,.5)` and the `.4` ring. Fully
 independent of PR 2.
 
+**Verification, named because this slice changes only styling and styling is what
+a green gate is worst at catching:** a unit test on the primitive for both boxes,
+the one ring alpha, the top crop and the identity-then-stripes fallback chain; a
+new `partner-slot.test.tsx` pinning both states of the dashed border, which had
+no coverage at all; and a browser census in `probe:art-wash` that measures every
+marked thumb's box, radius, ring alpha and crop, reports any card-shaped box
+**without** the marker as a missed migration, and presses a candidate row so the
+picker's selected summary and partner slot are measured rather than assumed.
+
 ### PR 4 — the commander surfaces
 
 `detail.tsx` (render 04 → 288, `IdentityPips` retired from the band into the block, `Card details` to
