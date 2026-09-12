@@ -335,7 +335,10 @@ const THUMB_BOXES = ["44×62", "64×89"];
 
 /** One ring alpha, replacing `.35` on two thumbs and `.3` on the card faces. All
     three are inset shadows, so the alpha is the only thing that distinguishes the
-    converged ring from the drift it replaced. */
+    converged ring from the drift it replaced — and it is matched on its own,
+    because `rgba(0, 0, 0, 0.4)` contains commas: a `inset[^,]*rgba(…)` pattern
+    cannot cross them and failed every migrated thumb. The `inset` keyword is
+    asserted separately beside it. */
 /** The one surface that legitimately draws card-shaped boxes which are not
     commander thumbs: the decks LIST's zero-state illustration. Matched exactly
     rather than by substring — `includes("decks")` also matches every
@@ -344,7 +347,7 @@ const THUMB_BOXES = ["44×62", "64×89"];
     shape-excluded, so a real one anywhere else still fails. */
 const DECORATIVE_FANS = ["decks"];
 
-const THUMB_RING_RE = /inset[^,]*rgba\(0,\s*0,\s*0,\s*0\.4\)|rgba\(0,\s*0,\s*0,\s*0\.4\)[^,]*inset/;
+const THUMB_RING_RE = /rgba\(0,\s*0,\s*0,\s*0\.4\)/;
 
 const VIEWPORTS = [
   ["mobile", 375, 812],
@@ -477,6 +480,7 @@ async function checkChrome(page, label, note) {
     // The alpha, not just the word `inset`: the whole point of the convergence is
     // that `.3` and `.35` became `.4`, and all three are inset shadows. The
     // browser resolves the alpha to `0.4`, so the string is the check.
+    if (!t.shadow.includes("inset")) note(`  FAIL thumb ring is not inset: ${t.shadow}`);
     if (!THUMB_RING_RE.test(t.shadow)) note(`  FAIL thumb ring is not the one alpha: ${t.shadow}`);
     // `center top`, not `center`: a centred crop of a 63/88 frame at 44px wide is
     // mostly type box, and the face is at the top of the card.
