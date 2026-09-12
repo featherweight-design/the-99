@@ -19,7 +19,7 @@ import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
-import type { PendingAddMove } from "./pending-add";
+import type { PendingChangeMove } from "./pending-change";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
@@ -94,21 +94,21 @@ type DecklistProps = {
   /** Built on the server; see BuilderShell. */
   provenance?: ProvenanceForm | null;
   /**
-   * The cards this deck's draft added on top of its newest version (#389), each
+   * The cards this deck's draft changed against its newest version (#389), each
    * against its quantity move. Empty on a brew and on a committed deck with
    * nothing pending, which is why every note below is gated on the map's size
    * rather than on a second flag. Nothing here reads a move — the notes count
-   * rows — but the rows read the same map through `PendingAddProvider`, which is
+   * rows — but the rows read the same map through `PendingChangeProvider`, which is
    * where the pair is printed.
    */
-  pendingAdds?: ReadonlyMap<string, PendingAddMove>;
+  pendingChanges?: ReadonlyMap<string, PendingChangeMove>;
   /** The newest version's number, for the toolbar note. Null on a brew. */
   pendingVersion?: number | null;
 };
 
 /** Module-scoped, so the default does not hand a fresh map to the provider on
  *  every render and remount the rows under it. */
-const EMPTY_PENDING_ADDS: ReadonlyMap<string, PendingAddMove> = new Map();
+const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
 
 export function Decklist({
   deckId,
@@ -136,7 +136,7 @@ export function Decklist({
   shoppingFigures = {},
   newestAsOf = null,
   provenance = null,
-  pendingAdds = EMPTY_PENDING_ADDS,
+  pendingChanges = EMPTY_PENDING_CHANGES,
   pendingVersion = null,
 }: DecklistProps) {
   // The view does not persist and does not touch the URL: it is one visit's
@@ -149,8 +149,8 @@ export function Decklist({
   // with no version has no vN to count against, and a set with nothing in it has
   // nothing to count. Null in either case, and the kept note keeps the slot.
   const draftNote =
-    pendingAdds.size > 0 && pendingVersion !== null
-      ? deckVersioningCopy.pending.toolbarNote(pendingAdds.size, pendingVersion)
+    pendingChanges.size > 0 && pendingVersion !== null
+      ? deckVersioningCopy.pending.toolbarNote(pendingChanges.size, pendingVersion)
       : null;
 
   // undefined = no figure line on the row. That is the All view's answer, and
@@ -609,23 +609,23 @@ export function Decklist({
             nineteen adds the per-row version is nineteen copies of one
             sentence. Only under All — Shopping shows a subset, and a caption
             counting rows the reader cannot see is a caption about nothing. List
-            view only, with `groupAddNote` below it, for the same reason: the
+            view only, with `groupChangeNote` below it, for the same reason: the
             brass rule lives on the row, and the card view draws tiles that carry
             no mark at all. A sentence pointing at a marker nobody can see is
             worse than silence. */}
-        {pendingAdds.size > 0 && filter === "all" && view === "list" && (
+        {pendingChanges.size > 0 && filter === "all" && view === "list" && (
           <p className="m-0 mb-[8px] font-mono text-[10px] text-[color:var(--fg-faint)]">
-            {deckVersioningCopy.pending.addListCaption(pendingAdds.size)}
+            {deckVersioningCopy.pending.changeListCaption(pendingChanges.size)}
           </p>
         )}
         {groups.map(([label, groupCards]) => {
-          // Omitted at zero rather than printed as `0 added in this draft`: a
+          // Omitted at zero rather than printed as `0 changed in this draft`: a
           // group the draft did not touch has nothing to say about it.
           // List view only: this note is the heading's half of one mark, and the
           // card view's tiles draw the other half nowhere.
-          const addedInGroup =
+          const changedInGroup =
             view === "list"
-              ? groupCards.filter((c) => pendingAdds.has(c.oracleId)).length
+              ? groupCards.filter((c) => pendingChanges.has(c.oracleId)).length
               : 0;
           return (
             <DecklistGroup
@@ -638,8 +638,8 @@ export function Decklist({
               siblings={orderedIds}
               newestAsOf={newestAsOf}
               note={
-                addedInGroup > 0
-                  ? deckVersioningCopy.pending.groupAddNote(addedInGroup)
+                changedInGroup > 0
+                  ? deckVersioningCopy.pending.groupChangeNote(changedInGroup)
                   : undefined
               }
               // Brass, the same brass as the rules below it: this note is the

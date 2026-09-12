@@ -10,7 +10,7 @@ import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provide
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { PendingAddProvider } from "./pending-add";
+import { PendingChangeProvider } from "./pending-change";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -716,11 +716,11 @@ describe("DecklistRow ownership (§Errata)", () => {
 
 // #389, surface 1: the brass rule says the draft touched this row, and only the
 // printed pair says what it did to a count the version already held.
-describe("DecklistRow pending add (#389)", () => {
+describe("DecklistRow pending change (#389)", () => {
   const withMoves = (moves: Array<[string, { from: number; to: number }]>, ui: React.ReactNode) =>
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <PendingAddProvider value={{ moves: new Map(moves) }}>{ui}</PendingAddProvider>
+        <PendingChangeProvider value={{ moves: new Map(moves) }}>{ui}</PendingChangeProvider>
       </CardDetailProvider>,
     );
 
@@ -766,6 +766,21 @@ describe("DecklistRow pending add (#389)", () => {
       screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
     ).toHaveAccessibleDescription(
       new RegExp(deckVersioningCopy.pending.addMarkRecountedA11y(1, 3)),
+    );
+  });
+
+  // State 11 is `+1 / −1`: a cut that leaves copies behind is as much a ruled row
+  // as an add, and it cannot borrow the add's word — the card is in the version,
+  // at a count the version does not have.
+  it("prints the pair and says `cut` on a row whose count came down", () => {
+    withMoves([["sol-ring", { from: 3, to: 1 }]], <DecklistRow deckId="d1" card={card} />);
+    expect(
+      screen.getByText(deckImportCopy.update.diff.recountedItem("Sol Ring", "3", "1")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(
+      new RegExp(deckVersioningCopy.pending.cutMarkRecountedA11y(3, 1)),
     );
   });
 

@@ -72,7 +72,7 @@ function renderDecklist(
     fetchCard?: (oracleId: string) => Promise<unknown>;
     spentSlot?: DeckDetailCard | null;
     filter?: "all" | "shopping";
-    pendingAdds?: ReadonlyMap<string, { from: number; to: number }>;
+    pendingChanges?: ReadonlyMap<string, { from: number; to: number }>;
   } = {},
 ) {
   const deckEdits = {
@@ -105,7 +105,7 @@ function renderDecklist(
           grouping="role"
           onFilterChange={vi.fn()}
           onGroupingChange={vi.fn()}
-          pendingAdds={opts.pendingAdds}
+          pendingChanges={opts.pendingChanges}
           shoppingFigures={opts.shoppingFigures === undefined ? {} : opts.shoppingFigures}
         />
       </AddOptimisticCardProvider>
@@ -616,37 +616,37 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
 });
 
 // Both pending notes promise a visual mapping: the caption says the brass rule
-// marks the added rows, and the group note says how many of a heading's rows the
-// draft added. Only `decklist-row.tsx` draws that rule — `DeckCardTile` carries
+// marks the changed rows, and the group note says how many of a heading's rows the
+// draft changed. Only `decklist-row.tsx` draws that rule — `DeckCardTile` carries
 // no pending mark at all — so in card view each sentence would point at a marker
 // the reader cannot find. `toolbarNote` states a count and no marker, so it
 // stays in both views; the test below holds that distinction in place.
-describe("the pending-add notes are the row view's, because the mark is", () => {
-  const pendingAdds = new Map([["sol-ring", { from: 0, to: 1 }]]);
+describe("the pending-change notes are the row view's, because the mark is", () => {
+  const pendingChanges = new Map([["sol-ring", { from: 0, to: 1 }]]);
 
   it("captions the list and heads the group in list view", () => {
-    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingAdds });
+    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
 
     expect(
-      screen.getByText(deckVersioningCopy.pending.addListCaption(1)),
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(deckVersioningCopy.pending.groupAddNote(1)),
+      screen.getByText(deckVersioningCopy.pending.groupChangeNote(1)),
     ).toBeInTheDocument();
   });
 
   it("says neither in card view, where no tile draws the rule", () => {
-    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingAdds });
+    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
 
     fireEvent.click(
       screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0],
     );
 
     expect(
-      screen.queryByText(deckVersioningCopy.pending.addListCaption(1)),
+      screen.queryByText(deckVersioningCopy.pending.changeListCaption(1)),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(deckVersioningCopy.pending.groupAddNote(1)),
+      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(1)),
     ).not.toBeInTheDocument();
   });
 });

@@ -37,7 +37,7 @@ import {
   useReportRemoveFailure,
 } from "./optimistic-deck";
 import { usePassMark } from "./pass-mark";
-import { usePendingAdd } from "./pending-add";
+import { usePendingChange } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -115,15 +115,16 @@ export function DecklistRow({
   // there is room to spare the two are identical — grow still takes the slack.
   const nameBlockClass = "flex-auto min-w-0 flex items-center gap-[6px]";
 
-  // The draft added this card (#389, surface 1), and the move that added it.
+  // The draft changed this card (#389, surface 1), and the move that changed it.
   // Read this high because the count glyph below depends on it: a row whose
   // count merely moved prints `1 → 2` in the name's place, and `×2` beside that
   // is the second figure saying the same thing.
-  const pendingAdd = usePendingAdd();
-  const pendingMove = pendingAdd?.moves.get(card.oracleId);
-  const isPendingAdd = pendingMove !== undefined;
+  const pendingChange = usePendingChange();
+  const pendingMove = pendingChange?.moves.get(card.oracleId);
+  const isPendingChange = pendingMove !== undefined;
   // A move out of a count the version already held, as against a card it did
-  // not hold at all. Only the former has a pair to print.
+  // not hold at all. Only the former has a pair to print, and it prints the same
+  // pair whichever way the count went.
   const recounted = pendingMove && pendingMove.from > 0 && pendingMove.to > 0 ? pendingMove : null;
 
   // Multi-copy count (addendum C5): one row per card, the count inline after
@@ -234,7 +235,7 @@ export function DecklistRow({
     [
       availabilityDescriptionId,
       marked ? markDescriptionId : null,
-      isPendingAdd ? pendingDescriptionId : null,
+      isPendingChange ? pendingDescriptionId : null,
     ]
       .filter(Boolean)
       .join(" ") || undefined;
@@ -245,7 +246,7 @@ export function DecklistRow({
   // 2px, the Component notes table's width, and behind the pass mark's 3px when
   // a row carries both — the first shadow listed paints on top, and the wider
   // rule is the one that would otherwise show a seam under the narrower.
-  if (isPendingAdd) rowEdges.push("inset 2px 0 0 0 var(--accent)");
+  if (isPendingChange) rowEdges.push("inset 2px 0 0 0 var(--accent)");
   if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
 
   function handleRemove() {
@@ -492,20 +493,25 @@ export function DecklistRow({
           </span>
         )}
 
-        {/* The pending add's whole visible treatment is the brass rule, which a
+        {/* The pending change's whole visible treatment is the brass rule, which a
             screen reader cannot see. The word rides the name's accessible
             description instead — never rendered visually, because the
             card-rows floor makes name width the binding constraint and a chip
             would spend ~86px of it on every added row. A recounted row's pair
             rides this description too, because the name's accessible label is
             the printed name and the visible `1 → 2` is not part of it. */}
-        {isPendingAdd && (
+        {isPendingChange && (
           <span id={pendingDescriptionId} className="sr-only">
             {recounted
-              ? deckVersioningCopy.pending.addMarkRecountedA11y(
-                  recounted.from,
-                  recounted.to,
-                )
+              ? recounted.to > recounted.from
+                ? deckVersioningCopy.pending.addMarkRecountedA11y(
+                    recounted.from,
+                    recounted.to,
+                  )
+                : deckVersioningCopy.pending.cutMarkRecountedA11y(
+                    recounted.from,
+                    recounted.to,
+                  )
               : deckVersioningCopy.pending.addMarkA11y}
           </span>
         )}

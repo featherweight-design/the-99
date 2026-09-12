@@ -80,14 +80,23 @@ export const deckVersioningCopy = {
     // the pair would never be spoken. It rides the same description as the word.
     addMarkRecountedA11y: (from: number, to: number) =>
       `pending add, was ${from}, now ${to}`,
-    // Said once above the list instead of once per row.
-    addListCaption: (n: number) =>
-      `the brass rule marks the ${plural(n, "row")} this draft added`,
+    // The same rule on a row whose count came DOWN — state 11 is `+1 / −1`, so a
+    // cut of two copies out of three is as much a ruled row as an add is. It
+    // cannot borrow the word above: the card is in v2, and calling the row a
+    // pending add would say the opposite of what happened to it.
+    cutMarkRecountedA11y: (from: number, to: number) =>
+      `pending cut, was ${from}, now ${to}`,
+    // Said once above the list instead of once per row. `changed`, not `added`:
+    // the same rule marks a row the draft cut copies from.
+    changeListCaption: (n: number) =>
+      `the brass rule marks the ${plural(n, "row")} this draft changed`,
     // On the group heading, so grouping by type also maps where the draft happened.
-    groupAddNote: (n: number) => `${n} added in this draft`,
+    groupChangeNote: (n: number) => `${n} changed in this draft`,
     // The list toolbar's right slot, replacing "n cards are yours now" while a draft exists.
+    // `differ from`, not `not in yet`: a row that held three copies and now holds
+    // one is in the version, at a count the version does not have.
     toolbarNote: (n: number, version: number) =>
-      `${n} of these ${n === 1 ? "is" : "are"} not in v${version} yet`,
+      `${n} of these ${n === 1 ? "differs" : "differ"} from v${version}`,
     // The mix strip's header, beside the EDHREC source line: which list the five
     // figures below were counted from. Drawn only while a draft exists — on a
     // clean deck there is one list, and naming it would raise a question the

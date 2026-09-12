@@ -33,7 +33,7 @@ describe("deckVersioningCopy", () => {
     expect(copy.pending.moneyPulls(1)).toBe(
       "1 of those is sleeved in another deck and can be pulled instead.",
     );
-    expect(copy.pending.toolbarNote(1, 3)).toBe("1 of these is not in v3 yet");
+    expect(copy.pending.toolbarNote(1, 3)).toBe("1 of these differs from v3");
     expect(copy.review.heading(1, 2)).toBe("1 change since v2");
     expect(copy.review.outNote(1)).toMatch(/^it goes back in the pool/);
     expect(copy.review.footer(1, 0, 0)).toContain("1 card ·");

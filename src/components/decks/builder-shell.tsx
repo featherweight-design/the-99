@@ -52,7 +52,7 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { LastSlotsStrip } from "./last-slots-strip";
 import { PendingBanner } from "./pending-banner";
-import { PendingAddProvider } from "./pending-add";
+import { PendingChangeProvider } from "./pending-change";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
@@ -227,22 +227,27 @@ export function BuilderShell({
   // toward that rather than a written-down 99.
   const bodySize = deckBodySize(deck.partner !== null);
 
-  // The draft's added cards, as the rows ask about them: the move per row.
+  // The draft's changed cards, as the rows ask about them: the move per row.
   // Null outside a draft, which is what makes every mark and every note absent
   // on a deck with nothing pending rather than gated on a second flag.
-  // Built from `addChanges` rather than `adds` because that is the list carrying
-  // the before/after pair, and it is the same cards in the same order.
-  const pendingAdd = useMemo(
-    () =>
-      draft && draft.adds.length > 0
-        ? {
-            moves: new Map(
-              draft.addChanges.map((c) => [c.oracleId, { from: c.from, to: c.to }]),
-            ),
-          }
-        : null,
-    [draft],
-  );
+  //
+  // BOTH change lists, not the adds alone. A cut that leaves copies behind — 3
+  // Sol Ring down to 1 — is a `removes` entry with `to` above zero, and its row
+  // is still on the decklist to be ruled (state 11 is `+1 / −1`). A full removal
+  // is filtered out because there is no row left to mark: the card is gone from
+  // the draft, and the banner is where it is named.
+  //
+  // `addChanges` rather than `adds` because that is the list carrying the
+  // before/after pair, and it is the same cards in the same order.
+  const pendingChange = useMemo(() => {
+    if (!draft) return null;
+    const moves = new Map<string, { from: number; to: number }>();
+    for (const c of draft.addChanges) moves.set(c.oracleId, { from: c.from, to: c.to });
+    for (const c of draft.removes) {
+      if (c.to > 0) moves.set(c.oracleId, { from: c.from, to: c.to });
+    }
+    return moves.size > 0 ? { moves } : null;
+  }, [draft]);
 
   // The one deliberate exception. Keyed off the SERVER counts because the
   // commitments roll-up below states a fact about other decks' claims, and a
@@ -1046,7 +1051,7 @@ export function BuilderShell({
               /* The provider wraps the list from out here rather than from
                  inside it: `Decklist` returns three different trees, and mounted
                  within it the provider would have to be repeated in each. */
-              <PendingAddProvider value={pendingAdd}>
+              <PendingChangeProvider value={pendingChange}>
               <Decklist
                 deckId={deck.id}
                 cards={cards}
@@ -1073,10 +1078,10 @@ export function BuilderShell({
                 shoppingFigures={shoppingFigures}
                 newestAsOf={newestAsOf}
                 provenance={provenance}
-                pendingAdds={pendingAdd?.moves}
+                pendingChanges={pendingChange?.moves}
                 pendingVersion={draft?.version?.number ?? null}
               />
-              </PendingAddProvider>
+              </PendingChangeProvider>
             )}
             </div>
             )}

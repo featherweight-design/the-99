@@ -297,6 +297,17 @@ async function readDraft(
 
   // The releasable holder, not the first mature one: `heldBy` includes the decks
   // a pull is refused from, and offering one of those names an act that fails.
+  //
+  // Read after `readSnapshot`'s transaction has closed, deliberately. A claim is
+  // point-in-time whatever boundary we draw around it: another deck can commit
+  // between this read and the reader's click, so no shared snapshot can make the
+  // offer true at the moment it is taken. What makes a pull safe is that the
+  // server action re-reads every claim in its own transaction and refuses with a
+  // named reason, which the control prints. Folding `loadAvailability`'s raw SQL,
+  // the price join and the detail read into the diff's repeatable-read
+  // transaction would buy display-internal consistency for a figure that is
+  // advisory either way, at the cost of holding that transaction open across
+  // three more round trips.
   const pullFrom = pullHints(bucketed, availability);
 
   const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
