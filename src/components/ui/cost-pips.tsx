@@ -43,6 +43,24 @@ export const COST_TRACK = 40;
 export const COST_PIP_CAP = 5;
 export const COST_PIP_SIZE = 12;
 
+/**
+ * A row's cost slot, drawn whether or not the card has a cost.
+ *
+ * A null cost still draws the track, empty. The name is the only flexible item
+ * on these rows, so a land that ended its row short pulled whatever follows the
+ * cost out to the right edge and off the vertical every costed row beside it
+ * holds.
+ */
+export function CostTrack({ cost }: { cost: string | null }) {
+  return (
+    <span className="flex flex-none items-center justify-end" style={{ width: COST_TRACK }}>
+      {cost ? (
+        <CostPips cost={cost} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
+      ) : null}
+    </span>
+  );
+}
+
 type CostPipsProps = {
   cost: string;
   /** Pip diameter. 12px in the decklist's desktop track, 13px on the phone meta line. */

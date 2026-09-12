@@ -29,7 +29,7 @@ import type { Availability } from "../../lib/decks/availability";
 import type { PriceFact } from "../../lib/decks/price";
 import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
+import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips, CostTrack } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_RADIUS, ROW_SHELL } from "../ui/row-shell";
 import { BuyTag } from "./buy-tag";
@@ -213,26 +213,6 @@ function AvailabilitySlot({
       selfExcluded={selfClaimed}
       className="flex-none"
     />
-  );
-}
-
-/** The cost, as the pips every surface that draws a cost column draws. The track
- *  and the cap come from the shipped constants rather than a width of this row's
- *  own: the shingle arithmetic behind them is what makes five pips measure 40px,
- *  and a caller that picked its own would either misalign against the rows beside
- *  it or burst a track the module still believes is 40px wide.
- *
- *  A null cost still draws the track, empty. The name is the row's only flexible
- *  item, so a land that ended the row short pulled its availability slot out to
- *  the right edge and off the vertical line every costed row beside it holds —
- *  the same reason the adds column keeps its trailing slot on a costless row. */
-function CostTrack({ cost }: { cost: string | null }) {
-  return (
-    <span className="flex flex-none items-center justify-end" style={{ width: COST_TRACK }}>
-      {cost ? (
-        <CostPips cost={cost} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
-      ) : null}
-    </span>
   );
 }
 

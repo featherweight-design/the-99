@@ -22,7 +22,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
 import { PendingMark } from "../ui/pending-mark";
-import { CostPips, COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK } from "../ui/cost-pips";
+import { CostTrack } from "../ui/cost-pips";
 import { DecklistGroupHeader } from "./decklist-group-header";
 
 const copy = deckVersioningCopy.history;
@@ -57,17 +57,7 @@ function DiffCardRow({ card }: { card: VersionDiffCard }) {
       <span className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[12.5px] md:text-[13px] text-[color:var(--fg)]">
         {name}
       </span>
-      {card.manaCost && (
-        <span className="flex flex-none items-center justify-end" style={{ width: COST_TRACK }}>
-          <CostPips
-            cost={card.manaCost}
-            size={COST_PIP_SIZE}
-            track={COST_TRACK}
-            cap={COST_PIP_CAP}
-            spoken
-          />
-        </span>
-      )}
+      <CostTrack cost={card.manaCost} />
     </div>
   );
 }

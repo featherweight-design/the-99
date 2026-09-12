@@ -90,6 +90,20 @@ describe("VersionDiff", () => {
     expect(row.querySelector("button")).toBeNull();
   });
 
+  // A land has no cost and still holds the track, so the names beside it end on
+  // the same vertical as every costed row in its group.
+  it("keeps the cost track on a card with no cost", async () => {
+    getVersionDiff.mockResolvedValueOnce({
+      in: [card({ name: "Wastes", typeLine: "Land", manaCost: null })],
+      out: [],
+    });
+    mount();
+    const row = (await screen.findByText("Wastes")).parentElement!;
+    const track = row.lastElementChild as HTMLElement;
+    expect(track.style.width).toBe("40px");
+    expect(track.textContent).toBe("");
+  });
+
   // A version's cards are read on open, not with the rail — a ten-version deck
   // would otherwise pay ten diffs to draw ten closed rows. The predecessor is not
   // passed: the server resolves it, so no caller can ask for a mismatched pair.
