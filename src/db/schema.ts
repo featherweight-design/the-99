@@ -18,6 +18,12 @@ export const sets = pgTable("sets", {
   setType: text("set_type").notNull(),      // expansion | commander | token | promo | …
   releasedAt: date("released_at"),          // nullable — undated/unreleased sets exist
   cardCount: integer("card_count").notNull().default(0),
+  /**
+   * Count of this set's base-run printings — the denominator every completion figure
+   * divides by. Written by a post-load pass over `printings`, never by the sets ingest,
+   * because it is a fact about printings. NULL means "not indexed yet".
+   */
+  baseSetSize: integer("base_set_size"),
   digital: boolean("digital").notNull().default(false),
   iconSvgUri: text("icon_svg_uri"),
 });
@@ -76,8 +82,25 @@ export const printings = pgTable("printings", {
   // The name printed on this printing when it is not its oracle card's — Secret Lair's renames
   // (#467). Null on all but a few hundred printings, which is why its index is partial.
   flavorName: text("flavor_name"),
+  /**
+   * Scryfall's booster flag — the base-run boundary a set page divides by. NULLABLE on
+   * purpose: a row written before the re-seed has no answer, and `false` would be a lie
+   * that reads as "this is an extra". A set whose rows are all null is not indexed yet,
+   * which is a state the index draws rather than a percentage it invents.
+   */
+  booster: boolean("booster"),
+  /**
+   * This printing's rarity, as opposed to `cards.rarity`, which is oracle-level and taken
+   * from one arbitrary printing: Sacred Foundry is rare in `eoe` and mythic in `exp`.
+   * Nullable for the same reason as `booster`.
+   */
+  rarity: text("rarity"),
 }, (t) => [
   index("printings_oracle_set_idx").on(t.oracleId, t.setCode),
+  // Set-first, because every set-collection read filters on set_code alone and the
+  // oracle-first index above cannot serve that: without this each set page, and each
+  // owned-set index build, scans the whole printing catalogue.
+  index("printings_set_code_idx").on(t.setCode),
   index("printings_oracle_idx").on(t.oracleId),
   // Partial, and that is the whole point of it: both readers want every row that has a flavor
   // name and none of the millions that do not. Neither can use it to find one name — the import

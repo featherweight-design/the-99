@@ -12,7 +12,7 @@ const card: BrowseListCard = {
   oracleId: "o1",
   name: "Smothering Tithe",
   typeLine: "Enchantment",
-  manaCost: "{3}{W}",
+  manaCost: "{3}{W}", cmc: 2,
   keywords: [],
   rarity: "rare",
   colorIdentity: ["W"],

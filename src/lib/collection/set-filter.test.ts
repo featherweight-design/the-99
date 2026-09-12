@@ -12,7 +12,7 @@ const card = (over: Partial<BrowseListCard> = {}): BrowseListCard => ({
   oracleId: "o-1",
   name: "Sol Ring",
   typeLine: "Artifact",
-  manaCost: "{1}",
+  manaCost: "{1}", cmc: 2,
   keywords: [],
   rarity: "rare",
   colorIdentity: [],

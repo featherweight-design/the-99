@@ -207,7 +207,7 @@ describe("deck card-detail triggers", () => {
     );
     // Creatures precede Artifacts in group order, and names sort within a group.
     fetchCard.mockResolvedValue({
-      oracleId: "o-bear", name: "Grizzly Bears", typeLine: "Creature", manaCost: null,
+      oracleId: "o-bear", name: "Grizzly Bears", typeLine: "Creature", manaCost: null, cmc: 2,
       oracleText: null, keywords: [], rarity: "common", colorIdentity: [], imageUri: null,
       printedName: null,
       quantity: 1, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,

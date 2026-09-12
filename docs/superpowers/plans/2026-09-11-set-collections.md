@@ -978,22 +978,37 @@ git commit -m "feat(sets): production copy for both routes"
 
 - [ ] **Step 1: Write the failing test**
 
+**Written against the shipped `ColorPip`, not against a guess at it.** `color-pip.tsx:17-21`
+renders `role="switch"` with `aria-checked` and an accessible name of `Filter by R` — so
+`getByRole("button")`, `aria-pressed` and a name of `/red/i` all miss, and a test built on
+them would fail against a correct verbatim extraction while passing only if the extraction
+changed something.
+
 ```tsx
 it("renders one pip per WUBRG colour", () => {
   render(<ColorFilterRow selected={[]} onToggle={() => {}} />);
-  expect(screen.getAllByRole("button")).toHaveLength(5);
+  expect(screen.getAllByRole("switch")).toHaveLength(5);
 });
-it("marks a selected pip as pressed", () => {
+it("checks exactly the selected pip", () => {
   render(<ColorFilterRow selected={["R"]} onToggle={() => {}} />);
-  expect(screen.getByRole("button", { name: /red/i })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("switch", { name: "Filter by R" })).toBeChecked();
+  expect(screen.getByRole("switch", { name: "Filter by W" })).not.toBeChecked();
 });
-it("reports the colour that was toggled", async () => {
+it("reports the colour that was toggled", () => {
   const onToggle = vi.fn();
   render(<ColorFilterRow selected={[]} onToggle={onToggle} />);
-  await userEvent.click(screen.getByRole("button", { name: /blue/i }));
+  fireEvent.click(screen.getByRole("switch", { name: "Filter by U" }));
   expect(onToggle).toHaveBeenCalledWith("U");
 });
 ```
+
+`fireEvent`, not `userEvent`: this repository does not depend on
+`@testing-library/user-event`, and every component test here uses `fireEvent`.
+
+**`Filter by R` reads the colour code rather than the colour, which is a poor accessible
+name — but changing it is the filter chassis's call, not this plan's.** That handoff supplies
+`chassisCopy.colour.pipAria` as the replacement, and it governs a control `/collection` also
+mounts; renaming it from here would ship a chassis ruling inside a set-collections change.
 
 - [ ] **Step 2: Run and confirm failure**
 

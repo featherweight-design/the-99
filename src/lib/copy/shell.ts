@@ -30,6 +30,16 @@ export const shellCopy = {
       heading: "Consulting the council",
       status: "ranking by what you own…",
     },
+    // Written to the same shape as the rest: a table phrase, then a lowercase
+    // status naming what the wait is actually spent on.
+    sets: {
+      heading: "Laying out the sets",
+      status: "counting what you're missing…",
+    },
+    setGrid: {
+      heading: "Dealing the set",
+      status: "matching your copies to the checklist…",
+    },
     // Not in the App Shell handoff: /discover did not exist when it was drawn.
     // Written to the same shape as `commanders` above — a table phrase, then a
     // participle — because the two lanes ask the same question of opposite

@@ -24,7 +24,7 @@ const card = (over: Partial<CatalogCardRow> = {}): CatalogCardRow => ({
   scryfallId: "s-default",
   name: "Arcane Signet",
   typeLine: "Artifact",
-  manaCost: "{2}",
+  manaCost: "{2}", cmc: 2,
   oracleText: "{T}: Add one mana of any color in your commander's identity.",
   keywords: [],
   rarity: "common",

@@ -1,0 +1,100 @@
+import { describe, expect, it } from "vitest";
+import { applyFilters, EMPTY_FILTERS, parseFilters, serialiseFilters } from "./filters";
+import type { Cell } from "./completion";
+
+const cell = (over: Partial<Cell>): Cell => ({
+  scryfallId: "s", oracleId: "o", collectorNumber: "1", name: "Card",
+  imageUriSmall: null, colorIdentity: [], rarity: "common", booster: true,
+  isVariant: false, owned: false, byName: false, foilOnly: false, ...over,
+});
+
+describe("applyFilters", () => {
+  it("keeps only missing cells under missing-only", () => {
+    const cells = [cell({ owned: true }), cell({ collectorNumber: "2" })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, missingOnly: true })).toHaveLength(1);
+  });
+
+  it("matches a colour when the identity contains it", () => {
+    const cells = [cell({ colorIdentity: ["R", "G"] })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, colors: ["R"] })).toHaveLength(1);
+  });
+
+  it("treats multiple colours as any, never as exactly", () => {
+    const cells = [cell({ colorIdentity: ["W"] }), cell({ colorIdentity: ["U"] })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, colors: ["W", "U"] })).toHaveLength(2);
+  });
+
+  it("keeps a colourless card out of every colour filter", () => {
+    const cells = [cell({ colorIdentity: [] })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, colors: ["W"] })).toHaveLength(0);
+  });
+
+  it("matches rarity case-insensitively against the printing's own rarity", () => {
+    const cells = [cell({ rarity: "Mythic" })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, rarities: ["mythic"] })).toHaveLength(1);
+  });
+
+  it("drops a cell whose rarity the catalog has not recorded", () => {
+    const cells = [cell({ rarity: null })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, rarities: ["rare"] })).toHaveLength(0);
+  });
+
+  it("combines missing-only with rarity", () => {
+    const cells = [
+      cell({ rarity: "rare", owned: true }),
+      cell({ collectorNumber: "2", rarity: "rare" }),
+      cell({ collectorNumber: "3", rarity: "common" }),
+    ];
+    const kept = applyFilters(cells, { ...EMPTY_FILTERS, rarities: ["rare"], missingOnly: true });
+    expect(kept.map((c) => c.collectorNumber)).toEqual(["2"]);
+  });
+
+  it("returns nothing when the combination matches nothing", () => {
+    const cells = [cell({ rarity: "common", colorIdentity: ["W"] })];
+    expect(applyFilters(cells, { ...EMPTY_FILTERS, rarities: ["mythic"], colors: ["W"] }))
+      .toHaveLength(0);
+  });
+});
+
+describe("filter URL round trip", () => {
+  it("serialises defaults as absences", () => {
+    expect(serialiseFilters(EMPTY_FILTERS).toString()).toBe("");
+  });
+
+  it("joins colours on a comma in WUBRG order", () => {
+    expect(serialiseFilters({ ...EMPTY_FILTERS, colors: ["R", "W"] }).get("c")).toBe("W,R");
+  });
+
+  it("writes missing-only as m=1", () => {
+    expect(serialiseFilters({ ...EMPTY_FILTERS, missingOnly: true }).get("m")).toBe("1");
+  });
+
+  it("round trips", () => {
+    const f = { colors: ["U"], rarities: ["rare"], missingOnly: true };
+    expect(parseFilters(serialiseFilters(f))).toEqual(f);
+  });
+
+  it("ignores an unknown colour or rarity rather than throwing", () => {
+    expect(parseFilters(new URLSearchParams("c=Z&r=legendary"))).toEqual(EMPTY_FILTERS);
+  });
+
+  it("reads m as off unless it is exactly 1", () => {
+    expect(parseFilters(new URLSearchParams("m=true")).missingOnly).toBe(false);
+  });
+});
+
+describe("hand-edited URLs", () => {
+  it("parses a rarity whatever case it was typed in", () => {
+    expect(parseFilters(new URLSearchParams("r=Mythic")).rarities).toEqual(["mythic"]);
+  });
+
+  it("parses a colour whatever case it was typed in", () => {
+    expect(parseFilters(new URLSearchParams("c=u,g")).colors).toEqual(["U", "G"]);
+  });
+
+  it("cannot represent a rarity the rack does not offer", () => {
+    // `special` was parseable while no control could select it and no copy named it, so a
+    // URL could carry a filter state no reader could reach or clear.
+    expect(parseFilters(new URLSearchParams("r=special")).rarities).toEqual([]);
+  });
+});

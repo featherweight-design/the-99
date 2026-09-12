@@ -9,7 +9,7 @@ const ATRAXA: BrowseCard = {
   oracleId: "o-atraxa",
   name: "Atraxa, Praetors' Voice",
   typeLine: "Legendary Creature — Phyrexian Angel Horror",
-  manaCost: "{G}{W}{U}{B}",
+  manaCost: "{G}{W}{U}{B}", cmc: 2,
   oracleText: "Flying, vigilance, deathtouch, lifelink",
   keywords: ["Flying"],
   rarity: "mythic",

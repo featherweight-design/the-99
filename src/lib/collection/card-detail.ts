@@ -21,6 +21,7 @@ export type CatalogCardRow = {
   name: string;
   typeLine: string;
   manaCost: string | null;
+  cmc: number;
   oracleText: string | null;
   keywords: string[];
   rarity: string;
@@ -78,6 +79,7 @@ export function catalogCard(
     oracleId: card.oracleId,
     name: card.name,
     typeLine: card.typeLine,
+    cmc: card.cmc,
     manaCost: card.manaCost,
     oracleText: card.oracleText,
     keywords: card.keywords,
@@ -159,6 +161,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       scryfallId: cards.scryfallId,
       name: cards.name,
       typeLine: cards.typeLine,
+      cmc: cards.cmc,
       manaCost: cards.manaCost,
       oracleText: cards.oracleText,
       keywords: cards.keywords,

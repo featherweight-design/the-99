@@ -15,6 +15,22 @@ export type PrintingRow = {
    * everywhere else. Null on the ~99.9% of printings that carry no such name.
    */
   flavorName: string | null;
+  /**
+   * Scryfall's own "can be found in a booster" flag, and the only reliable base-run
+   * boundary available. `isVariant` cannot serve: it is an art-treatment allowlist built
+   * to choose a default art, and it flags EOE's full-art basics at #262-266, which sit
+   * inside the base run. Verified against EOE: 1-276 booster, 277-399 not.
+   *
+   * Not sufficient alone. Every printing in a Commander product carries `booster: false`,
+   * so a set with no booster printings at all falls back to its non-variant ones — a
+   * set-level rule, applied by setBaseSetSizes rather than here.
+   */
+  booster: boolean | null;
+  /**
+   * Rarity of THIS printing. `cards.rarity` is oracle-level, taken from one arbitrary
+   * printing, and is wrong per set: Sacred Foundry is rare in `eoe` and mythic in `exp`.
+   */
+  rarity: string | null;
 };
 
 export type SkippedPrintingRow = { scryfallId: string; layout: string; name: string };
@@ -105,6 +121,11 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
       flavorName: typeof raw.flavor_name === "string" && raw.flavor_name !== ""
         ? raw.flavor_name
         : null,
+      // NULL, not false, when the key is absent: the column is nullable precisely so
+      // "nobody has classified this" stays distinct from "this is not in a booster", and
+      // writing false would file an unknown printing under extras.
+      booster: typeof raw.booster === "boolean" ? raw.booster : null,
+      rarity: typeof raw.rarity === "string" && raw.rarity !== "" ? raw.rarity : null,
     },
   };
 }

@@ -15,7 +15,7 @@ const base: BrowseListCard = {
   oracleId: "o",
   name: "Card",
   typeLine: "Artifact",
-  manaCost: "{1}",
+  manaCost: "{1}", cmc: 2,
   keywords: [],
   rarity: "common",
   colorIdentity: [],

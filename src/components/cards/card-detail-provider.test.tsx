@@ -16,7 +16,7 @@ const card = (oracleId: string, name: string): BrowseCard => ({
   oracleId,
   name,
   typeLine: "Artifact",
-  manaCost: "{2}",
+  manaCost: "{2}", cmc: 2,
   oracleText: null,
   keywords: [],
   rarity: "common",
