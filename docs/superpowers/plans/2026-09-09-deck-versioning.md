@@ -2750,12 +2750,21 @@ export function PendingBanner({
               {" · "}
               {copy.since(n, state.version.number)}
             </p>
-            {/* Exactly one money sentence. The pull clause is a second line
-                only because it is a different offer, not a second total. */}
+            {/* Exactly one money sentence, or none. The pull clause is a second
+                line only because it is a different offer, not a second total.
+
+                Three states, and only two of them speak — `moneyLine` returns
+                null for the third. `moneyNone` claims every card coming in has a
+                free copy, so it takes a claim read that actually happened
+                (`claimsKnown`) and a genuine zero; a failed read leaves
+                `unfreeCount` at 0 and would otherwise say the commit is free.
+                When rows are unfree but nothing could be priced there IS a
+                purchase and no figure for it, so the banner states neither and
+                the review page one click away names the rows. A total over
+                partial coverage carries the shipped `pricedClause`, and `money`
+                takes `buyCount` beside the row count. */}
             <p className="m-0 text-[13px] text-[color:var(--fg-faint)]">
-              {state.unfreeCount === 0 || state.total === null
-                ? copy.moneyNone
-                : copy.money(state.unfreeCount, state.addChanges.length, state.total)}
+              {moneyLine(state)}
               {state.pullableCount > 0 && ` ${copy.moneyPulls(state.pullableCount)}`}
             </p>
           </>

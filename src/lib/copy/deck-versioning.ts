@@ -182,8 +182,12 @@ export const deckVersioningCopy = {
     refused: "We couldn't commit that version. Your changes are still here.",
     announced: (version: number, cards: number, buy: number) =>
       `Committed v${version}. ${plural(cards, "card")}, ${buy} to buy.`,
-    pullAnnounced: (card: string, deck: string, buy: number, total: string) =>
-      `${card} pulled from ${deck}. ${buy} to buy, ${total}.`,
+    // Nullable total, because `DraftState.total` is: a purchase where no
+    // requested copy carried a price is a real purchase with no figure, and the
+    // pull that produced it still has to be announced. The clause is dropped
+    // rather than filled with a fabricated zero.
+    pullAnnounced: (card: string, deck: string, buy: number, total: string | null) =>
+      `${card} pulled from ${deck}. ${buy} to buy${total === null ? "" : `, ${total}`}.`,
   },
 
   /* ---- Discard · unrecoverable, so it confirms (the #476 bar) ---- */

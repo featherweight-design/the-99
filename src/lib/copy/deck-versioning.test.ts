@@ -75,6 +75,17 @@ describe("deckVersioningCopy", () => {
     );
   });
 
+  // The reader returns `total: null` when no requested copy carried a price, and
+  // the pull that produced it still happened.
+  it("announces a pull whose purchase could not be priced", () => {
+    expect(copy.commit.pullAnnounced("Sol Ring", "Kykar", 2, "$6.00")).toBe(
+      "Sol Ring pulled from Kykar. 2 to buy, $6.00.",
+    );
+    expect(copy.commit.pullAnnounced("Sol Ring", "Kykar", 2, null)).toBe(
+      "Sol Ring pulled from Kykar. 2 to buy.",
+    );
+  });
+
   it("has no bucket headings and no second recount phrasing", () => {
     // R2 made availability a per-row treatment; Addendum R3 kept one phrasing
     // for "{name} {from} → {to}". Both deletions are load-bearing.
