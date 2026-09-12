@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { FilterChassis, type FilterChip } from "./filter-chassis";
 
 const base = {
@@ -184,6 +184,86 @@ describe("FilterChassis", () => {
     );
     const swatches = container.querySelectorAll("[data-chassis-row='chips'] span[aria-hidden] span");
     expect(swatches).toHaveLength(2);
+  });
+
+  it("draws resultTrailing at row 3's trailing edge", () => {
+    // `/collection`'s view toggle and `By set` link live here: both change what
+    // surface you are on rather than what is in the list. Without an assertion
+    // a refactor could drop the slot and every structural test would still pass.
+    const { container } = render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[]}
+        resultTrailing={<button type="button">Grid view</button>}
+      />,
+    );
+    const row = container.querySelector("[data-chassis-row='result']")!;
+    const trailing = within(row as HTMLElement).getByRole("button", { name: "Grid view" });
+    expect(trailing).toBeTruthy();
+    // Pushed to the edge rather than sitting beside the sentence.
+    expect(trailing.parentElement?.className).toContain("ml-auto");
+  });
+
+  it("omits the trailing group when the route has nothing for it", () => {
+    const { container } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    const row = container.querySelector("[data-chassis-row='result']")!;
+    expect(row.querySelector(".ml-auto")).toBeNull();
+  });
+
+  it("forwards a custom announcement through to the live region", () => {
+    // ResultLine is tested in isolation, so a regression dropping either prop
+    // HERE would lose /collection's richer announcements with every other test
+    // still green.
+    const { container, rerender } = render(
+      <FilterChassis {...base} controls={null} chips={[]} announce="Red added." announceId={1} />,
+    );
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+    // Same sentence, new event: the id is what makes it speak again.
+    rerender(
+      <FilterChassis {...base} controls={null} chips={[]} announce="" announceId={1} />,
+    );
+    rerender(
+      <FilterChassis {...base} controls={null} chips={[]} announce="Red added." announceId={2} />,
+    );
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+  });
+
+  it("speaks a chip's collapsed values rather than its count", () => {
+    render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[
+          { key: "colors", label: "2 colours", spoken: "White, Black", onRemove: () => {} },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Remove filter: White, Black" })).toBeTruthy();
+    // The count stays on screen; only what is spoken changes.
+    const count = screen.getByText("2 colours");
+    expect(count).toBeTruthy();
+    // And the names are heard reading the ROW, not only on entering the button.
+    expect(count.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("White, Black").className).toContain("sr-only");
+  });
+
+  it("draws a chip's leading node before its label", () => {
+    render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[
+          {
+            key: "avail",
+            label: "2 states",
+            leading: <i data-testid="marker" />,
+            onRemove: () => {},
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId("marker")).toBeTruthy();
   });
 
   it("carries exactly one live region", () => {

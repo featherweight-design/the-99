@@ -21,6 +21,8 @@ import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 export type ChipSpec = {
   key: string;
   label: string;
+  /** The collapsed values named, for readers who cannot see the swatches. */
+  spoken?: string;
   /** WUBRG fills, drawn as leading swatches on the colour chip — one per lit
       hue, even where the label has already collapsed them to a count. The chip
       is still one chip; the swatches say which pips it stands for. */
@@ -51,6 +53,14 @@ export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
     chips.push({
       key: "colors",
       label,
+      // The swatches say which hues with colour alone and are `aria-hidden`, so
+      // past one pip the label is a bare count for anyone not looking at them.
+      // Undefined at a single value, where the label already IS the name.
+      spoken: single
+        ? undefined
+        : params.colors
+            .map((c) => filterCopy.colour.names[c as keyof typeof filterCopy.colour.names] ?? c)
+            .join(", "),
       dots: params.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
       removeAria: `Remove ${label} filter`,
       // Dropping the pips drops the modifier with them: `Exactly` with nothing

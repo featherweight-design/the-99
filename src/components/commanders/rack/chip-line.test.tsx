@@ -31,6 +31,20 @@ describe("chipsFor", () => {
     expect(colour[0].dots).toHaveLength(2);
   });
 
+  it("names the hues a collapsed colour chip stands for", () => {
+    // The swatches are aria-hidden, so past one pip "2 colours" is all a
+    // screen reader gets without this.
+    const chips = chipsFor({ ...defaultParams("owned"), colors: ["b", "g"] }, "owned");
+    expect(chips.find((c) => c.key === "colors")?.spoken).toBe("Black, Green");
+  });
+
+  it("leaves a single hue unspoken, since the label already names it", () => {
+    const chips = chipsFor({ ...defaultParams("owned"), colors: ["r"] }, "owned");
+    const colour = chips.find((c) => c.key === "colors")!;
+    expect(colour.label).toBe("Red");
+    expect(colour.spoken).toBeUndefined();
+  });
+
   it("hands back the parameters that unset just that chip", () => {
     const params = { ...defaultParams("owned"), q: "druid", colors: ["b"] };
     const search = chipsFor(params, "owned").find((c) => c.label.includes("druid"))!;

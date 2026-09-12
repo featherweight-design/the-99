@@ -31,10 +31,29 @@ export type FilterChip = {
   /**
    * CSS colours drawn as leading swatches, one per value the label collapsed.
    * A colour chip reads "3 colours" rather than splitting into three chips, so
-   * without these the reader is told how many are on and never which — the
-   * swatches are the only thing that says so.
+   * without these a sighted reader is told how many are on and never which.
+   *
+   * They are `aria-hidden`, which is why `spoken` exists: swatches say it with
+   * colour and nothing else, so a screen reader needs the names in words.
    */
   dots?: readonly string[];
+  /**
+   * Drawn before the label. `/collection`'s availability chips carry the same
+   * marker the list rows use, and a chip that named a state without its glyph
+   * would be the one place that pairing breaks.
+   */
+  leading?: React.ReactNode;
+  /**
+   * What a screen reader hears in place of `label`, when the label collapsed
+   * values into a count. "3 colours" tells a sighted reader to look at the
+   * swatches; it tells everyone else nothing, and the row this chassis replaced
+   * named each colour.
+   *
+   * Present, the chip hides its visible count from the accessibility tree and
+   * exposes this instead — so the names are heard reading the row, not only on
+   * entering the dismiss button.
+   */
+  spoken?: string;
   onRemove: () => void;
 };
 
@@ -92,6 +111,24 @@ export type FilterChassisProps = {
    * does not. The line still draws; only the region goes quiet.
    */
   silentResult?: boolean;
+  /**
+   * Row 3's trailing edge. `/collection` puts its view toggle here
+   * (decision 21) alongside the `By set` link: both change WHAT SURFACE YOU ARE
+   * ON rather than what is in the list, which is the distinction the control
+   * row is for, so neither belongs among the filters.
+   */
+  resultTrailing?: React.ReactNode;
+  /** Announced in place of the result line — see `ResultLine`. */
+  announce?: string;
+  /** Identity of that announcement, so a repeated sentence still speaks. */
+  announceId?: string | number;
+  /**
+   * Something that moves when the list does — see `ResultLine`'s `revision`.
+   * Without it a message held while the compact sheet is silent can be
+   * announced against a list it no longer describes, because a different filter
+   * can leave the same count.
+   */
+  revision?: string | number;
 };
 
 /**
@@ -117,7 +154,8 @@ const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
-  controls, sort, chips, onClearAll, resultLine, form, after, silentResult,
+  controls, sort, chips, onClearAll, resultLine, form, after,
+  silentResult, resultTrailing, announce, announceId, revision,
 }: FilterChassisProps) {
   return (
     <div
@@ -184,6 +222,7 @@ export function FilterChassis({
                 "px-[8px] py-[3px] font-mono text-[11px] leading-[14px] text-[color:var(--fg-body)]",
               ].join(" ")}
             >
+              {chip.leading}
               {chip.dots && chip.dots.length > 0 && (
                 <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
                   {chip.dots.map((fill, i) => (
@@ -195,11 +234,23 @@ export function FilterChassis({
                   ))}
                 </span>
               )}
-              {chip.label}
+              {chip.spoken ? (
+                // The same split `buy-tag.tsx` uses: the count is for the eye,
+                // the names are for the ear. Without this a screen reader
+                // reading the row hears "2 colours" and has to enter the
+                // dismiss button to learn which two — which the row this
+                // replaces never made them do.
+                <>
+                  <span aria-hidden="true">{chip.label}</span>
+                  <span className="sr-only">{chip.spoken}</span>
+                </>
+              ) : (
+                chip.label
+              )}
               <button
                 type="button"
                 onClick={chip.onRemove}
-                aria-label={chassisCopy.chips.removeAria(chip.label)}
+                aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
                 className={[
                   "relative cursor-pointer border-0 bg-transparent p-0",
                   "text-[color:var(--fg-faint)]",
@@ -238,8 +289,11 @@ export function FilterChassis({
       </div>
 
       {/* Row 3 — the chassis's only live region. */}
-      <div data-chassis-row="result">
-        <ResultLine line={resultLine} silent={silentResult} />
+      <div className="flex items-center gap-[10px]" data-chassis-row="result">
+        <ResultLine line={resultLine} announce={announce} announceId={announceId} revision={revision} silent={silentResult} />
+        {resultTrailing && (
+          <div className="ml-auto flex items-center gap-[8px]">{resultTrailing}</div>
+        )}
       </div>
 
       {after}

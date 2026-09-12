@@ -81,7 +81,8 @@ the PR 3 section below.
 | 1a | Pip assets, `ColourPips`, `FilterChassis`, `ResultLine`'s move | nothing |
 | 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a ✅ |
 | 2 | `/commanders` and `/discover` | 1b ✅ — shipped in the same PR |
-| 3 | `/collection` | 2 — **not** Task 9, which is built; see below |
+| 3a | `/collection`'s chip derivation, copy, and the chassis slots it needs | 2 ✅ |
+| 3b | `/collection` mounts the chassis; `ChipRow` retires | 3a |
 
 **1a and 1b were one PR in the first draft of this plan.** They are split because the primitives
 are self-contained and fully tested while the `/decks` mount is a real refactor of `decks-view.tsx`
@@ -202,9 +203,10 @@ document, which its author corrected. Nothing is waiting.
 ```
 // src/components/collection/color-filter-row.tsx
 export function ColorFilterRow({
-  selected,   // string[]
-  onToggle,   // (color: string) => void
-  className = "hidden md:flex",   // visibility only
+  selected,      // string[]
+  onToggle,      // (color: string) => void
+  className = "hidden md:flex",  // visibility only; every other property is fixed
+  containerRef,  // somewhere for focus to land — the set grid hands focus here
 })
 ```
 
@@ -224,6 +226,28 @@ starts. Neither is negotiable from this side.
    76/90px cost track, and the phone grid template went from `38px 1fr auto` to
    `38px 1fr 76px auto`. `BrowseCard` gained `cmc`.
 
+### The `By set` pill moves with the view toggle, and keeps its own treatment
+
+`/collection`'s toolbar gained a `By set →` pill in #519 — an `--accent` hairline with a 7px filled
+diamond, a plain `<Link href="/collection/sets">` with no count and no state, sitting between
+`Availability ▾` and the view well. It renders only when `hasCollection` is true.
+
+**It goes to `resultTrailing`, beside the view toggle.** Its own rationale is the reason: the
+leading cluster changes *what is in the list* and the trailing cluster changes *what surface you are
+on*, which is the same distinction decision 21 moves the view toggle on. Leaving it in the control
+row would also collide — once the toggle leaves, the pill becomes the row's last item, and decision
+11 has already given that position to sort, past a hairline, on every route at both widths. A
+surface link and the sort competing for one slot puts the hairline somewhere that says the wrong
+thing about both.
+
+**Its drawn treatment does not change in this round.** It is ratified by the set-collections
+handoff, and the chassis defines four control types — field, trigger+panel, segmented, pips
+(decision 19). A link is a fifth, and a migration PR is the wrong place to invent one.
+
+**Ratification for Design, not blocking:** the result line's trailing edge now carries two non-filter
+controls, and whether they share a treatment — and what a fifth "link" control type looks like — is
+a real question for the chassis handoff's next iteration.
+
 ### The accessible-name ruling this PR carries
 
 `ColorFilterRow` names its pips `Filter by R`. `ColourPips` names them `Red`. When `/collection`
@@ -240,9 +264,21 @@ hue code nor a `, on` suffix earns its place in the name.
 - `filter-bar.tsx`'s five `FilterPanel` mounts move into chassis slots, at `desktopRowMinPx={44}`.
 - The `COLOR` caption goes (decision 17) — it existed to explain five abstract squares.
 - The view toggle moves to the result line's trailing edge (decision 21).
-- `ColorFilterRow` is replaced by `ColourPips`. **The set pages mount it too**, so the new pip
-  reaches them: readiness finding 1 requires a fresh six-theme contrast check on `--surface-sunken`,
-  which no audit has measured, rather than assuming the four routes' figures carry over.
+- `ColorFilterRow` is replaced by `ColourPips` **on `/collection` only**. The set pages mount
+  `ColorFilterRow` directly (`src/components/sets/set-grid-view.tsx:21,396`), so they do **not**
+  inherit the new pip by replacing that one call site — they keep the swatch row until a separate
+  slice moves them.
+
+  **This departs from the brief's §5**, which ruled that there is one colour control in the app and
+  the set pages mount it. That ruling stands as the destination; this round simply does not reach
+  it, because the set grid mounts the row directly rather than through `filter-bar.tsx`. Recorded
+  here rather than silently diverging.
+
+  It has a consequence worth stating: for as long as it holds,
+  the two surfaces draw colour differently, which is the inconsistency this whole round exists to
+  remove. The six-theme contrast figure readiness finding 1 asked for was measured anyway —
+  **7.61:1** on `--surface-rail`, the set pages' ground — so whoever migrates them has the number
+  and does not need a second audit.
 - `bodyOneFix` needs the per-filter count query `/collection` does not have (readiness finding 4).
 - **The composition problem lands here**: `FilterPanel`'s compact branch is its own `aria-modal`
   sheet, and `Set ▾` is the searchable dimension that needs it. Solve it as a nested list rather
@@ -307,3 +343,41 @@ twice.
 Decision 16 holds: the match modifier is untouched, still inside
 `ColourControl`, which is why that component stays rather than being replaced
 by `ColourPips` on these two lanes. Availability remains owned-lane only.
+
+
+---
+
+## PR 3 split: 3a lands the parts, 3b does the migration
+
+`/collection` turned out to be the least like the other three. It already has a chip row and a
+result count — in `browser.tsx`'s `ChipRow`, not in the bar — so this is a **replacement** rather
+than the addition it was on `/decks`, and three things have to be reconciled rather than mounted.
+
+**3a (this PR)** lands what the migration consumes, all of it tested and none of it mounted:
+
+- `src/lib/collection/chips.ts` — the derivation, in the shape `chipLabels` and `chipsFor` already
+  have on the other routes. One chip per control; a bare code when a set's option is filtered out.
+- `collectionChassisCopy` in `src/lib/copy/collection.ts` — the result line the route never had.
+- `FilterChassis` gains `resultTrailing` (decision 21's home for the view toggle and the `By set`
+  link, both of which change *what surface you are on*) and `announce`.
+- **The six-theme contrast check readiness finding 1 asked for.** The pip floors at **7.61:1**
+  (R, kaldheim, on `--surface-rail`) across `--surface-sunken`, `--bg` and `--surface-rail` — so the
+  set pages, which mount the same control, inherit a verified figure rather than an assumed one.
+
+**3b must reconcile three conflicts, and none is mechanical:**
+
+1. **`ChipRow`'s `onClearAll` resets the sort** (`browser.tsx`, `updateSort("name", …)`). The
+   chassis's clear names itself "Clear all filters. The sort is unchanged." One of them has to give,
+   and it is not the chassis — but that is a visible behaviour change on this route and belongs in
+   the PR description rather than a diff.
+2. **The bar owns a live region and the chassis owns row 3.** Two regions is the chorus this
+   codebase warns about in both files. `announce` exists so the bar's richer messages — "EOE added.
+   3 sets, 120 of 400 cards shown." — survive through the single region, but the bar's own
+   `<span role="status">` has to go in the same change.
+3. **`ChipRow` counts three things** — `resultCount`, `uniqueCount`, `totalQuantity` — where the
+   chassis's result line states one. Decide which figure the line carries before wiring it, because
+   "1,240 cards" meaning copies and meaning distinct names are different sentences.
+
+**Also in 3b:** `ColourPips` replaces `ColorFilterRow` *and* the mobile Color panel, the `COLOR`
+caption goes with the row that carried it (decision 17), and the five `FilterPanel` mounts take
+`desktopRowMinPx={44}`.

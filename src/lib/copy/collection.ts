@@ -19,6 +19,25 @@ import { availabilityCopy } from "./availability";
  */
 const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")} cards`);
 
+/**
+ * `/collection`'s chassis rows. The route states both today — `browser.tsx`
+ * renders `ChipRow` below the bar with the selected values and the count — and
+ * the chassis draws them itself, so this is what the replacement says rather
+ * than the route's first version of it.
+ */
+export const collectionChassisCopy = {
+  result: (shown: number, total: number) =>
+    shown === total ? cards(total) : `${shown.toLocaleString("en-US")} of ${cards(total)} match`,
+  chip: {
+    /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
+    search: (q: string) => `"${q}"`,
+    colours: (n: number) => (n === 1 ? "1 colour" : `${n} colours`),
+    types: (n: number, first: string) => (n === 1 ? first : `${n} types`),
+    sets: (n: number, first: string) => (n === 1 ? first : `${n} sets`),
+    availability: (n: number, first: string) => (n === 1 ? first : `${n} states`),
+  },
+} as const;
+
 export const collectionFilterCopy = {
   set: {
     // Trigger
