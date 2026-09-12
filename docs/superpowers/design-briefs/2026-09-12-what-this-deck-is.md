@@ -7,9 +7,11 @@ the source of truth the Claude Design handoff prompt points at.
 that commit, not recalled.
 
 Four figures describe a deck: how it has played, what colours it actually is, what it costs to cast,
-and what finishing it costs to buy. The computation for all four is merged and unit-tested
-(`src/lib/decks/stats.ts`, PR #524). Nothing draws them. This brief is about where they appear and
-what they say — and, more than anything, about the three of them the app **already states somewhere
+and what finishing it costs to buy. The computation for all four is merged (PR #524): the pure
+folds are unit-tested (`src/lib/decks/stats.ts`) and the loaders that assemble them are covered by
+`pnpm probe:stats` against a real Postgres, which is the split `AGENTS.md` draws for every
+database-backed reader in this repository. Nothing draws them. This brief is about where they
+appear and what they say — and, more than anything, about the three of them the app **already states somewhere
 else**, in a shape a new block must not contradict.
 
 ---
@@ -32,7 +34,14 @@ specifically — see decision 2.
 all and `cost` is `null` (`stats-query.ts:47`, assigned at `:179`) — that is the finished deck.
 `{ copies: 3, cents: 0, pricedCopies: 0 }` is a different state entirely: three copies to buy and no
 price for any of them, because the feed omits an out-of-stock card rather than pricing it at zero.
-Both must draw differently from each other, and neither may draw as `$0.00`.
+Both must draw differently from each other, and neither should draw as `$0.00`.
+
+**One shipped surface does draw exactly that**, and it is an existing discrepancy rather than a
+precedent to follow: Home's Commitments card calls `formatCents(shopping.total.cents)`
+unconditionally (`commitments-card.tsx:90`), so a player with copies to buy and no price for any of
+them is shown `$0.00`. The deck tile's own copy already avoids it, branching to
+`detailToBuyNoPrice` when `cents` is zero (`deck-card.tsx:81-82`). Design's answer here settles
+which of the two the app follows.
 
 **Both commanders are in the colour spread and the curve.** They are not `deck_cards` rows, so the
 loader reads them separately and folds them in at one copy each (`stats-query.ts:143-159`). A deck's
@@ -42,10 +51,12 @@ not a hard 99, or the figures on screen will not add up to the ones computed.
 
 Two further computed properties Design should know before drawing:
 
-- **The colour figures sum to more than the deck.** A multi-colour card counts once per colour, not
-  fractionally, so a Golgari deck can report 60 black and 55 green over 100 copies. `copies` is carried
-  beside the five for exactly this reason, and any share drawn from these figures divides by
-  `copies`, never by their sum. The rule is documented at `stats.ts:97-119`.
+- **The colour figures can sum to more than the deck, and usually do.** A multi-colour card counts
+  once per colour, not fractionally, so a Golgari deck can report 60 black and 55 green over 100
+  copies. The overage is not guaranteed — a mono-colour list has every card in exactly one bucket
+  and the six figures then add to `copies` exactly — which is precisely why a surface cannot infer
+  its denominator from the figures in front of it. `copies` is carried beside them for that reason,
+  and every share divides by it, never by their sum. The rule is documented at `stats.ts:97-119`.
 - **The curve has eight buckets and bucket 7 is a ceiling** (`stats.ts:153`), lands excluded and
   reported separately as `lands` (`stats.ts:163-188`). A land creature counts as a land
   (`cards/facet.ts:45` `isLandFace`).
@@ -67,8 +78,8 @@ Two further computed properties Design should know before drawing:
 ## §3 What Design is being asked to call — open
 
 - **§3.1 The block's shape at both breakpoints.** Four figures of four different shapes — a
-  record, a five-way distribution, an eight-bucket series and a money figure — have to sit together
-  as one block on a phone and on a desktop. This is the substance of the handoff.
+  record, a six-bucket distribution (WUBRG **and colourless**), an eight-bucket series and a money
+  figure — have to sit together as one block on a phone and on a desktop. This is the substance of the handoff.
 - **§3.2 What a deck with no games shows.** The record is never absent — `recordFromCounts([])`
   returns all zeroes (`stats.ts:51`), so the loader always hands the block a record. The question is
   what the block does with it: `0–0` is a figure nobody played, and an omitted row leaves a hole in
@@ -95,15 +106,19 @@ the two disagree.
 
 ## §4 Constraint — three of the four figures are already on screen somewhere
 
-This is the part a new stats block can most easily get wrong. Each of these is a shipped, ratified
-statement of the same underlying number, and a block that restates it differently makes the app
-disagree with itself.
+This is the part a new stats block can most easily get wrong. The record and the mana figure are
+each a shipped statement of the *same* number this block would restate, both governed by ratified
+property tables, so a block that words either one differently makes the app disagree with itself.
+Cost is the harder case and a different one: the surfaces printing it today do not all print one
+number, which is the finding below rather than an invariant to preserve.
 
 **Play record — the Games tab already states it, and its property table forbids one phrasing.**
 `games-panel.tsx:33-43` builds the record line, `game-headline.ts:38` reads
 `summary.record`, and `docs/superpowers/design-tables/game-log.md:121` rules that the tab's own
-count is *"games logged, never the record"*. The record line is drawn in `--accent`
-(`game-log.md:33`). A stats block stating `3–1–1` beside a Games tab labelled with a count is fine;
+count is *"games logged, never the record"*. Its ink is not uniform and Design should not assume it
+is: the standalone N=1 record renders `text-fg-body` (`games-panel.tsx:205-207`), while at N≥2 the
+record is a clause inside the sub-line and takes `--accent` (`games-panel.tsx:59`, and `--accent` is
+the table's "record figure" colour at `game-log.md:33`). A stats block stating `3–1–1` beside a Games tab labelled with a count is fine;
 a stats block that relabels either one is an amendment to that table.
 
 **Mana curve — the deck page already states a mana *value*, as a single number that moves.**
