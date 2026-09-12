@@ -131,7 +131,7 @@ versions **the tab does not render at all** (state 37b, §Decisions 7).
 | color | `#C9A24B` (`--accent`) | `#C9A24B` (`--accent`) |
 | value drawn | `3` | `3` |
 | rendered at 0 versions | **—** (absent; and the whole tab is absent — state 37b) | **—** (same) |
-| copy key | none — the bare number. `history.heading(n)` (`{n} versions`) is **not** drawn anywhere (Discrepancy 31) | same |
+| copy key | none — the bare number. `history.heading(n)` (`{n} versions`) is not drawn **on the tab**; it carries the route's own `h1` instead, per the resolution recorded under Discrepancy 28 | same |
 
 ### Versions tab — inactive siblings (for contrast; shipped chrome)
 
@@ -857,7 +857,10 @@ not positions in one flat 1–45 sequence.
 28. **The rail's heading string is never drawn.** `history.heading(n)` (`{n} versions`) and
     §Copy per state's `History heading` both exist; the canvas draws the tab's count and no
     heading anywhere on the route. Either the route has an unnamed heading slot or the string
-    is dead.
+    is dead. **Resolved as the first arm:** the route draws the sibling `/changes` route's
+    header — the deck-name link back, and an `h1` under it — and `history.heading(n)` is the
+    string that `h1` carries. A route with no `h1` is the alternative, and that is an
+    accessibility regression rather than a design absence.
 29. **`Version line` has two forms.** §Copy per state: `v{n} · committed {date}`. The opened
     panel's Cinzel title: `v2 · 14 Mar 2026`, with `committed` absent. The rail's meta line is
     the only place `committed` is drawn, and only on desktop.

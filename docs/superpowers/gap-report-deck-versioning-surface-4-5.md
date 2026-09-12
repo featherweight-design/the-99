@@ -88,6 +88,20 @@ header rather than the builder shell's tab strip, exactly as the sibling `/chang
 The tab is the way *in* from the deck page; once on the route, the way back is the deck-name link.
 Not a gap in this PR's surface.
 
+**Discrepancy 28 — `history.heading(n)` is drawn as the route's `h1`.** Errata, not a gap. The
+discrepancy offered two arms: an unnamed heading slot on the route, or a dead string. The first
+arm is taken, because the route is a page and a page with no `h1` is an accessibility regression
+that no design absence asks for. The header is the sibling `/changes` route's, structurally
+verbatim: the deck-name link back, and the heading under it. The property table's count row and
+the discrepancy entry both stand corrected.
+
+**Discrepancy 30 — the Versions cell keeps its count at phone width.** The inactive-sibling row's
+`— (not drawn on phone)` governs the three shipped tabs, not this cell. Discrepancy 30 states the
+canvas's phone frame "draws the three labels bare and keeps only the `Versions 3` count", so the
+count at 390px is what the design draws, and hiding it below `md` would be the deviation. The
+cell's number is `aria-hidden` and the figure also rides `accessibleName`, so nothing is lost to a
+screen reader either way.
+
 **Gaps 1, 2, 3, 5, 6, 15, 18 — shipped chrome outside this PR.** These sit in `builder-tabs.tsx`,
 `game-history-row.tsx`'s existing cells and `games-panel.tsx`, all of which shipped in earlier
 PRs and are unmodified here apart from the stamp slot. Flagging them is correct behaviour from a
