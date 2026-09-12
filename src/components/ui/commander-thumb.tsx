@@ -36,11 +36,13 @@ const BOX: Record<ThumbSize, { width: number; height: number }> = {
   summary: { width: 64, height: 89 },
 };
 
-/** One alpha, replacing three: `.35` on the partner slot, `.35` on the
-    pre-filled thumb and `.3` on the two card faces. `.4` is `IdentityPips`' own
-    value and is already reused by the progress bar's track, so the convergence
-    is on a number the app already draws rather than on a fourth one. */
-export const THUMB_RING = "inset 0 0 0 1px rgba(0,0,0,0.4)";
+/** The ring every commander's card art carries, at whatever size — the two thumb
+    boxes and both full card faces, which is why it is not named for the thumb.
+    One alpha replacing three: `.35` on the partner slot, `.35` on the pre-filled
+    thumb and `.3` on the two faces. `.4` is `IdentityPips`' own value and is
+    already reused by the progress bar's track, so the convergence is on a number
+    the app draws rather than on a fourth one. */
+export const CARD_ART_RING = "inset 0 0 0 1px rgba(0,0,0,0.4)";
 
 /** The ground under the art, which is the partner slot's own reasoning adopted:
     art is fetched, and a plate with nothing behind it flashes the card beneath
@@ -86,7 +88,7 @@ export function CommanderThumb({
           : colorIdentity === null
             ? ART_STRIPES
             : commanderGradient(colorIdentity),
-        boxShadow: THUMB_RING,
+        boxShadow: CARD_ART_RING,
       }}
     />
   );

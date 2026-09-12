@@ -13,7 +13,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
-import { CommanderThumb, THUMB_RING } from "../ui/commander-thumb";
+import { CommanderThumb, CARD_ART_RING } from "../ui/commander-thumb";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -163,7 +163,7 @@ export function CreatePreFilled({
               // The two card faces converge: `0 20px 50px` is the commander
               // page's, and the 24px offset here was drift rather than a second
               // decision. The ring takes the app's one thumb alpha with it.
-              boxShadow: `0 20px 50px rgba(0,0,0,0.5), ${THUMB_RING}`,
+              boxShadow: `0 20px 50px rgba(0,0,0,0.5), ${CARD_ART_RING}`,
             }}
           />
           {/* No pip inset on the art: the locked "Color identity" row to the
