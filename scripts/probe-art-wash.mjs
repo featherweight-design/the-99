@@ -179,16 +179,12 @@ const READ_STATED_BANDS = `() => {
       return {
         declared: root.getAttribute('data-art-wash-band') + 'px',
         laid: Math.round(root.getBoundingClientRect().height),
-        // A left-portrait band whose ink starts past the flat stop draws no ramp
-        // at all and reports one scrim rather than two: a band with nothing to
-        // check rather than a band that failed.
-        //
-        // Testing for 180deg would be worse than not testing: the browser omits
-        // a gradient's default angle from the computed value, so every stated
-        // cover band — which draws exactly one scrim, its ramp — would report
-        // itself flat and skip the hold checks silently. The horizontal scrim is
-        // the one that states an angle, so the ramp is anything that does not.
-        ramped: scrims.length > 1 || !/^linear-gradient\\(\\s*90deg/.test(image),
+        // Read off the primitive's own marker, never inferred from the scrims.
+        // A band that draws no ramp BY INTENT and a band that lost its ramp are
+        // both one 90deg scrim, so inferring would have classified the second as
+        // the first and skipped every hold check on exactly the regression these
+        // checks exist to catch.
+        ramped: !root.hasAttribute('data-art-wash-flat'),
         stops,
       };
     });

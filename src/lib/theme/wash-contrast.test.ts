@@ -272,13 +272,20 @@ describe("art wash contrast floor", () => {
     // The one glyph on art with no plate, by the boundary rule: the ramp protects
     // the label block, plates protect what is above it, and the rename pencil sits
     // INSIDE the block on ground held at 73%. 3:1 rather than 4.5 because it is an
-    // icon-only control rather than a string — measured, `--fg-muted` lands at
-    // 3.42–3.75 across the six themes, so this is a floor with no headroom: any
-    // lift of `COVER_ART_OPACITY` or drop of the 73% hold breaks this glyph first.
-    it(`${theme}: the unplated rename glyph clears 3:1 inside the block`, () => {
-      const ground = washGround(token(theme, "bg"), 0.73);
-      expect(contrast(token(theme, "fg-muted"), ground)).toBeGreaterThanOrEqual(3);
-    });
+    // icon-only control rather than a string.
+    //
+    // BOTH tokens, because the glyph draws `--fg` until the deck spines take
+    // their bands and `--fg-muted` after — and the floor has to hold for either,
+    // or the assertion is measuring a colour the control does not use. Measured,
+    // `--fg-muted` lands at 3.42–3.75 across the six themes, so it is a floor
+    // with no headroom: any lift of `COVER_ART_OPACITY` or drop of the 73% hold
+    // breaks this glyph first.
+    for (const ink of ["fg", "fg-muted"] as const) {
+      it(`${theme}: the unplated rename glyph clears 3:1 inside the block at --${ink}`, () => {
+        const ground = washGround(token(theme, "bg"), 0.73);
+        expect(contrast(token(theme, ink), ground)).toBeGreaterThanOrEqual(3);
+      });
+    }
 
     for (const ink of PORTRAIT_INK) {
       it(`${theme}: ${ink.surface} clears 4.5:1 over the brightest possible portrait`, () => {
