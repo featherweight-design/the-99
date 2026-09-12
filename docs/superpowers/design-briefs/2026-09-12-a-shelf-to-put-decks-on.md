@@ -146,7 +146,8 @@ survive only as long as a filter chip does. And `Clear all filters` would drop t
 reader to all decks — nothing is lost but the shelf they were standing in, which may be the right behaviour or may
 be the tell that this branch is wrong.
 
-**(b) A folder is a nav level above the filters.** The chassis stays at five dimensions and filters
+**(b) A folder is a nav level above the filters.** The chassis keeps `/decks`'s four dimensions and
+its separate sort slot, unchanged, and filters
 *within* whatever the level selects. Consequences: folders need their own frame, their own URL
 question (§3.1) and their own empty states, and the two must be drawn to sit above a chassis whose
 placement relative to content is itself part of the chassis handoff. It also makes the two concepts

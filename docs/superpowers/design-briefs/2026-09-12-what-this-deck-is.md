@@ -69,7 +69,7 @@ Two further computed properties Design should know before drawing:
   and every share divides by it, never by their sum. The rule is documented at `stats.ts:97-119`.
 - **The curve has eight buckets and bucket 7 is a ceiling** (`stats.ts:153`), lands excluded and
   reported separately as `lands` (`stats.ts:163-188`). A land creature counts as a land
-  (`cards/facet.ts:45` `isLandFace`).
+  (`src/lib/cards/facet.ts:45` `isLandFace`).
 
 ---
 
@@ -134,7 +134,7 @@ is, and neither is its placement. `deriveHeadline` (`game-headline.ts:35-103`) h
 N=1 the record is a standalone line in `text-fg-body` (`games-panel.tsx:205-207`); at N≥2 with a
 pattern it is a clause inside the sub-line taking `--accent`, the table's "record figure" colour
 (`games-panel.tsx:59`, `game-log.md:33`); below `PATTERN_MIN` with a clear lean the record is
-**dropped entirely**; and a log with no marks at all puts it in the **heading** instead. Design
+**dropped entirely**; and at N≥2 with no marks at all it goes in the **heading** instead. Design
 should not assume one place or one ink for it. A stats block stating `3–1–1` beside a Games tab labelled with a count is fine;
 a stats block that relabels either one is an amendment to that table.
 
@@ -155,7 +155,7 @@ elsewhere on the same page is either a second reading of one word or a deliberat
 must say which, and if the two coexist, what each is for.
 
 **Engineering note, and it is more than language: the two figures are not measuring the same list.**
-They now agree on what a land is — one predicate, `isLandFace` (`cards/facet.ts:45`) — but
+They now agree on what a land is — one predicate, `isLandFace` (`src/lib/cards/facet.ts:45`) — but
 `versionManaValue` reads `deck_version_cards` alone (`versions.ts:246-256`), so it sees the
 **committed** list and **not** either commander, while `manaCurve.average` reads the live draft with
 both commanders folded in (`stats-query.ts:143-159`). `averageManaValue` also rounds to one decimal
