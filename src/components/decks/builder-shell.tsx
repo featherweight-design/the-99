@@ -53,7 +53,6 @@ import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { LastSlotsStrip } from "./last-slots-strip";
 import { PendingBanner } from "./pending-banner";
 import { PendingAddProvider } from "./pending-add";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
@@ -240,7 +239,6 @@ export function BuilderShell({
             moves: new Map(
               draft.addChanges.map((c) => [c.oracleId, { from: c.from, to: c.to }]),
             ),
-            label: deckVersioningCopy.pending.addMarkA11y,
           }
         : null,
     [draft],

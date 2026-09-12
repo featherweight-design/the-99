@@ -75,6 +75,11 @@ export const deckVersioningCopy = {
     // row's own padding. This string is the row's ACCESSIBLE NAME only — it is never
     // rendered visually.
     addMarkA11y: "pending add",
+    // A recounted row prints `Sol Ring 1 → 2` beside the name, but the name's
+    // accessible label is the card's whole printed name and carries no count, so
+    // the pair would never be spoken. It rides the same description as the word.
+    addMarkRecountedA11y: (from: number, to: number) =>
+      `pending add, was ${from}, now ${to}`,
     // Said once above the list instead of once per row.
     addListCaption: (n: number) =>
       `the brass rule marks the ${plural(n, "row")} this draft added`,
@@ -91,6 +96,9 @@ export const deckVersioningCopy = {
     // The mix cell's bottom-left slot takes the previous figure instead of the
     // recommendation while a draft exists — but ONLY when the figure actually moved.
     mixCellWas: (n: number) => `was ${n}`,
+    // The caption above is not part of the cell's accessible name — a figure's and
+    // a button's name come from `aria-label` — so the move is appended to it.
+    mixCellWasA11y: (base: string, n: number) => `${base}, was ${n}`,
 
     // Committed and clean: the whole of versioning's permanent footprint.
     versionLine: (version: number, date: string) => `v${version} · committed ${date}`,

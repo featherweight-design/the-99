@@ -305,6 +305,17 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
     ).toBeInTheDocument();
   });
 
+  // A caption inside a figure is not part of its accessible name, so the move
+  // would otherwise be visual only.
+  it("carries the version's figure in the cell's accessible name", () => {
+    render(<RoleCounterStrip cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
+    expect(
+      screen.getByRole("figure", {
+        name: new RegExp(`${deckVersioningCopy.pending.mixCellWas(3)}$`),
+      }),
+    ).toBeInTheDocument();
+  });
+
   // "was 0" beside a 0 is noise, so an unmoved role says nothing — which is why
   // the strip compares rather than passing `wasCounts` straight through. Every
   // other case here holds `wasCounts` equal to the counts, so without this pair

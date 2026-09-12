@@ -178,11 +178,17 @@ export function RoleCounterCell({
     </>
   );
 
+  // The `was N` caption above is the only place the cell says a draft moved this
+  // figure, and a caption inside a figure or a button is not part of its
+  // accessible name. Both names take it so the move is spoken, not just seen.
+  const named = (base: string) =>
+    was !== undefined ? deckVersioningCopy.pending.mixCellWasA11y(base, was) : base;
+
   if (!onSeeShelf) {
     return (
       <div
         role="figure"
-        aria-label={addPanelCopy.strip.cellStaticAria(label, have, target)}
+        aria-label={named(addPanelCopy.strip.cellStaticAria(label, have, target))}
         className={shell}
       >
         {face}
@@ -194,7 +200,7 @@ export function RoleCounterCell({
     <button
       type="button"
       onClick={onSeeShelf}
-      aria-label={addPanelCopy.strip.cellLinkAria(label, have, target)}
+      aria-label={named(addPanelCopy.strip.cellLinkAria(label, have, target))}
       className={shell + interactive}
     >
       {face}

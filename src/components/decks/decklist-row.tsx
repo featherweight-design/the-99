@@ -496,10 +496,17 @@ export function DecklistRow({
             screen reader cannot see. The word rides the name's accessible
             description instead — never rendered visually, because the
             card-rows floor makes name width the binding constraint and a chip
-            would spend ~86px of it on every added row. */}
+            would spend ~86px of it on every added row. A recounted row's pair
+            rides this description too, because the name's accessible label is
+            the printed name and the visible `1 → 2` is not part of it. */}
         {isPendingAdd && (
           <span id={pendingDescriptionId} className="sr-only">
-            {deckVersioningCopy.pending.addMarkA11y}
+            {recounted
+              ? deckVersioningCopy.pending.addMarkRecountedA11y(
+                  recounted.from,
+                  recounted.to,
+                )
+              : deckVersioningCopy.pending.addMarkA11y}
           </span>
         )}
 

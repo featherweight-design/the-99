@@ -720,7 +720,7 @@ describe("DecklistRow pending add (#389)", () => {
   const withMoves = (moves: Array<[string, { from: number; to: number }]>, ui: React.ReactNode) =>
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <PendingAddProvider value={{ moves: new Map(moves), label: "added" }}>{ui}</PendingAddProvider>
+        <PendingAddProvider value={{ moves: new Map(moves) }}>{ui}</PendingAddProvider>
       </CardDetailProvider>,
     );
 
@@ -753,6 +753,27 @@ describe("DecklistRow pending add (#389)", () => {
     expect(
       screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
     ).toBeInTheDocument();
+  });
+
+  // The visible pair rides the name's child text, which an explicit `aria-label`
+  // on the trigger excludes — so without this the move is seen and never heard.
+  it("speaks the pair through the name's description", () => {
+    withMoves(
+      [["sol-ring", { from: 1, to: 3 }]],
+      <DecklistRow deckId="d1" card={{ ...card, quantity: 3 } as DeckDetailCard} />,
+    );
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(
+      new RegExp(deckVersioningCopy.pending.addMarkRecountedA11y(1, 3)),
+    );
+  });
+
+  it("says only the word on a card the version never held", () => {
+    withMoves([["sol-ring", { from: 0, to: 1 }]], <DecklistRow deckId="d1" card={card} />);
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(new RegExp(deckVersioningCopy.pending.addMarkA11y));
   });
 
   it("says nothing about a draft on a row the draft did not touch", () => {

@@ -15,7 +15,6 @@ export type PendingAdd = {
    *  than a set of ids, because a row whose count merely moved has to print the
    *  pair, and membership alone cannot express one. */
   moves: Map<string, PendingAddMove>;
-  label: string;
 };
 
 /**
