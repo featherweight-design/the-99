@@ -12,16 +12,18 @@
 
 import type { AvailabilityState } from "../decks/availability";
 import { collectionChassisCopy } from "../copy/collection";
+import { COLOR_NAMES } from "./color-filter";
 import type { BrowseFilters } from "./browse";
 import { WUBRG_COLOR } from "./browse";
 
 const copy = collectionChassisCopy.chip;
 
-/** WUBRG letter to the word a reader hears. */
-const COLOUR_NAMES: Record<string, string> = {
-  W: "White", U: "Blue", B: "Black", R: "Red", G: "Green",
-};
-const colourName = (code: string) => COLOUR_NAMES[code.toUpperCase()] ?? code;
+/**
+ * The shared map, not a second copy. `color-filter.ts` already owns it for the
+ * filter options, and two of them would let a chip announce a colour by a name
+ * the option beside it no longer uses.
+ */
+const colourName = (code: string) => COLOR_NAMES[code.toUpperCase()] ?? code;
 
 export type CollectionChip = {
   key: string;

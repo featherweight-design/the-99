@@ -202,6 +202,19 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("5 of 41 decks");
   });
 
+  it("drops a queued message once the list has moved past it", () => {
+    // "EOE added, 12 shown" held through two more filters would announce a
+    // count that is no longer true. The current count speaks instead.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41" announce="EOE added. 12 shown." announceId={1} silent />);
+    act(() => vi.advanceTimersByTime(50));
+    rerender(<ResultLine line="4 of 41" announce="EOE added. 12 shown." announceId={1} silent />);
+    act(() => vi.advanceTimersByTime(50));
+    rerender(<ResultLine line="4 of 41" announce="EOE added. 12 shown." announceId={1} />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("4 of 41");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

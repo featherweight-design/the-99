@@ -70,6 +70,8 @@ export function ResultLine({
   // sheet's own debounce never fired for. Keying the handover on the silence
   // would suppress a count nobody had said.
   const silentSince = useRef<number | null>(null);
+  // The line a custom message was queued against while silent, or null.
+  const queuedFor = useRef<string | null>(null);
   // The `announce` last seen, so a message is spoken once and never re-used.
   const lastAnnounce = useRef<string | number | undefined>(undefined);
   useEffect(() => {
@@ -108,12 +110,24 @@ export function ResultLine({
       // Re-stamped on every change, so the handover measures the age of the
       // pending value rather than the age of the silence.
       silentSince.current = performance.now();
-      // `lastAnnounce` is deliberately NOT stamped here. Marking a message as
-      // seen while returning without scheduling it is how the sibling ref lost
-      // an announcement one round ago: silence ends, `fresh` reads false, and
-      // the richer sentence is replaced by the bare count.
+      // A custom message is held for delivery when silence ends — `lastAnnounce`
+      // is deliberately not stamped, or the sentence would read as already said
+      // and be replaced by the bare count.
+      //
+      // But it is only held while it still describes the list. If the line moves
+      // again before the sheet closes, that sentence belongs to a state the
+      // reader has left — "EOE added, 12 shown" after two more filters would
+      // announce a count that is no longer true — so the queue is dropped and
+      // the current count speaks instead.
+      if (queuedFor.current !== null && queuedFor.current !== line) {
+        lastAnnounce.current = identity;
+        queuedFor.current = null;
+      } else if (fresh) {
+        queuedFor.current = line;
+      }
       return;
     }
+    queuedFor.current = null;
     const silentFor =
       silentSince.current === null ? null : performance.now() - silentSince.current;
     silentSince.current = null;
