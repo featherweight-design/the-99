@@ -143,13 +143,19 @@ export function SetGridView(props: SetGridViewProps) {
   // evidence that a control was unmounted: a reader who clicked page whitespace and then
   // resized would have had focus yanked into a rack they never touched. Recorded as focus
   // MOVES, because by the time the effect runs the element that held it may be gone.
-  const focusWasInRack = useRef(false);
+  // The element AND where it was, not a bare flag. A flag set on `focusin` goes stale the
+  // moment that control is removed some other way — clicking a chip's × drops focus to the
+  // body and leaves the flag true, so a later resize would rescue focus that was never in
+  // the rack at the crossing. Holding both lets the crossing ask the question that actually
+  // matters: was a rack control focused, and did this crossing take it away?
+  const lastFocused = useRef<{ node: Element; inRack: boolean } | null>(null);
   const rackRegion = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onFocusIn = () => {
-      const active = document.activeElement;
-      focusWasInRack.current =
-        active instanceof Node && (rackRegion.current?.contains(active) ?? false);
+      const node = document.activeElement;
+      lastFocused.current = node
+        ? { node, inRack: rackRegion.current?.contains(node) ?? false }
+        : null;
     };
     document.addEventListener("focusin", onFocusIn);
     return () => document.removeEventListener("focusin", onFocusIn);
@@ -157,7 +163,13 @@ export function SetGridView(props: SetGridViewProps) {
   useEffect(() => {
     const crossed = focusWidth.current !== null && focusWidth.current !== isDesktop;
     focusWidth.current = isDesktop;
-    if (!crossed || !focusWasInRack.current) return;
+    // Was a RACK control focused, and is it gone? `contains` is asked at focus time, since a
+    // removed node is no longer anyone's descendant; `isConnected` is asked now, because
+    // that is what distinguishes a control the crossing unmounted from one the reader simply
+    // clicked away from.
+    const was = lastFocused.current;
+    const rescuing = was !== null && was.inRack && !was.node.isConnected;
+    if (!crossed || !rescuing) return;
     const id = requestAnimationFrame(() => {
       const active = document.activeElement as HTMLElement | null;
       const stranded =
@@ -757,7 +769,7 @@ export function SetGridView(props: SetGridViewProps) {
             and moved the grid under the reader's thumb: the exact motion the fixed-height
             rule exists to prevent, arriving through the row meant to guarantee it. Desktop
             has 1112px and never wraps. */}
-        <div className="min-h-[32px] md:min-h-[16px]" data-set-result>
+        <div className="mt-[8px] min-h-[32px] md:min-h-[16px]" data-set-result>
         {sections.indexed ? (
         <p
           role="status"
@@ -766,7 +778,7 @@ export function SetGridView(props: SetGridViewProps) {
           // `leading-[16px]` stated rather than inherited, for the same reason the chassis
           // states its own: Tailwind's 1.5 on 11px is 16.5, so two lines are 33 and no
           // whole-number reserve can cover them. At 16 the wrapped line is exactly 32.
-          className="mt-[8px] font-mono text-[11px] leading-[16px]"
+          className="font-mono text-[11px] leading-[16px]"
           style={{ color: "var(--fg-muted)" }}
         >
           {effective.missingOnly

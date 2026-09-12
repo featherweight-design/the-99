@@ -984,15 +984,18 @@ describe("SetGridView — row 3's box is unconditional", () => {
     const { container } = view([p("1", { booster: null, isVariant: true })], []);
     const row = container.querySelector("[data-set-result]") as HTMLElement;
     expect(row).not.toBeNull();
-    expect(row.className).toMatch(/min-h-\[32px\] md:min-h-\[16px\]/);
+    // The margin is on the BOX, not on the paragraph inside it — or a wrapped line would
+    // need 8 + 2×16 = 40 against a 32px reserve and the head would grow after all.
+    expect(row.className).toMatch(/mt-\[8px\] min-h-\[32px\] md:min-h-\[16px\]/);
     expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("and holds the same box once there is one", () => {
     const { container } = view([p("1"), p("2")], ["1"]);
     const row = container.querySelector("[data-set-result]") as HTMLElement;
-    expect(row.className).toMatch(/min-h-\[32px\] md:min-h-\[16px\]/);
-    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+    expect(row.className).toMatch(/mt-\[8px\] min-h-\[32px\] md:min-h-\[16px\]/);
+    const line = screen.getAllByRole("status")[0];
+    expect(line.className).not.toMatch(/mt-\[8px\]/);
   });
 });
 
