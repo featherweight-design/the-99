@@ -130,6 +130,7 @@ export function FilterRack({
     // only thing that says which hues are lit. Dropping them made "2 colours"
     // mean two unnamed colours.
     dots: chip.dots,
+    spoken: chip.spoken,
     onRemove: () => onChange({ ...params, ...chip.next }),
   }));
 

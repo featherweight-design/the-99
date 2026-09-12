@@ -215,6 +215,18 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("4 of 41");
   });
 
+  it("speaks a newer message that arrived during the same silence", () => {
+    // Two actions inside one open sheet: the second sentence replaces the
+    // first rather than being mistaken for it and dropped as stale.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41" announce="EOE added." announceId={1} silent />);
+    act(() => vi.advanceTimersByTime(50));
+    rerender(<ResultLine line="4 of 41" announce="Red added." announceId={2} silent />);
+    act(() => vi.advanceTimersByTime(50));
+    rerender(<ResultLine line="4 of 41" announce="Red added." announceId={2} />);
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

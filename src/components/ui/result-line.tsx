@@ -72,6 +72,9 @@ export function ResultLine({
   const silentSince = useRef<number | null>(null);
   // The line a custom message was queued against while silent, or null.
   const queuedFor = useRef<string | null>(null);
+  // The identity of the queued message, so a genuinely NEW one can be told from
+  // the same one still sitting there while the list moves under it.
+  const queuedId = useRef<string | number | undefined>(undefined);
   // The `announce` last seen, so a message is spoken once and never re-used.
   const lastAnnounce = useRef<string | number | undefined>(undefined);
   useEffect(() => {
@@ -119,15 +122,24 @@ export function ResultLine({
       // reader has left — "EOE added, 12 shown" after two more filters would
       // announce a count that is no longer true — so the queue is dropped and
       // the current count speaks instead.
-      if (queuedFor.current !== null && queuedFor.current !== line) {
+      if (fresh && identity !== queuedId.current) {
+        // A genuinely new message REPLACES the queued one rather than being
+        // mistaken for it. Dropping it as stale stamped its identity as
+        // delivered, so when silence ended nothing read fresh and the current
+        // sentence was never spoken.
+        queuedFor.current = line;
+        queuedId.current = identity;
+      } else if (queuedFor.current !== null && queuedFor.current !== line) {
+        // The same message still sitting there while the list moved under it:
+        // it describes a state the reader has left.
         lastAnnounce.current = identity;
         queuedFor.current = null;
-      } else if (fresh) {
-        queuedFor.current = line;
+        queuedId.current = undefined;
       }
       return;
     }
     queuedFor.current = null;
+    queuedId.current = undefined;
     const silentFor =
       silentSince.current === null ? null : performance.now() - silentSince.current;
     silentSince.current = null;
