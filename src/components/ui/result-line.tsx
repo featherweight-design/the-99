@@ -21,7 +21,20 @@ import { useEffect, useRef, useState } from "react";
 
 const ANNOUNCE_DELAY_MS = 300;
 
-export function ResultLine({ line }: { line: string }) {
+export function ResultLine({
+  line,
+  silent,
+}: {
+  line: string;
+  /**
+   * Stop announcing while another surface owns the region. The compact sheet is
+   * `aria-modal` and carries its own, so with both live a filter change is
+   * announced twice — once inside the modal and once from the page behind it,
+   * which some assistive tech reads and some does not. The line still draws;
+   * only the region goes quiet.
+   */
+  silent?: boolean;
+}) {
   const [announcement, setAnnouncement] = useState("");
   // What was last announced. Null until the line first changes, which is what
   // keeps the chassis from reading its own count out on arrival.
@@ -32,9 +45,10 @@ export function ResultLine({ line }: { line: string }) {
       return;
     }
     announced.current = line;
+    if (silent) return;
     const t = setTimeout(() => setAnnouncement(line), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
-  }, [line]);
+  }, [line, silent]);
 
   return (
     <>

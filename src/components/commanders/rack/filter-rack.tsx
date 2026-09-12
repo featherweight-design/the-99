@@ -153,6 +153,10 @@ export function FilterRack({
       // the trigger joins the trailing cluster rather than sitting in the
       // controls ahead of it. Wide keeps sort alone past the hairline, where
       // the five filter controls are all inline.
+      // The sheet is aria-modal and carries its own region, so the chassis's
+      // stays quiet while it is open rather than announcing the same count from
+      // behind the modal.
+      silentResult={!wide && sheetOpen}
       sort={
         wide ? (
           order

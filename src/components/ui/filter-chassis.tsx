@@ -84,6 +84,14 @@ export type FilterChassisProps = {
    * replaces, which is what `use-min-width.ts` exists to prevent.
    */
   after?: React.ReactNode;
+  /**
+   * Silence the result line's region while another surface owns the reader's
+   * attention. The compact sheet is `aria-modal` and carries its own region, so
+   * with both live a filter change is announced twice — once inside the modal
+   * and once from the page behind it, which some assistive tech reads and some
+   * does not. The line still draws; only the region goes quiet.
+   */
+  silentResult?: boolean;
 };
 
 /**
@@ -109,7 +117,7 @@ const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
-  controls, sort, chips, onClearAll, resultLine, form, after,
+  controls, sort, chips, onClearAll, resultLine, form, after, silentResult,
 }: FilterChassisProps) {
   return (
     <div
@@ -231,7 +239,7 @@ export function FilterChassis({
 
       {/* Row 3 — the chassis's only live region. */}
       <div data-chassis-row="result">
-        <ResultLine line={resultLine} />
+        <ResultLine line={resultLine} silent={silentResult} />
       </div>
 
       {after}

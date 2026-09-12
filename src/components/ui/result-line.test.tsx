@@ -27,6 +27,18 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
   });
 
+  it("goes quiet when another surface owns the region", () => {
+    // The compact sheet is aria-modal and carries its own region. With both
+    // live a filter change is announced twice, from inside the modal and from
+    // the page behind it.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+    // The visible line still draws — only the announcement stops.
+    expect(screen.getByText("12 of 41 decks")).toBeTruthy();
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");
