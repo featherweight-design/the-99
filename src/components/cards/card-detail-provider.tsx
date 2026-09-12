@@ -10,7 +10,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import { twMerge } from "tailwind-merge";
-import type { BrowseCard } from "../../lib/collection/browse";
+import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { CardModal } from "./card-modal";
 
@@ -25,8 +25,17 @@ type CardDetailContextValue = {
    * Open the modal for `oracleId`. `siblings` is the ordered oracle-id list the card belongs
    * to, which is what Prev/Next page through; omit it where there is no list (the commander,
    * a suggestion) and the modal renders "1 of 1" with both arrows disabled.
+   *
+   * `atPrinting` opens the card AT one printing — the set grid's cells each ARE a printing,
+   * so clicking the dashed #239 must show #239 rather than whichever printing the resolver
+   * would otherwise choose. It is a view, never a pick: nothing is written, and the picker
+   * still marks the reader's own preference wherever that is.
    */
-  open: (oracleId: string, siblings?: string[]) => void;
+  open: (
+    oracleId: string,
+    siblings?: string[],
+    atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
+  ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
   /**
@@ -151,6 +160,32 @@ export function CardDetailProvider({
 }) {
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
+  // The printing the caller asked to open at, carrying the oracle id it belongs to.
+  //
+  // NOTHING here moves when a card is merely asked for — only when one arrives. That is the
+  // single rule, and it is what all three of this state's defects had in common: a printing
+  // set at click time dressed the card still painted behind the read in the printing of the
+  // one just clicked; a printing cleared at click time stripped the art off a card that
+  // `load` then deliberately left standing when the read failed; and a printing kept by id
+  // alone came back to life when the reader paged away and back.
+  //
+  // So `open` records a PENDING printing and `show` commits it, at the one moment the card
+  // it describes is on screen. The id it carries is what lets `show` tell "this arrival is
+  // the one that was asked for" from "this arrival is something else, so let the old one
+  // go".
+  const [openAt, setOpenAt] = useState<{
+    oracleId: string;
+    printing: PreferredPrinting & { imageUri?: string | null };
+  } | null>(null);
+  /**
+   * The printing an `open` asked for, before the card it describes has arrived. A ref, not
+   * state: nothing renders from it, and `show` is memoised on nothing so it must read the
+   * current value rather than one closed over at mount.
+   */
+  const pendingAt = useRef<{
+    oracleId: string;
+    printing: (PreferredPrinting & { imageUri?: string | null }) | null;
+  } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
@@ -198,6 +233,27 @@ export function CardDetailProvider({
   const show = useCallback((next: BrowseCard | null) => {
     openRef.current = next?.oracleId ?? null;
     shownRef.current = openRef.current;
+    // The opened-at printing dies when a DIFFERENT card actually lands, not when one is
+    // asked for. Clearing it at the paging callback instead would strip the art off the
+    // card still on screen the moment Prev was pressed — and `load` deliberately leaves
+    // that card standing when the read fails, so a failed page left the wrong art behind.
+    // Here it survives the whole transition and is invalidated by the transition
+    // completing, which is also what stops paging back from resurrecting it.
+    // The card that just arrived is the one a pending open was for: its printing commits
+    // now, which is the first moment it has a card to describe. Read and cleared here
+    // rather than inside the updater, which must stay pure.
+    const pending = pendingAt.current;
+    if (pending && pending.oracleId === next?.oracleId) {
+      pendingAt.current = null;
+      setOpenAt(
+        pending.printing ? { oracleId: pending.oracleId, printing: pending.printing } : null,
+      );
+    } else {
+      // Anything else arriving means whatever was committed belongs to a card that is no
+      // longer on screen. A re-read of the SAME card keeps it, which is what lets an art
+      // pick land without taking the reader off the printing they are looking at.
+      setOpenAt((prev) => (prev && prev.oracleId !== next?.oracleId ? null : prev));
+    }
     setCard(next);
   }, []);
 
@@ -206,8 +262,25 @@ export function CardDetailProvider({
   // it on each render would re-render all of them.
   const loadRef = useRef<(oracleId: string, list?: string[]) => Promise<void>>(async () => {});
   const load = useCallback(
-    async (oracleId: string, list?: string[]) => {
+    async (
+      oracleId: string,
+      list?: string[],
+      at?: (PreferredPrinting & { imageUri?: string | null }) | null,
+    ) => {
       const request = ++latest.current;
+      // EVERY read decides the pending printing, including the reads that have none: paging,
+      // a re-read and an owed re-read all pass nothing, which clears whatever an earlier
+      // open left behind. That is what binds the value to a read rather than to an oracle
+      // id — held by id, an open whose read failed would sit waiting and commit its cell's
+      // printing the next time the reader paged onto that card, a page that supplied no
+      // printing at all. One place owns this value's whole life, which is why there is no
+      // second guard on the way out.
+      // `undefined` and `null` are different asks. `undefined` is not an open at all —
+      // paging, a re-read, an owed re-read — and clears whatever an earlier open left. A
+      // `null` IS an open, for a card with no printing in particular, and has to be able to
+      // clear a printing on the card already shown: without the distinction, reopening the
+      // current card plainly left it wearing the cell it was opened at last time.
+      pendingAt.current = at === undefined ? null : { oracleId, printing: at };
       openRef.current = oracleId;
       inFlight.current = oracleId;
       if (list !== undefined) setSiblings(list);
@@ -289,8 +362,17 @@ export function CardDetailProvider({
   useEffect(() => { loadRef.current = load; }, [load]);
 
   const open = useCallback(
-    (oracleId: string, list?: string[]) => {
-      void load(oracleId, list ?? []);
+    (
+      oracleId: string,
+      list?: string[],
+      atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
+    ) => {
+      // PENDING, not committed. A second open while the first card is still painted must
+      // not take the first card's printing away from it: the read may fail, and `load`
+      // deliberately leaves that card standing. The printing commits in `show`, when the
+      // card it describes actually arrives — and only if the read that asked for it is
+      // still the current one.
+      void load(oracleId, list ?? [], atPrinting ?? null);
     },
     [load],
   );
@@ -303,6 +385,9 @@ export function CardDetailProvider({
     latest.current++;
     inFlight.current = null;
     owed.current = null;
+    // Or a read abandoned by the close could still commit its printing onto the next card
+    // the reader opens.
+    pendingAt.current = null;
     show(null);
     setPendingOracleId(null);
     setFailed(false);
@@ -338,6 +423,9 @@ export function CardDetailProvider({
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
+  // See `openAt`: the printing applies to one card, and the card on screen is not always
+  // the one that was asked for.
+  const openAtPrinting = card && openAt?.oracleId === card.oracleId ? openAt.printing : null;
   const paging = index >= 0 && siblings.length > 1;
 
   return (
@@ -353,13 +441,18 @@ export function CardDetailProvider({
           // optimistic art pick across — same reason the collection browser remounts.
           key={card.oracleId}
           card={card}
+          openAtPrinting={openAtPrinting}
           onArtChange={() => { evict(card.oracleId); onArtChange?.(card.oracleId); }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
-          onPrev={paging && index > 0 ? () => void load(siblings[index - 1]) : null}
+          onPrev={paging && index > 0
+            ? () => void load(siblings[index - 1])
+            : null}
           onNext={
-            paging && index < siblings.length - 1 ? () => void load(siblings[index + 1]) : null
+            paging && index < siblings.length - 1
+              ? () => void load(siblings[index + 1])
+              : null
           }
         />
       )}

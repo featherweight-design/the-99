@@ -698,3 +698,286 @@ describe("CardDetailProvider card cache", () => {
     await waitFor(() => expect(fetchCard.mock.calls.length).toBeGreaterThan(1));
   });
 });
+
+// The printing a caller opens at belongs to ONE card. `open` sets it in the same pass as
+// the click, but the card behind it stays whatever was painted until the read lands — so
+// opening a second card from inside an open modal put the first card's face under the
+// second card's printing for the length of that read.
+describe("CardDetailProvider open-at-printing scope", () => {
+  function Harness() {
+    const { open } = useCardDetail();
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => open("o-signet", [], {
+            setCode: "RVR", collectorNumber: "24",
+            imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+          })}
+        >
+          open signet at RVR
+        </button>
+        <button
+          type="button"
+          onClick={() => open("o-sol", [], {
+            setCode: "M21", collectorNumber: "268",
+            imageUri: "https://cards.scryfall.io/normal/m21-268.jpg",
+          })}
+        >
+          open sol at M21
+        </button>
+      </>
+    );
+  }
+
+  const backgrounds = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+      .map((el) => el.style.backgroundImage);
+
+  it("does not dress the card on screen in the printing of the one being read", async () => {
+    // The second read never settles, which is the whole window under test.
+    let release: (() => void) | null = null;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-signet") return SIGNET;
+      await new Promise<void>((resolve) => { release = resolve; });
+      return SOL;
+    });
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Harness />
+      </CardDetailProvider>,
+    );
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(backgrounds(container).some((b) => b.includes("rvr-24"))).toBe(true);
+
+    // Sol Ring is still being read; Arcane Signet is still the card on screen. It must not
+    // be wearing Sol Ring's printing.
+    await click(screen.getByRole("button", { name: "open sol at M21" }));
+    expect(backgrounds(container).some((b) => b.includes("m21-268"))).toBe(false);
+
+    // And once the read lands, the printing applies to the card it was asked for.
+    await act(async () => { release?.(); });
+    await waitFor(() =>
+      expect(backgrounds(container).some((b) => b.includes("m21-268"))).toBe(true),
+    );
+  });
+
+  // Paging is not the read window from the other side — it is the reader leaving the cell.
+  // The id pairing alone would match again on the way back and resurrect a printing they
+  // had already paged out of, so Prev/Next clears outright.
+  it("does not resurrect the opened-at printing when paging back to that card", async () => {
+    const fetchCard = vi.fn(async (oracleId: string) =>
+      oracleId === "o-signet" ? SIGNET : SOL);
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <button
+          type="button"
+          onClick={() => open("o-signet", ["o-signet", "o-sol"], {
+            setCode: "RVR", collectorNumber: "24",
+            imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+          })}
+        >
+          open signet at RVR
+        </button>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await click(screen.getAllByRole("button", { name: "Next card" })[0]);
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+    await click(screen.getAllByRole("button", { name: "Previous card" })[0]);
+
+    await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
+  });
+
+  // `load` leaves the card on screen standing when a read fails. Clearing the printing at
+  // the paging callback would therefore strip the art off a card the reader is still
+  // looking at, and leave it wrong for good.
+  it("keeps the printing when paging away fails and the card stays put", async () => {
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-signet") return SIGNET;
+      throw new Error("read failed");
+    });
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <button
+          type="button"
+          onClick={() => open("o-signet", ["o-signet", "o-sol"], {
+            setCode: "RVR", collectorNumber: "24",
+            imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+          })}
+        >
+          open signet at RVR
+        </button>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await click(screen.getAllByRole("button", { name: "Next card" })[0]);
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+    // Arcane Signet is still the card on screen, and still wearing the printing that was
+    // clicked. The page did not happen.
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+  });
+
+  // The mirror of the failed-page case: opening a SECOND card while the first is still
+  // painted must not take the first card's printing away from it either. Committing at
+  // click time reverted the visible card to its resolver art, and a failed read left it
+  // reverted for good.
+  it("leaves the visible card's printing alone while a second card is being read", async () => {
+    let release: (() => void) | null = null;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-signet") return SIGNET;
+      await new Promise<void>((resolve) => { release = resolve; });
+      return SOL;
+    });
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => open("o-signet", [], {
+              setCode: "RVR", collectorNumber: "24",
+              imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+            })}
+          >
+            open signet at RVR
+          </button>
+          <button type="button" onClick={() => open("o-sol", [])}>open sol plain</button>
+        </>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    // Sol Ring is being read and will never land. Arcane Signet is still on screen, and
+    // still wearing the printing it was opened at.
+    await click(screen.getByRole("button", { name: "open sol plain" }));
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await act(async () => { release?.(); });
+    await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
+  });
+
+  // A pending printing belongs to ONE read. Held by oracle id alone, a failed open sat
+  // waiting and committed its cell's printing the next time the reader paged onto that
+  // card — a page that supplied no printing at all.
+  it("drops a pending printing whose read never landed", async () => {
+    let failNext = true;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-sol" && failNext) throw new Error("read failed");
+      return oracleId === "o-signet" ? SIGNET : SOL;
+    });
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => open("o-sol", [], {
+              setCode: "M21", collectorNumber: "268",
+              imageUri: "https://cards.scryfall.io/normal/m21-268.jpg",
+            })}
+          >
+            open sol at M21
+          </button>
+          <button type="button" onClick={() => open("o-sol", [])}>open sol plain</button>
+        </>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    // The open fails, so nothing is painted and its printing is owed to a read that is over.
+    await click(screen.getByRole("button", { name: "open sol at M21" }));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+
+    // The same card, opened again with NO printing. It must arrive wearing none.
+    failNext = false;
+    await click(screen.getByRole("button", { name: "open sol plain" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("m21-268"))).toBe(false);
+  });
+
+  // Reopening the SAME card with no printing is an explicit ask for no printing, and has to
+  // clear one. Held by id alone it read as a same-card refresh and preserved the cell the
+  // reader opened at last time.
+  it("clears the printing when the same card is reopened without one", async () => {
+    const fetchCard = vi.fn(async () => SIGNET);
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => open("o-signet", [], {
+              setCode: "RVR", collectorNumber: "24",
+              imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+            })}
+          >
+            open at RVR
+          </button>
+          <button type="button" onClick={() => open("o-signet", [])}>open plain</button>
+        </>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await click(screen.getByRole("button", { name: "open plain" }));
+    await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
+  });
+});

@@ -597,6 +597,7 @@ export function SetGridView(props: SetGridViewProps) {
             priceFor={priceFor}
             newest={newest}
             siblings={siblingIds}
+            setCode={code.toUpperCase()}
             onOpenCard={open}
           />
           {shownExtras.length > 0 ? (
@@ -609,6 +610,7 @@ export function SetGridView(props: SetGridViewProps) {
               priceFor={priceFor}
               newest={newest}
               siblings={siblingIds}
+              setCode={code.toUpperCase()}
               onOpenCard={open}
             />
           ) : null}
@@ -688,7 +690,7 @@ function MissingOnlyToggle({
 }
 
 function Section({
-  id, title, ratio, cells, priceFor, newest, siblings, onOpenCard,
+  id, title, ratio, cells, priceFor, newest, siblings, setCode, onOpenCard,
 }: {
   id?: string;
   title: string;
@@ -697,7 +699,13 @@ function Section({
   priceFor: Map<string, PriceFact>;
   newest: Date | null;
   siblings: string[];
-  onOpenCard: (oracleId: string, siblings?: string[]) => void;
+  /** Uppercase, because BrowsePrinting.setCode is and the match is exact (browse.ts:398). */
+  setCode: string;
+  onOpenCard: (
+    oracleId: string,
+    siblings?: string[],
+    atPrinting?: { setCode: string; collectorNumber: string; imageUri?: string | null },
+  ) => void;
 }) {
   return (
     <section id={id} className="mt-[20px]">
@@ -724,7 +732,11 @@ function Section({
             cell={c}
             price={priceFor.get(c.scryfallId) ?? null}
             newestAsOf={newest}
-            onOpen={(oracleId) => onOpenCard(oracleId, siblings)}
+            // The cell IS a printing, so the modal is told which one. Uppercased because
+            // BrowsePrinting.setCode is uppercase and the match is exact (browse.ts:398).
+            onOpen={(oracleId) => onOpenCard(oracleId, siblings, {
+              setCode, collectorNumber: c.collectorNumber, imageUri: c.imageUri ?? null,
+            })}
           />
         ))}
       </div>

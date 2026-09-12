@@ -12,6 +12,7 @@ import {
   cssUrl,
   printedNameOf,
   printingCaption,
+  matchesPreference,
   resolvedPrinting,
   WUBRG_COLOR,
 } from "../../lib/collection/browse";
@@ -246,6 +247,7 @@ export function CardModal({
   onPrev,
   onNext,
   onArtChange,
+  openAtPrinting = null,
 }: {
   card: BrowseCard;
   position: number;
@@ -262,6 +264,17 @@ export function CardModal({
    * only up front would let that pre-write answer be filed as the current one.
    */
   onArtChange?: () => void;
+  /**
+   * The printing this card was opened AT, when the surface that opened it was showing one
+   * in particular. The set grid's cells each ARE a printing, so clicking the dashed #239
+   * has to show #239 — not whichever printing the resolver would pick for the card.
+   *
+   * A VIEW, never a pick. It decides the art, the caption and the shown-now badge, and it
+   * does not touch `pick`: the picker still marks the reader's own preference where it is,
+   * and nothing is written by looking. The moment the reader picks something in this modal,
+   * their choice takes over.
+   */
+  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -279,6 +292,9 @@ export function CardModal({
   // the card is only correct because the caller keys this component on oracleId — paging
   // Prev/Next remounts rather than reusing the state of the card you just left.
   const [pick, setPick] = useState<PreferredPrinting | null>(card.preferredPrinting);
+  // Whether the reader has chosen a printing in THIS modal. Until they do, a card opened at
+  // a particular printing shows that one; afterwards their choice wins.
+  const [picked, setPicked] = useState(false);
 
   // A caller can hand this component a re-read of the same card, so the seed above is not
   // the last word: without this, a preference that moved on the server would be ignored for
@@ -325,7 +341,83 @@ export function CardModal({
 
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
-  const preview = useMemo<BrowseCard>(() => ({ ...card, preferredPrinting: pick }), [card, pick]);
+  const preview = useMemo<BrowseCard>(() => {
+    const at = picked ? null : openAtPrinting;
+    if (!at) {
+      const next = { ...card, preferredPrinting: pick };
+      // Only once the reader has actually picked. `card.printedName` is the server's
+      // answer and is right until then — recomputing it unconditionally would resolve a
+      // different printing than `aggregateCollection` did and rename cards nobody touched.
+      // After a pick it is stale by construction: it was resolved for the preference the
+      // pick just replaced, so the art and caption moved while both headings did not.
+      if (!picked) return next;
+      const shown = resolvedPrinting(next);
+      const renamed =
+        shown?.flavorName != null && shown.flavorName !== card.name ? shown.flavorName : null;
+      return { ...next, printedName: renamed };
+    }
+    // For an OWNED card `card.printings` is what the reader owns, and a holding matched by
+    // name carries no collector number — so the printing the caller is showing is often
+    // absent and the resolver would fall back to an unrelated set. Injected at quantity 0
+    // so it resolves; the picker reads `card.printings`, not this, and never sees it.
+    // A row matching by set and collector number is not necessarily carrying that
+    // printing's art: `collection_items.scryfall_id` is nullable, and `aggregateCollection`
+    // falls back to the set representative when the exact join is missing — so a Moxfield
+    // or Archidekt holding can match here and still hold another printing's image. When the
+    // caller handed over the exact art, it wins over that fallback.
+    const known = card.printings.some((p) => matchesPreference(p, at));
+    const printings = known
+      ? (at.imageUri
+          ? card.printings.map((p) =>
+              // The flavour name goes with the art it described — but only when the art
+              // actually changes. `aggregateCollection` fills the name from the set
+              // REPRESENTATIVE when a holding has no `scryfall_id`, and it is that fallback
+              // the exact art replaces; where the two URLs already agree, the row is the
+              // printing and its name is the right one. Clearing unconditionally took the
+              // name off an owned Secret Lair whose art was never in question.
+              matchesPreference(p, at)
+                ? {
+                    ...p,
+                    imageUri: at.imageUri ?? p.imageUri,
+                    flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
+                  }
+                : p)
+          : card.printings)
+      : [...card.printings, {
+      setCode: at.setCode,
+      setName: at.setCode,
+      collectorNumber: at.collectorNumber,
+      releasedAt: null,
+      quantity: 0,
+      finishes: {},
+      // `resolveImageUri`'s card-level fallback, not a hard null: a set cell whose
+      // full-size art the catalog does not hold would otherwise open on the identity
+      // gradient, where the modal used to show the card's own image.
+      imageUri: at.imageUri ?? card.imageUri,
+      flavorName: null,
+    }];
+    // The title follows the art. `printedName` is a CARD-level field, set from whichever
+    // printing the collection resolved to — so left alone it would print the owned
+    // holding's flavour name over the printing the cell actually opened at, which is the
+    // pairing `BrowseCard` documents and this whole branch exists to keep. Derived from the
+    // row the preview resolves to: the injected row carries no flavour name, so an
+    // unowned target falls back to the oracle name, which is the honest answer for a
+    // printing the reader has no copy of.
+    const row = printings.find((p) => matchesPreference(p, at));
+    // The same exact-equality rule `aggregateCollection` applies, verbatim: a printing whose
+    // flavour name IS the oracle name has renamed nothing, and copying it here would print
+    // the name twice and add an oracle-name line under it that says the same thing.
+    // Only off a printing the reader OWNS. `catalogCard` fills `printings` with the whole
+    // catalog at quantity 0 for a card nobody owns, so a renamed catalog row would put a
+    // printed name on a card with no copy of it — which locked decision 2 forbids
+    // (`card-detail.ts`): there is no printing in hand to print one.
+    const renamed =
+      row !== undefined && row.quantity > 0
+      && row.flavorName != null && row.flavorName !== card.name
+        ? row.flavorName
+        : null;
+    return { ...card, printings, preferredPrinting: at, printedName: renamed };
+  }, [card, pick, picked, openAtPrinting]);
   const resolved = resolvedPrinting(preview);
   // The picker is about the printings you OWN — every string it renders says so, and picking
   // one only decides which of your copies represents the card. `card.printings` is not that
@@ -389,6 +481,7 @@ export function CardModal({
   function onPick(p: { setCode: string; collectorNumber: string }) {
     const written = { setCode: p.setCode, collectorNumber: p.collectorNumber };
     setPick(written);
+    setPicked(true);
     onArtChange?.();
     const generation = ++writes.current;
     startWrite(async () => {
@@ -404,6 +497,7 @@ export function CardModal({
 
   function onClearPick() {
     setPick(null);
+    setPicked(true);
     onArtChange?.();
     const generation = ++writes.current;
     startWrite(async () => {
@@ -426,7 +520,9 @@ export function CardModal({
     if (fallback) setAnnouncement(pickerCopy.announceReset(fallback.setName ?? fallback.setCode));
   }
 
-  const caption = printingCaption(preview);
+  // The base resolves off `preview`, so it names the printing actually on screen; the count
+  // is of what the reader OWNS, so an injected row is art and not a holding.
+  const caption = printingCaption(preview, ownedPrintings);
 
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
   // region is instantiated twice and each instance needs its own id for aria-controls.
@@ -456,7 +552,7 @@ export function CardModal({
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
-  const faces = faceNames(printedNameOf(card));
+  const faces = faceNames(printedNameOf(preview));
 
   function onFlip() {
     const next = !flipped;
@@ -567,7 +663,10 @@ export function CardModal({
             // DOM (display:none on phone) — this copy is the visual half of the same heading.
             <div aria-hidden className="relative z-[1] min-w-0" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
               <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
-                {card.name}
+                {/* The same source as the h3 below it — these are two halves of one
+                    heading, and reading them off different objects is how the compact
+                    header ended up naming a printing the art is not showing. */}
+                {printedNameOf(preview)}
               </div>
               <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
                 {card.typeLine}
@@ -626,14 +725,14 @@ export function CardModal({
                   className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
                   style={{ color: "var(--fg)" }}
                 >
-                  {printedNameOf(card)}
+                  {printedNameOf(preview)}
                 </h3>
                 {/* The oracle name — absent, not blank, when the printing prints
                     its own name. A reserved empty line would spend 23px on every
                     ordinary card to make the ordinary case look incomplete. The
                     tighter gap above binds the two names into one unit; the
                     looser one below keeps the type line a separate fact. */}
-                {card.printedName && (
+                {preview.printedName && (
                   <p
                     className="flex items-baseline gap-[6px] text-[13px] md:text-[13.5px] mt-[5px] md:mt-[6px] mb-0"
                     style={{ color: "var(--fg-body)" }}
@@ -652,7 +751,7 @@ export function CardModal({
                     what keeps the type line from joining the name pair. */}
                 <p
                   className={`text-[13px] md:text-[14px] ${
-                    card.printedName ? "mt-[10px]" : "mt-[4px] md:mt-[6px]"
+                    preview.printedName ? "mt-[10px]" : "mt-[4px] md:mt-[6px]"
                   }`}
                   style={{ color: "var(--fg-muted)" }}
                 >

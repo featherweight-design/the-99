@@ -640,3 +640,440 @@ describe("CardModal oracle-name line", () => {
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Battle of Olympus");
   });
 });
+
+describe("CardModal opened at a particular printing", () => {
+  const printing = (setCode: string, collectorNumber: string, imageUri: string) => ({
+    setCode,
+    setName: setCode,
+    collectorNumber,
+    releasedAt: "2024-01-12",
+    quantity: 0,
+    finishes: {},
+    imageUri,
+    flavorName: null,
+  });
+
+  const twoPrintings: BrowseCard = {
+    ...card,
+    quantity: 0,
+    printings: [
+      printing("HOB", "96", "https://cards.scryfall.io/normal/hob-96.jpg"),
+      printing("HOB", "239", "https://cards.scryfall.io/normal/hob-239.jpg"),
+    ],
+  };
+
+  // The face is a CSS background, not an <img>, so this reads the style the modal set.
+  const artOf = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+      .map((el) => el.style.backgroundImage);
+
+  it("shows the printing it was opened at, not the one the resolver would choose", () => {
+    // A set cell IS a printing: clicking the dashed #239 must show #239. Without this the
+    // modal resolved to the first printing with art and showed a different card face.
+    const { container } = render(
+      <CardModal
+        card={twoPrintings}
+        openAtPrinting={{ setCode: "HOB", collectorNumber: "239" }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(artOf(container).some((src) => src?.includes("hob-239"))).toBe(true);
+  });
+
+  it("falls back to the resolver when it was opened at no printing in particular", () => {
+    const { container } = render(
+      <CardModal
+        card={twoPrintings}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(artOf(container).some((src) => src?.includes("hob-96"))).toBe(true);
+  });
+
+  it("does not claim the viewed printing as the reader's pick", () => {
+    // Looking at a cell writes nothing and asserts nothing about preference: the picker
+    // must still mark whatever the reader actually chose, which here is nothing.
+    //
+    // OWNED rows, deliberately: with quantity 0 the picker is not rendered at all and the
+    // assertion below would pass over a `Your pick` that could never have appeared.
+    const owned = {
+      ...twoPrintings,
+      quantity: 3,
+      printings: twoPrintings.printings.map((p, i) => ({
+        ...p, quantity: i + 1, finishes: { nonfoil: i + 1 },
+      })),
+    };
+    render(
+      <CardModal
+        card={owned}
+        openAtPrinting={{ setCode: "HOB", collectorNumber: "239" }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(screen.queryByText(/Your pick/)).toBeNull();
+  });
+});
+
+describe("CardModal opened at a printing it does not own", () => {
+  // The case the first fix missed. For an OWNED card `card.printings` is what the reader
+  // owns, and a holding matched by name carries no collector number — so the printing the
+  // set cell stands for is absent, and the resolver fell back to an unrelated set.
+  const ownedElsewhere: BrowseCard = {
+    ...card,
+    quantity: 90,
+    printings: [{
+      setCode: "ARC",
+      setName: "ARC",
+      collectorNumber: "",
+      releasedAt: "2010-06-18",
+      quantity: 90,
+      finishes: {},
+      imageUri: "https://cards.scryfall.io/normal/arc.jpg",
+      flavorName: null,
+    }],
+  };
+
+  const backgrounds = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+      .map((el) => el.style.backgroundImage);
+
+  it("shows the art the caller handed it", () => {
+    const { container } = render(
+      <CardModal
+        card={ownedElsewhere}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(backgrounds(container).some((b) => b.includes("tla-282"))).toBe(true);
+    expect(backgrounds(container).some((b) => b.includes("arc.jpg"))).toBe(false);
+  });
+
+  // The injected row is art for the face and nothing else. The picker counts and lists what
+  // the reader OWNS, and a printing they do not own appearing in "N printings you own" is
+  // the same defect this file already covers for the catalog list one describe block above —
+  // reached the other way, through the caller rather than through the fetch.
+  it("leaves the picker counting only what the reader owns", async () => {
+    const twoOwned: BrowseCard = {
+      ...card,
+      quantity: 93,
+      printings: [
+        {
+          setCode: "ARC", setName: "ARC", collectorNumber: "", releasedAt: "2010-06-18",
+          quantity: 90, finishes: { nonfoil: 90 },
+          imageUri: "https://cards.scryfall.io/normal/arc.jpg", flavorName: null,
+        },
+        {
+          setCode: "M21", setName: "M21", collectorNumber: "268", releasedAt: "2020-07-03",
+          quantity: 3, finishes: { nonfoil: 3 },
+          imageUri: "https://cards.scryfall.io/normal/m21-268.jpg", flavorName: null,
+        },
+      ],
+    };
+    render(
+      <CardModal
+        card={twoOwned}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    // Two, not three: the injected TLA row is not a holding.
+    expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+    // The caption counts the reader's OWN printings, and the resolved row is not one of
+    // them — so both are "other printings owned" and the figure is 2, not 1. Subtracting a
+    // resolved row that is not in the list hid a printing they hold.
+    expect(screen.getAllByText(/\+2 more/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/\+3 more/)).toBeNull();
+    expect(screen.queryByText(/3 printings you own/)).toBeNull();
+    // And it is not offered as something to pick. Expanded, because the tiles are the
+    // other half of the claim: a count that is right over a list that is wrong still
+    // hands the reader a printing they cannot choose.
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: /printings owned/,
+      })[0]);
+    });
+    expect(screen.getAllByRole("radio", { name: /ARC/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("radio", { name: /M21/ }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("radio", { name: /TLA/ })).toHaveLength(0);
+  });
+
+  // The suffix counts printings the reader OWNS besides the one on screen. Opened at a
+  // printing they do not own, their single holding is one such — so `+1 more` is true here,
+  // where it was the injected row counting itself before.
+  it("counts the one owned printing as other than the one being shown", () => {
+    render(
+      <CardModal
+        card={ownedElsewhere}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(screen.getAllByText(/TLA · 282 \+1 more/).length).toBeGreaterThan(0);
+  });
+
+  // A row can match by set and collector number and still hold the WRONG art:
+  // `collection_items.scryfall_id` is nullable, so a Moxfield or Archidekt holding falls
+  // back to the set representative's image. The caller handed over the exact one.
+  it("prefers the art it was handed over a matching row's fallback", () => {
+    const fallbackArt: BrowseCard = {
+      ...card,
+      quantity: 1,
+      printings: [{
+        setCode: "TLA", setName: "TLA", collectorNumber: "282", releasedAt: "2025-11-21",
+        quantity: 1, finishes: { nonfoil: 1 },
+        imageUri: "https://cards.scryfall.io/normal/tla-representative.jpg",
+        flavorName: null,
+      }],
+    };
+    const { container } = render(
+      <CardModal
+        card={fallbackArt}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(backgrounds(container).some((b) => b.includes("tla-282"))).toBe(true);
+    expect(backgrounds(container).some((b) => b.includes("representative"))).toBe(false);
+  });
+});
+
+// `printedName` is a CARD-level field, resolved from whatever printing the collection
+// picked. Opening at a different printing therefore printed the owned holding's flavour
+// name over the target printing's art — the pairing `BrowseCard` documents, broken by the
+// very branch that exists to keep it.
+describe("CardModal title under an opened-at printing", () => {
+  const flavoured: BrowseCard = {
+    ...card,
+    quantity: 2,
+    printedName: "Lonely Sandbar Vista",
+    printings: [{
+      setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+      quantity: 2, finishes: { nonfoil: 2 },
+      imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+      flavorName: "Lonely Sandbar Vista",
+    }],
+  };
+
+  it("falls back to the oracle name for a printing the reader does not own", () => {
+    render(
+      <CardModal
+        card={flavoured}
+        openAtPrinting={{
+          setCode: "TLA", collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+    expect(screen.queryByText("Lonely Sandbar Vista")).toBeNull();
+  });
+
+  it("keeps the flavour name when that IS the printing being shown", () => {
+    render(
+      <CardModal
+        card={flavoured}
+        openAtPrinting={{ setCode: "SLD", collectorNumber: "1500" }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
+  });
+
+  it("leaves an ordinary open untouched", () => {
+    render(
+      <CardModal card={flavoured} position={1} total={1}
+        onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
+  });
+
+  // The same exact-equality rule `aggregateCollection` applies: a printing whose flavour
+  // name IS the oracle name has renamed nothing, and copying it would print the name twice
+  // with an oracle-name line under it saying the same thing.
+  it("treats a flavour name equal to the oracle name as no rename", () => {
+    const sameName: BrowseCard = {
+      ...card,
+      quantity: 1,
+      printedName: null,
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 1, finishes: { nonfoil: 1 },
+        imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        flavorName: card.name,
+      }],
+    };
+    render(
+      <CardModal
+        card={sameName}
+        openAtPrinting={{ setCode: "SLD", collectorNumber: "1500" }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+    expect(screen.queryByText(printedNameCopy.oracleLabel)).toBeNull();
+  });
+
+  // The reader picks a different owned printing: the art and caption move, so the name has
+  // to move with them. It was falling back to `card.printedName`, which the server resolved
+  // for the preference the pick just replaced.
+  it("moves the name with an optimistic pick", async () => {
+    const two: BrowseCard = {
+      ...card,
+      quantity: 3,
+      printedName: "Lonely Sandbar Vista",
+      preferredPrinting: { setCode: "SLD", collectorNumber: "1500" },
+      printings: [
+        {
+          setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+          quantity: 1, finishes: { nonfoil: 1 },
+          imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+          flavorName: "Lonely Sandbar Vista",
+        },
+        {
+          setCode: "M21", setName: "Core Set 2021", collectorNumber: "268",
+          releasedAt: "2020-07-03", quantity: 2, finishes: { nonfoil: 2 },
+          imageUri: "https://cards.scryfall.io/normal/m21-268.jpg", flavorName: null,
+        },
+      ],
+    };
+    render(
+      <CardModal card={two} position={1} total={1}
+        onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", { name: /printings owned/ })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /Core Set 2021/ })[0]);
+    });
+    // M21 prints its own name, so the heading is the oracle name again.
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+  });
+
+  // Locked decision 2 (`card-detail.ts`): a card the player does not own keeps its oracle
+  // name — there is no printing in hand to print one. `catalogCard` fills `printings` with
+  // the whole catalog at quantity 0, so a renamed catalog row must not become a title.
+  it("gives an unowned card no printed name, however the catalog names the printing", () => {
+    const unowned: BrowseCard = {
+      ...card,
+      quantity: 0,
+      printedName: null,
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 0, finishes: {},
+        imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        flavorName: "Lonely Sandbar Vista",
+      }],
+    };
+    render(
+      <CardModal
+        card={unowned}
+        openAtPrinting={{ setCode: "SLD", collectorNumber: "1500" }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+    expect(screen.queryByText("Lonely Sandbar Vista")).toBeNull();
+  });
+
+  // The art the cell hands over replaces a REPRESENTATIVE fallback, and the name goes with
+  // it. Where the two URLs already agree the row IS the printing, and clearing its name
+  // took the title off an owned Secret Lair whose art was never in question.
+  it("keeps an owned printing's flavour name when the art it was handed matches", () => {
+    const exact: BrowseCard = {
+      ...card,
+      quantity: 2,
+      printedName: "Lonely Sandbar Vista",
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 2, finishes: { nonfoil: 2 },
+        imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        flavorName: "Lonely Sandbar Vista",
+      }],
+    };
+    render(
+      <CardModal
+        card={exact}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "1500",
+          imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
+  });
+
+  it("drops it when the handed-over art replaces a different image", () => {
+    const fallback: BrowseCard = {
+      ...card,
+      quantity: 2,
+      printedName: "Lonely Sandbar Vista",
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 2, finishes: { nonfoil: 2 },
+        imageUri: "https://cards.scryfall.io/normal/sld-representative.jpg",
+        flavorName: "Lonely Sandbar Vista",
+      }],
+    };
+    render(
+      <CardModal
+        card={fallback}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "1500",
+          imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+  });
+});

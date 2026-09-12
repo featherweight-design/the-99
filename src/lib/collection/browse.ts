@@ -469,7 +469,18 @@ export function printedFaceName(
  * other printings owned. Grid and row captions stay on primarySetCode alone — they are one
  * line of a dense list — but the modal shows one specific piece of art and has to say which.
  */
-export function printingCaption(card: BrowseCard): string {
+export function printingCaption(
+  card: BrowseCard,
+  /**
+   * The list `+N more` counts, when it is not the one the caption resolves against.
+   *
+   * One caller separates them: the modal injects the printing it was opened at so the face
+   * resolves to it, and that row is art rather than a holding. Counting it would caption an
+   * owned card's single holding `TLA · 282 +1 more` while the picker beside it says one
+   * printing is owned. Defaulted, so every other caller is unchanged.
+   */
+  countFrom: BrowsePrinting[] = card.printings,
+): string {
   const primary = primaryPrinting(card.printings, card.preferredPrinting);
   // The set code comes off the resolved printing even with no collector number to pair it
   // with: `primarySetCode` is the server's answer, which lags an optimistic pick by a
@@ -479,7 +490,14 @@ export function printingCaption(card: BrowseCard): string {
     : primary.collectorNumber
       ? `${primary.setCode} · ${primary.collectorNumber}`
       : primary.setCode;
-  const others = card.printings.length - 1;
+  // Minus the resolved one, but only when it is IN the list being counted. Opened at a
+  // printing the reader does not own, the resolved row is not one of their holdings — so
+  // subtracting it there hid a printing they do own, and two owned printings reported one.
+  const resolvedIsCounted =
+    primary !== undefined
+    && countFrom.some((p) => p.setCode === primary.setCode
+      && p.collectorNumber === primary.collectorNumber);
+  const others = countFrom.length - (resolvedIsCounted ? 1 : 0);
   return others > 0 ? `${base} +${others} more` : base;
 }
 

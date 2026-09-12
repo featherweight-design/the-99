@@ -331,7 +331,9 @@ describe("SetGridView — the cell is the target", () => {
     // one: every button on the grid was inert.
     view([p("1"), p("2")], []);
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
-    expect(openCard).toHaveBeenCalledWith("o-1", ["o-1", "o-2"]);
+    expect(openCard).toHaveBeenCalledWith(
+      "o-1", ["o-1", "o-2"], { setCode: "DSK", collectorNumber: "1", imageUri: null },
+    );
   });
 
   it("pages Prev/Next through the cells in the order they are on screen", () => {
@@ -339,7 +341,9 @@ describe("SetGridView — the cell is the target", () => {
     view([p("1"), p("2"), p("3")], ["2"]);
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
     // #2 is owned and hidden by missing-only, so it is not a sibling to page to.
-    expect(openCard).toHaveBeenCalledWith("o-1", ["o-1", "o-3"]);
+    expect(openCard).toHaveBeenCalledWith(
+      "o-1", ["o-1", "o-3"], { setCode: "DSK", collectorNumber: "1", imageUri: null },
+    );
   });
 });
 
@@ -540,5 +544,46 @@ describe("SetGridView — the grid declaration", () => {
     const declared = [...container.querySelectorAll<HTMLElement>("[data-set-grid]")]
       .map((g) => g.style.gridTemplateColumns);
     expect(new Set(declared).size).toBe(1);
+  });
+});
+
+describe("SetGridView — a cell opens its own printing", () => {
+  it("tells the modal which printing the cell is", () => {
+    // A cell IS a printing. Opening by oracle id alone let the modal resolve to whichever
+    // printing it liked — so clicking the dashed full-art #239 showed a different one.
+    view([p("239")], []);
+    fireEvent.click(screen.getByRole("button", { name: /not in your collection/ }));
+    expect(openCard).toHaveBeenCalledWith(
+      "o-239",
+      ["o-239"],
+      { setCode: "DSK", collectorNumber: "239", imageUri: null },
+    );
+  });
+
+  it("names the printing in upper case, which is how printings compare", () => {
+    view([p("42")], []);
+    fireEvent.click(screen.getByRole("button", { name: /not in your collection/ }));
+    const at = openCard.mock.calls[0][2];
+    expect(at.setCode).toBe(at.setCode.toUpperCase());
+  });
+});
+
+// The full-size art is the whole point of the payload change, and every fixture above
+// leaves it undefined — so the assertions only ever proved the `null` path. A regression
+// dropping `imageUri` from the callback would have passed while the modal fell back to the
+// resolver's choice, which is the defect this branch exists to fix.
+describe("SetGridView — the cell forwards its full-size art", () => {
+  it("hands the modal the exact URL, not just the identity", () => {
+    view([p("1", { imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /not in your collection/ }));
+    expect(openCard).toHaveBeenCalledWith(
+      "o-1",
+      ["o-1"],
+      {
+        setCode: "DSK",
+        collectorNumber: "1",
+        imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg",
+      },
+    );
   });
 });
