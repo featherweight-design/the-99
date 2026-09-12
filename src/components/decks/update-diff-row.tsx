@@ -25,18 +25,62 @@
 
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { Availability } from "../../lib/decks/availability";
+import type { PriceFact } from "../../lib/decks/price";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";
+import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_RADIUS, ROW_SHELL } from "../ui/row-shell";
 import { BuyTag } from "./buy-tag";
 
 const copy = deckImportCopy.update.diff;
 
-// Both plates the diff rows sit on, so the over-committed marker's seam matches
-// what is actually behind it rather than the base canvas.
-const SEAM_SURFACE = "var(--surface)";
-const SEAM_KEPT = "var(--elevated-hover)";
+// The affordance the row writes under the pointer. No copy module owns it: both
+// modules a diff row reads are a flow's copy, and this string belongs to the row
+// itself — it wants a key of its own the next time either is opened.
+const OPEN_CARD_HINT = "open card →";
+
+/**
+ * The review page's box: 40px desktop, 44px phone, and 44px at both widths on a
+ * row carrying an action, because the control is 44px on the phone and the plate
+ * cannot be shorter than what stands on it.
+ *
+ * THE REVIEW PAGE'S ALONE, which is what `review` on both rows is for. The
+ * update flow draws six row kinds in one list and only two of them are these
+ * components; retuning the pair to the newer box would leave a kept removal and
+ * an unchanged row 4px taller and 3px wider beside their neighbours in a list
+ * whose alignment is its whole legibility.
+ */
+const ROW_BOX = "min-h-[44px] md:min-h-[40px] px-[8px] md:px-[9px]";
+const ROW_BOX_ACTION = "min-h-[44px] px-[8px] md:pl-[9px] md:pr-[6px]";
+
+/** What the update flow has always drawn. `DiffRowOut` reserves its right edge
+ *  for the keep control; `DiffRowIn` has no action in that flow. */
+const ROW_BOX_OUT_IMPORT = "min-h-[44px] pl-[12px] pr-[6px]";
+const ROW_BOX_IN_IMPORT = "min-h-[44px] px-[12px]";
+
+// The plate, the seam the availability marker cuts its notch against, and the
+// hover state — all three at once, because hover moves the plate and a seam left
+// behind would notch the marker against a colour the row has stopped being.
+//
+// Hover is a fill and NOT the border the canvas drew with it. An
+// `--accent-shadow` row border is already a statement on this component: it is
+// how the update flow says a removal has been kept. A hover that borrowed it
+// would make a row the pointer is merely passing over indistinguishable from one
+// the player has decided about — and the design bundle flags the same collision
+// itself, the hover fill having no brand token behind it.
+//
+// The hover is the review page's, for the reason the box is: four of the update
+// flow's six row kinds cannot hover, so a pair that could would single itself out
+// of a list where a row's tint already means something.
+const ROW_PLATE =
+  "group bg-[color:var(--surface)] [--row-bg:var(--surface)] [border:1px_solid_var(--border)]";
+const ROW_PLATE_HOVER =
+  "md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]";
+const ROW_PLATE_KEPT =
+  "group bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)] " +
+  "[border:1px_solid_var(--accent-shadow)]";
+const SEAM = "var(--row-bg)";
 
 export type DiffRowCard = {
   oracleId: string;
@@ -53,7 +97,21 @@ export type DiffRowCard = {
    *  by different routes and must not be collapsed into one. An unowned row
    *  still fills the slot, with the buy tag. */
   availability: Availability | null;
+  /** Review page only. The update flow passes none of the four and draws exactly
+   *  what it drew before: no cost track, a bare `buy` tag, and the two-state dot.
+   *  The cost is the printed string rather than the mana value, because
+   *  `{W}{W}{U}{U}` and `{4}` are the same integer and different cards. */
+  manaCost?: string | null;
+  price?: PriceFact | null;
+  /** Liveness is one comparison against the newest row in the price table. */
+  newestAsOf?: Date | null;
+  /** Owned but spoken for by another deck — the ownership dot's third state, and
+   *  the one row that is owned and still has a price worth reading. */
+  committed?: boolean;
 };
+
+/** A copy count that moved rather than a card arriving or leaving whole. */
+export type DiffRowRecount = { from: string; to: string };
 
 /** The shipped `auto` tag, and nothing in its place when the card is not the
  *  app's. No column records who placed a card, so a second marker would assert
@@ -76,9 +134,16 @@ function Marker({ auto }: { auto: boolean }) {
 }
 
 /**
- * The floor's one availability slot: the buy tag when the card is not owned,
- * the marker when it is. Never both — an unowned card has no claims to compete
- * over, and a card the player owns is not one to buy.
+ * The floor's one availability slot: the buy tag on a row with no free copy, the
+ * marker when there is one. Never both — a row with nothing free has no headroom
+ * to report, and a row that holds a free copy is not one to buy.
+ *
+ * The question the slot asks is "has this row a free copy", not "is the card
+ * owned", and the difference is the sleeved add: the copy exists and is in
+ * somebody else's deck, so buying it is the alternative the pull is weighed
+ * against and the price is the whole point of drawing it. `committed` is how the
+ * caller says so, and the update flow, which does not pass it, keeps the reading
+ * it has always had.
  *
  * An owned card nothing competes for draws nothing here, and that is the slot
  * being filled correctly rather than left empty: the marker returns null at
@@ -97,23 +162,61 @@ function Marker({ auto }: { auto: boolean }) {
  */
 function AvailabilitySlot({
   card,
-  seam,
   selfClaimed,
 }: {
   card: DiffRowCard;
-  seam: string;
   selfClaimed: boolean;
 }) {
-  if (!card.owned) return <BuyTag variant="row" />;
+  if (!card.owned || card.committed) {
+    return (
+      <BuyTag variant="row" price={card.price ?? null} newestAsOf={card.newestAsOf ?? null} />
+    );
+  }
   if (!card.availability) return null;
   return (
     <AvailabilityMarker
       availability={card.availability}
-      seam={seam}
+      seam={SEAM}
       selfExcluded={selfClaimed}
       className="flex-none"
     />
   );
+}
+
+/** The cost, as the pips every surface that draws a cost column draws. The track
+ *  and the cap come from the shipped constants rather than a width of this row's
+ *  own: the shingle arithmetic behind them is what makes five pips measure 40px,
+ *  and a caller that picked its own would either misalign against the rows beside
+ *  it or burst a track the module still believes is 40px wide. */
+function CostTrack({ cost }: { cost: string }) {
+  return (
+    <span className="flex flex-none items-center justify-end">
+      <CostPips cost={cost} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
+    </span>
+  );
+}
+
+/** What the row does, said only while the pointer is on it and never to a screen
+ *  reader: the name's own accessible name already says it opens the card, so this
+ *  is a second utterance of one fact and a sighted reader's only clue that a row
+ *  with no chevron is a way in. */
+function OpenHint() {
+  return (
+    <span
+      aria-hidden="true"
+      className="hidden md:group-hover:inline flex-none font-mono text-[10px] text-[color:var(--fg-faint)]"
+    >
+      {OPEN_CARD_HINT}
+    </span>
+  );
+}
+
+/** The auto tag, and the invisible box it keeps when there is no tag to draw.
+ *  That box is the update flow's rhythm and not a slot the design reserves, so a
+ *  row drawing a cost track — which has a fixed trailing column of its own —
+ *  gives the space back rather than holding it empty. */
+function markerDrawn(card: DiffRowCard): boolean {
+  return card.auto || !card.manaCost;
 }
 
 /** The row's name, and the flow's one way into the card itself. A player
@@ -127,25 +230,41 @@ function DiffRowName({
   tone,
   siblings,
   describedBy,
+  recount,
 }: {
   oracleId: string;
   name: string;
   tone: string;
   siblings?: string[];
   describedBy?: string;
+  recount?: DiffRowRecount;
 }) {
-  return (
+  const trigger = (
     <CardDetailTrigger
       oracleId={oracleId}
       name={name}
       title={name}
       siblings={siblings}
       describedBy={describedBy}
-      className="flex-auto min-w-0 truncate text-left text-[13.5px]"
+      className={`min-w-0 truncate text-left text-[12.5px] md:text-[13px] ${recount ? "" : "flex-auto"}`}
       style={{ color: tone }}
     >
       {name}
     </CardDetailTrigger>
+  );
+  if (!recount) return trigger;
+  return (
+    <span className="flex-auto min-w-0 flex items-baseline gap-[6px]">
+      {trigger}
+      {/* The counts are the shipped recount's shape with the name taken off the
+          front, because the name is the element beside it: one arrow and one
+          spacing rule in the app rather than a second phrasing of a fact the
+          update flow already words. Outside the trigger, so a long name
+          truncates and the figures that make the row worth reading do not. */}
+      <span className="flex-none font-mono text-[11.5px] text-[color:var(--fg-faint)]">
+        {copy.recountedItem("", recount.from, recount.to).trim()}
+      </span>
+    </span>
   );
 }
 
@@ -173,35 +292,50 @@ export function DiffRowOut({
   action = null,
   siblings,
   describedBy,
+  recount,
+  review = false,
 }: {
   card: DiffRowCard;
   /** Plate-and-seam only, and the update flow's alone: a kept removal is tinted,
    *  and the review page has nothing to keep. */
   kept?: boolean;
+  /** The review page's box, hover fill and pointer hint. Off by default, so the
+   *  update flow's list keeps the one geometry all six of its row kinds share. */
+  review?: boolean;
   /** Whatever this mounting's decision is. `null` renders no control and no
    *  reserved box, because a row with nothing to decide should not hold a gap
    *  where a button would be. */
   action?: React.ReactNode;
+  /** Review page only: the copies this row lost, inside the row rather than on a
+   *  line under it repeating the name. */
+  recount?: DiffRowRecount;
 } & DiffRowNameExtras) {
   return (
     <div
       className={[
-        `${ROW_SHELL} min-h-[44px] pl-[12px] pr-[6px]`,
-        kept
-          ? "bg-[color:var(--elevated-hover)] [border:1px_solid_var(--accent-shadow)]"
-          : "bg-[color:var(--surface)] [border:1px_solid_var(--border)]",
+        ROW_SHELL,
+        review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_OUT_IMPORT,
+        kept ? ROW_PLATE_KEPT : ROW_PLATE,
+        review && !kept ? ROW_PLATE_HOVER : "",
       ].join(" ")}
     >
-      <OwnershipDot owned={card.owned} size={7} />
+      <OwnershipDot owned={card.owned} committed={card.committed} size={7} />
       <DiffRowName
         oracleId={card.oracleId}
         name={card.name}
         tone="var(--fg)"
         siblings={siblings}
         describedBy={describedBy}
+        recount={recount}
       />
-      <Marker auto={card.auto} />
-      <AvailabilitySlot card={card} seam={kept ? SEAM_KEPT : SEAM_SURFACE} selfClaimed />
+      {review ? <OpenHint /> : null}
+      {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
+      <AvailabilitySlot card={card} selfClaimed />
+      {/* The removes column draws the same anatomy as the adds, cost track and
+          all. A card with no printed cost — a land — ends the row short rather
+          than holding an empty slot: the track's width is the shipped constant's
+          and no longer a reserved column of this row's own. */}
+      {card.manaCost ? <CostTrack cost={card.manaCost} /> : null}
       {action}
     </div>
   );
@@ -253,41 +387,80 @@ export function DiffRowIn({
   siblings,
   describedBy,
   action = null,
+  recount,
+  review = false,
 }: {
   card: DiffRowCard;
   sourceLine: number | null;
   action?: React.ReactNode;
+  /** Review page only: the copies this row gained, inside the row. */
+  recount?: DiffRowRecount;
+  /** The review page's box, hover fill and pointer hint — see `DiffRowOut`. */
+  review?: boolean;
 } & DiffRowNameExtras) {
   return (
-    <div className={`${ROW_SHELL} min-h-[44px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]`}>
-      <OwnershipDot owned={card.owned} size={7} />
+    <div
+      className={[
+        ROW_SHELL,
+        review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_IN_IMPORT,
+        ROW_PLATE,
+        review ? ROW_PLATE_HOVER : "",
+      ].join(" ")}
+    >
+      <OwnershipDot owned={card.owned} committed={card.committed} size={7} />
       <DiffRowName
         oracleId={card.oracleId}
         name={card.name}
         tone="var(--fg)"
         siblings={siblings}
         describedBy={describedBy}
+        recount={recount}
       />
-      {/* The slot sits BEFORE the line number, not after it. The name is the only
-          flexible item, so anything that can disappear has to sit on the name's
-          side of the fixed columns — with the slot trailing, an owned row's line
-          number landed a tag's width right of an unowned row's. */}
-      <AvailabilitySlot card={card} seam={SEAM_SURFACE} selfClaimed={false} />
-      {/* Between the tag and the line number, for the reason above it: the
+      {review ? <OpenHint /> : null}
+      {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
+      {/* The slot sits BEFORE the trailing column, not after it. The name is the
+          only flexible item, so anything that can disappear has to sit on the
+          name's side of the fixed column — with the slot trailing, an owned row's
+          line number landed a tag's width right of an unowned row's. */}
+      <AvailabilitySlot card={card} selfClaimed={false} />
+      {/* Between the tag and the trailing column, for the reason above it: the
           action is the row's other item that can be absent, so it sits on the
           name's side of the one fixed column. */}
       {action}
-      {/* The line number keeps its width and is tabular, so it lands in the same
-          place however many digits the source line has. */}
+      {/* One trailing column, whichever mounting is drawing: the import's line
+          number, or the cost track that the deleted type label paid for. They
+          are never both — a row with a printed cost is the review page's, which
+          has no lines to cite — so the column is written once and the review row
+          inherits the width the line number reserved.
+
+          Desktop-only when it holds the line number, because the import's phone
+          row does not cite lines; drawn at both widths when it holds pips, which
+          the design puts on the phone row too. One element either way. */}
       <span
         // `whitespace-nowrap` because the string has a space in it: a long line
         // number would otherwise wrap and take the row's height with it. The
         // sibling slots get it from `truncate`. `min-w` rather than `w` so the
         // slot holds its place on short numbers but grows past four digits
         // instead of colliding with the type line — nothing caps import length.
-        className="hidden md:inline font-mono text-[11px] min-w-[54px] flex-none text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]"
+        className={[
+          card.manaCost ? "flex" : "hidden md:flex",
+          "items-center justify-end font-mono text-[11px] min-w-[54px] flex-none",
+          "text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]",
+        ].join(" ")}
       >
-        {sourceLine !== null ? copy.sourceLine(String(sourceLine)) : ""}
+        {card.manaCost ? (
+          <CostPips
+            cost={card.manaCost}
+            size={COST_PIP_SIZE}
+            track={COST_TRACK}
+            cap={COST_PIP_CAP}
+            spoken
+          />
+        ) : sourceLine !== null ? (
+          copy.sourceLine(String(sourceLine))
+        ) : (
+          ""
+        )}
       </span>
     </div>
   );

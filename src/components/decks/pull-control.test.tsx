@@ -124,6 +124,42 @@ describe("PullControl", () => {
     await act(async () => {
       screen.getByRole("button", { name: copy.pull }).click();
     });
-    expect(screen.getByRole("alert").textContent).toContain("Release the card there");
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("Release the card there");
+    // The shipped `MutationError`, which is a paragraph beneath the control, and
+    // not a second refusal written inline beside it.
+    expect(alert.tagName).toBe("P");
+    // The row stays pullable: what refused it was a race, and the reader can act
+    // on the advice and ask again.
+    expect(screen.getByRole("button", { name: copy.pull })).toBeTruthy();
+  });
+
+  // Both actions stand in one box, so a guarded row is the same width and the
+  // same height as a pullable one. Only the ink differs: the accent belongs to
+  // the one control on this page that writes, and leaving for another deck is
+  // navigation.
+  it("gives the guard's route the pull's geometry and the reading ink", () => {
+    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    const pull = screen.getByRole("button", { name: copy.pull }).className;
+    cleanup();
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claim={{ ...FREE_TO_PULL, pending: true }}
+        onPulled={noop}
+      />,
+    );
+    const open = screen.getByRole("link", { name: /Open it to release Sol Ring/ }).className;
+    for (const geometry of ["min-h-[44px]", "md:min-h-[34px]", "px-[16px]", "md:px-[11px]"]) {
+      expect(pull).toContain(geometry);
+      expect(open).toContain(geometry);
+    }
+    expect(pull).toContain("text-[color:var(--accent)]");
+    expect(open).toContain("text-[color:var(--fg)]");
+    expect(open).not.toContain("text-[color:var(--accent)]");
+    // Sans on both, never the mono this page sets its meta in: these are controls.
+    expect(pull).toContain("font-sans");
+    expect(open).toContain("font-sans");
   });
 });

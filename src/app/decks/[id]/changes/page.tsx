@@ -40,5 +40,13 @@ export default async function ChangesPage({
   // the version line now is, so that is where the reader goes.
   if (changeCount(state) === 0 && !wantsCommit) redirect(`/decks/${id}`);
 
-  return <ReviewChanges deckId={id} rows={rows} state={state} commitOpen={wantsCommit} />;
+  return (
+    <ReviewChanges
+      deckId={id}
+      deckName={detail.name}
+      rows={rows}
+      state={state}
+      commitOpen={wantsCommit}
+    />
+  );
 }

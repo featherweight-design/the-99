@@ -47,12 +47,15 @@ describe("ReviewChanges", () => {
     render(
       <ReviewChanges
         deckId="d"
+        deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
         state={STATE}
       />,
     );
-    expect(screen.getByText(deckVersioningCopy.review.groupIn(1))).toBeTruthy();
-    expect(screen.getByText(deckVersioningCopy.review.groupOut(1))).toBeTruthy();
+    // Twice each, and one markup: the phone segment and the desktop direction
+    // header carry the same string at the two widths.
+    expect(screen.getAllByText(deckVersioningCopy.review.groupIn(1))).toHaveLength(2);
+    expect(screen.getAllByText(deckVersioningCopy.review.groupOut(1))).toHaveLength(2);
     // The type is said once over the rows that share it, never per row — the
     // whole of what dropping the row's own label bought.
     expect(screen.getAllByText("Artifacts")).toHaveLength(2);
@@ -61,7 +64,7 @@ describe("ReviewChanges", () => {
 
   it("files a quantity move as one row carrying from → to, never a bare name", () => {
     render(
-      <ReviewChanges deckId="d" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} state={STATE} />,
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} state={STATE} />,
     );
     expect(screen.getByText(/1 → 2/)).toBeTruthy();
   });
@@ -69,14 +72,15 @@ describe("ReviewChanges", () => {
   // A whole add and a whole cut are what the column heading already says, so a
   // `0 → 1` beside them would restate the column the row is standing in.
   it("says nothing about copies on a card arriving or leaving whole", () => {
-    render(<ReviewChanges deckId="d" rows={{ in: [row()], out: [] }} state={STATE} />);
-    expect(screen.queryByText(/→/)).toBeNull();
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />);
+    expect(screen.queryByText(/\d+ → \d+/)).toBeNull();
   });
 
   it("puts the availability word in the accessible name, not only in colour", () => {
     render(
       <ReviewChanges
         deckId="d"
+        deckName="Korvold"
         rows={{ in: [row({ bucket: "unowned" })], out: [] }}
         state={STATE}
       />,
@@ -94,7 +98,7 @@ describe("ReviewChanges", () => {
   // `free` on every surface in the app — so there is no colour for a word to be
   // the alternative to.
   it("describes nothing on a row the player already has a free copy of", () => {
-    render(<ReviewChanges deckId="d" rows={{ in: [row()], out: [] }} state={STATE} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />);
     expect(
       screen.getByRole("button", { name: /Sol Ring/ }).getAttribute("aria-describedby"),
     ).toBeNull();
@@ -104,6 +108,7 @@ describe("ReviewChanges", () => {
     render(
       <ReviewChanges
         deckId="d"
+        deckName="Korvold"
         rows={{ in: [], out: [row({ direction: "out", from: 1, to: 0 })] }}
         state={STATE}
       />,
@@ -115,7 +120,7 @@ describe("ReviewChanges", () => {
   // The lede names the version the player is about to cut, not the one they are
   // standing on: the whole page exists to be read before that number exists.
   it("heads the page with the version behind it and the version ahead", () => {
-    render(<ReviewChanges deckId="d" rows={{ in: [row()], out: [] }} state={STATE} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />);
     expect(screen.getByText(deckVersioningCopy.review.heading(1, 1))).toBeTruthy();
     expect(screen.getByText(deckVersioningCopy.review.lede(2))).toBeTruthy();
   });
@@ -126,6 +131,7 @@ describe("ReviewChanges", () => {
     render(
       <ReviewChanges
         deckId="d"
+        deckName="Korvold"
         rows={{
           in: [row({ bucket: "claimed", availability: claimed() })],
           out: [
@@ -147,6 +153,7 @@ describe("ReviewChanges", () => {
     render(
       <ReviewChanges
         deckId="d"
+        deckName="Korvold"
         rows={{ in: [row(), row({ oracleId: "o2", name: "Mox", bucket: "unowned" })], out: [] }}
         state={STATE}
       />,
@@ -161,6 +168,7 @@ describe("ReviewChanges", () => {
     render(
       <ReviewChanges
         deckId="d"
+        deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
         state={STATE}
       />,
@@ -174,21 +182,89 @@ describe("ReviewChanges", () => {
   // One column is nothing to switch between, so the phone control is absent —
   // and its absence is what keeps the desktop columns from being drawn twice.
   it("offers the phone segments only when both columns have rows", () => {
-    // The segment carries its figure, so it is named "1 in" rather than "in" —
-    // the count is the reason the control is worth reading before it is tapped.
-    const segment = new RegExp(`${deckVersioningCopy.review.chipIn}$`);
+    // The segment is labelled by the column heading itself, figure and all, so
+    // the page has one name for a direction rather than a chip's and a
+    // heading's.
+    const segment = deckVersioningCopy.review.groupIn(1);
     const { unmount } = render(
-      <ReviewChanges deckId="d" rows={{ in: [row()], out: [] }} state={STATE} />,
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />,
     );
     expect(screen.queryByRole("button", { name: segment })).toBeNull();
     unmount();
     render(
       <ReviewChanges
         deckId="d"
+        deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
         state={STATE}
       />,
     );
     expect(screen.getByRole("button", { name: segment })).toBeTruthy();
+  });
+
+  // The one way off this page that is neither a commit nor a discard, and it
+  // names the deck: a bare "Back" would ask the reader to remember which deck
+  // they were editing to know where it goes.
+  it("links back to the deck by name", () => {
+    render(
+      <ReviewChanges deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />,
+    );
+    const back = screen.getByRole("link", { name: /Korvold/ });
+    expect(back.getAttribute("href")).toBe("/decks/d7");
+  });
+
+  // Every chip is counted off the state rather than off the rows beside it — the
+  // banner, this strip and the commit sheet's buy block are one purchase with
+  // three appearances — and the purchase rides on the to-buy chip because a
+  // count of copies and what those copies cost are one fact.
+  it("chips the purchase with its total, and draws no chip for a nought", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={{ ...STATE, buyCount: 3, total: "$28.40", pullableCount: 0 }}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.chipBuy)).toBeTruthy();
+    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getByText("$28.40")).toBeTruthy();
+    // No pull is on the table, so the chip standing for one is absent rather
+    // than drawn at zero.
+    expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
+    // Nor is the out chip, with no column behind it.
+    expect(screen.queryByText(deckVersioningCopy.review.chipOut)).toBeNull();
+  });
+
+  // The pair goes inside the row the card is already named on. A caption under
+  // the row printed the name a second time, which is the one thing the row it
+  // hangs off has never failed to say.
+  it("carries the recount inside the row without naming the card twice", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ from: 3, to: 1 })], out: [] }}
+        state={STATE}
+      />,
+    );
+    expect(screen.getByText(/3 → 1/)).toBeTruthy();
+    expect(screen.queryByText(/Sol Ring 3 → 1/)).toBeNull();
+  });
+
+  // Desktop only: at 390px the segmented pair is the direction, and the lede
+  // describes pulls the reader can see on the list below it.
+  it("heads each column with its direction and its breakdown", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE}
+      />,
+    );
+    expect(
+      screen.getByText(deckVersioningCopy.review.groupInBreakdown(0, 0, 0)),
+    ).toBeTruthy();
   });
 });
