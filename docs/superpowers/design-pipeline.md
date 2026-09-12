@@ -32,8 +32,9 @@ The same handoff locks the character layer that carries the voice visually — t
 3. Orange/Red → addendum or new design ticket → Track 2
 
 **A fourth path, added 2026-09-12: eng changes or extends what a handoff specifies, to fix a
-reported defect.** Both founding cases are here — one changed a VALUE (the `left-portrait` ambient
-layer's opacity, removed), and one extended a TREATMENT'S SCOPE (the `Card details` control, specced
+reported defect.** Both founding cases are here — one REMOVED A LAYER the handoff specifies (the
+`left-portrait` ambient copy, which drew the crop a second time), and one extended a TREATMENT'S
+SCOPE (the `Card details` control, specced
 for the phone, added to the desktop frame because what it opens stopped being what §4 assumed). That is
 not an audit outcome — there is no verdict to flip, because the handoff was already Green and the
 change came from a bug report rather than a review. It ships with an errata in the handoff — and in its `READINESS.md` where one exists, which the

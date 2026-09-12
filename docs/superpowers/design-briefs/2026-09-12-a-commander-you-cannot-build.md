@@ -98,8 +98,10 @@ what fits.
 
 The row and the hero each need to say one of:
 
-- **Sleeved** — committed claims match the owned copies EXACTLY, so `free === 0` and the state is
-  `hard` (`availabilityState` tests `over` first, so anything past exact lands there instead). Meren
+- **Sleeved** — the player owns at least one copy AND committed claims match the owned copies
+  EXACTLY, so `free === 0` and the state is `hard`. Both halves are load-bearing: `availabilityState`
+  returns `free` for anything the player does not own before it looks at claims at all, and it tests
+  `over` before `hard`, so anything past exact lands there instead. Meren
   and Kotis today, where that is one copy in one deck, but the condition is no free supply rather
   than one copy: three copies across three committed decks read the same, and a brew may want one
   too. Strongest form: building means taking the card out of a finished deck.

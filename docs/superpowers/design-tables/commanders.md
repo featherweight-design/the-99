@@ -1050,7 +1050,7 @@
 | display | flex | — |
 | gap | 5px | — |
 
-### "⛶ Full card" affordance chip
+### "⛶ Full card" affordance chip — the handoff's heading; the shipped label is `Card details`
 
 > **Errata (2026-09-11, ratified 2026-09-12):** this chip is drawn on the desktop commander
 > detail page as well, inside the 63/88 card frame at `left: 12px; bottom: 12px`, with the frame

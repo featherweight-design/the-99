@@ -168,5 +168,5 @@ twice again.
 
 **Ratified by Hugh, 2026-09-12: leave it gone.** It was built as the defect exactly as reported and
 ruled on after the fact, so the verdict above stands whole. If the ambient atmosphere is ever wanted
-back, it needs a treatment that does not restate the crop — a blur past the mask edge, or a flat tint
-sampled from the art are the two candidates that would.
+back, it needs a treatment that does not restate the crop: a blur past the mask edge, or a flat tint
+sampled from the art.

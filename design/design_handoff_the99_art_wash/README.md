@@ -206,9 +206,9 @@ Yawgmoth; Azog, Moria's Ruin. Use double quotes inside `url()` **and** append `.
 | Surface | Band | Strategy | Geometry | Art opacity |
 |---|---|---|---|---|
 | Deck card | aspect `2.2/1` | `cover` | focal `center top`, labels top | `.58` |
-| Commander row | `148px` | `left-portrait` | portrait `203px`, mask `0 58%`, scrim `118/203/264px`, ambient `cover top .20`, labels at band baseline | `.80` sharp |
+| Commander row | `148px` | `left-portrait` | portrait `203px`, mask `0 58%`, scrim `118/203/264px`, ~~ambient `cover top .20`~~ **(removed 2026-09-11, ratified 2026-09-12 — see the errata below)**, labels at band baseline | `.80` sharp |
 | Home · ready to build | aspect `2.2/1` | `cover` | focal `center top`, labels top | `.58` |
-| Home · resume | `72px` | `left-portrait` | portrait `99px`, mask `0 62%`, scrim `0/58/99/138px`, ambient `cover top .14`, type inset `116px`, **no text-shadow** | `.85` sharp |
+| Home · resume | `72px` | `left-portrait` | portrait `99px`, mask `0 62%`, scrim `0/58/99/138px`, ~~ambient `cover top .14`~~ **(removed, same errata)**, type inset `116px`, **no text-shadow** | `.85` sharp |
 
 Constants across all four: L1 `#0E0C09`, focal `center top`, divider `1px #2A241D`, ground
 `#1A160F`, chip-on-art `#14110E` + `1px #3A3229`, title `#F4EFE3`, subtitle `#C6B79A`.
@@ -226,8 +226,9 @@ Constants across all four: L1 `#0E0C09`, focal `center top`, divider `1px #2A241
 - **Respect reduced-transparency.** Under `prefers-reduced-transparency` or forced high contrast,
   drop L2 to `opacity .3` and push L3's stops to `.95 / .6 / .85 / .86` across the base
   gradient's own four positions (`0 / 40 / 74 / 100%`) — the ramp keeps its fourth stop.
-  Reduced-opacity values are a **ceiling, never a floor**: `min(layer, .3)`, so a `left-portrait`
-  ambient copy already at `.14` or `.20` is left alone rather than raised. The preference applies
+  Reduced-opacity values are a **ceiling, never a floor**: `min(layer, .3)`. The example this rule
+  was written against — a `left-portrait` ambient copy at `.14` or `.20`, left alone rather than
+  raised — no longer exists (see the errata below); the rule stands for every layer that does. The preference applies
   to **art layers only** — the no-crop identity gradient publishes its own opacity and is not
   capped, and the 180deg override is scoped to the `cover` strategy so it cannot delete the
   90deg px-keyed fade that `left-portrait` exists for.
