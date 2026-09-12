@@ -122,9 +122,20 @@ async function walkSurface(page, label, vpName, slug, { expectFlip = false } = {
   }
 
   const hit = await page.evaluate(`(${READ_HIT_TEST})()`);
-  if (!hit.found) fail(`no chip found for the hit test`);
-  else if (!hit.hitsTheChip) fail(`the chip is painted but something else takes the click`);
-  else note(`  the pointer lands on the chip`);
+  if (!hit.found) {
+    fail(`no chip found for the hit test`);
+    return;
+  }
+  if (!hit.hitsTheChip) {
+    // RETURN, rather than clicking anyway. This is the regression this probe was
+    // written for, and the overlay that causes it also intercepts the click — so
+    // clicking would throw out of the whole run, taking the remaining surfaces
+    // and the failure summary with it. The finding is already recorded; the
+    // other three walks are worth more than a stack trace.
+    fail(`the chip is painted but something else takes the click`);
+    return;
+  }
+  note(`  the pointer lands on the chip`);
 
   await page.locator('button[aria-label="View card details"]:visible').first().click();
   await page.waitForTimeout(1200);
@@ -197,17 +208,29 @@ try {
       continue;
     }
     let walked = false;
-    for (const href of deckHrefs.slice(0, 8)) {
+    let skipped = 0;
+    // EVERY deck, not the first handful. A cap here would report "no qualifying
+    // deck" while a later one had a crop, which is a silent pass on a surface
+    // this probe exists to test. The loop stops at the first deck that
+    // qualifies, so the cost is one page load in the normal case.
+    for (const href of deckHrefs) {
       await page.goto(`${BASE}${href}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(700);
       const chips = await page.evaluate(`(${READ_TRIGGERS})()`);
-      if (chips.length === 0) continue; // artless commander, §G — try the next
+      if (chips.length === 0) {
+        skipped += 1; // artless commander, §G — no crop, no printing to open
+        continue;
+      }
+      if (skipped) note(`  (skipped ${skipped} deck(s) whose commander has no art crop)`);
       await walkSurface(page, `${vpName} deck header (${href})`, vpName, "deck");
       walked = true;
       break;
     }
     if (!walked) {
-      fail(`${vpName}: no deck whose commander has an art crop — the deck header went unchecked`);
+      fail(
+        `${vpName}: none of ${deckHrefs.length} decks has a commander with an art crop — ` +
+          `the deck header went unchecked`,
+      );
     }
 
     await context.close();
