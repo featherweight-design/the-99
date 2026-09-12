@@ -1,89 +1,44 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { defaultParams } from "@/lib/commanders/lane-params";
-import { ChipLine } from "./chip-line";
+import { chipsFor } from "./chip-line";
 
-const noop = () => {};
-
-describe("ChipLine", () => {
-  // The disabled `Clear` beside no chips already says there is nothing to clear,
-  // so the row holds its height and says nothing.
-  it("holds its height with nothing active, without narrating the empty row", () => {
-    const { container } = render(
-      <ChipLine params={defaultParams("owned")} lane="owned" onChange={noop} wide />,
-    );
-    expect(screen.queryAllByTestId("filter-chip")).toHaveLength(0);
-    expect(container.firstElementChild).toHaveClass("min-h-[22px]");
-    expect(container.textContent).toBe("Clear");
-  });
-
-  it("keeps Clear present and inert rather than removing it", () => {
-    render(<ChipLine params={defaultParams("owned")} lane="owned" onChange={noop} wide />);
-    expect(screen.getByRole("button", { name: "Clear" })).toBeDisabled();
+// The component is gone: the rack mounts `FilterChassis`, which draws the chip
+// row for all four routes. The row's own behaviours — holding its height with
+// nothing on, keeping Clear present and inert, naming the value a chip removes
+// — are covered once in `src/components/ui/filter-chassis.test.tsx`.
+//
+// What stayed is the derivation, which is lane-shaped and the chassis cannot do
+// for itself: which chips exist, in what order, and what each one unsets.
+describe("chipsFor", () => {
+  it("gives an untouched lane no chips at all", () => {
+    expect(chipsFor(defaultParams("owned"), "owned")).toHaveLength(0);
   });
 
   it("orders chips by control, search first", () => {
-    render(
-      <ChipLine
-        params={{ ...defaultParams("owned"), q: "druid", colors: ["b", "g"] }}
-        lane="owned"
-        onChange={noop}
-        wide
-      />,
+    const chips = chipsFor(
+      { ...defaultParams("owned"), q: "druid", colors: ["b", "g"] },
+      "owned",
     );
-    const chips = screen.getAllByTestId("filter-chip").map((c) => c.textContent);
-    expect(chips[0]).toContain('"druid"');
+    expect(chips[0].label).toContain('"druid"');
   });
 
-  // One chip per control is about chips, not swatches: the label collapses two
-  // pips to "2 colours", and the swatches inside that one chip say which two.
-  it("draws a swatch per lit hue inside the single colour chip", () => {
-    render(
-      <ChipLine
-        params={{ ...defaultParams("owned"), colors: ["b", "g"] }}
-        lane="owned"
-        onChange={noop}
-        wide
-      />,
-    );
-    const chip = screen.getByTestId("filter-chip");
-    expect(chip).toHaveTextContent("2 colours");
-    expect(chip.querySelectorAll("span[style*='background']")).toHaveLength(2);
+  // One chip per control, not per value: the label collapses two pips to
+  // "2 colours" and the swatches inside that one chip say which two.
+  it("collapses several hues into one chip carrying a swatch each", () => {
+    const chips = chipsFor({ ...defaultParams("owned"), colors: ["b", "g"] }, "owned");
+    const colour = chips.filter((c) => c.key === "colors");
+    expect(colour).toHaveLength(1);
+    expect(colour[0].dots).toHaveLength(2);
   });
 
-  // Four is the most either lane can produce, and the phone shows all four: a
-  // chip hidden behind a count is a filter the reader cannot see is on.
-  it("shows every chip on the phone, wrapping rather than collapsing", () => {
-    const { container } = render(
-      <ChipLine
-        params={{
-          q: "druid",
-          colors: ["b", "g"],
-          match: "exactly",
-          avail: "free",
-          order: "name",
-        }}
-        lane="owned"
-        onChange={noop}
-        wide={false}
-      />,
-    );
-    expect(screen.getAllByTestId("filter-chip")).toHaveLength(4);
-    expect(screen.queryByText(/^\+\d/)).not.toBeInTheDocument();
-    expect(container.firstElementChild).toHaveClass("flex-wrap");
+  it("hands back the parameters that unset just that chip", () => {
+    const params = { ...defaultParams("owned"), q: "druid", colors: ["b"] };
+    const search = chipsFor(params, "owned").find((c) => c.label.includes("druid"))!;
+    expect({ ...params, ...search.next }).toMatchObject({ q: "", colors: ["b"] });
   });
 
-  it("clears every control at once, back to the lane's defaults", async () => {
-    const onChange = vi.fn();
-    render(
-      <ChipLine
-        params={{ ...defaultParams("owned"), colors: ["b"] }}
-        lane="owned"
-        onChange={onChange}
-        wide
-      />,
-    );
-    screen.getByRole("button", { name: "Clear" }).click();
-    expect(onChange).toHaveBeenCalledWith(defaultParams("owned"));
+  it("does not offer an availability chip on the lane that has no availability", () => {
+    const discover = chipsFor({ ...defaultParams("discover"), colors: ["r"] }, "discover");
+    expect(discover.some((c) => c.key.startsWith("avail"))).toBe(false);
   });
 });

@@ -67,6 +67,16 @@ export type FilterChassisProps = {
    * one thing.
    */
   form: "wide" | "compact";
+  /**
+   * Rendered after the three rows, inside the frame. This is the phone sheet's
+   * home: it is an `aria-modal` dialog that belongs to the chassis's own
+   * `Filters` trigger, and mounting it outside the frame would put the dialog
+   * and the control that opens it in two different subtrees.
+   *
+   * Closed, a sheet returns null — never a hidden duplicate of the controls it
+   * replaces, which is what `use-min-width.ts` exists to prevent.
+   */
+  after?: React.ReactNode;
 };
 
 /**
@@ -92,7 +102,7 @@ const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
-  controls, sort, chips, onClearAll, resultLine, form,
+  controls, sort, chips, onClearAll, resultLine, form, after,
 }: FilterChassisProps) {
   return (
     <div
@@ -205,6 +215,8 @@ export function FilterChassis({
       <div data-chassis-row="result">
         <ResultLine line={resultLine} />
       </div>
+
+      {after}
     </div>
   );
 }

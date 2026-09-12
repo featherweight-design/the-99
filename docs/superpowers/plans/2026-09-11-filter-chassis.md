@@ -79,7 +79,7 @@ this run's work.
 |---|---|---|
 | 1a | Pip assets, `ColourPips`, `FilterChassis`, `ResultLine`'s move | nothing |
 | 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a ✅ |
-| 2 | `/commanders` and `/discover` | 1b |
+| 2 | `/commanders` and `/discover` | 1b ✅ — shipped in the same PR |
 | 3 | `/collection` | 2, and set collections' Task 9 |
 
 **1a and 1b were one PR in the first draft of this plan.** They are split because the primitives
@@ -247,3 +247,23 @@ an assumption that the four routes' figures carry over.
 - **Counts are filter-aware.** A status row's count is what survives the *other* active filters,
   which is what makes a zero meaningful: it means "nothing given the colours already on", not
   "no deck has ever had this status".
+
+
+## PR 2 landed with 1b rather than after it
+
+The rack turned out to be the chassis already — a frame wrapping a control row,
+a chip line, a result line and a sheet — so migrating it was mostly deletion,
+and holding it back would have left two frames drawing the same three rows for
+no reason. Both routes ship in the same PR.
+
+What the migration removed rather than rewrote: `ChipLine` and the rack's
+`ResultLine` wrapper are gone. `chipsFor` and `resultSentence` survive them,
+because those are the lane-shaped halves the chassis cannot derive — which
+chips exist and what each unsets, and how a lane words its own count. Their
+tests follow them, and the behaviours that moved to the chassis are covered
+once in `filter-chassis.test.tsx` and `ui/result-line.test.tsx` rather than
+twice.
+
+Decision 16 holds: the match modifier is untouched, still inside
+`ColourControl`, which is why that component stays rather than being replaced
+by `ColourPips` on these two lanes. Availability remains owned-lane only.

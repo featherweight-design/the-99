@@ -28,10 +28,19 @@ import {
   STATUS_COPY_KEY,
   SearchField,
   toggleIn,
-  type FilterChromeProps,
 } from "./deck-filter-column";
+import type { DeckFilters } from "../../lib/decks/filter";
 
-type DeckFilterSheetProps = FilterChromeProps & {
+/**
+ * Filters only. The sheet carried the sort until §3.4 retired that group — the
+ * chassis gives sort its own slot on both forms — so these props no longer
+ * inherit the sort state nothing in here reads.
+ */
+type DeckFilterSheetProps = {
+  filters: DeckFilters;
+  onChange: (next: DeckFilters) => void;
+  shown: number;
+  total: number;
   open: boolean;
   onDismiss: () => void;
   autoFocusSearch: boolean;

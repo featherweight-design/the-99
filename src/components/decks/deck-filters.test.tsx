@@ -16,8 +16,6 @@ function props(over = {}) {
   return {
     filters: EMPTY_FILTERS,
     onChange: vi.fn(),
-    sort: "lastPlayed" as const,
-    onSortChange: vi.fn(),
     shown: 6,
     total: 6,
     ...over,

@@ -1,7 +1,13 @@
 "use client";
 
-// The desktop `Sort · last played` trigger and its menu. Phone has no sort
-// trigger at all — the sheet carries the order there (table §Ambiguities 2).
+// The `Sort · last played` trigger and its menu, at every width.
+//
+// The phone used to have no sort trigger and reached the order through the
+// filter sheet (table §Ambiguities 2). The chassis gives sort its own trailing
+// slot past a hairline on both forms (decision 11), so the sheet's sort group
+// is retired and this is the one control for the value — which is why the
+// trigger has to clear 44px on the compact form rather than staying at the
+// desktop's 32.
 //
 // Not `FilterPanel`, which is the collection bar's control: its trigger is a
 // 44px pill with a chevron and its own type scale, and every one of those is a
@@ -89,7 +95,10 @@ export function DeckSortMenu({
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] py-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)]"
+        // 44px on the compact form, 32 on the desktop one: this is now the
+        // only route to the sort at either width, so the phone target cannot
+        // sit under the floor the way a desktop-only control could.
+        className="flex h-[44px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] py-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] sm:h-[32px]"
       >
         {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
       </button>

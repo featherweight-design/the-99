@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 import {
+  defaultParams,
   activeControlCount,
   type Lane,
   type LaneParams,
@@ -26,12 +27,13 @@ import {
 import { filterCopy } from "../../../lib/copy/lanes";
 import { useIsWide } from "../../ui/use-is-wide";
 import { AvailabilityControl } from "./availability-control";
-import { ChipLine } from "./chip-line";
+import { chipsFor } from "./chip-line";
+import { FilterChassis, type FilterChip } from "../../ui/filter-chassis";
 import { ColourControl } from "./colour-control";
 import { FilterSheet } from "./filter-sheet";
 import { OrderControl } from "./order-control";
 import { ORDER_OPTIONS } from "./order-options";
-import { ResultLine } from "./result-line";
+import { resultSentence } from "./result-line";
 import { SearchControl } from "./search-control";
 
 export function FilterRack({
@@ -88,14 +90,33 @@ export function FilterRack({
     />
   );
 
+  // `chipsFor` already knows every dimension and how to unset one; the chassis
+  // needs only a label and a callback, so this is a shape change rather than a
+  // second source of truth about what is on.
+  const chassisChips: FilterChip[] = chipsFor(params, lane).map((chip) => ({
+    key: chip.key,
+    label: chip.label,
+    onRemove: () => onChange({ ...params, ...chip.next }),
+  }));
+
   return (
-    <div className="flex flex-col gap-[11px] border-0 border-b border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] pt-[12px] pb-[10px] lg:px-[22px] lg:pt-[14px] lg:pb-[12px]">
-      {wide ? (
+    <FilterChassis
+      form={wide ? "wide" : "compact"}
+      chips={chassisChips}
+      onClearAll={() => onChange(defaultParams(lane))}
+      resultLine={`${resultSentence(shown, total, lane)}${
+        excludedByExactly === null
+          ? ""
+          : ` — ${filterCopy.match.excludedAside(excludedByExactly)}`
+      }`}
+      sort={order}
+      controls={
+        wide ? (
         // Leading-edge reading order (readiness decision 2): the controls run
         // left to right in the order a reader would reach for them, and each
         // lane's own control sits where its question is asked. Frame `I1`'s
         // trailing arrangement is deliberately not built.
-        <div className="flex flex-wrap items-center gap-[14px]">
+        <>
           {search}
           <ColourControl
             colors={params.colors}
@@ -113,39 +134,25 @@ export function FilterRack({
               wide
             />
           )}
-          {/* Order trails on both lanes, and stays put on discover even though
-              two of its options now decide what the lane is ranked on: one
-              shared control in two places by lane would have to be re-found on
-              every lane flip. */}
-          <div className="ml-auto">{order}</div>
-        </div>
+        </>
       ) : (
         // The persistent row: search · order · `Filters`, all 44px. Everything
         // else is in the sheet, which is why search is here and not there — and
         // why the badge cannot count it.
-        <div className="flex items-center gap-[8px]">
-          <div className="min-w-0 flex-1">{search}</div>
-          {order}
+        <>
+          <div className="min-w-0 flex-auto">{search}</div>
           <FiltersTrigger
             badge={active}
             onClick={() => setSheetOpen(true)}
             expanded={sheetOpen}
           />
-        </div>
-      )}
-
-      <ChipLine params={params} lane={lane} onChange={onChange} wide={wide} />
-
-      <ResultLine
-        shown={shown}
-        total={total}
-        lane={lane}
-        excludedByExactly={excludedByExactly}
-      />
-
-      {/* Closed, this returns null: the sheet is never a hidden duplicate of
-          the controls it replaces. */}
-      {!wide && (
+        </>
+      )
+      }
+      after={
+        /* Closed, this returns null: the sheet is never a hidden duplicate of
+           the controls it replaces. */
+        !wide && (
         <FilterSheet
           open={sheetOpen}
           onOpenChange={setSheetOpen}
@@ -155,8 +162,9 @@ export function FilterRack({
           shown={shown}
           total={total}
         />
-      )}
-    </div>
+      )
+      }
+    />
   );
 }
 

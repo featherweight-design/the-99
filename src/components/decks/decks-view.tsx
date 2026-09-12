@@ -333,8 +333,6 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
           <DeckFilterSheet
             filters={state.filters}
             onChange={onFilters}
-            sort={state.sort}
-            onSortChange={onSort}
             shown={shown.length}
             total={decks.length}
             open={sheet.open}
