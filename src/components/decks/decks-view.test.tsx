@@ -221,6 +221,9 @@ describe("DecksView", () => {
     });
     rerender(view([deckOf()]));
     expect(screen.queryByRole("dialog")).toBeNull();
+    // The trigger the sheet would restore focus to unmounts with it, so the
+    // wide form's search field takes the focus rather than losing it to body.
+    expect(screen.getByLabelText("Search decks")).toHaveFocus();
   });
 
   it("clears every filter and leaves a non-default sort alone", () => {

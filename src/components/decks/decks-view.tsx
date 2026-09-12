@@ -99,7 +99,17 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   // does not have; every later read is in a callback, where `window` is safe.
   const search = useSearchParams();
   const [state, setState] = useState<ViewState>(() => filtersFromParams(search));
-  const [sheet, setSheet] = useState<{ open: boolean; focusSearch: boolean }>({
+  const [sheet, setSheet] = useState<{
+    open: boolean;
+    focusSearch: boolean;
+    /**
+     * Set only when the breakpoint closed the sheet. `useDialogA11y` restores
+     * focus to the trigger it opened from, and that trigger is removed in the
+     * same commit as the sheet — so focus would land on `<body>`. The wide
+     * form's search field is the nearest equivalent and takes it instead.
+     */
+    handOffFocus?: boolean;
+  }>({
     open: false,
     focusSearch: false,
   });
@@ -153,7 +163,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   const [wasWide, setWasWide] = useState(wide);
   if (wasWide !== wide) {
     setWasWide(wide);
-    if (wide && sheet.open) setSheet({ open: false, focusSearch: false });
+    if (wide && sheet.open) setSheet({ open: false, focusSearch: false, handOffFocus: true });
   }
 
   // `chipLabels` already knows how to remove one value; the chassis only needs
@@ -228,6 +238,9 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                       value={state.filters.search}
                       onChange={(search) => onFilters({ ...state.filters, search })}
                       size="column"
+                      // Takes the focus the closing sheet could not return to
+                      // its own trigger, which unmounts in the same commit.
+                      autoFocus={sheet.handOffFocus}
                     />
                   </div>
                   <FilterPanel
@@ -272,15 +285,9 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                   />
                 </>
               ) : (
-                // Compact puts every dimension in the sheet, which is the one
-                // control the row keeps. `DeckFilterSheet` already draws them.
-                <>
-                  {/* The search affordance the old phone header carried. It
-                      opens the same sheet with the field focused, because a
-                      full field cannot share 390px with a filter trigger and a
-                      sort trigger without one of them wrapping — which
-                      decision 18 forbids outright. */}
-                  <button
+                // Compact keeps only search here; sort and Filters are the
+                // trailing cluster, per STATES §156's `search · sort · Filters`.
+                <button
                     type="button"
                     onClick={() => setSheet({ open: true, focusSearch: true })}
                     aria-label={refreshCopy.filters.searchPlaceholder}
@@ -288,8 +295,19 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                     aria-expanded={sheet.open}
                     className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)]"
                   >
-                    <SearchIcon size={16} />
-                  </button>
+                  <SearchIcon size={16} />
+                </button>
+              )
+            }
+            // Compact's persistent row is `search · sort · Filters`
+            // (STATES §156), so the Filters trigger joins the trailing cluster
+            // rather than preceding sort in the controls.
+            sort={
+              wide ? (
+                <DeckSortMenu sort={state.sort} onChange={onSort} />
+              ) : (
+                <>
+                  <DeckSortMenu sort={state.sort} onChange={onSort} />
                 <button
                   type="button"
                   onClick={() => setSheet({ open: true, focusSearch: false })}
@@ -311,7 +329,6 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                 </>
               )
             }
-            sort={<DeckSortMenu sort={state.sort} onChange={onSort} />}
             chips={chassisChips}
             onClearAll={() => onFilters(EMPTY_FILTERS)}
             resultLine={deckChassisCopy.result(shown.length, decks.length)}

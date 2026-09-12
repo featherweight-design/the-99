@@ -132,7 +132,20 @@ export function FilterRack({
           ? ""
           : ` — ${filterCopy.match.excludedAside(excludedByExactly)}`
       }`}
-      sort={order}
+      // Compact's persistent row is `search · sort · Filters` (STATES §156), so
+      // the trigger joins the trailing cluster rather than sitting in the
+      // controls ahead of it. Wide keeps sort alone past the hairline, where
+      // the five filter controls are all inline.
+      sort={
+        wide ? (
+          order
+        ) : (
+          <>
+            {order}
+            <FiltersTrigger badge={active} onClick={() => setSheetOpen(true)} expanded={sheetOpen} />
+          </>
+        )
+      }
       controls={
         wide ? (
         // Leading-edge reading order (readiness decision 2): the controls run
@@ -162,14 +175,7 @@ export function FilterRack({
         // The persistent row: search · order · `Filters`, all 44px. Everything
         // else is in the sheet, which is why search is here and not there — and
         // why the badge cannot count it.
-        <>
-          <div className="min-w-0 flex-auto">{search}</div>
-          <FiltersTrigger
-            badge={active}
-            onClick={() => setSheetOpen(true)}
-            expanded={sheetOpen}
-          />
-        </>
+        <div className="min-w-0 flex-auto">{search}</div>
       )
       }
       after={
