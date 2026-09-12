@@ -89,8 +89,9 @@ content(viewport) = min(1180, viewport − 62) − 68      (≥768px, rail prese
 content(viewport) = viewport − 32                      (<768px, rail hidden)
 ```
 
-Measured at 1280 the probe reports **7 tracks of 150.28px**, which that formula predicts
-exactly — it is the check that the 62 is real.
+Measured at 1280 — on PR 1's branch, where the probe's new assertions live, not on this
+docs-only one — it reports **7 tracks of 150.28px**, which that formula predicts exactly.
+That agreement is the check that the 62 is real.
 
 | viewport | content | tracks | track | upscale |
 |---|---|---|---|---|

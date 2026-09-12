@@ -77,12 +77,15 @@ hand and is deliberately not part of `pnpm test`; only the unit runner is Playwr
   three things, so `042 · uncommon` is one format at every width.
 - [ ] **Step 5 — Probe.** **Replace**, do not supplement. `scripts/probe-sets.mjs` asserts
   `116x162` desktop, `108px` phone and three phone columns; all three are now wrong and a
-  conforming build would fail them. In their place: at 1180 assert 7 tracks, a flush right
-  edge (the last column reaches the grid's own right edge) and a height derived from the
-  measured width at 63/88; at 390 assert 2 tracks at 174px; keep the identical-geometry
-  check, which still holds and is the reason the ruling is safe. **Probe at 1280, not
-  1180**: the desktop NavRail is `w-[62px] shrink-0`, so 1180 gives six tracks and seven
-  starts at 1212.
+  conforming build would fail them. **The probe runs at 1280**, which is where seven tracks
+  are real — the desktop NavRail is `w-[62px] shrink-0`, so a 1180px viewport gives six and
+  the seventh starts at 1212. In their place: at 1280 assert 7 tracks, a flush right edge
+  (the last TRACK reaches the grid's own right edge — `auto-fill` keeps empty tracks, so
+  measuring the last filled cell false-fails a sparse set) and a height derived from the
+  measured width at 63/88; at 390 assert 2 tracks at 174px and the same derived height;
+  keep the identical-geometry check, which still holds and is the reason the ruling is
+  safe. Run the layout checks off ANY cell, not only a missing one, or a complete set skips
+  every geometry assertion and the probe reports green having measured no layout at all.
 - [ ] **Step 6 — Gate and commit.**
 
 **Watch for:** the one-column case falls out of the declaration already — do not add a
@@ -121,7 +124,9 @@ and assert 302 content / 334 viewport, not 330 of either.
 
 **Files:** Modify `src/components/sets/set-grid-view.tsx`, `src/lib/copy/set-collections.ts`.
 Delete `src/components/collection/color-filter-row.tsx`'s use on this route.
-**Test:** `set-grid-view.test.tsx`, `scripts/probe-sets.mjs`.
+**Test:** `set-grid-view.test.tsx`, **`src/lib/copy/set-collections.test.ts`** — it iterates
+`rarity.letters`, which this PR retires, so the suite fails without it — and
+`scripts/probe-sets.mjs`.
 
 Indivisible by Design's ruling: the pips, the rarity trigger, the chip line and the
 three-row bar are one conformance change, and splitting them leaves the page in neither
