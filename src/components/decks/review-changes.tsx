@@ -403,7 +403,7 @@ export function ReviewChanges({
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
               standing for a purchase, a pull or a column that is not there. */}
           {chips.length > 0 && (
-            <div className="hidden md:flex flex-wrap gap-[8px] mb-[20px]">
+            <div className="hidden md:flex flex-wrap gap-[8px] mb-[18px]">
               {chips.map((chip) => (
                 <CountChip
                   key={chip.label}
@@ -503,15 +503,32 @@ export function ReviewChanges({
               onCancel={() => setCommitSheetOpen(false)}
             />
           ) : (
-            // The deck page's own wording for the same act, because this is the
-            // same act: a reader who came here by a different door should not
-            // have to work out that two different phrasings are one button.
-            <PrimaryButton
-              onClick={() => setCommitSheetOpen(true)}
-              className="mt-[20px] md:mt-[26px] inline-flex items-center justify-center w-full md:w-auto min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
-            >
-              {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
-            </PrimaryButton>
+            // The bar. A dock on the phone — its own plate, ruled off and
+            // carrying the page's ground under it, because at 390px it is the
+            // last thing under a list the reader has scrolled; desktop is a line
+            // under the columns. The figures read first on the phone and last
+            // above it, which is the only difference between the two: one
+            // element, ordered twice.
+            // §Surfaces 2 draws a third control in this bar, `Discard`, which
+            // arrives with plan Task 19.
+            <div className="flex flex-col items-stretch md:flex-row md:items-center md:flex-wrap gap-[8px] md:gap-[12px] mt-[13px] md:mt-[24px] px-[14px] pt-[11px] pb-[16px] md:p-0 md:pt-[18px] bg-[color:var(--base)] md:bg-transparent [border-top:1px_solid_var(--border-strong)]">
+              {/* The deck page's own wording for the same act, because this is
+                  the same act: a reader who came here by a different door should
+                  not have to work out that two different phrasings are one
+                  button. */}
+              <PrimaryButton
+                onClick={() => setCommitSheetOpen(true)}
+                className="inline-flex items-center justify-center w-full md:w-auto min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
+              >
+                {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
+              </PrimaryButton>
+              <span className="order-first md:order-last font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]">
+                {/* The released figure is the state's own `removes`, which is what
+                    the sheet one click down counts: two figures under each other
+                    that disagreed would be the same commit priced twice. */}
+                {copy.footer(cardCount, state.buyCount, state.removes.length)}
+              </span>
+            </div>
           )}
         </div>
       </div>

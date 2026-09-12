@@ -46,7 +46,11 @@ describe("the review page's mounting", () => {
         action={<button type="button">Pull it</button>}
       />,
     );
-    expect(screen.getByText(deckVersioningCopy.review.heldBy("Kess Storm"))).toBeTruthy();
+    // The name takes the phone line, so the tag and the control beside it sit at
+    // the row's right edge; above that width it is an inline item like any other.
+    const held = screen.getByText(deckVersioningCopy.review.heldBy("Kess Storm"));
+    expect(held.className).toContain("flex-1");
+    expect(held.className).toContain("md:flex-none");
     // Two lines on the phone, one flat flex line above it — the wrappers
     // dissolve at `md`, so the desktop row keeps every other row's anatomy.
     expect(row.className).toContain("flex-col");

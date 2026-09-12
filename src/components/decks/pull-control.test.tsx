@@ -148,10 +148,10 @@ describe("PullControl", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  // The reason is the guard's own accessible name, not text sitting beside it: a
-  // detached `sr-only` sibling is reachable in browse mode only, and this arm has
-  // no control for a reader tabbing the row to land on.
-  it("gives the commander guard the reason as the name a screen reader reads", () => {
+  // Four letters and nothing spoken: the reason is the ROW's, carried in the name
+  // trigger's description, and a second utterance here read the whole sentence
+  // twice per row. `review-changes.test.tsx` owns the row's half of that.
+  it("leaves the commander guard's reason to the row that mounts it", () => {
     render(
       <PullControl
         deckId="d"
@@ -160,9 +160,9 @@ describe("PullControl", () => {
         onPulled={noop}
       />,
     );
-    expect(screen.getByRole("note")).toHaveAccessibleName(
-      copy.commanderGuardA11y("Atraxa", "Sol Ring"),
-    );
+    const tag = screen.getByText(copy.commanderGuardTag);
+    expect(tag.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.queryByLabelText(copy.commanderGuardA11y("Atraxa", "Sol Ring"))).toBeNull();
   });
 
   // Both guards are permanent for as long as the claim is what it is, and a

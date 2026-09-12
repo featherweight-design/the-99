@@ -256,10 +256,14 @@ function useRowOpen(
 
 /** Which deck is sleeving the copy this row wants. Drawn on a sleeved add only,
  *  where it is the subject of the pull beside it — the reader is deciding whether
- *  to take a card out of a named deck, and the name is the whole question. */
+ *  to take a card out of a named deck, and the name is the whole question.
+ *
+ *  It takes the phone's second line, so the tag and the control beside it sit at
+ *  the row's right edge rather than bunching against the deck name; above that
+ *  width the line dissolves and the name is an inline item like every other. */
 function HeldBy({ deck }: { deck: string }) {
   return (
-    <span className="flex-none truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
+    <span className="flex-1 md:flex-none min-w-0 truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
       {deckVersioningCopy.review.heldBy(deck)}
     </span>
   );

@@ -94,15 +94,14 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
   if (claim.commander) {
     return (
       <span className="inline-flex items-center flex-none">
-        {/* The tag IS the guard, and the sentence is its accessible name rather
-            than a detached `sr-only` sibling beside it: a sibling is reachable in
-            browse mode only, and this arm has no control of its own for a reader
-            tabbing the row to land on. `role="note"` is what the label attaches
-            to — an `aria-label` on a bare span has no role to name and is
-            dropped, which is why the two used to be separate elements. */}
+        {/* Four letters and no accessible name of its own, exactly as the pending
+            guard's tag is: the sentence behind them is the row's, carried in the
+            name trigger's `aria-describedby` (`review-changes.tsx`). That trigger
+            is the only focusable thing on this arm, so describing it is the one
+            place a reader tabbing the row hears why no pull is offered — and a
+            second utterance here read the whole sentence twice per row. */}
         <span
-          role="note"
-          aria-label={copy.commanderGuardA11y(claim.name, card.name)}
+          aria-hidden="true"
           className={GUARD_TAG}
           style={{ color: "var(--fg-muted)" }}
         >

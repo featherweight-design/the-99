@@ -121,10 +121,54 @@ describe("CommitSheet", () => {
     sheet();
     expect(screen.getByLabelText(copy.noteLabel)).toBeTruthy();
     expect(screen.getByText(copy.noteWarning)).toBeTruthy();
-    // The warning's whole point is to be read BEFORE the field is used. Once a
-    // player is typing into it, the same sentence is a reprimand.
+    // A typed note and an empty one differ in nothing but the field's value
+    // (state C24). The sentence is a fact about the version, so it survives the
+    // keystroke that would have read as a reprimand.
     fireEvent.change(screen.getByLabelText(copy.noteLabel), { target: { value: "cut the mill" } });
-    expect(screen.queryByText(copy.noteWarning)).toBeNull();
+    expect(screen.getByText(copy.noteWarning)).toBeTruthy();
+  });
+
+  // The note is a fact about the version and the figures are a fact about the
+  // commit: the canvas draws the reason first at both widths, directly under the
+  // lede that names the version being cut.
+  it("puts the note above the figures it explains", () => {
+    const { container } = sheet();
+    const field = screen.getByLabelText(copy.noteLabel);
+    const buy = screen.getByText(copy.buyHeading);
+    expect(field.compareDocumentPosition(buy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelectorAll("textarea")).toHaveLength(1);
+  });
+
+  // The two terms are the figure above them explained, so they are read at both
+  // widths; the link under them is the one part of the block that stays on
+  // desktop, where the rows it points at are a glance away rather than a scroll.
+  it("reads the breakdown on the phone and keeps the back link to desktop", () => {
+    sheet();
+    const breakdown = screen.getByText(copy.buyBreakdown(3, 5));
+    expect(breakdown.className).not.toContain("hidden");
+    expect(breakdown.className).toContain("text-[10px]");
+    expect(breakdown.className).toContain("md:text-[10.5px]");
+    expect(breakdown.className).toContain("md:leading-[1.55]");
+    expect(screen.getByText(copy.buyBackLink(8)).className).toContain("hidden md:block");
+  });
+
+  // Under the button at both widths. Inside the bar's own wrapping row the
+  // message landed after `Cancel` on desktop, beside the figures, which reads as
+  // a footnote rather than as the refusal of the click just made.
+  it("writes the refusal under the commit button", async () => {
+    vi.mocked(commitDeckVersion).mockResolvedValue({ ok: false, message: "gone" });
+    sheet();
+    const cta = screen.getByRole("button", { name: copy.cta(3) });
+    await act(async () => {
+      cta.click();
+    });
+    const refusal = screen.getByText(copy.refused);
+    expect(cta.parentElement?.contains(refusal)).toBe(true);
+    expect(
+      cta.compareDocumentPosition(refusal) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Never in the bar's own order, where `Cancel` sits between the two.
+    expect(refusal.closest("[class*='order-last']")).toBeNull();
   });
 
   it("links out to Mana Pool with the buy list, and only when there is one", () => {

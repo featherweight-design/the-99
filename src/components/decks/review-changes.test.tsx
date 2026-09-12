@@ -192,12 +192,27 @@ describe("ReviewChanges", () => {
       />,
     );
     expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
-    // The sentence is the tag's accessible name rather than rendered text: a
-    // detached `sr-only` sibling is reachable in browse mode only, and this arm
-    // draws no control for a reader tabbing the row to land on.
-    expect(screen.getByRole("note")).toHaveAccessibleName(
-      deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring"),
+    expect(screen.getByText(deckVersioningCopy.review.commanderGuardTag)).toBeTruthy();
+  });
+
+  // Said once per row, and by the row: the guard tag has no accessible name of
+  // its own, so the sentence reaches a screen reader through the name trigger's
+  // description — the only focusable thing on this arm — rather than twice.
+  it("speaks the commander guard once, from the row's description", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
     );
+    const sentence = deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring");
+    expect(screen.getAllByText(sentence)).toHaveLength(1);
+    expect(screen.queryByLabelText(sentence)).toBeNull();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(sentence);
   });
 
   // The word behind the colour is the row's own state. "can be pulled" on a row
@@ -366,6 +381,38 @@ describe("ReviewChanges", () => {
     expect(
       screen.getByText(deckVersioningCopy.review.groupInBreakdown(0, 0, 0)),
     ).toBeTruthy();
+  });
+
+  // The bar is a bar and not a lone button: the figures it carries are what a
+  // reader checks before the irreversible click, and they are the same three the
+  // sheet one click down repeats.
+  it("foots the page with the commit and the figures it would freeze", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={{ ...STATE, buyCount: 3 }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    const note = screen.getByText(
+      deckVersioningCopy.review.footer(CARD_COUNT, 3, STATE.removes.length),
+    );
+    const cta = screen.getByRole("button", {
+      name: deckVersioningCopy.pending.commitCta((STATE.version?.number ?? 0) + 1),
+    });
+    const bar = note.parentElement as HTMLElement;
+    expect(bar.contains(cta)).toBe(true);
+    expect(bar.className).toContain("[border-top:1px_solid_var(--border-strong)]");
+    expect(bar.className).toContain("bg-[color:var(--base)]");
+    // One element ordered twice rather than two subtrees: the note reads first on
+    // the phone and last above it, and the DOM holds it once either way.
+    expect(note.className).toContain("order-first md:order-last");
+    // Discard arrives with plan Task 19; nothing stands in for it here.
+    expect(
+      screen.queryByRole("button", { name: deckVersioningCopy.pending.discardCta }),
+    ).toBeNull();
   });
 
   // The two deck-page CTAs that mean "commit this" link here with `?commit=1`,

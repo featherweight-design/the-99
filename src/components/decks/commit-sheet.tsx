@@ -73,11 +73,6 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
   const noteId = useId();
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState("");
-  // The warning exists to be read BEFORE the field is used. Once a player is
-  // typing into it they have already decided to write one, and the same sentence
-  // is a reprimand — so it goes on first contact and does not come back if they
-  // empty the field again.
-  const [noteTouched, setNoteTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const version = (state.version?.number ?? 0) + 1;
@@ -120,6 +115,35 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
       </div>
 
       <div className="px-[14px] py-[14px] md:p-0">
+        {/* Above the figures, at both widths: the canvas draws the note directly
+            under the lede on the phone and on the desktop sheet alike. */}
+        <div className="md:mb-[18px]">
+          <label
+            htmlFor={noteId}
+            className="block font-mono text-[9.5px] md:text-[10px] uppercase tracking-[0.14em] mb-[7px] text-[color:var(--fg-faint)]"
+          >
+            {copy.noteLabel}
+          </label>
+          {/* No placeholder, never counted and never required: an optional field
+              that validates is not optional. The write trims it and stores null
+              for an empty one, so nothing is checked here. */}
+          <textarea
+            id={noteId}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="block w-full rounded-[8px] p-[11px_12px] md:p-[11px_13px] min-h-[76px] md:min-h-[70px] mb-[14px] md:mb-0 text-[13.5px] leading-[1.55] bg-[color:var(--surface)] md:bg-[color:var(--base)] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"
+          />
+          {/* Desktop only — at 390px the apply bar is the next thing under the
+              field and a second sentence there pushes the commit off screen.
+              Drawn whether or not the field has been typed into: a warning that
+              vanished on the first keystroke would make a typed note and an empty
+              one two different sheets, and the sentence is a fact about the
+              version rather than a prompt to write something. */}
+          <p className="hidden md:block font-mono text-[10px] m-0 mt-[7px] text-[color:var(--fg-locked)]">
+            {copy.noteWarning}
+          </p>
+        </div>
+
         {/* Stacked on the phone; two equal blocks side by side above it. Either
             can be absent whole — a draft with nothing to buy is not a draft with
             an empty money block, and a draft that cuts nothing releases nothing. */}
@@ -150,11 +174,11 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
                     </span>
                   )}
                 </div>
-                {/* Desktop only, both of them. At 390px the breakdown and a link
-                    back up the page sit between the figure and the one control
-                    that can act on it, and the rows they describe are a scroll
-                    away rather than a glance. */}
-                <div className="hidden md:block font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                {/* The breakdown is drawn at both widths; the link under it is
+                    not. At 390px the rows it points at are a scroll away rather
+                    than a glance, while the two terms are the figure above them
+                    explained and belong beside it. */}
+                <div className="font-mono text-[10px] md:text-[10.5px] md:leading-[1.55] mb-[11px] md:mb-0 text-[color:var(--fg-faint)]">
                   {copy.buyBreakdown(shortfallIn("unowned"), shortfallIn("claimed"))}
                 </div>
                 <a
@@ -204,34 +228,6 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
             )}
           </div>
         )}
-
-        <div className="mb-[18px]">
-          <label
-            htmlFor={noteId}
-            className="block font-mono text-[9.5px] md:text-[10px] uppercase tracking-[0.14em] mb-[7px] text-[color:var(--fg-faint)]"
-          >
-            {copy.noteLabel}
-          </label>
-          {/* No placeholder, never counted and never required: an optional field
-              that validates is not optional. The write trims it and stores null
-              for an empty one, so nothing is checked here. */}
-          <textarea
-            id={noteId}
-            value={note}
-            onChange={(e) => {
-              setNote(e.target.value);
-              setNoteTouched(true);
-            }}
-            className="block w-full rounded-[8px] p-[11px_12px] md:p-[11px_13px] min-h-[76px] md:min-h-[70px] text-[13.5px] leading-[1.55] bg-[color:var(--surface)] md:bg-[color:var(--base)] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"
-          />
-          {/* Desktop only — at 390px the apply bar is the next thing under the
-              field and a second sentence there pushes the commit off screen. */}
-          {!noteTouched && (
-            <p className="hidden md:block font-mono text-[10px] m-0 mt-[7px] text-[color:var(--fg-locked)]">
-              {copy.noteWarning}
-            </p>
-          )}
-        </div>
       </div>
 
       {/* The bar. Phone reads the footer figures, then commits, then cancels;
@@ -239,45 +235,54 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
           the only difference between the two — one element, ordered twice. */}
       <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-[8px] md:gap-[12px] px-[14px] pt-[11px] pb-[16px] md:p-0 md:pt-[16px] [border-top:1px_solid_var(--border-strong)]">
         <span className="order-first md:order-last">{footer}</span>
-        {/* The app's bone CTA, which is the cream-on-ink fill the design draws:
-            `--fg` on `--bg` are those two colours. Its hover and its disabled
-            appearance come with it rather than being restated here. */}
-        <PrimaryButton
-          disabled={pending}
-          className={`${BAR_BUTTON} min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]`}
-          onClick={() => {
-            setError(null);
-            startTransition(async () => {
-              let result: CommitResult;
-              try {
-                result = await commitDeckVersion(deckId, note);
-              } catch {
-                // A refusal and a throw read the same to the player, and both
-                // leave the draft exactly where it was: one sentence covers them.
-                setError(copy.refused);
-                return;
-              }
-              if (!result.ok) {
-                // The server's own message is dropped on purpose. Every way this
-                // write can fail leaves the changes intact, and that — not which
-                // race lost — is the thing the player needs told.
-                setError(copy.refused);
-                return;
-              }
-              // The version's real size, read by the write after it wrote. Spoken
-              // into the region that outlives this component, because the next
-              // thing that happens is leaving the page it is on.
-              draftAnnouncer().textContent = copy.announced(
-                result.number,
-                result.cardCount,
-                state.buyCount,
-              );
-              router.push(`/decks/${deckId}`);
-            });
-          }}
-        >
-          {pending ? copy.ctaPending : copy.cta(version)}
-        </PrimaryButton>
+        {/* A column holding the CTA and the refusal it belongs to, because the
+            design writes the message directly under the button at both widths —
+            a `w-full` message inside the bar itself landed after `Cancel` on the
+            desktop row, beside the figures. */}
+        <div className="flex flex-col gap-[8px]">
+          {/* The app's bone CTA, which is the cream-on-ink fill the design draws:
+              `--fg` on `--bg` are those two colours. Its hover and its disabled
+              appearance come with it rather than being restated here. */}
+          <PrimaryButton
+            disabled={pending}
+            className={`${BAR_BUTTON} min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]`}
+            onClick={() => {
+              setError(null);
+              startTransition(async () => {
+                let result: CommitResult;
+                try {
+                  result = await commitDeckVersion(deckId, note);
+                } catch {
+                  // A refusal and a throw read the same to the player, and both
+                  // leave the draft where it was: one sentence covers them.
+                  setError(copy.refused);
+                  return;
+                }
+                if (!result.ok) {
+                  // The server's own message is dropped on purpose. Every way this
+                  // write can fail leaves the changes intact, and that — not which
+                  // race lost — is the thing the player needs told.
+                  setError(copy.refused);
+                  return;
+                }
+                // The version's real size, read by the write after it wrote.
+                // Spoken into the region that outlives this component, because the
+                // next thing that happens is leaving the page it is on.
+                draftAnnouncer().textContent = copy.announced(
+                  result.number,
+                  result.cardCount,
+                  state.buyCount,
+                );
+                router.push(`/decks/${deckId}`);
+              });
+            }}
+          >
+            {pending ? copy.ctaPending : copy.cta(version)}
+          </PrimaryButton>
+          {/* Never over the page: a refused commit changed nothing, so the sheet
+              stays open with the note still in it. */}
+          {error && <MutationError message={error} />}
+        </div>
         {/* The ghost, in the quieter ink the design gives a way out that changes
             nothing. */}
         <GhostButton
@@ -287,13 +292,6 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
         >
           {copy.cancel}
         </GhostButton>
-        {/* Under the bar and never over the page: a refused commit changed
-            nothing, so the sheet stays open with the note still in it. */}
-        {error && (
-          <div className="w-full md:order-last">
-            <MutationError message={error} />
-          </div>
-        )}
       </div>
     </section>
   );
