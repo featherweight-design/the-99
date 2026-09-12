@@ -8,7 +8,7 @@
 // aria-hidden heading there.
 //
 // Run by hand with the dev server up:
-//   PROBE_CARD="<card name>" node scripts/probe-card-detail-price.mjs
+//   PROBE_CARD="<card name>" [PROBE_EXPECT_PRICE="$18.75"] node scripts/probe-card-detail-price.mjs
 // Point PROBE_CARD at a card the signed-in account owns in MORE THAN TWELVE
 // printings — `OVERFLOW_THRESHOLD` is 12 and the header collapses only past it, so
 // a card owned in two opens the picker and never reaches the compact state. A basic
@@ -26,6 +26,9 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const CARD = process.env.PROBE_CARD;
+// What the SECOND printing's tag should read, when the operator knows it. Unset by
+// default, because the feed is the source of that truth and the browser is not.
+const EXPECT = process.env.PROBE_EXPECT_PRICE;
 if (!CARD) throw new Error("Set PROBE_CARD to a card the account owns.");
 
 // Lifted from `scripts/probe-card-detail-availability.mjs`, which documents at
@@ -153,11 +156,25 @@ try {
         const after = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
         console.log("\n── after picking the second printing ──");
         console.log(JSON.stringify({ before, after }, null, 2));
-      // What can be asserted without knowing the feed: the pick landed, and the tag
-      // was re-resolved rather than left behind as a node from the previous printing.
-      // Whether the FIGURE differs is not assertable here — two printings of one card
-      // may legitimately cost the same — so the two are printed for a human to read
-      // against each other, and only the pick itself fails the probe.
+      // What the probe can assert on its own: the pick landed. Whether the FIGURE is
+        // right cannot be derived from the page — two printings of one card may
+        // legitimately cost the same, so an unchanged number is not evidence either
+        // way. Set PROBE_EXPECT_PRICE to what the second printing should read
+        // (`$18.75`, `no stock`, or an empty string for silence) and the probe checks
+        // it; leave it unset and the pair is printed for a human, with that stated
+        // rather than implied.
+        if (EXPECT !== undefined) {
+          const got = after.price ?? "";
+          if (!got.includes(EXPECT)) {
+            console.log(`\nFAIL: expected the second printing to read ${JSON.stringify(EXPECT)}, got ${JSON.stringify(got)}.`);
+            process.exitCode = 1;
+          }
+        } else {
+          console.log(
+            "\n(PROBE_EXPECT_PRICE is unset, so the two figures above are a human read." +
+              " Only the pick itself was asserted.)",
+          );
+        }
         if (before.caption === after.caption) {
           console.log("\nFAIL: the pick did not change the resolved printing, so the tag proves nothing.");
           process.exitCode = 1;

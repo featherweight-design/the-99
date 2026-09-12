@@ -173,6 +173,23 @@ describe("aggregateCollection", () => {
     expect(agg.printings[0].scryfallId).toBeUndefined();
   });
 
+  it("keeps the known id where the other row simply has none", () => {
+    // A name-only import beside a matched one. The row with no id does not
+    // contradict the row with one — it just does not know — and dropping the id
+    // there would leave the entry with the weaker identity of the two.
+    const [withIdFirst] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil" }),
+      raw({ scryfallId: null, finish: "foil" }),
+    ]);
+    const [withIdSecond] = aggregateCollection([
+      raw({ scryfallId: null, finish: "nonfoil" }),
+      raw({ scryfallId: "s-263", finish: "foil" }),
+    ]);
+
+    expect(withIdFirst.printings[0].scryfallId).toBe("s-263");
+    expect(withIdSecond.printings[0].scryfallId).toBe("s-263");
+  });
+
   it("keeps oracle metadata from the first row seen", () => {
     const [agg] = aggregateCollection([
       raw({ oracleText: "Tap: Add {C}{C}.", cardImageUri: "img.png" }),

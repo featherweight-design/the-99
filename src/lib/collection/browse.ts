@@ -416,10 +416,20 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // first would put one printing's figure under an entry that is not certainly
       // that printing. Dropped, the entry falls back to its (set, collector number)
       // identity, which is the thing the rows DO agree on.
-      if (seen.scryfallId !== printing.scryfallId) {
+      // Only two DIFFERENT ids are a contradiction. A row that carries none is a
+      // row that does not know — a name-only import beside a matched one — and
+      // discarding the known id because of it would throw away the better identity
+      // of the two. `pending.ts:30-33` reads stricter only because its groups are
+      // per finish, where a missing id and a present one describe the same row.
+      const knownId = seen.scryfallId ?? printing.scryfallId;
+      if (
+        seen.scryfallId !== undefined
+        && printing.scryfallId !== undefined
+        && seen.scryfallId !== printing.scryfallId
+      ) {
         ambiguousIds.add(`${r.oracleId}|${printingKey}`);
       }
-      if (ambiguousIds.has(`${r.oracleId}|${printingKey}`)) seen.scryfallId = undefined;
+      seen.scryfallId = ambiguousIds.has(`${r.oracleId}|${printingKey}`) ? undefined : knownId;
     } else {
       printings.set(printingKey, printing);
     }
