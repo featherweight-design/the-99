@@ -35,7 +35,9 @@ export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
 export type BandHeight = 168 | 208 | 248 | 288;
 
 /** @deprecated the aspect-ratio bands, keyed by their own height. `148` retires
-    with the two commander rows and `72` with the resume row. */
+    with the two commander rows, `168` with the deck spines — `spine-desktop.tsx`
+    is a live consumer of it — and `72` with the resume row, so the type itself
+    goes only once all three have migrated. */
 export type Band = 168 | 148 | 72;
 
 /** The ramp under a label block, in `[alphaPercent, positionPercent]` pairs:
@@ -132,8 +134,17 @@ const reducible = (opacity: number, art: boolean): CSSProperties =>
     header picks the portrait's shape first and lets the band follow, because 288
     is what keeps that crop from scaling past ~42%.
 
-    `203` and `99` are the two aspect-ratio bands' widths and retire with them. */
-export type PortraitWidth = 560 | 340 | 285 | 230 | 203 | 99;
+    The four a stated band may draw. */
+export type PortraitWidth = 560 | 340 | 285 | 230;
+
+/** The two aspect-ratio bands' own derived widths, `round(148 × 1.37)` and
+    `round(72 × 1.37)`. Separate from `PortraitWidth` rather than folded in with
+    it, because 203 carries a hand-written vertical ramp: a stated band allowed to
+    ask for 203 with `labelAtPx: "flat"` would draw that 180deg ramp while
+    publishing `data-art-wash-flat` and being read as ramp-free.
+    @deprecated 203 retires with the two commander rows and 99 with the resume
+    row. */
+type LegacyPortraitWidth = 203 | 99;
 
 /** Keyed to the portrait's **width**, not to the band's height. Every column here
     is a function of the width — `clearTo` is `maskEnd%` of it by derivation, the
@@ -153,7 +164,7 @@ export type PortraitWidth = 560 | 340 | 285 | 230 | 203 | 99;
     art opacity here moves the floor that test asserts rather than quietly passing
     an old one. */
 export const PORTRAITS: Record<
-  PortraitWidth,
+  PortraitWidth | LegacyPortraitWidth,
   {
     maskEnd: number;
     ground: string;
@@ -189,7 +200,6 @@ export const PORTRAITS: Record<
     ground: "--bg",
     sharpOpacity: 0.92,
     sharpAlpha: 78,
-    clearTo: 118,
     flatStop: 264,
     vertical: [
       [0, 0],
@@ -214,9 +224,17 @@ export const PORTRAITS: Record<
 /** The width each aspect-ratio band derived for itself, so a legacy caller keeps
     the geometry it ships with.
     @deprecated retires with the `band` prop. */
-const LEGACY_PORTRAIT: Record<Band, PortraitWidth> = { 168: 230, 148: 203, 72: 99 };
+const LEGACY_PORTRAIT: Record<Band, PortraitWidth | LegacyPortraitWidth> = {
+  168: 230,
+  148: 203,
+  72: 99,
+};
 
-const portrait = (width: PortraitWidth, labelAtPx: number | "flat", band: number) => {
+const portrait = (
+  width: PortraitWidth | LegacyPortraitWidth,
+  labelAtPx: number | "flat",
+  band: number,
+) => {
   const b = PORTRAITS[width];
   const clearTo = b.clearTo ?? Math.round((b.maskEnd / 100) * width);
   // Which dimension the crop is scaled by, derived rather than declared. A
@@ -316,7 +334,8 @@ export type ArtWashProps = ArtProps &
         band?: never;
         portrait?: never;
       }
-    /** @deprecated retires with the two commander rows and the resume row. */
+    /** @deprecated retires once the two commander rows, both deck spines and the
+        resume row have migrated — `spine-desktop.tsx` still passes `band={168}`. */
     | {
         strategy: "left-portrait";
         band: Band;

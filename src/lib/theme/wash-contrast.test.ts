@@ -7,7 +7,6 @@ import {
   COVER_ART_OPACITY,
   COVER_SCRIM_STOPS,
   legacyBottomScrimStops,
-  type PortraitWidth,
   PORTRAITS,
   type ScrimStops,
 } from "../../components/ui/art-wash";
@@ -98,7 +97,10 @@ const washGround = (bg: string, scrimAlpha: number): string =>
     Keyed by the portrait's width, as the shipped table now is: every column in it
     is a function of that width, and one band draws two portraits on the one
     surface whose shape was chosen before its height. */
-const horizontalStops = (width: PortraitWidth): ScrimStops => {
+// `number`, not `PortraitWidth`: this suite still measures the two aspect-ratio
+// bands' portraits, which are deliberately outside the stated set — a stated band
+// may not ask for 203 because that row carries a hand-written ramp.
+const horizontalStops = (width: keyof typeof PORTRAITS): ScrimStops => {
   const b = PORTRAITS[width];
   return [
     [0, 0],
@@ -122,7 +124,7 @@ const horizontalStops = (width: PortraitWidth): ScrimStops => {
     worst case rather than the typical one, which is the point. */
 const portraitGround = (
   theme: string,
-  width: PortraitWidth,
+  width: keyof typeof PORTRAITS,
   x: number,
   verticalAlpha: number,
   plate = 0,
@@ -152,7 +154,7 @@ const portraitGround = (
     value can lift it — that is a token question, not a wash one. */
 const PORTRAIT_INK: readonly {
   surface: string;
-  portrait: PortraitWidth;
+  portrait: keyof typeof PORTRAITS;
   /** The band the surface draws that portrait on, which the vertical ramp is a
       percentage of. */
   band: number;
@@ -192,7 +194,7 @@ const PORTRAIT_INK: readonly {
   { surface: "deck spine control, foot", portrait: 230, band: 168, x: 42, y: 92, plate: 1, tokens: ["fg"] },
 ];
 
-const verticalAlphaAt = (width: PortraitWidth, y: number): number => {
+const verticalAlphaAt = (width: keyof typeof PORTRAITS, y: number): number => {
   const v = PORTRAITS[width].vertical;
   return v ? alphaAt(v, y) : 0;
 };
