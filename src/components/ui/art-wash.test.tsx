@@ -410,7 +410,10 @@ describe("ArtWash — a stated band", () => {
       <ArtWash strategy="left-portrait" height={288} portrait={560} labelAtPx="flat" artCropUri="c.jpg" colorIdentity={["G"]} />,
     );
     expect(ramped.container.querySelectorAll(".art-wash-scrim")).toHaveLength(2);
-    expect(ramped.container.innerHTML).toContain("var(--bg) 73%, transparent) 78%");
+    // 78, not 73: a portrait's sharp layer draws at 0.92 against the cover
+    // band's 0.8, so the cover's hold leaves `--fg-body` at 4.33:1 here — which
+    // is why the hand-written column this replaces held at 78.
+    expect(ramped.container.innerHTML).toContain("var(--bg) 78%, transparent) 78%");
     expect(flat.container.querySelectorAll(".art-wash-scrim")).toHaveLength(1);
     expect(flat.container.innerHTML).not.toContain("180deg");
   });

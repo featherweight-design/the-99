@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   bottomScrimStops,
   COVER_ART_OPACITY,
+  PORTRAIT_HOLD,
   COVER_SCRIM_STOPS,
   legacyBottomScrimStops,
   PORTRAITS,
@@ -68,13 +69,24 @@ const LEGACY_BOTTOM_SURFACES: readonly (readonly [string, number])[] = [
     which is the distinction that matters: a block costed at 57px whose title
     wraps to three lines is 83px, and a ramp derived from 57 holds where that
     block ends rather than where it starts. */
-const STATED_BANDS: readonly (readonly [string, number, number])[] = [
-  ["home hero", 38, 288],
-  ["commander detail mobile", 57, 288],
-  ["deck spine, phone", 83, 288],
-  ["deck tile", 46, 248],
-  ["commander rows", 46, 208],
-  ["resume row", 40, 168],
+const STATED_BANDS: readonly {
+  surface: string;
+  labelAtPx: number;
+  band: number;
+  /** The strategy, because the ground and the hold both follow from it: a
+      `cover` band fades its art to 0.8 and holds at 73, and a `left-portrait`'s
+      sharp layer draws at 0.92 and holds at 78. Measuring a portrait row through
+      the cover's ground passes at a contrast the surface never has. */
+  strategy: "cover" | "left-portrait";
+  /** The portrait a `left-portrait` row draws, for composing its own ground. */
+  portrait?: keyof typeof PORTRAITS;
+}[] = [
+  { surface: "home hero", labelAtPx: 38, band: 288, strategy: "cover" },
+  { surface: "commander detail mobile", labelAtPx: 57, band: 288, strategy: "cover" },
+  { surface: "deck spine, phone", labelAtPx: 83, band: 288, strategy: "cover" },
+  { surface: "deck tile", labelAtPx: 46, band: 248, strategy: "cover" },
+  { surface: "commander rows", labelAtPx: 46, band: 208, strategy: "left-portrait", portrait: 285 },
+  { surface: "resume row", labelAtPx: 40, band: 168, strategy: "cover" },
 ];
 
 const over = (fg: string, bg: string, alpha: number): string => {
@@ -246,14 +258,28 @@ describe("art wash contrast floor", () => {
     // one-argument percentage signature would hold the scrim at 46% of a 248px
     // band where the drawing puts it at 81% — the scrim landing where the round
     // removes it, which is worse than not moving it at all.
-    for (const [surface, labelAtPx, band] of STATED_BANDS) {
-      const stops = bottomScrimStops(labelAtPx, band);
+    for (const { surface, labelAtPx, band, strategy, portrait: width } of STATED_BANDS) {
+      const hold = strategy === "cover" ? undefined : PORTRAIT_HOLD;
+      const stops = bottomScrimStops(labelAtPx, band, hold);
       for (const [edge, y] of [
         ["top", Math.round(((band - labelAtPx) / band) * 100)],
         ["foot", 100],
       ] as const) {
         it(`${theme}: ${surface}'s ink clears 4.5:1 at its block's ${edge}`, () => {
-          const ground = washGround(token(theme, "bg"), alphaAt(stops, y));
+          // The ground each strategy actually composes. A `cover` band is the
+          // crop at 0.8 under the ramp; a portrait row's ink stands on its own
+          // sharp layer at 0.92, out where the horizontal scrim is still clear,
+          // so measuring it through the cover's ground would report a contrast
+          // the surface never has.
+          const ground =
+            width === undefined
+              ? washGround(token(theme, "bg"), alphaAt(stops, y))
+              : portraitGround(
+                  theme,
+                  width,
+                  PORTRAITS[width].clearTo ?? Math.round((PORTRAITS[width].maskEnd / 100) * width),
+                  alphaAt(stops, y),
+                );
           expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
           expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
         });

@@ -58,14 +58,29 @@ export type Band = 168 | 148 | 72;
     height to its scrim. In pixels, added height lands on art.
 
     `0.48` and `73` are the shipped constants — `1.48` is `at + 0.48·at` folded
-    together. Exported because `wash-contrast.test.ts` derives its contrast floors
+    together.
+
+    **`hold` is a parameter because the two strategies fade their art by different
+    amounts.** 73% clears 4.5:1 for `--fg-body` over a pure white pixel at the
+    `cover` band's 0.8 art, which is what it was measured against. A
+    `left-portrait`'s sharp layer draws at 0.92, so the same 73 leaves that ink at
+    **4.33:1** — measured, across all six themes — and the hand-written column
+    this function replaces held at 78 for exactly that reason. One ramp function
+    with one shape, and the one number that has to answer to the art beneath it
+    stays answerable. Exported because `wash-contrast.test.ts` derives its contrast floors
     from these alphas; the two files drifting apart is the failure that test
     exists to catch. */
-export const bottomScrimStops = (labelAtPx: number, band: number): ScrimStops => [
+export const PORTRAIT_HOLD = 78;
+
+export const bottomScrimStops = (
+  labelAtPx: number,
+  band: number,
+  hold = 73,
+): ScrimStops => [
   [0, 0],
   [0, Math.round(((band - 1.48 * labelAtPx) / band) * 100)],
-  [73, Math.round(((band - labelAtPx) / band) * 100)],
-  [73, 100],
+  [hold, Math.round(((band - labelAtPx) / band) * 100)],
+  [hold, 100],
 ];
 
 /** LEGACY — the same ramp taking the block's top edge as a percentage of band
@@ -257,7 +272,7 @@ const portrait = (
   // band as well as across. A band whose ink starts past the flat stop is `flat`
   // — a vertical ramp there would darken the row for nothing.
   const vertical =
-    labelAtPx === "flat" ? b.vertical : bottomScrimStops(labelAtPx, band);
+    labelAtPx === "flat" ? b.vertical : bottomScrimStops(labelAtPx, band, PORTRAIT_HOLD);
   return {
     width,
     ground: b.ground,
