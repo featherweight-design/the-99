@@ -333,6 +333,11 @@ const SETTLED_BANDS = [168, 208, 248, 288];
 /** The two thumb boxes. A third is a render that kept its own geometry. */
 const THUMB_BOXES = ["44×62", "64×89"];
 
+/** One ring alpha, replacing `.35` on two thumbs and `.3` on the card faces. All
+    three are inset shadows, so the alpha is the only thing that distinguishes the
+    converged ring from the drift it replaced. */
+const THUMB_RING_RE = /inset[^,]*rgba\(0,\s*0,\s*0,\s*0\.4\)|rgba\(0,\s*0,\s*0,\s*0\.4\)[^,]*inset/;
+
 const VIEWPORTS = [
   ["mobile", 375, 812],
   ["desktop", 1440, 900],
@@ -416,7 +421,10 @@ async function checkChrome(page, label, note) {
     const box = t.box.join("×");
     if (!THUMB_BOXES.includes(box)) note(`  FAIL thumb at ${box}, outside the two settled boxes`);
     if (t.radius !== "6px") note(`  FAIL thumb radius ${t.radius}, expected 6px`);
-    if (!t.shadow.includes("inset")) note(`  FAIL thumb draws no inset ring: ${t.shadow}`);
+    // The alpha, not just the word `inset`: the whole point of the convergence is
+    // that `.3` and `.35` became `.4`, and all three are inset shadows. The
+    // browser resolves the alpha to `0.4`, so the string is the check.
+    if (!THUMB_RING_RE.test(t.shadow)) note(`  FAIL thumb ring is not the one alpha: ${t.shadow}`);
     // `center top`, not `center`: a centred crop of a 63/88 frame at 44px wide is
     // mostly type box, and the face is at the top of the card.
     if (t.hasArt && !t.position.startsWith("50% 0")) {
@@ -710,6 +718,44 @@ try {
           note(`  FAIL bottom cover scrim does not hold to the foot: ${JSON.stringify(stops.slice(-2))}`);
         }
       }
+    }
+
+    // The deck-creation surfaces, which is where four of the five thumbs live and
+    // where none of the list routes reaches. Every one of them is a screen where a
+    // player chooses or commits to a commander, which is the brief's own finding
+    // about why they had never been through the wash system: the picker's
+    // candidate rows and its selected summary on one door, the pre-filled flow's
+    // thumb on the other.
+    //
+    // Each entry names what it MUST draw. A census that only rejects a box
+    // outside the allow-list passes silently when a thumb is missing altogether,
+    // which is the same vacuity as running the check on a route that draws none.
+    // Read off Home, which is where the pre-filled door is entered from: the
+    // ready-to-build hero links to `/decks/new?commander=<oracleId>`, and the
+    // commanders list links by slug, which that route does not take.
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    const commanderOracleId = await page.evaluate(
+      `document.querySelector('a[href*="/decks/new?commander="]')?.getAttribute('href') ?? null`,
+    );
+    const CREATE_SURFACES = [
+      ["the picker's candidate rows", "/decks/new", ["44×62"]],
+      ...(commanderOracleId ? [["the pre-filled door", commanderOracleId, ["64×89"]]] : []),
+    ];
+    for (const [what, path, required] of CREATE_SURFACES) {
+      await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(900);
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-create-${required[0]}.png` });
+      const drawn = await page.evaluate(`(${READ_THUMBS})()`);
+      const boxes = new Set(drawn.map((t) => t.box.join("×")));
+      note(`${vpName} ${what}: ${drawn.length} thumb(s) at ${[...boxes].join(", ") || "none"}`);
+      for (const box of required) {
+        if (!boxes.has(box)) note(`  FAIL ${what} draws no ${box} thumb`);
+      }
+      await checkChrome(page, `${vpName} ${what}`, note);
+    }
+    if (!commanderOracleId) {
+      note(`  FAIL no /decks/new?commander= link found — the pre-filled door goes unchecked`);
     }
 
     // The deck header, which is the other surface drawing this control — and the
