@@ -81,7 +81,12 @@ async function readPrice(page) {
         // The gap between the art and the tag, measured rather than asserted from
         // the class list — a margin a sibling collapses is a margin that is not there.
         gapFromArt: (() => {
-          const art = document.querySelector('[role="dialog"] [style*="63/88"]');
+          // Both breakpoint trees are mounted at once, so the first 63/88 box in the
+          // dialog is the phone's even on a desktop viewport — and its `md:hidden`
+          // ancestor gives it a zero rect, which would make this measurement a
+          // fiction. The visible one is the one being drawn.
+          const art = [...document.querySelectorAll('[role="dialog"] [style*="63/88"]')]
+            .find((n) => n.getBoundingClientRect().width > 0);
           if (!art) return null;
           return Math.round(node.getBoundingClientRect().top - art.getBoundingClientRect().bottom);
         })(),
@@ -130,6 +135,13 @@ try {
       const caption = () =>
         page.locator('button[aria-label*="printings owned"]').last().getAttribute("aria-label");
       const before = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
+      // A pick is a WRITE: `setCardArtPreference` persists (user, oracle) in
+      // `card_art_preferences`, so a probe that picks and walks away has changed
+      // which printing this account sees everywhere. The tile that was checked on
+      // arrival is remembered and restored below.
+      const wasChecked = await tiles.evaluateAll((nodes) =>
+        nodes.findIndex((n) => n.getAttribute("aria-checked") === "true"),
+      );
       await tiles.nth(1).click();
       await page.waitForTimeout(1_200);
       const after = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
@@ -144,6 +156,15 @@ try {
         console.log("\nFAIL: the pick did not change the resolved printing, so the tag proves nothing.");
         process.exitCode = 1;
       }
+      // Put the account back where it was found. A probe that leaves a preference
+      // behind is a probe nobody can run twice and trust the second result.
+      if (wasChecked >= 0) {
+        await tiles.nth(wasChecked).click();
+      } else {
+        const forget = page.getByRole("button", { name: /forget|clear/i }).first();
+        if (await forget.count()) await forget.click();
+      }
+      await page.waitForTimeout(1_000);
     } else {
       console.log("\n(only one printing owned — the pick check needs a card with several)");
     }

@@ -118,6 +118,37 @@ describe("aggregateCollection", () => {
     expect(agg.setCodes.sort()).toEqual(["C21", "LEA"]);
     expect(agg.primarySetCode).toBe("C21");
   });
+  // The exact-id price path rests on this: without the holding's own catalog id on
+  // the printing, every owned card falls to the set/number key, and a holding that
+  // carries neither goes silent.
+  it("carries the holding's own scryfall id onto the printing", () => {
+    const [agg] = aggregateCollection([raw({ scryfallId: "s-263" })]);
+
+    expect(agg.printings[0].scryfallId).toBe("s-263");
+  });
+
+  it("leaves the id absent where the holding names none", () => {
+    // A bare `Name,Qty` import. `undefined` rather than null, so the field reads the
+    // same as it does on a fixture that never had one.
+    const [agg] = aggregateCollection([raw({ scryfallId: null })]);
+
+    expect(agg.printings[0].scryfallId).toBeUndefined();
+  });
+
+  it("keeps one id across the two finishes of one printing", () => {
+    // Foil and nonfoil are two collection rows sharing a catalog id, and they
+    // collapse into one entry — so the coalesce can only ever meet the same value,
+    // and must not drop it when the second row arrives.
+    const [agg] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil", quantity: 2 }),
+      raw({ scryfallId: "s-263", finish: "foil", quantity: 1 }),
+    ]);
+
+    expect(agg.printings).toHaveLength(1);
+    expect(agg.printings[0].scryfallId).toBe("s-263");
+    expect(agg.printings[0].quantity).toBe(3);
+  });
+
   it("keeps oracle metadata from the first row seen", () => {
     const [agg] = aggregateCollection([
       raw({ oracleText: "Tap: Add {C}{C}.", cardImageUri: "img.png" }),
