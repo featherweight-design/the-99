@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { FilterChassis, type FilterChip } from "./filter-chassis";
 
 const base = {
@@ -184,6 +184,31 @@ describe("FilterChassis", () => {
     );
     const swatches = container.querySelectorAll("[data-chassis-row='chips'] span[aria-hidden] span");
     expect(swatches).toHaveLength(2);
+  });
+
+  it("draws resultTrailing at row 3's trailing edge", () => {
+    // `/collection`'s view toggle and `By set` link live here: both change what
+    // surface you are on rather than what is in the list. Without an assertion
+    // a refactor could drop the slot and every structural test would still pass.
+    const { container } = render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[]}
+        resultTrailing={<button type="button">Grid view</button>}
+      />,
+    );
+    const row = container.querySelector("[data-chassis-row='result']")!;
+    const trailing = within(row as HTMLElement).getByRole("button", { name: "Grid view" });
+    expect(trailing).toBeTruthy();
+    // Pushed to the edge rather than sitting beside the sentence.
+    expect(trailing.parentElement?.className).toContain("ml-auto");
+  });
+
+  it("omits the trailing group when the route has nothing for it", () => {
+    const { container } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    const row = container.querySelector("[data-chassis-row='result']")!;
+    expect(row.querySelector(".ml-auto")).toBeNull();
   });
 
   it("carries exactly one live region", () => {

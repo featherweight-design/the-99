@@ -53,3 +53,32 @@ describe("collectionChips", () => {
     expect(chip.label).toBe("ZZZ");
   });
 });
+
+describe("collectionChassisCopy.result", () => {
+  it("drops the ratio when nothing is filtered out", async () => {
+    const { collectionChassisCopy } = await import("../copy/collection");
+    // "1,240 of 1,240" is a fact nobody asked for.
+    expect(collectionChassisCopy.result(1240, 1240)).toBe("1,240 cards");
+  });
+
+  it("singularises a collection of one", async () => {
+    const { collectionChassisCopy } = await import("../copy/collection");
+    expect(collectionChassisCopy.result(1, 1)).toBe("1 card");
+  });
+
+  it("states the ratio once something is filtered", async () => {
+    const { collectionChassisCopy } = await import("../copy/collection");
+    expect(collectionChassisCopy.result(412, 1240)).toBe("412 of 1,240 cards match");
+  });
+
+  it("pins the locale, so a European reader does not get 1.240", async () => {
+    const { collectionChassisCopy } = await import("../copy/collection");
+    expect(collectionChassisCopy.result(1000, 2000)).toContain("1,000");
+    expect(collectionChassisCopy.result(1000, 2000)).not.toContain("1.000");
+  });
+
+  // 3b replaces this with a three-figure version carrying `/collection`'s own
+  // two sentences, because the route counts distinct names and copies
+  // separately and the chassis result line has to say which is which. These
+  // cases move with it.
+});
