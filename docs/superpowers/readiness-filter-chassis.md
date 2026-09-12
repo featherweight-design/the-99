@@ -157,10 +157,26 @@ They also found a shipped accessibility defect while measuring their own work, a
 the app rather than folding it into their round.
 
 
+## §5b The accessible name that ships, since the handoff's copy is ambiguous
+
+`chassisCopy.colour.pipAria` takes the colour's **name**, not its hue code, so the pip announces
+**`Red`** — see `src/components/ui/colour-pips.tsx` and the test asserting
+`getByRole("switch", { name: "Red" })` (merged in PR #523). It is not `R`, and it is not
+`Filter by R`, which reads a letter rather than a colour.
+
+The handoff's copy also appended `, on` when lit. That is dropped: the pip is a `role="switch"` and
+`aria-checked` is announced, so the suffix made a lit pip read "Red, on … on" while an unlit one
+relied on the ARIA state alone. **This is the one place the build overrides a Design copy string**,
+and it is worth ratifying in the next handoff rather than round-tripping now.
+
 ## §6 Errata against the handoff, carried here rather than sent back
 
-Four corrections. None changes a drawing, so none is worth a Design round-trip; they are recorded
-here because the handoff is the document an implementer reads.
+None of these changes a drawing, so none is worth a Design round-trip. **This table is the
+correction of record**: the handoff's three documents are preserved exactly as Design delivered
+them, each carrying a banner that names this file and the plan as the build contract. An earlier
+revision of this PR rewrote passages inside those documents and left the prose damaged — a handoff
+is better served whole, with one authority named at the top, than edited in place by the team that
+audited it.
 
 | Handoff says | Correct | Why it matters |
 |---|---|---|

@@ -1,12 +1,29 @@
 # STATES — the filter chassis
 
-> **Errata — read `docs/superpowers/readiness-filter-chassis.md` §6 before implementing.**
-> The engineering audit corrected several figures in this document and closed two decisions it
-> leaves open. In particular: the shipped pip's 1.38:1 floor is against `--bg`, not
-> `--surface-sunken`; the Scryfall floor is 7.77:1, not 9.51:1, because three assumed hexes were
-> wrong and have since been fetched; decision 18's 887px total is 987px, so the switch moves to 1000px; asset delivery is ruled as
-> five static SVGs; and `Printed in` is cut from this round. This document is kept as delivered —
-> the errata table is the correction of record.
+> ## ⚠️ This document is Design's R2 deliverable, as delivered. It is **not** the build contract.
+>
+> The engineering readiness audit corrected several of its figures and closed several of its open
+> questions. **Where this document and the audit disagree, the audit wins.** Build from:
+>
+> - **`docs/superpowers/readiness-filter-chassis.md`** — the verdict (🟢 Green), its five findings,
+>   and §6, the errata table that is the correction of record.
+> - **`docs/superpowers/plans/2026-09-11-filter-chassis.md`** — the implementation plan, which
+>   carries every ruling already applied.
+>
+> The corrections in force, in brief: the switch is **1000px**, not 900 — decision 18's stated 887px
+> minimum is actually 987px. The Scryfall pip floor is **7.77:1**, not 9.51:1, because three assumed
+> hexes were wrong (`B` `#CAC5C0`, `R` `#E49977`, `G` `#A3C095`). The shipped dimming defect is
+> **two** controls, not three — 1.37:1 over `--bg` on the rack and 1.49:1 over `--surface-sunken` on
+> collection, with `/decks` carrying no opacity at all. `ui/filter-panel.tsx` is **kept and
+> parameterised**, which closes "Flagged, not decided". Asset delivery is **five static SVGs** in
+> `public/mana/`. The wide panel keeps its shipped `dialog`/`listbox` semantics rather than `menu`.
+> The keyboard model is **not** inherited — the shipped panels share none of the helpers this
+> document credits them with — so it is real work. And **`Printed in` is cut from this round**,
+> including its copy block in `filter-chassis · copy strings.ts`.
+>
+> Nothing below has been edited. Earlier revisions of this PR rewrote passages in place and left the
+> prose damaged; the document is better served whole, with one authority named at the top.
+
 
 Six states × four routes × two widths. The chassis is one component, so most cells are the same
 drawing with a different dimension list; this file exists to say which cells differ and **what each
@@ -59,12 +76,7 @@ Never sort, and never search — both are on the persistent row.
 | `/discover` | search · colour · **printed-in** | Any / Exactly | 5, all glossed |
 | `/collection` | search · colour · type · set · availability | — | 5 × direction, + view toggle |
 
-> ⚠️ **Superseded — `printed-in` is cut from this round. The two commander lanes ship
-> search · colour (· score-against on `/commanders`) and the `printed-in` column above is a
-> later slice. See `docs/superpowers/readiness-filter-chassis.md` §6.**
-
-`printed-in` is **cut from this round** — it was the one dimension this round would have added, and
-it is deferred to a later slice with the whole matrix above otherwise intact. `status` and `played-window` are deck-only;
+`printed-in` is the one dimension this round adds. `status` and `played-window` are deck-only;
 `type`, `set` and `availability` are collection-only. Per §2.2 that is correct and not a gap.
 
 ---
@@ -107,8 +119,6 @@ lane rather than a ratio.
   back — both shipped surfaces already promise this in comments.
 
 ## 4 · Open panel
-> ⚠️ **Superseded — the wide panel is a dialog containing a listbox of options, not a menu. See `docs/superpowers/readiness-filter-chassis.md` §6.**
-
 
 - Anchored to its trigger, 280px, `--surface-rail` on a `--border-strong` hairline, 16px/40px
   shadow. Opening lands focus on the current value, not the first row.
@@ -123,14 +133,8 @@ lane rather than a ratio.
   down on every open; that is the defect this shape exists to avoid.
 - **Must not** be a hidden duplicate. One treatment per width — a closed panel renders nothing, so
   no second copy of any radiogroup reaches the accessibility tree.
-- **Corrected by the audit — build the shipped semantics, not this bullet.** The handoff wrote:
-  *"**Must not** trap focus. It is a menu, not a dialog: `Escape` closes it and hands focus back to
-  the trigger; a click outside dismisses on `pointerdown`."* `FilterPanel` renders `role="dialog"`
-  containing a `role="listbox"` of `role="option"` rows (`filter-panel.tsx:546,863-877`), and its
-  compact branch is an `aria-modal` sheet that traps Tab by design. A `menu` wrapper is invalid
-  around those descendants. **Keep the shipped dialog/listbox semantics; keep the compact sheet's
-  focus trap.** `Escape`-closes-and-restores-focus and outside-dismiss-on-`pointerdown` are both
-  correct and already implemented. See `docs/superpowers/readiness-filter-chassis.md` §6.
+- **Must not** trap focus. It is a menu, not a dialog: `Escape` closes it and hands focus back to
+  the trigger; a click outside dismisses on `pointerdown`.
 
 ## 5 · Empty result
 
@@ -179,7 +183,7 @@ result line. The sheet holds every other dimension.
 
 ## 7 · The two forms, and the absence of a third
 
-Wide above 1000px, compact below. **The control row never wraps at any width.**
+Wide above 900px, compact below. **The control row never wraps at any width.**
 
 - Search is the only child that shrinks; every control is `flex: none` with `white-space: nowrap`;
   the trailing sort group is `flex: none`, so it can never be pushed to a second line.
@@ -187,7 +191,7 @@ Wide above 1000px, compact below. **The control row never wraps at any width.**
   layout bug rather than a trailing slot.
 - **Must not** introduce a third, intermediate form. A route with fewer dimensions has more room at
   the same width; it does not get a different frame.
-- The 1000px switch is set by `/collection`'s seven controls, not `/decks`' five — the widest list
+- The 900px switch is set by `/collection`'s seven controls, not `/decks`' five — the widest list
   in the app decides the breakpoint for all four routes, or the breakpoint is a per-route fact and
   the chassis is not one thing.
 - Row 2 may still wrap at desktop when many filters are on, and the result line follows it down.
@@ -198,14 +202,6 @@ Wide above 1000px, compact below. **The control row never wraps at any width.**
 ## What is not drawn, and why
 
 - **Ordered keyboard-walk frames.** The model is stated per state above and matches the four
-> **Corrected by the audit.** The handoff justified this keyboard model as "no new pattern",
-> on the grounds that the shipped panels already share `useDialogA11y`, roving radiogroups and
-> selection-follows-focus. **They do not.** `filter-panel.tsx` has its own panel and listbox key
-> handling and `rack/select.tsx` has its own focus and menu logic, so the shared behaviour is real
-> work rather than an inheritance. The keyboard walk is not drawn anywhere in this handoff and has
-> to be reconciled before the chassis carries it. See `docs/superpowers/readiness-filter-chassis.md`
-> §6.
-
   existing implementations, which already share `useDialogA11y`, roving radiogroups and
   selection-follows-focus. No new pattern is introduced, so there is nothing a walk would settle.
 - **Pending/in-flight.** `/discover`'s sort is the app's only server-answering filter control, and

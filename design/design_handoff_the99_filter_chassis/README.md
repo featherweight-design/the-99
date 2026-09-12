@@ -1,20 +1,29 @@
 # One filter chassis — R2
 
-> **Errata — read `docs/superpowers/readiness-filter-chassis.md` §6 before implementing.**
-> The engineering audit corrected several figures in this document and closed two decisions it
-> leaves open. In particular: the shipped pip's 1.38:1 floor is against `--bg`, not
-> `--surface-sunken`; the Scryfall floor is 7.77:1, not 9.51:1, because three assumed hexes were
-> wrong and have since been fetched; decision 18's 887px total is 987px, so the switch moves to 1000px; asset delivery is ruled as
-> five static SVGs; and `Printed in` is cut from this round. This document is kept as delivered —
-> the errata table is the correction of record.
+> ## ⚠️ This document is Design's R2 deliverable, as delivered. It is **not** the build contract.
+>
+> The engineering readiness audit corrected several of its figures and closed several of its open
+> questions. **Where this document and the audit disagree, the audit wins.** Build from:
+>
+> - **`docs/superpowers/readiness-filter-chassis.md`** — the verdict (🟢 Green), its five findings,
+>   and §6, the errata table that is the correction of record.
+> - **`docs/superpowers/plans/2026-09-11-filter-chassis.md`** — the implementation plan, which
+>   carries every ruling already applied.
+>
+> The corrections in force, in brief: the switch is **1000px**, not 900 — decision 18's stated 887px
+> minimum is actually 987px. The Scryfall pip floor is **7.77:1**, not 9.51:1, because three assumed
+> hexes were wrong (`B` `#CAC5C0`, `R` `#E49977`, `G` `#A3C095`). The shipped dimming defect is
+> **two** controls, not three — 1.37:1 over `--bg` on the rack and 1.49:1 over `--surface-sunken` on
+> collection, with `/decks` carrying no opacity at all. `ui/filter-panel.tsx` is **kept and
+> parameterised**, which closes "Flagged, not decided". Asset delivery is **five static SVGs** in
+> `public/mana/`. The wide panel keeps its shipped `dialog`/`listbox` semantics rather than `menu`.
+> The keyboard model is **not** inherited — the shipped panels share none of the helpers this
+> document credits them with — so it is real work. And **`Printed in` is cut from this round**,
+> including its copy block in `filter-chassis · copy strings.ts`.
+>
+> Nothing below has been edited. Earlier revisions of this PR rewrote passages in place and left the
+> prose damaged; the document is better served whole, with one authority named at the top.
 
-> **Corrected: the defect is two controls wide, not three, and the floor is against `--bg`.**
-> `rack/colour-control.tsx:126` dims to 0.34 over the `--bg` its own group paints — 1.37:1, failing
-> in 30 of 30 theme-and-hue combinations. `collection/color-pip.tsx:28` dims to 0.40 over
-> `--surface-sunken` — 1.49:1, failing in 24 of 30. **`/decks` is not affected**:
-> `deck-filter-column.tsx:119-130`'s `ColourSwatch` carries no opacity at all and signals state with
-> its border, which is what this round's no-opacity rule generalises. See
-> `docs/superpowers/readiness-filter-chassis.md` §6.
 
 **Deliverable:** `The 99 - Filter Chassis.dc.html` (canvas, six-theme `theme` prop).
 **Brief:** `docs/superpowers/design-briefs/2026-09-11-one-filter-chassis.md`, read at `main`.
@@ -109,9 +118,7 @@ hairline could never have been the carrier.
 rounded square and the column's 7px one would either crop the artwork or float it in a box. The
 phone pip is 44px itself, not a 26px pip inside a 44px hit area.
 
-**9. `Printed in ▾`, matching any printing, on both commander lanes.**
-> ⚠️ **Superseded — `Printed in` is cut from this round; this decision is a later slice. See `docs/superpowers/readiness-filter-chassis.md` §6.**
- §6 option (1).
+**9. `Printed in ▾`, matching any printing, on both commander lanes.** §6 option (1).
 Option (2) — owned printing — is the better long-term answer and engineering is right that it is
 the direction, but it cannot ship on the surface that needs it: `candidates.ts` partitions
 `/discover` to commanders the player does not own, so an owned-printing filter there matches
@@ -170,20 +177,12 @@ could ask — *what would this control do here?* Score-against on discover has n
 keeps its value, keeps `aria-disabled`, stays focusable. `/decks` and `/collection` AND their
 colours together and mount no modifier, unchanged from today.
 
-**18. The control row never wraps. There are two forms and nothing in between.**
-> ⚠️ **Superseded — the 887px total is 987px, and the switch is 1000px. See `docs/superpowers/readiness-filter-chassis.md` §6.**
- Wide above
+**18. The control row never wraps. There are two forms and nothing in between.** Wide above
 900px, compact below. Search is the only child that shrinks (`min-width: 132`); every control is
 `flex: none` with `white-space: nowrap`; the trailing sort group is `flex: none` too, so it can
 never be pushed to a second line. The switch is set by `/collection`'s seven controls, not
 `/decks`' five: 132 + 148 + 150 + 78 + 120 + 1 + 160 + 70 + seven 12px gaps + 44px padding =
 **887px**.
-
-> **Corrected: that sum is 987px, and the switch is 1000px.** The eight widths total 859, the seven
-> gaps add 84, the padding adds 44. At 900 the wide form does not fit and row 1 wraps — the defect
-> this decision exists to prevent. 1000 is this decision's own rule ("the minimums, plus a margin")
-> applied to the right number; nothing else in the decision changes. See
-> `docs/superpowers/readiness-filter-chassis.md` §7.
 
 R1 allowed row 1 to wrap and the sort landed on its own line. That read as a layout bug rather
 than a trailing slot — correctly, because a trailing slot that is not trailing is not a slot.
@@ -194,8 +193,7 @@ described as acceptable.
 slot, a pip slot, an ordered run of dimension slots, a trailing slot for sort. The type is chosen
 by **the shape of the values, not the route**, which is what makes status on `/decks` and type on
 `/collection` the same object and lets a fifth route mount the chassis with no design round. All
-twelve live controls are inventoried in §1b with what changes for each — **eleven ship this round;
-the twelfth is `Printed in`, which is cut and lands in a later slice**. Nothing is dropped.
+twelve live controls are inventoried in §1b with what changes for each. Nothing is dropped.
 
 - **Field** — search, all four routes.
 - **Pip row** — colour identity, all four routes. The only bespoke control.
@@ -236,15 +234,7 @@ Real symbols are their own label, and a mono caption inside a 34px well is furni
 
 ---
 
-## Flagged, not decided — RULED, and no longer blocking
-
-> **The audit ruled this. `FilterPanel` is kept, parameterised and mounted — not retired, not
-> forked.** The section below is preserved as Design wrote it, and its question is answered: the
-> brief rejects adopting an existing *chassis*, not every atom those chassis mount, and the panel
-> has its own ratification in `design-tables/collection-filter-panel.md`. There is no Design
-> round-trip and nothing here blocks the build. What "parameterised" costs — a caller-supplied
-> breakpoint, because the panel's own 768px would open a desktop popover inside the compact chassis
-> — is in `docs/superpowers/readiness-filter-chassis.md` §2.
+## Flagged, not decided
 
 **§2.1's locked "new chassis, not an adoption" retires a component that landed three weeks ago.**
 Drawn as locked. But the brief's rejection names "the collection bar", and the collection bar *is*
@@ -261,8 +251,6 @@ the one decision I want confirmed before build.
 ---
 
 ## Measured, to two decimals, in all six themes
-> ⚠️ **Superseded — three pip hexes were assumed and are wrong; the floor is 7.77:1, and the shipped 1.38:1 is against `--bg`. See `docs/superpowers/readiness-filter-chassis.md` §6.**
-
 
 | | Floor | Where |
 |---|---|---|

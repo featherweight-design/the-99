@@ -1,12 +1,29 @@
 # READINESS — the filter chassis (R2)
 
-> **Errata — read `docs/superpowers/readiness-filter-chassis.md` §6 before implementing.**
-> The engineering audit corrected several figures in this document and closed two decisions it
-> leaves open. In particular: the shipped pip's 1.38:1 floor is against `--bg`, not
-> `--surface-sunken`; the Scryfall floor is 7.77:1, not 9.51:1, because three assumed hexes were
-> wrong and have since been fetched; decision 18's 887px total is 987px, so the switch moves to 1000px; asset delivery is ruled as
-> five static SVGs; and `Printed in` is cut from this round. This document is kept as delivered —
-> the errata table is the correction of record.
+> ## ⚠️ This document is Design's R2 deliverable, as delivered. It is **not** the build contract.
+>
+> The engineering readiness audit corrected several of its figures and closed several of its open
+> questions. **Where this document and the audit disagree, the audit wins.** Build from:
+>
+> - **`docs/superpowers/readiness-filter-chassis.md`** — the verdict (🟢 Green), its five findings,
+>   and §6, the errata table that is the correction of record.
+> - **`docs/superpowers/plans/2026-09-11-filter-chassis.md`** — the implementation plan, which
+>   carries every ruling already applied.
+>
+> The corrections in force, in brief: the switch is **1000px**, not 900 — decision 18's stated 887px
+> minimum is actually 987px. The Scryfall pip floor is **7.77:1**, not 9.51:1, because three assumed
+> hexes were wrong (`B` `#CAC5C0`, `R` `#E49977`, `G` `#A3C095`). The shipped dimming defect is
+> **two** controls, not three — 1.37:1 over `--bg` on the rack and 1.49:1 over `--surface-sunken` on
+> collection, with `/decks` carrying no opacity at all. `ui/filter-panel.tsx` is **kept and
+> parameterised**, which closes "Flagged, not decided". Asset delivery is **five static SVGs** in
+> `public/mana/`. The wide panel keeps its shipped `dialog`/`listbox` semantics rather than `menu`.
+> The keyboard model is **not** inherited — the shipped panels share none of the helpers this
+> document credits them with — so it is real work. And **`Printed in` is cut from this round**,
+> including its copy block in `filter-chassis · copy strings.ts`.
+>
+> Nothing below has been edited. Earlier revisions of this PR rewrote passages in place and left the
+> prose damaged; the document is better served whole, with one authority named at the top.
+
 
 **Self-assessed: 🟡 amber, with one decision blocking and one dependency sequenced ahead of it.**
 Everything §3 asks Design to call is called, drawn and measured. What keeps this off green is not a
@@ -18,23 +35,12 @@ three weeks ago, and I would rather have that confirmed than discover it in a bu
 - **The chassis.** Three rows, the fixed-height rule, the 34px control rhythm, the panel shape, the
   chip line, the trailing sort slot. Drawn at `/decks`' five dimensions in five desktop states and
   four phone frames, which is the density §3.2 asks the frame to survive.
-- **The pip, and the measurement §5 says nobody has made.** Floor **7.77:1** (not 9.51 — three hexes were assumed and all three are wrong).
-> ⚠️ **Superseded — the floor is 7.77:1, not 9.51:1.** Three of the five pip hexes were assumed and
-> all three are wrong: `B` is `#CAC5C0`, `R` is `#E49977`, `G` is `#A3C095`. The real values are
-> not uniformly darker: R drops 20.2% in relative luminance and G 15.8%, while B is 2.3% lighter.
-> R is the darkest and R is what sets the floor, so the floor moves down — still clearing the 3:1
-> non-text floor by 4.77. And the shipped
-> defect's 1.38:1 is against `--bg`, on two controls rather than three. See
-> `docs/superpowers/readiness-filter-chassis.md` §6.
- Six themes, two decimals. The floor is
-  **7.77:1** — the handoff computed 9.51 from three assumed hexes, all of which were wrong; the
-  fetched `B` `#CAC5C0`, `R` `#E49977` and `G` `#A3C095` differ — R by −20.2% relative luminance and
-  G by −15.8%, while B is 2.3% lighter; R sets the floor. The treatment's own state
-  carrier (`--accent` ring) floors at **4.42:1**. Both clear their floors everywhere.
-- **The dimming defect it uncovers.** The shipped unlit pip measures **1.37:1** against **`--bg`**
-  on the rack and **1.49:1** against `--surface-sunken` on collection — **two** live controls under
-  the 3:1 non-text floor today, not three: `/decks`' `ColourSwatch` carries no opacity at all. Not a
-  consequence of this round — it ships already. Filed as a finding regardless of what happens to
+- **The pip, and the measurement §5 says nobody has made.** Six themes, two decimals. The floor is
+  **9.51:1** and the treatment's own state carrier (`--accent` ring) floors at **4.42:1**. Both
+  clear their floors everywhere.
+- **The dimming defect it uncovers.** The shipped unlit pip measures **1.38:1** against
+  `--surface-sunken`. That is three live surfaces under the 3:1 non-text floor today, and it is not
+  a consequence of this round — it ships already. Filed as a finding regardless of what happens to
   the chassis.
 - **§3.3, §3.4, §3.5 and §6**, each ruled with its consequence named rather than left implied —
   including the three retirements (§3.4's deck-sheet sort group, §3.3's two footer Clears and the
@@ -68,9 +74,7 @@ before the build rather than during it.
 
 ## The dependency, sequenced ahead of this
 
-**Set collections' Task 9 must land before the `/collection` slice — not before the build.**
-`/decks`, `/commanders` and `/discover` share no files with that task and start now; the plan slices
-the work by route for exactly this reason. The brief
+**Set collections' Task 9 must land first and must land with its test rewritten.** The brief
 already flags this and it is worth restating because the chassis lands on its output: the task
 expects `getByRole("button")` with `aria-pressed`, and `color-pip.tsx` emits `role="switch"` with
 `aria-checked` and the accessible name `Filter by R`. A verbatim extraction — which the same task
@@ -84,10 +88,9 @@ independently of this round, and `chassisCopy.colour.pipAria` replaces it.
 - **The wrapping control row.** R1 let row 1 wrap and listed the 768–868px two-line band as
   "not blocking, want eyes on it". Review called it what it was — the sort landing on its own line
   reads as a bug — so it is now a rule: two forms, no wrapping at any width, search the only
-  shrinking child, switch at **1000px** set by `/collection`'s seven controls, whose minimums total 987 rather than the 887 first stated. That open item is closed
+  shrinking child, switch at 900px set by `/collection`'s seven controls. That open item is closed
   by removal rather than by measurement.
-- **Every shipped filter is inventoried** (§1b): twelve live controls across four routes — **eleven
-  this round, since `Printed in` is cut** — each
+- **Every shipped filter is inventoried** (§1b): twelve live controls across four routes, each
   mapped to one of four control types, with what changes for it. The chassis has slots, and a route
   fills them.
 - **`Score against` corrected** from a trigger to its shipped inline segmented shape — and the
@@ -99,22 +102,18 @@ independently of this round, and `chassisCopy.colour.pipAria` replaces it.
 
 ## Still open, not blocking
 
-### Asset delivery — RULED: five static SVGs in `public/mana/`
+### Asset delivery is unspecified and one option is bad
 Five theme-independent SVGs, cacheable forever, appearing in the filter chrome of four routes plus
-the set pages. **Ruled by the audit: five static SVGs committed to `public/mana/`.** Design's own
-push-back is the reason — hotlinking a third party into the chrome of four routes makes a slow or
-failed fetch take out the only carrier of a filter's identity — and a sprite loses nothing but
-gains nothing either, while five files stay diffable and let `cost-pips.tsx` adopt them later
-without unpacking anything. The frames in the canvas hotlink for convenience; that is a canvas
-convenience and not a shipping fallback.
+the set pages. Static assets, a sprite or a hotlink are all viable; **hotlinking a third party into
+the chrome of four routes is the one choice Design would push back on**, because a slow or failed
+fetch takes out the only carrier of a filter's identity. The frames in the canvas hotlink for
+convenience and each pip sits on its own correctly-coloured ground, which is also the fallback I
+would ship.
 
-### Three pip hexes were assumed — the audit fetched them, and all three were wrong
-**Resolved, no longer a confirm-on-fetch item.** `W` `#F8F6D8` and `U` `#C1D7E9` are correct as
-quoted. The three assumed values are not: `B` is **`#CAC5C0`**, `R` is **`#E49977`** and `G` is
-**`#A3C095`**. They are not uniformly darker: R falls 20.2% in relative luminance and G 15.8%, while
-B is 2.3% lighter. R is both the darkest and the pip that sets the floor, so it moves from 9.51:1 to
-**7.77:1** — still clearing 3:1, with **4.77** points of headroom rather than 6.5. Build against the
-fetched values.
+### Three pip hexes are assumed
+`W` = `#F8F6D8` and `WU`'s blue half = `#C1D7E9` are quoted in the brief. `B`, `R` and `G` are the
+canonical values and are not quoted anywhere I could read; the table assumes `#CBC2BF`, `#F9AA8F`,
+`#9BD3AE`. Confirm on first fetch. The floor has 6.5 points of headroom over 3:1, so this is a
 provenance note rather than a risk.
 
 ### Hybrid pips are specified but not exercised
@@ -125,15 +124,11 @@ the brief's own ruling, and the pips here are drawn so the two can converge with
 
 ## Not blocking, but I want eyes on it
 
-**The 900px switch is a judgement, not a measurement.**
-> ⚠️ **Superseded — the arithmetic behind it is wrong and the switch is 1000px. See `docs/superpowers/readiness-filter-chassis.md` §6.**
- The arithmetic says `/collection` cannot be
+**The 900px switch is a judgement, not a measurement.** The arithmetic says `/collection` cannot be
 honest in the wide form below 887px, and 900 is that plus a margin. But it means a small laptop in a
 half-width window gets the phone treatment on a pointer device, where a 44px target row and a bottom
 sheet are both slightly wrong. The alternative — a per-route switch — makes the breakpoint a
-per-route fact and the chassis stops being one thing. **Ship 1000 and watch it** — the minimums
-total 987px rather than the 887px this section derived the 900 from, so at 900 the row wraps, which
-is the defect the rule exists to prevent.
+per-route fact and the chassis stops being one thing. I would ship 900 and watch it.
 
 **Chip-line length at `/collection`.** Five dimensions of chips plus `Clear all filters` on one
 line is drawn at two active. At five it wraps, and the result line follows it down. Acceptable, and
@@ -153,8 +148,6 @@ dimensions it is five extra passes over an in-memory list — cheap, but it is n
 currently written.
 
 ## Dependencies
-> ⚠️ **Superseded — `printings.setCode`, `printedIn` and the printing-aware lane belong to the cut `Printed in` slice, not to this round. See `docs/superpowers/readiness-filter-chassis.md` §6.**
-
 
 - **Set collections Task 9** — the extracted colour control this treatment lands on.
 - **`printings.setCode` reachable from the commander lane** — the `Printed in` dimension, option
