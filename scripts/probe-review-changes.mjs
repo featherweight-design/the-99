@@ -418,7 +418,9 @@ function reportConfirm(seen, width) {
         `points at the consequence: ${answer.describesWhy ? "yes" : "NO"}`,
     );
   }
-  const [danger, safe] = confirm.answers;
+  // DOM order, which the confirm draws as the way out first and the destructive
+  // answer second — the phone stack is the DOM order and desktop reverses it.
+  const [safe, danger] = confirm.answers;
   if (danger && safe) {
     // The pair stacks below 768px, and stacked it puts the way out on top: the
     // thumb reaches the bottom row first and the bottom row would otherwise be
