@@ -823,12 +823,6 @@ describe("SetGridView — the badge counts dimensions", () => {
     expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
   });
 
-  // The breakpoint effect moves focus here when the phone sheet unmounts under a resize.
-  it("keeps the desktop rack a focus target", () => {
-    const { container } = view([p("1"), p("2")], []);
-    const rack = container.querySelector('[class*="md:flex"][tabindex="-1"]');
-    expect(rack).not.toBeNull();
-  });
 });
 
 // Review round 3 on the rack. A filter that is SET but not APPLIED draws no chip, so the
@@ -871,36 +865,6 @@ describe("SetGridView — Clear is not inside the scrolling strip", () => {
   });
 });
 
-// The breakpoint effect treats `document.body` as stranded, which is correct after a
-// crossing unmounts the focused control — and wrong on a fresh load, where the body holds
-// focus because the reader has not touched anything yet.
-describe("SetGridView — focus is not stolen on mount", () => {
-  // The effect runs inside a `requestAnimationFrame`, so a test that does not flush one
-  // asserts about a callback that never fired — it would pass with the guard removed.
-  const flushFrame = () =>
-    act(async () => {
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-    });
-
-  it("leaves focus where it was when nothing crossed a breakpoint", async () => {
-    stubDesktop(true);
-    const outside = document.createElement("button");
-    document.body.appendChild(outside);
-    outside.focus();
-    view([p("1"), p("2")], []);
-    await flushFrame();
-    expect(document.activeElement).toBe(outside);
-    outside.remove();
-  });
-
-  it("leaves focus on the body rather than pulling it into the rack", async () => {
-    stubDesktop(true);
-    view([p("1"), p("2")], []);
-    await flushFrame();
-    expect(document.activeElement).toBe(document.body);
-  });
-});
-
 // Review round 7.
 describe("SetGridView — the last route out of a stale m=1", () => {
   // `?m=1&c=W` on a complete set draws a White chip, so an "empty chip line" test was false
@@ -937,42 +901,6 @@ describe("SetGridView — the rarity panel's rows", () => {
     fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
     const row = screen.getAllByRole("option")[0] as HTMLElement;
     expect(row.style.minHeight).toBe("44px");
-  });
-});
-
-// `document.body` alone is not evidence a control was unmounted. A reader who clicked page
-// whitespace and then resized would have had focus yanked into a rack they never touched.
-describe("SetGridView — focus is rescued only when it was in the rack", () => {
-  const flushFrame = () =>
-    act(async () => {
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-    });
-
-  it("leaves focus alone across a resize the reader was not inside the rack for", async () => {
-    stubDesktop(false);
-    const { rerender, container } = render(
-      <SetGridView
-        code="dsk" name="Duskmourn" iconSvgUri={null} releasedAt="2026-09-01"
-        ownedFingerprint="" artGeneration={0}
-        cells={placeCells([p("1"), p("2")], [])} prices={[]} newestAsOf={null}
-        baseSetSize={2} staleAsOf={null}
-      />,
-    );
-    // Focus is on the body for an ordinary reason: nothing in the rack was ever touched.
-    expect(document.activeElement).toBe(document.body);
-
-    stubDesktop(true);
-    rerender(
-      <SetGridView
-        code="dsk" name="Duskmourn" iconSvgUri={null} releasedAt="2026-09-01"
-        ownedFingerprint="" artGeneration={0}
-        cells={placeCells([p("1"), p("2")], [])} prices={[]} newestAsOf={null}
-        baseSetSize={2} staleAsOf={null}
-      />,
-    );
-    await flushFrame();
-    expect(document.activeElement).toBe(document.body);
-    expect(container).toBeTruthy();
   });
 });
 

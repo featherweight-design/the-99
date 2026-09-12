@@ -115,7 +115,6 @@ export function SetGridView(props: SetGridViewProps) {
   // mounted: crossing the breakpoint with it open left the desktop page scroll-locked and
   // trapped focus in a dialog nobody could see. Unmounted rather than hidden.
   const isDesktop = useIsDesktop();
-  const desktopRackRef = useRef<HTMLDivElement>(null);
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
   // a sheet the reader never reopened.
@@ -134,75 +133,21 @@ export function SetGridView(props: SetGridViewProps) {
   // going to phone unmounts the rarity panel, and a focused subtree being removed drops
   // focus to the body. Treating the body as "fine" lost the keyboard there entirely — the
   // reader was inside a control, and the control's replacement is one tab away at most.
-  const sheetTriggerRef = useRef<HTMLButtonElement>(null);
   /**
-   * Focus rescue across the `md` crossing, stated as a TRANSITION rather than a snapshot.
+   * There is no focus rescue across the `md` crossing, deliberately.
    *
-   * Three earlier versions each got one case right and another wrong, because each asked a
-   * question at the wrong moment: "is focus on something invisible?" (true on a fresh load,
-   * where the body holds it), "was focus in the rack?" (still true long after a chip's ×
-   * removed the control), "is the node disconnected?" (false for `hidden md:flex`, which
-   * stays connected while going invisible).
+   * One lived here and was rewritten five times: it fired on a fresh load where the body
+   * holds focus; it fired long after a chip's × removed the control; it missed
+   * `hidden md:flex`, which stays connected while going invisible; and it never covered the
+   * phone sheet, which sits outside this container so `useDialogA11y` returns focus to a
+   * trigger the crossing has just hidden. Each fix was correct and uncovered the next hole,
+   * which is the shape of a mechanism guarding a case too narrow to be worth it: a reader
+   * resizing the window while focused inside the filter rack.
    *
-   * The question that has no wrong moment is whether the rack control that HAD focus went
-   * from usable to unusable, and whether that happened at a crossing. So usability is
-   * sampled every commit, and the crossing compares this commit's answer with the last —
-   * which is why the two effects below are declared in this order: effects run in
-   * declaration order, so the crossing reads the previous commit's sample before the
-   * sampler overwrites it.
+   * No other route in this app rescues focus across a breakpoint. Left to the browser, as
+   * they leave it. If this ever needs solving it belongs in one place for all of them, not
+   * in thirty-five lines here.
    */
-  const focusWidth = useRef<boolean | null>(null);
-  const lastFocused = useRef<{ node: Element; inRack: boolean } | null>(null);
-  const rackFocusUsable = useRef(false);
-  const rackRegion = useRef<HTMLDivElement>(null);
-  // Connected AND drawn: `hidden md:flex` keeps a pip in the document while hiding it, and a
-  // reader left on an invisible control is the whole defect.
-  const rackFocusIsUsable = () => {
-    const was = lastFocused.current;
-    return was !== null && was.inRack && was.node.isConnected
-      && was.node.getClientRects().length > 0;
-  };
-
-  useEffect(() => {
-    const onFocusIn = () => {
-      const node = document.activeElement;
-      lastFocused.current = node
-        ? { node, inRack: rackRegion.current?.contains(node) ?? false }
-        : null;
-      rackFocusUsable.current = rackFocusIsUsable();
-    };
-    document.addEventListener("focusin", onFocusIn);
-    return () => document.removeEventListener("focusin", onFocusIn);
-  }, []);
-
-  useEffect(() => {
-    const crossed = focusWidth.current !== null && focusWidth.current !== isDesktop;
-    focusWidth.current = isDesktop;
-    // Usable before this commit, not usable now: a rack control lost its focus TO the
-    // crossing, rather than to a click the reader made minutes ago.
-    const lost = rackFocusUsable.current && !rackFocusIsUsable();
-    if (!crossed || !lost) return;
-    const id = requestAnimationFrame(() => {
-      const active = document.activeElement as HTMLElement | null;
-      const stranded =
-        active === null || active === document.body || active.getClientRects().length === 0;
-      if (!stranded) return;
-      // The first CONTROL, not the container. `desktopRackRef` wraps the pips in a
-      // `tabIndex={-1}` div so it can receive focus at all, and landing there puts a
-      // keyboard reader on an unnamed empty box instead of on a filter they can use.
-      const target = isDesktop
-        ? desktopRackRef.current?.querySelector<HTMLElement>('[role="switch"]')
-          ?? desktopRackRef.current
-        : sheetTriggerRef.current;
-      target?.focus();
-    });
-    return () => cancelAnimationFrame(id);
-  }, [isDesktop]);
-
-  // Declared AFTER the crossing effect on purpose: it samples for the NEXT one.
-  useEffect(() => {
-    rackFocusUsable.current = rackFocusIsUsable();
-  });
 
   const filters = local ?? urlFilters;
 
@@ -411,7 +356,6 @@ export function SetGridView(props: SetGridViewProps) {
   return (
     <div>
       <div
-        ref={rackRegion}
         className="sticky top-0 z-[2] pb-[12px] pt-[10px]"
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
@@ -531,7 +475,6 @@ export function SetGridView(props: SetGridViewProps) {
             rack not moving what the reader is reading, and there is nothing there to move. */}
         <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
           <button
-            ref={sheetTriggerRef}
             type="button"
             onClick={() => setSheetOpen(true)}
             aria-haspopup="dialog"
@@ -566,7 +509,7 @@ export function SetGridView(props: SetGridViewProps) {
               when the phone sheet unmounts under a resize, and a plain div is not a focus
               target — focus would fall to the document instead of the visible rack. The
               control this replaced carried it for the same reason. */}
-          <div ref={desktopRackRef} tabIndex={-1} className="hidden md:flex">
+          <div className="hidden md:flex">
             <ColourPips
               value={filters.colors}
               form="wide"
