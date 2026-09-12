@@ -148,11 +148,19 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // The import is inside the guard so an unowned card never pays for it, and inside the
     // catch because a module that fails to resolve is as quiet a failure as a query that
     // fails to run — either way the modal omits the block rather than losing the card.
-    const availability = await (async () => {
-      const { loadAvailability } = await import("../decks/availability-query");
-      return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
-    })().catch(() => null);
-    return { ...owned[0], availability, prices: await pricesFor(oracleId) };
+    // Started together, not one after the other: the two reads share nothing, and
+    // this whole path runs on a click, so a serial pair would put both round trips
+    // between the reader pressing a card and the modal filling in. Each still
+    // fails on its own — `Promise.all` over two already-caught promises settles
+    // with a null in the failed slot rather than rejecting the pair.
+    const [availability, prices] = await Promise.all([
+      (async () => {
+        const { loadAvailability } = await import("../decks/availability-query");
+        return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
+      })().catch(() => null),
+      pricesFor(oracleId),
+    ]);
+    return { ...owned[0], availability, prices };
   }
 
   const { db } = await import("../../db");
