@@ -372,8 +372,14 @@ export function VersionDiff({
       ) : diff === null ? (
         // The app's one loading mark, at the size every other in-flight control
         // wears it. No new drawing, and no sentence for a wait that is one query.
+        //
+        // `still`, though: READINESS 19 forbids motion anywhere on this surface,
+        // and the mark's pulse is motion whether or not the reader was watching
+        // when it started. Not replaced by a placeholder of its own — Design drew
+        // no loading state here, so a new one would be a drawing engineering
+        // invented.
         <div className="flex justify-center py-[18px] text-[color:var(--fg-faint)]">
-          <PendingMark />
+          <PendingMark still />
         </div>
       ) : diff === "unavailable" ? (
         // Never `noChange`: the read was refused or failed, so the app knows

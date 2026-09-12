@@ -214,6 +214,18 @@ describe("VersionDiff", () => {
     expect(container.querySelector("[data-pending-mark]")).not.toBeNull();
   });
 
+  // READINESS 19 forbids motion anywhere on this surface, and the mark's pulse is
+  // motion whether or not the reader was watching when the read started. Asserted
+  // here rather than in the browser probe: the read settles in a few milliseconds,
+  // so which frame a probe catches is a race and this is not.
+  it("holds the loading mark still", () => {
+    getVersionDiff.mockReturnValueOnce(new Promise(() => {}));
+    const { container } = mount();
+    const mark = container.querySelector("[data-pending-mark]")!;
+    expect(mark.querySelectorAll(".anim-dots")).toHaveLength(0);
+    expect(mark.innerHTML).not.toMatch(/anim-/);
+  });
+
   // A v1 has nothing before it to compare against, so there is no diff to fetch
   // and none to draw.
   it("draws the initial arm for a v1 and fetches nothing", () => {
