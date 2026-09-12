@@ -505,11 +505,10 @@ export function SetGridView(props: SetGridViewProps) {
               1.38:1; these are Scryfall's own full-colour symbols, undimmed, with a 2px
               --accent ring as the entire lit treatment. A fork here is how six themes of
               measurement get re-derived by hand. */}
-          {/* `tabIndex={-1}` is not decoration: the breakpoint effect above moves focus here
-              when the phone sheet unmounts under a resize, and a plain div is not a focus
-              target — focus would fall to the document instead of the visible rack. The
-              control this replaced carried it for the same reason. */}
-          <div className="hidden md:flex">
+          {/* Layout only: `hidden md:flex` is the width gate, and the wrapper exists so the
+              pips sit as one flex item beside the trigger. It is deliberately not a focus
+              target — see the note above on why this route has no breakpoint rescue. */}
+          <div className="hidden shrink-0 md:flex">
             <ColourPips
               value={filters.colors}
               form="wide"
