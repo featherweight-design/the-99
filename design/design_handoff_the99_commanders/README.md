@@ -66,6 +66,13 @@ so it carries a `⛶ Full card` affordance (and the whole header is tappable) th
 **full-card lightbox** — the complete 63/88 card with oracle text, dimmed over the page, tap to
 close. Both the affordance and the opened lightbox are drawn as phone frames.
 
+> **§4's last two sentences are SUPERSEDED, twice over.** The lightbox is gone: that control opens
+> the **shared card modal**, and `design/design_handoff_the99_amendments/PARITY-lightbox-to-modal.md`
+> records what happened to every element of it. Its label is `Card details` for the same reason. And
+> the affordance is no longer phone-only — see the errata at the foot of this file, where the desktop
+> card frame carries it too, because "desktop already shows the full card" stopped being an argument
+> once the thing it opens became printings, rulings and a two-faced flip. The rest of §4 stands.
+
 ### 5. Degraded → **the ranking survives, and says so, at two scopes**
 EDHREC is a real dependency that fails. Both conditions are designed as first-class, not error
 pages:

@@ -12,7 +12,9 @@ only on opacity and ramp values.
 
 The readability amendment fixed legibility and overcorrected. At art `.58` under the shipped
 ramps only 33–45% of the picture survives mid-band, which reads as a dimmed screen rather
-than a design. This round lifts art to `.80` on cover bands and `.92/.28` on rows, and pays
+than a design. This round lifts art to `.80` on cover bands and `.92`~~`/.28`~~ on rows — the struck
+ambient half was removed on 2026-09-11 and the removal ratified on 2026-09-12, see the errata at the
+foot of this file — and pays
 for it by holding each ramp's dark value across its whole label block instead of ramping
 through it.
 
@@ -129,7 +131,8 @@ Four PRs. The first two are independent of the lift and fix existing failures.
    commander detail hero and 66 for the deck spine. Retires the test's `BOTTOM_AT_LABEL = 54`
    estimate, which is the same overshoot this canvas was written to correct.
 3. **Art lift** — `COVER_ART_OPACITY` `.58` → `.80`.
-4. **Band lift and the phone hold** — 168 and 148 to `.92/.28`, 72 to `.95/.22`, plus
+4. **Band lift and the phone hold** — 168 and 148 to `.92`~~`/.28`~~, 72 to `.95`~~`/.22`~~ (the
+   struck ambient halves are removed; errata at the foot of this file), plus
    ratification 2. `wash-contrast.test.ts` covers the cover strategy only, which is precisely
    why the phone row went unmeasured through two drafts; it is extended to all three
    `left-portrait` bands at their real ink positions.

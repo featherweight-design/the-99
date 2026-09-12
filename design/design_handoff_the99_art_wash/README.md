@@ -166,8 +166,10 @@ which is why R1's rows read as texture. Those surfaces switch strategy:
 
 - **Sharp layer** — sized by height (`background-size: auto 100%`), anchored left, at its true
   1.37:1. Width is therefore `band × 1.37`: **203px** at a 148px band, **99px** at 72px.
-- **Ambient layer** — a full-bleed `cover` copy at low opacity carrying the colour behind it
-  (`.20` commander row, `.14` resume row). This is what preserves the "large wash" feel.
+- ~~**Ambient layer** — a full-bleed `cover` copy at low opacity carrying the colour behind it
+  (`.20` commander row, `.14` resume row). This is what preserves the "large wash" feel.~~
+  **REMOVED 2026-09-11, ratified 2026-09-12 — see the errata at the foot of this file.** Past the
+  portrait's width it restated the crop at a second scale, which is what the "large wash" feel cost.
 - **Fade** — `mask-image` on the sharp layer, not a scrim over it. See decision 8.
 
 ### 8. The fade belongs to the art, not the row

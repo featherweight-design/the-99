@@ -23,7 +23,12 @@ stated otherwise.
 `spine-desktop.tsx:79-84` · `spine-mobile.tsx:63-68`. Renders only when the deck has a partner;
 a single-commander caption is unchanged at both widths.
 
-### Wash container (#473, unchanged — context for the caption's insets)
+### Wash container (#473 — context for the caption's insets)
+
+> **Errata (2026-09-12):** the `ambient layer` row below is the `cover` strategy's full-bleed art,
+> which is untouched — `cover` bands draw plate, art and scrim, and always did. Only the
+> **`left-portrait`** ambient copy was removed (PR #517, ratified the same day); that one is in this
+> file's band-72 section further down, struck there.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
