@@ -6,7 +6,16 @@ import { PATTERN_MIN, axisCopy, gameLogCopy } from "../copy/game-log";
 const axisLabel = (key: keyof typeof axisCopy) => axisCopy[key].label;
 
 function game(over: Partial<DeckGame> = {}): DeckGame {
-  return { id: "g", result: "win", podSize: 4, playedAt: new Date("2026-09-01"), worked: [], hurt: [], ...over };
+  return {
+    id: "g",
+    result: "win",
+    podSize: 4,
+    playedAt: new Date("2026-09-01"),
+    versionNumber: null,
+    worked: [],
+    hurt: [],
+    ...over,
+  };
 }
 
 describe("deriveHeadline", () => {
