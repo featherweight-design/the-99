@@ -77,6 +77,8 @@ export function FilterBar({
   chips,
   onClearAll,
   resultLine,
+  announceId,
+  revision,
   announcement,
   onAnnounce,
   onFiltersChange,
@@ -107,6 +109,10 @@ export function FilterBar({
   onClearAll: () => void;
   /** Row 3's sentence, composed by the browser from its three counts. */
   resultLine: string;
+  /** Identity of the current announcement, so a repeat is heard as a new event. */
+  announceId?: string | number;
+  /** Something that moves when the list does, for queue staleness. */
+  revision?: string | number;
   /** The bar's single live region content — the panel writes here too. */
   announcement: string;
   onAnnounce: (message: string) => void;
@@ -137,8 +143,11 @@ export function FilterBar({
         onClearAll={onClearAll}
         resultLine={resultLine}
         announce={announcement}
+        announceId={announceId}
+        revision={revision}
         sort={<FilterPanel
           desktopRowMinPx={44}
+          compact={!isDesktop}
           copy={collectionFilterCopy.sort}
           options={buildSortOptions(sort, sortDirection)}
           selected={[sort]}
@@ -213,6 +222,7 @@ export function FilterBar({
             no footer total worth showing. */}
         <FilterPanel
           desktopRowMinPx={44}
+          compact={!isDesktop}
           copy={collectionFilterCopy.type}
           options={typeOptions}
           selected={filters.types}
@@ -235,6 +245,7 @@ export function FilterBar({
             the set abbreviation, which is also what the search matches (#118). */}
         <FilterPanel
           desktopRowMinPx={44}
+          compact={!isDesktop}
           copy={collectionFilterCopy.set}
           options={setOptions}
           selected={filters.setCodes}
@@ -261,6 +272,7 @@ export function FilterBar({
             menu and the list agree about what each state looks like. */}
         <FilterPanel
           desktopRowMinPx={44}
+          compact={!isDesktop}
           copy={collectionFilterCopy.availability}
           options={availabilityOptions.map((o) => ({
             ...o,

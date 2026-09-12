@@ -38,6 +38,7 @@ import {
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
 import { collectionChips } from "../../lib/collection/chips";
+import { AvailabilityGlyph } from "../ui/availability-marker";
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import type { FilterChip } from "../ui/filter-chassis";
 import { RowsView } from "./rows-view";
@@ -327,6 +328,9 @@ export function CollectionBrowser({
 
 
   const [announcement, setAnnouncement] = useState("");
+  // Bumped whenever an announcement is published, so a repeated sentence is a
+  // new event rather than an unchanged string the live region would not re-read.
+  const [announceSeq, setAnnounceSeq] = useState(0);
 
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
@@ -349,7 +353,10 @@ export function CollectionBrowser({
         availabilityChangeAnnouncement(
           filters, f, cards, availabilityOptions, totalQuantity, intent,
         );
-      if (message) setAnnouncement(message);
+      if (message) {
+        setAnnouncement(message);
+        setAnnounceSeq((n) => n + 1);
+      }
       setFilters(f);
       setShown(PAGE_SIZE);
     },
@@ -379,7 +386,23 @@ export function CollectionBrowser({
   }).map((chip) => ({
     key: chip.key,
     label: chip.label,
+    spoken: chip.spoken,
     dots: chip.dots,
+    // The same marker the list rows draw. `chips.ts` reports the states as
+    // codes because it is pure; building the glyph is this layer's job.
+    leading:
+      chip.markers && chip.markers.length > 0 ? (
+        <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
+          {chip.markers.map((state) => (
+            <AvailabilityGlyph
+              key={state}
+              // `chips.ts` filters `free` out, which is the markerless state.
+              state={state as "soft" | "hard" | "over"}
+              seam="var(--bg)"
+            />
+          ))}
+        </span>
+      ) : undefined,
     onRemove: () => updateFilters(chip.next),
   }));
 
@@ -453,6 +476,12 @@ export function CollectionBrowser({
       <FilterBar
         chips={chassisChips}
         onClearAll={clearAllFilters}
+        // A counter per announcement, so the same sentence spoken twice — the
+        // same search re-run to the same count — is heard twice.
+        announceId={announceSeq}
+        // What the queue measures staleness against. The count alone cannot:
+        // two filters can leave the same number of rows.
+        revision={JSON.stringify(filters)}
         resultLine={collectionChassisCopy.result(
           sorted.length,
           cards.length,
