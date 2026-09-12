@@ -549,6 +549,10 @@ export function SetGridView(props: SetGridViewProps) {
               searchable={false}
               selectionMode="single"
               widthPx={280}
+              // 44px rows, which is the chassis contract and not this mount's choice: the
+              // panel defaults desktop rows to 40, and `/decks` passes 44 for the same
+              // reason. ADDENDUM-STATES §4 states it too.
+              desktopRowMinPx={44}
               footerStatus
               options={RARITIES.map((r) => ({
                 code: r,

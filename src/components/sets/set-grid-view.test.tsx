@@ -927,3 +927,15 @@ describe("SetGridView — the last route out of a stale m=1", () => {
     expect(clear.textContent).toContain("Clear all filters");
   });
 });
+
+// The chassis contract puts the panel's desktop rows at 44px; `FilterPanel` defaults to 40,
+// and `/decks` passes the 44 for the same reason.
+describe("SetGridView — the rarity panel's rows", () => {
+  it("asks for the chassis's 44px rows rather than the panel's default", () => {
+    stubDesktop(true);
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    const row = screen.getAllByRole("option")[0] as HTMLElement;
+    expect(row.style.minHeight).toBe("44px");
+  });
+});
