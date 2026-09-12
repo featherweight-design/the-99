@@ -78,10 +78,11 @@ the chassis package should not find two floors for one asset.
 
 ## The route's own geometry, and the 62px nobody counted
 
-The addendum derives its columns from a 1100px content box. The route's is narrower than
-that in two ways: the desktop **NavRail is `w-[62px] shrink-0`** (`shell/nav.tsx:148`) and
-sits in the same flex row, and the content column is `max-w-[1180px]` less `px-[34px]`
-either side. So:
+The addendum derives its columns from a 1100px canvas box. The route's content box is its
+own thing, set by two facts the canvas does not model: the desktop **NavRail is
+`w-[62px] shrink-0`** (`shell/nav.tsx:148`) and sits in the same flex row, and the content
+column is `max-w-[1180px]` less `px-[34px]` either side. It is *wider* than the canvas at
+the maximum (1112px) and narrower below it, which is the part that matters. So:
 
 ```
 content(viewport) = min(1180, viewport − 62) − 68      (≥768px, rail present)
