@@ -184,6 +184,16 @@ describe("VersionDiff", () => {
     expect(heading.className).toContain("hidden");
   });
 
+  // An all-land predecessor has no curve to average, which is a real answer and
+  // not a missing one. The figure this version does know is still drawn.
+  it("draws the mana value with no before figure when the predecessor had no curve", async () => {
+    getVersionDiff.mockResolvedValueOnce({ in: [card()], out: [] });
+    mount({ previous: version({ number: 1, manaValue: null }) });
+    await screen.findByText("Sol Ring");
+    expect(screen.getByText("3.10")).toBeInTheDocument();
+    expect(screen.getByText(deckVersioningCopy.changed.manaValue)).toBeInTheDocument();
+  });
+
   it("shows the one loading mark while the diff is in flight", () => {
     getVersionDiff.mockReturnValueOnce(new Promise(() => {}));
     const { container } = mount();

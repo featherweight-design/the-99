@@ -401,6 +401,44 @@ try {
     console.log(`  h1: ${rail.h1} · back: ${rail.back}`);
     for (const row of rail.rows) console.log(`    ${row.open ? "open " : "closed"} ${row.text}`);
     check(`${viewport.label} · one row per version`, rail.rows.length === 3, `${rail.rows.length} of 3`);
+    // Every figure on a row comes out of `listVersions` — the card count off the
+    // snapshot rows, the delta off the diff against the predecessor, the tally off
+    // the games table — and the component tests are handed those figures already
+    // computed. A row whose text is only counted proves the rail renders, never
+    // that the aggregates are right, so each one is named here against the fixture
+    // this run wrote: v1 is the whole 99, v2 drops two, v3 takes two back and drops
+    // two more, and the one logged game is held by v2. Case-insensitive, because
+    // the tags are uppercased in CSS and `innerText` reports what is drawn. The
+    // mana values are catalog-dependent and only checked for shape.
+    const [rowThree, rowTwo, rowOne] = rail.rows.map((row) => row.text);
+    check(
+      `${viewport.label} · v3 states 97 cards, a two-for-two, and no held game`,
+      /97 cards/.test(rowThree) && /\+2/.test(rowThree) && /−2/.test(rowThree)
+        && /current/i.test(rowThree) && !/held/i.test(rowThree),
+      rowThree,
+    );
+    // The tally is desktop-only by design — at 390px the meta line keeps the date
+    // and the size, and the games a version held is the part that gives way. So
+    // the phone is checked for its absence rather than excused from the check.
+    const phone = viewport.width < 640;
+    check(
+      `${viewport.label} · v2 states 97 cards, two out, and ${
+        phone ? "no tally" : "the game it held"
+      }`,
+      /97 cards/.test(rowTwo) && /−2/.test(rowTwo) && !/\+\d/.test(rowTwo)
+        && /held 1 game/i.test(rowTwo) !== phone,
+      rowTwo,
+    );
+    check(
+      `${viewport.label} · v1 states the whole 99 and no delta`,
+      /99 cards/.test(rowOne) && /initial/i.test(rowOne) && !/[+−]\d/.test(rowOne),
+      rowOne,
+    );
+    check(
+      `${viewport.label} · every row carries a mana value`,
+      rail.rows.every((row) => /mv \d+\.\d\d/i.test(row.text)),
+      rail.rows.map((row) => row.text.match(/mv \d+\.\d\d/i)?.[0] ?? "none").join(" · "),
+    );
     check(
       `${viewport.label} · the deck's name is the way back`,
       (rail.back ?? "").includes(DECK_NAME),

@@ -328,15 +328,25 @@ export function VersionDiff({
           </div>
         ) : (
           <div className="flex gap-[10px]">
-            {manaBefore !== null && manaAfter !== null && (
+            {/* Keyed on the after figure alone, with the before half optional.
+                `averageManaValue` answers null for a list with nothing to average,
+                so a version that came off an all-land predecessor has a real curve
+                of its own and nothing earlier to point away from — and the pair
+                gate would have dropped the figure it does know. The changed strip
+                draws its mana cell by the same rule. */}
+            {manaAfter !== null && (
               <StatBox label={deckVersioningCopy.changed.manaValue}>
                 <div className="flex items-baseline gap-[5px] font-mono">
-                  <span className="text-[12px] text-[color:var(--fg-locked)]">
-                    {manaBefore.toFixed(2)}
-                  </span>
-                  <span aria-hidden className="text-[10px] text-[color:var(--fg-locked)]">
-                    →
-                  </span>
+                  {manaBefore !== null && (
+                    <>
+                      <span className="text-[12px] text-[color:var(--fg-locked)]">
+                        {manaBefore.toFixed(2)}
+                      </span>
+                      <span aria-hidden className="text-[10px] text-[color:var(--fg-locked)]">
+                        →
+                      </span>
+                    </>
+                  )}
                   {/* Neutral, never `--success`: a mana curve coming down is not
                       an improvement the app is entitled to congratulate. */}
                   <span className="text-[15px] text-[color:var(--fg-body)]">
