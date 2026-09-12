@@ -176,9 +176,8 @@ export const PORTRAITS: Record<
         starts fading and not a pixel further — so only a row whose shipped value
         disagrees with its own rule states one. */
     clearTo?: number;
-    /** Does not derive, and `PORTRAIT_BANDS` said so in its own comment: each was
-        drawn against its own surface, chosen so the title column clears the
-        mask's tail by ~15px. */
+    /** Does not derive: each was drawn against its own surface, chosen so the
+        title column clears the mask's tail by ~15px. */
     flatStop: number;
     /** LEGACY — the hand-written vertical ramp. `bottomScrimStops` does the same
         shape from a `labelAtPx`, which is what lets one function serve both
