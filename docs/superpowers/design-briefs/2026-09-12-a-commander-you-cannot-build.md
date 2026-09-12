@@ -73,9 +73,13 @@ There is a precedent, and it went the other way. `src/lib/copy/availability.ts:2
 > the deck name appears in card detail only. Do not "restore" the deck name here without widening a
 > shipped grid.
 
-The commander row is a similar shape — a fixed band with rank, identity pips, fit bar and a receipts
-line already competing for it — so the same answer may apply, and the brief does not assume it does
-not. The vocabulary already exists at both weights:
+**The commander row is two zones, and that may matter more than the precedent.** Read against
+`src/components/commanders/rec-card.tsx:143`: a fixed **148px band** carrying rank, identity, the fit
+chip and the action over the art (desktop grid `24px 1fr auto 32px`, `:213`), and below its divider a
+**data zone on flat ground** holding the fit bar and the receipts line (`:316-358`, `:400-456`) — §4
+of the art-wash handoff, *data lives on flat ground*. So there are two candidate homes rather than
+one crowded strip, and the `/collection` answer may or may not carry over. The vocabulary already
+exists at both weights:
 
 | String | Reads | Source |
 |---|---|---|

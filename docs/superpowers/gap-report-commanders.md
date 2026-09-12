@@ -28,7 +28,11 @@
 
 ## State reachability
 
-All 10 states REACHABLE: first-run, populated, filtered, degraded-global, degraded-per-commander, empty-no-candidates, empty-filtered-to-zero, detail-normal, detail-lightbox, detail-build-entry.
+All 10 states REACHABLE: first-run, populated, filtered, degraded-global, degraded-per-commander, empty-no-candidates, empty-filtered-to-zero, detail-normal, **detail-card-modal**, detail-build-entry.
+
+`detail-card-modal` was `detail-lightbox` until 2026-09-12. Same state, same count — the handoff's
+full-card lightbox was replaced by the shared card modal, and the row is renamed rather than split so
+this inventory keeps describing what a reader can actually reach.
 
 ## Accepted deviations (documented, not gaps)
 
