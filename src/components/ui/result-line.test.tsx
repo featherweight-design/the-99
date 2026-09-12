@@ -114,6 +114,27 @@ describe("ResultLine", () => {
     );
   });
 
+  it("still speaks a custom message after a long silence", () => {
+    // The sheet announces the COUNT, never the surface's own sentence. So a
+    // long silence means the number was heard and the sentence was not, and
+    // suppressing both lost the sentence permanently.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="9 of 41 decks" announce="EOE added. 9 shown." silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<ResultLine line="9 of 41 decks" announce="EOE added. 9 shown." />);
+    expect(container.querySelector("[role='status']")?.textContent).toBe("EOE added. 9 shown.");
+  });
+
+  it("does not treat a delivered message as fresh on the next change", () => {
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="9 of 41 decks" announce="EOE added. 9 shown." silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<ResultLine line="9 of 41 decks" announce="EOE added. 9 shown." />);
+    rerender(<ResultLine line="3 of 41 decks" announce="EOE added. 9 shown." />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("3 of 41 decks");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

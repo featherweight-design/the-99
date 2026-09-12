@@ -86,8 +86,12 @@ export function ResultLine({
     const silentFor =
       silentSince.current === null ? null : performance.now() - silentSince.current;
     silentSince.current = null;
-    if (silentFor !== null && silentFor >= ANNOUNCE_DELAY_MS) {
-      // The sheet already said it. Record it as spoken and stay quiet.
+    // The handover only covers the count. A long silence means the sheet has
+    // already said the number, so repeating it here would be the same figure
+    // twice — but the sheet says the COUNT, never the surface's own sentence,
+    // so a fresh custom message has still not been heard by anyone and must
+    // come through. Suppressing it here lost it permanently.
+    if (silentFor !== null && silentFor >= ANNOUNCE_DELAY_MS && !fresh) {
       announced.current = line;
       return;
     }
