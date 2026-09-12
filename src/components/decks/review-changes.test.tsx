@@ -22,7 +22,7 @@ const { getCardDetail } = vi.hoisted(() => ({ getCardDetail: vi.fn() }));
 vi.mock("../../app/card-detail-action", () => ({ getCardDetail }));
 
 const browseCard = (oracleId: string, name: string): BrowseCard => ({
-  oracleId, name, typeLine: "Artifact", manaCost: "{1}", oracleText: "", keywords: [],
+  oracleId, name, typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: "", keywords: [],
   rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 0,
   printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
 });
