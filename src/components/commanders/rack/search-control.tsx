@@ -36,6 +36,7 @@ export function SearchControl({
     <SearchField
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      autoFocus={autoFocus}
       // The narrow field is 44px of full width and takes the short word; the
       // rack's 300px field has room to say what is being searched.
       placeholder={wide ? copy.placeholderWide : copy.placeholder}
