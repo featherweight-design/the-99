@@ -4,7 +4,8 @@ import { seedPrintings } from "../src/lib/scryfall/seed-printings";
 seedPrintings()
   .then((r) => {
     console.log(
-      `Seeded ${r.upserted} printings (${r.representatives} representative); ` +
+      `Seeded ${r.upserted} printings (${r.representatives} representative, ` +
+      `${r.baseSetSizes} sets sized); ` +
       `skipped ${r.skippedLayout} token/emblem, ${r.skippedReversible} reversible, ` +
       `${r.skippedOrphan} orphan.`,
     );

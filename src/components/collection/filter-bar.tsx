@@ -22,7 +22,7 @@ import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityGlyph } from "../ui/availability-marker";
-import { ColorPip } from "./color-pip";
+import { ColorFilterRow } from "./color-filter-row";
 import { SearchField } from "../ui/text-field";
 import { FilterPanel } from "../ui/filter-panel";
 // Placeholder copy differs by breakpoint (§Copy (placeholders)) and the
@@ -30,12 +30,13 @@ import { FilterPanel } from "../ui/filter-panel";
 // The hook moved to ui/use-is-desktop.ts when filter-panel.tsx needed it too;
 // it is re-exported here because browser.tsx already imports it from this file.
 import { useIsDesktop } from "../ui/use-is-desktop";
+import Link from "next/link";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
+import { setPageCopy } from "../../lib/copy/set-collections";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 
 export { useIsDesktop };
 
-const WUBRG = ["W", "U", "B", "R", "G"] as const;
 
 export type ViewMode = "rows" | "grid";
 
@@ -65,6 +66,7 @@ export function FilterBar({
   typeOptions,
   availabilityOptions,
   availabilityOk,
+  hasCollection,
   announcement,
   onAnnounce,
   onFiltersChange,
@@ -85,6 +87,13 @@ export function FilterBar({
   availabilityOptions: AvailabilityOption[];
   /** False when the availability aggregate could not be read (Task 7 / Task 9). */
   availabilityOk: boolean;
+  /**
+   * Whether the reader has a collection at all — NOT whether the current filters left any
+   * sets. `setOptions` is filter-aware, so keying the By set pill on it removed the entry
+   * point whenever a type or colour filter excluded everything, which is an ordinary thing
+   * to do and has nothing to say about whether the sets page is worth visiting.
+   */
+  hasCollection: boolean;
   /** The bar's single live region content — the panel writes here too. */
   announcement: string;
   onAnnounce: (message: string) => void;
@@ -124,27 +133,10 @@ export function FilterBar({
           aria-label="Search your cards"
         />
 
-        {/* WUBRG pip selector (desktop) — §Color Filter */}
-        <div
-          className="hidden md:flex items-center gap-[6px] rounded-lg px-[10px] py-[7px]"
-          style={{
-            background: "var(--surface-sunken)",
-            border: "1px solid var(--border-strong)",
-          }}
-        >
-          {/* §Color Filter Label "COLOR" — mono 10px, --fg-faint, letter-spacing 0.1em, margin-right 2px */}
-          <span className="font-mono text-[10px] mr-[2px] tracking-[0.1em]" style={{ color: "var(--fg-faint)" }}>
-            COLOR
-          </span>
-          {WUBRG.map((c) => (
-            <ColorPip
-              key={c}
-              color={c}
-              selected={filters.colors.includes(c)}
-              onToggle={() => toggleColor(c)}
-            />
-          ))}
-        </div>
+        {/* WUBRG pip selector (desktop) — §Color Filter. The row itself lives in
+            color-filter-row.tsx so the set grid mounts this component rather than
+            drawing a second row of pips. */}
+        <ColorFilterRow selected={filters.colors} onToggle={toggleColor} />
 
         {/* Mobile Color ▾ (#116) — the same overlaid panel as Type/Set. The
             <details> this replaces expanded in flow, pushing the filter row and
@@ -259,6 +251,42 @@ export function FilterBar({
           onClear={() => onFiltersChange({ ...filters, availability: [] }, "clear-availability")}
           onAnnounce={onAnnounce}
         />
+
+        {/* By set → the last control before the view well, and never inside it.
+            The leading cluster changes WHAT IS IN THE LIST; the trailing cluster
+            changes WHAT SURFACE YOU ARE ON, and sets is a surface.
+
+            It always goes to the index. Carrying `Set ▾`'s current value into the
+            route — so that filtering to EOE and tapping this lands on the EOE page —
+            is exactly the state-sharing behind the Commanders/Discover confusion,
+            and would make one control go to two places depending on a filter set ten
+            minutes ago. If that shortcut is ever wanted it belongs inside the Set ▾
+            menu as an explicit row that says so.
+
+            `Set ▾` and this are opposites and share nothing: one narrows the cards you
+            OWN to a set, the other leaves for a page of the ones you DO NOT. Three
+            carriers keep them apart — position, shape (a diamond link, with no
+            dropdown affordance) and the words. */}
+        {/* Absent, not disabled, before there is a collection: with nothing uploaded the
+            index would have nothing to list, and the locked upload surface already owns
+            that moment. Keyed on the collection, never on the filtered set list. */}
+        {hasCollection ? (
+          <Link
+            href="/collection/sets"
+            aria-label={setPageCopy.entryPoint.aria}
+            className="inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px]
+                       min-h-[44px] md:min-h-[auto] md:h-[46px] text-[13px]
+                       border border-[color:var(--accent)] text-[color:var(--fg-body)]
+                       hover:bg-[color:var(--elevated)]"
+          >
+            <span
+              aria-hidden
+              className="inline-block rotate-45 bg-[color:var(--accent)]"
+              style={{ width: 7, height: 7 }}
+            />
+            {setPageCopy.entryPoint.label}
+          </Link>
+        ) : null}
 
         <ViewToggle
           options={COLLECTION_VIEWS}

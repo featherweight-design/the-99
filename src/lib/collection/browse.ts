@@ -48,6 +48,8 @@ export type BrowseCard = {
   name: string;
   typeLine: string;
   manaCost: string | null;
+  /** Mana value. The figure the collection row's cost track states (§1b). */
+  cmc: number;
   oracleText: string | null;
   keywords: string[];
   rarity: "common" | "uncommon" | "rare" | "mythic";
@@ -187,6 +189,7 @@ export const AVAILABLE_TYPES = [
 ] as const;
 
 export type RawCollectionRow = {
+  cmc: number;
   oracleId: string;
   quantity: number;
   setCode: string;
@@ -329,6 +332,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         name: r.name,
         typeLine: r.typeLine,
         manaCost: r.manaCost,
+        cmc: r.cmc,
         oracleText: r.oracleText,
         keywords: r.keywords,
         rarity: coerceRarity(r.rarity),
@@ -587,6 +591,7 @@ export async function selectCollectionRows(
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
+      cmc: cards.cmc,
       oracleText: cards.oracleText,
       keywords: cards.keywords,
       rarity: cards.rarity,

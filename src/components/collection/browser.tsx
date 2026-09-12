@@ -199,6 +199,7 @@ export function CollectionBrowser({
   cards,
   ownedSets,
   availabilityOk,
+  hasCollection,
 }: {
   cards: BrowseListCard[];
   /** `sets` catalog rows for the sets this user owns — names + release dates. */
@@ -209,6 +210,12 @@ export function CollectionBrowser({
    * reason. No banner (Addendum 2, implementation notes).
    */
   availabilityOk: boolean;
+  /**
+   * Whether the reader has a collection AT ALL, from the page's own stats. Not derived
+   * from `cards`: that array holds catalog-backed rows only, so a collection made
+   * entirely of unmatched cards would read as no collection and hide the sets entry.
+   */
+  hasCollection: boolean;
 }) {
   const search = useSearchParams();
   const isDesktop = useIsDesktop();
@@ -416,6 +423,7 @@ export function CollectionBrowser({
         sort={sort}
         view={effectiveView}
         setOptions={setOptions}
+        hasCollection={hasCollection}
         typeOptions={typeOptions}
         availabilityOptions={availabilityOptions}
         availabilityOk={availabilityOk}

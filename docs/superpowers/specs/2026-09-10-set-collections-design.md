@@ -291,6 +291,20 @@ right, but a windowed grid and an unrendered delta strip compete for the same sc
 container. Whatever approach is chosen has to hold the sticky head, the `extras ↓` jump and
 the strip together.
 
+## Known limitation: the catalog is never reconciled
+
+`seedPrintings` upserts and never deletes, and nothing compares the table against the bulk
+file it has just read. A printing Scryfall withdraws stays in `printings` indefinitely, so
+a set grid can draw a cell for a card that is no longer in the catalogue, and
+`base_set_size` counts it — a denominator one too large, and a cell nobody can buy.
+
+Deliberately not fixed by this feature. Reconciling means deleting catalog rows, and a run
+that fails mid-stream would delete live ones; doing it safely needs a staging table and a
+swap, which is a change to the ingest rather than to the surface that reads it. Withdrawals
+are rare and the damage is one stale cell against a denominator of several hundred.
+
+**Worth a follow-up ticket**, and flagged rather than filed.
+
 ## Errata against the handoff
 
 - `READINESS.md` says "seven of the nine grid states" are drawn. `STATES-set-grid.md` draws

@@ -11,7 +11,7 @@ const card: BrowseListCard = {
   oracleId: "o1",
   name: "Smothering Tithe",
   typeLine: "Enchantment",
-  manaCost: "{3}{W}",
+  manaCost: "{3}{W}", cmc: 4,
   keywords: [],
   rarity: "rare",
   colorIdentity: ["W"],
@@ -86,11 +86,14 @@ describe("RowsView availability marker", () => {
     expect(screen.queryByText(/Atraxa/)).toBeNull();
   });
 
-  it("gives a free row exactly today's accessible name, with no clause", () => {
+  it("gives a free row no availability clause at all", () => {
+    // The string gained ", mana value 4" when §1b put a cost on the row: the track is
+    // visible and was announced to nobody. What this test protects is unchanged — the
+    // availability clause lands LAST and a free card produces none.
     renderRows({ ...card, availability: avail(1, 0) });
     expect(
       screen.getByRole("button", {
-        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare",
+        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, mana value 4",
       }),
     ).toBeInTheDocument();
   });
@@ -99,7 +102,7 @@ describe("RowsView availability marker", () => {
     renderRows({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
     expect(
       screen.getByRole("button", {
-        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, no free copies",
+        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, mana value 4, no free copies",
       }),
     ).toBeInTheDocument();
   });
@@ -125,8 +128,11 @@ describe("RowsView availability marker", () => {
 // pips fan instead. A browser run confirmed the five-pip case at both widths;
 // four is the boundary the collection fixture has no card for.
 describe("RowsView colour pips", () => {
+  // Found by what they are, not by where they sit: §1b moved the pips out of the
+  // leading slot into the trailing cost track, and a positional selector would have to
+  // be rewritten every time the row's columns change.
   const pipsOf = (container: HTMLElement) =>
-    [...(container.querySelector("button")!.children[1].children as HTMLCollectionOf<HTMLElement>)];
+    [...container.querySelectorAll<HTMLElement>('span[class*="rounded-full"][class*="w-[11px]"]')];
 
   it("leaves three pips spaced", () => {
     const { container } = renderRows({ ...card, colorIdentity: ["W", "U", "B"] });
@@ -176,5 +182,46 @@ describe("RowsView printed name", () => {
   it("leaves an ordinary card on its oracle name, byte for byte", () => {
     renderRows({ ...card, name: "Fire // Ice", printedName: null });
     expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
+  });
+});
+
+describe("RowsView cost track (§1b)", () => {
+  const trackOf = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>('span[class*="w-[76px]"]');
+
+  it("states the mana value beside the identity pips", () => {
+    const { container } = renderRows({ ...card, typeLine: "Creature — Bear", cmc: 3 });
+    expect(trackOf(container)?.textContent).toContain("3");
+  });
+
+  it("leaves the disc empty for a land rather than printing 0", () => {
+    // Thirty-seven land rows printing a figure where there is an absence would be a
+    // claim about cost that lands do not make.
+    const { container } = renderRows({ ...card, typeLine: "Basic Land — Forest", cmc: 0 });
+    expect(trackOf(container)?.textContent).not.toContain("0");
+  });
+
+  it("keeps the disc's slot on a land so the track never ragged-edges", () => {
+    const { container } = renderRows({ ...card, typeLine: "Basic Land — Forest", cmc: 0 });
+    const disc = trackOf(container)?.firstElementChild as HTMLElement;
+    expect(disc).toBeTruthy();
+    expect(disc.className).toContain("w-[20px]");
+  });
+
+  it("renders one track, not a phone copy beside a desktop copy", () => {
+    const { container } = renderRows(card);
+    expect(container.querySelectorAll('span[class*="w-[76px]"]')).toHaveLength(1);
+  });
+});
+
+describe("RowsView cost track accessibility", () => {
+  it("names the mana value, which is otherwise only visible in the track", () => {
+    renderRows({ ...card, typeLine: "Creature — Bear", cmc: 3 });
+    expect(screen.getByRole("button", { name: /mana value 3/ })).toBeInTheDocument();
+  });
+
+  it("says nothing about mana value on a land, matching the empty disc it draws", () => {
+    renderRows({ ...card, typeLine: "Basic Land — Forest", cmc: 0 });
+    expect(screen.queryByRole("button", { name: /mana value/ })).toBeNull();
   });
 });

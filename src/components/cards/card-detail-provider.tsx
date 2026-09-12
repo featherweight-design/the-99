@@ -129,9 +129,25 @@ export function CardDetailProvider({
   children,
   // Injected for tests; production always uses the server action.
   fetchCard = getCardDetail,
+  onArtChange,
 }: {
   children: ReactNode;
   fetchCard?: (oracleId: string) => Promise<BrowseCard | null>;
+  /**
+   * Fired when a printing pick is ATTEMPTED, and again when it settles — including when
+   * the write was refused and the modal has rolled its own state back. It is a nudge that
+   * ownership may have moved, never a statement that it did.
+   *
+   * Treat it that way. A consumer that took the first call as committed state would show a
+   * pick the server never accepted; the set grid re-reads its own fingerprint and compares,
+   * so an extra call costs one small query and a wrong one changes nothing.
+   *
+   * It exists because a surface whose data depends on WHICH printing is owned cannot see
+   * the write otherwise: `revalidatePath` does not refresh a mounted client route, and a
+   * reader who closes the modal before the action returns leaves nothing else to notice.
+   * Every other consumer ignores it.
+   */
+  onArtChange?: (oracleId: string) => void;
 }) {
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
@@ -337,7 +353,7 @@ export function CardDetailProvider({
           // optimistic art pick across — same reason the collection browser remounts.
           key={card.oracleId}
           card={card}
-          onArtChange={() => evict(card.oracleId)}
+          onArtChange={() => { evict(card.oracleId); onArtChange?.(card.oracleId); }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}

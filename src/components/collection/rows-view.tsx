@@ -1,8 +1,8 @@
 "use client";
 // Dense rows view per property table §Collection Row (State 1a).
 // Grid columns:
-//   mobile:  38px 40px 1fr auto              (qty · pips · name+type · set)
-//   desktop: 52px 54px 1fr 150px 92px 18px   (qty · pips · name · type · set/rarity · chevron)
+//   mobile:  38px 1fr 76px auto              (qty · pips · name+type · set)
+//   desktop: 52px 1fr 90px 150px 92px 18px   (qty · pips · name · type · set/rarity · chevron)
 // Rarity dot colors per §Rarity Dot Colors.
 
 import type { BrowseListCard } from "../../lib/collection/browse";
@@ -62,7 +62,12 @@ export function RowsView({
             printedNameOf(c),
             c.typeLine,
             c.quantity,
-            `${c.primarySetCode}, ${c.rarity}`,
+            // §1b put a mana value on the row; without it here a screen-reader user gets
+            // the identity pips' information and not the cost beside them. Lands carry no
+            // clause at all, matching the empty disc they draw.
+            `${c.primarySetCode}, ${c.rarity}${
+              c.typeLine.toLowerCase().includes("land") ? "" : `, mana value ${c.cmc}`
+            }`,
             // Clause lands LAST, and only when there is one — a free card
             // produces today's exact string, unchanged.
             (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
@@ -70,15 +75,12 @@ export function RowsView({
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
-          className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
+          className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px]`}
         >
           {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent, font-weight 500 */}
           <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--accent)" }}>
             ×{c.quantity}
           </span>
-
-          {/* Color pips — §Row: Color Pip Container: gap 3/4px; pips 11×11 mobile / 13×13 desktop */}
-          <ColorPips colorIdentity={c.colorIdentity} />
 
           {/* Name column — §Row: Name Column Container: min-width 0 */}
           <span className="min-w-0">
@@ -128,6 +130,14 @@ export function RowsView({
             </span>
           </span>
 
+          {/* §1b — the cost track. Every other card row in the app states mana cost; the
+              collection row stated colour identity alone.
+
+              ONE element with a responsive width, never a desktop copy beside a phone
+              copy: a duplicated subtree doubles the pips in the accessibility tree and
+              reads as correct to a verifier looking at either width alone. */}
+          <CostTrack card={c} className="flex w-[76px] md:w-[90px]" />
+
           {/* SetRarityColumn: mobile set code + desktop type/set/rarity/chevron columns */}
           <SetRarityColumn card={c} />
         </button>
@@ -144,6 +154,38 @@ export function RowsView({
         </GhostButton>
       )}
     </div>
+  );
+}
+
+/**
+ * §1b — mana value and colour identity in one right-aligned track.
+ *
+ * A parity fix: every other card row in the app states mana cost, and this one stated
+ * colour identity alone. The identity pips leave the leading slot and join a fixed 90px
+ * track (76px on the phone's meta line), which is deck-versioning's un-shingled track at
+ * the size it already ships. The name column gains the width the pips vacated.
+ *
+ * A LAND KEEPS AN EMPTY DISC RATHER THAN PRINTING `0`. Thirty-seven land rows printing a
+ * figure where there is an absence would be a claim about cost that lands do not make,
+ * and dropping the disc entirely would ragged-edge the track.
+ */
+function CostTrack({ card, className }: { card: BrowseListCard; className: string }) {
+  const isLand = card.typeLine.toLowerCase().includes("land");
+  return (
+    <span className={`${className} items-center justify-end gap-[8px]`}>
+      <span
+        aria-hidden={isLand}
+        className="inline-flex h-[20px] w-[20px] shrink-0 items-center justify-center
+                   rounded-full font-mono text-[11px]"
+        style={{
+          background: "var(--surface-sunken)",
+          color: isLand ? "transparent" : "var(--fg-muted)",
+        }}
+      >
+        {isLand ? "" : card.cmc}
+      </span>
+      <ColorPips colorIdentity={card.colorIdentity} />
+    </span>
   );
 }
 

@@ -180,7 +180,10 @@ export async function setCardArtPreference(
     .where(and(
       eq(collectionItems.userId, userId),
       eq(collectionItems.oracleId, oracleId),
-      eq(collectionItems.setCode, normalizedSetCode),
+      // Lowercased like every other read of this column: a holding written before 0008
+      // carries an uppercase set_code, and comparing raw made the pick silently fail for
+      // exactly the rows the set page is trying to place.
+      eq(sql`lower(${collectionItems.setCode})`, normalizedSetCode),
       // May legitimately be '' — a bare `Name,Qty` import carries no collector number.
       eq(collectionItems.collectorNumber, collectorNumber),
     ))
@@ -196,6 +199,10 @@ export async function setCardArtPreference(
   // The browse payload carries the chosen printing's art, so it is stale now.
   revalidateUserLists(userId);
   revalidatePath("/collection");
+  // A pick is keyed (user_id, oracle_id), so choosing #268 fills #268 and EMPTIES #262:
+  // two cells change from one act, with the set's ratio unmoved. The set page is the only
+  // surface where that swap is legible, and without this it happens invisibly.
+  revalidatePath("/collection/sets/[code]", "page");
   return true;
 }
 
@@ -208,4 +215,6 @@ export async function clearCardArtPreference(oracleId: string): Promise<void> {
   ));
   revalidateUserLists(userId);
   revalidatePath("/collection");
+  // Clearing a pick moves the fill back, so the set page is stale for the same reason.
+  revalidatePath("/collection/sets/[code]", "page");
 }

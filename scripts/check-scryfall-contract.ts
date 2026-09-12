@@ -15,7 +15,15 @@ const REQUIRED: Record<BulkType, readonly string[]> = {
   oracle_cards: [
     "oracle_id", "id", "name", "cmc", "color_identity", "type_line", "legalities", "layout",
   ],
-  default_cards: ["oracle_id", "id", "name", "set", "collector_number", "layout", "digital"],
+  // `booster` and `rarity` carry the set-collection feature: booster is the base-run
+  // boundary and rarity is per-printing. The transform maps a missing one to null rather
+  // than throwing, which is right for a single odd entry and wrong as a silent outcome for
+  // a whole refresh — every set would go "not indexed yet" and the rarity filter would
+  // quietly lose cards, with the ingest reporting success. This is where that gets caught.
+  default_cards: [
+    "oracle_id", "id", "name", "set", "collector_number", "layout", "digital",
+    "booster", "rarity",
+  ],
 };
 
 /** Never rejects: a thrown fetch/parse failure is reported as a type-prefixed failure. */

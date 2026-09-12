@@ -23,7 +23,7 @@ const delver: BrowseCard = {
   oracleId: "o1",
   name: "Delver of Secrets // Insectile Aberration",
   typeLine: "Creature — Human Wizard",
-  manaCost: "{U}",
+  manaCost: "{U}", cmc: 2,
   oracleText: "",
   keywords: [],
   rarity: "common",

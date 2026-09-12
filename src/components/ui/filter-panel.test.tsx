@@ -552,6 +552,7 @@ describe("FilterPanel Clear announcement", () => {
         typeOptions={[]}
         availabilityOptions={[]}
         availabilityOk
+        hasCollection
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -667,6 +668,7 @@ describe("Type ▾ in the filter bar", () => {
         typeOptions={TYPE_OPTIONS}
         availabilityOptions={[]}
         availabilityOk
+        hasCollection
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -759,6 +761,7 @@ describe("FilterBar sort and color controls", () => {
         typeOptions={[]}
         availabilityOptions={[]}
         availabilityOk
+        hasCollection
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -828,6 +831,7 @@ describe("FilterBar sort and color controls", () => {
         typeOptions={[]}
         availabilityOptions={[]}
         availabilityOk
+        hasCollection
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={() => {}}

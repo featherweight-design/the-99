@@ -30,7 +30,7 @@ const asPrinting = (raw: Record<string, unknown>): PrintingRow => {
 const printing = (over: Partial<PrintingRow>): PrintingRow => ({
   scryfallId: "id", oracleId: "o", setCode: "ecl", collectorNumber: "1",
   imageUri: null, imageUriSmall: null, finishes: ["nonfoil"], isVariant: false,
-  flavorName: null, ...over,
+  flavorName: null, booster: false, rarity: "common", ...over,
 });
 
 describe("classifyPrinting", () => {
@@ -45,6 +45,8 @@ describe("classifyPrinting", () => {
       finishes: ["nonfoil", "foil"],
       isVariant: false,
       flavorName: null,
+      booster: null,
+      rarity: null,
     });
   });
 
@@ -200,5 +202,50 @@ describe("pickRepresentative", () => {
 
   it("returns null for an empty group", () => {
     expect(pickRepresentative([])).toBeNull();
+  });
+});
+
+describe("booster and rarity", () => {
+  it("carries booster through from the bulk entry", () => {
+    expect(asPrinting({ ...plains, booster: true }).booster).toBe(true);
+  });
+
+  it("reads a base-run full-art basic as in-booster", () => {
+    // EOE #262 is a full-art Plains: "inverted" is not a VARIANT_TREATMENT, and the
+    // printing sits inside the base run.
+    const row = asPrinting({
+      ...plains, collector_number: "262", booster: true,
+      frame_effects: ["inverted"], full_art: true,
+    });
+    expect(row.isVariant).toBe(false);
+    expect(row.booster).toBe(true);
+  });
+
+  it("reads a showcase extra as out of booster", () => {
+    const row = asPrinting({
+      ...plains, collector_number: "290", booster: false, frame_effects: ["showcase"],
+    });
+    expect(row.booster).toBe(false);
+  });
+
+  it("carries booster false for a Commander product, which the set-level fallback handles", () => {
+    // Every printing in c21 and otc is booster:false. The transform records that
+    // faithfully; the fallback lives in setBaseSetSizes, because it is a property of
+    // the set and not of any one printing.
+    expect(asPrinting({ ...plains, set: "C21", booster: false }).booster).toBe(false);
+  });
+
+  it("leaves booster null when the entry carries no flag, rather than claiming false", () => {
+    // The column is nullable so "not classified" stays distinct from "not in a booster";
+    // false would file an unclassified printing under extras.
+    expect(asPrinting({ ...plains }).booster).toBeNull();
+  });
+
+  it("carries the printing's own rarity, not the oracle card's", () => {
+    expect(asPrinting({ ...plains, set: "exp", rarity: "mythic" }).rarity).toBe("mythic");
+  });
+
+  it("leaves rarity null when the entry carries none", () => {
+    expect(asPrinting({ ...plains }).rarity).toBeNull();
   });
 });

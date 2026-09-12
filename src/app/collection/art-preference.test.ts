@@ -88,7 +88,9 @@ describe("setCardArtPreference", () => {
     stub.calls.owned.push({ one: 1 });
     await setCardArtPreference(ORACLE, "ZNR", "12");
     expect(stub.calls.conflict).toMatchObject({ set: { setCode: "znr", collectorNumber: "12" } });
-    expect(stub.calls.revalidated).toEqual(["/collection"]);
+    // The set page too: a pick is keyed (user_id, oracle_id), so it moves the fill
+    // between two cells there and the swap would otherwise happen invisibly.
+    expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
   });
 
   it("accepts the empty collector number a bare Name,Qty import carries", async () => {
@@ -102,6 +104,8 @@ describe("clearCardArtPreference", () => {
   it("deletes the row and revalidates", async () => {
     await clearCardArtPreference(ORACLE);
     expect(stub.calls.deleted).toBe(true);
-    expect(stub.calls.revalidated).toEqual(["/collection"]);
+    // The set page too: a pick is keyed (user_id, oracle_id), so it moves the fill
+    // between two cells there and the swap would otherwise happen invisibly.
+    expect(stub.calls.revalidated).toEqual(["/collection", "/collection/sets/[code]"]);
   });
 });
