@@ -736,9 +736,13 @@ export function SetGridView(props: SetGridViewProps) {
           </FilterSheet>
         ) : null}
 
-        {/* No result line while the catalog is unindexed: every cell falls out of both
-            sections, so the summary would read "0 cells · 0 yours, 0 missing" beside an
-            empty state that correctly says the set has not been indexed. */}
+        {/* Row 3, and the BOX is unconditional even though the sentence is not — which is
+            what makes "three rows, always all three" true rather than argued. No result
+            line while the catalog is unindexed: every cell falls out of both sections, so
+            the summary would read "0 cells · 0 yours, 0 missing" beside an empty state
+            correctly saying the set has not been indexed. But a set that becomes indexed
+            under a visible sticky head would otherwise grow the head by a line. */}
+        <div style={{ minHeight: 16 }} data-set-result>
         {sections.indexed ? (
         <p
           role="status"
@@ -774,6 +778,7 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
         </p>
         ) : null}
+        </div>
       </div>
 
       {!sections.indexed ? (

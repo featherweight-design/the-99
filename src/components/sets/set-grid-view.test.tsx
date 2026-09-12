@@ -975,3 +975,23 @@ describe("SetGridView — focus is rescued only when it was in the rack", () => 
     expect(container).toBeTruthy();
   });
 });
+
+// "Three rows, always all three" — made true rather than argued. The sentence is absent on
+// an unindexed set (there is no count to state), but its box is not, so a set that becomes
+// indexed under a visible sticky head does not grow the head by a line.
+describe("SetGridView — row 3's box is unconditional", () => {
+  it("reserves the result row even with no checklist to count", () => {
+    const { container } = view([p("1", { booster: null, isVariant: true })], []);
+    const row = container.querySelector("[data-set-result]") as HTMLElement;
+    expect(row).not.toBeNull();
+    expect(row.style.minHeight).toBe("16px");
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("and holds the same box once there is one", () => {
+    const { container } = view([p("1"), p("2")], ["1"]);
+    const row = container.querySelector("[data-set-result]") as HTMLElement;
+    expect(row.style.minHeight).toBe("16px");
+    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+  });
+});
