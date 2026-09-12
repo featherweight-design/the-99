@@ -198,9 +198,13 @@ export const loadCardDetail = cache(async function loadCardDetail(
 /**
  * The card's prices, or null. Swallowed for the same reason the availability read
  * above is: a feed that cannot be reached costs the reader a figure, never the
- * card. Null and "the feed has never carried this printing" are different states
- * and the modal draws both as silence — the distinction matters only in that
- * neither may ever be drawn as a price of nothing.
+ * card.
+ *
+ * Null is NOT the same state as "the feed has never carried this printing", and
+ * the two are drawn differently. Null means nobody asked the store anything, and
+ * the modal draws nothing at all; a successful read with no row for this printing
+ * means the store answered, and the modal draws `no stock`. What neither may ever
+ * become is a price of nothing.
  */
 async function pricesFor(oracleId: string): Promise<PrintingPrices | null> {
   return (async () => {

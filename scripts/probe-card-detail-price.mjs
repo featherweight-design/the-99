@@ -121,7 +121,10 @@ try {
   const trigger = page.locator('button[aria-label*="printings owned"]').last();
   if (await trigger.count()) {
     await trigger.click();
-    const tiles = page.locator('[role="radio"]');
+    // Both breakpoint trees mount a region and both are in the DOM at once,
+    // separated by CSS — so an unscoped `[role="radio"]` finds the phone tree's
+    // hidden tiles first and Playwright refuses to click one.
+    const tiles = page.locator('[role="radio"]:visible');
     const count = await tiles.count();
     if (count > 1) {
       const caption = () =>
