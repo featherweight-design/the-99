@@ -57,6 +57,11 @@ export type DeckUpdatePreview = {
   recounted: DeckUpdatePlan["recounted"];
   unresolved: DeckUpdatePlan["unresolved"];
   noChange: boolean;
+  /** The version the deck is sleeved as, or null for a brew. A versioned deck's
+   *  paste lands in the DRAFT and nothing it says about the deck's claims is true
+   *  until the player commits, so the preview has to say which version it is
+   *  drafting against; a brew has nothing to say and renders no notice. */
+  version: number | null;
 };
 
 export type DeckUpdateResult =
@@ -167,6 +172,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
   }
 
   const widened = await withFacts(userId, input.deckId, { out: plan.out, in: plan.in });
+  const version = await newestVersion(input.deckId);
 
   return {
     ok: true,
@@ -181,6 +187,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     recounted: plan.recounted,
     unresolved: plan.unresolved,
     noChange: plan.noChange,
+    version: version?.number ?? null,
   };
 }
 

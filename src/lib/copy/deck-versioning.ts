@@ -142,13 +142,27 @@ export const deckVersioningCopy = {
   /* ---- §Surfaces 3 · commit ---- */
   commit: {
     heading: (version: number) => `Commit this list as v${version}`,
-    lede: (version: number, unfree: number, removed: number) =>
-      `v${version} becomes the deck's list immediately. ` +
-      (unfree === 1
-        ? "The one card with no free copy keeps its buy tag until you actually buy it"
-        : `The ${unfree} cards with no free copy keep their buy tags until you actually buy them`) +
-      `, and the ${removed} you cut ${removed === 1 ? "is" : "are"} back in the pool the moment ` +
-      "you commit.",
+    lede: (version: number, unfree: number, removed: number) => {
+      const head = `v${version} becomes the deck's list immediately.`;
+      // A first commit, an all-free draft and a basics-only draft each leave one of
+      // these figures at zero, and "The 0 cards with no free copy" explains a
+      // consequence nobody is facing. Only the halves that moved are named, and a
+      // draft with neither says nothing further — the lede alone is the whole fact.
+      const clauses = [
+        unfree === 1
+          ? "the one card with no free copy keeps its buy tag until you actually buy it"
+          : unfree > 1
+            ? `the ${unfree} cards with no free copy keep their buy tags until you actually buy them`
+            : null,
+        removed > 0
+          ? `the ${removed} you cut ${removed === 1 ? "is" : "are"} back in the pool the moment ` +
+            "you commit"
+          : null,
+      ].filter(Boolean);
+      if (clauses.length === 0) return head;
+      const rest = clauses.join(", and ");
+      return `${head} ${rest.charAt(0).toUpperCase()}${rest.slice(1)}.`;
+    },
 
     noteLabel: "Why this version exists — optional",
     // Offered at commit time precisely because it is unrecoverable afterwards (§Surfaces 3).

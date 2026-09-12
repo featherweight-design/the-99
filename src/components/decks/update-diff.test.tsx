@@ -41,6 +41,7 @@ function preview(over: Partial<DeckUpdatePreview> = {}): DeckUpdatePreview {
     recounted: [],
     unresolved: [],
     noChange: false,
+    version: null,
     ...over,
   };
 }
@@ -143,6 +144,18 @@ describe("UpdateDiff groups", () => {
   it("omits the unnamed group when the list has no unnamed lines", () => {
     renderDiff({ unresolved: [] });
     expect(screen.queryByRole("heading", { name: /cannot name/ })).not.toBeInTheDocument();
+  });
+
+  // On a versioned deck the paste lands in the draft, so the preview has to say
+  // so — the groups below it otherwise read as a write to the committed list.
+  it("says a versioned paste lands in the draft, and says it only then", () => {
+    renderDiff({ version: 3 });
+    expect(screen.getByText(copy.draftPasteNotice(3))).toBeInTheDocument();
+  });
+
+  it("says nothing about drafts on a deck that has never committed", () => {
+    renderDiff({ version: null });
+    expect(screen.queryByText(/pending changes, not the committed deck/)).not.toBeInTheDocument();
   });
 
   it("caps a long group at four rows and discloses the remainder", () => {

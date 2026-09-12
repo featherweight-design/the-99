@@ -1993,6 +1993,15 @@ verbatim from the handoff file, with this comment:
       // final, which on a versioned deck it is not.
 ```
 
+Then wire it, in this same task — a copy key nothing renders is a string the next
+PR has to rediscover. `DeckUpdatePreview` (`src/app/decks/update-actions.ts`)
+gains `version: number | null`, `previewDeckUpdate` fills it from the shipped
+`newestVersion(input.deckId)` it already imports, and `update-diff.tsx` renders
+the notice under the provenance line and above the note block, guarded on
+`preview.version !== null`. `update-entry.tsx` already suppresses `UPDATED_PARAM`
+on a versioned deck; the notice is the other half of that contract, which is why
+the two ship together.
+
 - [ ] **Step 3: Write the failing test**
 
 Create `src/lib/copy/deck-versioning.test.ts`. The repo's copy tests assert the
@@ -2645,8 +2654,10 @@ for the first-commit offer:
 // than a mode of it.
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy, INLINE_CHANGE_MAX } from "../../lib/copy/deck-versioning";
+import { priceCopy } from "../../lib/copy/price";
 import type { DraftChange } from "../../lib/decks/draft-diff";
 import { changeCount, type DraftState } from "../../lib/decks/draft-state";
 import { formatDeckDate } from "../../lib/decks/format";
@@ -2684,6 +2695,36 @@ function changeLabel(state: DraftState, change: DraftChange): string {
   return moved
     ? deckImportCopy.update.diff.recountedItem(name, String(change.from), String(change.to))
     : name;
+}
+
+// The figure is a `<span>` inside the sentence, so the sentence is authored with a
+// placeholder and split on it rather than concatenated out of fragments here.
+const MONEY_SLOT = "\u0000";
+const MONEY_FIGURE = "font-mono text-[12px] md:text-[12.5px] text-[color:var(--warning)]";
+
+/**
+ * The money sentence, or null — the three states the comment at the call site
+ * describes. `claimsKnown` false and a null total are both reads that did not
+ * finish, and neither may be rendered as an answer.
+ */
+function moneyLine(state: DraftState): ReactNode | null {
+  if (!state.claimsKnown) return null;
+  if (state.unfreeCount === 0) return copy.moneyNone;
+  if (state.total === null) return null;
+  const partial = state.pricedCopies < state.buyCount;
+  const total = partial
+    ? `${state.total} · ${priceCopy.strip.pricedClause(state.pricedCopies, state.buyCount)}`
+    : state.total;
+  const [head, tail] = copy
+    .money(state.unfreeCount, state.addChanges.length, state.buyCount, MONEY_SLOT)
+    .split(MONEY_SLOT);
+  return (
+    <>
+      {head}
+      <span className={MONEY_FIGURE}>{total}</span>
+      {tail}
+    </>
+  );
 }
 
 export function PendingBanner({

@@ -63,6 +63,19 @@ describe("deckVersioningCopy", () => {
     );
   });
 
+  // A first commit, an all-free draft and a basics-only draft each leave one of the
+  // lede's figures at zero, and a consequence nobody faces is not an explanation.
+  it("names only the halves a commit actually has", () => {
+    expect(copy.commit.lede(2, 0, 3)).toBe(
+      "v2 becomes the deck's list immediately. The 3 you cut are back in the pool the moment you commit.",
+    );
+    expect(copy.commit.lede(2, 2, 0)).toBe(
+      "v2 becomes the deck's list immediately. The 2 cards with no free copy keep their buy tags " +
+        "until you actually buy them.",
+    );
+    expect(copy.commit.lede(1, 0, 0)).toBe("v1 becomes the deck's list immediately.");
+  });
+
   it("caps the inline density at six", () => {
     // The banner's two densities hinge on this and nothing else reads it.
     expect(INLINE_CHANGE_MAX).toBe(6);
