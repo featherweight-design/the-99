@@ -132,7 +132,7 @@ export function FilterChassis({
       <div className="flex items-center gap-[8px]" data-chassis-row="controls">
         {/* No `overflow-hidden` here, ever. `FilterPanel` puts its desktop
             popover in an absolutely positioned descendant of its own relative
-            root (`filter-panel.tsx:806-874`), so clipping this group hides
+            root — its popover is `absolute` with a computed `left` — so clipping this group hides
             every panel the chassis opens — and it clips focus outlines with
             them. `min-w-0` is what lets the group shrink; the shrinking is
             constrained on the one control that may shrink, not by a clip. */}
@@ -205,11 +205,11 @@ export function FilterChassis({
           ))
         )}
 
-        {/* Present and inert, never absent. `rack/chip-line.tsx:74-79` states
-            the reason — the affordance is part of what the row teaches, and a
-            button that comes and goes has to be re-found — and the commander
-            routes migrate onto this frame, so removing it would take away an
-            established way out and change the focusable structure with it. */}
+        {/* Present and inert, never absent. The rule comes from the rack's own
+            `ChipLine`, which this frame replaced: the affordance is part of what
+            the row teaches, and a button that comes and goes has to be re-found.
+            No line reference, because that component is deleted — the rule
+            outlived it, which is the point of moving it here. */}
         <button
           type="button"
           disabled={chips.length === 0}

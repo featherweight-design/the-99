@@ -346,7 +346,11 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
               <button
                 type="button"
                 onClick={() => apply({ filters: EMPTY_FILTERS, sort: state.sort })}
-                className="flex h-[44px] cursor-pointer items-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] text-[14px] text-[color:var(--fg)] sm:h-[32px] sm:rounded-[8px] sm:text-[12.5px]"
+                // Switches at the chassis breakpoint, not `sm:`. This sits
+                // below the compact chassis at 640-999px, where `sm:h-[32px]`
+                // would put it under the touch floor — the same mismatch the
+                // sort trigger and the sheet both had.
+                className="flex h-[44px] cursor-pointer items-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] text-[14px] text-[color:var(--fg)] min-[1000px]:h-[32px] min-[1000px]:rounded-[8px] min-[1000px]:text-[12.5px]"
               >
                 {refreshCopy.filters.emptyAction}
               </button>

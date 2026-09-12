@@ -69,7 +69,7 @@ are real and one apparent delta is not:
   (`src/components/ui/use-is-desktop.ts:8`). The chassis switches form at 1000px (decision 18, with
   §7's correction). **At 768–999px the compact chassis would open a desktop popover** — the phone frame with the desktop
   panel inside it. The panel must take its breakpoint from the caller rather than reading its own.
-- **Desktop option rows are `min-h-[40px]`** (`filter-panel.tsx:465`) and the chassis needs
+- **Desktop option rows were `min-h-[40px]`** (`filter-panel.tsx`, the option row's class list) and the chassis needs
   **44px** — `STATES-filter-chassis.md:85-87` specifies the panel's rows, and the handoff's 34px
   figure is the *control* rhythm for triggers and fields, not the rows inside a panel. An earlier
   draft of this section compared the two and called it a rhythm mismatch, which would have let an
@@ -82,7 +82,7 @@ are real and one apparent delta is not:
 ### One composition problem, deferred with its route
 
 `FilterPanel`'s compact branch is itself a fixed `aria-modal` sheet with its own scrim
-(`filter-panel.tsx:879-894`). The chassis phone form is also a sheet. Mounting one inside the other
+(`filter-panel.tsx`, the compact branch's scrim and sheet). The chassis phone form is also a sheet. Mounting one inside the other
 puts two modal dialogs and two scrims on screen, which no focus contract survives.
 
 **This does not arise in PR 1 or PR 2.** `/decks` has no searchable dimension — its five are a
@@ -190,7 +190,7 @@ audited it.
 | `STATES` §181: the shipped panels share `useDialogA11y`, roving radiogroups and selection-follows-focus | They do not. `filter-panel.tsx` has its own panel and listbox key handling; `rack/select.tsx` has its own focus and menu logic | The "no new pattern" justification is what makes the a11y work look free. It is not free — the shared behaviour has to be written |
 | `STATES` §104 lists only `Set` as searchable | `Printed in` is searchable too, per the canvas | Moot this round — `Printed in` is cut — but it must be settled before that dimension lands |
 | Decision 18 derives the 900px switch from a 887px total | **The stated minimums total 987px**, and the switch moves to **1000px** — see §7 | At 900 the wide form wraps, which is the defect the decision exists to prevent |
-| `STATES` §112 gives the wide panel `role="menu"` | `FilterPanel` renders `role="dialog"` containing a `role="listbox"` of `role="option"` rows (`filter-panel.tsx:546,863-877`) | A `menu` wrapper is invalid around those descendants. The shipped semantics stand; the contract in STATES does not |
+| `STATES` §112 gives the wide panel `role="menu"` | `FilterPanel` renders `role="dialog"` containing a `role="listbox"` of `role="option"` rows (all three in `filter-panel.tsx`; line numbers omitted deliberately — this file is edited by the chassis work and every number in this table drifted once already) | A `menu` wrapper is invalid around those descendants. The shipped semantics stand; the contract in STATES does not |
 | Asset delivery left open — "static assets, a sprite or a hotlink are all viable" | Ruled in finding 3: five static SVGs in the repository | The handoff reopens a decision this audit closed |
 | `Printed in` drawn and specified as this round's new dimension | Cut from the round, on Design's own recommendation | Tracker, plan and this verdict all say cut; the handoff is the only document that still says otherwise |
 
