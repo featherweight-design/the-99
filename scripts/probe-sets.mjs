@@ -224,20 +224,27 @@ async function run() {
         indexRow.colour === indexRow.muted && indexRow.colour !== indexRow.locked,
         `${indexRow.colour} (muted ${indexRow.muted}, locked ${indexRow.locked})`,
       );
+      // The drawn gap, not merely "somewhere below": `mt-[2px]`. Any non-negative offset
+      // would have passed layout drift and a collapsed 0px gap alike.
       failures += !report(
-        "it sits under the base ratio rather than beside the year",
-        indexRow.below !== null && indexRow.below >= 0,
+        "it sits 2px under the base ratio",
+        indexRow.below === 2,
         `${indexRow.below}px below the ratio`,
       );
+      // The drawn step, not merely "smaller": 10px under 11px. A 9px line under an 11px
+      // ratio is also smaller, and is not the ruling.
       failures += !report(
-        "it is one type step down from the ratio",
-        indexRow.ratioSize !== null && indexRow.size < indexRow.ratioSize,
+        "it is one type step down: 10px under 11px",
+        indexRow.size === 10 && indexRow.ratioSize === 11,
         `${indexRow.size}px under ${indexRow.ratioSize}px`,
       );
+      // The FIGURE, not the word. A label reading `Set extras` would pass a `.includes`
+      // check while omitting exactly what the clause exists to announce.
+      const spoken = indexRow.text.replace(" / ", " of ");
       failures += !report(
-        "the row's accessible name carries it",
-        indexRow.label.includes("extras"),
-        `label ${JSON.stringify(indexRow.label)}`,
+        "the row's accessible name carries the figure, not just the word",
+        indexRow.label.includes(`, and ${spoken}`),
+        `label ${JSON.stringify(indexRow.label)}, wanted ", and ${spoken}"`,
       );
     }
 
