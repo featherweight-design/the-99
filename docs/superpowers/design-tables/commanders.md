@@ -1597,7 +1597,14 @@
 
 ---
 
-## Component: Full-Card Lightbox (mobile only)
+## Component: Full-Card Lightbox (mobile only) — **SUPERSEDED 2026-09-12: nothing implements this**
+
+> Every section in this component — the overlay, the blurred art layer, the `"Full card"` label, the
+> close button, the 63/88 card frame and the tap-to-close hint — describes a surface that no longer
+> exists. The control that opened it now opens the **shared card modal**, which is why its label is
+> `Card details`; that modal's own properties live in the card-surfaces table, not here, and the
+> state is `detail-card-modal` in State Coverage below. Kept whole for the handoff's numbering and
+> for the record of what was drawn. **Do not implement from this block.**
 
 ### Lightbox overlay
 | Property | Mobile | Desktop |
@@ -1622,10 +1629,6 @@
 | filter | blur(3px) | — |
 
 ### "Full card" label (top center)
-
-> **Superseded (2026-09-12):** this label belongs to the full-card lightbox, which no longer exists
-> — the control opens the shared card modal (printings, rulings, flip), and its own label is
-> `Card details`. Kept for the handoff's numbering; nothing implements it.
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | position | absolute | — |

@@ -66,7 +66,8 @@ Conflicts found between README prose and the v2 canvas:
    literally inherited.
 9. **Focal is not `center top` on the sharp layer.** README decision 6 and the token table
    present `center top` as a constant for all four surfaces. The canvas applies `center top`
-   only to the `cover` layers and to the two *ambient* layers; both `left-portrait` **sharp**
+   only to the `cover` layers and to the two *ambient* layers (both since removed — see the errata
+   at the head of this file); both `left-portrait` **sharp**
    layers use `background-position: left center` with `background-size: auto 100%`.
 10. **Commander-row labels "at band baseline".** README's token table says so; the canvas
     bottom-aligns only the name/pips/subtitle block (`align-self:flex-end;padding-bottom:16px`).
@@ -809,7 +810,7 @@ contract (`strategy` + `band` only) or returned to Design; it is not specified h
 | Property | Value |
 |---|---|
 | L1 base plate | `#0E0C09` |
-| Focal | `center top` — canvas applies this to `cover` layers and to both ambient layers only; both sharp layers use `left center` |
+| Focal | `center top` — canvas applies this to `cover` layers and to both ambient layers only (the ambient layers are removed as of 2026-09-12; the rule survives for `cover`); both sharp layers use `left center` |
 | Divider | `1px #2A241D` |
 | Ground | `#1A160F` (canvas resume row: `#181410`) |
 | Chip on art | `#14110E` + `1px #3A3229` (canvas deck-card status chip border: `#33402F`) |
