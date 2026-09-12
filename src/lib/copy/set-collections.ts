@@ -132,10 +132,11 @@ export const setPageCopy = {
 
   head: {
     meta: (code: string, released: string, base: number, extras: number) =>
-      `${code.toUpperCase()} · released ${released} · ${base} in the base run · ${extras} extras`,
+      `${code.toUpperCase()} · released ${released} · ${base} in the base run`
+      + ` · ${extras} ${extras === 1 ? "extra" : "extras"}`,
     ratioNote: "base run only · extras counted apart",
     ratioAria: (have: number, total: number) =>
-      `You have ${have} of ${total} cards in the base run`,
+      `You have ${have} of ${total} ${total === 1 ? "card" : "cards"} in the base run`,
   },
 
   cost: {
@@ -178,7 +179,8 @@ export const setPageCopy = {
     // Mass Entry, not a cart: #330 ships no cart or checkout, and the link goes to
     // /add-deck. Telling a screen-reader user "cart" names an action that does not exist.
     sendAria: (n: number, total: string) =>
-      `Open ManaPool Mass Entry with ${n} missing cards, ${total}. Opens in a new tab`,
+      `Open ManaPool Mass Entry with ${n} missing ${n === 1 ? "card" : "cards"}, ${total}.`
+      + " Opens in a new tab",
     emptyTotal: "$0.00 over 0 of 0",
     // Stands in for the figure when nothing missing can be costed. A zero would read as a
     // set that costs nothing to finish rather than one nobody is selling.
@@ -196,10 +198,11 @@ export const setPageCopy = {
 
   result: {
     rest: (cells: number, have: number, missing: number) =>
-      `${cells} cells · ${have} yours, ${missing} missing`,
+      `${cells} ${cells === 1 ? "cell" : "cells"} · ${have} yours, ${missing} missing`,
     missingOnly: (n: number) =>
       `${n} missing · numbers skip, because the cards you own are hidden`,
-    filtered: (shown: number, total: number) => `${shown} of ${total} cells`,
+    filtered: (shown: number, total: number) =>
+      `${shown} of ${total} ${total === 1 ? "cell" : "cells"}`,
   },
 
   // A printing the feed has never carried, as distinct from one that has sold out.

@@ -106,9 +106,12 @@ describe("setFilterCopy", () => {
   });
 });
 
-describe("setsIndexCopy.row — the extras figure's plural", () => {
+// Swept as a class rather than patched where flagged: five formatters in this file printed
+// a bare plural that a count of one can reach. The noun agrees with the figure that governs
+// it, which for a ratio is the DENOMINATOR — `0 / 1 extra`, not `0 / 1 extras`.
+describe("set-collections copy — counts of one", () => {
   // The noun agrees with the denominator, which is what it counts. Every other plural in
-  // this file carries an explicit singular; this one shipped without.
+  // this file carries an explicit singular; these shipped without.
   it("says extra when the set has one", () => {
     expect(setsIndexCopy.row.extrasLine(0, 1)).toBe("0 / 1 extra");
     expect(setsIndexCopy.row.extrasLine(1, 1)).toBe("1 / 1 extra");
@@ -118,5 +121,31 @@ describe("setsIndexCopy.row — the extras figure's plural", () => {
   it("says extras otherwise", () => {
     expect(setsIndexCopy.row.extrasLine(4, 123)).toBe("4 / 123 extras");
     expect(setsIndexCopy.row.extrasAria(4, 123)).toBe(", and 4 of 123 extras");
+  });
+
+  it("captions a set with one extra printing", () => {
+    expect(setPageCopy.head.meta("eoe", "2026", 276, 1)).toContain("1 extra");
+    expect(setPageCopy.head.meta("eoe", "2026", 276, 1)).not.toContain("1 extras");
+    expect(setPageCopy.head.meta("eoe", "2026", 276, 4)).toContain("4 extras");
+  });
+
+  it("names a one-card base run in the ratio's accessible text", () => {
+    expect(setPageCopy.head.ratioAria(0, 1)).toBe("You have 0 of 1 card in the base run");
+    expect(setPageCopy.head.ratioAria(1, 2)).toBe("You have 1 of 2 cards in the base run");
+  });
+
+  it("counts one cell as a cell", () => {
+    expect(setPageCopy.result.rest(1, 1, 0)).toBe("1 cell · 1 yours, 0 missing");
+    expect(setPageCopy.result.rest(2, 1, 1)).toBe("2 cells · 1 yours, 1 missing");
+  });
+
+  it("counts a one-cell filtered population the same way", () => {
+    expect(setPageCopy.result.filtered(1, 1)).toBe("1 of 1 cell");
+    expect(setPageCopy.result.filtered(1, 2)).toBe("1 of 2 cells");
+  });
+
+  it("sends one missing card, not one missing cards", () => {
+    expect(setPageCopy.cost.sendAria(1, "$2.00")).toContain("1 missing card,");
+    expect(setPageCopy.cost.sendAria(2, "$4.00")).toContain("2 missing cards,");
   });
 });
