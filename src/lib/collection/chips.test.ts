@@ -85,6 +85,30 @@ describe("collectionChips", () => {
     expect(search.next).toMatchObject({ search: "", colors: ["R"] });
   });
 
+  it("carries the availability states so the chip can draw the rows' marker", () => {
+    // ChipRow draws an AvailabilityGlyph per state; a chip naming a state
+    // without its marker would be the one place that pairing breaks.
+    const chip = collectionChips(
+      { ...EMPTY, availability: ["soft", "hard"] as never },
+      { ...options, availability: [
+        { code: "soft", label: "Spoken for" },
+        { code: "hard", label: "Committed" },
+      ] },
+    )[0];
+    expect(chip.markers).toEqual(["soft", "hard"]);
+  });
+
+  it("leaves free markerless, as the rows do", () => {
+    const chip = collectionChips(
+      { ...EMPTY, availability: ["free", "soft"] as never },
+      { ...options, availability: [
+        { code: "free", label: "Free" },
+        { code: "soft", label: "Spoken for" },
+      ] },
+    )[0];
+    expect(chip.markers).toEqual(["soft"]);
+  });
+
   it("treats absent and empty availability the same", () => {
     expect(collectionChips({ ...EMPTY, availability: [] }, options)).toHaveLength(0);
     expect(collectionChips(EMPTY, options)).toHaveLength(0);

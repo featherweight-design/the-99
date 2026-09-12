@@ -28,6 +28,12 @@ const colourName = (code: string) => COLOR_NAMES[code.toUpperCase()] ?? code;
 export type CollectionChip = {
   key: string;
   label: string;
+  /**
+   * The availability states this chip stands for, so the mount can draw the
+   * same marker the list rows use. Codes rather than nodes: this module is
+   * pure and has no business constructing components.
+   */
+  markers?: readonly string[];
   /** The label with collapsed values named, for readers who cannot see swatches. */
   spoken?: string;
   /** One swatch per lit hue — the colour chip's label collapses them to a count. */
@@ -108,6 +114,8 @@ export function collectionChips(
       key: "avail",
       label: copy.availability(avail.length, nameOf(options.availability, avail[0])),
       spoken: spokenNames(avail, options.availability),
+      // `free` is markerless in the rows, so it is markerless here too.
+      markers: avail.filter((state) => state !== "free"),
       next: { ...filters, availability: [] as AvailabilityState[] },
     });
   }

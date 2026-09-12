@@ -248,6 +248,24 @@ describe("FilterChassis", () => {
     expect(screen.getByText("White, Black").className).toContain("sr-only");
   });
 
+  it("draws a chip's leading node before its label", () => {
+    render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[
+          {
+            key: "avail",
+            label: "2 states",
+            leading: <i data-testid="marker" />,
+            onRemove: () => {},
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId("marker")).toBeTruthy();
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,

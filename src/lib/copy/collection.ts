@@ -20,9 +20,10 @@ import { availabilityCopy } from "./availability";
 const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")} cards`);
 
 /**
- * `/collection`'s chassis rows. The route had no chip line and no result line
- * before the chassis — it stated its count nowhere, which is why the count
- * helper above existed only inside announcements.
+ * `/collection`'s chassis rows. The route states both today — `browser.tsx`
+ * renders `ChipRow` below the bar with the selected values and the count — and
+ * the chassis draws them itself, so this is what the replacement says rather
+ * than the route's first version of it.
  */
 export const collectionChassisCopy = {
   result: (shown: number, total: number) =>

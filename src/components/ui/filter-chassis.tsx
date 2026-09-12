@@ -38,6 +38,12 @@ export type FilterChip = {
    */
   dots?: readonly string[];
   /**
+   * Drawn before the label. `/collection`'s availability chips carry the same
+   * marker the list rows use, and a chip that named a state without its glyph
+   * would be the one place that pairing breaks.
+   */
+  leading?: React.ReactNode;
+  /**
    * What a screen reader hears in place of `label`, when the label collapsed
    * values into a count. "3 colours" tells a sighted reader to look at the
    * swatches; it tells everyone else nothing, and the row this chassis replaced
@@ -209,6 +215,7 @@ export function FilterChassis({
                 "px-[8px] py-[3px] font-mono text-[11px] leading-[14px] text-[color:var(--fg-body)]",
               ].join(" ")}
             >
+              {chip.leading}
               {chip.dots && chip.dots.length > 0 && (
                 <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
                   {chip.dots.map((fill, i) => (
