@@ -100,20 +100,22 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 /**
  * What the rail says, read off the rendered page.
  *
- * Rows are found by `aria-expanded` plus `aria-controls` rather than by text: the
- * row IS the control, so anything without those attributes is not a rail row
- * however much it looks like one. The pair, not `aria-expanded` alone — the
- * account menu in the app chrome carries that attribute and controls nothing.
+ * Rows are found by `aria-expanded` rather than by text: the row IS the control,
+ * so a thing without that attribute is not a rail row however much it looks like
+ * one. NOT `aria-controls` as well — a closed row deliberately carries none,
+ * because pointing at an id nothing has is a broken relationship, so requiring it
+ * matched nothing and reported an empty rail on a page drawing three rows. The
+ * leading `v<n>` does the narrowing the attribute pair used to: the account menu
+ * in the app chrome also carries `aria-expanded`.
  */
-const ROW = "button[aria-expanded][aria-controls]";
-// Clicking needs the stricter anchor: the account menu in the chrome takes
-// `aria-controls` the moment it opens, and it sits after the rail in the DOM, so
-// `.last()` on the attribute pair alone reaches the menu and not a version.
-const railRows = (page) => page.locator(ROW).filter({ hasText: /^v\d/ });
+const ROW = "button[aria-expanded]";
+const ROW_TEXT = /^v\d/;
+const railRows = (page) => page.locator(ROW).filter({ hasText: ROW_TEXT });
 
 const readRail = (page) =>
-  page.evaluate((selector) => {
-    const rows = [...document.querySelectorAll(selector)];
+  page.evaluate(({ selector, text }) => {
+    const rows = [...document.querySelectorAll(selector)]
+      .filter((b) => new RegExp(text).test(b.innerText));
     const moving = [...document.querySelectorAll("main *")].filter((el) => {
       const s = getComputedStyle(el);
       return (
@@ -134,7 +136,7 @@ const readRail = (page) =>
       pending: /pending|draft/i.test(document.body.innerText),
       moving: moving.length,
     };
-  }, ROW);
+  }, { selector: ROW, text: ROW_TEXT.source });
 
 /** The card lists the opened panel resolved to, and its stat boxes. */
 const readPanel = (page, panelId) =>
@@ -293,14 +295,24 @@ try {
   console.log(`signed in as ${userId} · deck ${deck.deckId}`);
 
   // ── The guard, once: a rail is not width-dependent in whom it refuses.
+  // `networkidle`, not `domcontentloaded`: the route streams behind a loading
+  // boundary, so the document is "loaded" while the skeleton is still on screen
+  // and the refusal has not arrived yet.
   const refused = await page.goto(`${BASE}/decks/${foreignDeckId}/versions`, {
-    waitUntil: "domcontentloaded",
+    waitUntil: "networkidle",
   });
+  await page.waitForTimeout(500);
   const refusedStatus = refused?.status() ?? null;
-  const leaked = /v1|committed/i.test(await page.evaluate(() => document.body.innerText));
+  const refusedBody = await page.evaluate(() => document.body.innerText);
+  const leaked = /v1|committed/i.test(refusedBody);
+  const notFoundPage = /There's no page here\./.test(refusedBody);
   console.log(`\n########## another player's deck · /decks/<id>/versions`);
-  console.log(`  status: ${refusedStatus} (expect 404)`);
   console.log(`  rail drawn: ${leaked ? "YES — LEAK" : "no (correct)"}`);
+  console.log(`  not-found page: ${notFoundPage ? "yes (correct)" : "NO — check the guard"}`);
+  // The status is reported and not asserted. `versions/loading.tsx` makes this
+  // route stream, so the 200 is flushed with the first chunk before the guard's
+  // `notFound()` throws — the body is the refusal, and the header cannot be.
+  console.log(`  status: ${refusedStatus} (200 while the route has a loading boundary)`);
 
   for (const viewport of VIEWPORTS) {
     const vpContext = await browser.newContext({ viewport });
