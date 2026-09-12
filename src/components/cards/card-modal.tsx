@@ -380,7 +380,12 @@ export function CardModal({
     // unowned target falls back to the oracle name, which is the honest answer for a
     // printing the reader has no copy of.
     const row = printings.find((p) => matchesPreference(p, at));
-    return { ...card, printings, preferredPrinting: at, printedName: row?.flavorName ?? null };
+    // The same exact-equality rule `aggregateCollection` applies, verbatim: a printing whose
+    // flavour name IS the oracle name has renamed nothing, and copying it here would print
+    // the name twice and add an oracle-name line under it that says the same thing.
+    const renamed =
+      row?.flavorName != null && row.flavorName !== card.name ? row.flavorName : null;
+    return { ...card, printings, preferredPrinting: at, printedName: renamed };
   }, [card, pick, picked, openAtPrinting]);
   const resolved = resolvedPrinting(preview);
   // The picker is about the printings you OWN — every string it renders says so, and picking

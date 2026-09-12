@@ -920,4 +920,30 @@ describe("CardModal title under an opened-at printing", () => {
     );
     expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
   });
+
+  // The same exact-equality rule `aggregateCollection` applies: a printing whose flavour
+  // name IS the oracle name has renamed nothing, and copying it would print the name twice
+  // with an oracle-name line under it saying the same thing.
+  it("treats a flavour name equal to the oracle name as no rename", () => {
+    const sameName: BrowseCard = {
+      ...card,
+      quantity: 1,
+      printedName: null,
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 1, finishes: { nonfoil: 1 },
+        imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        flavorName: card.name,
+      }],
+    };
+    render(
+      <CardModal
+        card={sameName}
+        openAtPrinting={{ setCode: "SLD", collectorNumber: "1500" }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+    expect(screen.queryByText(printedNameCopy.oracleLabel)).toBeNull();
+  });
 });
