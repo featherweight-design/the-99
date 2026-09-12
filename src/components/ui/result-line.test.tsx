@@ -175,6 +175,33 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
   });
 
+  it("announces a count whose timer the sheet opening cancelled", () => {
+    // The change schedules its 300ms timer, the sheet opens mid-debounce and
+    // the cleanup cancels it. Stamping at schedule time left the line looking
+    // spoken, so closing the sheet took the early return and nobody ever heard
+    // the number.
+    const { rerender, container } = render(<ResultLine line="41 decks" />);
+    rerender(<ResultLine line="12 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(100));
+    rerender(<ResultLine line="12 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(50));
+    rerender(<ResultLine line="12 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
+  });
+
+  it("does not let a spent silence suppress a later count", () => {
+    // Silence entered and left while the line sat unchanged leaves a stale
+    // timestamp; the next genuinely new count then reads as long-silenced.
+    const { rerender, container } = render(<ResultLine line="41 decks" />);
+    rerender(<ResultLine line="41 decks" silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<ResultLine line="41 decks" />);
+    rerender(<ResultLine line="5 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("5 of 41 decks");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

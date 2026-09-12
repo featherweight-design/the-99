@@ -85,6 +85,10 @@ export function ResultLine({
     const fresh = announce !== undefined && announce !== "" && identity !== lastAnnounce.current;
     if (!fresh && (announced.current === null || announced.current === line)) {
       announced.current = line;
+      // Silence may have been entered and left while this line sat unchanged.
+      // Leaving the timestamp set lets a later, genuinely new count read as
+      // long-silenced and be suppressed for a handover that never happened.
+      if (!silent) silentSince.current = null;
       return;
     }
     // Silence is a handover, not a mute: while the sheet is open it owns the
@@ -122,7 +126,6 @@ export function ResultLine({
       announced.current = line;
       return;
     }
-    announced.current = line;
     // `fresh` is the guard, not `announce ?? line`: the caller's initial value
     // is the empty string, which is not null, so the nullish fallback would
     // silence every ordinary announcement.
@@ -139,13 +142,19 @@ export function ResultLine({
     // the keystroke and delay every other one for no reason. The line this
     // component composes itself is the only thing that waits.
     if (fresh) {
+      announced.current = line;
       setAnnouncement((a) => ({ text: message, seq: a.seq + 1 }));
       return;
     }
-    const t = setTimeout(
-      () => setAnnouncement((a) => ({ text: message, seq: a.seq + 1 })),
-      ANNOUNCE_DELAY_MS,
-    );
+    // `announced` is stamped when the timer FIRES, not when it is scheduled.
+    // Turning `silent` on mid-debounce cancels this timer through the cleanup;
+    // stamping at schedule time left the line looking spoken, so when silence
+    // ended the guard above took the early return and the count was never
+    // announced at all.
+    const t = setTimeout(() => {
+      announced.current = line;
+      setAnnouncement((a) => ({ text: message, seq: a.seq + 1 }));
+    }, ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
   }, [line, announce, announceId, silent]);
 
