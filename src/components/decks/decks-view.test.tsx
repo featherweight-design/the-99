@@ -173,6 +173,28 @@ describe("DecksView", () => {
     expect(result?.textContent).toContain("2 decks");
   });
 
+  it("tells assistive tech the compact triggers open a dialog", () => {
+    render(view([deckOf()]));
+    for (const name of [/Filter decks/, /Search decks/]) {
+      const trigger = screen.getByRole("button", { name });
+      expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+    }
+    openFilters();
+    expect(screen.getByRole("button", { name: /Filter decks/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  it("keeps search reachable on the compact form", () => {
+    // The old phone header carried a search trigger; dropping it would have
+    // left search reachable only by opening the sheet on some other errand.
+    render(view([deckOf()]));
+    fireEvent.click(screen.getByRole("button", { name: /Search decks/ }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("keeps New deck and Import in the header at every state", () => {
     render(view([deckOf()]));
     openFilters();

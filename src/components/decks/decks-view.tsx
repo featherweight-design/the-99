@@ -40,6 +40,7 @@ import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
 import { ImportDeckButton } from "./import-deck-button";
 import { NewDeckButton } from "./new-deck-button";
+import { SearchIcon } from "./search-icon";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
@@ -216,6 +217,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                     />
                   </div>
                   <FilterPanel
+                    desktopRowMinPx={44}
                     copy={deckChassisCopy.status}
                     options={statusOptions}
                     selected={state.filters.statuses}
@@ -240,6 +242,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                     }
                   />
                   <FilterPanel
+                    desktopRowMinPx={44}
                     copy={deckChassisCopy.played}
                     options={playedOptions}
                     selected={state.filters.played ? [state.filters.played] : []}
@@ -257,9 +260,27 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
               ) : (
                 // Compact puts every dimension in the sheet, which is the one
                 // control the row keeps. `DeckFilterSheet` already draws them.
+                <>
+                  {/* The search affordance the old phone header carried. It
+                      opens the same sheet with the field focused, because a
+                      full field cannot share 390px with a filter trigger and a
+                      sort trigger without one of them wrapping — which
+                      decision 18 forbids outright. */}
+                  <button
+                    type="button"
+                    onClick={() => setSheet({ open: true, focusSearch: true })}
+                    aria-label={refreshCopy.filters.searchPlaceholder}
+                    aria-haspopup="dialog"
+                    aria-expanded={sheet.open}
+                    className="flex h-[34px] w-[34px] flex-none cursor-pointer items-center justify-center rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)]"
+                  >
+                    <SearchIcon size={16} />
+                  </button>
                 <button
                   type="button"
                   onClick={() => setSheet({ open: true, focusSearch: false })}
+                  aria-haspopup="dialog"
+                  aria-expanded={sheet.open}
                   className={`flex h-[34px] cursor-pointer items-center gap-[7px] rounded-[9px] border border-solid bg-transparent px-[12px] font-sans text-[13px] ${
                     active > 0
                       ? "border-[color:var(--accent)] text-[color:var(--fg)]"
@@ -273,6 +294,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                     </span>
                   )}
                 </button>
+                </>
               )
             }
             sort={<DeckSortMenu sort={state.sort} onChange={onSort} />}

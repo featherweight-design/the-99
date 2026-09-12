@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { EMPTY_FILTERS } from "../../lib/decks/filter";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 
@@ -149,15 +149,10 @@ describe("DeckFilterSheet", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("offers the three sort orders, one of them pressed", () => {
-    render(<DeckFilterSheet {...props()} open onDismiss={vi.fn()} autoFocusSearch={false} />);
-    const group = screen.getByRole("group", { name: "Sort" });
-    expect(within(group).getAllByRole("radio")).toHaveLength(3);
-    expect(within(group).getByRole("radio", { checked: true })).toHaveAccessibleName(
-      "last played",
-    );
-  });
-
+  // The sheet's sort group is retired by §3.4: the chassis gives sort its own
+  // trailing slot on both forms, so the phone no longer reaches it through the
+  // filter sheet and a second copy here would be two controls for one value.
+  // `deck-sort-menu.test.tsx` covers the surviving one.
   it("singularises its dismiss button", () => {
     render(
       <DeckFilterSheet {...props({ shown: 1 })} open onDismiss={vi.fn()} autoFocusSearch={false} />,

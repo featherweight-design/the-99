@@ -77,8 +77,11 @@ export function DeckSortMenu({
     move(to);
   }
 
+  // Visible at every width: the chassis gives sort its own trailing slot past a
+  // hairline on both forms (decision 11), so the phone no longer reaches it
+  // through the filter sheet.
   return (
-    <div ref={root} className="relative hidden sm:block">
+    <div ref={root} className="relative">
       <button
         ref={trigger}
         type="button"

@@ -4,7 +4,11 @@
 // the desktop column, through the same `toggleIn` — which is what stops the two
 // from ever disagreeing. Neither reads or writes a URL; the view does.
 //
-// The sheet carries the sort as well as the filters, because the phone header
+// The sheet carries the filters. It used to carry the sort too, because the
+// phone header had nowhere to put it; §3.4 retires that group now the chassis
+// gives sort its own slot on both forms.
+//
+// Historic note, kept because it explains the shape: the phone header
 // has nowhere to put it (plan ruling 6). Everything else is the column's
 // vocabulary re-drawn as chips at the 44px touch floor.
 
@@ -17,7 +21,6 @@ import {
   STATUS_ORDER,
   type PlayedWindow,
 } from "../../lib/decks/filter";
-import { DECK_SORT_LABELS, DECK_SORT_ORDER, type DeckSort } from "../../lib/decks/sort";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
 import {
   ColourSwatch,
@@ -118,8 +121,6 @@ export function DeckFilterSheet({ open, ...rest }: DeckFilterSheetProps) {
 function SheetBody({
   filters,
   onChange,
-  sort,
-  onSortChange,
   shown,
   total,
   onDismiss,
@@ -137,20 +138,6 @@ function SheetBody({
   // pressed `Filter decks` is not what they asked for.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: autoFocusSearch ? undefined : dialog });
 
-  const sortChips = useRef<(HTMLButtonElement | null)[]>([]);
-  function stepSort(from: number, e: React.KeyboardEvent) {
-    const dir =
-      e.key === "ArrowRight" || e.key === "ArrowDown"
-        ? 1
-        : e.key === "ArrowLeft" || e.key === "ArrowUp"
-          ? -1
-          : 0;
-    if (dir === 0) return;
-    e.preventDefault();
-    const next = (from + dir + DECK_SORT_ORDER.length) % DECK_SORT_ORDER.length;
-    sortChips.current[next]?.focus();
-    onSortChange(DECK_SORT_ORDER[next]);
-  }
 
   const c = refreshCopy.filters;
 
@@ -193,29 +180,6 @@ function SheetBody({
           autoFocus={autoFocusSearch}
         />
 
-        <Group heading={c.sortHeading}>
-          <div role="radiogroup" aria-label={c.sortHeading} className="flex flex-wrap gap-[8px]">
-            {DECK_SORT_ORDER.map((option: DeckSort, i) => (
-              <Chip
-                key={option}
-                role="radio"
-                chipRef={(node) => {
-                  sortChips.current[i] = node;
-                }}
-                label={DECK_SORT_LABELS[option]}
-                on={sort === option}
-                // Roving: the chosen order is the group's one tab stop, so the
-                // arrows move inside the group rather than Tab walking past
-                // three stops. Selection follows focus, matching FacetStrip.
-                tabIndex={sort === option ? 0 : -1}
-                onKeyDown={(e) => stepSort(i, e)}
-                // Radio, not checkbox: clicking the one already on leaves it on,
-                // because a list is always in some order.
-                onToggle={() => onSortChange(option)}
-              />
-            ))}
-          </div>
-        </Group>
 
         <Group heading={c.statusHeading}>
           <div className="flex flex-wrap gap-[8px]">
