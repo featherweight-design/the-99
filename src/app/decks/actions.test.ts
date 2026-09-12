@@ -273,6 +273,12 @@ vi.mock("../../lib/decks/versions", () => ({
 vi.mock("../../lib/decks/availability-query", () => ({
   loadAvailability: vi.fn(async () => new Map()),
 }));
+// The asking deck's position after a pull. Mocked rather than driven off the db
+// stub because the reader assembles a snapshot transaction, a diff, a claim read
+// and a price join — what the action owns is which figures it reports.
+vi.mock("../../lib/decks/draft-state", () => ({
+  loadDraftState: vi.fn(),
+}));
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, logGame,
@@ -282,6 +288,8 @@ import {
   commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
+import { loadDraftState } from "../../lib/decks/draft-state";
+import type { DraftState } from "../../lib/decks/draft-shape";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -1030,6 +1038,7 @@ describe("pullCardFromDeck", () => {
     );
     vi.mocked(newestVersion).mockResolvedValue(aVersion());
     vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 }, cardCount: 0 });
+    vi.mocked(loadDraftState).mockResolvedValue({ buyCount: 7, total: "$241.00" } as DraftState);
   });
 
   // The guard that stops a pull sweeping somebody else's half-finished
@@ -1094,6 +1103,28 @@ describe("pullCardFromDeck", () => {
     await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(stub.state.revalidated).toContain(`/decks/${SOURCE_ID}`);
     expect(stub.state.revalidated).toContain(`/decks/${ASKING_ID}`);
+  });
+
+  // The control prints these two figures, and they have to be the server's:
+  // a client that subtracts one from the count it was rendered with is guessing.
+  it("reports the asking deck's position after the pull", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: true, buy: 7, total: "$241.00" });
+    // After the revalidation, so the figures describe the world the reader is
+    // about to be shown rather than the one the pull replaced.
+    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID);
+  });
+
+  // The card has already moved by then. Failing the pull over the sentence
+  // describing it would undo a write that succeeded.
+  it("still reports the pull when that read fails", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadDraftState).mockRejectedValue(new Error("read failed"));
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: true, buy: 0, total: null });
   });
 
   // A brew holds nothing hard, so there is no claim to release and no version

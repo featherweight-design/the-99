@@ -240,17 +240,23 @@ export function DiffRowKeep({
   );
 }
 
-/** A row of `Going in`. A list, not a decision: there is deliberately no
- *  per-row toggle, because refusing individual additions turns update into a
- *  curated merge, which is the quick-add bar's job. */
+/** A row of `Going in`. In the update flow, a list and not a decision: there is
+ *  deliberately no per-row toggle, because refusing individual additions turns
+ *  update into a curated merge, which is the quick-add bar's job.
+ *
+ *  The review page's one exception rides in `action` — a pull is not a choice
+ *  about whether the card goes in, which is settled, but about where the copy
+ *  comes from. The update flow passes nothing and draws nothing. */
 export function DiffRowIn({
   card,
   sourceLine,
   siblings,
   describedBy,
+  action = null,
 }: {
   card: DiffRowCard;
   sourceLine: number | null;
+  action?: React.ReactNode;
 } & DiffRowNameExtras) {
   return (
     <div className={`${ROW_SHELL} min-h-[44px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]`}>
@@ -267,6 +273,10 @@ export function DiffRowIn({
           side of the fixed columns — with the slot trailing, an owned row's line
           number landed a tag's width right of an unowned row's. */}
       <AvailabilitySlot card={card} seam={SEAM_SURFACE} selfClaimed={false} />
+      {/* Between the tag and the line number, for the reason above it: the
+          action is the row's other item that can be absent, so it sits on the
+          name's side of the one fixed column. */}
+      {action}
       {/* The line number keeps its width and is tabular, so it lands in the same
           place however many digits the source line has. */}
       <span

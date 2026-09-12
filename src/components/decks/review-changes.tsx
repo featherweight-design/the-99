@@ -1,9 +1,10 @@
 "use client";
 
 // §Surfaces 2 — the review page. Two columns: what is coming in, what is going
-// out. Nothing here writes, and nothing here is a decision except the pulls
-// Task 17 hangs on the `in` rows — the list on the deck page is already this
-// list, and this page exists to say what committing it will cost.
+// out. Nothing here decides whether a card goes in — the list on the deck page
+// is already this list, and this page exists to say what committing it will
+// cost. The one write is the pull hanging off an `in` row, which decides where
+// a copy comes from rather than whether the card arrives.
 //
 // The rows are `update-diff-row`'s, verbatim. OVERLAPS.md call 2 forbids a second
 // diff row in this feature, and the reuse is not a saving of lines: the row
@@ -12,28 +13,28 @@
 // and already opens the card modal from the name. A fork would have had to be
 // taught all three, and would have got one of them wrong.
 
+import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import type { DraftState } from "../../lib/decks/draft-shape";
+import { pullCandidate, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRow, DraftRows } from "../../lib/decks/draft-state";
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { DecklistGroupHeader } from "./decklist-group-header";
+import { PullControl } from "./pull-control";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
 
 const copy = deckVersioningCopy.review;
 
 type ReviewChangesProps = {
-  /**
-   * Unread here, and both of these are the next two tasks' inputs rather than
-   * spare props: `PullControl` writes against this deck (Task 17), and the
-   * commit sheet mounts at the foot of this component seeded from `commitOpen`
-   * (Task 18). They are declared now because the route is written once.
-   */
+  /** The deck being reviewed — the one a pull moves a copy INTO, which is why
+   *  every `PullControl` below is given it rather than the holder's id alone. */
   deckId: string;
+  /** Unread here: the commit sheet mounts at the foot of this component seeded
+   *  from it (Task 18). Declared now because the route is written once. */
   commitOpen?: boolean;
   rows: DraftRows["rows"];
   state: DraftState;
@@ -64,13 +65,16 @@ function isQuantityMove(row: DraftRow): boolean {
 }
 
 function Column({
+  deckId,
   heading,
   note,
   rows,
   siblings,
   descriptionId,
   hiddenOnPhone,
+  onPulled,
 }: {
+  deckId: string;
   heading: string;
   note: string;
   rows: DraftRow[];
@@ -79,6 +83,7 @@ function Column({
    *  draw from one `useId` rather than two. */
   descriptionId: string;
   hiddenOnPhone: boolean;
+  onPulled: () => void;
 }) {
   return (
     <section className={`flex-1 min-w-0 flex-col ${hiddenOnPhone ? "hidden md:flex" : "flex"}`}>
@@ -95,6 +100,11 @@ function Column({
             {groupRows.map((row) => {
               const word = bucketWord(row.bucket);
               const wordId = `${descriptionId}-${row.oracleId}`;
+              // The claim the row's control is drawn against, guards and all —
+              // one selector, shared with the banner's own pull hints, so the
+              // two surfaces can never disagree about which deck holds a copy.
+              const pullClaim =
+                row.direction === "in" ? pullCandidate(row.availability ?? undefined) : null;
               const card = {
                 oracleId: row.oracleId,
                 name: row.name,
@@ -116,6 +126,23 @@ function Column({
                       sourceLine={null}
                       siblings={siblings}
                       describedBy={word ? wordId : undefined}
+                      // The adds column only. A removal has no pull to offer:
+                      // the copy is leaving this deck, not being sought for it.
+                      // Null for a row with no sleeved holder at all — an
+                      // unowned card has nothing to pull from and a free one
+                      // needs nothing pulled.
+                      action={
+                        pullClaim
+                          ? (
+                              <PullControl
+                                deckId={deckId}
+                                card={{ oracleId: row.oracleId, name: row.name }}
+                                claim={pullClaim}
+                                onPulled={onPulled}
+                              />
+                            )
+                          : null
+                      }
                     />
                   ) : (
                     <DiffRowOut
@@ -147,8 +174,9 @@ function Column({
   );
 }
 
-export function ReviewChanges({ rows, state }: ReviewChangesProps) {
+export function ReviewChanges({ deckId, rows, state }: ReviewChangesProps) {
   const descriptionId = useId();
+  const router = useRouter();
   // Phone only, and it decides which column is on screen rather than which one
   // is drawn twice: both columns are in the markup once, and the inactive one is
   // hidden below `md` and shown above it. A second mounting for the narrow
@@ -228,16 +256,22 @@ export function ReviewChanges({ rows, state }: ReviewChangesProps) {
               contradict it. */}
           {inCount > 0 && (
             <Column
+              deckId={deckId}
               heading={copy.groupIn(inCount)}
               note={copy.groupInBreakdown(free, sleeved, buy)}
               rows={rows.in}
               siblings={siblings}
               descriptionId={descriptionId}
               hiddenOnPhone={segmented && shown !== "in"}
+              // Every figure on this page is the server's — the breakdown under
+              // the heading, the buy count, the row's own tag — so a pull that
+              // moved a copy is read again rather than patched in place.
+              onPulled={() => router.refresh()}
             />
           )}
           {outCount > 0 && (
             <Column
+              deckId={deckId}
               heading={copy.groupOut(outCount)}
               // Said once under the heading, never per row: there is no Keep on
               // a removal here, because putting one back is adding it to the
@@ -247,6 +281,7 @@ export function ReviewChanges({ rows, state }: ReviewChangesProps) {
               siblings={siblings}
               descriptionId={descriptionId}
               hiddenOnPhone={segmented && shown !== "out"}
+              onPulled={() => router.refresh()}
             />
           )}
         </div>

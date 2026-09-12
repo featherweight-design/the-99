@@ -22,6 +22,7 @@ import {
 import {
   bucketAdds, draftDiff, type BucketedAdd, type DraftChange,
 } from "../../lib/decks/draft-diff";
+import { loadDraftState } from "../../lib/decks/draft-state";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
@@ -1434,11 +1435,23 @@ export async function discardDeckDraft(deckId: string): Promise<DeckMutationResu
  * already has pending changes, committing would sweep them into a version its
  * owner never asked for. That case sends the player to the source deck instead.
  */
+export type PullResult =
+  | {
+      ok: true;
+      /** The asking deck's buy count and priced total AFTER the pull, read from
+       *  the server rather than decremented on the client: a client that
+       *  subtracts one from the figure it was rendered with is guessing, and the
+       *  pull may have freed a copy the deck asked for more than once. */
+      buy: number;
+      total: string | null;
+    }
+  | { ok: false; message: string };
+
 export async function pullCardFromDeck(
   sourceDeckId: string,
   oracleId: string,
   askingDeckId: string,
-): Promise<DeckMutationResult> {
+): Promise<PullResult> {
   const userId = await requireUserId();
   if (!isUuid(sourceDeckId) || !isUuid(oracleId) || !isUuid(askingDeckId)) {
     return { ok: false, message: "We couldn't find that card." };
@@ -1509,5 +1522,13 @@ export async function pullCardFromDeck(
   if (!outcome.ok) return outcome;
   revalidateClaims(sourceDeckId, userId);
   revalidateClaims(askingDeckId, userId);
-  return { ok: true };
+  // After the write and after the revalidation, so it reads the world the
+  // reader is about to be shown. A failed read still reports the pull: the card
+  // has moved, and losing the sentence about it is not worth undoing that.
+  try {
+    const state = await loadDraftState(askingDeckId, userId);
+    return { ok: true, buy: state.buyCount, total: state.total };
+  } catch {
+    return { ok: true, buy: 0, total: null };
+  }
 }

@@ -1,13 +1,17 @@
 // §Surfaces 2 — the review page. What is asserted here is what the player can
 // read off the two columns before the one irreversible click: which cards move,
-// which way, by how many copies, and what each one will cost. Nothing on this
-// page writes, so there is no handler to spy on.
+// which way, by how many copies, and what each one will cost. The page's one
+// write is the pull, and `pull-control.test.tsx` owns what that control does —
+// asserted here is only which rows are given one.
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import type { Availability } from "../../lib/decks/availability";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const STATE = COMMITTED;
 
@@ -19,6 +23,24 @@ const row = (over: Partial<Row> = {}): Row => ({
   printedName: null, printedSetCode: null, printedCollectorNumber: null,
   cmc: 1, direction: "in" as const, from: 0, to: 1, bucket: "free" as const, ...over,
 });
+
+/** A card sleeved in one other deck. The flags are the guards `pullCandidate`
+ *  reads: a mature, unpending, non-commander claim is the releasable one. */
+const claimed = (over: Partial<Availability["claims"][number]> = {}): Availability =>
+  ({
+    free: 0,
+    claims: [
+      {
+        id: "holder",
+        name: "Kykar",
+        quantity: 1,
+        mature: true,
+        pending: false,
+        commander: false,
+        ...over,
+      },
+    ],
+  }) as unknown as Availability;
 
 describe("ReviewChanges", () => {
   it("groups both columns by card type and heads each with its count", () => {
@@ -96,6 +118,57 @@ describe("ReviewChanges", () => {
     render(<ReviewChanges deckId="d" rows={{ in: [row()], out: [] }} state={STATE} />);
     expect(screen.getByText(deckVersioningCopy.review.heading(1, 1))).toBeTruthy();
     expect(screen.getByText(deckVersioningCopy.review.lede(2))).toBeTruthy();
+  });
+
+  // The offer belongs to the adds: a pull answers "where does this copy come
+  // from", and a card leaving the deck is not being sought for it.
+  it("offers a pull on a sleeved add and on no removal", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        rows={{
+          in: [row({ bucket: "claimed", availability: claimed() })],
+          out: [
+            row({
+              oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0,
+              bucket: "claimed", availability: claimed(),
+            }),
+          ],
+        }}
+        state={STATE}
+      />,
+    );
+    expect(screen.getAllByRole("button", { name: deckVersioningCopy.review.pull })).toHaveLength(1);
+  });
+
+  // A card nobody has sleeved has no holder to pull from, and a free copy needs
+  // nothing pulled — in both cases the buy tag or nothing is the whole row.
+  it("offers no pull on a row with no sleeved holder", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        rows={{ in: [row(), row({ oracleId: "o2", name: "Mox", bucket: "unowned" })], out: [] }}
+        state={STATE}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+  });
+
+  // The guards are the server's, so the row says which obstacle it hit rather
+  // than drawing a control that can only fail. `pull-control.test.tsx` covers
+  // both arms; this is the wiring — the row reads the claim's flags at all.
+  it("draws the guard rather than the offer on a commander's copy", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
+        state={STATE}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(
+      screen.getByText(deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring")),
+    ).toBeTruthy();
   });
 
   // One column is nothing to switch between, so the phone control is absent —

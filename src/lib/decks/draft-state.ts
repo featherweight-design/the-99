@@ -16,7 +16,8 @@ import {
   type AddBucket, type CardQty, type DraftChange,
 } from "./draft-diff";
 import type { DraftAdd, DraftState } from "./draft-shape";
-import { hardDecks, type Availability, type DeckClaim } from "./availability";
+import { releasableClaims } from "./draft-shape";
+import { hardDecks, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
 import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./price";
@@ -25,27 +26,12 @@ import { newestVersion, versionCards, versionManaValue } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
 
-// `DraftState`, `DraftAdd`, `changeCount` and `hasChanges` live in
-// `draft-shape.ts` — the banner is a client component and cannot value-import a
-// module that reaches `db`. Re-exported here so a server caller has one import
-// for the whole model.
+// `DraftState`, `DraftAdd`, the two counts and the two claim selectors live in
+// `draft-shape.ts` — the banner and the pull control are client components and
+// cannot value-import a module that reaches `db`. Re-exported here so a server
+// caller has one import for the whole model.
 export type { DraftAdd, DraftState } from "./draft-shape";
-export { changeCount, hasChanges } from "./draft-shape";
-
-/**
- * The holders a pull could actually be offered against.
- *
- * Both guards, and both of them the server's own: a deck with pending changes
- * would have them swept into a version nobody asked for, and no route releases a
- * commander. A control that can only fail is worse than no control.
- *
- * Filtered off `claims` rather than through `hardDecks`, whose projection drops
- * the two guard flags — the maturity test is repeated here for that reason.
- */
-export function releasableClaims(a: Availability | undefined): DeckClaim[] {
-  if (!a) return [];
-  return a.claims.filter((c) => c.mature && !c.pending && !c.commander);
-}
+export { changeCount, hasChanges, pullCandidate, releasableClaims } from "./draft-shape";
 
 /**
  * The adds, bucketed against a claim read that may have failed.
