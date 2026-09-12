@@ -32,7 +32,11 @@ const PARTNER = {
   imageUri: null,
 };
 
-function makeDeck(size: number, partner: typeof PARTNER | null = null): DeckDetail {
+function makeDeck(
+  size: number,
+  partner: typeof PARTNER | null = null,
+  unresolved = 0,
+): DeckDetail {
   const cards = Array.from({ length: size }, (_, i) => ({
     oracleId: `card-${i}`,
     name: `Card ${i}`,
@@ -60,8 +64,13 @@ function makeDeck(size: number, partner: typeof PARTNER | null = null): DeckDeta
     built: size,
     ownedCount: size,
     toBuyCount: 0,
-    total: size,
-    unresolvedRows: [],
+    total: size + unresolved,
+    unresolvedRows: Array.from({ length: unresolved }, (_, i) => ({
+      id: `u-${i}`,
+      rawName: `Unnamed ${i}`,
+      quantity: 1,
+      sourceLine: i + 1,
+    })),
   } as unknown as DeckDetail;
 }
 
@@ -147,6 +156,15 @@ describe("BuilderShell — the gate on Commit as v1", () => {
   it("counts a partnered deck's body as 98", async () => {
     await mount(makeDeck(98, PARTNER), BREW);
     expect(offers()).toHaveLength(2);
+  });
+
+  // The status contract's rule, and the one a `total` gate got wrong: an
+  // unresolved line is a card the deck wants and cannot name, so it never pushes
+  // a deck to its body size. `commitVersion` snapshots matched rows, so a v1 cut
+  // here would freeze 98 cards under an offer that called the list complete.
+  it("withholds it at 98 matched cards plus an unresolved line", async () => {
+    await mount(makeDeck(98, null, 1), BREW);
+    expect(offers()).toHaveLength(0);
   });
 
   // A page that could not read the draft knows neither whether a version exists

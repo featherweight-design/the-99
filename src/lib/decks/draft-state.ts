@@ -74,6 +74,30 @@ export function bucketDraftAdds(
   ));
 }
 
+/**
+ * The deck a pull could be taken from, per add that offers one.
+ *
+ * Claimed adds only. A free add has a spare copy in the collection, so there is
+ * nothing to pull even when another deck also holds one — and `pullableCount`
+ * counts the same two conditions, so a hint drawn on a free row would name a
+ * card the count does not include.
+ *
+ * The map and the count are derived from this one list for exactly that reason:
+ * two filters over the same facts are how a hint and a figure come to disagree.
+ */
+export function pullHints(
+  bucketed: DraftAdd[],
+  availability: Map<string, Availability> | null,
+): Map<string, string> {
+  const hints = new Map<string, string>();
+  for (const add of bucketed) {
+    if (add.bucket !== "claimed") continue;
+    const holder = releasableClaims(availability?.get(add.oracleId))[0];
+    if (holder) hints.set(add.oracleId, holder.name);
+  }
+  return hints;
+}
+
 /** The adds that cost something. A null bucket is excluded with the free ones,
  *  for the opposite reason: not known to be free, but not known to be anything. */
 export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
@@ -273,11 +297,7 @@ async function readDraft(
 
   // The releasable holder, not the first mature one: `heldBy` includes the decks
   // a pull is refused from, and offering one of those names an act that fails.
-  const pullFrom = new Map<string, string>();
-  for (const add of bucketed) {
-    const holder = releasableClaims(availability?.get(add.oracleId))[0];
-    if (holder) pullFrom.set(add.oracleId, holder.name);
-  }
+  const pullFrom = pullHints(bucketed, availability);
 
   const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
   const typeByOracle = new Map(facts.map((f) => [f.oracleId, f.typeLine]));
@@ -302,9 +322,9 @@ async function readDraft(
       claimsKnown,
       buyCount: unfree.reduce((n, a) => n + a.shortfall, 0),
       unfreeCount: unfree.length,
-      pullableCount: bucketed.filter((a) =>
-        a.bucket === "claimed" && releasableClaims(availability?.get(a.oracleId)).length > 0,
-      ).length,
+      // The size of the hint map, not a second filter over the same facts: the
+      // count and the hints answer one question, so they read one list.
+      pullableCount: pullFrom.size,
       // `pricedCopies`, not a positive total: the feed can stock a card at
       // nothing, and a real $0.00 is a price the player should see rather than a
       // purchase the app claims it cannot quote.

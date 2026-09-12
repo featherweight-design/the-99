@@ -9,6 +9,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 
 // ── Server-action mocks ───────────────────────────────────────────────────────
 vi.mock("../../app/decks/actions", () => ({
@@ -69,6 +71,8 @@ function renderDecklist(
     filled?: boolean;
     fetchCard?: (oracleId: string) => Promise<unknown>;
     spentSlot?: DeckDetailCard | null;
+    filter?: "all" | "shopping";
+    pendingAdds?: ReadonlyMap<string, { from: number; to: number }>;
   } = {},
 ) {
   const deckEdits = {
@@ -97,10 +101,11 @@ function renderDecklist(
           bodySize={99}
           filled={opts.filled ?? false}
           spentSlot={opts.spentSlot ?? null}
-          filter="shopping"
+          filter={opts.filter ?? "shopping"}
           grouping="role"
           onFilterChange={vi.fn()}
           onGroupingChange={vi.fn()}
+          pendingAdds={opts.pendingAdds}
           shoppingFigures={opts.shoppingFigures === undefined ? {} : opts.shoppingFigures}
         />
       </AddOptimisticCardProvider>
@@ -606,6 +611,42 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByText(recommendationsCopy.shopping.emptyCoveredHeading),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// Both pending notes promise a visual mapping: the caption says the brass rule
+// marks the added rows, and the group note says how many of a heading's rows the
+// draft added. Only `decklist-row.tsx` draws that rule — `DeckCardTile` carries
+// no pending mark at all — so in card view each sentence would point at a marker
+// the reader cannot find. `toolbarNote` states a count and no marker, so it
+// stays in both views; the test below holds that distinction in place.
+describe("the pending-add notes are the row view's, because the mark is", () => {
+  const pendingAdds = new Map([["sol-ring", { from: 0, to: 1 }]]);
+
+  it("captions the list and heads the group in list view", () => {
+    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingAdds });
+
+    expect(
+      screen.getByText(deckVersioningCopy.pending.addListCaption(1)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(deckVersioningCopy.pending.groupAddNote(1)),
+    ).toBeInTheDocument();
+  });
+
+  it("says neither in card view, where no tile draws the rule", () => {
+    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingAdds });
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0],
+    );
+
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.addListCaption(1)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.groupAddNote(1)),
     ).not.toBeInTheDocument();
   });
 });

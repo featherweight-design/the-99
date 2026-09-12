@@ -608,8 +608,12 @@ export function Decklist({
         {/* Said once for the whole list rather than once per marked row: at
             nineteen adds the per-row version is nineteen copies of one
             sentence. Only under All — Shopping shows a subset, and a caption
-            counting rows the reader cannot see is a caption about nothing. */}
-        {pendingAdds.size > 0 && filter === "all" && (
+            counting rows the reader cannot see is a caption about nothing. List
+            view only, with `groupAddNote` below it, for the same reason: the
+            brass rule lives on the row, and the card view draws tiles that carry
+            no mark at all. A sentence pointing at a marker nobody can see is
+            worse than silence. */}
+        {pendingAdds.size > 0 && filter === "all" && view === "list" && (
           <p className="m-0 mb-[8px] font-mono text-[10px] text-[color:var(--fg-faint)]">
             {deckVersioningCopy.pending.addListCaption(pendingAdds.size)}
           </p>
@@ -617,7 +621,12 @@ export function Decklist({
         {groups.map(([label, groupCards]) => {
           // Omitted at zero rather than printed as `0 added in this draft`: a
           // group the draft did not touch has nothing to say about it.
-          const addedInGroup = groupCards.filter((c) => pendingAdds.has(c.oracleId)).length;
+          // List view only: this note is the heading's half of one mark, and the
+          // card view's tiles draw the other half nowhere.
+          const addedInGroup =
+            view === "list"
+              ? groupCards.filter((c) => pendingAdds.has(c.oracleId)).length
+              : 0;
           return (
             <DecklistGroup
               key={label}
