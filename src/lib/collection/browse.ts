@@ -416,20 +416,27 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // first would put one printing's figure under an entry that is not certainly
       // that printing. Dropped, the entry falls back to its (set, collector number)
       // identity, which is the thing the rows DO agree on.
-      // Only two DIFFERENT ids are a contradiction. A row that carries none is a
-      // row that does not know — a name-only import beside a matched one — and
-      // discarding the known id because of it would throw away the better identity
-      // of the two. `pending.ts:30-33` reads stricter only because its groups are
-      // per finish, where a missing id and a present one describe the same row.
-      const knownId = seen.scryfallId ?? printing.scryfallId;
-      if (
-        seen.scryfallId !== undefined
-        && printing.scryfallId !== undefined
-        && seen.scryfallId !== printing.scryfallId
-      ) {
+      // ANY disagreement drops the id, including a known id meeting a null one.
+      //
+      // The tempting rule is that a null row "does not know" and should defer to
+      // the row that does. It cannot, because at this layer a null has two
+      // histories and they are indistinguishable: a name-only import that never
+      // named a printing, and a row `aggregatePendingItems` deliberately nulled
+      // because two imports contradicted each other (`pending.ts:30-33`). Deferring
+      // to the known id would let the second history resurrect an id the import
+      // already ruled unsafe.
+      //
+      // Dropping it costs almost nothing: the entry is keyed by (set code,
+      // collector number) and `priceFor` falls back to exactly that, which names
+      // the same printing. The only case it costs a figure is a holding with no
+      // collector number either — and there the id is the sole identity, which is
+      // the state this rule exists to distrust. A missing figure is a state the
+      // design draws; a figure belonging to another printing is the one thing
+      // row 1.10 forbids outright.
+      if (seen.scryfallId !== printing.scryfallId) {
         ambiguousIds.add(`${r.oracleId}|${printingKey}`);
       }
-      seen.scryfallId = ambiguousIds.has(`${r.oracleId}|${printingKey}`) ? undefined : knownId;
+      if (ambiguousIds.has(`${r.oracleId}|${printingKey}`)) seen.scryfallId = undefined;
     } else {
       printings.set(printingKey, printing);
     }

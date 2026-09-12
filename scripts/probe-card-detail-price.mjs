@@ -176,7 +176,11 @@ try {
         nodes.findIndex((n) => n.getAttribute("aria-checked") === "true"),
       );
       try {
-        await tiles.nth(1).click();
+        // The first tile that is not already the selected one. Hard-coding index 1
+        // clicks the current pick whenever that is the second tile, and then the
+        // caption check below fails on a probe that did nothing wrong.
+        const target = wasChecked === 1 ? 0 : 1;
+        await tiles.nth(target).click();
         await page.waitForTimeout(1_200);
         const after = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
         console.log("\n── after picking the second printing ──");
@@ -190,7 +194,11 @@ try {
         // rather than implied.
         if (EXPECT !== undefined) {
           const got = after.price ?? "";
-          if (!got.includes(EXPECT)) {
+          // An empty EXPECT means silence, and `"anything".includes("")` is true —
+          // so the empty case is its own assertion rather than a substring match
+          // that can never fail.
+          const ok = EXPECT === "" ? after.price === null : got.includes(EXPECT);
+          if (!ok) {
             console.log(`\nFAIL: expected the second printing to read ${JSON.stringify(EXPECT)}, got ${JSON.stringify(got)}.`);
             process.exitCode = 1;
           }

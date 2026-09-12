@@ -173,21 +173,23 @@ describe("aggregateCollection", () => {
     expect(agg.printings[0].scryfallId).toBeUndefined();
   });
 
-  it("keeps the known id where the other row simply has none", () => {
-    // A name-only import beside a matched one. The row with no id does not
-    // contradict the row with one — it just does not know — and dropping the id
-    // there would leave the entry with the weaker identity of the two.
-    const [withIdFirst] = aggregateCollection([
+  it("drops the id where a known one meets a null one, whichever arrives first", () => {
+    // A null has two histories here and they cannot be told apart: a name-only
+    // import that never named a printing, and a row the import nulled because two
+    // sources contradicted each other (`pending.ts:30-33`). Deferring to the known
+    // id would resurrect the second. The entry still has its (set, collector
+    // number) identity, which names the same printing.
+    const [knownFirst] = aggregateCollection([
       raw({ scryfallId: "s-263", finish: "nonfoil" }),
       raw({ scryfallId: null, finish: "foil" }),
     ]);
-    const [withIdSecond] = aggregateCollection([
+    const [nullFirst] = aggregateCollection([
       raw({ scryfallId: null, finish: "nonfoil" }),
       raw({ scryfallId: "s-263", finish: "foil" }),
     ]);
 
-    expect(withIdFirst.printings[0].scryfallId).toBe("s-263");
-    expect(withIdSecond.printings[0].scryfallId).toBe("s-263");
+    expect(knownFirst.printings[0].scryfallId).toBeUndefined();
+    expect(nullFirst.printings[0].scryfallId).toBeUndefined();
   });
 
   it("keeps oracle metadata from the first row seen", () => {
