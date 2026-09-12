@@ -460,9 +460,16 @@ export function CommanderDetail({
           style={{ top: 20 }}
         >
           {/* Commander card frame — 63/88 aspect. Image when available;
-              gradient is the fallback. */}
+              gradient is the fallback.
+
+              It carries the same `⛶ Card details` trigger the phone's art header
+              does. Without one this column was the only place a commander's card
+              was drawn that could not be opened, so on desktop there was no way
+              to reach the printings, the rulings, or the flip control a two-faced
+              commander's back face lives behind. `relative` is what the pill and
+              the band-wide tap layer position against. */}
           <div
-            className="rounded-[14px]"
+            className="relative rounded-[14px] overflow-hidden"
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : gradient,
@@ -472,7 +479,9 @@ export function CommanderDetail({
               boxShadow:
                 "inset 0 0 0 1px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.5)",
             }}
-          />
+          >
+            <FullCardTrigger oracleId={c.oracleId} placement="commander-desktop" />
+          </div>
 
           {/* Name + type line, below the card rather than over it. The card
               scan prints both itself, but the desktop column needs a real

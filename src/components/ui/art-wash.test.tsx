@@ -160,35 +160,28 @@ describe("ArtWash — left portrait", () => {
     expect(container.innerHTML).toContain("62%");
   });
 
-  it("carries an ambient copy behind the portrait", () => {
+  it("draws the crop once, and only where the portrait is", () => {
     const { container } = render(
       <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
     );
-    const ambient = Array.from(container.querySelectorAll("div")).find(
-      (d) => d.style.backgroundSize === "cover" && d.style.opacity === "0.28",
-    );
-    expect(ambient).toBeDefined();
-  });
-
-  // Both art layers, or a reduced-transparency reader keeps the sharp portrait
-  // at full strength behind the one the rule dimmed.
-  it("marks both of its art layers for the accessibility rules", () => {
-    const { container } = render(
-      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
-    );
-    expect(container.querySelectorAll(".art-wash-art")).toHaveLength(2);
+    const art = Array.from(container.querySelectorAll<HTMLElement>(".art-wash-art"));
+    expect(art).toHaveLength(1);
+    // The one layer is the masked portrait, not a band-wide `cover` copy: a
+    // second scaling of the same picture across the whole band read as a double
+    // image, and at desktop widths it was the more visible of the two.
+    expect(art[0].style.backgroundSize).toBe("auto 100%");
+    expect(art[0].style.width).toBe("203px");
     expect(container.querySelector(".art-wash-scrim")).toBeTruthy();
   });
 
-  // A flat 0.3 under `prefers-reduced-transparency` would raise the ambient copy
-  // from 0.22, answering a request for less transparency with more art.
+  // A flat 0.3 under `prefers-reduced-transparency` must not RAISE a layer that
+  // already sits below it.
   it("publishes a reduced opacity that is a ceiling, never a floor", () => {
     const { container } = render(
       <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
     );
     const layers = Array.from(container.querySelectorAll<HTMLElement>(".art-wash-art"));
-    const reduced = layers.map((l) => l.style.getPropertyValue("--art-wash-reduced-opacity"));
-    expect(reduced).toEqual(["0.22", "0.3"]);
+    expect(layers.map((l) => l.style.getPropertyValue("--art-wash-reduced-opacity"))).toEqual(["0.3"]);
   });
 
   // The identity gradient is ground, not photography. Dimming it would answer a
@@ -212,8 +205,9 @@ describe("left-portrait, band 168", () => {
     );
     const root = container.firstElementChild as HTMLElement;
     expect(root.style.height).toBe("168px");
-    const sharp = container.querySelectorAll<HTMLElement>(".art-wash-art")[1];
-    expect(sharp.style.width).toBe("230px");
+    const art = container.querySelectorAll<HTMLElement>(".art-wash-art");
+    expect(art).toHaveLength(1);
+    expect(art[0].style.width).toBe("230px");
     const scrim = container.querySelector<HTMLElement>(".art-wash-scrim");
     expect(scrim?.style.background).toContain("var(--bg) 0%, transparent) 134px");
     expect(scrim?.style.background).toContain("230px");

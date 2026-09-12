@@ -562,10 +562,15 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    and an inline declaration outranks any selector without it.
 
    The art takes a *ceiling* the component publishes per layer, not a flat 0.3 —
-   a `left-portrait` row's ambient copy already sits below that, and raising it
-   would answer this preference by showing more art. A commander with no crop
-   publishes 1: its layer draws the identity gradient, which is ground rather
-   than photography and is the only identity signal that row has.
+   a flat value would RAISE any layer already sitting below it, answering a
+   request for less art by showing more. A commander with no crop publishes 1:
+   its layer draws the identity gradient, which is ground rather than photography
+   and is the only identity signal that row has.
+
+   Only the cover bands now publish a ceiling below 0.3. `left-portrait` used to
+   as well — the ambient copy of the crop it drew under the portrait — but that
+   layer is gone (it read as a second image past the portrait's own width), and
+   the sharp portrait it left behind publishes 0.3 like every other art layer.
 
    Only the `cover` scrim is re-weighted. A `left-portrait` scrim runs at 90deg
    on stops keyed to the portrait's pixel width, so replacing it with the

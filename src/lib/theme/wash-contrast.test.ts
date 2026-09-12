@@ -89,9 +89,12 @@ const horizontalStops = (band: Band): ScrimStops => {
 };
 
 /** The ground a `left-portrait` row's ink sits on, composed in the order
-    `<ArtWash>` stacks it: the row's own ground, the ambient crop across the
-    whole band, the sharp portrait where that column reaches, the horizontal
-    scrim, then the vertical one.
+    `<ArtWash>` stacks it: the row's own ground, the sharp portrait where that
+    column reaches, the horizontal scrim, then the vertical one.
+
+    No ambient layer. The band used to carry a full-bleed copy of the crop under
+    the portrait, and past the portrait's own width it read as a second image;
+    removing it can only darken the ground measured here, never lighten it.
 
     The sharp layer is treated as fully opaque out to its own width. Its mask
     fades from `maskEnd`% of the *row*, which on the narrowest row this band is
@@ -106,7 +109,7 @@ const portraitGround = (
 ): string => {
   const b = PORTRAIT_BANDS[band];
   const ground = token(theme, b.ground.replace("--", ""));
-  let g = over(BRIGHTEST_ART, ground, b.ambientOpacity);
+  let g = ground;
   if (x <= Math.round(band * PORTRAIT_RATIO)) g = over(BRIGHTEST_ART, g, b.sharpOpacity);
   g = over(ground, g, alphaAt(horizontalStops(band), x));
   g = over(token(theme, "bg"), g, verticalAlpha);
@@ -148,7 +151,9 @@ const PORTRAIT_INK: readonly {
   { surface: "discovery and rec rows, block top", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 55 },
   { surface: "discovery and rec rows, block foot", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 92 },
   // The resume row's type starts at the 116px inset, past the 99px portrait but
-  // short of the 138px flat stop, so the ambient crop is still under it.
+  // short of the 138px flat stop — so it stands on the row's own ground under a
+  // scrim that has not closed to opaque yet, which is the thinnest ground any
+  // ink on that band gets.
   { surface: "resume row", band: 72, x: 116, y: 0 },
   // The deck spine's `⛶ Card details` pill: 16px in, 14px off the foot, 26px
   // tall, and the one thing on that band whose ink sits over the crop. Its band

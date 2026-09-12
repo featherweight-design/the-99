@@ -149,3 +149,32 @@ sticky bottom bar on phone, a sticky side button on desktop.
   are real. Counts and scores are mock data (see the component's logic class).
 - Rebuild the **XCIX seal**, wordmark, and diamonds as **inline SVG** in production (brand-sheet
   guidance); the mockup uses CSS boxes.
+
+
+## Errata — the desktop card frame carries the `Card details` control too (2026-09-11, pending ratification)
+
+**What changed.** On the commander detail page's desktop left column, the 63/88 card frame now
+carries the same `⛶ Card details` chip the phone's art header does, and the frame itself is the tap
+target. §4 above specifies that affordance for the phone only.
+
+**Why the original reasoning no longer reaches.** §4 gives one: *"on desktop the full card is
+always shown in the left column"*, so there is nothing to reveal. That was true of what the control
+opened when it was written — a **full-card lightbox**, the complete 63/88 card with oracle text. It
+is not true of what it opens now. That surface became the shared card modal: it leads with
+**printings and rulings**, draws the art at 180px, and carries the **flip control for a two-faced
+commander's back face** (#363). None of those is on the desktop card frame, and desktop had no other
+way to reach any of them — the control's own label was changed from `Full card` to `Card details`
+for exactly this reason.
+
+So the divergence is not a new affordance so much as §4's premise expiring. It was taken as the
+defect it was reported as: *"card details of commander doesn't work on desktop (not clickable)"* and
+*"two sided commanders are not flippable on Commander Details screen"*, which are the same cause.
+
+**Placement**, which is the part most worth a ruling: bottom-left inside the frame, 12px in from
+each edge, using the same plated chip as every other placement. It sits over the card's artist line
+rather than over its rules text. The deck header's desktop placement is the precedent (`deck-desktop`,
+bottom-left at 16/14px); this frame is narrower, hence 12px.
+
+**Status: pending ratification.** No Design round-trip preceded it. Ratify, move the placement, or
+overturn — if the answer is that desktop should reach printings and the flip some other way, the
+control comes out in one line.

@@ -275,6 +275,30 @@ to draw against art. The four retired status-border colours are not coming back.
 4. **The 2.2:1 band was chosen against the reference's proportions**, not tested at every breakpoint.
    Confirm the deck grid's narrowest column still yields a band tall enough to read.
 
+
+## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, pending ratification)
+
+**Every `left-portrait` band shipped two copies of the art**, not one: the masked portrait at its
+sharp opacity, and under it the same `art_crop` drawn `cover` across the whole band at the ambient
+value this document specifies (`.20` on the 148 row, `.14` on the 72 resume row; the lift round
+raised them to `.28`/`.22` in code). Past the portrait's own width, that ambient copy is a second
+rendering of the same picture at a different scale — and it reads as one. It is plainest while a
+window resizes, when the two scalings move against each other.
+
+Removed in PR #517 (bug report with a DevTools capture of both layers inside one band). The
+horizontal scrim already closes the portrait out into the row's ground, so nothing else depended on
+it. **Decision §G of the deck-details wash handoff is preserved**: with no crop, the full-bleed layer
+is still what draws the identity gradient, for the reason §G gives — a gradient inside the masked
+230px box compresses the ramp and seams at the mask edge.
+
+Contrast is unaffected in the direction that matters: removing a lightening layer can only darken the
+ground ink stands on, and `wash-contrast.test.ts` still passes every floor with its composition model
+updated to match.
+
+**This has not been through Design.** It was taken as the defect exactly as reported. Ratify or
+overturn; if the ambient atmosphere is wanted back, it needs a treatment that does not restate the
+crop — the two candidates are a blur past the mask edge, or a flat tint sampled from the art.
+
 ## Files
 
 - `The 99 - Art Wash Readability v2.dc.html` — the canvas (this amendment's deliverable).

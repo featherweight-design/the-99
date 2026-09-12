@@ -123,6 +123,18 @@ describe("FullCardTrigger placement", () => {
     expect(container.querySelector('[aria-hidden="true"].inset-0')).toBeNull();
   });
 
+  it("sits inside the desktop commander card frame, whole frame tappable", () => {
+    const { container } = mount(
+      <FullCardTrigger oracleId="o-atraxa" placement="commander-desktop" />,
+    );
+    const pill = screen.getByRole("button", { name: "View card details" });
+    expect(pill.style.left).toBe("12px");
+    expect(pill.style.bottom).toBe("12px");
+    // Unlike the deck header, this frame carries no title and no rename pencil,
+    // so the tap layer has nothing to eat and the whole card opens the modal.
+    expect(container.querySelector('[aria-hidden="true"].inset-0')).not.toBeNull();
+  });
+
   it("sits top-right at 13px on the mobile deck header", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" placement="deck-mobile" bandTapTarget={false} />);
     const pill = screen.getByRole("button", { name: "View card details" });

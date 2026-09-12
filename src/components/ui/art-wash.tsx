@@ -101,8 +101,10 @@ export const COVER_INK_SHADOW = "0 1px 4px rgba(0,0,0,0.85)";
 export const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's
-    art at `.58`; applied flat it would make a `left-portrait` row's ambient copy
-    *more* prominent under a preference that asks for less. */
+    art at `.58`; applied flat it would raise any layer already drawn below it,
+    answering a preference that asks for less art by showing more. It was the
+    `left-portrait` ambient copy that made the distinction matter; that layer is
+    gone, and the rule stays because it is the honest way to apply a ceiling. */
 const REDUCED_ART_OPACITY = 0.3;
 
 /** `art: false` is the identity gradient, which is ground rather than
@@ -135,7 +137,6 @@ export const PORTRAIT_BANDS: Record<
   {
     maskEnd: number;
     ground: string;
-    ambientOpacity: number;
     sharpOpacity: number;
     /** How far the portrait runs unwashed. Past it the scrim climbs to its flat
         stop, closing the crop out into the row before any type starts. */
@@ -155,7 +156,6 @@ export const PORTRAIT_BANDS: Record<
   168: {
     maskEnd: 58,
     ground: "--bg",
-    ambientOpacity: 0.28,
     sharpOpacity: 0.92,
     clearTo: 134,
     sharpAlpha: 78,
@@ -170,7 +170,6 @@ export const PORTRAIT_BANDS: Record<
   148: {
     maskEnd: 58,
     ground: "--bg",
-    ambientOpacity: 0.28,
     sharpOpacity: 0.92,
     clearTo: 118,
     sharpAlpha: 78,
@@ -188,7 +187,6 @@ export const PORTRAIT_BANDS: Record<
   72: {
     maskEnd: 62,
     ground: "--surface-inset",
-    ambientOpacity: 0.22,
     sharpOpacity: 0.95,
     clearTo: 58,
     sharpAlpha: 80,
@@ -208,7 +206,6 @@ const portrait = (band: Band) => {
   return {
     width,
     ground: b.ground,
-    ambientOpacity: b.ambientOpacity,
     sharpOpacity: b.sharpOpacity,
     // Black is the opaque end of a mask's alpha, not a palette colour.
     mask: `linear-gradient(90deg, #000 0 ${b.maskEnd}%, transparent 100%)`,
@@ -266,17 +263,21 @@ export function ArtWash(props: ArtWashProps) {
         className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
         style={{ background: `var(${p.ground})`, height: `${props.band}px` }}
       >
-        <div
-          className="art-wash-art absolute inset-0"
-          style={{
-            ...reducible(artCropUri ? p.ambientOpacity : 1, Boolean(artCropUri)),
-            background: artCropUri ? undefined : commanderGradient(colorIdentity),
-            backgroundImage: artCropUri ? cssUrl(artCropUri) : undefined,
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-          }}
-        />
+        {/* The identity gradient stands in for a crop, and only for a crop: with
+            art there is no full-bleed layer here at all. There used to be one —
+            the same crop drawn `cover` across the whole band at an ambient 0.28
+            — and at any width past the portrait's own it was a second,
+            differently-scaled copy of the picture sitting behind the first. It
+            read as a double image, most plainly while the window resized and the
+            two scalings moved against each other. The horizontal scrim already
+            closes the portrait out into the row's ground, so nothing held that
+            layer up but the atmosphere it was meant to add. */}
+        {artCropUri ? null : (
+          <div
+            className="art-wash-art absolute inset-0"
+            style={{ ...reducible(1, false), background: commanderGradient(colorIdentity) }}
+          />
+        )}
         {artCropUri ? (
           <div
             className="art-wash-art absolute inset-y-0 left-0"

@@ -1,5 +1,6 @@
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { manaCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
+import { frontFaceCost } from "../../lib/cards/faces";
 
 // Mana cost as coloured pips. Promoted out of `suggestion-tile.tsx`, which drew
 // the shipped treatment the design tables then ratified: hybrid and Phyrexian
@@ -14,8 +15,13 @@ import { manaCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
 // "{2}{U}{B}" → ["2", "U", "B"]. Hybrid and Phyrexian symbols come back whole
 // ("U/B", "G/P"), which is why the cost is carried as Scryfall's string rather
 // than reconstructed from the mana value.
+//
+// The front face only: an `adventure`, `split` or `prepare` card stores both
+// halves in one string (`{3}{B} // {B}`), and a pip run cannot say `//` — so
+// without this the Adventure's pip joined the creature's run and the row drew a
+// cost no face has.
 export function parseManaCost(cost: string): string[] {
-  return [...cost.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+  return [...frontFaceCost(cost).matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
 }
 
 // Three plain 12px pips at gap 3 measure 42px and burst the 40px track, so

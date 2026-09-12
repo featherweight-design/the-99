@@ -5,12 +5,11 @@
 // WUBRG:      design palette bg + --bg glyph (§Mana Pip WUBRG colored).
 
 import { WUBRG_COLOR } from "../../lib/collection/browse";
-
-function parseManaCost(cost: string): string[] {
-  // Matches "{2}", "{U}", "{U/B}" (returns "U/B" as glyph). We only style
-  // WUBRG-only symbols as colored; hybrid renders as generic.
-  return [...cost.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
-}
+// One parser for both pip treatments. This file carried a second copy of the
+// same regex — the two never disagreed, they simply had no reason not to — and a
+// rule like the front-face one then has to be written twice to hold. Importing
+// it is what makes that impossible to half-do.
+import { parseManaCost } from "../ui/cost-pips";
 
 export function ManaCost({ cost }: { cost: string | null }) {
   if (!cost) return null;

@@ -9,6 +9,7 @@ import {
   useRef,
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLiveQuery } from "../../lib/commanders/live-query";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { fromFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { filterByColors } from "../../lib/commanders/filter";
@@ -75,12 +76,6 @@ export type CommandersViewProps = {
   uniqueCardsRead: number;
   candidateCount: number;
   firstRun: boolean;
-  /**
-   * Which ranking to open on, parsed from `?avail=`. Only the initial mode: both
-   * rankings arrive in the same render, so the toggle switches between two lists
-   * already on the client and this component owns the mode from mount on.
-   */
-  avail: AvailMode;
   /** The same commanders re-scored against the free pool, as a diff against
       `results` — the two lists share most of their bytes. Null when unreadable. */
   freeRanking: FreeRankingDelta | null;
@@ -98,7 +93,6 @@ export function CommandersView({
   uniqueCardsRead,
   candidateCount,
   firstRun,
-  avail: initialAvail,
   freeRanking,
   availOk,
   receiptCounts,
@@ -114,12 +108,142 @@ export function CommandersView({
   );
 
   // One parameter object for the whole rack, seeded off the URL. `avail` is the
-  // exception: the server decides which ranking it prepared — it forces `all`
-  // when the deck read failed — so the prop wins over the parsed value.
-  const [params, setParams] = useState<LaneParams>(() => ({
-    ...parseLaneParams(search, "owned"),
-    avail: initialAvail,
-  }));
+  // exception, and the rule has two halves: the URL is the reader's request, the
+  // prop is the server's statement of what it could prepare, and a request is
+  // honoured only where the payload can serve it — `availOk` false, or a null
+  // `freeRanking`, means there is no second ranking to switch to.
+  //
+  // The prop cannot be the only input. Flipping to `Free cards only` mirrors
+  // itself into the URL through `history.replaceState`, which Next adopts into
+  // router state without re-rendering the tree — so the cached tree behind that
+  // URL is still the one the server sent for the default lane. Coming back to
+  // this page from a commander restores exactly that tree, and a seed that took
+  // the prop alone put the reader back on `All my cards` while the URL beside it
+  // still read `a=free`.
+  // What the URL asks for, gated on what this payload can actually serve.
+  // `?a=free` is a request, not a promise: with no free ranking there is nothing
+  // to switch to, and the seed refuses it exactly as the flip does.
+  const fromUrl = useCallback(
+    (query: URLSearchParams): LaneParams => {
+      const parsed = parseLaneParams(query, "owned");
+      return {
+        ...parsed,
+        avail: parsed.avail === "free" && availOk && freeRanking !== null ? "free" : "all",
+      };
+    },
+    [availOk, freeRanking],
+  );
+
+  // The reader's edit, and the ONE query it is valid for.
+  //
+  // NOT a copy of the URL kept in sync with it. The rack's state IS the URL,
+  // derived every render; an edit is an overlay that lives exactly as long as
+  // the query it wrote. The write happens in the same tick as the edit — see
+  // `setParams` — so by the time anything renders, the live query already is
+  // that one, and there is no window in which the overlay has to be trusted
+  // against some earlier query.
+  //
+  // That matters because the earlier query is not distinguishable from a
+  // navigation back to it. Standing on `/commanders`, flipping to
+  // `Free cards only` and then tapping `Commanders` in the nav returns the URL
+  // to exactly the query the flip was made against — so an overlay that also
+  // honoured its starting query would keep the free lane under a URL with no
+  // mode on it, which is the bug it was meant to prevent, wearing the other
+  // face.
+  //
+  // Any query other than the one the edit wrote means the URL moved for a reason
+  // that is not the rack, and the overlay is dropped so the lane follows the URL.
+  //
+  // That case is reachable BECAUSE of `useLiveQuery`. A navigation landing back
+  // on `/commanders` — the primary nav while the reader stands in
+  // `Free cards only` — gives this route no new instance and no prop change, and
+  // `useSearchParams` stays silent through it. Before the subscription, nothing
+  // here ran: the lane sat in free under a URL with no mode, and the first
+  // control touched afterwards built its next state from those stale params and
+  // wrote `a=free` back into the URL the navigation had just reset. Cosmetic
+  // until it was not.
+  //
+  // A key on the server was tried first and cannot reach it: the key is fixed
+  // when the tree is first rendered, and that same tree is what the navigation
+  // restores.
+  const [edit, setEdit] = useState<{ query: string; params: LaneParams } | null>(null);
+
+  // The live query, subscribed rather than read off a hook.
+  //
+  // `useSearchParams` is not enough on its own: a navigation landing back on the
+  // route this component already occupies keeps it mounted with identical props,
+  // and that hook does not fire for it. `useLiveQuery` subscribes to the two
+  // events that actually move the URL, so such a navigation re-renders here and
+  // the lane follows it. Its own header carries why that patch is safe.
+  //
+  // It is also what an edit compares against: the edit writes the URL in the same
+  // tick, and this store reports that write on the same tick too, so the overlay
+  // below never has to be valid for more than the one query it produced.
+  const liveQuery = useLiveQuery(search.toString());
+
+  // Memoised on the query it was parsed from, because this object is the URL
+  // mirror's dependency: a fresh one per render would re-fire that effect on
+  // every unrelated update, revealing a batch of rows or moving the live
+  // announcement included.
+  const urlParams = useMemo(() => fromUrl(new URLSearchParams(liveQuery)), [fromUrl, liveQuery]);
+  const asked = edit && edit.query === liveQuery ? edit.params : urlParams;
+
+  // The free mode, and whether this payload can still serve it — DERIVED, not
+  // stored. A revalidation can take the ranking away under a reader already
+  // standing in it: an availability rollup that fails on the next read arrives as
+  // `availOk: false` with a null `freeRanking`, and without this the list would
+  // quietly fall back to the canonical one while the segment, the receipts, the
+  // detail links and the URL all went on saying `free`.
+  //
+  // Derived rather than written back, because writing it back is a second source
+  // of truth that outlives its own reason: an overlay recording `all` against the
+  // query `a=free` would go on imposing `all` if the reader returned to that same
+  // query once the ranking was available again — refusing a request the payload
+  // could by then serve. As a derivation it is simply recomputed, every render,
+  // from the two things that decide it.
+  //
+  // The URL climbs down with it: the mirror effect runs off `params`, so the
+  // address bar loses `a=free` on the same commit the control does.
+  const canRankFree = availOk && freeItems !== null;
+  // Memoised, because this object is the URL mirror's dependency: a fresh one per
+  // render would re-fire that effect on every unrelated update. The climb-down
+  // branch returns `asked` itself where nothing needs correcting, so the identity
+  // only moves when the answer does.
+  const params = useMemo<LaneParams>(
+    () => (asked.avail === "free" && !canRankFree ? { ...asked, avail: "all" } : asked),
+    [asked, canRankFree],
+  );
+
+  // The query `p` serialises to against the URL as it stands right now, in
+  // `useSearchParams`' spelling — no leading `?`, its key order — so every
+  // comparison here is between two like things.
+  const queryFor = useCallback((live: URLSearchParams, p: LaneParams) => {
+    const written = laneQuery(live, p, "owned");
+    return {
+      written,
+      query: new URLSearchParams(written.replace(/^\?/, "")).toString(),
+    };
+  }, []);
+
+  // The event path, and the ONLY path that writes the URL itself.
+  //
+  // The write sits in this callback's body, never inside the state updater: an
+  // updater must be pure, because React may replay or abandon it, and a replayed
+  // `replaceState` would move the URL for a render that never committed. Writing
+  // here is what lets the overlay name exactly one query — the one it wrote —
+  // since by the time anything renders, that is already the live one.
+  const setParams = useCallback(
+    (next: LaneParams | ((prev: LaneParams) => LaneParams)) => {
+      const live = new URLSearchParams(window.location.search);
+      const base = edit && edit.query === live.toString() ? edit.params : fromUrl(live);
+      const resolved = typeof next === "function" ? next(base) : next;
+      const { written, query } = queryFor(live, resolved);
+      window.history.replaceState(null, "", `${window.location.pathname}${written}`);
+      setEdit({ query, params: resolved });
+    },
+    [edit, fromUrl, queryFor],
+  );
+
   const { colors: rawColors, avail } = params;
   const colors = useMemo(() => upper(rawColors), [rawColors]);
 
@@ -132,12 +256,18 @@ export function CommandersView({
     // the keys the lane owns, leaving the path and every foreign parameter
     // exactly as it found them.
     const { pathname, search: live } = window.location;
-    const next = laneQuery(new URLSearchParams(live), params, "owned");
-    window.history.replaceState(null, "", `${pathname}${next}`);
-  }, [params]);
+    const { written, query } = queryFor(new URLSearchParams(live), params);
+    // Idempotent: an edit has already written its own URL, so this finds the bar
+    // already correct and leaves it alone. What it is here for is the render-time
+    // climb-down below, which changes `params` without an event to write from.
+    if (query === new URLSearchParams(live).toString()) return;
+    window.history.replaceState(null, "", `${pathname}${written}`);
+  }, [params, queryFor]);
 
   // Which list is on screen. Falling back to `results` when the free ranking is
-  // missing keeps the page rendering something true rather than nothing.
+  // missing keeps the page rendering something true rather than nothing — belt
+  // and braces next to the reconciliation above, and reachable only on the
+  // render that hands the mode back.
   const active = avail === "free" && freeItems ? freeItems : results;
 
   // Search narrows before colour, so the colour counts below describe the list
@@ -217,7 +347,11 @@ export function CommandersView({
       // one of these changes which commanders occupy the revealed range.
       setShown(REVEAL_STEP);
     },
-    [freeItems],
+    // `setParams` is not a plain setter — it records which queries the edit is
+    // valid for, so it changes whenever the live query does. Left out, this
+    // callback would keep the first render's copy and file every later edit
+    // against the query the page opened on, which drops it.
+    [freeItems, setParams],
   );
 
   // The zero state's wholesale escape says `Clear all filters`, so it means the

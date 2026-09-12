@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { CommanderListItem } from "../../lib/recs/recommend";
@@ -24,7 +24,25 @@ vi.mock("next/navigation", () => ({
 
 // The availability and reveal controls mirror to the URL through the History
 // API — no navigation, so there is no router call left to assert on.
-const replaceState = vi.spyOn(window.history, "replaceState");
+//
+// The spy also feeds the write back into `params`, which is what the mocked
+// `useSearchParams` reads. That is not test convenience: Next ADOPTS a
+// `replaceState` URL into router state, so the hook agrees with the write a
+// moment later, and the view now compares the live query against what it last
+// wrote to tell an arriving navigation from the reader's own flip. A mock where
+// the URL never moves cannot exercise that at all — it makes every flip look
+// like a navigation, which is precisely the bug the comparison exists to avoid.
+const realReplaceState = window.history.replaceState.bind(window.history);
+const replaceState = vi
+  .spyOn(window.history, "replaceState")
+  .mockImplementation((state, title, url) => {
+    // Still a real write: the mirror reads `window.location` to carry over the
+    // parameters the lane does not own.
+    realReplaceState(state, title, url ?? null);
+    const query = String(url ?? "").split("?")[1] ?? "";
+    for (const k of [...params.keys()]) params.delete(k);
+    for (const [k, v] of new URLSearchParams(query)) params.append(k, v);
+  });
 const urls = () => replaceState.mock.calls.map((c) => c[2]);
 
 vi.mock("../../app/commanders/actions", () => ({ retryRecs: vi.fn() }));
@@ -60,8 +78,22 @@ type Over = {
   degraded?: boolean;
 };
 
+// The mode is the URL's alone now, so a test that opens in `free` says so by
+// setting the parameter the reader's own flip would have written.
 function el(list: CommanderListItem[], over: Over = {}) {
   const { avail = "all", freeItems = null, availOk = true, degraded = false } = over;
+  // Through the URL, because that is where the view reads the lane from: it
+  // compares against `window.location` and uses the hook only to re-render.
+  // `replaceState` is spied above and feeds the write back into `params`, so
+  // both halves of the mock stay in step the way Next keeps them in step.
+  //
+  // Only the one key it owns, leaving anything a test put there beside it — the
+  // same rule the mirror itself follows.
+  const live = new URLSearchParams(window.location.search);
+  if (avail === "free") live.set("a", "free");
+  else live.delete("a");
+  const qs = live.toString();
+  window.history.replaceState(null, "", qs ? `/commanders?${qs}` : "/commanders");
   return (
     <CommandersView
       results={list}
@@ -69,7 +101,6 @@ function el(list: CommanderListItem[], over: Over = {}) {
       uniqueCardsRead={1418}
       candidateCount={list.length}
       firstRun={false}
-      avail={avail}
       // The tests state the free ranking as the list it is, and it reaches the
       // view the way the server sends it — through the diff. Every free-mode
       // assertion below therefore also asserts the round-trip.
@@ -335,6 +366,142 @@ describe("CommandersView ranking toggle", () => {
     fireEvent.click(segments(FREE)[0]);
     fireEvent.click(screen.getByRole("button", { name: "Red" }));
     expect(urls().at(-1)).toBe("/commanders?c=r&a=free");
+  });
+
+  // Coming back from a commander restores the tree the server rendered before
+  // the flip — the flip only ever mirrored itself into the URL, and Next adopts
+  // that URL without re-rendering. The URL is therefore the only thing that still
+  // knows what the reader chose, and the seed reads it in both directions.
+  it("opens on free when the URL asks for it, whatever the payload was rendered for", () => {
+    const all = results(3);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 2");
+  });
+
+  // The other direction, and it is the same defect: a reader who flipped BACK to
+  // `All my cards` left a URL with no mode on it, over a tree the server had
+  // rendered in free mode. A seed that preferred the payload reopened free.
+  it("opens on all when the URL carries no mode, even with a free ranking present", () => {
+    const all = results(3);
+    view(all, { avail: "all", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 0");
+  });
+
+  // `?a=free` is a request, not a promise — the same rule the flip itself
+  // follows. With no second ranking to switch to there is nothing to honour.
+  it("refuses the URL's request when no free ranking was produced", () => {
+    // `avail: "free"` is what puts `a=free` ON the URL — the helper writes the
+    // lane key rather than passing a prop, because that is where the view reads
+    // it. Seeding the URL by hand and then passing `all` deleted the very
+    // request this is here to exercise.
+    // `el` writes the lane key onto the URL, because that is where the view reads
+    // it — so the request is made before the render rather than passed as a prop.
+    // Seeding it by hand and then passing `all` deleted the very request this is
+    // here to exercise.
+    const element = el(results(3), { avail: "free", freeItems: null, availOk: false });
+    expect(window.location.search).toBe("?a=free");
+
+    render(element);
+
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
+    // And the refusal reaches the URL as well as the control: a request the
+    // payload cannot serve is not left standing in the address bar.
+    expect(window.location.search).toBe("");
+  });
+
+  // The primary nav pointing back at `/commanders` while the reader stands in
+  // `Free cards only`. Next keeps this instance mounted for that navigation and
+  // restores the tree it already has, with identical props and no word from
+  // `useSearchParams`, so the URL moving is the only signal there is — and
+  // `useLiveQuery` is what listens for it. The platform's notification is
+  // dispatched here as `popstate`, which is the event jsdom has; a browser with
+  // the Navigation API raises `currententrychange` for the same move, and
+  // `live-query.test.tsx` covers that path against a stub.
+  const navigateTo = (url: string) =>
+    act(() => {
+      window.history.pushState(null, "", url);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+  it("follows the URL when a navigation lands on this instance", () => {
+    const all = results(3);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+
+    navigateTo("/commanders");
+
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 0");
+  });
+
+  // And the reason that matters beyond the segment reading wrong: the rack builds
+  // each control's next state from the params it was rendered with. Stale, the
+  // first interaction after the navigation writes the previous lane back into a
+  // URL the navigation had just reset.
+  it("does not write the old lane back on the first interaction after one", () => {
+    const all = results(3, ["R"]);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+
+    navigateTo("/commanders");
+    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+
+    expect(urls().at(-1)).toBe("/commanders?c=r");
+  });
+
+  it("follows the URL on a fresh mount too", () => {
+    const all = results(3);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+  });
+
+  // The reader's own flip must never be mistaken for one of those navigations:
+  // it changes state first and the URL a moment later, and a reconciliation
+  // comparing against the params rather than against what was written would
+  // revert it inside that gap.
+  it("does not undo the reader's own flip before the URL catches up", () => {
+    const all = results(3);
+    view(all, { freeItems: [all[2], all[0], all[1]] });
+    fireEvent.click(segments(FREE)[0]);
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 2");
+  });
+
+  // The climb-down is derived, not recorded — so a reader who returns to the same
+  // `?a=free` once the ranking is back gets the free lane, not a remembered
+  // refusal. A stored overlay would have outlived the reason it was written.
+  it("honours the same request again once the payload can serve it", () => {
+    const all = results(3);
+    const { again } = view(all, { avail: "free", freeItems: null, availOk: false });
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+
+    // The reader asks again — `avail` is the URL the helper writes, not a prop —
+    // and this time the ranking is there.
+    again(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 2");
+  });
+
+  // A revalidation can take the ranking away under a reader already standing in
+  // it: an availability rollup that fails on the next read arrives as
+  // `availOk: false` with no free ranking. Without a climb-down the list falls
+  // back to the canonical one while the segment and the URL still say `free`.
+  it("hands the mode back when a later payload cannot serve it", () => {
+    const all = results(3);
+    const { again } = view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+
+    again(all, { avail: "all", freeItems: null, availOk: false });
+
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
+    expect(cards()[0]).toHaveTextContent("General 0");
+    // The URL climbs down with the control: `all` is the lane's default, so the
+    // mode leaves the query string rather than being written out.
+    expect(urls().at(-1)).not.toContain("a=free");
   });
 
   it("ranks against the free list once the server sends one", () => {

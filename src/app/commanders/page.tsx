@@ -7,7 +7,6 @@ import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
 import { scopeRedirectTarget } from "./scope-redirect";
-import { parseLaneParams } from "../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { retryRecs } from "./actions";
 import { RetryGhost } from "../../components/commanders/retry-submit";
@@ -32,13 +31,6 @@ export default async function CommandersPage({
   // target never carries it — one 308 and the parameter is gone for good.
   const target = scopeRedirectTarget(searchParamsToQuery(sp));
   if (target) permanentRedirect(target);
-  // `All my cards` is the default the lane opens on, which reverses the shipped
-  // build's `What's free`. The rack is why: `Free cards only` now counts as an
-  // active control, so defaulting to it would badge the `Filters` trigger and
-  // draw a chip on arrival, for a choice the reader never made. The parse is
-  // `lane-params`' own, so the short key, the legacy `avail` and the lane rule
-  // are read here exactly as the client reads them.
-  const avail = parseLaneParams(searchParamsToQuery(sp), "owned").avail;
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {
@@ -201,12 +193,18 @@ export default async function CommandersPage({
 
   const receiptCounts = new Map(rankings.receipts);
 
-  // `?avail=free` is a request, not a promise. With no free ranking to show the
-  // page renders the canonical list, so it must say so too: left as `free` the
-  // toggle would read as checked, the receipt would claim `are free` over
-  // all-mode counts, and the live region would announce a re-rank that never
-  // happened. The struck-out segment carries the reason.
-  const renderedAvail = availOk ? avail : ("all" as const);
+  // The mode is NOT stated here. `?avail=free` is a request, not a promise, and
+  // the view is the one place that can answer it: it reads the same `?a=`
+  // through `lane-params` (short key, legacy `avail` and lane rule alike) and
+  // refuses it when `availOk` or the ranking says there is nothing to switch to
+  // — the same two inputs this page would have used. Sending the mode as well
+  // gave the disagreement somewhere to live: the flip mirrors itself into the
+  // URL without a re-render, so a cached tree's prop and the live URL drift
+  // apart, and whichever won was wrong half the time.
+  //
+  // `All my cards` stays the lane's default, and the reason is still the rack's:
+  // `Free cards only` counts as an active control, so opening on it would badge
+  // the `Filters` trigger for a choice the reader never made.
 
   return (
     <section className="flex flex-col min-h-screen">
@@ -218,7 +216,6 @@ export default async function CommandersPage({
         uniqueCardsRead={uniqueCardsRead}
         candidateCount={candidateCount}
         firstRun={firstRun}
-        avail={renderedAvail}
         freeRanking={freeRanking}
         availOk={availOk}
         receiptCounts={receiptCounts}

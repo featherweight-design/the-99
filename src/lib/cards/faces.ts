@@ -35,3 +35,30 @@ export function faceNames(name: string): { front: string; back: string } {
   const [front, back] = name.split(" // ");
   return { front, back: back ?? front };
 }
+
+/**
+ * The front face's half of a printed mana cost.
+ *
+ * Scryfall carries no top-level cost for the two-sided layouts, but it does for
+ * every layout that prints two faces on ONE piece of card stock — `adventure`,
+ * `split` and `prepare` — and there the string is both halves joined:
+ * `Gollum, Silent Slinker // Meager Meal` is stored as `{3}{B} // {B}`. A pip
+ * run has no way to say `//`, so drawing that string put the Adventure's pip in
+ * the same run as the creature's and the row read as a four-pip card.
+ *
+ * The front half is simply the first run the pip treatment can represent: a run
+ * of symbols has no way to say `//`, so one of the two halves is all it can
+ * honestly draw, and the front is the one a reader casts from hand. It does NOT
+ * follow the name beside it — `printedFaceName` splits only what `isTwoFaced`
+ * recognises, which is `transform` and `modal_dfc`, so an `adventure` or `split`
+ * row still prints both halves of its name next to one half of its cost.
+ *
+ * A split card's second cost is therefore drawn nowhere today — a real loss, and
+ * the reason this lives in one function rather than inline in each pip renderer:
+ * a treatment that wants both halves has one place to start from.
+ *
+ * A cost with no separator is returned whole, so this is safe on every card.
+ */
+export function frontFaceCost(cost: string): string {
+  return cost.split(" // ")[0];
+}

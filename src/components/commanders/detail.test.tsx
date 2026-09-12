@@ -297,3 +297,16 @@ describe("CommanderDetail availability mode", () => {
     expect(screen.queryByText(availabilityCopy.ranking.freeNote)).toBeNull();
   });
 });
+
+describe("CommanderDetail card details trigger", () => {
+  // Both breakpoint trees render in jsdom — one is `sm:hidden`, the other
+  // `hidden sm:grid`, and neither media query resolves here. Two triggers is
+  // therefore the passing state: one per width. Before the desktop column had
+  // one, this count was 1 and the desktop card could not be opened at all, so
+  // the printings, the rulings and a two-faced commander's flip control were
+  // unreachable at that width.
+  it("offers a card-details control at both widths", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    expect(screen.getAllByRole("button", { name: "View card details" })).toHaveLength(2);
+  });
+});
