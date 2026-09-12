@@ -141,7 +141,10 @@ phone's figure, and 46 on the owned row leaves its desktop name on a ramp still 
 is what keeps the other surfaces' tests green in the meantime; a surface PR that leaves its own test
 asserting the old band is not a slice, it is a red gate.
 
-### PR 5 — the deck surfaces
+### PR 5 — the deck surfaces (two PRs)
+
+The tile and the spines share no file, so this slice ships as two: the tile with its
+overflow control, then both spines together.
 
 `deck-card.tsx` (render 08 → 248, pips off the footer, the status chip onto the progress-bar row,
 `all owned` and `never played` cut, `labelAt 46`) **with** `deck-card-overflow.tsx` gaining the 26px

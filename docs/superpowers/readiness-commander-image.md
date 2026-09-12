@@ -1,7 +1,8 @@
 # READINESS — One commander image (handoff R6)
 
 **Verdict: 🟢 Green.** Build starts now — this PR is the design record and the
-plan; the six build PRs follow it. §6's amendments are every place the handoff's
+plan; the build slices follow it, PRs 2 through 6 of the plan, and the deck slice
+ships as two because the tile and the spines share no file. §6's amendments are every place the handoff's
 own arithmetic had to be corrected inside a rule it got right, and §5c is the one
 table that governs the figures. Build starts now. Design self-assessed Green after six rounds and the audit
 concurs: every one of the brief's five open calls is made, decision 6's enumeration is complete once
