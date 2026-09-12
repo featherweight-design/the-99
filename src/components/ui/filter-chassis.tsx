@@ -140,6 +140,8 @@ export type FilterChassisProps = {
    * compact surface of its own; no other route sets this.
    */
   scrollCompactControls?: boolean;
+  /** Draw the result line as a warning — see `ResultLine`'s `warn`. */
+  warnResult?: boolean;
 };
 
 /**
@@ -166,7 +168,7 @@ export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
-  silentResult, resultTrailing, announce, announceId, revision, scrollCompactControls,
+  silentResult, resultTrailing, announce, announceId, revision, scrollCompactControls, warnResult,
 }: FilterChassisProps) {
   return (
     <div
@@ -307,7 +309,7 @@ export function FilterChassis({
 
       {/* Row 3 — the chassis's only live region. */}
       <div className="flex items-center gap-[10px]" data-chassis-row="result">
-        <ResultLine line={resultLine} announce={announce} announceId={announceId} revision={revision} silent={silentResult} />
+        <ResultLine line={resultLine} announce={announce} announceId={announceId} revision={revision} silent={silentResult} warn={warnResult} />
         {resultTrailing && (
           <div className="ml-auto flex items-center gap-[8px]">{resultTrailing}</div>
         )}

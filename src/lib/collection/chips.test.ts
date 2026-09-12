@@ -139,6 +139,12 @@ describe("collectionChassisCopy.result", () => {
     expect(collectionChassisCopy.result(412, 1240, 2933, true)).toBe("Showing 412 of 2,933");
   });
 
+  it("keeps the phone's shorter line", async () => {
+    const { collectionChassisCopy } = await import("../copy/collection");
+    // Row 3 also carries `By set` and the view toggle at 390px.
+    expect(collectionChassisCopy.resultCompact(1240)).toBe("1,240 results");
+  });
+
   it("pins the locale, so a European reader does not get 1.240", async () => {
     const { collectionChassisCopy } = await import("../copy/collection");
     const line = collectionChassisCopy.result(1000, 1000, 2000, false);

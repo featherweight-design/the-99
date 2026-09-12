@@ -492,12 +492,19 @@ export function CollectionBrowser({
         // What the queue measures staleness against. The count alone cannot:
         // two filters can leave the same number of rows.
         revision={JSON.stringify(filters)}
-        resultLine={collectionChassisCopy.result(
-          sorted.length,
-          cards.length,
-          totalQuantity,
-          anyFilterActive,
-        )}
+        warnResult={sorted.length === 0}
+        resultLine={
+          isDesktop
+            ? collectionChassisCopy.result(
+                sorted.length,
+                cards.length,
+                totalQuantity,
+                anyFilterActive,
+              )
+            : // The phone keeps the shorter line the chip row drew: row 3 also
+              // carries `By set` and the view toggle at 390px.
+              collectionChassisCopy.resultCompact(sorted.length)
+        }
         filters={filters}
         sort={sort}
         view={effectiveView}

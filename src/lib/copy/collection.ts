@@ -40,6 +40,12 @@ export const collectionChassisCopy = {
    * the plan for a copy pass rather than fixed here, because a migration that
    * quietly changes what a number means is worse than one that moves it.
    */
+  /**
+   * The phone's shorter line. The retired chip row drew this at `md:hidden`,
+   * and it matters more now: row 3 also carries the `By set` link and the view
+   * toggle, so the long sentence and those controls compete for 390px.
+   */
+  resultCompact: (shown: number) => `${shown.toLocaleString("en-US")} results`,
   result: (shown: number, unique: number, total: number, filtered: boolean) =>
     filtered
       ? `Showing ${shown.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`

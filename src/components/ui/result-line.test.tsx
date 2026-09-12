@@ -261,6 +261,15 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).not.toBe("EOE added.");
   });
 
+  it("draws the line as a warning when asked", () => {
+    // /collection's retired chip row turned amber at zero — the one state where
+    // the number reports something wrong rather than a total.
+    const { rerender } = render(<ResultLine line="0 results" warn />);
+    expect(screen.getByText("0 results").className).toContain("var(--warning)");
+    rerender(<ResultLine line="41 decks" />);
+    expect(screen.getByText("41 decks").className).toContain("var(--fg-muted)");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

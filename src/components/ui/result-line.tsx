@@ -27,6 +27,7 @@ export function ResultLine({
   announceId,
   revision,
   silent,
+  warn,
 }: {
   line: string;
   /**
@@ -63,6 +64,13 @@ export function ResultLine({
    * only the region goes quiet.
    */
   silent?: boolean;
+  /**
+   * Draw the line in `--warning` rather than `--fg-muted`. `/collection`'s
+   * retired chip row turned its count amber at zero, which is the one state
+   * where the number is telling the reader something went wrong rather than
+   * reporting a total.
+   */
+  warn?: boolean;
 }) {
   // The announcement and the event that produced it. Text alone is not enough:
   // setting the same string leaves React's DOM untouched, and a live region
@@ -210,7 +218,9 @@ export function ResultLine({
     <>
       <p
         aria-hidden
-        className="m-0 font-mono text-[11px] leading-[1.5] tabular-nums text-[color:var(--fg-muted)]"
+        className={`m-0 font-mono text-[11px] leading-[1.5] tabular-nums ${
+          warn ? "text-[color:var(--warning)]" : "text-[color:var(--fg-muted)]"
+        }`}
       >
         {line}
       </p>

@@ -79,6 +79,7 @@ export function FilterBar({
   resultLine,
   announceId,
   revision,
+  warnResult,
   announcement,
   onAnnounce,
   onFiltersChange,
@@ -113,6 +114,8 @@ export function FilterBar({
   announceId?: string | number;
   /** Something that moves when the list does, for queue staleness. */
   revision?: string | number;
+  /** Draw the result line as a warning — zero results. */
+  warnResult?: boolean;
   /** The bar's single live region content — the panel writes here too. */
   announcement: string;
   onAnnounce: (message: string) => void;
@@ -149,6 +152,7 @@ export function FilterBar({
         announce={announcement}
         announceId={announceId}
         revision={revision}
+        warnResult={warnResult}
         sort={<FilterPanel
           desktopRowMinPx={44}
           compact={!isDesktop}
