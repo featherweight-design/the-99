@@ -61,6 +61,12 @@ moved from 📐 to 🟢. No code.
    `vertical` becomes an override too, kept only on width 203, since one ramp function now serves both
    strategies. New rows: 285 → `flatStop 300`, 340 → `356`, 560 → `584`; 230 keeps its shipped 240;
    every row is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`.
+   **The transitional table is six rows, not four.** `203` and `99` are the two aspect-ratio bands'
+   own derived widths — `round(148 × 1.37)` and `round(72 × 1.37)`, which is what the primitive
+   already computes for them — so the legacy `band` prop resolves through the same table rather than
+   through a fallback path, carrying its shipped `clearTo`, `flatStop`, ground and vertical ramp
+   verbatim. 203 retires with the two commander rows in PR 4 and 99 with the resume row in PR 6, each
+   taking its overrides with it.
 4. **Deleted here, and only these:** `OVER_ART_PLATE` and the assertion holding it in step with a
    hard-coded Tailwind class. `COVER_SCRIM_STOPS.top`, the `labelEdge` prop, its class hook, the
    stylesheet override and the two `min-h-[104px]` floors all survive to PR 6, because their
