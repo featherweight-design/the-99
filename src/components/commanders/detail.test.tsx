@@ -332,3 +332,63 @@ describe("commander detail — the desktop card face", () => {
     expect(face.style.boxShadow).not.toContain("24px");
   });
 });
+
+describe("commander detail — the art header band", () => {
+  // A page header, stated in px. The 1.6/1 ratio made this band 244px on a 390px
+  // phone and 328px on a 520px one: a header whose height was a function of the
+  // device rather than of the job, and whose scrim scaled its darkness with it.
+  it("states 288px rather than an aspect ratio", () => {
+    const { container } = render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />,
+    );
+    const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none");
+    expect(band).not.toBeNull();
+    expect(band!.style.height).toBe("288px");
+    expect(band!.style.aspectRatio).toBe("");
+    expect(band!.firstElementChild).toHaveAttribute("data-art-wash-band", "288");
+    // The measured figure, pinned. The browser probe checks the hold against
+    // whatever the component publishes, so it would follow this number down to
+    // the handoff's 57 without failing — 57 is a percentage read of a px block,
+    // which is the round's own bug. Only an assertion on the figure itself
+    // catches the drift.
+    expect(band!.firstElementChild).toHaveAttribute("data-art-wash-label-at", "109");
+  });
+
+  // The pips leave the band's top edge for the block. Five plated swatches in a
+  // corner would be five plates for a decorative read, and every other band in
+  // the app already draws them beside the name — so moving them is both cheaper
+  // than plating them and what leaves this top edge empty.
+  it("draws the identity pips in the block, not at the top edge", () => {
+    const { container } = render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />,
+    );
+    const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none")!;
+    const pinned = Array.from(band.querySelectorAll<HTMLElement>("div.absolute")).filter(
+      (d) => d.style.top !== "",
+    );
+    expect(pinned).toHaveLength(0);
+
+    const heading = band.querySelector("h1")!;
+    // Beside the name, in the name's own row.
+    expect(heading.parentElement?.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    // And on the name's LAST line. jsdom lays nothing out, so the alignment is
+    // only assertable as the declaration — but the declaration is the whole
+    // defect: a flex container baseline-aligns to a multi-line item's first
+    // baseline, so `items-baseline` puts the swatches beside line one of the
+    // two-line name this block is sized for.
+    expect(heading.parentElement?.className).toContain("items-end");
+    expect(heading.parentElement?.className).not.toContain("items-baseline");
+  });
+
+  // The block reserves the corner the 44px card-details target sits in, the way
+  // the deck tile's block clears its overflow control. Without it the name runs
+  // under a plate drawn over it.
+  it("keeps the block clear of the card-details corner", () => {
+    const { container } = render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />,
+    );
+    const band = container.querySelector<HTMLElement>(".sm\\:hidden.relative.flex-none")!;
+    const block = band.querySelector<HTMLElement>("h1")!.closest("div.absolute") as HTMLElement;
+    expect(Number.parseInt(block.style.paddingRight, 10)).toBeGreaterThanOrEqual(40);
+  });
+});

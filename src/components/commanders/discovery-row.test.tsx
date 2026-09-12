@@ -42,11 +42,25 @@ const both = 2;
 describe("DiscoveryRow", () => {
   // §4 — the wash owns one band, which states its own height. The row's old
   // floor let a long tag sentence stretch the wash and over-scale the crop.
-  it("confines the wash to a 148px band", () => {
+  // 208, the row band: a full-width result row you scan down is the one class
+  // priced by scroll, so it is the shortest of the three bands that grew. The
+  // height is still stated rather than a floor — the sharp portrait resolves
+  // `auto 100%` against it, so a row grown by a long tag sentence would
+  // over-scale the crop.
+  it("confines the wash to a 208px band", () => {
     const { container } = row();
-    expect(container.firstElementChild?.className).not.toContain("min-h-[148px]");
     const band = container.querySelector<HTMLElement>(".discovery-band")!;
-    expect(band.style.height).toBe("148px");
+    // On the BAND, which is what would carry a floor — the row wrapper never had
+    // one, so asserting there passed whatever the band did. And no floor at all
+    // rather than "not the old one": a regression restoring `min-h-[148px]` has
+    // to fail this.
+    expect(band.className).not.toMatch(/min-h-\[/);
+    expect(band.style.height).toBe("208px");
+    expect(band.firstElementChild).toHaveAttribute("data-art-wash-band", "208");
+    // Keyed to the rank column, which is the taller of the row's two blocks.
+    // Pinned for the same reason the band is: the probe validates the hold
+    // against this number rather than deciding it.
+    expect(band.firstElementChild).toHaveAttribute("data-art-wash-label-at", "56");
   });
 
   it("keeps the data zone off the art", () => {

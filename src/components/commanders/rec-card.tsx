@@ -140,10 +140,23 @@ export function RecCard(props: RecCardProps) {
           px rather than taking a floor from the row: decision 8 derives the
           portrait's whole geometry from that figure, and a row grown by a long
           note used to over-scale the crop and clip it. */}
-      <div className="rec-band relative overflow-hidden" style={{ height: 148 }}>
+      <div className="rec-band relative overflow-hidden" style={{ height: 208 }}>
         <ArtWash
           strategy="left-portrait"
-          band={148}
+          height={208}
+          // 285 is `208 × 1.37`, the crop's own aspect: the height is chosen for
+          // what the box is for — a full-width result row you scan down — and the
+          // portrait follows from it.
+          portrait={285}
+          // The block's measured height in pixels from the foot, keyed to the
+          // TALLER of the two blocks this one wash sits under. The rows are
+          // `items-end` at either width, but the desktop block is the bigger of
+          // them — 24px of padding under a 17px name at 1.1 and a 12px type line,
+          // against the phone's 12px under a 14.5px name and a 10.5px line — so
+          // 63 covers both and the phone's 47 would leave the desktop name's top
+          // on a ramp that has not finished climbing. That is the round's own
+          // failure, and a shared wash under two blocks is where it hides.
+          labelAtPx={63}
           artCropUri={c.artCropUri}
           colorIdentity={c.colorIdentity}
         />
@@ -167,11 +180,16 @@ export function RecCard(props: RecCardProps) {
             {rank}
           </span>
 
-          <div className="flex-1 min-w-0">
+          {/* `data-wash-label` marks the INK the ramp exists for, not the
+              breakpoint wrapper around it: that wrapper is `h-full` and spans the
+              whole band, so a probe measuring it would report a block starting at
+              the band's top edge. The chips beside this column plate themselves
+              and stand outside the measurement by design. */}
+          <div data-wash-label className="flex-1 min-w-0">
             <div className="flex items-center gap-[6px]" style={{ minWidth: 0 }}>
               <span
                 className="font-display font-[600] truncate"
-                style={{ fontSize: 14.5, color: "var(--fg)", textShadow: INK_SHADOW }}
+                style={{ fontSize: 14.5, lineHeight: 1.2, color: "var(--fg)", textShadow: INK_SHADOW }}
               >
                 {c.name}
               </span>
@@ -179,7 +197,7 @@ export function RecCard(props: RecCardProps) {
             </div>
             <p
               className="m-0 mt-[3px] font-mono truncate"
-              style={{ fontSize: 10.5, color: "var(--fg-body)", textShadow: INK_SHADOW }}
+              style={{ fontSize: 10.5, lineHeight: 1.35, color: "var(--fg-body)", textShadow: INK_SHADOW }}
             >
               {c.typeLine}
             </p>
@@ -245,8 +263,10 @@ export function RecCard(props: RecCardProps) {
             />
           </div>
 
-          {/* Identity column: the name, its pips and the type line. */}
-          <div style={{ minWidth: 0 }}>
+          {/* Identity column: the name, its pips and the type line. The taller of
+              the two blocks this one wash sits under, and the one `labelAtPx` is
+              keyed to. */}
+          <div data-wash-label style={{ minWidth: 0 }}>
             <div className="flex items-center gap-[8px]" style={{ minWidth: 0 }}>
               <h3
                 className="font-display font-[600] m-0 truncate"
@@ -263,7 +283,7 @@ export function RecCard(props: RecCardProps) {
             </div>
             <p
               className="m-0 mt-[4px] font-mono truncate"
-              style={{ fontSize: 12, color: "var(--fg-body)", textShadow: INK_SHADOW }}
+              style={{ fontSize: 12, lineHeight: 1.35, color: "var(--fg-body)", textShadow: INK_SHADOW }}
             >
               {c.typeLine}
             </p>

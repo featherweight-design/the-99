@@ -220,12 +220,23 @@ describe("RecCard score and denominator", () => {
 // on flat ground. Both responsive subtrees render in jsdom, so every node here
 // is asserted twice over, which is also what proves the split reached both.
 describe("RecCard band and data zone", () => {
-  it("confines the wash to a 148px band", () => {
+  // 208, the row band: a full-width result row you scan down is the one class
+  // priced by scroll, so it is the shortest of the three bands that grew. The
+  // height is still stated rather than a floor — the sharp portrait resolves
+  // `auto 100%` against it, so a row grown by a long tag sentence would
+  // over-scale the crop.
+  it("confines the wash to a 208px band", () => {
     const { container } = card();
     const bands = container.querySelectorAll<HTMLElement>(".rec-band");
     // One band holding both responsive subtrees, so the wash renders once.
     expect(bands).toHaveLength(1);
-    expect(bands[0].style.height).toBe("148px");
+    expect(bands[0].style.height).toBe("208px");
+    // A stated band, marked as one: the hook is what a browser probe reads, and
+    // its absence is what the census counts as not yet migrated.
+    expect(bands[0].firstElementChild).toHaveAttribute("data-art-wash-band", "208");
+    // 63, not discovery's 56: this row's block carries a type line under its
+    // name. Pinned so the two rows cannot quietly converge on one figure again.
+    expect(bands[0].firstElementChild).toHaveAttribute("data-art-wash-label-at", "63");
   });
 
   it("keeps the data zone off the art", () => {

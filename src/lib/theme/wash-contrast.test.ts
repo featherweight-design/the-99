@@ -53,12 +53,16 @@ const TOP_AT_TITLE = alphaAt(COVER_SCRIM_STOPS.top, 0); // 0.78 — the top of t
     subtitle: both ends were held while the ink between them sat in the trough. */
 const TOP_AT_SUBTITLE = alphaAt(COVER_SCRIM_STOPS.top, COVER_SCRIM_STOPS.top[1][1]);
 
-/** LEGACY — the two surfaces still expressing their block as a percentage,
-    because each still sizes itself from an `aspect-ratio` and a band with no
-    height in px cannot state a block in px. Both migrate to `labelAtPx`.
-    @deprecated retires with `detail.tsx` and `spine-mobile.tsx`. */
+/** LEGACY — the surfaces still expressing their block as a percentage, because
+    each still sizes itself from an `aspect-ratio` and a band with no height in px
+    cannot state a block in px.
+
+    Commander detail migrated in this slice, so it is gone from here: leaving it
+    would have kept a retired percentage ramp under test while its real 109px/288
+    case was asserted separately, which is coverage pointing at nothing. The deck
+    spine's phone header is the last one, and it retires with the spines.
+    @deprecated retires with `spine-mobile.tsx`. */
 const LEGACY_BOTTOM_SURFACES: readonly (readonly [string, number])[] = [
-  ["commander detail mobile", 55],
   ["deck spine, phone", 57],
 ];
 

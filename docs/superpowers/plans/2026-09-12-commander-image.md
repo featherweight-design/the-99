@@ -136,10 +136,12 @@ picker's selected summary and partner slot are measured rather than assumed.
 the bottom corner, and `labelAtPx` **109** — measured, not the handoff's 57, which cannot hold a block
 whose 25px name alone is 29px; its own open item 2 asked for this figure to be measured at 288 rather
 than trusted), `rec-card.tsx` and `discovery-row.tsx` (148 → **208** with a 285 portrait, and the literal `148`
-retires). **Their `labelAtPx` figures differ — 46 discovery, 63 the owned lane** — because one wash
+retires). **Their `labelAtPx` figures differ — 56 discovery, 63 the owned lane** — because one wash
 sits under two breakpoint subtrees on each row and the desktop block is the taller: the owned lane's
-carries a type line under its name and discovery's does not. The handoff gives both 46, which is the
-phone's figure, and 46 on the owned row leaves its desktop name on a ramp still climbing. Render 06's "inset frame" is a no-op: there is no frame (verdict finding 5).
+carries a type line under its name and discovery's does not. The handoff gives both 46, which is
+neither row's measured figure: 46 on the owned row leaves its desktop name on a ramp still climbing,
+and discovery's block is keyed to its rank column, which measures 56. Both figures are the verdict's
+(§5c), not the handoff's. Render 06's "inset frame" is a no-op: there is no frame (verdict finding 5).
 
 **Tests migrate with their surface, in the same PR**, because each asserts the number being changed:
 `detail.test.tsx`, `rec-card.test.tsx` and `discovery-row.test.tsx` here. The primitive's legacy arm
