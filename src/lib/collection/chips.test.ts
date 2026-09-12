@@ -35,6 +35,13 @@ describe("collectionChips", () => {
     expect(chip.dots).toHaveLength(2);
   });
 
+  it("names the colours for a reader who cannot see the swatches", () => {
+    // The dots are aria-hidden, so "2 colours" is all a screen reader would get
+    // — the row this replaces named each one.
+    const chip = collectionChips({ ...EMPTY, colors: ["W", "B"] }, options)[0];
+    expect(chip.spoken).toBe("White, Black");
+  });
+
   it("hands back the filters with only that control unset", () => {
     const filters = { ...EMPTY, search: "bolt", colors: ["R"] };
     const search = collectionChips(filters, options).find((c) => c.key === "q")!;

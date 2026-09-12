@@ -31,10 +31,19 @@ export type FilterChip = {
   /**
    * CSS colours drawn as leading swatches, one per value the label collapsed.
    * A colour chip reads "3 colours" rather than splitting into three chips, so
-   * without these the reader is told how many are on and never which — the
-   * swatches are the only thing that says so.
+   * without these a sighted reader is told how many are on and never which.
+   *
+   * They are `aria-hidden`, which is why `spoken` exists: swatches say it with
+   * colour and nothing else, so a screen reader needs the names in words.
    */
   dots?: readonly string[];
+  /**
+   * What a screen reader hears in place of `label`, when the label collapsed
+   * values into a count. "3 colours" tells a sighted reader to look at the
+   * swatches; it tells everyone else nothing, and the row this chassis replaced
+   * named each colour.
+   */
+  spoken?: string;
   onRemove: () => void;
 };
 
@@ -211,7 +220,7 @@ export function FilterChassis({
               <button
                 type="button"
                 onClick={chip.onRemove}
-                aria-label={chassisCopy.chips.removeAria(chip.label)}
+                aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
                 className={[
                   "relative cursor-pointer border-0 bg-transparent p-0",
                   "text-[color:var(--fg-faint)]",

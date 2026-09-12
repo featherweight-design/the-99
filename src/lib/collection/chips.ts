@@ -17,9 +17,17 @@ import { WUBRG_COLOR } from "./browse";
 
 const copy = collectionChassisCopy.chip;
 
+/** WUBRG letter to the word a reader hears. */
+const COLOUR_NAMES: Record<string, string> = {
+  W: "White", U: "Blue", B: "Black", R: "Red", G: "Green",
+};
+const colourName = (code: string) => COLOUR_NAMES[code.toUpperCase()] ?? code;
+
 export type CollectionChip = {
   key: string;
   label: string;
+  /** The label with collapsed values named, for readers who cannot see swatches. */
+  spoken?: string;
   /** One swatch per lit hue — the colour chip's label collapses them to a count. */
   dots?: string[];
   /** The filters with just this control unset. */
@@ -52,6 +60,10 @@ export function collectionChips(
     chips.push({
       key: "colors",
       label: copy.colours(filters.colors.length),
+      // The swatches say which hues with colour alone, and they are
+      // `aria-hidden`. The row this replaces named each one, so the names go
+      // here rather than being lost to a count.
+      spoken: filters.colors.map((c) => colourName(c)).join(", "),
       dots: filters.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
       next: { ...filters, colors: [] },
     });

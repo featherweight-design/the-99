@@ -52,7 +52,15 @@ export function ResultLine({
    */
   silent?: boolean;
 }) {
-  const [announcement, setAnnouncement] = useState("");
+  // The announcement and the event that produced it. Text alone is not enough:
+  // setting the same string leaves React's DOM untouched, and a live region
+  // whose content did not change is a region most screen readers do not read.
+  // The `seq` rides on the node's `key`, so a repeated sentence is a NEW node
+  // and the region is genuinely re-announced.
+  const [announcement, setAnnouncement] = useState<{ text: string; seq: number }>({
+    text: "",
+    seq: 0,
+  });
   // What was last announced. Null until the line first changes, which is what
   // keeps the chassis from reading its own count out on arrival.
   const announced = useRef<string | null>(null);
@@ -128,10 +136,13 @@ export function ResultLine({
     // the keystroke and delay every other one for no reason. The line this
     // component composes itself is the only thing that waits.
     if (fresh) {
-      setAnnouncement(message);
+      setAnnouncement((a) => ({ text: message, seq: a.seq + 1 }));
       return;
     }
-    const t = setTimeout(() => setAnnouncement(message), ANNOUNCE_DELAY_MS);
+    const t = setTimeout(
+      () => setAnnouncement((a) => ({ text: message, seq: a.seq + 1 })),
+      ANNOUNCE_DELAY_MS,
+    );
     return () => clearTimeout(t);
   }, [line, announce, announceId, silent]);
 
@@ -145,8 +156,14 @@ export function ResultLine({
       </p>
       {/* Atomic, or a reader hears only the number that changed and loses the
           sentence that gave it a denominator. */}
-      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {announcement}
+      <span
+        key={announcement.seq}
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {announcement.text}
       </span>
     </>
   );

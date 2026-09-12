@@ -156,8 +156,13 @@ describe("ResultLine", () => {
     rerender(<ResultLine line="41 decks" announce="Red added." announceId={1} />);
     expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
     rerender(<ResultLine line="41 decks" announce="" announceId={1} />);
+    const firstNode = container.querySelector("[role='status']");
     rerender(<ResultLine line="41 decks" announce="Red added." announceId={2} />);
-    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+    const secondNode = container.querySelector("[role='status']");
+    expect(secondNode?.textContent).toBe("Red added.");
+    // Text alone proves nothing: an unchanged live region is one most screen
+    // readers do not read. The node itself has to be replaced.
+    expect(secondNode).not.toBe(firstNode);
   });
 
   it("is the one live region, and it is atomic", () => {

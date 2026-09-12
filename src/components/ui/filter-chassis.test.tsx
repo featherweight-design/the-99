@@ -229,6 +229,21 @@ describe("FilterChassis", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
   });
 
+  it("speaks a chip's collapsed values rather than its count", () => {
+    render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[
+          { key: "colors", label: "2 colours", spoken: "White, Black", onRemove: () => {} },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Remove filter: White, Black" })).toBeTruthy();
+    // The count stays on screen; only what is spoken changes.
+    expect(screen.getByText("2 colours")).toBeTruthy();
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,
