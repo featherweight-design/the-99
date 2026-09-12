@@ -195,14 +195,29 @@ describe("the discard confirm", () => {
 
   it("announces the discard and says which version the deck is back on", async () => {
     vi.mocked(discardDeckDraft).mockResolvedValue({ ok: true });
-    const name = deckName();
-    discard();
+    const onDiscarded = vi.fn();
+    discard({ onDiscarded });
     act(raise);
     await act(async () => {
       screen.getByRole("button", { name: copy.confirm(36) }).click();
     });
-    expect(discardDeckDraft).toHaveBeenCalledWith("d");
+    // The version the confirmation named, sent with the call so the server can
+    // refuse a discard that would land somewhere else.
+    expect(discardDeckDraft).toHaveBeenCalledWith("d", "v");
     expect(screen.getByRole("status").textContent).toBe(copy.announced(36, 2));
+    expect(onDiscarded).toHaveBeenCalled();
+  });
+
+  // A host that navigates takes this surface and the deck name beside it with
+  // it, so only a host staying put gets the handoff below.
+  it("hands focus to the deck name when the host stays put", async () => {
+    vi.mocked(discardDeckDraft).mockResolvedValue({ ok: true });
+    const name = deckName();
+    discard({ onDiscarded: undefined });
+    act(raise);
+    await act(async () => {
+      screen.getByRole("button", { name: copy.confirm(36) }).click();
+    });
     // Every draft control is about to be removed by the revalidation, so focus
     // goes to the one thing certain to still be in the document.
     expect(document.activeElement).toBe(name);

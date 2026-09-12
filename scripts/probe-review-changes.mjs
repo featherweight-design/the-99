@@ -728,6 +728,18 @@ try {
       () => document.getElementById("draft-announcer")?.textContent ?? null,
     )}`,
   );
+  // The navigation takes the confirm and everything focused near it, so the deck
+  // page's version line takes focus off the body — the one sentence naming the
+  // list the deck is on now, which is what the draft just stopped being. The
+  // hash that carried the handoff is spent on arrival.
+  console.log(
+    `  after · focus: ${await discardPage.evaluate(
+      () => document.activeElement?.textContent?.trim().slice(0, 60) ?? null,
+    )} (expect the version line)`,
+  );
+  console.log(
+    `  after · hash: "${await discardPage.evaluate(() => window.location.hash)}" (expect empty)`,
+  );
   const settled = await pool.query(
     `select
        (select count(*) from deck_cards where deck_id = $1) as draft_rows,

@@ -4,7 +4,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { priceCopy } from "../../lib/copy/price";
 import type { DraftState } from "../../lib/decks/draft-shape";
-import { COMMIT_RECEIPT_HASH, DRAFT_ANNOUNCER_ID } from "./draft-announcer";
+import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH, DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PendingBanner } from "./pending-banner";
 
 vi.mock("../../app/decks/actions", () => ({ discardDeckDraft: vi.fn() }));
@@ -45,8 +45,6 @@ const empty: DraftState = {
   total: null,
   pricedCopies: 0,
   newestAsOf: null,
-  manaValue: 3.1,
-  manaValueBefore: 3.4,
 };
 
 const withChanges = (adds: number, removes: number): DraftState => ({
@@ -105,6 +103,15 @@ describe("PendingBanner", () => {
     expect(document.activeElement).toBe(screen.getByText(copy.versionLine(2, "1 Sep 2026")));
     // And the hash goes, so a reload or a back-forward return does not re-fire a
     // receipt for a commit minutes old.
+    expect(window.location.hash).toBe("");
+  });
+
+  // A discard made from the review page navigates for the same reason and after
+  // the more destructive of the two acts, so it lands on the same line.
+  it("takes focus on the version line when a discard lands it here", () => {
+    history.replaceState(null, "", `/decks/d${DISCARD_RECEIPT_HASH}`);
+    render(<PendingBanner state={empty} deckId="d" />);
+    expect(document.activeElement).toBe(screen.getByText(copy.versionLine(2, "1 Sep 2026")));
     expect(window.location.hash).toBe("");
   });
 

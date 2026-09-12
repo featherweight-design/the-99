@@ -26,6 +26,20 @@ export const DRAFT_ANNOUNCER_ID = "draft-announcer";
  */
 export const COMMIT_RECEIPT_HASH = "#committed";
 
+/**
+ * The same receipt for a discard made from the review page.
+ *
+ * A discard from that page navigates for the same reason a commit does — the
+ * page exists to show changes and there are none left — so it strands focus in
+ * the same place, and after the more destructive of the two acts. The version
+ * line is again the answer: it names the list the deck is on now, which is
+ * exactly what the draft stopped being.
+ *
+ * A separate hash rather than one shared "receipt" value so that a future
+ * difference between the two landings does not need one taken apart first.
+ */
+export const DISCARD_RECEIPT_HASH = "#discarded";
+
 export function draftAnnouncer(): HTMLElement {
   const existing = document.getElementById(DRAFT_ANNOUNCER_ID);
   if (existing) return existing;

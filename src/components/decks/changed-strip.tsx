@@ -21,22 +21,20 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardTypeGroup, groupByCardType, type CardTypeGroup } from "../../lib/decks/grouping";
+import { averageManaValue } from "../../lib/decks/mana-value";
 import { computeRoleCounts, RECOMMENDED_MIX, ROLE_ORDER } from "../../lib/decks/mix";
 
 const copy = deckVersioningCopy.changed;
 
 type ChangedStripProps = {
-  /** The newest committed version's list. Empty on a brew, and that emptiness is
-   *  the whole of how this component knows there is nothing to compare against:
-   *  `+12 ramp` against no previous version is a claim about a comparison that
-   *  does not exist. */
-  before: ShapeCard[];
+  /** The newest committed version's list, and null on a brew — the presence of a
+   *  version, not the size of its list, is what says whether there is anything to
+   *  compare against. `+12 ramp` against no previous version is a claim about a
+   *  comparison that does not exist; a version that happens to hold no cards is a
+   *  comparison, and every figure in it is a nought the reader moved off. */
+  before: ShapeCard[] | null;
   /** The draft — the deck's own `deck_cards`, as the decklist draws them. */
   after: ShapeCard[];
-  /** The draft's average and the version's, both null on an all-land list. A null
-   *  says nothing about the curve rather than printing a nought. */
-  manaValue: number | null;
-  manaValueBefore: number | null;
 };
 
 /** A card type whose count moved. */
@@ -135,21 +133,25 @@ function StripCell({
   );
 }
 
-export function ChangedStrip({
-  before,
-  after,
-  manaValue,
-  manaValueBefore,
-}: ChangedStripProps) {
-  const beforeCounts = computeRoleCounts(before);
+export function ChangedStrip({ before, after }: ChangedStripProps) {
+  const beforeCounts = computeRoleCounts(before ?? []);
   const afterCounts = computeRoleCounts(after);
 
   // A brew has no previous shape, so nothing on this surface states a movement:
   // no before figure, no arrow, no curve direction and no type block. What is
   // left is the deck as it stands against its recommendations, which is true of a
   // first commit as much as of a fiftieth.
-  const comparable = before.length > 0;
-  const moves = comparable ? typeMoves(before, after) : [];
+  const comparable = before !== null;
+  const moves = before !== null ? typeMoves(before, after) : [];
+
+  // Averaged here, off the same two lists every other cell is tallied from,
+  // rather than carried alongside them. A basics-only draft leaves every figure
+  // in `DraftState` empty by design, and a curve read from there would take the
+  // cell off the strip on the one edit that provably cannot move it: lands are
+  // out of the average, so both ends of the pair are the figure they already
+  // were.
+  const manaValue = averageManaValue(after);
+  const manaValueBefore = before === null ? null : averageManaValue(before);
   // One denominator across the drawn bars, so two rows of the same length mean
   // the same count. The design's own bars are not on one scale (Discrepancy 19);
   // this is the reading of them that lets a reader compare two rows.
@@ -158,7 +160,7 @@ export function ChangedStrip({
   // Two decimals, both figures, so the pair reads as one measurement — `3.4 →
   // 3.14` would look like a different kind of number on each side of the arrow.
   const movedCurve =
-    comparable && manaValue !== null && manaValueBefore !== null && manaValue !== manaValueBefore;
+    manaValue !== null && manaValueBefore !== null && manaValue !== manaValueBefore;
 
   return (
     <>
@@ -169,7 +171,7 @@ export function ChangedStrip({
         {manaValue !== null && (
           <StripCell
             label={copy.manaValue}
-            before={comparable && manaValueBefore !== null ? manaValueBefore.toFixed(2) : null}
+            before={manaValueBefore !== null ? manaValueBefore.toFixed(2) : null}
             after={manaValue.toFixed(2)}
             // A curve coming down is the improvement, which is the only reason
             // the cell has a colour at all: there is no recommended mana value

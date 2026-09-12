@@ -14,7 +14,7 @@ import { changeCount, hasChanges, type DraftAdd, type DraftState } from "../../l
 import { formatDeckDate } from "../../lib/decks/format";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
-import { COMMIT_RECEIPT_HASH } from "./draft-announcer";
+import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
 
 const copy = deckVersioningCopy.pending;
 
@@ -215,12 +215,13 @@ function NameLine({
 
 /** The committed version line, and where a commit lands. Focusable but not a tab
  *  stop — `tabIndex={-1}` — because it is a statement, not a control: it exists
- *  to be reachable programmatically once, the paint after the commit sheet
- *  navigated here. See `COMMIT_RECEIPT_HASH` for why that matters. */
+ *  to be reachable programmatically once, the paint after the commit sheet or a
+ *  discard navigated here. See `COMMIT_RECEIPT_HASH` for why that matters. */
 function VersionLine({ text }: { text: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    if (window.location.hash !== COMMIT_RECEIPT_HASH) return;
+    const hash = window.location.hash;
+    if (hash !== COMMIT_RECEIPT_HASH && hash !== DISCARD_RECEIPT_HASH) return;
     ref.current?.focus();
     // `replaceState`, so the receipt does not become an entry the reader can go
     // back to and re-fire.

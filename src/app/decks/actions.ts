@@ -1483,17 +1483,29 @@ export async function commitDeckVersion(
  * Throw the draft away and put the newest version's list back.
  *
  * Destructive and unrecoverable — the draft is not versioned — so the caller
- * confirms first. A deck with no version has nothing to restore TO, and
- * silently emptying it would delete a whole brew.
+ * confirms first.
+ *
+ * `expectedVersionId` is the version the caller told the player they were
+ * landing on. It is checked against the newest one under the restore's own
+ * lock, so a commit from another tab — or a deck holding no version at all —
+ * refuses this write rather than quietly landing somewhere the confirmation
+ * never named. The refusal revalidates: whatever the player is looking at is
+ * out of date either way.
  */
-export async function discardDeckDraft(deckId: string): Promise<DeckMutationResult> {
+export async function discardDeckDraft(
+  deckId: string,
+  expectedVersionId: string,
+): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  if (!isUuid(deckId) || !isUuid(expectedVersionId)) {
+    return { ok: false, message: "We couldn't find that deck." };
+  }
   await requireDeck(deckId, userId);
-  const version = await newestVersion(deckId);
-  if (!version) return { ok: false, message: "This deck has no version to go back to." };
-  await restoreDraftFromVersion(deckId, version.id);
+  const outcome = await restoreDraftFromVersion(deckId, expectedVersionId);
   revalidateClaims(deckId, userId);
+  if (outcome === "moved") {
+    return { ok: false, message: "We couldn't discard those changes. Nothing has changed." };
+  }
   return { ok: true };
 }
 

@@ -73,11 +73,18 @@ export default async function ChangesPage({
   // The shape strip's two lists, each a read of its own: neither a version's
   // cards nor the header loader's figures carry the role and type line the strip
   // tallies by. Read after the admission test, not before it, so a visit that
-  // redirects pays for neither. A brew gets an empty `before` rather than a
-  // skipped strip — the deck still has a shape, and what it has is no previous
-  // figure to compare it against.
+  // redirects pays for neither. A brew gets a null `before` rather than a skipped
+  // strip — the deck still has a shape, and what it has is no previous figure to
+  // compare it against.
+  //
+  // Outside the snapshot the state and the rows came out of, deliberately, and on
+  // the same terms as the claim and price reads there: an edit landing between
+  // the two would make the strip's figures a moment older than the columns', and
+  // every write to this deck revalidates the page that drew them. Folding two
+  // more round trips into that transaction would hold it open to buy consistency
+  // between two readings of a list the reader is about to commit anyway.
   const [before, after] = await Promise.all([
-    state.version ? loadVersionShape(state.version.id) : Promise.resolve([]),
+    state.version ? loadVersionShape(state.version.id) : Promise.resolve(null),
     loadDraftShape(id),
   ]);
 

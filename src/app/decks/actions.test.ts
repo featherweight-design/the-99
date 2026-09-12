@@ -1104,23 +1104,31 @@ describe("discardDeckDraft", () => {
     vi.clearAllMocks();
     stub.state.revalidated.length = 0;
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
-    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+    vi.mocked(restoreDraftFromVersion).mockResolvedValue("restored");
   });
 
-  // A brew has nothing to go back to, and restoring it to an empty list would
-  // silently delete the whole deck.
-  it("refuses a deck with no version", async () => {
-    vi.mocked(newestVersion).mockResolvedValue(null);
-    const result = await discardDeckDraft(DECK_ID);
-    expect(result.ok).toBe(false);
-    expect(restoreDraftFromVersion).not.toHaveBeenCalled();
-  });
-
-  it("restores the newest version and revalidates", async () => {
-    const result = await discardDeckDraft(DECK_ID);
+  it("restores the version the caller named and revalidates", async () => {
+    const result = await discardDeckDraft(DECK_ID, VERSION_ID);
     expect(result.ok).toBe(true);
     expect(restoreDraftFromVersion).toHaveBeenCalledWith(DECK_ID, VERSION_ID);
     expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
+  });
+
+  // The restore decides this under its own lock — a brew, or a commit from
+  // another tab, both come back "moved". What is asserted here is that the
+  // action reports the refusal rather than claiming a discard, and revalidates
+  // anyway: whatever the player is looking at is out of date either way.
+  it("says nothing changed when the restore refuses", async () => {
+    vi.mocked(restoreDraftFromVersion).mockResolvedValue("moved");
+    const result = await discardDeckDraft(DECK_ID, VERSION_ID);
+    expect(result.ok).toBe(false);
+    expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
+  });
+
+  it("refuses a version id that is not a uuid without touching the database", async () => {
+    const result = await discardDeckDraft(DECK_ID, "nope");
+    expect(result.ok).toBe(false);
+    expect(restoreDraftFromVersion).not.toHaveBeenCalled();
   });
 });
 

@@ -111,7 +111,11 @@ export interface DiscardConfirmProps {
   versionCards: number;
   onCancel: () => void;
   /** For a caller holding its own optimistic list: the rows it is drawing have
-   *  just been rewritten under it. The server revalidates the page itself. */
+   *  just been rewritten under it. The server revalidates the page itself.
+   *
+   *  A host that supplies one owns where the reader ends up, because a host that
+   *  navigates takes this whole surface — and anything focused inside or beside
+   *  it — with it. Only a host staying put gets the deck-name handoff below. */
   onDiscarded?: () => void;
   /** Spacing the host needs around the box, never its own surface. */
   className?: string;
@@ -220,7 +224,10 @@ export function DiscardConfirm({
             startTransition(async () => {
               let result: DeckMutationResult;
               try {
-                result = await discardDeckDraft(deckId);
+                // The version the sentence above named, sent along so the
+                // server can refuse rather than land the discard on a version
+                // this confirmation never described.
+                result = await discardDeckDraft(deckId, version.id);
               } catch {
                 // A throw and a refusal read the same to the player and leave the
                 // draft where it was, so one sentence covers them — the same call
@@ -239,10 +246,17 @@ export function DiscardConfirm({
               // the version rather than only the loss: the deck the player is
               // looking at is now a different list from the one they were editing.
               draftAnnouncer().textContent = copy.announced(n, version.number);
+              if (onDiscarded) {
+                // The host navigates, and focusing this page's name first would
+                // put the reader on an element the navigation then removes —
+                // which is the drop this handoff exists to prevent. Where the
+                // reader lands is that host's to say.
+                onDiscarded();
+                return;
+              }
               // Before this box goes, while it is still in the document — see
               // `focusDeckName`.
               focusDeckName();
-              onDiscarded?.();
             });
           }}
           className={DANGER_CTA}

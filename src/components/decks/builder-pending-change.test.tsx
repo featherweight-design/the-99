@@ -85,8 +85,6 @@ const DRAFT: DraftState = {
   total: null,
   pricedCopies: 0,
   newestAsOf: null,
-  manaValue: null,
-  manaValueBefore: null,
 };
 
 async function mount(draft: DraftState) {

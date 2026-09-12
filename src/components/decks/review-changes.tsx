@@ -27,6 +27,7 @@ import { PrimaryButton } from "../ui/button";
 import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
+import { DISCARD_RECEIPT_HASH } from "./draft-announcer";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { PullControl } from "./pull-control";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
@@ -50,8 +51,8 @@ type ReviewChangesProps = {
   /** The two whole lists the shape strip folds — the newest version's, and the
    *  draft's. Read by the route rather than derived here: the changed rows cannot
    *  say what a role or a card type held, and `before` is a query of its own.
-   *  Empty `before` is a brew, where nothing states a movement. */
-  before: ShapeCard[];
+   *  Null `before` is a brew, where nothing states a movement. */
+  before: ShapeCard[] | null;
   after: ShapeCard[];
   /** The server's count of the cards the commit would freeze, passed straight
    *  through to the sheet — see `commit-sheet.tsx`. */
@@ -395,7 +396,7 @@ export function ReviewChanges({
   // version's card list, which is why this page takes no prop for the figure the
   // deck page passes down. Copies rather than rows: it is the figure the decklist
   // prints, and what the reader is being told they land on.
-  const versionCards = before.reduce((n, card) => n + card.quantity, 0);
+  const versionCards = (before ?? []).reduce((n, card) => n + card.quantity, 0);
 
   const inCount = rows.in.length;
   const outCount = rows.out.length;
@@ -491,12 +492,7 @@ export function ReviewChanges({
           {/* Under the lede and above the columns, because it answers the other
               question the page is asked: the columns say which cards moved, and
               this says where the deck's shape went. */}
-          <ChangedStrip
-            before={before}
-            after={after}
-            manaValue={state.manaValue}
-            manaValueBefore={state.manaValueBefore}
-          />
+          <ChangedStrip before={before} after={after} />
 
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
               standing for a purchase, a pull or a column that is not there. */}
@@ -627,7 +623,11 @@ export function ReviewChanges({
                   // there is nothing here to read: the route's own guard would
                   // send the reader back on the next render, and going straight
                   // there spares them a frame of two empty columns.
-                  onDiscarded={() => router.push(`/decks/${deckId}`)}
+                  // With the receipt hash: this navigation takes the confirm,
+                  // its answers and the whole page with it, and the deck page's
+                  // version line is where a reader who just discarded needs to
+                  // land. See `DISCARD_RECEIPT_HASH`.
+                  onDiscarded={() => router.push(`/decks/${deckId}${DISCARD_RECEIPT_HASH}`)}
                 />
               ) : (
                 <>

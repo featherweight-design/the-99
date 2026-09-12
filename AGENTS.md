@@ -98,9 +98,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm probe:draft` proves the draft readers against a real Postgres by calling the real
   `loadDraftState` and `loadDraftRows` — a brew has no version rather than an empty change
   list, a draft identical to its version is clean, a basics-only edit names no card and still
-  counts as a change, `names` covers the changed cards only while the mana average reads every
-  row, an unowned add with a live price is quoted and one that has never been stocked is
-  counted out of the coverage, and a row's `quantity` is the delta rather than the copy count.
+  counts as a change, `names` covers the changed cards only, an unowned add with a live
+  price is quoted and one that has never been stocked is counted out of the coverage, and
+  a row's `quantity` is the delta rather than the copy count.
   Those figures come out of a snapshot transaction, a diff, a claim read, a price join and a
   collection lookup, which no unit test here can assemble. Only the diff is transaction-bound:
   the claim, price and collection reads run after that transaction closes, deliberately, because

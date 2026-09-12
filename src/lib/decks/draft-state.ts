@@ -21,8 +21,7 @@ import { hardDecks, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
 import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./price";
-import { averageManaValue } from "./mana-value";
-import { newestVersion, versionCards, versionManaValue } from "./versions";
+import { newestVersion, versionCards } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
 
@@ -197,7 +196,6 @@ async function readDraft(
     claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
     pricedCopies: 0, newestAsOf: null,
-    manaValue: null, manaValueBefore: null,
   };
   const bare = (state: DraftState): DraftRead => ({
     state, availability: null, prices: null, names: new Map(), detail: new Map(),
@@ -303,9 +301,6 @@ async function readDraft(
   // three more round trips.
   const pullFrom = pullHints(bucketed, availability);
 
-  const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
-  const typeByOracle = new Map(facts.map((f) => [f.oracleId, f.typeLine]));
-
   const detail = detailed
     ? new Map((await loadDetailFacts(userId, changed)).map((d) => [d.oracleId, d]))
     : new Map<string, DetailFact>();
@@ -335,12 +330,6 @@ async function readDraft(
       total: summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
       pricedCopies: summary.pricedCopies,
       newestAsOf: prices?.newestAsOf ?? null,
-      manaValue: averageManaValue(draft.map((c) => ({
-        cmc: cmcByOracle.get(c.oracleId) ?? 0,
-        quantity: c.quantity,
-        typeLine: typeByOracle.get(c.oracleId) ?? "",
-      }))),
-      manaValueBefore: await versionManaValue(version.id),
     },
     availability,
     prices,
@@ -360,6 +349,11 @@ export type ShapeCard = {
   role: DeckDetailCard["role"];
   quantity: number;
   typeLine: string;
+  /** So the strip averages its own curve off the same two lists it tallies every
+   *  other cell from. A figure carried separately would have to be computed for
+   *  a basics-only draft too, where every other draft figure is deliberately
+   *  empty — and the cell would vanish on the one edit that cannot move it. */
+  cmc: number;
 };
 
 /**
@@ -373,13 +367,14 @@ export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> 
   const rows = await db.select({
     quantity: deckVersionCards.quantity,
     typeLine: cards.typeLine,
+    cmc: cards.cmc,
     oracleText: cards.oracleText,
     keywords: cards.keywords,
   }).from(deckVersionCards)
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
     .where(eq(deckVersionCards.versionId, versionId));
   return rows.map((r) => ({
-    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine,
+    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine, cmc: r.cmc,
   }));
 }
 
@@ -395,13 +390,14 @@ export async function loadDraftShape(deckId: string): Promise<ShapeCard[]> {
   const rows = await db.select({
     quantity: deckCards.quantity,
     typeLine: cards.typeLine,
+    cmc: cards.cmc,
     oracleText: cards.oracleText,
     keywords: cards.keywords,
   }).from(deckCards)
     .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
     .where(eq(deckCards.deckId, deckId));
   return rows.map((r) => ({
-    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine,
+    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine, cmc: r.cmc,
   }));
 }
 

@@ -196,9 +196,22 @@ async function commitVersionIn(
  * list the player committed to, so nothing in it is an unclaimed suggestion,
  * and leaving the flag set would let a later sweep delete cards out of a
  * committed deck.
+ *
+ * `versionId` is what the caller believes the newest version to be, and it is
+ * re-checked under the lock rather than trusted. A commit landing between the
+ * caller's read and this transaction moves the deck on: restoring the older
+ * list then would overwrite a version's own cards with the one behind it and
+ * leave the deck reading as a draft against a version nobody edited. "moved"
+ * is that case, and nothing is written — the caller sends the reader back to a
+ * page that now says something different. A deck holding no version at all is
+ * the same answer: there is nothing behind the draft to land on, and emptying
+ * it would delete a whole brew.
  */
-export async function restoreDraftFromVersion(deckId: string, versionId: string): Promise<void> {
-  await db.transaction(async (tx) => {
+export async function restoreDraftFromVersion(
+  deckId: string,
+  versionId: string,
+): Promise<"restored" | "moved"> {
+  return db.transaction(async (tx) => {
     // The same `for update` commitVersion takes, and for the same reason: this
     // reads a list and then replaces `deck_cards` wholesale, so an add landing
     // from another tab in between is thrown away without a trace.
@@ -216,9 +229,11 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
     await tx.select({ oracleId: deckCards.oracleId })
       .from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
-    const [version] = await tx.select().from(deckVersions)
-      .where(and(eq(deckVersions.id, versionId), eq(deckVersions.deckId, deckId)));
-    if (!version) throw new Error("version not found");
+    // Read under the lock, and compared rather than fetched by id: the question
+    // is not whether the caller's version exists but whether it is still the
+    // one the draft sits on top of.
+    const newest = await newestVersion(deckId, tx);
+    if (!newest || newest.id !== versionId) return "moved";
 
     const rows = await tx.select({
       oracleId: deckVersionCards.oracleId,
@@ -233,6 +248,7 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
         })),
       );
     }
+    return "restored";
   });
 }
 
