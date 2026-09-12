@@ -110,6 +110,27 @@ describe("useLiveQuery", () => {
     expect(window.history.state).toEqual({ marker: 1 });
   });
 
+  // The first-mount case, and it is the router's actual behaviour: Next patches
+  // both methods inside the app router's mount effect, and effects run child
+  // before parent — so this store's wrapper is displaced a moment after it is
+  // installed. The macrotask re-arm closes that before anything can navigate.
+  it("re-arms after a patch that lands during the same mount", async () => {
+    const shown = await mountProbe();
+    const displaced = window.history.pushState;
+    window.history.pushState = function routerPatch(this: History, state, title, url) {
+      return displaced.call(this, state, title, url ?? null);
+    };
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    act(() => {
+      window.history.pushState(null, "", "/commanders?c=g");
+    });
+
+    expect(shown()).toBe("c=g");
+  });
+
   // Two patchers cannot both be outermost, and the router installs its own at its
   // own moment. A wrapper displaced by a later patch is re-armed on the next
   // read, which restores the order rather than fighting for it.

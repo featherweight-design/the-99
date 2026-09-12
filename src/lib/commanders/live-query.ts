@@ -94,17 +94,26 @@ function wrapHistory() {
 /**
  * Re-arms the fallback if something has patched over it.
  *
- * Two patchers cannot both be outermost, and the router's is installed at its own
- * moment: if Next re-intercepts `pushState` after this module did, its assignment
- * replaces this wrapper and notifications stop. Wrapping whatever is installed
- * NOW restores the order — this delegates to the router's wrapper, the router's
- * still runs, and nothing recurses, because each wrapper closes over the function
- * it found rather than over a live lookup.
+ * Two patchers cannot both be outermost, and Next's goes on SECOND on a first
+ * mount — not hypothetically. It patches both methods inside the app router's
+ * own `useEffect` (`next/dist/client/components/app-router.js`), and effects run
+ * child before parent, so a subscription made while this component commits is
+ * already installed when that effect assigns over it. Wrapping whatever is
+ * installed NOW restores the order: this delegates to the router's wrapper, the
+ * router's still runs first, and nothing recurses, because each wrapper closes
+ * over the function it found rather than over a live lookup.
  *
- * Called from the store's own read, which runs on every render of every
- * subscriber: it is one identity comparison, and it means a displaced wrapper
- * costs at most the renders between the patch and the next one, rather than
- * every navigation for the life of the page.
+ * Called from two places, and it needs both. From `subscribe`, on a macrotask,
+ * which lands after the mount effects that displace it — that is the first-mount
+ * case, closed before any navigation can happen. And from the store's read, which
+ * runs on every render of every subscriber, for a patch installed later still: one
+ * identity comparison, and a displaced wrapper then costs the renders between the
+ * patch and the next one rather than every navigation for the life of the page.
+ *
+ * What neither closes is a patch installed after the last render AND followed by a
+ * navigation before the next one. That is a fallback's fallback — it needs a
+ * browser with no Navigation API, and a router that re-patches mid-session — and
+ * its cost is the behaviour this file was written to improve, one render late.
  */
 function ensureObserving() {
   if (ours.size === 0) return; // the Navigation API is carrying this.
@@ -126,8 +135,17 @@ function subscribe(listener: () => void): () => void {
     // URL — and it is what the fallback leans on for a traversal.
     window.addEventListener("popstate", notify);
     const navigation = navigationApi();
-    if (navigation) navigation.addEventListener("currententrychange", notify);
-    else wrapHistory();
+    if (navigation) {
+      navigation.addEventListener("currententrychange", notify);
+    } else {
+      wrapHistory();
+      // On a macrotask, because the router patches these same two methods in its
+      // own mount effect and effects run child before parent: this subscription
+      // is in place before that assignment, so the wrapper installed a moment ago
+      // has already been displaced by the time this runs. Nothing can navigate in
+      // between.
+      setTimeout(ensureObserving, 0);
+    }
   }
   return () => listeners.delete(listener);
 }
