@@ -100,11 +100,64 @@ const READ_ART_LAYERS_PER_BAND = `() => {
   return [...bands.values()];
 }`;
 
+/** Split a computed gradient into its TOP-LEVEL stops. Shared as a string
+    because every reader in this file travels to the browser as one, and this is
+    the third time the same parse has been got wrong: a `[^()]*` pattern cannot
+    cross the nested `var(--bg)` inside each `color-mix(...)`, and splitting the
+    whole value on commas at depth 0 never splits at all, because the gradient's
+    own parentheses put its separators at depth 1. The wrapper comes off first,
+    then commas at depth 0 are the stop boundaries. */
+const PARSE_STOPS = `
+  const parseStops = (image) => {
+    const inner = image.replace(/^[^(]*\\(/, '').replace(/\\)\\s*$/, '');
+    const parts = [];
+    let depth = 0;
+    let current = '';
+    for (const ch of inner) {
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === ',' && depth === 0) {
+        parts.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    parts.push(current);
+    return parts
+      .map((part) => {
+        // Both units. A vertical ramp computes to percentages; the portrait's
+        // horizontal scrim is emitted in px, so a percent-only pattern dropped
+        // every one of its stops and reported an empty list as a failing band on
+        // every viewport. The unit travels with the figure — the hold check
+        // compares against a percentage and has to know which it was handed.
+        const position = part.match(/([\\d.]+)(%|px)\\s*$/);
+        if (!position) return null;
+        // Both serialisations. A browser computes a color-mix to
+        // oklab with a slash alpha, but falls back to
+        // rgba for stops that survive in sRGB, where the alpha
+        // is the fourth component and no slash appears. Reading only the slash
+        // form returned alpha 1 for every rgba stop, which makes a clear stop
+        // look opaque and fails a correct band for veiling its own top.
+        const slashed = part.match(/\\/\\s*([\\d.]+)\\s*\\)/);
+        const rgba = part.match(/rgba\\(\\s*[\\d.]+\\s*,\\s*[\\d.]+\\s*,\\s*[\\d.]+\\s*,\\s*([\\d.]+)\\s*\\)/);
+        const alpha = slashed ?? rgba;
+        return {
+          alpha: alpha ? Number(alpha[1]) : 1,
+          position: Number(position[1]),
+          unit: position[2],
+        };
+      })
+      .filter(Boolean);
+  };
+`;
+
 // The 148 band's two scrims, as the browser computes them. JSDOM applies no CSS,
 // so this is the only place the ruling is answerable: one vertical ramp at both
 // widths, and a horizontal scrim that leaves the portrait alone until the
 // fade-out starts.
 const READ_148_SCRIMS = `() => {
+  ${PARSE_STOPS}
   const band = document.querySelector('.discovery-band, .rec-band');
   if (!band) return null;
   return [...band.querySelectorAll('.art-wash-scrim')].map((s) => {
@@ -119,23 +172,17 @@ const READ_148_SCRIMS = `() => {
       // beside it keeps its own 90deg.
       ramp: /^linear-gradient\\((?!\\s*[\\d.-]+deg)/.test(image),
       horizontal: /^linear-gradient\\(\\s*90deg/.test(image),
+      stops: parseStops(image),
     };
   });
 }`;
 
-/** The first two colour stops of the horizontal scrim, which this round drove to
-    zero alpha: the portrait carries no wash at all until the crop starts fading
-    out into the row. A non-zero alpha here is the lift silently reverting.
-
-    Matched on the `/ 0)` alpha rather than on `rgba(`: a `color-mix(in oklab, …)`
-    computes to an `oklab()` colour, and the browser only falls back to `rgba()`
-    for stops that survive in sRGB. */
-const CLEAR_STOPS = /\/\s*0\)\s*\S+,\s*\S+\(\s*[^)]*\/\s*0\)/;
 
 /** A cover scrim's stops, as `{ alpha, position }`, read off the computed value.
     An omitted `/ alpha` is alpha 1 — the browser drops it, exactly as it drops a
     gradient's default 180deg. */
 const READ_COVER_STOPS = `(edge) => {
+  ${PARSE_STOPS}
   // Laid-out bands only. The commander detail hero's band is wrapped in
   // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
   // selector while drawing nothing — counting it would report a phone-only
@@ -144,16 +191,226 @@ const READ_COVER_STOPS = `(edge) => {
     .filter((s) => s.getClientRects().length)
     .map((s) => {
       const image = getComputedStyle(s).backgroundImage;
-      const stops = image.match(/[a-z-]+\\([^()]*\\)\\s+[\\d.]+%/g) ?? [];
-      return stops.map((stop) => {
-        const alpha = stop.match(/\\/\\s*([\\d.]+)\\)/);
-        return {
-          alpha: alpha ? Number(alpha[1]) : 1,
-          position: Number(stop.match(/([\\d.]+)%$/)[1]),
-        };
-      });
+      return parseStops(image);
     });
 }`;
+
+
+/** Every band that has taken a stated height, with the ramp it draws. Selected by
+    `data-art-wash-band` on the wash's own root rather than by a scrim class: the
+    two strategies draw different scrims, so keying this to `-cover` would stop
+    covering `left-portrait` the moment those rows migrate — a check that goes
+    quiet is worse than one that fails. The attribute is absent on a legacy band,
+    which is what makes the census a countdown rather than a guess.
+
+    The ramp read is the LAST scrim in the root, which is the vertical one under
+    both strategies: `cover` draws one, and `left-portrait` draws its horizontal
+    scrim first and its ramp second. */
+const READ_STATED_BANDS = `() => {
+  ${PARSE_STOPS}
+  return [...document.querySelectorAll('[data-art-wash-band]')]
+    .filter((root) => root.getClientRects().length)
+    .map((root) => {
+      const scrims = [...root.querySelectorAll('.art-wash-scrim')]
+        .filter((s) => getComputedStyle(s).display !== 'none');
+      const s = scrims.at(-1);
+      // Counted, not just read: reading `.at(-1)` alone passes a band that has
+      // grown a SECOND vertical ramp under a valid last one, and two ramps over
+      // one band is twice the darkening the round settled.
+      // Same definition the row reader uses: the vertical ramp is the gradient
+      // that names no angle at all, because the browser drops the default 180deg.
+      const verticals = scrims.filter((s) =>
+        /^linear-gradient\((?!\s*[\d.-]+deg)/.test(getComputedStyle(s).backgroundImage),
+      ).length;
+      const image = s ? getComputedStyle(s).backgroundImage : '';
+      const stops = parseStops(image);
+      return {
+        declared: root.getAttribute('data-art-wash-band') + 'px',
+        labelAtPx: root.hasAttribute('data-art-wash-label-at')
+          ? Number(root.getAttribute('data-art-wash-label-at'))
+          : null,
+        laid: Math.round(root.getBoundingClientRect().height),
+        // Read off the primitive's own marker, never inferred from the scrims.
+        // A band that draws no ramp BY INTENT and a band that lost its ramp are
+        // both one 90deg scrim, so inferring would have classified the second as
+        // the first and skipped every hold check on exactly the regression these
+        // checks exist to catch.
+        ramped: !root.hasAttribute('data-art-wash-flat'),
+        verticals,
+        stops,
+      };
+    });
+}`;
+
+/** THE PLATE, per control. The target and the drawn box are two elements — a
+    44px plate would be a panel and a 26px button would miss the touch floor — so
+    both are measured, and the plate's own background is read resolved: an
+    `oklab()` with an alpha is the translucent mix this round replaced. */
+const READ_PLATES = `() => {
+  return [...document.querySelectorAll('[aria-label="View card details"]')]
+    .filter((b) => b.getClientRects().length)
+    .map((b) => {
+      const box = b.getBoundingClientRect();
+      const plate = b.firstElementChild;
+      const p = plate ? getComputedStyle(plate) : null;
+      const pb = plate ? plate.getBoundingClientRect() : null;
+      // The alpha that actually reaches the crop, not the one the plate declares.
+      // Its own colour can be opaque while an ancestor's opacity composites it —
+      // which is how a pending fetch put this icon back on unscrimmed art — so
+      // every opacity from the plate up to the band is folded in.
+      let composited = 1;
+      const declared = p ? p.backgroundColor : '';
+      const alpha = /(?:rgba|\\/)/.test(declared) && /[\\d.]+\\s*\\)$/.test(declared)
+        ? Number(declared.match(/([\\d.]+)\\s*\\)$/)[1])
+        : 1;
+      for (let el = plate; el && el !== document.body; el = el.parentElement) {
+        composited *= Number(getComputedStyle(el).opacity || 1);
+      }
+      return {
+        target: [Math.round(box.width), Math.round(box.height)],
+        drawn: pb ? [Math.round(pb.width), Math.round(pb.height)] : null,
+        fill: declared,
+        alpha: alpha * composited,
+        border: p ? p.borderTopWidth : '',
+        text: (b.textContent ?? '').replace('⛶', '').trim(),
+      };
+    });
+}`;
+
+/** Does the reader's own tap reach the control, or does something eat it? The
+    plate is inset well inside every band, but its 44px target is not — so the
+    points that matter are the target's own edges, and the answer is whatever
+    `elementFromPoint` returns there.
+
+    EDGE MIDPOINTS, not corners. A corner is the one point that a rounded
+    ancestor legitimately clips: `commander-desktop` sits inside a
+    `rounded-[14px] overflow-hidden` frame, so its bottom-left corner is outside
+    the curve by construction and asserting it would fail a correct build. A
+    midpoint is never inside a corner radius, and it is where a thumb actually
+    lands — while a sibling drawn over the control blocks midpoints just as
+    readily, which is the defect this exists to catch (#534, one control over).
+
+    Counting plates proves they paint; this is the only check that proves one can
+    be pressed. */
+const READ_PLATE_HIT = `() => {
+  return [...document.querySelectorAll('[aria-label="View card details"]')]
+    .filter((b) => b.getClientRects().length)
+    .map((b) => {
+      const r = b.getBoundingClientRect();
+      const probe = (x, y) => {
+        const el = document.elementFromPoint(x, y);
+        return el ? (el === b || b.contains(el) ? 'self' : 'blocked') : 'nothing';
+      };
+      return {
+        centre: probe(r.left + r.width / 2, r.top + r.height / 2),
+        top: probe(r.left + r.width / 2, r.top + 1),
+        bottom: probe(r.left + r.width / 2, r.bottom - 1),
+        left: probe(r.left + 1, r.top + r.height / 2),
+        right: probe(r.right - 1, r.top + r.height / 2),
+      };
+    });
+}`;
+
+/** Every commander thumb on the page, as drawn. Five renders each invented one of
+    these, at five geometries and three ring alphas; the convergence is its own
+    change, and this reads what is there so the before and after are the same
+    measurement. The ring comes off the computed shadow rather than a class,
+    because three of the five set it inline. */
+const READ_THUMBS = `() => {
+  return [...document.querySelectorAll('span[aria-hidden="true"], div')]
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      // A card-face thumb, not a pip or a spacer: the 63/88 frame is the shape
+      // this looks for, at anything bigger than an icon and smaller than a page.
+      const ratio = r.height ? r.width / r.height : 0;
+      return r.width >= 24 && r.width <= 120 && ratio > 0.6 && ratio < 0.85;
+    })
+    .map((el) => {
+      const s = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return {
+        box: [Math.round(r.width), Math.round(r.height)],
+        radius: s.borderTopLeftRadius,
+        shadow: s.boxShadow,
+        position: s.backgroundPosition,
+        hasArt: s.backgroundImage.includes('url('),
+      };
+    });
+}`;
+
+/** THE PLATE and the thumbs, on whatever surface is loaded. A routine rather than
+    an inline block, because the controls this measures live on the commander and
+    deck DETAIL pages while the band checks live on the lists — and an earlier
+    draft ran these inside the list loop alone, where the control list is always
+    empty and every assertion under it passes without executing. A check that
+    cannot fail is worse than no check. */
+async function checkChrome(page, label, note) {
+  const plates = await page.evaluate(`(${READ_PLATES})()`);
+  if (plates.length) {
+    note(`${label}: ${plates.length} card-details control(s) at ${[...new Set(plates.map((p) => p.drawn?.join("×")))].join(", ")}`);
+  }
+  for (const plate of plates) {
+    if (plate.target[0] < 44 || plate.target[1] < 44) {
+      note(`  FAIL control target ${plate.target.join("×")} under the 44px floor`);
+    }
+    if (!plate.drawn || plate.drawn[0] !== 26 || plate.drawn[1] !== 26) {
+      note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26×26`);
+    }
+    // Opaque is the whole argument for deleting the top scrim: a translucent plate
+    // passes the brightest pixel of an unscrimmed crop through to the glyph. A
+    // resolved colour carrying an alpha under 1 is that mix — including the case
+    // where a parent's own opacity is what composites it.
+    if (plate.alpha < 0.999) note(`  FAIL plate is translucent: ${plate.fill} at ${plate.alpha}`);
+    if (Number.parseFloat(plate.border) < 1) note(`  FAIL plate draws no hairline: ${plate.border}`);
+    if (plate.text) note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
+  }
+
+  const hits = await page.evaluate(`(${READ_PLATE_HIT})()`);
+  for (const hit of hits) {
+    // Every edge midpoint, not just the centre: the target is 9px further out
+    // than the drawn box and every band it sits on is `overflow-hidden`, so an
+    // overhang is clipped out of its own hit area without changing one pixel of
+    // what a screenshot shows.
+    for (const [where, result] of Object.entries(hit)) {
+      if (result !== "self") {
+        note(`  FAIL card-details control unreachable at its ${where}: ${result}`);
+      }
+    }
+  }
+
+  // The thumbs, as a census rather than as assertions: the five renders that draw
+  // one still disagree about every dimension of it, and asserting a settled box
+  // before the change that settles it would make this probe fail against its own
+  // build. The boxes are printed so the convergence has a before.
+  const thumbs = await page.evaluate(`(${READ_THUMBS})()`);
+  if (thumbs.length) {
+    note(`${label}: ${thumbs.length} commander thumb(s) at ${[...new Set(thumbs.map((t) => t.box.join("×")))].join(", ")}`);
+  }
+}
+
+/** Every reader in this file travels to the browser as a template literal, so a
+    regex written with single escapes loses them before the browser ever parses
+    it: `\(` becomes `(` and `\s` becomes `s`, and the generated function throws
+    a SyntaxError that surfaces as a mysteriously empty result. Parsing each one
+    here turns that into a loud failure at startup rather than a silent gap in
+    coverage — it is the same class of bug as a check that cannot fail. */
+const READERS = {
+  READ_WASHES,
+  READ_ART_LAYERS_PER_BAND,
+  READ_148_SCRIMS,
+  READ_COVER_STOPS,
+  READ_STATED_BANDS,
+  READ_THUMBS,
+  READ_PLATES,
+  READ_PLATE_HIT,
+};
+for (const [name, source] of Object.entries(READERS)) {
+  try {
+    new Function(`return (${source})`);
+  } catch (error) {
+    throw new Error(`${name} does not parse as a browser function: ${error.message}`);
+  }
+}
 
 // The scrims outlive the art under `forced-colors`, so they are what proves the
 // band kept its height when the photograph left.
@@ -169,6 +426,10 @@ const ROUTES = [
   // report named them.
   ["discover", "/discover"],
 ];
+
+/** The four bands this round settles. A stated band outside the set is either a
+    fifth number nobody decided or an aspect ratio that survived the migration. */
+const SETTLED_BANDS = [168, 208, 248, 288];
 
 const VIEWPORTS = [
   ["mobile", 375, 812],
@@ -244,6 +505,100 @@ try {
           note(`  FAIL top cover scrim climbs at the foot: ${prior.alpha} to ${last.alpha}`);
         }
       }
+      // The commander-image round's census. A top-labelled band is now a band
+      // that has not migrated yet, so the count is progress rather than a
+      // failure — until the last one goes, at which point the top scrim, its
+      // `labelEdge` prop and its stylesheet override are all deletable and this
+      // line becomes the check that they stayed deleted.
+      note(`  top-labelled bands still drawing: ${tops.length}`);
+
+      // A stated band owns its height and labels at its foot. The ramp is the
+      // round's load-bearing change and it is checked as arithmetic, not as a
+      // prop: the hold has to sit where the block's top edge is, and a px
+      // `labelAt` pushed through a percentage signature lands it at less than
+      // half the band instead.
+      const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
+      note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
+      // An empty census is not a pass. Every wash laid out on this route has to
+      // be a STATED band once its surface has migrated, so the check is the
+      // count of bands that are not — which needs no per-route table and cannot
+      // go quiet when a migration disappears or reverts to the legacy arm.
+      // BANDS, not scrim layers: a `left-portrait` band draws a horizontal scrim
+      // and a vertical ramp, so counting layers reported one unmigrated band as
+      // two and inflated the countdown. Each scrim's own root is the band, so the
+      // distinct roots are the count.
+      const unstated = await page.evaluate(
+        `new Set(
+          [...document.querySelectorAll('.art-wash-scrim')]
+            .filter((s) => s.getClientRects().length)
+            .filter((s) => !s.closest('[data-art-wash-band]'))
+            .map((s) => s.parentElement),
+        ).size`,
+      );
+      if (unstated) {
+        note(`  ${unstated} wash layer(s) on an unstated band — surfaces still to migrate`);
+      }
+      for (const band of stated) {
+        if (!SETTLED_BANDS.some((h) => `${h}px` === band.declared)) {
+          note(`  FAIL band declares ${band.declared || "no height"}, outside the settled set`);
+        }
+        if (Math.abs(band.laid - Number.parseInt(band.declared, 10)) > 1) {
+          note(`  FAIL band declares ${band.declared} and lays out at ${band.laid}px`);
+        }
+        if (band.ramped && band.verticals !== 1) {
+          note(
+            `  FAIL ${band.declared} band paints ${band.verticals} vertical ramps, expected exactly 1`,
+          );
+        }
+        if (!band.ramped) {
+          // A flat band: its ink starts past the portrait's flat stop and stands
+          // on the row's own ground, so there is no ramp to measure — but it
+          // has to draw NONE, not merely be excused from the check. The marker
+          // is a declaration, and a band that declares itself flat while still
+          // painting a ramp is darkening art nobody decided to darken.
+          if (band.verticals !== 0) {
+            note(
+              `  FAIL ${band.declared} band declares itself flat and paints ${band.verticals} vertical ramps`,
+            );
+          } else {
+            note(`  ${band.declared} band is flat — no ramp to check`);
+          }
+          continue;
+        }
+        if (band.stops.length !== 4) {
+          note(`  FAIL stated band computed ${band.stops.length} stops, expected 4`);
+          continue;
+        }
+        if (band.stops[0].alpha !== 0 || band.stops[1].alpha !== 0) {
+          note(`  FAIL stated band veils its top: ${JSON.stringify(band.stops.slice(0, 2))}`);
+        }
+        if (band.stops[3].alpha !== band.stops[2].alpha) {
+          note(`  FAIL stated band does not hold to its foot: ${JSON.stringify(band.stops.slice(2))}`);
+        }
+        // The hold compared to the exact figure its own `labelAtPx` implies,
+        // rather than to a threshold. A generic "below half" test passes the very
+        // regression it was written for: 57 or 83 read as a percentage on a 288
+        // band lands at 57% or 83%, both perfectly ordinary-looking numbers, and
+        // only `(band − at) / band` tells them from the 80% and 71% expected.
+        const at = band.labelAtPx;
+        if (at === null) {
+          note(`  FAIL stated band publishes no label-at figure to check its hold against`);
+        } else {
+          const height = Number.parseInt(band.declared, 10);
+          const expected = Math.round(((height - at) / height) * 100);
+          if (band.stops[2].unit !== "%") {
+            // A px hold is not comparable to a percentage, and silently reading
+            // 46px as 46% is this round's own bug moved into the probe.
+            note(
+              `  FAIL ${band.declared} band holds at ${band.stops[2].position}${band.stops[2].unit}, expected a percentage`,
+            );
+          } else if (Math.abs(band.stops[2].position - expected) > 1) {
+            note(`  FAIL ${band.declared} band holds at ${band.stops[2].position}%, expected ${expected}% for a ${at}px block`);
+          }
+        }
+      }
+
+      await checkChrome(page, `${vpName} ${routeName}`, note);
     }
 
     // Ratification 2 — the 148 band's vertical damping, at this viewport. This
@@ -266,14 +621,26 @@ try {
       // band to protect its bottom third.
       if (ramps.length !== 1) note(`  FAIL expected exactly one vertical ramp to paint`);
       if (horizontals.length !== 1) note(`  FAIL expected exactly one horizontal scrim to paint`);
-      else if (!CLEAR_STOPS.test(horizontals[0].image)) {
-        note(`  FAIL horizontal scrim washes the portrait: ${horizontals[0].image.slice(0, 120)}`);
+      else {
+        // The first two stops BY INDEX, not a pattern anywhere in the gradient:
+        // an unanchored match is satisfied by any later pair of zero-alpha
+        // stops, so a scrim that veils the portrait from 0 and clears further
+        // along passed the very check written to catch it. This round drove
+        // those two to zero — the portrait carries no wash at all until the crop
+        // starts fading into the row — so a non-zero alpha in either is the lift
+        // silently reverting.
+        const first = horizontals[0].stops.slice(0, 2);
+        if (first.length !== 2) {
+          note(`  FAIL horizontal scrim computed ${horizontals[0].stops.length} stops, expected at least 2`);
+        } else if (first.some((stop) => stop.alpha !== 0)) {
+          note(`  FAIL horizontal scrim washes the portrait: ${JSON.stringify(first)}`);
+        }
       }
     }
 
     // Ratification 3 — the bottom-labelled cover ramp, on the commander page the
     // phone draws it for. The band's top runs clear: the only control up there
-    // plates itself to `OVER_ART_PLATE`, so a non-zero alpha in the first two
+    // plates itself opaquely, so a non-zero alpha in the first two
     // stops is the veil this round removed coming back. The link is read off the
     // list rather than written down, so no slug is hard-coded here.
     const slug = await page.evaluate(
@@ -295,6 +662,8 @@ try {
       if (vpName === "desktop" && bottoms.length !== 0) {
         note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
       }
+      await checkChrome(page, `${vpName} ${slug}`, note);
+
       for (const stops of bottoms) {
         const clear = stops.slice(0, 2).every((s) => s.alpha === 0);
         if (!clear) {
@@ -304,6 +673,45 @@ try {
           note(`  FAIL bottom cover scrim does not hold to the foot: ${JSON.stringify(stops.slice(-2))}`);
         }
       }
+    }
+
+    // The deck header, which is the other surface drawing this control — and the
+    // one whose `Card details` chip shipped visible and dead (#534), so its hit
+    // test is the one with a history. The link is read off the list rather than
+    // written down, so no deck id is hard-coded.
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    // Every deck link, not the first one. `/decks/new` is a link on this page too
+    // and would take the probe to the creation picker; and a deck whose commander
+    // has no crop draws no control AT ALL by ruling, so the first real deck can
+    // legitimately have none. Walk them until one shows the control, which is
+    // what `probe-commander-card-details.mjs` already does.
+    const deckHrefs = await page.evaluate(
+      `[...document.querySelectorAll('a[href^="/decks/"]')]
+        .map((a) => a.getAttribute('href'))
+        .filter((href) => /^\\/decks\\/[^/]+$/.test(href) && href !== '/decks/new')`,
+    );
+    let walkedADeck = false;
+    // Every link, not the first five: a run whose earliest decks all have
+    // crop-less commanders would have concluded that no deck page draws the
+    // control, which is a false failure about the fixture rather than the build.
+    for (const deckHref of deckHrefs) {
+      await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(800);
+      const deckPlates = await page.evaluate(`(${READ_PLATES})()`);
+      if (!deckPlates.length) {
+        note(`${vpName} ${deckHref}: no card-details control — this commander has no crop`);
+        continue;
+      }
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-deck.png`, fullPage: false });
+      await checkChrome(page, `${vpName} ${deckHref}`, note);
+      const deckBands = await page.evaluate(`(${READ_STATED_BANDS})()`);
+      note(`${vpName} ${deckHref}: ${deckBands.length} stated band(s)`);
+      walkedADeck = true;
+      break;
+    }
+    if (!walkedADeck) {
+      note(`  FAIL no deck page drew a card-details control — the deck header's chrome goes unchecked`);
     }
 
     // The two accessibility mechanisms, on the surface that carries every case.

@@ -3,13 +3,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
-  type Band,
   bottomScrimStops,
   COVER_ART_OPACITY,
+  PORTRAIT_HOLD,
   COVER_SCRIM_STOPS,
-  OVER_ART_PLATE,
-  PORTRAIT_BANDS,
-  PORTRAIT_RATIO,
+  legacyBottomScrimStops,
+  PORTRAITS,
   type ScrimStops,
 } from "../../components/ui/art-wash";
 import { contrast, parseHex } from "./color";
@@ -54,12 +53,48 @@ const TOP_AT_TITLE = alphaAt(COVER_SCRIM_STOPS.top, 0); // 0.78 — the top of t
     subtitle: both ends were held while the ink between them sat in the trough. */
 const TOP_AT_SUBTITLE = alphaAt(COVER_SCRIM_STOPS.top, COVER_SCRIM_STOPS.top[1][1]);
 
-/** The two bottom-labelled surfaces, at the `labelAt` each one passes. Asserting
-    a shared constant was the estimate this round removed: the floor has to hold
-    at each surface's own block edge, so each surface is measured. */
-const BOTTOM_SURFACES: readonly (readonly [string, number])[] = [
-  ["commander detail hero", 55],
+/** LEGACY — the two surfaces still expressing their block as a percentage,
+    because each still sizes itself from an `aspect-ratio` and a band with no
+    height in px cannot state a block in px. Both migrate to `labelAtPx`.
+    @deprecated retires with `detail.tsx` and `spine-mobile.tsx`. */
+const LEGACY_BOTTOM_SURFACES: readonly (readonly [string, number])[] = [
+  ["commander detail mobile", 55],
   ["deck spine, phone", 57],
+];
+
+/** Every band this round states, as `[surface, labelAtPx, band]`. Asserting a
+    shared constant was the estimate the round removed — the floor has to hold at
+    each surface's own block edge — and asserting a percentage was the unit it
+    removed. Each figure is the block's MEASURED height at its reference width,
+    which is the distinction that matters: a block costed at 57px whose title
+    wraps to three lines is 83px, and a ramp derived from 57 holds where that
+    block ends rather than where it starts. */
+const STATED_BANDS: readonly {
+  surface: string;
+  labelAtPx: number;
+  band: number;
+  /** The strategy, because the ground and the hold both follow from it: a
+      `cover` band fades its art to 0.8 and holds at 73, and a `left-portrait`'s
+      sharp layer draws at 0.92 and holds at 78. Measuring a portrait row through
+      the cover's ground passes at a contrast the surface never has. */
+  strategy: "cover" | "left-portrait";
+  /** The portrait a `left-portrait` row draws, for composing its own ground. */
+  portrait?: keyof typeof PORTRAITS;
+}[] = [
+  // The SETTLED figures, from the verdict's §5c — not the handoff's estimates,
+  // five of which describe blocks that do not ship. This suite is about the ramp
+  // function rather than about which surface has migrated, so it holds the
+  // numbers the round ends with from the moment the function exists.
+  { surface: "home hero", labelAtPx: 46, band: 288, strategy: "cover" },
+  { surface: "commander detail mobile", labelAtPx: 109, band: 288, strategy: "cover" },
+  { surface: "deck spine, phone", labelAtPx: 90, band: 288, strategy: "cover" },
+  { surface: "deck tile", labelAtPx: 46, band: 248, strategy: "cover" },
+  // The two rows differ: one wash under two breakpoint subtrees on each, and the
+  // desktop block is the taller — discovery's is its rank column, the owned
+  // lane's its identity column with a type line under the name.
+  { surface: "discovery row", labelAtPx: 56, band: 208, strategy: "left-portrait", portrait: 285 },
+  { surface: "owned-lane row", labelAtPx: 63, band: 208, strategy: "left-portrait", portrait: 285 },
+  { surface: "resume row", labelAtPx: 53, band: 168, strategy: "cover" },
 ];
 
 const over = (fg: string, bg: string, alpha: number): string => {
@@ -75,15 +110,22 @@ const over = (fg: string, bg: string, alpha: number): string => {
 const washGround = (bg: string, scrimAlpha: number): string =>
   over(bg, over(BRIGHTEST_ART, bg, ART_ALPHA), scrimAlpha);
 
-/** The horizontal scrim a `left-portrait` band draws, as `alphaAt` pairs. Its
+/** The horizontal scrim a `left-portrait` portrait draws, as `alphaAt` pairs. Its
     positions are pixels rather than percentages — the portrait is a fixed column
-    beside type, not a fraction of a row whose width nobody controls. */
-const horizontalStops = (band: Band): ScrimStops => {
-  const b = PORTRAIT_BANDS[band];
+    beside type, not a fraction of a row whose width nobody controls.
+
+    Keyed by the portrait's width, as the shipped table now is: every column in it
+    is a function of that width, and one band draws two portraits on the one
+    surface whose shape was chosen before its height. */
+// `number`, not `PortraitWidth`: this suite still measures the two aspect-ratio
+// bands' portraits, which are deliberately outside the stated set — a stated band
+// may not ask for 203 because that row carries a hand-written ramp.
+const horizontalStops = (width: keyof typeof PORTRAITS): ScrimStops => {
+  const b = PORTRAITS[width];
   return [
     [0, 0],
-    [0, b.clearTo],
-    [b.sharpAlpha, Math.round(band * PORTRAIT_RATIO)],
+    [0, b.clearTo ?? Math.round((b.maskEnd / 100) * width)],
+    [b.sharpAlpha, width],
     [100, b.flatStop],
   ];
 };
@@ -102,16 +144,16 @@ const horizontalStops = (band: Band): ScrimStops => {
     worst case rather than the typical one, which is the point. */
 const portraitGround = (
   theme: string,
-  band: Band,
+  width: keyof typeof PORTRAITS,
   x: number,
   verticalAlpha: number,
   plate = 0,
 ): string => {
-  const b = PORTRAIT_BANDS[band];
+  const b = PORTRAITS[width];
   const ground = token(theme, b.ground.replace("--", ""));
   let g = ground;
-  if (x <= Math.round(band * PORTRAIT_RATIO)) g = over(BRIGHTEST_ART, g, b.sharpOpacity);
-  g = over(ground, g, alphaAt(horizontalStops(band), x));
+  if (x <= width) g = over(BRIGHTEST_ART, g, b.sharpOpacity);
+  g = over(ground, g, alphaAt(horizontalStops(width), x));
   g = over(token(theme, "bg"), g, verticalAlpha);
   return plate ? over(token(theme, "bg"), g, plate) : g;
 };
@@ -132,7 +174,10 @@ const portraitGround = (
     value can lift it — that is a token question, not a wash one. */
 const PORTRAIT_INK: readonly {
   surface: string;
-  band: Band;
+  portrait: keyof typeof PORTRAITS;
+  /** The band the surface draws that portrait on, which the vertical ramp is a
+      percentage of. */
+  band: number;
   x: number;
   /** Percent down the band, for the vertical ramp. */
   y: number;
@@ -148,38 +193,24 @@ const PORTRAIT_INK: readonly {
   // foot 24px off the band's own. Phone: the name starts at 39px and its block
   // spans 65%–92%. Both are `items-end`, so the phone's block sits inside the
   // desktop's and the four samples below bound every 148 row at either width.
-  { surface: "discovery and rec rows, block top", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 55 },
-  { surface: "discovery and rec rows, block foot", band: 148, x: PORTRAIT_BANDS[148].clearTo, y: 92 },
+  { surface: "discovery and rec rows, block top", portrait: 203, band: 148, x: 118, y: 55 },
+  { surface: "discovery and rec rows, block foot", portrait: 203, band: 148, x: 118, y: 92 },
   // The resume row's type starts at the 116px inset, past the 99px portrait but
   // short of the 138px flat stop — so it stands on the row's own ground under a
   // scrim that has not closed to opaque yet, which is the thinnest ground any
   // ink on that band gets.
-  { surface: "resume row", band: 72, x: 116, y: 0 },
-  // The deck spine's `⛶ Card details` pill: 16px in, 14px off the foot, 26px
-  // tall, and the one thing on that band whose ink sits over the crop. Its band
-  // no longer draws a vertical ramp at all — the pill's own plate is what holds
-  // it up, which is why `verticalAlphaAt` returns 0 here and these still pass.
-  // Both its spans are `--fg`.
-  {
-    surface: "deck spine pill, top",
-    band: 168,
-    x: 16,
-    y: 76,
-    plate: OVER_ART_PLATE / 100,
-    tokens: ["fg"],
-  },
-  {
-    surface: "deck spine pill, foot",
-    band: 168,
-    x: 120,
-    y: 92,
-    plate: OVER_ART_PLATE / 100,
-    tokens: ["fg"],
-  },
+  { surface: "resume row", portrait: 99, band: 72, x: 116, y: 0 },
+  // The deck spine's `⛶ Card details` control: 16px in, 14px off the foot, and
+  // the one thing on that band whose ink sits over the crop. THE PLATE is opaque
+  // now, so `plate: 1` is not a shortcut — it is the whole argument for deleting
+  // the top scrim, and asserting it here is what proves the control does not
+  // depend on the band underneath it.
+  { surface: "deck spine control, top", portrait: 230, band: 168, x: 16, y: 76, plate: 1, tokens: ["fg"] },
+  { surface: "deck spine control, foot", portrait: 230, band: 168, x: 42, y: 92, plate: 1, tokens: ["fg"] },
 ];
 
-const verticalAlphaAt = (band: Band, y: number): number => {
-  const v = PORTRAIT_BANDS[band].vertical;
+const verticalAlphaAt = (width: keyof typeof PORTRAITS, y: number): number => {
+  const v = PORTRAITS[width].vertical;
   return v ? alphaAt(v, y) : 0;
 };
 
@@ -209,7 +240,7 @@ describe("art wash contrast floor", () => {
       expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
     });
 
-    for (const [surface, labelAt] of BOTTOM_SURFACES) {
+    for (const [surface, labelAt] of LEGACY_BOTTOM_SURFACES) {
       // Both edges of the block, as everywhere else: the ramp holds one value
       // from `labelAt` to the band's foot precisely so the two agree, and it is
       // that hold — not a second climb to 88% — that the sample at 100 proves.
@@ -217,26 +248,80 @@ describe("art wash contrast floor", () => {
         ["top", labelAt],
         ["foot", 100],
       ] as const) {
-        it(`${theme}: bottom-ramp ink clears 4.5:1 at ${surface}'s label ${edge}`, () => {
-          const ground = washGround(token(theme, "bg"), alphaAt(bottomScrimStops(labelAt), y));
+        it(`${theme}: legacy bottom-ramp ink clears 4.5:1 at ${surface}'s label ${edge}`, () => {
+          const ground = washGround(token(theme, "bg"), alphaAt(legacyBottomScrimStops(labelAt), y));
           expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
           expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
         });
       }
     }
 
-    // The `⛶ Card details` chip is the one control that prints where a bottom
-    // ramp is clear, so its plate is measured with no scrim under it at all.
-    // This is the assertion that lets the top of that ramp run at zero.
-    it(`${theme}: the over-art chip's plate clears 4.5:1 with no scrim beneath it`, () => {
-      const ground = over(token(theme, "bg"), washGround(token(theme, "bg"), 0), OVER_ART_PLATE / 100);
+    // Every band this round states, at both edges of its own block. `band` is
+    // required: these stops are gradient positions, so a px `labelAt` through a
+    // one-argument percentage signature would hold the scrim at 46% of a 248px
+    // band where the drawing puts it at 81% — the scrim landing where the round
+    // removes it, which is worse than not moving it at all.
+    for (const { surface, labelAtPx, band, strategy, portrait: width } of STATED_BANDS) {
+      const hold = strategy === "cover" ? undefined : PORTRAIT_HOLD;
+      const stops = bottomScrimStops(labelAtPx, band, hold);
+      for (const [edge, y] of [
+        ["top", Math.round(((band - labelAtPx) / band) * 100)],
+        ["foot", 100],
+      ] as const) {
+        it(`${theme}: ${surface}'s ink clears 4.5:1 at its block's ${edge}`, () => {
+          // The ground each strategy actually composes. A `cover` band is the
+          // crop at 0.8 under the ramp; a portrait row's ink stands on its own
+          // sharp layer at 0.92, out where the horizontal scrim is still clear,
+          // so measuring it through the cover's ground would report a contrast
+          // the surface never has.
+          const ground =
+            width === undefined
+              ? washGround(token(theme, "bg"), alphaAt(stops, y))
+              : portraitGround(
+                  theme,
+                  width,
+                  PORTRAITS[width].clearTo ?? Math.round((PORTRAITS[width].maskEnd / 100) * width),
+                  alphaAt(stops, y),
+                );
+          expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
+          expect(contrast(token(theme, "fg-body"), ground)).toBeGreaterThanOrEqual(4.5);
+        });
+      }
+    }
+
+    // THE PLATE is opaque, so the control it carries stands on the page's own
+    // body contrast and no band underneath it can reach its ink. That is the
+    // argument decision 5 needs in order to be safe: with the top scrim gone the
+    // top edge is the brightest, least controlled region of the crop, and the 72%
+    // mix this replaces still passed 28% of a pure white pixel through.
+    it(`${theme}: a control on THE PLATE clears 4.5:1 with no scrim beneath it`, () => {
+      const ground = over(token(theme, "bg"), washGround(token(theme, "bg"), 0), 1);
+      expect(ground).toBe(token(theme, "bg").toUpperCase());
       expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
     });
 
+    // The one glyph on art with no plate, by the boundary rule: the ramp protects
+    // the label block, plates protect what is above it, and the rename pencil sits
+    // INSIDE the block on ground held at 73%. 3:1 rather than 4.5 because it is an
+    // icon-only control rather than a string.
+    //
+    // BOTH tokens, because the glyph draws `--fg` until the deck spines take
+    // their bands and `--fg-muted` after — and the floor has to hold for either,
+    // or the assertion is measuring a colour the control does not use. Measured,
+    // `--fg-muted` lands at 3.42–3.75 across the six themes, so it is a floor
+    // with no headroom: any lift of `COVER_ART_OPACITY` or drop of the 73% hold
+    // breaks this glyph first.
+    for (const ink of ["fg", "fg-muted"] as const) {
+      it(`${theme}: the unplated rename glyph clears 3:1 inside the block at --${ink}`, () => {
+        const ground = washGround(token(theme, "bg"), 0.73);
+        expect(contrast(token(theme, ink), ground)).toBeGreaterThanOrEqual(3);
+      });
+    }
+
     for (const ink of PORTRAIT_INK) {
       it(`${theme}: ${ink.surface} clears 4.5:1 over the brightest possible portrait`, () => {
-        const vertical = verticalAlphaAt(ink.band, ink.y);
-        const ground = portraitGround(theme, ink.band, ink.x, vertical, ink.plate ?? 0);
+        const vertical = verticalAlphaAt(ink.portrait, ink.y);
+        const ground = portraitGround(theme, ink.portrait, ink.x, vertical, ink.plate ?? 0);
         for (const name of ink.tokens ?? ["fg", "fg-body"]) {
           expect(contrast(token(theme, name), ground)).toBeGreaterThanOrEqual(4.5);
         }
@@ -249,7 +334,17 @@ describe("art wash contrast floor", () => {
     // past the flat stop is the real invariant — a contrast figure there would
     // only be measuring `--fg` against `--bg`.
     it(`${theme}: the deck spine's desktop inset clears the band's flat stop`, () => {
-      expect(alphaAt(horizontalStops(168), 254)).toBe(1);
+      expect(alphaAt(horizontalStops(230), 254)).toBe(1);
+    });
+
+    // The 288 band's two geometries, both of them: a 560px portrait at a 592px
+    // inset above ~1200px of row, and a 340px portrait at a 364px inset below it.
+    // The narrow one is why the table is keyed by width rather than by band — one
+    // band cannot hold two portraits — and its row is the one the 248 band already
+    // ships, so the fallback is a value rather than a gap.
+    it(`${theme}: both desktop deck header insets clear their own flat stop`, () => {
+      expect(alphaAt(horizontalStops(560), 592)).toBe(1);
+      expect(alphaAt(horizontalStops(340), 364)).toBe(1);
     });
   }
 });

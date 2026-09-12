@@ -32,10 +32,11 @@ old path. That ordering is what lets the deck tile's phone overflow gain its
 plate in the same PR that removes the scrim carrying it today — the handoff's highest-severity risk,
 and non-negotiable.
 
-### PR 1 — the record (this PR)
+### PR 1 — the record (#537)
 
 The patched brief, the handoff committed into the tree, the verdict, the plan, and the tracker row
-moved from 📐 to 🟢. No code.
+moved from 📐 to 🟢. No code. Every slice below carries this file, so it names its own PR rather than
+saying "this one".
 
 ### PR 2 — the primitive and THE PLATE
 
@@ -83,10 +84,14 @@ moved from 📐 to 🟢. No code.
    consumers do.
 5. **THE PLATE**: `background: var(--bg)`, `1px solid var(--border-strong)`, radius 7, no
    `backdrop-filter`, icon only, a 26px box centred in a 44px target, `aria-label` required.
-   `full-card-trigger.tsx` loses its words and its `72%` class, and its `hero` placement moves to the
-   bottom corner the block does not reach. `OVER_ART_PLATE` and its assertion are deleted, which
-   takes `full-card-trigger.test.tsx` with it: that file asserts the old top-right placement, the
-   visible words and the 72% class, so it migrates in the same PR. `z-[2]` (PR #534) is kept — it is
+   `full-card-trigger.tsx` loses its words and its `72%` class. Its `hero` placement does NOT move in
+   this slice: which corner the block leaves free is only knowable once the hero's block is one row,
+   and that is the home slice's change, so the move ships there and `hero` keeps `{ top: 56, right:
+   16 }` until then. `OVER_ART_PLATE` and its assertion are deleted, which
+   **migrates `full-card-trigger.test.tsx` in the same PR** — that file asserts the old top-right
+   placement, the visible words and the 72% class, so those three assertions change. Nothing in it is
+   deleted: opening the modal, `aria-busy`, the band tap target and all four placements are
+   load-bearing and stay, with the plate and the icon-only name asserted alongside them. `z-[2]` (PR #534) is kept — it is
    what makes the control clickable rather than merely visible — and the 44px target is pulled 9px
    inward rather than overhung, because every band it sits on is `overflow-hidden` and an overhanging
    target loses that 9px out of its own hit area.
