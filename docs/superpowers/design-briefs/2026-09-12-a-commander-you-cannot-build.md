@@ -85,7 +85,8 @@ not. The vocabulary already exists at both weights:
 
 (Two modules share the name — `src/lib/copy/availability.ts` holds the strings,
 `src/lib/decks/availability.ts` the states. Every citation in this brief is full-path for that
-reason.)
+reason. The `none free` / `also in` wording is **ratified and locked** by #43's R5 readiness, so
+choosing different words for these surfaces is a decision to take deliberately, not a blank page.)
 
 **The hero has room and the row may not.** A split answer is legitimate: name the deck on the
 commander page, mark the row without naming. Design should say which, rather than eng picking by
@@ -97,10 +98,11 @@ what fits.
 
 The row and the hero each need to say one of:
 
-- **Sleeved** — committed decks have spoken for every copy, so `free === 0` and the state is `hard`.
-  Meren and Kotis today, where that is one copy in one deck, but the condition is no free SUPPLY
-  rather than one copy: three copies across three committed decks read the same, and a brew may want
-  one too. Strongest form: building means taking the card out of a finished deck.
+- **Sleeved** — committed claims match the owned copies EXACTLY, so `free === 0` and the state is
+  `hard` (`availabilityState` tests `over` first, so anything past exact lands there instead). Meren
+  and Kotis today, where that is one copy in one deck, but the condition is no free supply rather
+  than one copy: three copies across three committed decks read the same, and a brew may want one
+  too. Strongest form: building means taking the card out of a finished deck.
 - **Wanted by a brew** — a copy is free to build with, and an uncommitted list also names one
   (`soft`). Weaker than sleeved, because a brew is a list rather than a stack of sleeves and the
   player can build today. Note this does NOT mean no copy is sleeved: with two copies, one sleeved
