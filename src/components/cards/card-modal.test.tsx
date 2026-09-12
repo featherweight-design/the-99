@@ -1023,4 +1023,57 @@ describe("CardModal title under an opened-at printing", () => {
     expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
     expect(screen.queryByText("Lonely Sandbar Vista")).toBeNull();
   });
+
+  // The art the cell hands over replaces a REPRESENTATIVE fallback, and the name goes with
+  // it. Where the two URLs already agree the row IS the printing, and clearing its name
+  // took the title off an owned Secret Lair whose art was never in question.
+  it("keeps an owned printing's flavour name when the art it was handed matches", () => {
+    const exact: BrowseCard = {
+      ...card,
+      quantity: 2,
+      printedName: "Lonely Sandbar Vista",
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 2, finishes: { nonfoil: 2 },
+        imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        flavorName: "Lonely Sandbar Vista",
+      }],
+    };
+    render(
+      <CardModal
+        card={exact}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "1500",
+          imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
+  });
+
+  it("drops it when the handed-over art replaces a different image", () => {
+    const fallback: BrowseCard = {
+      ...card,
+      quantity: 2,
+      printedName: "Lonely Sandbar Vista",
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 2, finishes: { nonfoil: 2 },
+        imageUri: "https://cards.scryfall.io/normal/sld-representative.jpg",
+        flavorName: "Lonely Sandbar Vista",
+      }],
+    };
+    render(
+      <CardModal
+        card={fallback}
+        openAtPrinting={{
+          setCode: "SLD", collectorNumber: "1500",
+          imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+  });
 });

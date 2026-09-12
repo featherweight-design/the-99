@@ -369,12 +369,18 @@ export function CardModal({
     const printings = known
       ? (at.imageUri
           ? card.printings.map((p) =>
-              // The flavour name goes with the art it described. `aggregateCollection` can
-              // fill it from the set REPRESENTATIVE when a holding has no `scryfall_id`, so
-              // once the exact art replaces that fallback the name beside it is a different
-              // printing's — and the title would sit over a face it does not name.
+              // The flavour name goes with the art it described — but only when the art
+              // actually changes. `aggregateCollection` fills the name from the set
+              // REPRESENTATIVE when a holding has no `scryfall_id`, and it is that fallback
+              // the exact art replaces; where the two URLs already agree, the row is the
+              // printing and its name is the right one. Clearing unconditionally took the
+              // name off an owned Secret Lair whose art was never in question.
               matchesPreference(p, at)
-                ? { ...p, imageUri: at.imageUri ?? p.imageUri, flavorName: null }
+                ? {
+                    ...p,
+                    imageUri: at.imageUri ?? p.imageUri,
+                    flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
+                  }
                 : p)
           : card.printings)
       : [...card.printings, {
