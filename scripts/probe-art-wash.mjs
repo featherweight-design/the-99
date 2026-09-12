@@ -831,28 +831,56 @@ try {
     if (!candidateCount) {
       note(`  FAIL no candidate row on /decks/new — the picker's selected summary goes unchecked`);
     } else {
-      // Walk candidates until one can PAIR, because the partner slot is the
-      // fifth thumb and it only mounts for a commander with a partner ability.
-      // Clicking the first row reaches the summary and, most of the time, not
-      // the slot — so a census that stopped there reported four of five renders
-      // while claiming all five.
+      // Walk candidates until one can PAIR, and then actually pair it. The
+      // partner slot is the fifth thumb: its EMPTY state mounts once a
+      // partner-capable commander is selected, and its FILLED state — the one
+      // drawing `CommanderThumb` — only after a partner is chosen. Stopping at
+      // the empty slot would have censused four of five renders while the code
+      // claimed all five, and clicking only the first row usually reaches
+      // neither.
+      //
+      // Every candidate, not a capped prefix: a pairable commander can sort
+      // anywhere in the owned list, and a probe that gives up after twelve and
+      // logs a note is a probe that passes while the render goes unverified.
       let pairing = false;
-      for (let i = 0; i < Math.min(candidateCount, 12); i++) {
+      for (let i = 0; i < candidateCount; i++) {
         await candidates.nth(i).click();
-        await page.waitForTimeout(400);
-        pairing = Boolean(
-          await page.evaluate(
-            `document.querySelectorAll('[aria-label^="Add a partner"], [class*="border-dashed"]').length`,
-          ),
+        await page.waitForTimeout(350);
+        const addPartner = page.getByRole("button", { name: /^Add a partner for / });
+        if (!(await addPartner.count())) continue;
+
+        note(`${vpName} the picker: candidate ${i + 1} can pair`);
+        // The empty slot, which keeps the dash and the thumb's own box so the row
+        // does not move when a partner arrives.
+        const emptyPlate = await page.evaluate(
+          `document.querySelectorAll('[class*="border-dashed"][class*="w-[44px]"]').length`,
         );
-        if (pairing) {
-          note(`${vpName} the picker: candidate ${i + 1} can pair — the partner slot is drawn`);
+        if (!emptyPlate) note(`  FAIL the empty partner slot draws no 44×62 dashed plate`);
+
+        await addPartner.click();
+        await page.waitForTimeout(400);
+        const partnerCandidate = page.locator('li button[aria-pressed]').first();
+        if (!(await partnerCandidate.count())) {
+          note(`  FAIL pairing mode offered no partner to choose`);
           break;
         }
+        await partnerCandidate.click();
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: `/tmp/art-wash-${vpName}-picker-paired.png` });
+        const paired = await page.evaluate(`(${READ_THUMBS})()`);
+        const pairedBoxes = new Set(paired.map((t) => t.box.join("×")));
+        note(`${vpName} the picker, partner chosen: ${paired.length} thumb(s) at ${[...pairedBoxes].join(", ")}`);
+        if (!pairedBoxes.has("44×62")) {
+          note(`  FAIL the filled partner slot draws no 44×62 thumb`);
+        }
+        await checkChrome(page, `${vpName} the picker, paired`, note);
+        pairing = true;
+        break;
       }
       if (!pairing) {
-        note(`${vpName} the picker: none of the first ${Math.min(candidateCount, 12)} candidates can pair — the partner slot goes unchecked`);
+        note(`  FAIL none of the ${candidateCount} candidates can pair — the partner slot's two states go unverified`);
       }
+
       await page.waitForTimeout(300);
       await page.screenshot({ path: `/tmp/art-wash-${vpName}-picker-selected.png` });
       const picked = await page.evaluate(`(${READ_THUMBS})()`);
@@ -869,13 +897,6 @@ try {
       if (vpName === "mobile" && boxes.has("64×89")) {
         note(`  FAIL a summary thumb drew on the phone, whose dock is text-only`);
       }
-      // The partner slot mounts only for a commander that can pair, so its
-      // absence is not a failure — but when it is there it is a thumb like any
-      // other, and `checkChrome` asserts it with the rest.
-      const partnerSlot = await page.evaluate(
-        `document.querySelectorAll('[role="group"] [data-commander-thumb], .border-dashed').length`,
-      );
-      note(`  partner slot: ${partnerSlot ? "drawn" : "absent — this commander cannot pair"}`);
       await checkChrome(page, `${vpName} the picker, picked`, note);
     }
     if (!commanderOracleId) {
