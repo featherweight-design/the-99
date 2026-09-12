@@ -527,13 +527,11 @@ export function CollectionBrowser({
           query={filters.search}
           colors={filters.colors}
           totalCount={totalQuantity}
-          onClearAll={() => {
-            updateFilters(
-              { search: "", colors: [], types: [], setCodes: [], availability: [] },
-              "clear-sets",
-            );
-            updateSort("name", DEFAULT_SORT_DIRECTION.name);
-          }}
+          // The same `clearAllFilters` the chassis's Clear uses. This was a
+          // second implementation of the same action that still reset the sort
+          // and announced itself as a set clear — two visible controls with one
+          // name behaving differently.
+          onClearAll={clearAllFilters}
           onKeepSearch={() =>
             updateFilters({
               search: filters.search,

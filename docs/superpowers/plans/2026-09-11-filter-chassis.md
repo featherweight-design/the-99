@@ -381,3 +381,23 @@ than the addition it was on `/decks`, and three things have to be reconciled rat
 **Also in 3b:** `ColourPips` replaces `ColorFilterRow` *and* the mobile Color panel, the `COLOR`
 caption goes with the row that carried it (decision 17), and the five `FilterPanel` mounts take
 `desktopRowMinPx={44}`.
+
+
+---
+
+## One behaviour difference the migration made deliberately, recorded for a copy pass
+
+`ChipRow` drew **one chip per value** — `filters.colors.map(...)`, `types.map(...)`,
+`setCodes.map(...)`, `availability.map(...)` — so five selected sets were five chips.
+`collectionChips` draws **one chip per control**, collapsing those five to `5 sets` with the values
+in its spoken name and the panel beside it.
+
+That matches `rack/chip-line.tsx`, which already collapsed colours, and it is what keeps the chip
+row a fixed height with five dimensions active. But it does **not** match `/decks`, whose
+`chipLabels` still emits one chip per status and per colour.
+
+So the shared frame now carries two chip granularities: per value on `/decks`, per control on
+`/collection` and the two commander lanes. Neither is wrong on its own and this round is not the
+place to pick, but a reader moving between routes sees the same row behave differently, which is the
+kind of inconsistency the chassis exists to remove. **Worth a ruling in the next Design round**, and
+cheap to change afterwards in either direction — the derivations are three small pure functions.
