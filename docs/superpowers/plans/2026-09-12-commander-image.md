@@ -85,9 +85,9 @@ saying "this one".
 5. **THE PLATE**: `background: var(--bg)`, `1px solid var(--border-strong)`, radius 7, no
    `backdrop-filter`, icon only, a 26px box centred in a 44px target, `aria-label` required.
    `full-card-trigger.tsx` loses its words and its `72%` class. Its `hero` placement does NOT move in
-   this slice: which corner the block leaves free is only knowable once the hero's block is one row,
-   and that is the home slice's change, so the move ships there and `hero` keeps `{ top: 56, right:
-   16 }` until then. `OVER_ART_PLATE` and its assertion are deleted, which
+   this slice: the corner is only free once the identity pips are inside the label block, which is the
+   commander-surfaces slice below, so the move ships THERE and `hero` keeps `{ top: 56, right: 16 }`
+   until then. `OVER_ART_PLATE` and its assertion are deleted, which
    **migrates `full-card-trigger.test.tsx` in the same PR** — that file asserts the old top-right
    placement, the visible words and the 72% class, so those three assertions change. Nothing in it is
    deleted: opening the modal, `aria-busy`, the band tap target and all four placements are
@@ -142,6 +142,11 @@ carries a type line under its name and discovery's does not. The handoff gives b
 neither row's measured figure: 46 on the owned row leaves its desktop name on a ramp still climbing,
 and discovery's block is keyed to its rank column, which measures 56. Both figures are the verdict's
 (§5c), not the handoff's. Render 06's "inset frame" is a no-op: there is no frame (verdict finding 5).
+
+**`hero` moves in this slice**, from `{ top: 56, right: 16 }` to `{ right: 16, bottom: 15 }`: the
+identity pips it used to stack under are inside the label block here, and that block reserves the
+corner with its own right padding. The primitive slice above therefore leaves the placement alone —
+it has no free corner to move to yet.
 
 **Tests migrate with their surface, in the same PR**, because each asserts the number being changed:
 `detail.test.tsx`, `rec-card.test.tsx` and `discovery-row.test.tsx` here. The primitive's legacy arm
