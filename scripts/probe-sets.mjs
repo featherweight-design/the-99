@@ -559,6 +559,21 @@ async function run() {
       );
     }
 
+    // The head's height at PHONE too, which is where it was actually moving: the
+    // missing-only result line wraps in 358px, so toggling that filter grew row 3 and the
+    // desktop-only check above never saw it.
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phoneRest = await rackAt("");
+    const phoneMissing2 = await rackAt("?m=1");
+    const phoneThree = await rackAt("?c=W&r=rare&m=1");
+    if (phoneRest !== null) {
+      failures += !report(
+        "the phone head's height does not move with the filter state either",
+        phoneRest.head === phoneMissing2.head && phoneMissing2.head === phoneThree.head,
+        `rest ${phoneRest.head}px, missing-only ${phoneMissing2.head}px, three ${phoneThree.head}px`,
+      );
+    }
+
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
     await waitForCells(page);

@@ -164,7 +164,14 @@ export function SetGridView(props: SetGridViewProps) {
         active === null || active === document.body || active.getClientRects().length === 0;
       if (!stranded) return;
       // Whichever width we just arrived at, land on that width's own first control.
-      (isDesktop ? desktopRackRef.current : sheetTriggerRef.current)?.focus();
+      // The first CONTROL, not the container. `desktopRackRef` wraps the pips in a
+      // `tabIndex={-1}` div so it can receive focus at all, and landing there puts a
+      // keyboard reader on an unnamed empty box instead of on a filter they can use.
+      const target = isDesktop
+        ? desktopRackRef.current?.querySelector<HTMLElement>('[role="switch"]')
+          ?? desktopRackRef.current
+        : sheetTriggerRef.current;
+      target?.focus();
     });
     return () => cancelAnimationFrame(id);
   }, [isDesktop]);
@@ -742,13 +749,22 @@ export function SetGridView(props: SetGridViewProps) {
             the summary would read "0 cells · 0 yours, 0 missing" beside an empty state
             correctly saying the set has not been indexed. But a set that becomes indexed
             under a visible sticky head would otherwise grow the head by a line. */}
-        <div style={{ minHeight: 16 }} data-set-result>
+        {/* TWO lines' worth at phone, one at desktop. `minHeight: 16` was a minimum, and
+            the missing-only line — "N missing · numbers skip, because the cards you own are
+            hidden" — wraps in 358px of phone content, so toggling that filter grew row 3
+            and moved the grid under the reader's thumb: the exact motion the fixed-height
+            rule exists to prevent, arriving through the row meant to guarantee it. Desktop
+            has 1112px and never wraps. */}
+        <div className="min-h-[32px] md:min-h-[16px]" data-set-result>
         {sections.indexed ? (
         <p
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          className="mt-[8px] font-mono text-[11px]"
+          // `leading-[16px]` stated rather than inherited, for the same reason the chassis
+          // states its own: Tailwind's 1.5 on 11px is 16.5, so two lines are 33 and no
+          // whole-number reserve can cover them. At 16 the wrapped line is exactly 32.
+          className="mt-[8px] font-mono text-[11px] leading-[16px]"
           style={{ color: "var(--fg-muted)" }}
         >
           {effective.missingOnly

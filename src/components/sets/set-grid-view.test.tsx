@@ -984,14 +984,14 @@ describe("SetGridView — row 3's box is unconditional", () => {
     const { container } = view([p("1", { booster: null, isVariant: true })], []);
     const row = container.querySelector("[data-set-result]") as HTMLElement;
     expect(row).not.toBeNull();
-    expect(row.style.minHeight).toBe("16px");
+    expect(row.className).toMatch(/min-h-\[32px\] md:min-h-\[16px\]/);
     expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("and holds the same box once there is one", () => {
     const { container } = view([p("1"), p("2")], ["1"]);
     const row = container.querySelector("[data-set-result]") as HTMLElement;
-    expect(row.style.minHeight).toBe("16px");
+    expect(row.className).toMatch(/min-h-\[32px\] md:min-h-\[16px\]/);
     expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
   });
 });
