@@ -5,6 +5,14 @@ Source: `design/design_handoff_the99_art_wash/`
 - `README.md` — prose/decisions log
 - `The 99 - Art Wash Readability.dc.html` — R1, superseded (diff only)
 
+> **Errata (2026-09-12): the `left-portrait` ambient layer is no longer drawn.** Every `ambient`
+> value in this table — `.20` on the 148 band, `.14` on the 72, `.28`/`.22` as the lift raised them —
+> describes a full-bleed copy of the crop that was removed in PR #517 and ratified the same day. It
+> read as a double image past the portrait's own width. The **sharp** values, the masks and every
+> scrim in this table are untouched and still authoritative. With no crop, that full-bleed layer
+> still draws the identity gradient (decision §G). See the errata in
+> `design/design_handoff_the99_art_wash/README.md` and its `READINESS.md`.
+
 ## Source precedence
 
 The v2 canvas wins on every conflict; the README's decisions log and token reference are

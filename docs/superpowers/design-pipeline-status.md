@@ -118,8 +118,8 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 ## ⚖️ Built, awaiting a ratification
 
-Holds work that SHIPPED while changing a value a handoff specifies — the fix for a reported defect,
-built before Design ruled. Each row names what changed, what reverting costs, and the alternatives
+Holds work that SHIPPED while changing or extending what a handoff specifies — a value, or a
+treatment's scope — as the fix for a reported defect, built before Design ruled. Each row names what changed, what reverting costs, and the alternatives
 already weighed, so the ruling is a yes/no rather than a re-investigation. An errata in the handoff
 and its `READINESS.md` carries the same account; this table is only the index.
 

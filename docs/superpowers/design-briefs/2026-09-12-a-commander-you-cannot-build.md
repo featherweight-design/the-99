@@ -108,8 +108,10 @@ The row and the hero each need to say one of:
   player can build today. Note this does NOT mean no copy is sleeved: with two copies, one sleeved
   and one wanted by a brew, the state is still `soft` — see the worked example below.
 - **Over-committed** — committed decks have claimed more COPIES than the player owns (`free < 0`,
-  `over`) — a quantity against a quantity, not a count of decks: one deck asking for four Nazgûl
-  against three owned reaches it alone, and so do two decks each sleeving the only copy.
+  `over`, and only where `owned > 0` — the `owned <= 0` guard runs first and returns `free`, which
+  keeps every marker off cards nobody owns). A quantity against a quantity, not a count of decks: one
+  deck asking for four Nazgûl against three owned reaches it alone, and so do two decks each sleeving
+  the only copy.
   `/collection` already draws this state. Whether it deserves its own weight on these two surfaces or simply reads as
   sleeved is question 7 below — the player's answer to both is the same act, taking the card out of a
   deck, but the over-committed case means a deck is already going short.
