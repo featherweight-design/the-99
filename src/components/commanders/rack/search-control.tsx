@@ -16,10 +16,17 @@ export function SearchControl({
   value,
   onChange,
   wide,
+  autoFocus,
 }: {
   value: string;
   onChange: (v: string) => void;
   wide: boolean;
+  /**
+   * Set only when the breakpoint closed the sheet. That close removes the
+   * element `FilterSheet` had focused, and the sheet has no focus-return
+   * cleanup, so without this focus falls to `<body>`.
+   */
+  autoFocus?: boolean;
 }) {
   // The border is the state: brass with a query, hairline without. That is the
   // whole of search's "active" treatment on the rack — it is never chipped and

@@ -68,10 +68,19 @@ export function FilterRack({
   // Same reason as `decks-view.tsx`: unmounting the sheet at the breakpoint
   // does not close it, so crossing back would remount an open modal. Adjusted
   // during render rather than in an effect, which this repo's lint rejects.
+  // `FilterSheet` focuses its own dialog and has no focus-return cleanup, so
+  // closing it at the breakpoint removes the focused element and focus falls to
+  // `<body>`. The wide form's search field takes it, exactly as `/decks` does.
+  const [handOffFocus, setHandOffFocus] = useState(false);
   const [wasWide, setWasWide] = useState(wide);
   if (wasWide !== wide) {
     setWasWide(wide);
-    if (wide && sheetOpen) setSheetOpen(false);
+    if (wide && sheetOpen) {
+      setSheetOpen(false);
+      setHandOffFocus(true);
+    } else if (!wide && handOffFocus) {
+      setHandOffFocus(false);
+    }
   }
   const orders = ORDER_OPTIONS[lane];
 
@@ -84,6 +93,7 @@ export function FilterRack({
       value={params.q}
       onChange={(q) => onChange({ ...params, q })}
       wide={wide}
+      autoFocus={handOffFocus}
     />
   );
   // Keyed on the form so both popover controls get fresh state across the

@@ -164,6 +164,10 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   if (wasWide !== wide) {
     setWasWide(wide);
     if (wide && sheet.open) setSheet({ open: false, focusSearch: false, handOffFocus: true });
+    // Consumed on the way back. Left set, a later compact → wide resize would
+    // autofocus the search field again without the reader ever opening the
+    // sheet.
+    else if (!wide && sheet.handOffFocus) setSheet({ ...sheet, handOffFocus: false });
   }
 
   // `chipLabels` already knows how to remove one value; the chassis only needs

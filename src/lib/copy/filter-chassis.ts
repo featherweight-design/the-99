@@ -95,7 +95,11 @@ const deckPanel = (
   optionAria: (name, count) => `${name}, ${countNoun(count)}`,
   optionAriaUnavailable: (name) => `${name}, no decks`,
 
-  footerTotal: (total) => countNoun(Number(total)),
+  // `FilterPanel` formats the count before calling this, so `total` arrives as
+  // "1,000" and `Number(total)` would be NaN — a player with four figures of
+  // decks would hear "NaN decks". The string is used as given; only the
+  // singular needs a case.
+  footerTotal: (total) => `${total} ${total === "1" ? "deck" : "decks"}`,
   footerSelected: (n, total) => `${n} of ${total} on`,
   clear: refreshCopy.filters.clear,
   done: "Done",

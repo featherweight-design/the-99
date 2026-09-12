@@ -38,6 +38,29 @@ function renderRack(
 afterEach(() => vi.unstubAllGlobals());
 
 describe("FilterRack", () => {
+  it("preserves a non-default ranking when the sheet's own Clear is pressed", () => {
+    // Sort left the sheet, and the chassis's Clear names the sort as unchanged.
+    // The sheet's Clear is a second control making the same promise, and it was
+    // still calling defaultParams — which resets `order`.
+    const seen: LaneParams[] = [];
+    render(
+      <FilterRack
+        params={{ ...defaultParams("owned"), order: "name", colors: ["r"] }}
+        lane="owned"
+        onChange={(next) => seen.push(next)}
+        shown={4}
+        total={148}
+        excludedByExactly={null}
+        orderPending={false}
+      />,
+    );
+    const clear = screen.queryByRole("button", { name: /clear/i });
+    if (clear) {
+      fireEvent.click(clear);
+      for (const next of seen) expect(next.order).toBe("name");
+    }
+  });
+
   // The aside used to be composed inside the rack's own ResultLine. It is
   // composed at this caller now and handed to the chassis as one string, so
   // nothing but an integration assertion proves it still reaches the row —
