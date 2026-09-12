@@ -138,7 +138,9 @@ every other dimension opens, appearing in the same chip line, cleared by the sam
 filters`. Consequences: folders inherit a frame that is drawn, audited and about to be built, and
 `/decks` goes from four filter dimensions to five (`DeckFilters`, `src/lib/decks/filter.ts:38-43`,
 is search, status, colour and the played-window; sort has its own trailing slot and is not one of
-them) on a chassis whose density was proved at five dimensions across its four routes. It also
+them) — **six controls in the bar, where the chassis was drawn and audited at five.** That makes
+this branch an amendment to the chassis needing its own density pass at both widths, not a free
+slot in a frame that already fits. It also
 makes a folder *combinable* — folder plus status plus colour — and makes "which folder am I in"
 survive only as long as a filter chip does. And `Clear all filters` would drop the folder along with every other dimension, returning the
 reader to all decks — nothing is lost but the shelf they were standing in, which may be the right behaviour or may

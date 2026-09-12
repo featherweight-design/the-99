@@ -30,8 +30,11 @@ else**, in a shape a new block must not contradict.
 `sumPlayRecords` (`stats.ts:67`) and `sumColourSpreads` (`stats.ts:136`) exist for the roll-up
 specifically — see decision 2.
 
-**`cost` is nullable, and null is not zero.** A deck with nothing to buy has no roll-up entry at
-all and `cost` is `null` (`stats-query.ts:47`, assigned at `:179`) — that is the finished deck.
+**`cost` is nullable, and null is not zero.** A deck with no buy rows has no roll-up entry at all
+and `cost` is `null` (`stats-query.ts:47`, assigned at `:179`). Null does **not** mean finished: the
+roll-up excludes basic lands, as every Shopping surface does, so a deck whose only gap is thirty
+Forests is also `null` here — the case `deck-card.tsx:74-77` already spells out. Null means "nothing
+this app will offer to sell you", which is not the same claim as "done".
 `{ copies: 3, cents: 0, pricedCopies: 0 }` is a different state entirely: three copies to buy and no
 price for any of them, because the feed omits an out-of-stock card rather than pricing it at zero.
 Both must draw differently from each other, and neither should draw as `$0.00`.
@@ -45,9 +48,10 @@ which of the two the app follows.
 
 **Both commanders are in the colour spread and the curve.** They are not `deck_cards` rows, so the
 loader reads them separately and folds them in at one copy each (`stats-query.ts:143-159`). A deck's
-`copies` is therefore the 99 *plus* its commander — 100 for a single-commander deck, and the pair
-already counts as two of its own 99. Any denominator a surface prints must be `copies` as returned,
-not a hard 99, or the figures on screen will not add up to the ones computed.
+`copies` is therefore whatever `deck_cards` actually holds plus one commander, or two for a pair —
+100 for a *finished* single-commander deck, and far less for a deck mid-build, which is most of
+them. Any denominator a surface prints must be `copies` as returned, never a hard 99, or the
+figures on screen will not add up to the ones computed.
 
 Two further computed properties Design should know before drawing:
 
@@ -136,9 +140,16 @@ on a card row (`deck-versioning-surface-1.md:780`, `deck-versioning-surface-2.md
 
 So the app already uses the word *curve* for a one-number average. Drawing an eight-bucket curve
 elsewhere on the same page is either a second reading of one word or a deliberate split — Design
-must say which, and if the two coexist, what each is for. Engineering note: both figures come from
-one predicate now (`isLandFace`, `cards/facet.ts:45`), so they cannot disagree about which cards are
-lands; the question is entirely one of language and placement.
+must say which, and if the two coexist, what each is for.
+
+**Engineering note, and it is more than language: the two figures are not measuring the same list.**
+They now agree on what a land is — one predicate, `isLandFace` (`cards/facet.ts:45`) — but
+`versionManaValue` reads `deck_version_cards` alone (`versions.ts:246-256`), so it sees the
+**committed** list and **not** either commander, while `manaCurve.average` reads the live draft with
+both commanders folded in (`stats-query.ts:143-159`). `averageManaValue` also rounds to one decimal
+(`mana-value.ts:35`) where `manaCurve.average` is raw. So the same deck can legitimately show two
+different averages, and if both figures appear, the drawing has to make clear which list each one
+describes.
 
 **Cost to complete — four surfaces already print it, and they do NOT all print the same figure.**
 
