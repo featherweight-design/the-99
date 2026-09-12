@@ -7,11 +7,16 @@
 // /collection's search, type and availability filters are not applied here, and colour,
 // rarity and missing-only are not applied back. Different populations, different params.
 //
-// One density, 116x162, and no toggle. 88px was drawn and rejected: it truncates the card
-// name at ~13 characters, and the name is the only thing in a dimmed cell a reader can
-// match against memory. The scroll is paid for by the sticky head, the extras jump, and
-// missing-only, which removes the cells the reader is done with rather than shrinking
-// everything.
+// One density and no toggle, set by ONE declaration on the grid and by nothing on the cell:
+// `repeat(auto-fill, minmax(146px, 1fr))` (addendum R2 §27). It measures ~150x210 at 1180
+// and 174x243 at 390, and the track — not a breakpointed literal — is what a cell is wide.
+// The upper bound is structural rather than declared: a track can never reach `2F + gap`,
+// because at that width another column fits and the count goes up instead.
+//
+// A smaller cell was drawn and rejected: at 88px the card name truncates at ~13 characters,
+// and the name is the only thing in a dimmed cell a reader can match against memory. The
+// scroll is paid for by the sticky head, the extras jump, and missing-only, which removes
+// the cells the reader is done with rather than shrinking everything.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -702,7 +707,17 @@ function Section({
           <span className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{ratio}</span>
         ) : null}
       </h2>
-      <div className="mt-[10px] flex flex-wrap gap-x-[10px] gap-y-[18px]">
+      {/* One declaration and one constant (addendum R2 §27). `auto-fill`, NEVER `auto-fit`:
+          auto-fit collapses empty tracks, so a filter leaving three cells would stretch
+          those three across the whole width — the exact reflow the brief forbids, one
+          keyword away. The 146px minimum is `image_uri_small`'s own width, and it produces
+          the phone answer for free: at 390px there is nothing between two tracks at 174 and
+          three at 112.67, so any minimum in that band gives two. */}
+      <div
+        data-set-grid
+        className="mt-[10px] grid gap-x-[10px] gap-y-[18px]"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(146px, 1fr))" }}
+      >
         {cells.map((c) => (
           <SetCell
             key={c.scryfallId}

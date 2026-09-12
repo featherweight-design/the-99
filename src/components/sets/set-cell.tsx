@@ -24,10 +24,11 @@ import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import type { Cell } from "../../lib/sets/completion";
 
-// The cell is 116x162 on desktop and 108x151 on a phone, written as Tailwind breakpoints
-// below rather than as constants here. That phone size is what puts three columns in
-// 390px: three 116px cells plus two 10px gaps need 368px against a 358px content width, so
-// the designed density was silently falling back to two columns.
+// The cell carries NO width or height literal, at any width (addendum R2 §27). The grid
+// track sets the width and `aspect-ratio: 63/88` sets the height, which makes the
+// identical-geometry constraint the grid depends on true by construction rather than by two
+// pairs of breakpointed literals somebody has to keep in step. It also means the one grid
+// declaration is the whole density: change the track minimum and every cell follows.
 
 function PriceTag({ fact, newestAsOf }: { fact: PriceFact | null; newestAsOf: Date | null }) {
   const state = priceState(fact, newestAsOf);
@@ -124,17 +125,16 @@ export function SetCell({
 
   return (
     // The cell is the only target. No control sits inside it at any width — a checkbox on
-    // 214 cells would be a second selection mechanism and a 16px control inside a 116px
+    // 214 cells would be a second selection mechanism and a 16px control inside a ~150px
     // plate. Tapping opens the card modal, where the shipped printing picker already lives.
     <button
       type="button"
       onClick={() => onOpen?.(cell.oracleId)}
       aria-label={label}
-      className="group flex w-[108px] flex-col text-left md:w-[116px]"
+      className="group flex w-full min-w-0 flex-col text-left"
     >
       <span
-        className="relative block h-[151px] w-[108px] overflow-hidden rounded-[6px]
-                   md:h-[162px] md:w-[116px]"
+        className="relative block aspect-[63/88] w-full overflow-hidden rounded-[6px]"
         style={{
           background: "var(--surface-sunken)",
           // Identical geometry either way: only the border STYLE and colour differ, so a
@@ -145,7 +145,7 @@ export function SetCell({
         }}
       >
         {cell.imageUriSmall ? (
-          // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote and unsized; next/image would need a loader per host for no gain at 116px
+          // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote and unsized; next/image would need a loader per host for no gain at a ~150px track
           <img
             src={cell.imageUriSmall}
             alt=""
@@ -191,9 +191,9 @@ export function SetCell({
       <span className="mt-[6px] flex items-baseline gap-[5px] font-mono text-[10px]">
         <span style={{ color: cell.owned ? "var(--fg-muted)" : "var(--fg-body)" }}>{num}</span>
         {cell.rarity ? (
-          // Rarity drops below md: the caption has room for two things, and rarity is a
-          // filter you set rather than a fact you scan on a phone.
-          <span className="hidden md:inline" style={{ color: "var(--fg-locked)" }}>
+          // One caption format at every width (addendum R2 §27): the hiding was a
+          // consequence of the 108px phone cell, and a 174px one holds three things.
+          <span style={{ color: "var(--fg-locked)" }}>
             · {cell.rarity.toLowerCase()}
           </span>
         ) : null}
@@ -202,7 +202,7 @@ export function SetCell({
       {/* The name stays at full strength on a missing cell. It is the only thing in a
           dimmed cell a reader can match against memory. */}
       <span
-        className="mt-[2px] block w-[108px] truncate text-[11px] md:w-[116px]"
+        className="mt-[2px] block w-full truncate text-[11px]"
         style={{ color: "var(--fg-body)" }}
       >
         {cell.name}

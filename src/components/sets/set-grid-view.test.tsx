@@ -512,3 +512,33 @@ describe("SetGridView — a pick that settles after the modal closes", () => {
     expect(deltaProps.recheckKey).not.toBe(first);
   });
 });
+
+// Addendum R2 §27 — findings 1 and 2 are one ruling and one constant. The grid gives its
+// leftover width to the cells instead of to the right margin, which is the same sentence as
+// "the row distributes" read from the other end.
+describe("SetGridView — the grid declaration", () => {
+  const renderGrid = () => view([p("1"), p("2"), p("3", { booster: false, isVariant: true })], ["1"]);
+  const gridOf = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>("[data-set-grid]");
+
+  it("lays one auto-fill track set with a 146px minimum", () => {
+    const { container } = renderGrid();
+    const grid = gridOf(container);
+    expect(grid).not.toBeNull();
+    expect(grid!.style.gridTemplateColumns).toBe("repeat(auto-fill, minmax(146px, 1fr))");
+  });
+
+  // One keyword decides the no-reflow constraint: `auto-fit` collapses empty tracks, so a
+  // filter leaving three cells would stretch those three across the whole width.
+  it("never uses auto-fit", () => {
+    const { container } = renderGrid();
+    expect(gridOf(container)!.style.gridTemplateColumns).not.toContain("auto-fit");
+  });
+
+  it("keeps one declaration across both sections", () => {
+    const { container } = renderGrid();
+    const declared = [...container.querySelectorAll<HTMLElement>("[data-set-grid]")]
+      .map((g) => g.style.gridTemplateColumns);
+    expect(new Set(declared).size).toBe(1);
+  });
+});
