@@ -80,10 +80,12 @@ moved from 📐 to 🟢. No code.
    what makes the control clickable rather than merely visible — and the 44px target is pulled 9px
    inward rather than overhung, because every band it sits on is `overflow-hidden` and an overhanging
    target loses that 9px out of its own hit area.
-6. `wash-contrast.test.ts` moves with it, as the handoff requires: the two top-ramp tests retire with
-   the top scrim, `BOTTOM_SURFACES` becomes `(labelAtPx, band)` pairs for all six values, the plate
-   test becomes the opaque assertion (`--fg` on `--bg`, 12.06–15.65:1 measured), and the vertical-ramp
-   helper goes. `THEMES.size === 6` is untouched.
+6. `wash-contrast.test.ts` moves with it, as the handoff requires: it gains a `(labelAtPx, band)`
+   table covering every stated band, and the plate test becomes the opaque assertion (`--fg` on
+   `--bg`, 12.06–15.65:1 measured). **The two top-ramp tests stay until PR 6**, along with the
+   percentage ramp they measure — retiring them here would leave a path this PR still supports
+   untested, which is the same mistake as asserting the top scrim's absence before deleting it.
+   `THEMES.size === 6` is untouched.
 7. `scripts/probe-art-wash.mjs` is **extended, never duplicated**: each stated band's declared height
    against its laid-out height, the ramp's hold position (below half the band is the signature of a px
    value read as a percentage), a **census** of bands that have not migrated, and per card-details
@@ -117,8 +119,11 @@ picker's selected summary and partner slot are measured rather than assumed.
 
 `detail.tsx` (render 04 → 288, `IdentityPips` retired from the band into the block, `Card details` to
 the bottom corner, `labelAt` **measured at 288** rather than inherited from 248 — the handoff's own
-open item 2), `rec-card.tsx` and `discovery-row.tsx` (148 → **208**, `labelAtPx 46`, the literal `148`
-retires). Render 06's "inset frame" is a no-op: there is no frame (verdict finding 5).
+open item 2), `rec-card.tsx` and `discovery-row.tsx` (148 → **208** with a 285 portrait, and the literal `148`
+retires). **Their `labelAtPx` figures differ — 46 discovery, 63 the owned lane** — because one wash
+sits under two breakpoint subtrees on each row and the desktop block is the taller: the owned lane's
+carries a type line under its name and discovery's does not. The handoff gives both 46, which is the
+phone's figure, and 46 on the owned row leaves its desktop name on a ramp still climbing. Render 06's "inset frame" is a no-op: there is no frame (verdict finding 5).
 
 **Tests migrate with their surface, in the same PR**, because each asserts the number being changed:
 `detail.test.tsx`, `rec-card.test.tsx` and `discovery-row.test.tsx` here. The primitive's legacy arm
