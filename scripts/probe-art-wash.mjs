@@ -543,8 +543,17 @@ try {
         }
         if (!band.ramped) {
           // A flat band: its ink starts past the portrait's flat stop and stands
-          // on the row's own ground, so there is no ramp to measure.
-          note(`  ${band.declared} band is flat — no ramp to check`);
+          // on the row's own ground, so there is no ramp to measure — but it
+          // has to draw NONE, not merely be excused from the check. The marker
+          // is a declaration, and a band that declares itself flat while still
+          // painting a ramp is darkening art nobody decided to darken.
+          if (band.verticals !== 0) {
+            note(
+              `  FAIL ${band.declared} band declares itself flat and paints ${band.verticals} vertical ramps`,
+            );
+          } else {
+            note(`  ${band.declared} band is flat — no ramp to check`);
+          }
           continue;
         }
         if (band.stops.length !== 4) {
