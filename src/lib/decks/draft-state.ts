@@ -181,7 +181,8 @@ async function readDraft(
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [], basicsChanged: false,
-    names: new Map(), costs: new Map(), prices: new Map(), claimsKnown: true,
+    names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
+    claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
     pricedCopies: 0, newestAsOf: null,
     manaValue: null, manaValueBefore: null,
@@ -270,6 +271,14 @@ async function readDraft(
     if (cents !== null) priceTags.set(add.oracleId, formatCents(cents));
   }
 
+  // The releasable holder, not the first mature one: `heldBy` includes the decks
+  // a pull is refused from, and offering one of those names an act that fails.
+  const pullFrom = new Map<string, string>();
+  for (const add of bucketed) {
+    const holder = releasableClaims(availability?.get(add.oracleId))[0];
+    if (holder) pullFrom.set(add.oracleId, holder.name);
+  }
+
   const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
   const typeByOracle = new Map(facts.map((f) => [f.oracleId, f.typeLine]));
 
@@ -289,6 +298,7 @@ async function readDraft(
       names,
       costs,
       prices: priceTags,
+      pullFrom,
       claimsKnown,
       buyCount: unfree.reduce((n, a) => n + a.shortfall, 0),
       unfreeCount: unfree.length,

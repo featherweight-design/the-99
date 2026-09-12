@@ -28,6 +28,7 @@ const empty: DraftState = {
   names: new Map(),
   costs: new Map(),
   prices: new Map(),
+  pullFrom: new Map(),
   claimsKnown: true,
   buyCount: 0,
   unfreeCount: 0,
@@ -116,12 +117,29 @@ describe("PendingBanner", () => {
       bucket: "claimed",
       heldBy: [{ id: "d2", name: "Kess Storm" }],
     };
+    // The hint reads `pullFrom`, not `heldBy` — a holder a pull is refused from
+    // is in the latter and never the former.
+    state.pullFrom = new Map([["a0", "Kess Storm"]]);
     render(<PendingBanner state={state} deckId="d" />);
     expect(screen.getByText(copy.addPullHint("Kess Storm"))).toBeTruthy();
     // One tile, on the add: a remove is a copy going back in the pool and has
     // nothing to buy.
     expect(screen.getAllByText("$4.00")).toHaveLength(1);
     expect(screen.getByText(copy.removeHint)).toBeTruthy();
+  });
+
+  // A deck with pending changes of its own, or holding the card as its commander,
+  // is a mature claimant the server refuses a pull from. Naming it in the hint
+  // offers an act that fails, so an empty `pullFrom` draws no hint at all.
+  it("offers no pull when the holder is not releasable", () => {
+    const state = withChanges(1, 0);
+    state.adds[0] = {
+      ...state.adds[0],
+      bucket: "claimed",
+      heldBy: [{ id: "d2", name: "Kess Storm" }],
+    };
+    render(<PendingBanner state={state} deckId="d" />);
+    expect(screen.queryByText(copy.addPullHint("Kess Storm"))).toBeNull();
   });
 
   it("states counts and one money sentence above INLINE_CHANGE_MAX", () => {
@@ -191,6 +209,20 @@ describe("PendingBanner", () => {
     expect(
       screen.getByText(priceCopy.strip.pricedClause(4, 19), { exact: false }),
     ).toBeTruthy();
+  });
+
+  // $0.00 is a price the feed gave, not the absence of one, so it prints as a
+  // figure rather than falling through to the no-figure branch. The reader is the
+  // reason: a card stocked at nothing is still a card to obtain.
+  it("prints a real $0.00 total rather than withholding the figure", () => {
+    const { container } = render(
+      <PendingBanner
+        state={{ ...withChanges(19, 17), total: "$0.00" }}
+        deckId="d"
+      />,
+    );
+    expect(container.textContent).toContain(copy.money(19, 19, 19, "$0.00"));
+    expect(screen.queryByText(copy.moneyNone)).toBeNull();
   });
 
   it("says the commit asks for nothing only on a real zero", () => {

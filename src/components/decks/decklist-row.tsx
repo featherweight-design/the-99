@@ -12,7 +12,13 @@ import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CostPips, parseManaCost } from "../ui/cost-pips";
+import {
+  COST_PIP_CAP,
+  COST_PIP_SIZE,
+  COST_TRACK,
+  CostPips,
+  parseManaCost,
+} from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_SHELL as SHARED_ROW_SHELL } from "../ui/row-shell";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -47,14 +53,10 @@ const ROW_SHELL = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[44px] md:min-h-[34p
 
 const ROW_SHELL_META = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h-[34px]`;
 
-/** Desktop pip metrics. The track never widens: a variable track would put the
- *  pips of adjacent rows on different vertical lines, which is the failure the
- *  search row's fixed slot exists to prevent. */
-const PIP_TRACK = 40;
-const PIP_SIZE_DESKTOP = 12;
-const PIP_CAP = 5;
-/** Phone pips ride the meta line at its own size, plain and uncapped — there
- *  the line is theirs alone and has the width to spend. */
+/** Phone pips ride the meta line at their own size, plain and uncapped — there
+ *  the line is theirs alone and has the width to spend. Desktop takes the shared
+ *  `COST_*` metrics: the track never widens, because a variable track would put
+ *  the pips of adjacent rows on different vertical lines. */
 const PIP_SIZE_PHONE = 13;
 
 interface DecklistRowProps {
@@ -398,9 +400,9 @@ export function DecklistRow({
           <span className="hidden md:flex flex-none items-center">
             <CostPips
               cost={cost}
-              size={PIP_SIZE_DESKTOP}
-              track={PIP_TRACK}
-              cap={PIP_CAP}
+              size={COST_PIP_SIZE}
+              track={COST_TRACK}
+              cap={COST_PIP_CAP}
               spoken
             />
           </span>

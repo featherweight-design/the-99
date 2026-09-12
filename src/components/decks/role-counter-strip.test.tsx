@@ -295,6 +295,27 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
     ).toBeNull();
   });
 
+  // The previous figure is the point of the sub-run: a role the draft moved says
+  // where it came from, so the reader can see the edit in the mix rather than
+  // only the mix it left behind.
+  it("names the version's figure on a role the draft moved", () => {
+    render(<RoleCounterStrip cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
+    expect(
+      screen.getByText(deckVersioningCopy.pending.mixCellWas(3)),
+    ).toBeInTheDocument();
+  });
+
+  // "was 0" beside a 0 is noise, so an unmoved role says nothing — which is why
+  // the strip compares rather than passing `wasCounts` straight through. Every
+  // other case here holds `wasCounts` equal to the counts, so without this pair
+  // a strip that drew `was` unconditionally would still pass them all.
+  it("says nothing on a role the draft left where it was", () => {
+    render(<RoleCounterStrip cards={[]} wasCounts={{ ...ZERO, ramp: 3 }} />);
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.mixCellWas(0)),
+    ).toBeNull();
+  });
+
   // Brass, and beside the EDHREC line rather than under it — the two sub-runs
   // read as one sentence about where the numbers come from.
   it("draws the note in accent, at the source line's size and breakpoint", () => {

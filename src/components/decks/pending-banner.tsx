@@ -12,7 +12,7 @@ import { priceCopy } from "../../lib/copy/price";
 import type { DraftChange } from "../../lib/decks/draft-diff";
 import { changeCount, hasChanges, type DraftAdd, type DraftState } from "../../lib/decks/draft-shape";
 import { formatDeckDate } from "../../lib/decks/format";
-import { CostPips } from "../ui/cost-pips";
+import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 
 const copy = deckVersioningCopy.pending;
 
@@ -153,7 +153,9 @@ function NameLine({
 }) {
   const cost = state.costs.get(change.oracleId);
   const price = add ? state.prices.get(change.oracleId) : undefined;
-  const holder = add?.heldBy[0]?.name;
+  // `pullFrom`, never `heldBy`: the hint offers a pull, and `heldBy` includes the
+  // holders the server refuses one from.
+  const holder = add ? state.pullFrom.get(change.oracleId) : undefined;
   return (
     <li className="flex items-center gap-[9px] min-h-[34px]">
       <span
@@ -168,7 +170,11 @@ function NameLine({
       </span>
       {add ? (
         holder && (
-          <span className="flex-none font-mono text-[10px] text-[color:var(--fg-faint)]">
+          // Shrinks and truncates rather than `flex-none`: a deck name is valid up
+          // to 120 characters, and on the phone an unshrinkable one pushes the
+          // price and cost slots off the card. The full text stays in the DOM, so
+          // a screen reader still hears which deck.
+          <span className="min-w-0 shrink truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
             {copy.addPullHint(holder)}
           </span>
         )
@@ -182,7 +188,11 @@ function NameLine({
           what holds every line's pips on one vertical line. A card the catalog
           gives no cost draws nothing inside it, never a zero. */}
       <span className="flex-none w-[56px] flex items-center justify-end gap-[3px]">
-        {cost ? <CostPips cost={cost} size={PIP_SIZE} track={PIP_TRACK} cap={PIP_CAP} spoken /> : null}
+        {/* The shared track, so a card's cost lands on the same vertical line here
+            and in the decklist below. `CostPips` defaults neither, so both pass. */}
+        {cost ? (
+          <CostPips cost={cost} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
+        ) : null}
       </span>
     </li>
   );
@@ -327,13 +337,6 @@ const MONEY_FIGURE = "font-mono text-[12px] md:text-[12.5px] text-[color:var(--w
 const PRICE_TILE =
   "flex-none font-mono text-[10px] text-[color:var(--warning)] rounded-[4px] px-[5px] py-[1px] " +
   "[border:1px_solid_var(--accent-shadow)]";
-
-/** The banner's pips ride the shipped decklist track: one geometry, so a card's
- *  cost lands on the same vertical line in the banner and in the list below it.
- *  `CostPips` defaults neither, so both are passed. */
-const PIP_TRACK = 40;
-const PIP_CAP = 5;
-const PIP_SIZE = 12;
 
 // Phone stacks the controls and gives the primary its own full-width row; the
 // second row dissolves on desktop so all three sit in one line.

@@ -650,6 +650,9 @@ Cross-surface conditions:
   `pending.addPullHint`, `discard.pending`, `discard.announced`, `discard.refused`,
   `discard.question`, `discard.consequence`, `discard.confirm`, `discard.cancel`, `history.tab`,
   `deckImportCopy.update.draftPasteNotice`.
+  **Correction (2026-09-11):** `pending.addPullHint` now has a call site —
+  `pending-banner.tsx` draws it from `DraftState.pullFrom`, the releasable-holder map added in
+  review. The remaining keys in that list belong to PRs 4–6 and are still unreached.
 - **Hex vs token**: this codebase redefines every colour per theme (six themes in
   `src/app/globals.css`), so colour rows are scored on token identity. `--bg: #14110E` confirms the
   primary-ink value; `--surface-rail` is `#1A1611` in the default theme against the canvas's

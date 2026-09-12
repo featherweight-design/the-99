@@ -58,6 +58,18 @@ export type DraftState = {
    */
   prices: Map<string, string>;
   /**
+   * The deck a pull could actually be taken from, per add that offers one.
+   *
+   * NOT `DraftAdd.heldBy`, which is every mature claimant and includes the two
+   * holders no pull can come out of: a deck with pending changes of its own, and
+   * a deck holding the card as its commander. `heldBy` answers "who has it" — the
+   * question the availability marker asks — and naming one of those decks in an
+   * offer to pull promises an act the server refuses. Filtered through
+   * `releasableClaims`, the same guard `pullableCount` counts with, so the hint
+   * and the count can never disagree. Absent when no holder is releasable.
+   */
+  pullFrom: Map<string, string>;
+  /**
    * Whether the claim model could be read at all.
    *
    * False only when the availability read failed. Every money figure below is
