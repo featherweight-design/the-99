@@ -587,6 +587,7 @@ describe("FilterPanel Clear announcement", () => {
         setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
         typeOptions={[]}
         availabilityOptions={[]}
+      colorOptions={[]}
         chips={[]}
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
@@ -618,7 +619,7 @@ describe("FilterPanel Clear announcement", () => {
 
   it("still reads the removed string when the last set is toggled off", () => {
     expect(setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, "0", 2933),
+      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, 0, 2933),
     );
   });
 });
@@ -705,6 +706,7 @@ describe("Type ▾ in the filter bar", () => {
         setOptions={[]}
         typeOptions={TYPE_OPTIONS}
         availabilityOptions={[]}
+      colorOptions={[]}
         chips={[]}
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
@@ -765,7 +767,7 @@ describe("Type ▾ in the filter bar", () => {
     ).toBe(collectionFilterCopy.type.announceCleared(2933));
     expect(
       typeChangeAnnouncement(filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933),
-    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, "0", 2933));
+    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, 0, 2933));
   });
 
   it("says nothing about types when only the set selection moved", () => {
@@ -793,6 +795,7 @@ describe("FilterBar sort and color controls", () => {
         setOptions={[]}
         typeOptions={[]}
         availabilityOptions={[]}
+      colorOptions={[]}
         chips={[]}
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
@@ -866,13 +869,13 @@ describe("FilterBar sort and color controls", () => {
 
   it("reads the added string when a color is toggled on", () => {
     expect(colorChangeAnnouncement(base, withColors(["R"]), [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.color.announceAdded("Red", 1, "0", 2933),
+      collectionFilterCopy.color.announceAdded("Red", 1, 0, 2933),
     );
   });
 
   it("reads the removed string when a color is toggled off", () => {
     expect(colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.color.announceRemoved("Red", 0, "0", 2933),
+      collectionFilterCopy.color.announceRemoved("Red", 0, 0, 2933),
     );
   });
 

@@ -39,13 +39,24 @@ export type ColourPipsProps = {
    * pips lead the sheet (decision 22) and carry a real touch target.
    */
   form: "wide" | "sheet";
+  /**
+   * Hue codes no surviving card carries. `collection/color-filter.ts` states
+   * the contract: a colour with no matches stays listed and disabled, because
+   * the vocabulary is fixed and dropping one would move the other four.
+   *
+   * Both forms, not just the phone's. The route's retired mobile panel
+   * disabled these and its desktop row did not, which is the kind of
+   * two-forms-one-control disagreement this component exists to end.
+   */
+  unavailable?: readonly string[];
 };
 
-export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
+export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsProps) {
   // Read is case-tolerant so a lowercase caller still lights its pips; the
   // WRITE is always canonical uppercase (`PIP_ORDER`). A caller whose state is
   // lowercase maps on the way out — the commander rack is the only one.
   const on = new Set(value.map((v) => v.toUpperCase()));
+  const off = new Set((unavailable ?? []).map((v) => v.toUpperCase()));
   const size = form === "wide" ? DESKTOP_PX : PHONE_PX;
 
   return (
@@ -56,6 +67,9 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
     >
       {PIP_ORDER.map((code) => {
         const lit = on.has(code);
+        // A lit hue stays interactive even with no matches left, or the reader
+        // could not turn off the filter that emptied the list.
+        const dead = !lit && off.has(code);
         return (
           <button
             key={code}
@@ -67,7 +81,16 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
             // the control this replaces.
             role="switch"
             aria-checked={lit}
-            aria-label={chassisCopy.colour.pipAria(chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>])}
+            disabled={dead}
+            aria-label={
+              dead
+                ? chassisCopy.colour.pipAriaUnavailable(
+                    chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>],
+                  )
+                : chassisCopy.colour.pipAria(
+                    chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>],
+                  )
+            }
             onClick={() => onToggle(code)}
             // The ring is the entire lit treatment. No opacity on either state:
             // an unlit pip is the symbol at full strength, which is what makes it
@@ -77,7 +100,12 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
               // in the chassis's control row, which is deliberately allowed to
               // compress. Without it a narrow row would shrink the inline width
               // below the 44px the phone form promises as a touch target.
-              "shrink-0 cursor-pointer rounded-full border-0 p-0 transition-shadow",
+              // No opacity on a dead pip either (decision 7): the measured
+              // reason unlit pips draw at full strength holds whatever the
+              // reason for not drawing them lit. The name carries the state,
+              // and a visual affordance for it is a Design question.
+              "shrink-0 rounded-full border-0 p-0 transition-shadow",
+              dead ? "cursor-default" : "cursor-pointer",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
             ].join(" ")}
             // The symbol is a background rather than an `<img>`: it is

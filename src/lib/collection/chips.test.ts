@@ -86,7 +86,7 @@ describe("collectionChips", () => {
   });
 
   it("carries the availability states so the chip can draw the rows' marker", () => {
-    // ChipRow draws an AvailabilityGlyph per state; a chip naming a state
+    // The retired chip row drew an AvailabilityGlyph per state; a chip naming a state
     // without its marker would be the one place that pairing breaks.
     const chip = collectionChips(
       { ...EMPTY, availability: ["soft", "hard"] as never },

@@ -41,6 +41,13 @@ export const chassisCopy = {
      * state belongs to `aria-checked`; the name stays the colour.
      */
     pipAria: (name: string) => name,
+    /**
+     * A hue no surviving card carries. `collection/color-filter.ts` states the
+     * contract — listed and disabled, because the vocabulary is fixed and a hue
+     * vanishing from the row would move the other four — and the name has to
+     * say so, since the pip itself draws no disabled treatment.
+     */
+    pipAriaUnavailable: (name: string) => `${name}, no matches`,
     /** Reused on the commander lanes; stated for the two routes that had none. */
     legend: "Colour",
     /** Chip label past one pip — never one chip per hue. */

@@ -22,6 +22,7 @@ import { collectionFilterCopy } from "../../lib/copy/collection";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { ColourPips } from "../ui/colour-pips";
+import type { ColorOption } from "../../lib/collection/color-filter";
 import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../ui/filter-chassis";
 import { useMinWidth } from "../ui/use-min-width";
 import { SearchField } from "../ui/text-field";
@@ -73,6 +74,7 @@ export function FilterBar({
   setOptions,
   typeOptions,
   availabilityOptions,
+  colorOptions,
   availabilityOk,
   hasCollection,
   chips,
@@ -97,6 +99,8 @@ export function FilterBar({
   typeOptions: TypeOption[];
   /** The four availability states with counts under the other active filters. */
   availabilityOptions: AvailabilityOption[];
+  /** The five hues with counts under the other active filters — zero means disabled. */
+  colorOptions: ColorOption[];
   /** False when the availability aggregate could not be read (Task 7 / Task 9). */
   availabilityOk: boolean;
   /**
@@ -235,6 +239,11 @@ export function FilterBar({
           form={wide ? "wide" : "sheet"}
           value={filters.colors}
           onToggle={(code) => toggleColor(code)}
+          // `color-filter.ts` builds these with `disabled: count === 0`. The
+          // retired mobile Color panel passed them through and the pips must
+          // too, or a hue no surviving card carries is selectable and empties
+          // the list.
+          unavailable={colorOptions.filter((o) => o.disabled).map((o) => o.code)}
         />
 
 

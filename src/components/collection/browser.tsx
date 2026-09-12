@@ -133,7 +133,7 @@ function selectionAnnouncement(
   // off, not to pressing the button.
   if (cleared) return copy.announceCleared(totalQuantity);
   const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
-  const shown = quantityOf(filterCards(cards, next)).toLocaleString();
+  const shown = quantityOf(filterCards(cards, next));
   const added = after.find((c) => !before.includes(c));
   if (added !== undefined) return copy.announceAdded(label(added), after.length, shown, totalQuantity);
   const removed = before.find((c) => !after.includes(c));
@@ -508,6 +508,7 @@ export function CollectionBrowser({
   return (
     <>
       <FilterBar
+        colorOptions={colorOptions}
         chips={chassisChips}
         onClearAll={clearAllFilters}
         // A counter per announcement, so the same sentence spoken twice — the

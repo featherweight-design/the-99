@@ -17,44 +17,47 @@ import { availabilityCopy } from "./availability";
  * verbatim, and an unpinned toLocaleString renders "1.240" or "1 240" under a
  * European locale.
  */
-const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")} cards`);
+const cards = (n: number) => (n === 1 ? "1 card" : `${count(n)} cards`);
+/**
+ * Every figure in this file goes through one formatter. `cards()` pinned its
+ * count to `en-US` while callers pre-formatted the other with a bare
+ * `toLocaleString()`, so a non-en-US browser announced "1.234 of 2,933" — one
+ * sentence, two separator conventions.
+ */
+const count = (n: number) => n.toLocaleString("en-US");
 
 /**
- * `/collection`'s chassis rows. The route states both today — `browser.tsx`
- * renders `ChipRow` below the bar with the selected values and the count — and
- * the chassis draws them itself, so this is what the replacement says rather
- * than the route's first version of it.
+ * `/collection`'s chassis rows. The route drew these itself before — a chip row
+ * below the bar, carrying the selected values and the count — and the chassis
+ * draws both rows now, so this is what the replacement says rather than the
+ * route's first version of it.
  */
 export const collectionChassisCopy = {
-  /**
-   * The route's own two sentences, moved from `ChipRow` unchanged.
-   *
-   * Three figures, because `/collection` counts three things and they are not
-   * interchangeable: `shown` is the distinct cards surviving the filters,
-   * `unique` the distinct cards in the whole collection, and `total` the sum of
-   * quantities across it. "1,240" meaning names and "2,933" meaning copies are
-   * different facts, which is why the rest state states both.
-   *
-   * Carried verbatim rather than reworded. The filtered line compares a
-   * distinct count to a quantity total, which is apples to oranges — noted in
-   * the plan for a copy pass rather than fixed here, because a migration that
-   * quietly changes what a number means is worse than one that moves it.
-   */
   /**
    * The phone's shorter line. The retired chip row drew this at `md:hidden`,
    * and it matters more now: row 3 also carries the `By set` link and the view
    * toggle, so the long sentence and those controls compete for 390px.
    */
-  resultCompact: (shown: number) =>
-    shown === 1 ? "1 result" : `${shown.toLocaleString("en-US")} results`,
-  // `shown` and `unique` are both counts of distinct cards; `total` counts
-  // copies. The filtered sentence compares the first two, because "4 of 2,933"
-  // read as 4 cards out of 2,933 cards when 2,933 was a number of copies —
-  // a figure the reader cannot get to 4 from.
+  resultCompact: (shown: number) => (shown === 1 ? "1 result" : `${count(shown)} results`),
+  /**
+   * The route's wide line, in two states.
+   *
+   * Three figures, because `/collection` counts three things and they are not
+   * interchangeable: `shown` is the distinct cards surviving the filters,
+   * `unique` the distinct cards in the whole collection, and `total` the sum of
+   * quantities across it. "1,240" meaning names and "2,933" meaning copies are
+   * different facts, which is why the rest state states both and labels each.
+   *
+   * The filtered state compares `shown` to `unique` — distinct against
+   * distinct. It carried `shown` over `total` out of `ChipRow`, which read as
+   * 4 cards out of 2,933 cards when 2,933 counted copies: a denominator the
+   * reader cannot get to the numerator from. Changed rather than moved, and
+   * recorded in the plan alongside the question that asked for the ruling.
+   */
   result: (shown: number, unique: number, total: number, filtered: boolean) =>
     filtered
-      ? `Showing ${shown.toLocaleString("en-US")} of ${unique.toLocaleString("en-US")}`
-      : `Showing ${unique.toLocaleString("en-US")} unique · ${total.toLocaleString("en-US")} total`,
+      ? `Showing ${count(shown)} of ${count(unique)}`
+      : `Showing ${count(unique)} unique · ${count(total)} total`,
   /** The chassis's Clear — every dimension at once, named as such. */
   announceClearedAll: (total: number) =>
     // Through the shared helper, which singularises: a one-card collection
@@ -115,12 +118,12 @@ export const collectionFilterCopy = {
     // Live region (shared with the filter bar — one region for the whole bar)
     announceMatches: (n: number, query: string) =>
       n === 0 ? `No sets match ${query}` : `${n} ${n === 1 ? "set matches" : "sets match"} ${query}`,
-    announceAdded: (setName: string, sets: number, shown: string, total: number) =>
-      `${setName} added. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${cards(total)} shown.`,
-    announceRemoved: (setName: string, sets: number, shown: string, total: number) =>
+    announceAdded: (setName: string, sets: number, shown: number, total: number) =>
+      `${setName} added. ${sets} ${sets === 1 ? "set" : "sets"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (setName: string, sets: number, shown: number, total: number) =>
       sets === 0
         ? `${setName} removed. No set filter, ${cards(total)} shown.`
-        : `${setName} removed. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${cards(total)} shown.`,
+        : `${setName} removed. ${sets} ${sets === 1 ? "set" : "sets"}, ${count(shown)} of ${cards(total)} shown.`,
     announceCleared: (total: number) => `Set filter cleared. ${cards(total)} shown.`,
   },
 
@@ -162,12 +165,12 @@ export const collectionFilterCopy = {
 
     announceMatches: (n: number, query: string) =>
       n === 0 ? `No types match ${query}` : `${n} ${n === 1 ? "type matches" : "types match"} ${query}`,
-    announceAdded: (typeName: string, types: number, shown: string, total: number) =>
-      `${typeName} added. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${cards(total)} shown.`,
-    announceRemoved: (typeName: string, types: number, shown: string, total: number) =>
+    announceAdded: (typeName: string, types: number, shown: number, total: number) =>
+      `${typeName} added. ${types} ${types === 1 ? "type" : "types"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (typeName: string, types: number, shown: number, total: number) =>
       types === 0
         ? `${typeName} removed. No type filter, ${cards(total)} shown.`
-        : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${cards(total)} shown.`,
+        : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${count(shown)} of ${cards(total)} shown.`,
     announceCleared: (total: number) => `Type filter cleared. ${cards(total)} shown.`,
   },
 
@@ -213,12 +216,12 @@ export const collectionFilterCopy = {
       n === 0
         ? `No options match ${query}`
         : `${n} ${n === 1 ? "option matches" : "options match"} ${query}`,
-    announceAdded: (name: string, n: number, shown: string, total: number) =>
-      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${cards(total)} shown.`,
-    announceRemoved: (name: string, n: number, shown: string, total: number) =>
+    announceAdded: (name: string, n: number, shown: number, total: number) =>
+      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (name: string, n: number, shown: number, total: number) =>
       n === 0
         ? `${name} removed. No availability filter, ${cards(total)} shown.`
-        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${cards(total)} shown.`,
+        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${count(shown)} of ${cards(total)} shown.`,
     announceCleared: (total: number) => `Availability filter cleared. ${cards(total)} shown.`,
   },
 
@@ -257,12 +260,12 @@ export const collectionFilterCopy = {
       n === 0 ? `No colors match ${query}` : `${n} ${n === 1 ? "color matches" : "colors match"} ${query}`,
     // Colors AND with each other, so the announcement says "and" rather than a
     // bare count — two colors selected means cards in BOTH, not either.
-    announceAdded: (colorName: string, colors: number, shown: string, total: number) =>
-      `${colorName} added. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${cards(total)} shown.`,
-    announceRemoved: (colorName: string, colors: number, shown: string, total: number) =>
+    announceAdded: (colorName: string, colors: number, shown: number, total: number) =>
+      `${colorName} added. ${colors} ${colors === 1 ? "color" : "colors"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (colorName: string, colors: number, shown: number, total: number) =>
       colors === 0
         ? `${colorName} removed. No color filter, ${cards(total)} shown.`
-        : `${colorName} removed. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${cards(total)} shown.`,
+        : `${colorName} removed. ${colors} ${colors === 1 ? "color" : "colors"}, ${count(shown)} of ${cards(total)} shown.`,
     announceCleared: (total: number) => `Color filter cleared. ${cards(total)} shown.`,
   },
 
@@ -359,8 +362,8 @@ export type FilterPanelCopy = {
   emptyBody: (query: string) => { before: string; query: string; after: string };
 
   announceMatches: (n: number, query: string) => string;
-  announceAdded: (name: string, n: number, shown: string, total: number) => string;
-  announceRemoved: (name: string, n: number, shown: string, total: number) => string;
+  announceAdded: (name: string, n: number, shown: number, total: number) => string;
+  announceRemoved: (name: string, n: number, shown: number, total: number) => string;
   announceCleared: (total: number) => string;
 };
 
