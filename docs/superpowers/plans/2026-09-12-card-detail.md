@@ -78,7 +78,17 @@ Each merges before the next branches, and each is independently shippable.
   `layout` and `availability` already are — fixtures and tests build `BrowsePrinting` literals that
   cannot reach the catalog. The **owned** path does not select it today: `browse.ts:612` uses
   `collection_items.scryfall_id` only in a join, so add it to the projection and carry it through
-  the aggregation. The unowned path already has it (`card-detail.ts:178-186`).
+  the aggregation. Two finishes of one printing are two rows sharing one id, so the coalesce in the
+  aggregation is `??=`, exactly as `imageUri` and `flavorName` already are. The unowned path already
+  has it (`card-detail.ts:178-186`).
+- [ ] **1.1a Rule the holding that has no id.** `collection_items.scryfall_id` is **nullable**
+  (`schema.ts`) — a bare `Name,Qty` import carries neither an id nor a collector number. The read is
+  therefore keyed on the identity the entry actually has: the exact `scryfall_id` when present,
+  otherwise `(set_code, collector_number)` joined to `printings`. When neither resolves, the tag is
+  **silent**. It must never fall back to the representative printing the way `resolveImageUri` does
+  for art: a representative is a different collector number in the same set, and row 1.10 forbids
+  another printing's figure. Silence is also the honest reading of row 1.7 — we did not ask the
+  store about a printing we cannot name.
 - [ ] **1.2 `loadPrintingPrices`.** One statement, the shape `price-query.ts:67-95` already proves:
   `newest as (select max(as_of) …)` joined `on true` so `newestAsOf` survives a zero-row match, rows
   keyed by `scryfall_id`, **no filter on liveness** — `priceState` decides that, and filtering would
@@ -134,7 +144,7 @@ Each merges before the next branches, and each is independently shippable.
   rather than adding a handler.
 - [ ] **2.4 Focus.** On open, to the flip control when two-faced, else to ✕; on close, always back to
   the art (rows 3.10, 3.12). No second trap — the shipped trap already covers the subtree.
-- [ ] **2.5 Motion.** 200ms ease-out in with `scale(.94)→1`, 160ms ease-in out, blur set at its final
+- [ ] **2.5 Motion.** 200ms `ease-out` on open with `scale(.94)→1`, 160ms `ease-in` on close, blur set at its final
   value on the first frame; a named reduced-motion block that keeps the zoom working without the
   transform (rows 5.1, 5.2, 5.4, 5.6).
 - [ ] **2.6 Tests + probe.** Open/close by all three doors; the Escape ladder; focus return; the

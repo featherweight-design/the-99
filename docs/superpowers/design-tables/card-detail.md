@@ -15,7 +15,11 @@ Scope: `src/components/cards/card-modal.tsx` and its art regions at both widths 
 the zoom layer and the flip inside it. Nothing else in the modal changes.
 
 **Governing-value rule: §Errata at the foot of this table wins over every other row and over the
-handoff.** Where the handoff describes shipped code, the code is the authority; each erratum below
+handoff.** The handoff's own files are kept exactly as Design drew them — a drawing is a record of
+what was decided on the day, and correcting it in place would destroy the evidence the audit rests
+on. Where the README, the canvas or `MOTION-no-token-set.md` describes shipped code incorrectly, the
+erratum below is the correction and the build follows the erratum, not the drawing. That is this
+repo's standing convention, not a concession made here. Where the handoff describes shipped code, the code is the authority; each erratum below
 was verified in the tree and is what the build implements.
 
 ---
@@ -26,7 +30,7 @@ was verified in the tree and is what the build implements.
 |---|---|---|---|
 | 1.1 | Placement | Last child of the art column, **10px** under the sharp art (9px phone), centred on the card | canvas §7, README §1 |
 | 1.2 | Why there | The art column is the one region every card has at both widths, owned or not, one printing or fifty-four; the art *is* the printing the figure is about | README §1 |
-| 1.3 | Priced | mono 10px, `--accent` on `1px solid --accent-dim`, radius 4, padding `2px 7px` | canvas §7 |
+| 1.3 | Priced | mono 10px, `--accent` on `1px solid --accent-dim`, radius 4, padding `2px 5px` | canvas §7, corrected by E1 |
 | 1.4 | Foil-only | `◆ foil $6.10` — the diamond **prefixes**, the finish word comes from which column supplied the figure (`foil` / `etched`) | canvas §2, `set-collections.ts:208` |
 | 1.5 | No stock | the word `no stock`, `--fg-locked` on `1px dashed --fg-locked` | canvas §2 |
 | 1.6 | Silence | **Nothing renders.** No dash, no `$0.00`, no greyed box, no reserved slot, no skeleton | canvas §2, STATES §1 |
@@ -135,7 +139,7 @@ phyrexia the floor; if it fails, the fix belongs to the tag everywhere it render
 
 | # | The handoff says | The tree says | Consequence |
 |---|---|---|---|
-| E1 | "The tag is the deck-side buy tag, verbatim" | It is **`set-cell.tsx`'s** tag, verbatim: priced is `--accent` on `1px solid --accent-dim`, mono 10px, radius 4, `px 5 / py 2` (`set-cell.tsx:70-77`); no-stock is the dashed `--fg-locked` (`:51-56`). The deck buy tag is warning-tinted at 9/9.5px with a `--fg-body` figure and a **suffixed** `foil` | Build from `set-cell.tsx`. Promote its `PriceTag` to a shared component rather than copying it |
+| E1 | "The tag is the deck-side buy tag, verbatim" | It is **`set-cell.tsx`'s** tag, verbatim: priced is `--accent` on `1px solid --accent-dim`, mono 10px, radius 4, `px 5 / py 2` (`set-cell.tsx:70-77`); no-stock is the dashed `--fg-locked` (`:51-56`). The deck buy tag is warning-tinted at 9/9.5px with a `--fg-body` figure and a **suffixed** `foil` | Build from `set-cell.tsx`. Promote its `PriceTag` to a shared component rather than copying it. The canvas's `2×7` padding goes with the wrong ancestor: row 1.3 is `2px 5px`, set-cell's own |
 | E2 | Flip control is "the `--accent` plate … radius 9" | `--bg` at 86% with a `--border-strong` hairline and a `--fg` glyph, **radius 7**, `right 10 / bottom 10`, 34px desktop and **already 44px on phone** (`card-modal.tsx:812-833`) | Inside the zoom the control grows to 44px on desktop; on phone it is already there |
 | E3 | Phone plate `rgba(10,8,6,.72)` | The shipped over-art plate is `color-mix(in oklab, var(--bg) 72%, transparent)` — `OVER_ART_PLATE = 72` (`art-wash.tsx:79`), written out at `full-card-trigger.tsx:65` because Tailwind cannot compile an interpolated class | Use the token expression. A raw rgba is not theme-aware and would not survive the six themes |
 | E4 | Desktop ✕ at `top 18 / right 18` | `top 22 / right 24`, 34px (`card-modal.tsx:608-616`) | The drawing's 52px title gutter is a canvas correction; the shipped slot is what the ✕ keeps |
