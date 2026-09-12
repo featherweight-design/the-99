@@ -62,7 +62,14 @@ export function FullCardTrigger({
         // Tailwind cannot compile an interpolated class; `OVER_ART_PLATE` is
         // what the contrast suite measures, and the test below asserts the two
         // still agree.
-        className="absolute inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] border border-[color:color-mix(in_oklab,var(--fg)_18%,transparent)]"
+        // `z-[2]`, and it is what makes the chip CLICKABLE rather than merely
+        // visible. Every band this sits on paints its own content in a
+        // positioned sibling that comes later in the DOM — the deck header's
+        // `relative flex h-full` row is the case that caught this — and two
+        // positioned elements at auto z-index are ordered by document position,
+        // so that row won the hit test across the chip's whole corner. Painting
+        // was never the problem; the pill was on screen and dead to the touch.
+        className="absolute z-[2] inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] border border-[color:color-mix(in_oklab,var(--fg)_18%,transparent)]"
         style={{
           ...PLACEMENT[placement],
           gap: 6,
