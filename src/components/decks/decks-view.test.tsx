@@ -205,6 +205,36 @@ describe("DecksView", () => {
     expect(dialog.parentElement?.className ?? "").not.toMatch(/\bsm:hidden\b/);
   });
 
+  it("does not remount an open sheet after a trip through the wide form", () => {
+    // Crossing to wide unmounts the sheet; leaving `open` true would reopen it
+    // on the way back, unasked, with the search field taking focus.
+    const { rerender } = render(view([deckOf()]));
+    openFilters();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    Object.defineProperty(window, "matchMedia", {
+      writable: true, configurable: true,
+      value: (query: string) => ({
+        matches: true, media: query, onchange: null,
+        addEventListener: () => {}, removeEventListener: () => {},
+        addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+      }),
+    });
+    rerender(view([deckOf()]));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("clears every filter and leaves a non-default sort alone", () => {
+    // The real version of the assertion the sheet's test could no longer make:
+    // `Clear all filters` names the sort as unchanged, so a sort that is not
+    // the default has to survive the clear — in state and on the URL.
+    window.history.replaceState(null, "", "/decks?sort=name&status=Draft");
+    render(view([deckOf()]));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." }),
+    );
+    expect(window.location.search).toBe("?sort=name");
+  });
+
   it("keeps New deck and Import in the header at every state", () => {
     render(view([deckOf()]));
     openFilters();

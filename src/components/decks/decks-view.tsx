@@ -142,6 +142,20 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   // because `/collection`'s seven controls need 987 and the row must never wrap.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
+  // Crossing to wide unmounts the sheet but would leave `open` true, so
+  // crossing back would remount it already open — a modal the reader never
+  // asked for, with the search field stealing focus on the way in.
+  //
+  // Adjusted during render rather than in an effect: React re-runs this pass
+  // before touching the DOM, so nothing paints with the stale value, and an
+  // effect that calls setState is what this repo's lint rejects as a cascading
+  // render.
+  const [wasWide, setWasWide] = useState(wide);
+  if (wasWide !== wide) {
+    setWasWide(wide);
+    if (wide && sheet.open) setSheet({ open: false, focusSearch: false });
+  }
+
   // `chipLabels` already knows how to remove one value; the chassis only needs
   // the label and the callback, so this is a shape change rather than a second
   // source of truth about what is on.

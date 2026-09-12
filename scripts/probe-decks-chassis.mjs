@@ -98,9 +98,15 @@ async function measure(page) {
       return acc;
     }, []);
     const tops = lineSet;
+    // Centres prove the controls share a line; they cannot prove the line
+    // FITS. The row has no `flex-wrap` by design, so an over-wide row still
+    // reports one line while its controls overflow or are clipped — which is
+    // the actual failure decision 18 is written against. Overflow is the test.
+    const overflow = Math.max(0, controls.scrollWidth - controls.clientWidth);
     return {
       lines: tops.length,
       controlCount: items.length,
+      overflow,
       chipsHeight: Math.round(chips.getBoundingClientRect().height),
       gridWidth: grid ? Math.round(grid.getBoundingClientRect().width) : null,
       hasColumn: Boolean(q("[data-filter-column]")),
@@ -136,6 +142,10 @@ for (const vp of WIDTHS) {
   check(before.hasHairline, `${vp.name}: sort is not separated by a hairline`);
   check(before.lines === 1, `${vp.name}: the control row wrapped onto ${before.lines} lines`);
   check(
+    before.overflow === 0,
+    `${vp.name}: the control row overflows its width by ${before.overflow}px — it cannot wrap, so it clips instead`,
+  );
+  check(
     before.controlCount > 0,
     `${vp.name}: measured no controls — the probe is anchored to the wrong element`,
   );
@@ -153,10 +163,14 @@ for (const vp of WIDTHS) {
     `${vp.name}: the chip row grew from ${before.chipsHeight}px to ${after.chipsHeight}px when a filter went on`,
   );
   check(after.lines === 1, `${vp.name}: the control row wrapped with a filter on`);
+  check(
+    after.overflow === 0,
+    `${vp.name}: the control row overflows by ${after.overflow}px with a filter on`,
+  );
 
   await page.screenshot({ path: `/tmp/probe-decks-chassis-${vp.name}.png`, fullPage: false });
   console.log(
-    `${vp.name.padEnd(14)} form=${before.form} controls=${before.controlCount} lines=${before.lines} chips=${before.chipsHeight}px grid=${before.gridWidth}px`,
+    `${vp.name.padEnd(14)} form=${before.form} controls=${before.controlCount} lines=${before.lines} overflow=${before.overflow}px chips=${before.chipsHeight}px grid=${before.gridWidth}px`,
   );
 }
 

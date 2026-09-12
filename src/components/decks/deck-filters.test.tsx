@@ -78,24 +78,25 @@ describe("Deck filters — the sheet the chassis opens on the phone", () => {
     expect(screen.getByRole("switch", { name: "Green" })).toBeInTheDocument();
   });
 
-  it("clears every filter but never the sort", () => {
+  // "Clears every filter but never the sort" moved to `decks-view.test.tsx`.
+  // The sheet no longer takes sort state at all, so asserting `onSortChange`
+  // went uncalled here would assert nothing: the prop is not in its contract,
+  // and the real claim is about what the view does to the URL.
+  it("clears every filter it owns", () => {
     const onChange = vi.fn();
-    const onSortChange = vi.fn();
     render(
       <DeckFilterSheet
         open
-        onDismiss={() => {}} autoFocusSearch={false}
+        onDismiss={() => {}}
+        autoFocusSearch={false}
         {...props({
           filters: { statuses: ["Draft"], colours: ["R"], played: "never", search: "krenko" },
           onChange,
-          onSortChange,
-          sort: "name",
         })}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(onChange).toHaveBeenCalledWith(EMPTY_FILTERS);
-    expect(onSortChange).not.toHaveBeenCalled();
   });
 });
 

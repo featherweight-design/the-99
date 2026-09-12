@@ -64,6 +64,15 @@ export function FilterRack({
   // which is the thing one frame exists to stop.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Same reason as `decks-view.tsx`: unmounting the sheet at the breakpoint
+  // does not close it, so crossing back would remount an open modal. Adjusted
+  // during render rather than in an effect, which this repo's lint rejects.
+  const [wasWide, setWasWide] = useState(wide);
+  if (wasWide !== wide) {
+    setWasWide(wide);
+    if (wide && sheetOpen) setSheetOpen(false);
+  }
   const orders = ORDER_OPTIONS[lane];
 
   // The badge is `activeControlCount` and nothing else — not the chip count,
