@@ -337,9 +337,11 @@ const THUMB_BOXES = ["44×62", "64×89"];
     three are inset shadows, so the alpha is the only thing that distinguishes the
     converged ring from the drift it replaced. */
 /** The one surface that legitimately draws card-shaped boxes which are not
-    commander thumbs: the decks zero state's illustration. Named rather than
-    shape-excluded, so a real unmigrated render on any other surface still
-    fails. */
+    commander thumbs: the decks LIST's zero-state illustration. Matched exactly
+    rather than by substring — `includes("decks")` also matches every
+    `/decks/<id>` label this probe passes in, which would have excused an
+    unmigrated render on the deck page as decorative. Named rather than
+    shape-excluded, so a real one anywhere else still fails. */
 const DECORATIVE_FANS = ["decks"];
 
 const THUMB_RING_RE = /inset[^,]*rgba\(0,\s*0,\s*0,\s*0\.4\)|rgba\(0,\s*0,\s*0,\s*0\.4\)[^,]*inset/;
@@ -460,7 +462,12 @@ async function checkChrome(page, label, note) {
   const unmarked = await page.evaluate(`(${READ_UNMARKED_FACES})()`);
   if (unmarked.length) {
     const line = `${label}: ${unmarked.length} unmarked card-face box(es) at ${[...new Set(unmarked)].join(", ")}`;
-    note(DECORATIVE_FANS.some((r) => label.includes(r)) ? `${line} — decorative, not asserted` : `  FAIL ${line}`);
+    // The label is `"<viewport> <route>"`, so the route is its last word and the
+    // match is on that word alone.
+    const route = label.split(" ").at(-1);
+    note(
+      DECORATIVE_FANS.includes(route) ? `${line} — decorative, not asserted` : `  FAIL ${line}`,
+    );
   }
 
   for (const t of thumbs) {
@@ -807,6 +814,38 @@ try {
         if (!boxes.has(box)) note(`  FAIL ${what} draws no ${box} thumb`);
       }
       await checkChrome(page, `${vpName} ${what}`, note);
+    }
+
+    // The picker's OTHER two renders. Its candidate rows draw at rest; the
+    // selected summary and the partner slot only exist after a pick, so a probe
+    // that loads the route and stops sees one of three. It presses a candidate,
+    // which is the only way to reach them.
+    await page.goto(`${BASE}/decks/new`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(900);
+    const candidate = page.locator('li button[aria-pressed]').first();
+    if (!(await candidate.count())) {
+      note(`  FAIL no candidate row on /decks/new — the picker's selected summary goes unchecked`);
+    } else {
+      await candidate.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-picker-selected.png` });
+      const picked = await page.evaluate(`(${READ_THUMBS})()`);
+      const boxes = new Set(picked.map((t) => t.box.join("×")));
+      note(`${vpName} the picker, one commander picked: ${picked.length} thumb(s) at ${[...boxes].join(", ")}`);
+      // The summary is the reason for the click: a 64×89 appearing is the proof
+      // that state was reached at all, rather than the probe having pressed
+      // something inert.
+      if (!boxes.has("64×89")) {
+        note(`  FAIL the picker's selected summary draws no 64×89 thumb`);
+      }
+      // The partner slot mounts only for a commander that can pair, so its
+      // absence is not a failure — but when it is there it is a thumb like any
+      // other, and `checkChrome` asserts it with the rest.
+      const partnerSlot = await page.evaluate(
+        `document.querySelectorAll('[role="group"] [data-commander-thumb], .border-dashed').length`,
+      );
+      note(`  partner slot: ${partnerSlot ? "drawn" : "absent — this commander cannot pair"}`);
+      await checkChrome(page, `${vpName} the picker, picked`, note);
     }
     if (!commanderOracleId) {
       note(`  FAIL no /decks/new?commander= link found — the pre-filled door goes unchecked`);
