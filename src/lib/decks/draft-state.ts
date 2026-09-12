@@ -136,6 +136,39 @@ export function releasableClaims(a: Availability | undefined): DeckClaim[] {
 }
 
 /**
+ * The adds, bucketed against a claim read that may have failed.
+ *
+ * A null `availability` is the failed read, and it is not an empty one: every add
+ * keeps its place in the list and makes no statement about what it costs. Zero
+ * `shortfall` is what stands the purchase down — `unfreeAdds` returns nothing over
+ * null buckets, so no total is quoted for a cost nobody could read.
+ */
+export function bucketDraftAdds(
+  adds: DraftChange[],
+  availability: Map<string, Availability> | null,
+): DraftAdd[] {
+  if (!availability) {
+    return adds.map((c) => ({
+      oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
+      bucket: null, heldBy: [],
+    }));
+  }
+  return bucketAdds(adds, new Map(
+    [...availability].map(([oracleId, a]) => [
+      oracleId,
+      // hardDecks, not the raw claims: a brew "holding" a card holds nothing.
+      { free: a.free, claims: hardDecks(a) },
+    ]),
+  ));
+}
+
+/** The adds that cost something. A null bucket is excluded with the free ones,
+ *  for the opposite reason: not known to be free, but not known to be anything. */
+export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
+  return bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
+}
+
+/**
  * The newest version, its cards and the deck's own rows as of one instant.
  *
  * One read-only `repeatable read` transaction, because these three reads ARE the
@@ -255,7 +288,6 @@ async function readDraft(
   const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
   const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
   const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
-  const names = new Map(facts.map((f) => [f.oracleId, f.name]));
 
   // A basics-only edit: real, committable, and priceable by nothing. Every list
   // and every figure stays empty, and `basicsChanged` is the one signal that
@@ -265,6 +297,13 @@ async function readDraft(
   }
 
   const changed = [...adds, ...removes].map((c) => c.oracleId);
+  // Changed cards only, per `DraftState.names`: `facts` spans the whole draft
+  // because the mana average needs every row, and a consumer enumerating this map
+  // would otherwise draw cards the draft never touched.
+  const changedSet = new Set(changed);
+  const names = new Map(
+    facts.filter((f) => changedSet.has(f.oracleId)).map((f) => [f.oracleId, f.name]),
+  );
   // Excluding this deck: the question is what OTHER decks hold, which is the
   // same question the commit asks. Scoped to the adds unless a caller is drawing
   // rows, which need the `out` side too.
@@ -275,22 +314,8 @@ async function readDraft(
     : new Map<string, Availability>();
 
   const claimsKnown = availability !== null;
-  const bucketed: DraftAdd[] = availability
-    ? bucketAdds(adds, new Map(
-        [...availability].map(([oracleId, a]) => [
-          oracleId,
-          // hardDecks, not the raw claims: a brew "holding" a card holds nothing.
-          { free: a.free, claims: hardDecks(a) },
-        ]),
-      ))
-    // No claim model, so no answer: every add keeps its place in the list and
-    // makes no statement about what it costs.
-    : adds.map((c) => ({
-        oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
-        bucket: null, heldBy: [],
-      }));
-
-  const unfree = bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
+  const bucketed = bucketDraftAdds(adds, availability);
+  const unfree = unfreeAdds(bucketed);
   const priceAsked = detailed ? changed : unfree.map((a) => a.oracleId);
   const prices = priceAsked.length > 0
     ? await loadPrices(priceAsked).catch(() => null)

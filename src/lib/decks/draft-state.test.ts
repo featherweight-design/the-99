@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Availability, DeckClaim } from "./availability";
-import { changeCount, hasChanges, releasableClaims, type DraftState } from "./draft-state";
+import { summarisePrices } from "./price";
+import {
+  bucketDraftAdds, changeCount, hasChanges, releasableClaims, unfreeAdds,
+  type DraftState,
+} from "./draft-state";
 
 const state = (over: Partial<DraftState> = {}): DraftState => ({
   version: null, adds: [], addChanges: [], removes: [], basicsChanged: false,
@@ -27,6 +31,38 @@ describe("changeCount / hasChanges", () => {
 
   it("calls an untouched draft unchanged", () => {
     expect(hasChanges(state())).toBe(false);
+  });
+});
+
+// The degradation path the whole `DraftAdd` type exists for: a claim read that
+// failed must not be rendered as a claim read that came back empty.
+describe("bucketDraftAdds / unfreeAdds", () => {
+  const adds = [
+    { oracleId: "a", from: 0, to: 2 },
+    { oracleId: "b", from: 1, to: 2 },
+  ];
+
+  it("buckets against a read that came back", () => {
+    const bucketed = bucketDraftAdds(adds, new Map([
+      ["a", { owned: 2, hard: 0, soft: 0, free: 2, claims: [] }],
+      ["b", { owned: 0, hard: 0, soft: 0, free: 0, claims: [] }],
+    ]));
+    expect(bucketed.map((a) => a.bucket)).toEqual(["free", "unowned"]);
+    expect(unfreeAdds(bucketed).map((a) => a.oracleId)).toEqual(["b"]);
+  });
+
+  it("calls nothing unowned when the read failed, and quotes no purchase", () => {
+    const bucketed = bucketDraftAdds(adds, null);
+    // Every add keeps its place, `needed` still states the ask, and neither the
+    // bucket nor the shortfall makes a claim the failed read cannot support.
+    expect(bucketed).toEqual([
+      { oracleId: "a", needed: 2, shortfall: 0, bucket: null, heldBy: [] },
+      { oracleId: "b", needed: 1, shortfall: 0, bucket: null, heldBy: [] },
+    ]);
+    expect(unfreeAdds(bucketed)).toEqual([]);
+    // No unfree rows is no priced copies, and `total` is null on a zero — so the
+    // banner states no figure rather than "this commit asks for nothing".
+    expect(summarisePrices([], null).pricedCopies).toBe(0);
   });
 });
 
