@@ -150,6 +150,10 @@ export function FilterBar({
 
   return (
     // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop, border-bottom 1px --border, z-index 2
+    // `md:` is deliberate here and NOT the chassis breakpoint. This is the
+    // bar's stickiness, which is a question about the viewport having room to
+    // spare rather than about which form the chassis takes, and it is the
+    // behaviour the route already shipped. Every CONTROL inside follows `wide`.
     <div className="md:sticky md:top-0 md:z-[2]" style={{ background: "var(--bg)" }}>
       <FilterChassis
         form={wide ? "wide" : "compact"}
@@ -197,10 +201,16 @@ export function FilterBar({
           <Link
             href="/collection/sets"
             aria-label={setPageCopy.entryPoint.aria}
-            className="inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px]
-                       min-h-[44px] md:min-h-[auto] md:h-[46px] text-[13px]
-                       border border-[color:var(--accent)] text-[color:var(--fg-body)]
-                       hover:bg-[color:var(--elevated)]"
+            // Sized by the chassis's form, not `md:`. The two disagree by 232px,
+            // and at 768-999 this dropped to a 46px fixed height inside the
+            // compact frame while the controls around it kept their 44px
+            // minimum — the same split ViewToggle and the panel triggers had.
+            className={[
+              "inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px] text-[13px]",
+              wide ? "min-h-[auto] h-[46px]" : "min-h-[44px]",
+              "border border-[color:var(--accent)] text-[color:var(--fg-body)]",
+              "hover:bg-[color:var(--elevated)]",
+            ].join(" ")}
           >
             <span
               aria-hidden
@@ -216,7 +226,7 @@ export function FilterBar({
           onChange={onViewChange}
           // The chassis's breakpoint, like every other control in this frame.
           compact={!wide}
-          className="md:ml-[2px]"
+          className={wide ? "ml-[2px]" : ""}
         />
           </>
         }
@@ -224,7 +234,11 @@ export function FilterBar({
           <>
         {/* Search input — §Search Input: bg --surface-sunken, border 1px --border-strong, radius 8px, padding 9px 12px mobile / 10px 14px desktop */}
         <SearchField
-          containerClassName="gap-[8px] md:gap-[10px] md:flex-1 px-[12px] md:px-[14px] py-[9px] md:py-[10px]"
+          containerClassName={
+            wide
+              ? "gap-[10px] flex-1 px-[14px] py-[10px]"
+              : "gap-[8px] px-[12px] py-[9px]"
+          }
           className="text-[14px]"
           value={filters.search}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
