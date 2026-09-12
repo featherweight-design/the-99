@@ -18,6 +18,11 @@ const stub = vi.hoisted(() => {
     transactionError: null as Error | null,
     // The rows already in the deck, returned by the in-transaction read
     deckRows: [] as { oracleId: string; quantity: number }[],
+    // The same read, per deck, for the one action that reads TWO decks' drafts
+    // in one transaction. A pull's guards are decisions about how the two lists
+    // differ, so a stub that hands both decks the same rows cannot express the
+    // case. Any deck with no entry here falls back to `deckRows`.
+    deckRowsByDeck: {} as Record<string, { oracleId: string; quantity: number }[]>,
     // What an in-transaction `update(...).returning()` hands back. Empty means
     // the guarded decrement matched nothing, which is how a caller learns the
     // row was down to its last copy and must be deleted instead.
@@ -33,6 +38,10 @@ const stub = vi.hoisted(() => {
     deleteCalls: [] as { table: string; id: string | null }[],
     // Every path passed to revalidatePath, in order
     revalidated: [] as string[],
+    // Lines the deck's import never matched a card for. Only the first-version
+    // guard reads this: they are not `deck_cards` rows, so no card count sees
+    // them, and a v1 frozen over them silently drops them.
+    unresolvedRows: 0,
   };
 
   // Lift the bound value out of a drizzle `eq(column, value)` condition so a
@@ -188,22 +197,30 @@ const stub = vi.hoisted(() => {
     select: () => ({
       from: (table: unknown) => {
         const tableName = nameOf(table);
-        const rows = () => {
+        const rows = (condition?: unknown) => {
           if (tableName === "fill_passes") {
             return [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }];
           }
           if (tableName === "decks") return state.decks;
           // The commit reads type lines to keep basics off the buy list.
           if (tableName === "cards") return state.cards;
+          // An aggregate, so always exactly one row.
+          if (tableName === "deck_unresolved_rows") return [{ n: state.unresolvedRows }];
+          // Which deck's draft, off the bound `deck_id`, so a pull can be given
+          // two lists that differ. Unset decks share `deckRows`.
+          for (const id of paramValues(condition)) {
+            const own = state.deckRowsByDeck[id];
+            if (own) return own as unknown as Record<string, unknown>[];
+          }
           return state.deckRows as unknown as Record<string, unknown>[];
         };
         return {
-          where: () => Object.assign(
-            Promise.resolve(rows()),
+          where: (condition?: unknown) => Object.assign(
+            Promise.resolve(rows(condition)),
             {
-              limit: async (n: number) => rows().slice(0, n),
+              limit: async (n: number) => rows(condition).slice(0, n),
               // `for("update")` — the row lock a guard reads under.
-              for: async () => rows(),
+              for: async () => rows(condition),
             },
           ),
         };
@@ -273,6 +290,12 @@ vi.mock("../../lib/decks/versions", () => ({
 vi.mock("../../lib/decks/availability-query", () => ({
   loadAvailability: vi.fn(async () => new Map()),
 }));
+// The asking deck's position after a pull. Mocked rather than driven off the db
+// stub because the reader assembles a snapshot transaction, a diff, a claim read
+// and a price join — what the action owns is which figures it reports.
+vi.mock("../../lib/decks/draft-state", () => ({
+  loadDraftState: vi.fn(),
+}));
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, logGame,
@@ -282,6 +305,9 @@ import {
   commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
+import { loadDraftState } from "../../lib/decks/draft-state";
+import { deckBodySize } from "../../lib/decks/deck-size";
+import type { DraftState } from "../../lib/decks/draft-shape";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -353,6 +379,7 @@ beforeEach(() => {
   stub.state.fillPasses.length = 0;
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
+  stub.state.unresolvedRows = 0;
 });
 
 describe("createDeck — filled baseline", () => {
@@ -894,6 +921,23 @@ describe("commitDeckVersion", () => {
     expect(commitVersion).not.toHaveBeenCalled();
   });
 
+  // A Server Action's arguments are wire input, so the signature is a claim about
+  // the caller and not a guarantee. Without the guard the value reaches
+  // `note.trim()` and throws a TypeError, which the action has no result shape for.
+  it("refuses a note that is not a string", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    const result = await commitDeckVersion(DECK_ID, 7 as unknown as string);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  it("commits with no note when none was given", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    const result = await commitDeckVersion(DECK_ID, undefined as unknown as string);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything());
+  });
+
   it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     await commitDeckVersion(DECK_ID, null);
@@ -930,6 +974,20 @@ describe("commitDeckVersion", () => {
     expect(result.ok && result.buy).toEqual([
       { oracleId: CARD_A, needed: 1, shortfall: 1, bucket: "unowned", heldBy: [] },
     ]);
+  });
+
+  // The version is written and the receipt is read afterwards, on `db` rather
+  // than the transaction — so a claim read that throws costs the player a
+  // figure, never the version they asked for. Null is "nobody could say": an
+  // empty list here would announce their shopping as finished.
+  it("still commits, with no buy list, when the claim read behind the receipt throws", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(loadAvailability).mockRejectedValue(new Error("claim read"));
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.buy).toBeNull();
+    expect(commitVersion).toHaveBeenCalled();
   });
 
   // Basics are excluded from the availability model, so an added Forest comes
@@ -977,6 +1035,59 @@ describe("commitDeckVersion", () => {
     expect(result.ok && result.cardCount).toBe(10);
   });
 
+  // The first version is the one commit with an eligibility test of its own, and
+  // `?commit=1` is a URL: a stale or hand-typed link reaches the sheet on a deck
+  // that is not a whole list, so the server owns the test.
+  it("freezes a first version on a list that is exactly its body size", async () => {
+    // `partnerOracleId` explicitly null: the expected body size is a card
+    // smaller for a partner pair, so a row that leaves the column off asks for
+    // 98 and the test would be measuring the wrong deck.
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, partnerOracleId: null });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: deckBodySize(false) });
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalled();
+    // A first version buys nothing: every add is a card the player already holds
+    // in this brew, and the claim model reads the brew's own rows as the claim.
+    expect(result.ok && result.buy).toEqual([]);
+  });
+
+  it("refuses a first version on a list short of its body size", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, partnerOracleId: null });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 63 });
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.message).toContain(String(deckBodySize(false)));
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  // Unresolved lines are not `deck_cards` rows, so the count above never sees
+  // them: a deck at its body size plus two unnamed lines is a list the player
+  // has not finished, and the version would drop them without a word.
+  it("refuses a first version while any line is unresolved", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, partnerOracleId: null });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: deckBodySize(false) });
+    stub.state.unresolvedRows = 2;
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(false);
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  // A later commit carries no size test at all: the deck has a version to fall
+  // back to, and a draft mid-edit is what this feature exists to let a player
+  // commit. Without this the guard above could be widened to every commit and
+  // the suite would stay green.
+  it("commits a later version on a list that is not a whole deck", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 63 });
+    stub.state.unresolvedRows = 2;
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(true);
+  });
+
   // An empty note is not a note. Storing "" would render a blank line in the
   // history where the player wrote nothing.
   it("stores a whitespace-only note as null", async () => {
@@ -1021,6 +1132,7 @@ describe("pullCardFromDeck", () => {
     vi.clearAllMocks();
     stub.state.revalidated.length = 0;
     stub.state.deleteCalls.length = 0;
+    stub.state.deckRowsByDeck = {};
     // BOTH decks: a pull calls requireDeck on the asking deck as well as the
     // source. The stub ignores the where clause, so leaving the asking deck
     // out passes by accident and would stop meaning anything the day it stops.
@@ -1028,8 +1140,145 @@ describe("pullCardFromDeck", () => {
       { id: SOURCE_ID, userId: USER_ID, commanderOracleId: CMD },
       { id: ASKING_ID, userId: USER_ID, commanderOracleId: CMD },
     );
-    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+    // Per deck, because the action reads both decks' versions in one transaction.
+    // The asking deck is a brew by default, which makes its whole draft a list of
+    // adds — the shortest way to give it something to be waiting on.
+    vi.mocked(newestVersion).mockImplementation(async (deckId) =>
+      deckId === ASKING_ID ? null : aVersion());
     vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 }, cardCount: 0 });
+    vi.mocked(loadDraftState).mockResolvedValue(askingDraft());
+    vi.mocked(loadAvailability).mockResolvedValue(claimedBySource());
+  });
+
+  /** The asking deck's position after the pull: what it still owes, and what
+   *  that costs. Read once, after the write, for the figures the control
+   *  prints — the authorization no longer comes from here.
+   *
+   *  `version` is set, because only a deck with one has a purchase figure to
+   *  quote. This mock is independent of the version reads the transaction makes:
+   *  those decide whether the pull is allowed, this decides what is reported
+   *  about it, and the brew's answer has its own test below. */
+  function askingDraft() {
+    return { version: aVersion(), buyCount: 7, total: "$241.00", claimsKnown: true } as DraftState;
+  }
+
+  /** Both movable cards owned, both entirely spoken for, and the source deck is
+   *  the deck holding them. This is the claim shape a pull is offered against;
+   *  without it there is nothing in anybody's box to take. */
+  function claimedBySource() {
+    const claim = { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false };
+    return new Map([CARD_A, CARD_B].map((oracleId) => [
+      oracleId,
+      { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] },
+    ])) as unknown as Awaited<ReturnType<typeof loadAvailability>>;
+  }
+
+  // Ownership proves the player may touch both decks, not that the app ever
+  // offered this pull. Otherwise any two owned decks can be named and the source
+  // made to lose a card nothing asked for.
+  it("refuses a card the asking deck is not waiting on", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    // Both decks sleeved with exactly this list: the source holds the card, and
+    // the asking deck's draft matches its version, so it is waiting on nothing.
+    vi.mocked(newestVersion).mockResolvedValue(aVersion());
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // The race the in-transaction claim read exists for. The reader was offered a
+  // pull, and by the time they took it the copy was free — another deck released
+  // it, or their own earlier pull already landed. Releasing a second copy here
+  // would empty a box for a deck that no longer needs anything.
+  it("refuses when the copy has come free since the page was drawn", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadAvailability).mockResolvedValue(
+      new Map([[CARD_A, { owned: 1, hard: 0, soft: 0, free: 1, claims: [] }]]),
+    );
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(false);
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // The claim is what authorizes the pull, and it is made of decks this
+  // transaction does not otherwise touch. Those decks' rows are locked from a
+  // read taken before the transaction, so a claimant that joined since is locked
+  // by nothing — and authorizing a destructive write against half an unlocked
+  // claim is exactly the race the locks exist to close. Refuse instead.
+  it("refuses when a deck outside the locked set has joined the claim", async () => {
+    const THIRD_ID = "77777777-7777-4777-8777-777777777777";
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    // First call is the pre-transaction read that chooses the lock set; the
+    // second is the authorization, taken under those locks.
+    vi.mocked(loadAvailability)
+      .mockResolvedValueOnce(claimedBySource())
+      .mockResolvedValueOnce(
+        new Map([[CARD_A, {
+          owned: 2, hard: 2, soft: 0, free: 0,
+          claims: [
+            { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false },
+            { id: THIRD_ID, name: "Latecomer", quantity: 1, mature: true, pending: false },
+          ],
+        }]]) as unknown as Awaited<ReturnType<typeof loadAvailability>>,
+      );
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(false);
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // The same claimant, named by the read the lock set was chosen from, is locked
+  // and the pull goes through. Without this the guard above would be satisfied by
+  // refusing every pull whose card any other deck holds — which is every pull.
+  it("allows the pull when the whole claim is inside the locked set", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalled();
+  });
+
+  // The pre-transaction read only chooses locks, so losing it costs no pull the
+  // claim still supports: the set falls back to the two decks in hand, and the
+  // authorization refuses only if a third deck turns out to be holding a copy.
+  it("still pulls when the read that chooses the lock set throws", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadAvailability)
+      .mockRejectedValueOnce(new Error("claim read"))
+      .mockResolvedValueOnce(claimedBySource());
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalled();
+  });
+
+  // The claim read has to be the one taken inside the transaction, or it is
+  // answering for a moment already past by the time the locks are held.
+  it("reads the claim inside the transaction it writes in", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(loadAvailability).toHaveBeenCalledWith(
+      USER_ID,
+      { oracleIds: [CARD_A], excludeDeckId: ASKING_ID },
+      expect.anything(),
+    );
+  });
+
+  // One id for both ends is not a transfer: the deck loses a copy to satisfy a
+  // want it already holds, and commits the loss.
+  it("refuses a deck pulling from itself", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, SOURCE_ID);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
   });
 
   // The guard that stops a pull sweeping somebody else's half-finished
@@ -1047,6 +1296,9 @@ describe("pullCardFromDeck", () => {
   // that never happened.
   it("refuses a card the source deck does not hold", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    // The asking deck genuinely wants CARD_B, so the refusal has to come from the
+    // source's shelf rather than from the offer check standing in front of it.
+    stub.state.deckRowsByDeck[ASKING_ID] = [{ oracleId: CARD_B, quantity: 1 }];
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
     const result = await pullCardFromDeck(SOURCE_ID, CARD_B, ASKING_ID);
     expect(result.ok).toBe(false);
@@ -1096,9 +1348,69 @@ describe("pullCardFromDeck", () => {
     expect(stub.state.revalidated).toContain(`/decks/${ASKING_ID}`);
   });
 
+  // The control prints these two figures, and they have to be the server's:
+  // a client that subtracts one from the count it was rendered with is guessing.
+  it("reports the asking deck's position after the pull", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: true, buy: 7, total: "$241.00" });
+    // After the revalidation, so the figures describe the world the reader is
+    // about to be shown rather than the one the pull replaced.
+    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID);
+  });
+
+  // The card has already moved by then. Failing the pull over the sentence
+  // describing it would undo a write that succeeded — but the sentence cannot
+  // claim a purchase of nothing, which is what a zero here would say.
+  it("reports the pull with an unknown buy count when that read fails", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    // The only read left is the one describing where the pull left the asking
+    // deck: the authorization is the transaction's own claim read now.
+    vi.mocked(loadDraftState).mockRejectedValue(new Error("read failed"));
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: true, buy: null, total: null });
+  });
+
+  // `claimsKnown` false is the loader's degraded answer, and it reports
+  // `buyCount: 0` in that state. Printing that zero would tell a player who just
+  // pulled a card that their shopping list is empty — a figure nobody computed.
+  it("reports an unknown buy count when the claim read degraded", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadDraftState).mockResolvedValue({
+      buyCount: 0,
+      total: "$0.00",
+      claimsKnown: false,
+    } as DraftState);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: true, buy: null, total: null });
+  });
+
+  // A versionless asking deck is allowed to take a pull: with no version to diff
+  // against, its live rows are all adds. But `loadDraftState` answers for a brew
+  // with the bare state, whose `buyCount` is 0 because nothing was measured —
+  // printing it would tell a player with a whole brew to buy that they are done.
+  it("reports an unknown buy count when the asking deck has no version", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadDraftState).mockResolvedValue({
+      version: null,
+      buyCount: 0,
+      total: null,
+      claimsKnown: true,
+    } as DraftState);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: true, buy: null, total: null });
+  });
+
   // A brew holds nothing hard, so there is no claim to release and no version
   // to commit against.
   it("refuses a source deck that is not sleeved", async () => {
+    // Both decks unsleeved, so the asking deck's whole draft is a list of adds and
+    // the offer check passes — leaving the source's missing version as the refusal.
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(newestVersion).mockResolvedValue(null);
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(false);

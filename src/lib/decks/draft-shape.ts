@@ -8,6 +8,7 @@
 // client component can reach it and the queries stay behind the server module
 // that re-exports both.
 
+import type { Availability, DeckClaim } from "./availability";
 import type { AddBucket, BucketedAdd, DraftChange } from "./draft-diff";
 import type { DeckVersion } from "./versions";
 
@@ -125,10 +126,54 @@ export function changeCount(state: DraftState): number {
   return state.adds.length + state.removes.length;
 }
 
+/**
+ * Copies going back in the pool when the draft commits.
+ *
+ * COPIES, not rows: `3 → 1` is one remove that releases two, and every surface
+ * that prints this figure prints it beside `buyCount`, which is a copy count.
+ * Counting rows there would tell a player who cut two copies of one card that
+ * one card comes back, and disagree with the claim delta the commit actually
+ * makes.
+ */
+export function releasedCopies(state: DraftState): number {
+  return state.removes.reduce((sum, r) => sum + (r.from - r.to), 0);
+}
+
 /** Whether the draft differs from the version at all. A basics-only edit counts
  *  here and in no figure, which is the only honest split: the app cannot price
  *  an Island, and it must not tell a player who cut three of them that the deck
  *  is unchanged. */
 export function hasChanges(state: DraftState): boolean {
   return changeCount(state) > 0 || state.basicsChanged;
+}
+
+/**
+ * The holders a pull could actually be offered against.
+ *
+ * Both guards, and both of them the server's own: a deck with pending changes
+ * would have them swept into a version nobody asked for, and no route releases a
+ * commander. A control that can only fail is worse than no control.
+ *
+ * Filtered off `claims` rather than through `hardDecks`, whose projection drops
+ * the two guard flags — the maturity test is repeated here for that reason.
+ */
+export function releasableClaims(a: Availability | undefined): DeckClaim[] {
+  if (!a) return [];
+  return a.claims.filter((c) => c.mature && !c.pending && !c.commander);
+}
+
+/**
+ * The one claim a review row draws its control against, or null for a row with
+ * no sleeved holder — an unowned card, or a free one.
+ *
+ * A releasable holder wins, because that row gets the offer. Below that a
+ * commander claim beats a pending one, matching the control's own guard order:
+ * a pending deck can be opened and released, a commander never can, so naming
+ * the permanent obstacle is the more useful of the two.
+ */
+export function pullCandidate(a: Availability | undefined): DeckClaim | null {
+  const releasable = releasableClaims(a)[0];
+  if (releasable) return releasable;
+  const sleeved = (a?.claims ?? []).filter((c) => c.mature);
+  return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.pending) ?? null;
 }

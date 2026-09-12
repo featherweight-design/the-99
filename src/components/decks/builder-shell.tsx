@@ -705,8 +705,7 @@ export function BuilderShell({
               // An exact match, not `>=`: past the body size the deck is `Over`,
               // whose one next action is to cut the excess. An import or a list
               // edit can leave a brew above its commander-specific ceiling, and
-              // `commitDeckVersion` does not check the count, so a `>=` gate
-              // would offer to freeze an illegal list as v1.
+              // a `>=` gate would offer to freeze an illegal list as v1.
               //
               // BOTH counts, and the conjunction is the point. The server count
               // alone holds the offer back until an add has landed, but it also
@@ -714,8 +713,16 @@ export function BuilderShell({
               // freezes the shortened list the player is looking at. The
               // optimistic count alone has the opposite hole. A commit is
               // offered only where the two agree the deck is whole.
+              //
+              // The unresolved count is the same test `commitDeckVersion` now
+              // applies inside its transaction: an unnamed line is not a
+              // `deck_cards` row, so it reaches neither count above, and a v1
+              // cut over it would silently drop it.
               offerFirstCommit={
-                draft?.version === null && deck.built === bodySize && built === bodySize
+                draft?.version === null &&
+                deck.built === bodySize &&
+                built === bodySize &&
+                unresolvedCount === 0
               }
               {...commitments}
               // No link while the Shopping list is what the player is looking

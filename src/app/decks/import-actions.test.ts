@@ -322,7 +322,14 @@ describe("resolveUnresolvedRow", () => {
     // surfaces that draw availability off deck rows are invalidated with it,
     // and the commander detail route with them: its rank is counted over a
     // window that excludes built commanders, so a deck write moves it.
-    expect(stub.state.revalidated).toEqual([...claimSurfaces(DECK), "/commanders/[slug]"]);
+    // Every other deck's review page comes with them by route pattern: a
+    // membership change here decides whether a row over there still offers a
+    // pull, and `claimSurfaces` names this deck's review page alone.
+    expect(stub.state.revalidated).toEqual([
+      ...claimSurfaces(DECK),
+      "/commanders/[slug]",
+      "/decks/[id]/changes",
+    ]);
     // And the reader's cached list payloads, which the revalidated pages read.
     expect(stub.state.updatedTags).toEqual(["user-lists:user_1"]);
   });

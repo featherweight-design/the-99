@@ -7,6 +7,7 @@ import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DraftState } from "../../lib/decks/draft-shape";
+import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import type { DeckDetail } from "../../lib/decks/read";
 
 vi.mock("../../app/decks/actions", () => ({
@@ -75,43 +76,6 @@ function makeDeck(
   } as unknown as DeckDetail;
 }
 
-/** A draft whose deck has never been committed — every figure empty, because a
- *  brew has no version for anything to be pending against. */
-const BREW: DraftState = {
-  version: null,
-  adds: [],
-  addChanges: [],
-  removes: [],
-  basicsChanged: false,
-  names: new Map(),
-  costs: new Map(),
-  prices: new Map(),
-  pullFrom: new Map(),
-  claimsKnown: true,
-  buyCount: 0,
-  unfreeCount: 0,
-  pullableCount: 0,
-  total: null,
-  pricedCopies: 0,
-  newestAsOf: null,
-  manaValue: null,
-  manaValueBefore: null,
-};
-
-const COMMITTED: DraftState = {
-  ...BREW,
-  version: {
-    id: "v",
-    number: 1,
-    committedAt: new Date("2026-09-01T00:00:00Z"),
-    note: null,
-    commanderOracleId: "korvold",
-    partnerOracleId: null,
-    commanderSince: new Date("2026-08-01T00:00:00Z"),
-    partnerSince: null,
-  },
-};
-
 async function mount(deck: DeckDetail, draft: DraftState | null) {
   await act(async () => {
     render(
@@ -146,8 +110,8 @@ describe("BuilderShell — the gate on Commit as v1", () => {
   });
 
   // Past the body size the deck is `Over`, and the action it is waiting for is a
-  // cut, not a commit. `commitDeckVersion` checks no count, so an offer here
-  // would freeze an illegal list as v1 — and a version cannot be uncut.
+  // cut, not a commit. An offer here would put the reader in front of a sheet the
+  // server then refuses, and a `>=` gate would freeze an illegal list as v1.
   it("withholds it past a full body", async () => {
     await mount(makeDeck(101), BREW);
     expect(offers()).toHaveLength(0);
@@ -180,6 +144,16 @@ describe("BuilderShell — the gate on Commit as v1", () => {
   // here would freeze 98 cards under an offer that called the list complete.
   it("withholds it at 98 matched cards plus an unresolved line", async () => {
     await mount(makeDeck(98, null, 1), BREW);
+    expect(offers()).toHaveLength(0);
+  });
+
+  // The other side of the same rule, and the reason the gate reads the unresolved
+  // count directly: at a FULL body plus an unnamed line, both card counts agree
+  // the deck is whole and the line is still a card the player has not finished.
+  // `commitDeckVersion` refuses this inside its transaction, so an offer here
+  // would walk the reader into a refusal.
+  it("withholds it at a full body plus an unresolved line", async () => {
+    await mount(makeDeck(99, null, 1), BREW);
     expect(offers()).toHaveLength(0);
   });
 

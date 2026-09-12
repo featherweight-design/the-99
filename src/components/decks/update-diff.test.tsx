@@ -236,15 +236,38 @@ describe("UpdateDiff groups", () => {
   });
 
   // The slot sits on the name's side of the fixed columns, so a row losing its
-  // tag widens the name rather than shifting the type line — the alignment the
-  // old reserved-width pill was there to protect.
-  it("puts the availability slot before the type line, not after it", () => {
-    const { container } = renderDiff({ in: [row("in-1", { owned: false })] });
+  // tag widens the name rather than shifting the line number — the alignment the
+  // old reserved-width pill was there to protect. Anchored on the source line
+  // since #389 took the per-row type label off the row; it is the only fixed
+  // column left.
+  it("puts the availability slot before the source line, not after it", () => {
+    const { container } = renderDiff({ in: [row("in-1", { owned: false, sourceLine: 4 })] });
     const buy = Array.from(container.querySelectorAll("span")).find(
       (s) => s.textContent === "buy",
     )!;
-    const typeLine = container.querySelector("span[class*='w-[150px]']")!;
-    expect(buy.compareDocumentPosition(typeLine)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const sourceLine = container.querySelector("span[class*='min-w-[54px]']")!;
+    expect(buy.compareDocumentPosition(sourceLine)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  // #389, step 4b. The type was on every row when it is a property of a group of
+  // them; grouped, it is said once, and the width it held funds the cost track.
+  // Both mountings of the row group by type and neither labels a row — if one of
+  // them still did, the row would have forked.
+  it("heads a group by card type rather than labelling every row", () => {
+    renderDiff({ out: [row("out-1", { typeLine: "Artifact" }), row("out-2", { typeLine: "Artifact" })] });
+    expect(screen.getAllByText("Artifacts")).toHaveLength(1);
+    expect(screen.queryByText("Artifact")).not.toBeInTheDocument();
+  });
+
+  it("heads one group per card type, in the decklist's order", () => {
+    renderDiff({
+      in: [],
+      out: [row("out-1", { typeLine: "Island" }), row("out-2", { typeLine: "Creature — Bird" })],
+    });
+    const headings = Array.from(document.querySelectorAll("span"))
+      .map((s) => s.textContent)
+      .filter((t) => t === "Creatures" || t === "Lands");
+    expect(headings).toEqual(["Creatures", "Lands"]);
   });
 
   // The rollup was read with `excludeDeckId`, so a removal reaches `free === 0`

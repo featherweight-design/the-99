@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "../../db";
 import {
   cards, collectionItems, deckCards, deckGameAxes, deckGames, decks,
-  fillPassCards, fillPasses,
+  deckUnresolvedRows, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
@@ -22,6 +22,7 @@ import {
 import {
   bucketAdds, draftDiff, type BucketedAdd, type DraftChange,
 } from "../../lib/decks/draft-diff";
+import { loadDraftState } from "../../lib/decks/draft-state";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
@@ -1311,7 +1312,13 @@ export type CommitResult =
        *  that was snapshotted, not of the shopping decision. The success line
        *  prints this rather than recounting on the client. */
       cardCount: number;
-      buy: BucketedAdd[];
+      /** What the version costs, or NULL when the claim read behind it failed.
+       *  Null is "nobody could say", never "nothing": the read is a receipt, so
+       *  a failure must not cost the player a version they asked for, and an
+       *  empty list there would announce their shopping as finished on the
+       *  strength of a query that threw. Same distinction `PullResult.buy`
+       *  draws, and the same one the page's `claimsKnown` draws. */
+      buy: BucketedAdd[] | null;
       pull: DraftChange[];
     }
   | { ok: false; message: string };
@@ -1336,6 +1343,14 @@ export async function commitDeckVersion(
 ): Promise<CommitResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  // A Server Action's arguments arrive over the wire, so the declared type is a
+  // claim about the caller rather than a guarantee: anything at all can be posted
+  // here. An absent note is legitimate, a non-string one is not, and refusing it
+  // by name is what keeps `note.trim()` below from throwing a TypeError the action
+  // has no result shape for.
+  if (note !== null && note !== undefined && typeof note !== "string") {
+    return { ok: false, message: "We couldn't save that note." };
+  }
   try {
     await requireDeck(deckId, userId);
   } catch {
@@ -1356,6 +1371,37 @@ export async function commitDeckVersion(
     const draft = await tx.select({
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
     }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
+
+    // A FIRST version is the one commit with an eligibility test of its own, and
+    // the server owns it. The spine offers `Commit as v1` only on a list that is
+    // exactly its body size with nothing unresolved; `?commit=1` is a URL, so a
+    // stale link or a hand-typed one reaches the sheet on a 63-card brew, and
+    // without this it would freeze that as v1. Later commits carry no such test:
+    // a deck already has a version to fall back to, and a draft mid-edit is
+    // exactly what this feature exists to let the player commit.
+    if (!previous) {
+      const body = draft.reduce((n, row) => n + row.quantity, 0);
+      const expected = deckBodySize(deck.partnerOracleId !== null);
+      // An exact match, not `>=`: past its size the deck is `Over`, and a v1 of
+      // 104 cards is an illegal list frozen into the deck's history.
+      if (body !== expected) {
+        return {
+          ok: false,
+          message: `A first version has to be a whole deck — ${expected} cards. This one has ${body}.`,
+        };
+      }
+      const [unresolved] = await tx.select({ n: sql<number>`count(*)::int` })
+        .from(deckUnresolvedRows).where(eq(deckUnresolvedRows.deckId, deckId));
+      // Unresolved lines are not `deck_cards` rows and so never reach the count
+      // above: a deck at its body size plus two unnamed lines is a list the
+      // player has not finished, and the version would silently drop them.
+      if ((unresolved?.n ?? 0) > 0) {
+        return {
+          ok: false,
+          message: "Some lines in this deck never matched a card. Resolve them before cutting v1.",
+        };
+      }
+    }
 
     const diff = draftDiff(draft, before);
     // Basics are out of the availability model entirely — see that query's
@@ -1379,18 +1425,47 @@ export async function commitDeckVersion(
     const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
     const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
 
-    // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim,
-    // and the answer wanted is the one that held before this commit landed.
-    const availability = await loadAvailability(userId, {
-      oracleIds: adds.map((a) => a.oracleId),
-      excludeDeckId: deckId,
-    });
-    // hardDecks, not the raw claims: a BREW "holding" a card holds nothing, and
-    // naming it would offer a pull against a list that was never sleeved.
-    const claimants = new Map(
-      [...availability].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
-    );
-    const buy = bucketAdds(adds, claimants).filter((a) => a.bucket !== "free");
+    // A first version buys nothing. `previous` is null, so `before` is empty and
+    // `diff.adds` is the whole deck — every card the player already owns and has
+    // been holding in this brew. Asked about those, the availability model
+    // answers 0 free for all of them: a brew's own live rows are claims, and
+    // `excludeDeckId` subtracts them from a total that already counted them, so
+    // each card appears spoken for by the very list asking about it. The receipt
+    // would read as a 99-card purchase. The design says the same thing from the
+    // other side — see `commit.lede`, where a first commit is one of the cases
+    // that leaves a figure at zero.
+    // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim, and
+    // the answer wanted is the one that held before this commit landed. That choice
+    // is also what makes the catch below safe — a query that throws on `tx` would
+    // abort the transaction and take the write with it, and one that throws on `db`
+    // leaves this transaction untouched.
+    //
+    // Caught rather than allowed to propagate, because this read is the RECEIPT and
+    // not the write: the page keeps the commit CTA live when its own claim read
+    // fails (`claimsKnown`), so a version the player is invited to cut must not be
+    // refused by a transient failure to price it. hardDecks, not the raw claims: a
+    // BREW "holding" a card holds nothing, and naming it would offer a pull against
+    // a list that was never sleeved.
+    let buy: BucketedAdd[] | null = [];
+    if (previous) {
+      try {
+        const availability = await loadAvailability(userId, {
+          oracleIds: adds.map((a) => a.oracleId),
+          excludeDeckId: deckId,
+        });
+        buy = bucketAdds(
+          adds,
+          new Map(
+            [...availability].map(([oracleId, a]) => [
+              oracleId,
+              { free: a.free, claims: hardDecks(a) },
+            ]),
+          ),
+        ).filter((a) => a.bucket !== "free");
+      } catch {
+        buy = null;
+      }
+    }
 
     // `cardCount` comes back off the rows the snapshot was written from, rather
     // than being counted here from `draft`: a path that inserts a card the deck
@@ -1434,11 +1509,28 @@ export async function discardDeckDraft(deckId: string): Promise<DeckMutationResu
  * already has pending changes, committing would sweep them into a version its
  * owner never asked for. That case sends the player to the source deck instead.
  */
+export type PullResult =
+  | {
+      ok: true;
+      /** The asking deck's buy count and priced total AFTER the pull, read from
+       *  the server rather than decremented on the client: a client that
+       *  subtracts one from the figure it was rendered with is guessing, and the
+       *  pull may have freed a copy the deck asked for more than once.
+       *
+       *  Null when that read failed, and never 0: zero is a purchase statement,
+       *  the true count may be anything, and "0 to buy" over a transient read
+       *  failure tells the player their shopping is finished when it is not. A
+       *  consumer holding a null says nothing at all about buying. */
+      buy: number | null;
+      total: string | null;
+    }
+  | { ok: false; message: string };
+
 export async function pullCardFromDeck(
   sourceDeckId: string,
   oracleId: string,
   askingDeckId: string,
-): Promise<DeckMutationResult> {
+): Promise<PullResult> {
   const userId = await requireUserId();
   if (!isUuid(sourceDeckId) || !isUuid(oracleId) || !isUuid(askingDeckId)) {
     return { ok: false, message: "We couldn't find that card." };
@@ -1447,15 +1539,70 @@ export async function pullCardFromDeck(
   await requireDeck(sourceDeckId, userId);
   await requireDeck(askingDeckId, userId);
 
-  // One transaction, and the guards run inside it under the deck's row lock.
-  // Each guard is a decision about what the draft holds right now: read outside
+  // A deck cannot pull from itself. Owning both ends is no defence here: with one
+  // id the source loses a copy to satisfy a want the same list already holds, and
+  // commits that loss — a destructive self-removal dressed as a transfer.
+  if (sourceDeckId === askingDeckId) {
+    return { ok: false, message: "A deck can't pull a card from itself." };
+  }
+
+  // Which decks the claim on this card is made of, read BEFORE the transaction
+  // and used only to decide what to lock. The authorization below re-reads the
+  // claim under those locks and is the read that decides; this one just names
+  // the parties, because a lock set cannot be chosen from inside a transaction
+  // without either locking every deck the player owns or taking locks in an
+  // order a concurrent pull could deadlock against.
+  //
+  // A read that throws leaves the set at the two decks this pull is between,
+  // which is the shipped behaviour and still safe: the verification inside the
+  // transaction refuses rather than authorizing against an unlocked claimant.
+  let claimants: string[] = [];
+  try {
+    const seen = await loadAvailability(userId, {
+      oracleIds: [oracleId],
+      excludeDeckId: askingDeckId,
+    });
+    claimants = hardDecks(seen.get(oracleId) ?? { claims: [] }).map((d) => d.id);
+  } catch {
+    claimants = [];
+  }
+  // Every party, deduplicated and sorted once. Sorting the whole set — not the
+  // two decks with claimants appended — is what makes the ordering global: a
+  // concurrent pull between any other pair takes the same locks in the same
+  // sequence, so one of the two waits instead of both holding what the other
+  // needs.
+  const lockIds = [...new Set([sourceDeckId, askingDeckId, ...claimants])].sort();
+
+  // One transaction, and every guard runs inside it under every party's row lock.
+  // Each guard is a decision about what a draft holds right now: read outside
   // the lock, an edit landing before the commit is swept into a version its
   // owner never asked for — the exact case the pending-changes guard exists to
   // prevent. The write is in here for its own reason: a delete that lands
   // without its commit leaves the draft short of a card the version claims.
   const outcome = await db.transaction<DeckMutationResult>(async (tx) => {
-    const [deck] = await tx.select().from(decks)
-      .where(eq(decks.id, sourceDeckId)).for("update");
+    // EVERY party's deck row, locked in sorted id order, before anything is read.
+    // The asking deck is locked because this transaction authorizes itself against
+    // that deck's claim on the card: two readers each pulling the same card for
+    // the same asking deck from two different sources would otherwise both find
+    // it spoken for and release two copies for a deck that wanted one. The other
+    // claimants are locked because the claim is what authorizes the pull, and a
+    // claim is made of decks this transaction does not otherwise touch —
+    // `commitDeckVersion` takes its own deck's row lock first, so holding a
+    // claimant's row is what stops it committing a release underneath this read.
+    //
+    // Sorted order is what keeps that safe from deadlock. Two pulls with the
+    // roles swapped — A pulling for B while B pulls for A — would otherwise each
+    // hold the lock the other waits on. Sorted, one of them takes both locks and
+    // the other waits at the first, which also serialises every `deck_cards`
+    // lock taken below, so those need no ordering rule of their own.
+    //
+    // A statement each rather than one `where in (...) order by ... for update`:
+    // Postgres does not promise FOR UPDATE takes its locks in ORDER BY order,
+    // so the ordering has to be in the statement sequence to mean anything.
+    for (const id of lockIds) {
+      await tx.select({ id: decks.id }).from(decks).where(eq(decks.id, id)).for("update");
+    }
+    const [deck] = await tx.select().from(decks).where(eq(decks.id, sourceDeckId));
 
     // Deleted between the ownership check and this lock. Left to fall through,
     // it reaches commitVersion, which throws rather than refusing.
@@ -1464,8 +1611,67 @@ export async function pullCardFromDeck(
     // Neither commander is a `deck_cards` row, but both are claims, so a deck
     // can be named as a card's holder on the strength of its commander alone.
     // Without this the pull the reader was offered fails as "doesn't hold it".
+    //
+    // Ahead of the offer check below, because it is the more specific answer: a
+    // commander cannot be pulled by anybody for any reason, and a reader told
+    // instead that their deck isn't waiting on the card would go looking for a
+    // problem with their own draft.
     if (deck.commanderOracleId === oracleId || deck.partnerOracleId === oracleId) {
       return { ok: false, message: "That card is that deck's commander." };
+    }
+
+    // Ownership proves the player may act on both decks; it does not prove this
+    // is a pull the app ever offered. Without this any two owned decks can be
+    // named and the source made to lose a card the asking deck never asked for,
+    // so the asking deck's own draft is the authority on which pulls exist.
+    //
+    // Re-derived here rather than read before the transaction, because that read
+    // would be answering for a moment already past by the time the lock is
+    // taken. `draftDiff` off a `for update` read of the asking deck's rows is the
+    // same derivation `loadDraftState` performs, minus the presentation.
+    const askingVersion = await newestVersion(askingDeckId, tx);
+    const askingBefore = askingVersion ? await versionCards(askingVersion.id, tx) : [];
+    const askingDraft = await tx.select({
+      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
+    }).from(deckCards).where(eq(deckCards.deckId, askingDeckId)).for("update");
+    const add = draftDiff(askingDraft, askingBefore).adds
+      .find((a) => a.oracleId === oracleId);
+    if (!add) return { ok: false, message: "That deck isn't waiting on that card." };
+
+    // And the claim, read under the same locks. An add the reader was offered a
+    // pull for is one whose copies are all spoken for; if a copy has come free
+    // since the page was drawn — because another deck released it, or because an
+    // earlier pull in this same flow already landed — there is nothing to take
+    // out of anybody's box and the draft is already covered.
+    //
+    // `hardDecks`, not the raw claims, for the reason the commit gives: a BREW
+    // "holding" a card holds nothing, and a pull against a list that was never
+    // sleeved moves no physical card.
+    const askingAvailability = await loadAvailability(
+      userId,
+      { oracleIds: [oracleId], excludeDeckId: askingDeckId },
+      tx,
+    );
+    const holders = hardDecks(askingAvailability.get(oracleId) ?? { claims: [] });
+
+    // The claim this authorizes against has to be one every party of which is
+    // locked, or the read above answers for a moment that can still move: a deck
+    // outside the lock set can commit a release between this SELECT and the
+    // decrement below, and the source would then give up a copy that was already
+    // free. The lock set was chosen from a read taken before the transaction, so
+    // a claimant that appeared since is possible — and the honest answer to it is
+    // to refuse and let the reader ask again against a page that names it, never
+    // to authorize a destructive write on a claim half of which is unlocked.
+    const unlocked = holders.find((d) => !lockIds.includes(d.id));
+    if (unlocked) {
+      return { ok: false, message: "Another deck claimed that card. Open the changes again." };
+    }
+
+    const [bucketed] = bucketAdds([add], new Map(
+      [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: hardDecks(a) }]),
+    ));
+    if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
+      return { ok: false, message: "That deck already has the copies it needs." };
     }
 
     const version = await newestVersion(sourceDeckId, tx);
@@ -1509,5 +1715,29 @@ export async function pullCardFromDeck(
   if (!outcome.ok) return outcome;
   revalidateClaims(sourceDeckId, userId);
   revalidateClaims(askingDeckId, userId);
-  return { ok: true };
+  // After the write and after the revalidation, so it reads the world the
+  // reader is about to be shown. A failed read still reports the pull: the card
+  // has moved, and losing the sentence about it is not worth undoing that.
+  try {
+    const state = await loadDraftState(askingDeckId, userId);
+    // `claimsKnown` false is the loader's degraded answer, and it reports
+    // `buyCount: 0` in that state — an honest zero for a figure it could not
+    // compute, not a finished shopping list. Quoting it here would tell the
+    // player they have nothing left to buy on the strength of a failed read, so
+    // an unknown claim model gets the same null a thrown read gets.
+    if (!state.claimsKnown) return { ok: true, buy: null, total: null };
+    // A brew gets the same null, for the same reason. The guards above let a
+    // versionless asking deck take a pull — with no version to diff against its
+    // live rows are all adds — but `loadDraftState` answers for a brew with the
+    // bare state, whose `buyCount` is 0 because nothing was measured rather than
+    // because nothing is left to buy. Only a deck with a version has a purchase
+    // figure this can quote.
+    if (state.version === null) return { ok: true, buy: null, total: null };
+    return { ok: true, buy: state.buyCount, total: state.total };
+  } catch {
+    // A null count, not a zero: the pull happened and the figures did not come
+    // back, and quoting 0 would announce a finished purchase the server never
+    // read. The caller draws the pull and says nothing about buying.
+    return { ok: true, buy: null, total: null };
+  }
 }

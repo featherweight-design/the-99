@@ -1,0 +1,717 @@
+// §Surfaces 2 — the review page. What is asserted here is what the player can
+// read off the two columns before the one irreversible click: which cards move,
+// which way, by how many copies, and what each one will cost. The page's one
+// write is the pull, and `pull-control.test.tsx` owns what that control does —
+// asserted here is only which rows are given one.
+
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
+import type { BrowseCard } from "../../lib/collection/browse";
+import type { Availability } from "../../lib/decks/availability";
+import { cardDetailCopy } from "../cards/card-detail-provider";
+import { BREW, COMMITTED } from "./__fixtures__/draft-state";
+import { ReviewChanges } from "./review-changes";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
+// The page mounts its own provider, so the modal's paging is reachable only
+// through the read that provider does — there is no `fetchCard` to inject.
+const { getCardDetail } = vi.hoisted(() => ({ getCardDetail: vi.fn() }));
+vi.mock("../../app/card-detail-action", () => ({ getCardDetail }));
+
+const browseCard = (oracleId: string, name: string): BrowseCard => ({
+  oracleId, name, typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: "", keywords: [],
+  rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 0,
+  printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+});
+
+const STATE = COMMITTED;
+
+/** The server's count of the list a commit would freeze, handed down to the sheet
+ *  at the foot of the page. Nothing here counts rows to get it. */
+const CARD_COUNT = 99;
+
+type Row = Parameters<typeof ReviewChanges>[0]["rows"]["in"][number];
+
+const row = (over: Partial<Row> = {}): Row => ({
+  oracleId: "o1", name: "Sol Ring", typeLine: "Artifact", cardTypeGroup: "Artifacts",
+  role: "ramp" as const, owned: true, quantity: 1, auto: false,
+  printedName: null, printedSetCode: null, printedCollectorNumber: null,
+  cmc: 1, direction: "in" as const, from: 0, to: 1, bucket: "free" as const,
+  shortfall: 0, ...over,
+});
+
+/** A card sleeved in one other deck. The flags are the guards `pullCandidate`
+ *  reads: a mature, unpending, non-commander claim is the releasable one. */
+const claimed = (over: Partial<Availability["claims"][number]> = {}): Availability =>
+  ({
+    free: 0,
+    claims: [
+      {
+        id: "holder",
+        name: "Kykar",
+        quantity: 1,
+        mature: true,
+        pending: false,
+        commander: false,
+        ...over,
+      },
+    ],
+  }) as unknown as Availability;
+
+/** The pull's accessible name — the card and the deck it comes out of, not the
+ *  two visible words, which repeat down the column. */
+const PULL_NAME = deckVersioningCopy.review.pullA11y("Sol Ring", "Kykar");
+
+describe("ReviewChanges", () => {
+  it("groups both columns by card type and heads each with its count", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    // Twice each, and one markup: the phone segment and the desktop direction
+    // header carry the same string at the two widths.
+    expect(screen.getAllByText(deckVersioningCopy.review.groupIn(1))).toHaveLength(2);
+    expect(screen.getAllByText(deckVersioningCopy.review.groupOut(1))).toHaveLength(2);
+    // The type is said once over the rows that share it, never per row — the
+    // whole of what dropping the row's own label bought.
+    expect(screen.getAllByText("Artifacts")).toHaveLength(2);
+    expect(screen.queryByText("Artifact")).toBeNull();
+  });
+
+  it("files a quantity move as one row carrying from → to, never a bare name", () => {
+    render(
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+    );
+    expect(screen.getByText(/1 → 2/)).toBeTruthy();
+  });
+
+  // A whole add and a whole cut are what the column heading already says, so a
+  // `0 → 1` beside them would restate the column the row is standing in.
+  it("says nothing about copies on a card arriving or leaving whole", () => {
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
+    expect(screen.queryByText(/\d+ → \d+/)).toBeNull();
+  });
+
+  it("puts the availability word in the accessible name, not only in colour", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "unowned" })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    const describedBy = screen
+      .getByRole("button", { name: /Sol Ring/ })
+      .getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy as string)?.textContent).toBe(
+      deckVersioningCopy.review.chipBuy,
+    );
+  });
+
+  // A free copy is drawn as nothing — the availability marker returns null at
+  // `free` on every surface in the app — so there is no colour for a word to be
+  // the alternative to.
+  it("describes nothing on a row the player already has a free copy of", () => {
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
+    expect(
+      screen.getByRole("button", { name: /Sol Ring/ }).getAttribute("aria-describedby"),
+    ).toBeNull();
+  });
+
+  // The figure is COPIES, not rows: one card going from three copies to one puts
+  // two back in the pool, and the same note sits beside a buy count of copies.
+  it("states the out column's rule once, in copies, and offers no per-row toggle", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
+        state={{ ...STATE, removes: [{ oracleId: "o1", from: 3, to: 1 }] }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.outNote(2))).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.outNote(1))).toBeNull();
+    expect(screen.queryByRole("button", { name: /Keep/ })).toBeNull();
+  });
+
+  // The lede names the version the player is about to cut, not the one they are
+  // standing on: the whole page exists to be read before that number exists.
+  it("heads the page with the version behind it and the version ahead", () => {
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
+    expect(screen.getByText(deckVersioningCopy.review.heading(1, 1))).toBeTruthy();
+    expect(screen.getByText(deckVersioningCopy.review.lede(2))).toBeTruthy();
+  });
+
+  // The offer belongs to the adds: a pull answers "where does this copy come
+  // from", and a card leaving the deck is not being sought for it.
+  it("offers a pull on a sleeved add and on no removal", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [row({ bucket: "claimed", availability: claimed() })],
+          out: [
+            row({
+              oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0,
+              bucket: "claimed", availability: claimed(),
+            }),
+          ],
+        }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getAllByRole("button", { name: PULL_NAME })).toHaveLength(1);
+  });
+
+  // A card nobody has sleeved has no holder to pull from, and a free copy needs
+  // nothing pulled — in both cases the buy tag or nothing is the whole row.
+  it("offers no pull on a row with no sleeved holder", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row(), row({ oracleId: "o2", name: "Mox", bucket: "unowned" })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
+  });
+
+  // `bucketAdds` calls an add free the moment the collection has a spare copy
+  // for it, whatever else is holding one — so a free row arrives with live
+  // claims on it, and an offer to raid another deck for a copy already in the
+  // box is one `pullableCount` has never counted. The holder goes with it: the
+  // row draws no availability marker at `free` either, and naming a deck the
+  // reader is being offered nothing from is a fact about somebody else's box.
+  it("offers no pull on a free add another deck also holds", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [
+            row({
+              bucket: "free",
+              // A spare copy in the collection AND a copy sleeved elsewhere,
+              // which is the pair the bucket is indifferent to.
+              availability: { ...claimed(), free: 1 } as unknown as Availability,
+            }),
+          ],
+          out: [],
+        }}
+        state={{ ...STATE, pullableCount: 0 }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
+    expect(screen.queryByText(deckVersioningCopy.review.heldBy("Kykar"))).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
+        .getAttribute("aria-describedby"),
+    ).toBeNull();
+  });
+
+  // The pending guard is an `Open →` rather than a pull, because committing that
+  // deck's half-finished draft from here would sweep in changes its owner never
+  // asked for. The sentence explaining that is the LINK's accessible name, so the
+  // row does not carry it a second time — a description repeating a control inside
+  // the row reads one sentence twice. "can be pulled" goes with it: it is the
+  // opposite of what this row is.
+  it("leaves a pending holder's guard to the control, and says it once", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ pending: true }) })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    const guard = deckVersioningCopy.review.pullGuardA11y("Kykar", "Sol Ring");
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
+    expect(screen.getByRole("link", { name: guard })).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
+        .getAttribute("aria-describedby"),
+    ).toBeNull();
+    expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
+  });
+
+  // The guards are the server's, so the row says which obstacle it hit rather
+  // than drawing a control that can only fail. `pull-control.test.tsx` covers
+  // both arms; this is the wiring — the row reads the claim's flags at all.
+  it("draws the guard rather than the offer on a commander's copy", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
+    expect(screen.getByText(deckVersioningCopy.review.commanderGuardTag)).toBeTruthy();
+  });
+
+  // Said once per row, and by the row: the guard tag has no accessible name of
+  // its own, so the sentence reaches a screen reader through the name trigger's
+  // description — the only focusable thing on this arm — rather than twice.
+  it("speaks the commander guard once, from the row's description", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    const sentence = deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring");
+    expect(screen.getAllByText(sentence)).toHaveLength(1);
+    expect(screen.queryByLabelText(sentence)).toBeNull();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(sentence);
+  });
+
+  // The word behind the colour is the row's own state. "can be pulled" on a row
+  // whose control is refusing to offer one describes an act the page will not do.
+  it("describes a commander's copy with the guard rather than the pull", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    const describedBy = screen
+      .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
+      .getAttribute("aria-describedby");
+    expect(document.getElementById(describedBy as string)?.textContent).toBe(
+      deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring"),
+    );
+    expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
+  });
+
+  // Every other figure on the page stands down when the claim read failed — the
+  // chips, the breakdown and the banner one click back all quote no purchase — so
+  // a row still printing its figure would be the one thing pricing a commit
+  // nobody could cost. The tag keeps the word `buy`, which is the collection's
+  // answer and not the claim model's.
+  it("quotes no price on a row when the claim read failed", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [row({
+            owned: false, bucket: null,
+            price: { cents: 2840, foilCents: null, etchedCents: null, asOf: new Date("2026-09-08") },
+          })],
+          out: [],
+        }}
+        state={{ ...STATE, claimsKnown: false, newestAsOf: new Date("2026-09-08") }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(addPanelCopy.unowned.tag)).toBeTruthy();
+    expect(screen.queryByText("$28.40")).toBeNull();
+  });
+
+  // `bucketAdds` files a partially covered add with no claimant under `unowned`,
+  // so the row is a card the player owns a copy of AND a purchase of the rest.
+  // Deciding the slot on `owned` drew the availability marker there and hid the
+  // price on a row this page's own buy count includes.
+  it("prices an add the player owns a copy of but must still buy copies for", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [row({
+            owned: true, from: 1, to: 4, bucket: "unowned", shortfall: 3,
+            price: { cents: 2840, foilCents: null, etchedCents: null, asOf: new Date("2026-09-08") },
+          })],
+          out: [],
+        }}
+        state={{ ...STATE, newestAsOf: new Date("2026-09-08") }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText("$28.40")).toBeTruthy();
+  });
+
+  // The bar's own figure, and the sheet one click down counts the same one: both
+  // are copies, because the buy term beside them is.
+  it("counts the bar's released figure in copies", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
+        state={{ ...STATE, removes: [{ oracleId: "o1", from: 3, to: 1 }] }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByText(deckVersioningCopy.review.footer(CARD_COUNT, STATE.buyCount, 2)),
+    ).toBeTruthy();
+  });
+
+  // Grouped order, not the payload's: the columns group by type and sort inside a
+  // group, so paging the payload's own order steps the reader somewhere other
+  // than the row under the one they opened.
+  it("pages the card modal in the order the columns draw", async () => {
+    getCardDetail.mockImplementation(async (oracleId: string) =>
+      browseCard(oracleId, oracleId === "o1" ? "Sol Ring" : oracleId === "o2" ? "Llanowar Elves" : "Mox"),
+    );
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [
+            row(),
+            row({ oracleId: "o2", name: "Llanowar Elves", typeLine: "Creature", cardTypeGroup: "Creatures" }),
+            row({ oracleId: "o3", name: "Mox" }),
+          ],
+          out: [],
+        }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    // Drawn as Llanowar Elves (Creatures), then Mox and Sol Ring (Artifacts, by
+    // name) — so Sol Ring is the third of three here and the first of three in
+    // the payload.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("3 of 3")).toBeTruthy();
+    });
+  });
+
+  // One column is nothing to switch between, so the phone control is absent —
+  // and its absence is what keeps the desktop columns from being drawn twice.
+  it("offers the phone segments only when both columns have rows", () => {
+    // The segment is labelled by the column heading itself, figure and all, so
+    // the page has one name for a direction rather than a chip's and a
+    // heading's.
+    const segment = deckVersioningCopy.review.groupIn(1);
+    const { unmount } = render(
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+    );
+    expect(screen.queryByRole("button", { name: segment })).toBeNull();
+    unmount();
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByRole("button", { name: segment })).toBeTruthy();
+  });
+
+  // The one way off this page that is neither a commit nor a discard, and it
+  // names the deck: a bare "Back" would ask the reader to remember which deck
+  // they were editing to know where it goes.
+  it("links back to the deck by name", () => {
+    render(
+      <ReviewChanges deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+    );
+    const back = screen.getByRole("link", { name: /Korvold/ });
+    expect(back.getAttribute("href")).toBe("/decks/d7");
+  });
+
+  // Every chip is counted off the state rather than off the rows beside it — the
+  // banner, this strip and the commit sheet's buy block are one purchase with
+  // three appearances — and the purchase rides on the to-buy chip because a
+  // count of copies and what those copies cost are one fact.
+  it("chips the purchase with its total, and draws no chip for a nought", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={{ ...STATE, buyCount: 3, total: "$28.40", pullableCount: 0 }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.chipBuy)).toBeTruthy();
+    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getByText("$28.40")).toBeTruthy();
+    // No pull is on the table, so the chip standing for one is absent rather
+    // than drawn at zero.
+    expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
+    // Nor is the out chip, with no column behind it.
+    expect(screen.queryByText(deckVersioningCopy.review.chipOut)).toBeNull();
+  });
+
+  // The pair goes inside the row the card is already named on. A caption under
+  // the row printed the name a second time, which is the one thing the row it
+  // hangs off has never failed to say.
+  it("carries the recount inside the row without naming the card twice", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ from: 3, to: 1 })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(/3 → 1/)).toBeTruthy();
+    expect(screen.queryByText(/Sol Ring 3 → 1/)).toBeNull();
+  });
+
+  // Desktop only: at 390px the segmented pair is the direction, and the lede
+  // describes pulls the reader can see on the list below it.
+  it("heads each column with its direction and its breakdown", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByText(deckVersioningCopy.review.groupInBreakdown(0, 0, 0)),
+    ).toBeTruthy();
+  });
+
+  // The bar is a bar and not a lone button: the figures it carries are what a
+  // reader checks before the irreversible click, and they are the same three the
+  // sheet one click down repeats.
+  it("foots the page with the commit and the figures it would freeze", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={{ ...STATE, buyCount: 3 }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    const note = screen.getByText(
+      deckVersioningCopy.review.footer(CARD_COUNT, 3, STATE.removes.length),
+    );
+    const cta = screen.getByRole("button", {
+      name: deckVersioningCopy.pending.commitCta((STATE.version?.number ?? 0) + 1),
+    });
+    const bar = note.parentElement as HTMLElement;
+    expect(bar.contains(cta)).toBe(true);
+    expect(bar.className).toContain("[border-top:1px_solid_var(--border-strong)]");
+    expect(bar.className).toContain("bg-[color:var(--base)]");
+    // One element ordered twice rather than two subtrees: the note reads first on
+    // the phone and last above it, and the DOM holds it once either way.
+    expect(note.className).toContain("order-first md:order-last");
+    // Discard arrives with plan Task 19; nothing stands in for it here.
+    expect(
+      screen.queryByRole("button", { name: deckVersioningCopy.pending.discardCta }),
+    ).toBeNull();
+  });
+
+  // The two deck-page CTAs that mean "commit this" link here with `?commit=1`,
+  // and the page is the commit surface — arriving that way and being shown a
+  // button that opens what you asked for is one click too many.
+  it("mounts the commit sheet at the foot, open when the reader asked for it", () => {
+    const commitCta = deckVersioningCopy.pending.commitCta(
+      (STATE.version?.number ?? 0) + 1,
+    );
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    // Folded by default: the reader came to read the columns, and the sheet is
+    // one click under them.
+    expect(screen.getByRole("button", { name: commitCta })).toBeTruthy();
+    expect(screen.queryByLabelText(deckVersioningCopy.commit.noteLabel)).toBeNull();
+
+    cleanup();
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+        commitOpen
+      />,
+    );
+    // Expanded, and the sheet's own figure is the count it was handed rather
+    // than a tally of the one row above it.
+    expect(screen.queryByRole("button", { name: commitCta })).toBeNull();
+    expect(screen.getByLabelText(deckVersioningCopy.commit.noteLabel)).toBeTruthy();
+    expect(
+      screen.getByText(
+        deckVersioningCopy.commit.footer(CARD_COUNT, STATE.buyCount, STATE.removes.length),
+      ),
+    ).toBeTruthy();
+  });
+
+  // `?commit=1` is an instruction to open the sheet, so cancelling has to take it
+  // off the URL as well as close the sheet. Left behind, a reload or a
+  // back-forward return hands the reader back the sheet they just dismissed.
+  it("takes ?commit=1 off the URL when the sheet is cancelled", () => {
+    history.replaceState(null, "", "/decks/d/changes?commit=1&filter=shopping");
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+        commitOpen
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: deckVersioningCopy.commit.cancel }).click();
+    });
+    expect(screen.queryByLabelText(deckVersioningCopy.commit.noteLabel)).toBeNull();
+    expect(window.location.search).toBe("?filter=shopping");
+  });
+  // A versionless deck has no predecessor to diff against, so `loadDraftState`
+  // gives it no change lists at all. Read through the committed copy this page
+  // would head itself "0 changes since v1" over a lede about what a draft costs —
+  // both false of a list that IS v1. The route admits a brew only when it can cut
+  // v1, so this pair is the whole page.
+  it("names the act rather than a diff on a deck with no version yet", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [] }}
+        state={BREW}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: deckVersioningCopy.review.firstHeading(CARD_COUNT) }),
+    ).toBeTruthy();
+    expect(screen.getByText(deckVersioningCopy.review.firstLede)).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.heading(0, 1))).toBeNull();
+  });
+
+  // A draft that moved only basic lands has a version to cut and no row either
+  // column can draw, so counting changes prints a nought standing for a real
+  // edit — "0 changes since v1" over an open sheet offering v2. The page is
+  // reachable in this state only as the banner's `?commit=1`, which is why the
+  // sheet is what the pair is read above.
+  it("names the mana base rather than counting changes on a basics-only draft", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [] }}
+        state={{ ...STATE, basicsChanged: true }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: deckVersioningCopy.review.basicsHeading(1) }),
+    ).toBeTruthy();
+    expect(screen.getByText(deckVersioningCopy.review.basicsLede(2))).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.heading(0, 1))).toBeNull();
+  });
+
+  // Nothing moved at all: not a state the route admits, and the heading stays the
+  // diff's rather than borrowing the basics-only line — that line would claim an
+  // edit to the mana base nobody made.
+  it("keeps the diff heading when a clean draft is rendered anyway", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: deckVersioningCopy.review.heading(0, 1) })).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.basicsHeading(1))).toBeNull();
+  });
+
+  // A failed claim read leaves every add's bucket null, so all three terms of the
+  // breakdown come back at nought. Printed as themselves they read "nothing to
+  // buy" — the one thing the page must not say about a read it could not make.
+  it("says the claims were unreadable rather than printing three noughts", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: null })], out: [] }}
+        state={{ ...STATE, claimsKnown: false }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.groupInUnknown)).toBeTruthy();
+    expect(
+      screen.queryByText(deckVersioningCopy.review.groupInBreakdown(0, 0, 0)),
+    ).toBeNull();
+  });
+
+  // The same false zero in the bar: `buyCount` is 0 both when there is nothing to
+  // buy and when the claims could not be read, and only the first is a fact.
+  it("drops the footer's purchase term when the claims could not be read", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: null })], out: [] }}
+        state={{ ...STATE, claimsKnown: false }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByText(
+        deckVersioningCopy.review.footerUnknown(CARD_COUNT, STATE.removes.length),
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(deckVersioningCopy.review.footer(CARD_COUNT, 0, STATE.removes.length)),
+    ).toBeNull();
+  });
+
+  // The heading hides on the phone only because the segmented pair above it is
+  // already naming the direction. A lone column has no pair, so hiding it there
+  // leaves the phone an unlabelled list of cards with no way to tell which way
+  // they are going.
+  it("keeps the lone column's heading on the phone, and drops it beside a pair", () => {
+    const headingOf = () =>
+      screen.getByRole("heading", { name: deckVersioningCopy.review.groupIn(1) })
+        .parentElement as HTMLElement;
+    const { unmount } = render(
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+    );
+    expect(headingOf().className).not.toContain("hidden");
+    unmount();
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(headingOf().className).toContain("hidden");
+  });
+});

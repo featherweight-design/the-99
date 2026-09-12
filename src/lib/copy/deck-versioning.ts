@@ -130,6 +130,27 @@ export const deckVersioningCopy = {
       "Nothing here is a decision except the pulls. The list on the deck page is already " +
       `this list — this page exists to show you what it costs before you lock it in as v${version}.`,
 
+    // A versionless deck reaches this page to cut v1, and neither line above can
+    // describe it: there is no predecessor to count changes against, so the pair
+    // would read "0 changes since v1" over a sentence about what a draft costs.
+    // Nothing is coming in or going out either — the whole list is v1 — so the
+    // page is the commit surface and these two say so.
+    firstHeading: (n: number) => `${plural(n, "card")}, ready for v1`,
+    firstLede:
+      "This deck has no version yet, so there is nothing to compare it against. Committing " +
+      "freezes the list exactly as it stands and starts claiming its cards against your " +
+      "other decks.",
+
+    // The third case the two lines at the top cannot describe: a draft that
+    // moved only basic lands. It has a version to cut and no nameable row, so
+    // `heading` reads "0 changes since v1" over an open commit sheet — a zero
+    // standing for a real edit. Same reasoning as `firstHeading` above, and the
+    // page is reachable in this state only as the banner's `?commit=1`.
+    basicsHeading: (version: number) => `Mana base only, since v${version}`,
+    basicsLede: (version: number) =>
+      "This draft moved basic lands and nothing else, so no card is coming in or going out and " +
+      `there is nothing to buy. Committing freezes the new mana base as v${version}.`,
+
     chipIn: "in",
     chipOut: "out",
     chipBuy: "to buy",
@@ -143,6 +164,12 @@ export const deckVersioningCopy = {
     heldBy: (deck: string) => `in ${deck}`,
     pull: "Pull it",
     pulling: "Pulling…",
+    // Never rendered — the button's accessible name, for the same reason the two
+    // guards carry one. "Pull it" is two words repeated down a column of changed
+    // rows, and a reader tabbing through them cannot tell which card leaves which
+    // deck. The visible text stays two words because the row prints both names
+    // beside it; only the name spoken out of context has to carry them.
+    pullA11y: (card: string, deck: string) => `Pull ${card} from ${deck}.`,
     // The guard: the source deck has pending changes of its own, so committing it
     // automatically would sweep somebody's half-finished tinkering into a version.
     // The deck NAME is already on the row, so the reason is a four-letter tag beside
@@ -163,6 +190,16 @@ export const deckVersioningCopy = {
     outNote: (n: number) =>
       `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit. No per-row ` +
       "toggle: putting one back is adding it to the deck, and the deck page already does that.",
+
+    // The breakdown and the footer each carry a purchase figure, and a failed
+    // claim read leaves every add's bucket null — so all three terms of the
+    // breakdown and the footer's `buy` come back at nought for a question nobody
+    // answered. Printed as themselves they read as "nothing to buy", which is the
+    // one thing the page must not say on a read it could not make. Same call the
+    // pending banner makes when `claimsKnown` is false.
+    groupInUnknown: "we couldn't read what your other decks hold",
+    footerUnknown: (cards: number, released: number) =>
+      `${plural(cards, "card")} · ${released} back in the pool`,
 
     footer: (cards: number, buy: number, released: number) =>
       `${plural(cards, "card")} · ${buy} to buy · ${released} back in the pool`,
@@ -217,6 +254,9 @@ export const deckVersioningCopy = {
     linkOut: "Open in Mana Pool",
 
     pullHeading: (n: number) => `Back in the pool · ${n}`,
+    // The same label without its count, for the width that draws the figure
+    // beneath it at 24px rather than inside the label (§Surfaces 3, desktop).
+    pullHeadingPlain: "Back in the pool",
     pullNote:
       "No action required — committing is what releases them. Take them out of the box " +
       "whenever you next open it.",
@@ -226,16 +266,35 @@ export const deckVersioningCopy = {
     cancel: "Cancel",
     footer: (cards: number, buy: number, released: number) =>
       `${plural(cards, "card")} · ${buy} to buy · ${released} released`,
+    // The same line with the purchase term taken out, for the draft whose claim
+    // read came back null. A failed read buckets every add as `null` with no
+    // shortfall, so `buyCount` is 0 by absence rather than by fact, and "0 to
+    // buy" would state the opposite of what is known.
+    footerUnknown: (cards: number, released: number) =>
+      `${plural(cards, "card")} · ${released} released`,
 
     refused: "We couldn't commit that version. Your changes are still here.",
     announced: (version: number, cards: number, buy: number) =>
       `Committed v${version}. ${plural(cards, "card")}, ${buy} to buy.`,
+    // The same line with the purchase clause taken out, for the commit whose claim
+    // read failed. The version was written and its size is known; what nobody can
+    // say is what it costs, and "0 to buy" over a failed read tells the player
+    // their shopping is finished. Same rule as `footerUnknown` and
+    // `pullAnnouncedBuyUnknown`.
+    announcedBuyUnknown: (version: number, cards: number) =>
+      `Committed v${version}. ${plural(cards, "card")}.`,
     // Nullable total, because `DraftState.total` is: a purchase where no
     // requested copy carried a price is a real purchase with no figure, and the
     // pull that produced it still has to be announced. The clause is dropped
     // rather than filled with a fabricated zero.
     pullAnnounced: (card: string, deck: string, buy: number, total: string | null) =>
       `${card} pulled from ${deck}. ${buy} to buy${total === null ? "" : `, ${total}`}.`,
+    // The same announcement with every word about buying taken out, for the pull
+    // whose post-write read of the asking deck came back null. The copy moved and
+    // the player asked for it, so the pull is still announced; what nobody can say
+    // is what is left to buy. A 0 there would tell them their shopping is finished
+    // over a read that failed, and "unknown" is a figure nobody offered.
+    pullAnnouncedBuyUnknown: (card: string, deck: string) => `${card} pulled from ${deck}.`,
   },
 
   /* ---- Discard · unrecoverable, so it confirms (the #476 bar) ---- */

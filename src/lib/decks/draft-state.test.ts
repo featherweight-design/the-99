@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Availability, DeckClaim } from "./availability";
 import { summarisePrices } from "./price";
 import {
-  bucketDraftAdds, changeCount, hasChanges, pullHints, releasableClaims, unfreeAdds,
-  type DraftAdd, type DraftState,
+  bucketDraftAdds, changeCount, hasChanges, pullCandidate, pullHints, releasableClaims,
+  releasedCopies, unfreeAdds, type DraftAdd, type DraftState,
 } from "./draft-state";
 
 const state = (over: Partial<DraftState> = {}): DraftState => ({
@@ -33,6 +33,19 @@ describe("changeCount / hasChanges", () => {
 
   it("calls an untouched draft unchanged", () => {
     expect(hasChanges(state())).toBe(false);
+  });
+});
+
+// Copies, because the figure is printed beside `buyCount`, which counts copies.
+describe("releasedCopies", () => {
+  it("counts copies rather than rows", () => {
+    expect(releasedCopies(state({
+      removes: [{ oracleId: "a", from: 3, to: 1 }, { oracleId: "b", from: 1, to: 0 }],
+    }))).toBe(3);
+  });
+
+  it("releases nothing on a draft that cut nothing", () => {
+    expect(releasedCopies(state())).toBe(0);
   });
 });
 
@@ -132,5 +145,40 @@ describe("pullHints", () => {
   // offer can be made — the same degradation every other figure takes.
   it("offers no pull when the claim read failed", () => {
     expect(pullHints([add({ bucket: null, shortfall: 0 })], null).size).toBe(0);
+  });
+});
+
+// Which claim the review row hands its control. The same three flags decide it,
+// but this one has to return a claim where `releasableClaims` returns none —
+// that is the row that draws a guard instead of an offer.
+describe("pullCandidate", () => {
+  const claim = (over: Partial<DeckClaim> = {}): DeckClaim => ({
+    id: "d-1", name: "Kykar, Wind's Fury", quantity: 1,
+    mature: true, pending: false, commander: false, ...over,
+  });
+  const availability = (claims: DeckClaim[]): Availability =>
+    ({ owned: 1, hard: 1, soft: 0, free: 0, claims });
+
+  it("prefers the holder the pull can be offered against", () => {
+    const chosen = pullCandidate(availability([
+      claim({ id: "d-guarded", pending: true }),
+      claim({ id: "d-free" }),
+    ]));
+    expect(chosen?.id).toBe("d-free");
+  });
+
+  // The permanent obstacle is the more useful one to name: a pending deck can be
+  // opened and released, a commander claim never can.
+  it("names a commander claim ahead of a pending one", () => {
+    const chosen = pullCandidate(availability([
+      claim({ id: "d-pending", pending: true }),
+      claim({ id: "d-commander", commander: true }),
+    ]));
+    expect(chosen?.id).toBe("d-commander");
+  });
+
+  it("draws nothing for a card with no sleeved holder", () => {
+    expect(pullCandidate(availability([claim({ mature: false })]))).toBeNull();
+    expect(pullCandidate(undefined)).toBeNull();
   });
 });

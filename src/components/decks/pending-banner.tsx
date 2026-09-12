@@ -5,7 +5,7 @@
 // than a mode of it.
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy, INLINE_CHANGE_MAX } from "../../lib/copy/deck-versioning";
 import { priceCopy } from "../../lib/copy/price";
@@ -13,6 +13,7 @@ import type { DraftChange } from "../../lib/decks/draft-diff";
 import { changeCount, hasChanges, type DraftAdd, type DraftState } from "../../lib/decks/draft-shape";
 import { formatDeckDate } from "../../lib/decks/format";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
+import { COMMIT_RECEIPT_HASH } from "./draft-announcer";
 
 const copy = deckVersioningCopy.pending;
 
@@ -203,6 +204,30 @@ function NameLine({
   );
 }
 
+/** The committed version line, and where a commit lands. Focusable but not a tab
+ *  stop — `tabIndex={-1}` — because it is a statement, not a control: it exists
+ *  to be reachable programmatically once, the paint after the commit sheet
+ *  navigated here. See `COMMIT_RECEIPT_HASH` for why that matters. */
+function VersionLine({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (window.location.hash !== COMMIT_RECEIPT_HASH) return;
+    ref.current?.focus();
+    // `replaceState`, so the receipt does not become an entry the reader can go
+    // back to and re-fire.
+    history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  }, []);
+  return (
+    <span
+      ref={ref}
+      tabIndex={-1}
+      className="font-mono text-[11px] text-[color:var(--fg-faint)]"
+    >
+      {text}
+    </span>
+  );
+}
+
 export function PendingBanner({ state, deckId, onDiscard }: PendingBannerProps) {
   const n = changeCount(state);
   const next = (state.version?.number ?? 0) + 1;
@@ -220,9 +245,12 @@ export function PendingBanner({ state, deckId, onDiscard }: PendingBannerProps) 
   if (!hasChanges(state)) {
     return (
       <div className={STRIP}>
-        <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-          {copy.versionLine(state.version.number, formatDeckDate(state.version.committedAt))}
-        </span>
+        <VersionLine
+          text={copy.versionLine(
+            state.version.number,
+            formatDeckDate(state.version.committedAt),
+          )}
+        />
       </div>
     );
   }
