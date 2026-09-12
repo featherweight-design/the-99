@@ -31,6 +31,7 @@ const unresolvedCopy = deckImportCopy.unresolved;
 const result = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   oracleId: over.name.toLowerCase(),
   typeLine: "Enchantment",
+  cmc: 2,
   owned: true,
   ownedQty: 1,
   cardTypeGroup: "Enchantments",
@@ -51,6 +52,7 @@ const solRing: DeckDetailCard = {
   typeLine: "Artifact",
   cardTypeGroup: "Artifacts",
   role: "ramp",
+  cmc: 2,
   owned: true,
   quantity: 1,
   auto: false,
@@ -408,7 +410,7 @@ describe("the resolution row's availability marker", () => {
     hard: names.length,
     soft: 0,
     free: 0,
-    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true })),
+    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
   });
 
   const mount = (r: SearchResult, deckOracleIds: string[] = [], commanderOracleId?: string) => {

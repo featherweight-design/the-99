@@ -24,6 +24,7 @@ const card = (role: DeckDetailCard["role"], i: number): DeckDetailCard => ({
   name: `${role} ${i}`,
   typeLine: "Artifact",
   cardTypeGroup: "Artifacts",
+  cmc: 2,
   role,
   owned: true,
   quantity: 1,

@@ -5,6 +5,7 @@ import {
   cards,
   collectionItems,
   deckCards,
+  deckFolders,
   deckGames,
   deckUnresolvedRows,
   decks,
@@ -213,6 +214,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       oracleText: cards.oracleText,
       keywords: cards.keywords,
       manaCost: cards.manaCost,
+      cmc: cards.cmc,
       imageUri: cards.imageUri,
       layout: cards.layout,
       owned: ownedSql,
@@ -284,6 +286,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     typeLine: row.typeLine,
     cardTypeGroup: cardTypeGroup(row.typeLine),
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
+    cmc: row.cmc,
     owned: row.owned,
     quantity: row.quantity,
     auto: row.auto,
@@ -348,6 +351,14 @@ export type DeckListItem = {
    */
   partnerName: string | null;
   partnerColorIdentity: string[] | null;
+  /**
+   * The folder this deck is filed on, or null for unfiled. Both fields ride
+   * along together so a grid can group by folder and label the group without a
+   * second lookup; null on both is the unfiled bucket, which is where every
+   * deck starts and where one returns when its folder is deleted.
+   */
+  folderId: string | null;
+  folderName: string | null;
   built: number;
   ownedCount: number;
   toBuyCount: number;
@@ -465,6 +476,14 @@ export async function listDecksWithStats(
       commanderArtCropUri: cards.artCropUri,
       partnerName: partnerCards.name,
       partnerColorIdentity: partnerCards.colorIdentity,
+      // The JOINED id, not `decks.folder_id`. The join is scoped to the owner,
+      // so a row pointing at another player's folder — a state the foreign key
+      // permits even though nothing writes it — matches nothing here. Reading
+      // the raw column would then pair a foreign id with a null name, which
+      // both breaks the documented pair and hands a grouping consumer a
+      // phantom unlabelled folder to draw.
+      folderId: deckFolders.id,
+      folderName: deckFolders.name,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
@@ -476,6 +495,18 @@ export async function listDecksWithStats(
     // have no partner — an inner join would drop every single-commander deck
     // from the list.
     .leftJoin(partnerCards, eq(decks.partnerOracleId, partnerCards.oracleId))
+    // LEFT, because an unfiled deck has no folder row — an inner join here
+    // would hide every deck the player has not filed, which today is all of them.
+    //
+    // Keyed on the OWNER as well as the id. The foreign key constrains only the
+    // id, so a row whose deck and folder belong to different players is a state
+    // the database permits even though `moveDeck` refuses to write it — and on
+    // this join it would print another player's folder name beside this
+    // player's deck.
+    .leftJoin(
+      deckFolders,
+      and(eq(deckFolders.id, decks.folderId), eq(deckFolders.userId, userId)),
+    )
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
     .groupBy(
@@ -488,6 +519,8 @@ export async function listDecksWithStats(
       cards.artCropUri,
       partnerCards.name,
       partnerCards.colorIdentity,
+      deckFolders.id,
+      deckFolders.name,
     )
     .orderBy(...order);
 
@@ -555,6 +588,8 @@ export async function listDecksWithStats(
       commanderArtCropUri: row.commanderArtCropUri,
       partnerName: row.partnerName,
       partnerColorIdentity: row.partnerColorIdentity,
+      folderId: row.folderId,
+      folderName: row.folderName,
       built: row.built,
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,

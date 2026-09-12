@@ -21,6 +21,8 @@ function deckOf(over: Partial<DeckListItem> = {}): DeckListItem {
     commanderArtCropUri: null,
     partnerName: null,
     partnerColorIdentity: null,
+    folderId: null,
+    folderName: null,
     statusPill: "Complete",
     built: 99,
     ownedCount: 99,

@@ -188,6 +188,31 @@ export const cardArtPreferences = pgTable("card_art_preferences", {
   collectorNumber: text("collector_number").notNull().default(""),  // TEXT — "31", "12a", "★", ""
 }, (t) => [primaryKey({ columns: [t.userId, t.oracleId] })]);
 
+/**
+ * A shelf the player files decks on. One deck lives in exactly one folder, or
+ * in none — chosen deliberately over tags, which answer a different question
+ * (what is this deck like) than the one being asked here (where do I keep it).
+ * One folder per deck is why this is a column on `decks` and not a join table:
+ * a join table would make "two folders" representable, and then something
+ * would have to decide which one a deck belongs to at read time.
+ *
+ * Scoped to `user_id` like every other player-owned table, and named uniquely
+ * within that scope — two shelves called "Commander night" are not a state
+ * worth being able to reach, and the constraint is in the database rather than
+ * in a check the create path could forget.
+ */
+export const deckFolders = pgTable("deck_folders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  // This unique index is also the read index: its leading `user_id` serves the
+  // per-player filter and the name ordering `listFolders` asks for, so a second
+  // index on `user_id` alone would cost writes and storage and buy nothing.
+  unique("deck_folders_user_name_key").on(t.userId, t.name),
+]);
+
 export const decks = pgTable("decks", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
@@ -198,6 +223,17 @@ export const decks = pgTable("decks", {
   // two columns already carry.
   partnerOracleId: uuid("partner_oracle_id").references(() => cards.oracleId),
   notes: text("notes"),
+  /**
+   * The shelf this deck is filed on, or null for unfiled. NULLABLE because
+   * every deck that exists today is unfiled and must stay valid — a required
+   * folder would need a fabricated one to migrate into.
+   *
+   * `set null`, NOT cascade: deleting a shelf must never delete the decks on
+   * it. They return to unfiled, which is where they started. Enforced here
+   * rather than by the delete query, so no future caller can delete a folder
+   * by another route and take its decks with it.
+   */
+  folderId: uuid("folder_id").references(() => deckFolders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // True once a fill has run against this deck — including a fill that found
   // nothing to add, because a collection thin enough to plan zero rows still
@@ -210,6 +246,13 @@ export const decks = pgTable("decks", {
       "decks_partner_distinct",
       sql`${t.partnerOracleId} is null or ${t.partnerOracleId} <> ${t.commanderOracleId}`,
     ),
+    // The deck grid groups by folder within one player's decks, which is this
+    // index.
+    index("decks_user_folder_idx").on(t.userId, t.folderId),
+    // And this one, keyed on `folder_id` alone, is for the lookups that have no
+    // user to narrow by: the foreign key's own `on delete set null` scan when a
+    // folder is deleted. A composite index led by `user_id` cannot serve it.
+    index("decks_folder_idx").on(t.folderId),
     // `notBuiltBy` is a CORRELATED `not exists`, so it is evaluated once per
     // candidate row — ~3,100 of them on the discover lane, and one per stored
     // score on the detail page's rank window. Unindexed, each of those probes is

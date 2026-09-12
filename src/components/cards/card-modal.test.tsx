@@ -49,7 +49,7 @@ const avail = (
   hard,
   soft,
   free: owned - hard,
-  claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true })),
+  claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
 });
 
 function mount(c: BrowseCard) {
@@ -97,8 +97,8 @@ describe("CardModal availability detail", () => {
       availability: {
         owned: 2, hard: 1, soft: 1, free: 1,
         claims: [
-          { id: "d1", name: "Atraxa", quantity: 1, mature: true },
-          { id: "d2", name: "Sketchbook", quantity: 1, mature: false },
+          { id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false },
+          { id: "d2", name: "Sketchbook", quantity: 1, mature: false, pending: false, commander: false },
         ],
       },
     });
@@ -123,7 +123,7 @@ describe("CardModal availability detail", () => {
 // learn where the other sixteen went. These assert the receipt reconciles.
 describe("CardModal allocation receipt", () => {
   const claim = (id: string, name: string, quantity: number, mature: boolean) => ({
-    id, name, quantity, mature,
+    id, name, quantity, mature, pending: false, commander: false,
   });
   // Built term by term rather than through `avail`, because the whole point of
   // these cases is claims whose quantities are not 1 and whose maturity is

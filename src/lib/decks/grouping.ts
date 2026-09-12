@@ -15,6 +15,13 @@ export type DeckDetailCard = {
   typeLine: string;
   cardTypeGroup: CardTypeGroup;
   role: "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
+  /**
+   * Scryfall's converted cost, for the what-changed strip's mana value cell.
+   * Required rather than optional, unlike `manaCost`: a literal that omitted it
+   * would average as a zero and quietly pull the deck's figure down. `cards.cmc`
+   * is `notNull` with a default of 0, so there is no null to model.
+   */
+  cmc: number;
   owned: boolean;
   quantity: number;
   auto: boolean;

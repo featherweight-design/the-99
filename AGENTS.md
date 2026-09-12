@@ -74,6 +74,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   point it at `local-dev` or a scratch Neon branch, **never production**. On a deck's own page
   `free` is a surplus, not a count of copies: 0 means "holds what it needs and no spare", and a
   negative figure is the number of copies that deck has to buy.
+- `pnpm probe:folders` proves deck folders against a real Postgres by calling the real
+  queries — a deck files and unfiles, a cross-user move is refused from either side, and
+  deleting a folder unfiles its decks without deleting any of them. That last rule is the
+  foreign key's `on delete set null`, which no unit test in this repository can reach. It
+  writes a fixture under a per-run `user_id` and deletes it in a `finally`; point it at
+  `local-dev` or a scratch Neon branch, **never production**.
 - `pnpm probe:writer-version` proves the `commander_scores` writer stamp against a real Postgres:
   a writer that announces `app.writer_version` keeps it, one that says nothing has every row it
   touches marked stale, and the announcement does not outlive its transaction. That last one is
@@ -113,3 +119,4 @@ in one payload when the set of parameters is small enough to precompute.
 - UI work is gated on design handoffs in `design/design_handoff_the99_*` — no UI until the handoff exists and has a READINESS verdict. Backend/API/DB work may proceed without one.
 - Every UI PR passes the design-review skill (property-table enumerate → verify → confirm) before `gh pr create`. Mobile + desktop parity ships in the same PR.
 - Pipeline state lives in `docs/superpowers/design-pipeline-status.md`; plans in `docs/superpowers/plans/`; gap reports in `docs/superpowers/gap-report-*.md`.
+- `design/` is **reference material, never shipped code**. It sits outside both `public/` and `src/`, so no route serves it and no module imports it. Each handoff's `support.js` is a generated runtime that evaluates code dynamically and loads React from a CDN — it is read by opening that bundle's `.dc.html` from disk, and by nothing else. Never import from `design/`, and never copy a handoff asset into `public/`.

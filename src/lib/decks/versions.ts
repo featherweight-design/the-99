@@ -6,8 +6,9 @@
 
 import { and, desc, eq, lte } from "drizzle-orm";
 import { db } from "../../db";
-import { deckCards, deckVersionCards, deckVersions, decks } from "../../db/schema";
+import { cards, deckCards, deckVersionCards, deckVersions, decks } from "../../db/schema";
 import type { CardQty } from "./draft-diff";
+import { averageManaValue } from "./mana-value";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -96,7 +97,7 @@ export async function commitVersion(
   deckId: string,
   note: string | null,
   tx?: Tx,
-): Promise<{ version: DeckVersion }> {
+): Promise<{ version: DeckVersion; cardCount: number }> {
   return tx
     ? commitVersionIn(tx, deckId, note)
     : db.transaction((t) => commitVersionIn(t, deckId, note));
@@ -106,7 +107,7 @@ async function commitVersionIn(
   tx: Tx,
   deckId: string,
   note: string | null,
-): Promise<{ version: DeckVersion }> {
+): Promise<{ version: DeckVersion; cardCount: number }> {
   const [deck] = await tx.select().from(decks)
     .where(eq(decks.id, deckId))
     .for("update");
@@ -173,7 +174,15 @@ async function commitVersionIn(
       })),
     );
   }
-  return { version: { ...inserted, commanderSince, partnerSince } };
+  // Counted off the rows this just snapshotted, and returned rather than left to
+  // the caller's own read of `deck_cards`. A path that INSERTS a card the deck
+  // did not hold cannot be serialized by row locks — there is no row to lock —
+  // so a caller counting its own earlier read could print a figure the version
+  // does not hold.
+  return {
+    version: { ...inserted, commanderSince, partnerSince },
+    cardCount: rows.reduce((n, r) => n + r.quantity, 0),
+  };
 }
 
 /**
@@ -225,4 +234,23 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
       );
     }
   });
+}
+
+/**
+ * The average mana value of a version's list — the strip's `was 7`.
+ *
+ * A join rather than a second query over `versionCards`: the snapshot stores
+ * quantities only, and the figure needs each card's cost and type line. Null
+ * when the version was all land, which `averageManaValue` decides.
+ */
+export async function versionManaValue(versionId: string): Promise<number | null> {
+  const rows = await db.select({
+    cmc: cards.cmc,
+    quantity: deckVersionCards.quantity,
+    typeLine: cards.typeLine,
+  })
+    .from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(eq(deckVersionCards.versionId, versionId));
+  return averageManaValue(rows);
 }

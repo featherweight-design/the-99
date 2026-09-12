@@ -25,12 +25,22 @@ const stub = vi.hoisted(() => {
   const tx = {
     select: () => ({
       from: (table: unknown) => ({
-        where: async (condition: unknown) => {
-          const key = nameOf(table);
-          state.wheres.push({ table: key, condition });
-          if (key === "decks") return state.decks;
-          if (key === "deck_unresolved_rows") return state.unresolved;
-          return state.cards;
+        // A thenable that also offers `.for()`: the resolve path locks the deck
+        // row so its insert of a card the deck did not hold cannot slip past a
+        // concurrent commit, and awaiting the builder directly is what every
+        // other read here does.
+        where: (condition: unknown) => {
+          const rows = () => {
+            const key = nameOf(table);
+            state.wheres.push({ table: key, condition });
+            if (key === "decks") return state.decks;
+            if (key === "deck_unresolved_rows") return state.unresolved;
+            return state.cards;
+          };
+          return {
+            then: (resolve: (v: unknown) => unknown) => Promise.resolve(rows()).then(resolve),
+            for: async () => rows(),
+          };
         },
       }),
     }),

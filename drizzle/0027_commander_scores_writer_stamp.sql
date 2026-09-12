@@ -2,14 +2,14 @@
 -- a writer that does not know the column cannot leave a row claiming to be
 -- current.
 --
--- The DEFAULT alone could not do this. It catches an old deployment's INSERTs,
--- which omit the column, but not its UPDATEs: `persistScores` upserts, and an
--- upsert onto an existing version-2 row leaves that 2 in place while replacing
--- every score beside it. Two ways that happens — a rollback, and a compute that
--- was already in flight when the new build went live — and both end the same
--- way: a set with its built commanders deleted back out of it, marked current,
--- served warm, and the commander gone again. That is the whole bug this
--- migration's predecessor exists to fix, returning by the back door.
+-- The DEFAULT in the previous migration could not do this. It catches an old
+-- deployment's INSERTs, which omit the column, but not its UPDATEs:
+-- `persistScores` upserts, and an upsert onto an existing version-2 row leaves
+-- that 2 in place while replacing every score beside it. Two ways that happens —
+-- a rollback, and a compute already in flight when the new build went live — and
+-- both end the same way: a set with its built commanders deleted back out of it,
+-- marked current, served warm, and the commander gone again. That is the whole
+-- bug this pair of migrations exists to fix, returning by the back door.
 --
 -- Only the DOWNGRADE is automatic. A writer that sets `app.writer_version` keeps
 -- whatever value it wrote, so the column still works if this trigger is ever

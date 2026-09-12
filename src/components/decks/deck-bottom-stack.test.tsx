@@ -34,6 +34,7 @@ function makeDeck(): DeckDetail {
     typeLine: "Artifact",
     cardTypeGroup: "Artifacts" as const,
     role: "other" as const,
+    cmc: 2,
     owned: true,
     quantity: 1,
     auto: false,
