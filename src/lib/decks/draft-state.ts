@@ -383,6 +383,28 @@ export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> 
   }));
 }
 
+/**
+ * The same shape, read off the live draft.
+ *
+ * `getDeckDetail` would answer this too, and carries a whole deck's art, prices
+ * and availability to do it — the review route deliberately does not read one,
+ * which is why `getDeckReviewHeader` exists. Tallying the strip needs three
+ * columns per row and nothing else.
+ */
+export async function loadDraftShape(deckId: string): Promise<ShapeCard[]> {
+  const rows = await db.select({
+    quantity: deckCards.quantity,
+    typeLine: cards.typeLine,
+    oracleText: cards.oracleText,
+    keywords: cards.keywords,
+  }).from(deckCards)
+    .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
+    .where(eq(deckCards.deckId, deckId));
+  return rows.map((r) => ({
+    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine,
+  }));
+}
+
 /** One changed card, as the review page draws it. `DeckDetailCard` shaped, so
  *  the row reuses the shipped ownership dot, availability marker, buy tag and
  *  cost pips without a second card type in the codebase. */

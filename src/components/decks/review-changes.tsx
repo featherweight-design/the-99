@@ -20,11 +20,13 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { pullCandidate, releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
-import type { DraftRow, DraftRows } from "../../lib/decks/draft-state";
+import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state";
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
+import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
+import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { PullControl } from "./pull-control";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
@@ -45,6 +47,12 @@ type ReviewChangesProps = {
   commitOpen?: boolean;
   rows: DraftRows["rows"];
   state: DraftState;
+  /** The two whole lists the shape strip folds — the newest version's, and the
+   *  draft's. Read by the route rather than derived here: the changed rows cannot
+   *  say what a role or a card type held, and `before` is a query of its own.
+   *  Empty `before` is a brew, where nothing states a movement. */
+  before: ShapeCard[];
+  after: ShapeCard[];
   /** The server's count of the cards the commit would freeze, passed straight
    *  through to the sheet — see `commit-sheet.tsx`. */
   cardCount: number;
@@ -350,6 +358,8 @@ export function ReviewChanges({
   deckName,
   rows,
   state,
+  before,
+  after,
   cardCount,
   commitOpen,
 }: ReviewChangesProps) {
@@ -377,6 +387,15 @@ export function ReviewChanges({
   // width would put every card name, every buy tag and every card-modal trigger
   // in the DOM twice.
   const [shown, setShown] = useState<"in" | "out">("in");
+  // The same hook the banner's control uses, so the question asked from either
+  // door is one construct with one set of answers.
+  const discard = useDiscardConfirm(state);
+
+  // The version's own size, for the consequence sentence — and `before` IS that
+  // version's card list, which is why this page takes no prop for the figure the
+  // deck page passes down. Copies rather than rows: it is the figure the decklist
+  // prints, and what the reader is being told they land on.
+  const versionCards = before.reduce((n, card) => n + card.quantity, 0);
 
   const inCount = rows.in.length;
   const outCount = rows.out.length;
@@ -469,6 +488,16 @@ export function ReviewChanges({
         </header>
 
         <div className="px-[14px] pt-[13px] md:px-[26px] md:pt-0 md:pb-[26px]">
+          {/* Under the lede and above the columns, because it answers the other
+              question the page is asked: the columns say which cards moved, and
+              this says where the deck's shape went. */}
+          <ChangedStrip
+            before={before}
+            after={after}
+            manaValue={state.manaValue}
+            manaValueBefore={state.manaValueBefore}
+          />
+
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
               standing for a purchase, a pull or a column that is not there. */}
           {chips.length > 0 && (
@@ -584,27 +613,54 @@ export function ReviewChanges({
             // under the columns. The figures read first on the phone and last
             // above it, which is the only difference between the two: one
             // element, ordered twice.
-            // §Surfaces 2 draws a third control in this bar, `Discard`, which
-            // arrives with plan Task 19.
             <div className="flex flex-col items-stretch md:flex-row md:items-center md:flex-wrap gap-[8px] md:gap-[12px] mt-[13px] md:mt-[24px] px-[14px] pt-[11px] pb-[16px] md:p-0 md:pt-[18px] bg-[color:var(--base)] md:bg-transparent [border-top:1px_solid_var(--border-strong)]">
-              {/* The deck page's own wording for the same act, because this is
-                  the same act: a reader who came here by a different door should
-                  not have to work out that two different phrasings are one
-                  button. */}
-              <PrimaryButton
-                onClick={() => setCommitSheetOpen(true)}
-                className="inline-flex items-center justify-center w-full md:w-auto min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
-              >
-                {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
-              </PrimaryButton>
-              <span className="order-first md:order-last font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]">
-                {/* The released figure is the state's own `removes`, which is what
-                    the sheet one click down counts: two figures under each other
-                    that disagreed would be the same commit priced twice. */}
-                {state.claimsKnown
-                  ? copy.footer(cardCount, state.buyCount, released)
-                  : copy.footerUnknown(cardCount, released)}
-              </span>
+              {discard.confirming ? (
+                // The question takes the bar's own body, exactly as it takes the
+                // banner's on the deck page — the same two lines and the same two
+                // answers, with no second wording authored for this door.
+                <DiscardConfirm
+                  deckId={deckId}
+                  state={state}
+                  versionCards={versionCards}
+                  onCancel={discard.cancel}
+                  // This page is a page about a draft, so once the draft is gone
+                  // there is nothing here to read: the route's own guard would
+                  // send the reader back on the next render, and going straight
+                  // there spares them a frame of two empty columns.
+                  onDiscarded={() => router.push(`/decks/${deckId}`)}
+                />
+              ) : (
+                <>
+                  {/* Both controls in one wrapper, which dissolves on desktop: at
+                      390px they share the row under the figures, and above it all
+                      three items are one line. */}
+                  <div className="flex items-center gap-[8px] md:contents">
+                    {/* The deck page's own wording for the same act, because this is
+                        the same act: a reader who came here by a different door should
+                        not have to work out that two different phrasings are one
+                        button. */}
+                    <PrimaryButton
+                      onClick={() => setCommitSheetOpen(true)}
+                      className="inline-flex flex-1 md:flex-none items-center justify-center min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
+                    >
+                      {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
+                    </PrimaryButton>
+                    {/* Withheld on a brew, where there is no version for a discard
+                        to land on — the rendering half of the server's own refusal. */}
+                    {discard.offered && (
+                      <DiscardTrigger onOpen={discard.open} triggerRef={discard.triggerRef} />
+                    )}
+                  </div>
+                  <span className="order-first md:order-last font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]">
+                    {/* The released figure is the state's own removals, which is what
+                        the sheet one click down counts: two figures under each other
+                        that disagreed would be the same commit priced twice. */}
+                    {state.claimsKnown
+                      ? copy.footer(cardCount, state.buyCount, released)
+                      : copy.footerUnknown(cardCount, released)}
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>

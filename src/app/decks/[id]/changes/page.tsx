@@ -4,7 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
-import { changeCount, loadDraftRows } from "../../../../lib/decks/draft-state";
+import {
+  changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
+} from "../../../../lib/decks/draft-state";
 import { ReviewChanges } from "../../../../components/decks/review-changes";
 import { admitsReview } from "./admits-review";
 
@@ -68,12 +70,25 @@ export default async function ChangesPage({
   });
   if (!admitted) redirect(`/decks/${id}`);
 
+  // The shape strip's two lists, each a read of its own: neither a version's
+  // cards nor the header loader's figures carry the role and type line the strip
+  // tallies by. Read after the admission test, not before it, so a visit that
+  // redirects pays for neither. A brew gets an empty `before` rather than a
+  // skipped strip — the deck still has a shape, and what it has is no previous
+  // figure to compare it against.
+  const [before, after] = await Promise.all([
+    state.version ? loadVersionShape(state.version.id) : Promise.resolve([]),
+    loadDraftShape(id),
+  ]);
+
   return (
     <ReviewChanges
       deckId={id}
       deckName={detail.name}
       rows={rows}
       state={state}
+      before={before}
+      after={after}
       commitOpen={wantsCommit}
       // `built`, not `total`: the snapshot holds the matched cards, and `total`
       // adds the unresolved lines no version can freeze.

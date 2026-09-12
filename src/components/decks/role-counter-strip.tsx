@@ -6,6 +6,7 @@ import {
   computeRoleCounts,
   RECOMMENDED_MIX,
   RECOMMENDED_MIX_SOURCE_LINE,
+  ROLE_ORDER,
   type MixRole,
 } from "../../lib/decks/mix";
 import { RoleCounterCell } from "./role-counter-cell";
@@ -42,8 +43,6 @@ type RoleCounterStripProps = {
   | { onSeeShelf: (role: MixRole) => void; rolesWithShelves: ReadonlySet<MixRole> }
   | { onSeeShelf?: never; rolesWithShelves?: never }
 );
-
-const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
 export function RoleCounterStrip({
   cards,

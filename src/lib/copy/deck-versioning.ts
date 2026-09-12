@@ -301,7 +301,12 @@ export const deckVersioningCopy = {
   discard: {
     // The number is in the question AND on the button: two changes and thirty-six
     // are different acts behind one word.
-    question: (n: number) => `Discard ${plural(n, "change")}?`,
+    //
+    // At zero it is the draft that is named instead. A basics-only draft has
+    // changes — `basicsChanged` is what keeps the banner up — and names no card,
+    // so `changeCount` is 0 and "Discard 0 changes?" would ask about nothing on
+    // a surface that is only there because something moved.
+    question: (n: number) => (n === 0 ? "Discard this draft?" : `Discard ${plural(n, "change")}?`),
     consequence: (version: number, date: string, cards: number, adds: number, removes: number) => {
       const back = `The deck goes back to v${version} as committed on ${date} — ` +
         `${plural(cards, "card")}. `;
@@ -320,11 +325,14 @@ export const deckVersioningCopy = {
       return `${back}${lost.charAt(0).toUpperCase()}${lost.slice(1)} ` +
         `${single === 1 ? "is" : "are"} not stored anywhere, so this cannot be undone.`;
     },
-    confirm: (n: number) => `Discard ${plural(n, "change")}`,
+    // Same zero branch as the question, and for the same reason.
+    confirm: (n: number) => (n === 0 ? "Discard the draft" : `Discard ${plural(n, "change")}`),
     cancel: "Keep editing",
     pending: "Discarding…",
     announced: (n: number, version: number) =>
-      `${plural(n, "change")} discarded. Back to v${version}.`,
+      n === 0
+        ? `Draft discarded. Back to v${version}.`
+        : `${plural(n, "change")} discarded. Back to v${version}.`,
     refused: "We couldn't discard those changes. Nothing has changed.",
   },
 

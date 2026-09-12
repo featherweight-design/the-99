@@ -13,6 +13,7 @@ import type { DraftChange } from "../../lib/decks/draft-diff";
 import { changeCount, hasChanges, type DraftAdd, type DraftState } from "../../lib/decks/draft-shape";
 import { formatDeckDate } from "../../lib/decks/format";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
+import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
 import { COMMIT_RECEIPT_HASH } from "./draft-announcer";
 
 const copy = deckVersioningCopy.pending;
@@ -20,7 +21,15 @@ const copy = deckVersioningCopy.pending;
 interface PendingBannerProps {
   state: DraftState;
   deckId: string;
-  onDiscard?: () => void;
+  /**
+   * Cards in the version a discard would land on, straight through to
+   * `DiscardConfirm` — see the reason it is a prop there. No figure, no `Discard`:
+   * the confirm's job is naming what you land on, and it cannot ask without it.
+   */
+  versionCards?: number;
+  /** Passed through: what the caller does once the draft has been rewritten out
+   *  from under whatever it is drawing. */
+  onDiscarded?: () => void;
 }
 
 // §Surfaces 5: "one commit surface, two entry points" — the sheet lives at the
@@ -228,7 +237,11 @@ function VersionLine({ text }: { text: string }) {
   );
 }
 
-export function PendingBanner({ state, deckId, onDiscard }: PendingBannerProps) {
+export function PendingBanner({ state, deckId, versionCards, onDiscarded }: PendingBannerProps) {
+  // Above the early returns, because a hook cannot sit under one. The flag it
+  // holds belongs here rather than inside the confirm: the question replaces this
+  // banner's whole body, so this is the component that has to know it was asked.
+  const discard = useDiscardConfirm(state);
   const n = changeCount(state);
   const next = (state.version?.number ?? 0) + 1;
 
@@ -257,6 +270,37 @@ export function PendingBanner({ state, deckId, onDiscard }: PendingBannerProps) 
 
   const inline = n <= INLINE_CHANGE_MAX;
   const money = inline ? null : moneyLine(state);
+
+  // The question stands where the banner's card stood — same plate, same width,
+  // the brass rule swapped for the danger one — rather than in the row the control
+  // was pressed in. Nothing of the draft's account is drawn beside it: the
+  // consequence sentence is the account, and the figures it replaced are the ones
+  // being thrown away.
+  if (versionCards !== undefined && discard.confirming) {
+    return (
+      <div className={WRAP}>
+        <DiscardConfirm
+          deckId={deckId}
+          state={state}
+          versionCards={versionCards}
+          onCancel={discard.cancel}
+          onDiscarded={onDiscarded}
+          // The card's own bottom space, so swapping one for the other does not
+          // move the block under it. Desktop takes that space from the next
+          // block's top padding, which is why only the phone carries a margin.
+          className="mb-[14px] md:mb-0"
+        />
+      </div>
+    );
+  }
+
+  // One element for both densities: the control is the same control, and the two
+  // branches below differ only in which row of the bar it stands in. Withheld
+  // where the version's size is unknown — see `versionCards`.
+  const discardControl =
+    versionCards === undefined ? null : (
+      <DiscardTrigger onOpen={discard.open} triggerRef={discard.triggerRef} />
+    );
 
   return (
     <div className={WRAP}>
@@ -307,11 +351,7 @@ export function PendingBanner({ state, deckId, onDiscard }: PendingBannerProps) 
                 {copy.commitCta(next)}
               </Link>
               <div className={CONTROLS_SECOND_ROW}>
-                {onDiscard && (
-                  <button type="button" onClick={onDiscard} className={GHOST_CTA}>
-                    {copy.discardCta}
-                  </button>
-                )}
+                {discardControl}
                 {/* Absent on a basics-only draft. That draft has changes —
                     `basicsChanged` is what keeps the banner up — and it has no
                     named card, so the review page has two empty columns and
@@ -333,11 +373,7 @@ export function PendingBanner({ state, deckId, onDiscard }: PendingBannerProps) 
                 <Link href={commitHref(deckId)} className={SECONDARY_CTA}>
                   {copy.commitCta(next)}
                 </Link>
-                {onDiscard && (
-                  <button type="button" onClick={onDiscard} className={GHOST_CTA}>
-                    {copy.discardCta}
-                  </button>
-                )}
+                {discardControl}
               </div>
             </>
           )}
@@ -381,7 +417,10 @@ const PRICE_TILE =
 // Phone stacks the controls and gives the primary its own full-width row; the
 // second row dissolves on desktop so all three sit in one line.
 const CONTROLS = "flex flex-col md:flex-row md:flex-wrap md:items-center gap-[8px] md:gap-[10px]";
-const CONTROLS_SECOND_ROW = "flex items-center gap-[8px] md:contents";
+// `flex-wrap`, because the discard confirm replaces one control with a question
+// far wider than it: without this the row it stands in would push whatever sits
+// beside it off the card rather than under the question.
+const CONTROLS_SECOND_ROW = "flex flex-wrap items-center gap-[8px] md:contents";
 
 // Bone fill on the act, per src/components/ui/button.tsx's PRIMARY — never
 // --accent, which means "in use / to buy" everywhere else in the app. Written
@@ -396,10 +435,6 @@ const SECONDARY_CTA =
   "px-[18px] py-[10px] rounded-[8px] font-sans font-medium text-[13.5px] " +
   "text-[color:var(--fg)] bg-transparent [border:1px_solid_var(--border-strong)] " +
   "cursor-pointer no-underline";
-const GHOST_CTA =
-  "flex md:inline-flex flex-none w-[92px] md:w-auto items-center justify-center " +
-  "min-h-[44px] md:min-h-0 px-[16px] py-[10px] rounded-[8px] font-sans font-medium text-[13.5px] " +
-  "text-[color:var(--fg-muted)] bg-transparent [border:1px_solid_var(--border-strong)] cursor-pointer";
 // Demoted to a link at six changes or fewer, and still a touch target there.
 const REVIEW_LINK =
   "flex-none inline-flex items-center min-h-[44px] md:min-h-0 font-mono text-[11px] " +
