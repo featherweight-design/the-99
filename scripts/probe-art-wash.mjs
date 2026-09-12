@@ -263,11 +263,21 @@ const READ_PLATES = `() => {
     });
 }`;
 
-/** Does the reader's own tap reach the control, or does the band clip it? The
+/** Does the reader's own tap reach the control, or does something eat it? The
     plate is inset well inside every band, but its 44px target is not — so the
-    point that matters is the target's own corner, and the answer is whatever
-    `elementFromPoint` returns there. Counting plates proves they paint; this is
-    the only check that proves one can be pressed. */
+    points that matter are the target's own edges, and the answer is whatever
+    `elementFromPoint` returns there.
+
+    EDGE MIDPOINTS, not corners. A corner is the one point that a rounded
+    ancestor legitimately clips: `commander-desktop` sits inside a
+    `rounded-[14px] overflow-hidden` frame, so its bottom-left corner is outside
+    the curve by construction and asserting it would fail a correct build. A
+    midpoint is never inside a corner radius, and it is where a thumb actually
+    lands — while a sibling drawn over the control blocks midpoints just as
+    readily, which is the defect this exists to catch (#534, one control over).
+
+    Counting plates proves they paint; this is the only check that proves one can
+    be pressed. */
 const READ_PLATE_HIT = `() => {
   return [...document.querySelectorAll('[aria-label="View card details"]')]
     .filter((b) => b.getClientRects().length)
@@ -279,37 +289,13 @@ const READ_PLATE_HIT = `() => {
       };
       return {
         centre: probe(r.left + r.width / 2, r.top + r.height / 2),
-        // Two opposite corners, one pixel inside, which is where a clipped
-        // overhang or a sibling drawn over the corner shows up.
-        near: probe(r.left + 1, r.top + 1),
-        far: probe(r.right - 1, r.bottom - 1),
+        top: probe(r.left + r.width / 2, r.top + 1),
+        bottom: probe(r.left + r.width / 2, r.bottom - 1),
+        left: probe(r.left + 1, r.top + r.height / 2),
+        right: probe(r.right - 1, r.top + r.height / 2),
       };
     });
 }`;
-
-// The scrims outlive the art under `forced-colors`, so they are what proves the
-// band kept its height when the photograph left.
-const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
-
-const ROUTES = [
-  ["home", "/"],
-  ["decks", "/decks"],
-  ["commanders", "/commanders"],
-  // `/discover`, not `/commanders?lane=discover`. The two lanes became two
-  // routes; that query parameter is not one the app reads, so the entry loaded
-  // `/commanders` a second time and every discovery row went unchecked while the
-  // report named them.
-  ["discover", "/discover"],
-];
-
-/** The four bands this round settles. A stated band outside the set is either a
-    fifth number nobody decided or an aspect ratio that survived the migration. */
-const SETTLED_BANDS = [168, 208, 248, 288];
-
-const VIEWPORTS = [
-  ["mobile", 375, 812],
-  ["desktop", 1440, 900],
-];
 
 /** Every commander thumb on the page, as drawn. Five renders each invented one of
     these, at five geometries and three ring alphas; the convergence is its own
@@ -339,12 +325,6 @@ const READ_THUMBS = `() => {
 }`;
 
 /** THE PLATE and the thumbs, on whatever surface is loaded. A routine rather than
-    four inline blocks, because the controls this measures live on the commander
-    and deck DETAIL pages and the band checks live on the lists — the first draft
-    ran these inside the list loop alone, where `plates` is always empty and every
-    assertion under it passes without executing. A check that cannot fail is worse
-    than no check. */
-/** THE PLATE and the thumbs, on whatever surface is loaded. A routine rather than
     an inline block, because the controls this measures live on the commander and
     deck DETAIL pages while the band checks live on the lists — and an earlier
     draft ran these inside the list loop alone, where the control list is always
@@ -373,11 +353,10 @@ async function checkChrome(page, label, note) {
 
   const hits = await page.evaluate(`(${READ_PLATE_HIT})()`);
   for (const hit of hits) {
-    // Every corner, not just the centre: the target is 9px further out than the
-    // drawn box and every band it sits on is `overflow-hidden`, so an overhang is
-    // clipped out of its own hit area without changing one pixel of what a
-    // screenshot shows. Counting controls proves they paint; this is the only
-    // check that proves one can be pressed.
+    // Every edge midpoint, not just the centre: the target is 9px further out
+    // than the drawn box and every band it sits on is `overflow-hidden`, so an
+    // overhang is clipped out of its own hit area without changing one pixel of
+    // what a screenshot shows.
     for (const [where, result] of Object.entries(hit)) {
       if (result !== "self") {
         note(`  FAIL card-details control unreachable at its ${where}: ${result}`);
