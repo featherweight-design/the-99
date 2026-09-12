@@ -23,7 +23,7 @@ import { chassisCopy, PIP_ORDER, type PipCode } from "../../lib/copy/filter-chas
  * exists to prevent; an opacity is what the shipped controls did wrong.
  */
 const PIP_SRC: Record<PipCode, string> = {
-  w: "/mana/W.svg", u: "/mana/U.svg", b: "/mana/B.svg", r: "/mana/R.svg", g: "/mana/G.svg",
+  W: "/mana/W.svg", U: "/mana/U.svg", B: "/mana/B.svg", R: "/mana/R.svg", G: "/mana/G.svg",
 };
 
 /** 22px desktop, a real 44px target on the phone (decision 8). */
@@ -42,7 +42,10 @@ export type ColourPipsProps = {
 };
 
 export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
-  const on = new Set(value.map((v) => v.toLowerCase()));
+  // Read is case-tolerant so a lowercase caller still lights its pips; the
+  // WRITE is always canonical uppercase (`PIP_ORDER`). A caller whose state is
+  // lowercase maps on the way out — the commander rack is the only one.
+  const on = new Set(value.map((v) => v.toUpperCase()));
   const size = form === "wide" ? DESKTOP_PX : PHONE_PX;
 
   return (
@@ -64,7 +67,7 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
             // the control this replaces.
             role="switch"
             aria-checked={lit}
-            aria-label={chassisCopy.colour.pipAria(chassisCopy.colour.names[code])}
+            aria-label={chassisCopy.colour.pipAria(chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>])}
             onClick={() => onToggle(code)}
             // The ring is the entire lit treatment. No opacity on either state:
             // an unlit pip is the symbol at full strength, which is what makes it

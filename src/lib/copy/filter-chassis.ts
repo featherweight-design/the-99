@@ -50,11 +50,29 @@ export const chassisCopy = {
      */
     collapsedExactly: (count: number) => `Exactly ${count} colours`,
     /** The five hues, in WUBRG order, with the names the lanes already use. */
+    /**
+     * Keyed lowercase by `lanes.ts`; the pips look up through a lowercased
+     * code so the canonical uppercase vocabulary and the existing copy module
+     * do not have to agree on case.
+     */
     names: filterCopy.colour.names,
   },
 } as const;
 
-/** WUBRG, in the order the pips draw. */
-export const PIP_ORDER = ["w", "u", "b", "r", "g"] as const;
+/**
+ * WUBRG, in the order the pips draw, and **uppercase is canonical**.
+ *
+ * Two of the three surfaces that will mount the pips already store colour this
+ * way — `/decks`' `COLOUR_ORDER` is `["W","U","B","R","G"]`
+ * (`src/lib/decks/filter.ts:34`) and `/collection`'s `BrowseFilters.colors` is a
+ * subset of the same (`src/lib/collection/browse.ts:133`). Only the commander
+ * rack keeps lowercase, so it adapts at its own mount rather than the other two
+ * adapting to it.
+ *
+ * This matters beyond tidiness: a toggle that emits `w` against an uppercase
+ * `W` in state does not remove it, it appends a duplicate, and the filter and
+ * its URL chip then disagree about what is on.
+ */
+export const PIP_ORDER = ["W", "U", "B", "R", "G"] as const;
 
 export type PipCode = (typeof PIP_ORDER)[number];

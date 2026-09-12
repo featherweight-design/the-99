@@ -12,6 +12,13 @@ describe("ColourPips", () => {
     ]);
   });
 
+  it("emits canonical uppercase whatever case it was given", () => {
+    const onToggle = vi.fn();
+    render(<ColourPips value={["g"]} onToggle={onToggle} form="wide" />);
+    fireEvent.click(screen.getByRole("switch", { name: "Green" }));
+    expect(onToggle).toHaveBeenCalledWith("G");
+  });
+
   it("names the colour, never the hue letter", () => {
     // `color-pip.tsx` shipped `Filter by B`, which reads as a letter.
     render(<ColourPips value={[]} onToggle={() => {}} form="wide" />);
@@ -65,13 +72,16 @@ describe("ColourPips", () => {
     const onToggle = vi.fn();
     render(<ColourPips value={[]} onToggle={onToggle} form="wide" />);
     fireEvent.click(screen.getByRole("switch", { name: "Black" }));
-    expect(onToggle).toHaveBeenCalledWith("b");
+    // Uppercase is canonical: /decks and /collection both store colour that
+    // way, so emitting "b" against a stored "B" would append a duplicate
+    // instead of removing the selection.
+    expect(onToggle).toHaveBeenCalledWith("B");
   });
 
-  it("reads an uppercase value, since routes store identity either way", () => {
+  it("reads a lowercase value too, so the commander rack can mount it unchanged", () => {
     // Asserting existence alone would pass with the normalisation removed —
     // the pips render either way. The lit state is what depends on it.
-    render(<ColourPips value={["W", "R"]} onToggle={() => {}} form="wide" />);
+    render(<ColourPips value={["w", "r"]} onToggle={() => {}} form="wide" />);
     expect(screen.getByRole("switch", { name: "White" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("switch", { name: "Red" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("switch", { name: "Blue" })).toHaveAttribute("aria-checked", "false");
