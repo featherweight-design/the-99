@@ -333,9 +333,14 @@ export function SetGridView(props: SetGridViewProps) {
   // A filter that is SET but not APPLIED draws no chip, so the chip line alone would offer
   // no way out of it. That happens exactly once: `m=1` still in the URL on a set the reader
   // has completed, where `effective` drops missing-only and its control is gone too. Clear
-  // stays, alone on the line, because it is the only route left to a parameter that would
-  // start filtering again the moment the set stopped being complete.
-  const staleFilter = anyFilterOn && chips.length === 0;
+  // stays, because it is the only route left to a parameter that would start filtering
+  // again the moment the set stopped being complete.
+  //
+  // Named precisely rather than inferred from an empty chip line: `?m=1&c=W` on a complete
+  // set draws a White chip, so "no chips" was false and the hidden `m` had neither a toggle
+  // nor a Clear. This is the one filter this page can hold without applying, and this is
+  // the one condition under which it does.
+  const staleFilter = complete && filters.missingOnly;
 
   // Per-row counts from the ONE filtered computation, so the panel never disagrees with
   // the result line beside it. Rarity is excluded from its own counts — a panel whose rows

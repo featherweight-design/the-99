@@ -678,13 +678,13 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   it("offers Clear all filters past one active control", () => {
     search = "m=1&c=W";
     view([p("1"), p("2")], []);
-    expect(screen.getByRole("button", { name: /Clear every filter/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
   });
 
   it("clears every dimension from that one control", () => {
     search = "m=1&c=W";
     view([p("1"), p("2")], []);
-    fireEvent.click(screen.getByRole("button", { name: /Clear every filter/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 
@@ -838,19 +838,19 @@ describe("SetGridView — a stale filter a complete set does not apply", () => {
   it("keeps Clear on the chip line with m=1 on a completed set", () => {
     search = "m=1";
     view([p("1")], ["1"]);
-    expect(screen.getByRole("button", { name: /Clear every filter/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
   });
 
   it("removes the parameter when it is used", () => {
     search = "m=1";
     view([p("1")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: /Clear every filter/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 
   it("still shows no Clear when nothing at all is on", () => {
     view([p("1")], ["1"]);
-    expect(screen.queryByRole("button", { name: /Clear every filter/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Clear all filters" })).toBeNull();
   });
 });
 
@@ -863,7 +863,7 @@ describe("SetGridView — Clear is not inside the scrolling strip", () => {
     const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
     const row = container.querySelector("[data-set-chips]") as HTMLElement;
     const scroller = row.querySelector(".overflow-x-auto") as HTMLElement;
-    const clear = screen.getByRole("button", { name: /Clear every filter/ });
+    const clear = screen.getByRole("button", { name: "Clear all filters" });
     expect(scroller).not.toBeNull();
     expect(scroller.querySelectorAll("span > button").length).toBe(3);
     expect(scroller.contains(clear)).toBe(false);
@@ -898,5 +898,32 @@ describe("SetGridView — focus is not stolen on mount", () => {
     view([p("1"), p("2")], []);
     await flushFrame();
     expect(document.activeElement).toBe(document.body);
+  });
+});
+
+// Review round 7.
+describe("SetGridView — the last route out of a stale m=1", () => {
+  // `?m=1&c=W` on a complete set draws a White chip, so an "empty chip line" test was false
+  // and the hidden `m` had neither a toggle nor a Clear.
+  it("keeps Clear beside a chip when m=1 is still set on a completed set", () => {
+    search = "m=1&c=W";
+    view([p("1")], ["1"]);
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+  });
+
+  it("removes both from it", () => {
+    search = "m=1&c=W";
+    view([p("1")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  // The accessible name has to contain the visible label, or a voice-control user cannot
+  // say the words they can see.
+  it("names the control with the words it shows", () => {
+    search = "m=1&c=W";
+    view([p("1")], ["1"]);
+    const clear = screen.getByRole("button", { name: "Clear all filters" });
+    expect(clear.textContent).toContain("Clear all filters");
   });
 });

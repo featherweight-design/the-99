@@ -56,7 +56,10 @@ export const setFilterCopy = {
   // the addendum's own note says to take them from the chassis once it lands, and it has.
   // Only the accessible name is this page's, because the chassis's names a sort this page
   // does not have.
-  clearAllAria: "Clear every filter",
+  // CONTAINS the visible label, which is the chassis's `Clear all filters` — a voice-control
+  // user says what they can see (WCAG 2.5.3), and "Clear every filter" said the same thing
+  // in words the button does not show.
+  clearAllAria: "Clear all filters",
 
   // The rarity panel. `FilterPanel` mounted, never forked (§28's named dependency).
   rarityPanel: {
