@@ -557,16 +557,22 @@ export function SetGridView(props: SetGridViewProps) {
             the bug the three-row rule exists to forbid.
 
             At desktop it can never reach two lines: three dimensions cap the widest
-            possible line at ~380px of 1100, so the chassis's one legitimate height change
-            is unreachable here. At phone the chips scroll horizontally and never wrap, and
-            the strip starts at its TRAILING edge so the clipped item is a chip rather than
-            the way out. */}
+            possible line at ~380px, so the chassis's one legitimate height change is
+            unreachable here. At phone the chips scroll horizontally and never wrap, and
+            Clear is outside that scroll — so the clipped item is a chip and never the way
+            out. */}
         <div
           data-set-chips
-          className="mt-[8px] flex items-center gap-[6px] overflow-x-auto md:overflow-visible
-                     md:flex-wrap"
+          className="mt-[8px] flex items-center gap-[6px]"
           style={{ minHeight: 22 }}
         >
+          {/* Clear sits OUTSIDE the scrolling strip, which is how "the clipped item is a
+              chip and never Clear all filters" is actually delivered. Inside it, Clear is
+              the last flex item and a phone's overflow starts at the LEADING edge — so the
+              only way out of three filters was off-screen until the reader discovered
+              horizontal scrolling. Scroll the chips; keep the exit still. */}
+          <div className="flex min-w-0 flex-1 items-center gap-[6px] overflow-x-auto
+                          md:flex-wrap md:overflow-visible">
           {chips.length === 0 ? (
             <span
               className="font-mono text-[11px] leading-[14px] py-[3px] whitespace-nowrap"
@@ -610,6 +616,8 @@ export function SetGridView(props: SetGridViewProps) {
             ))
           )}
 
+          </div>
+
           {/* Past ONE active control only. At one filter the chip's own x and the lit
               control beside it are both shorter routes off, and a third control there is
               noise. Not a GhostButton: it was the only one in a row of 32px hairlines, and
@@ -620,7 +628,7 @@ export function SetGridView(props: SetGridViewProps) {
               type="button"
               onClick={clearAll}
               aria-label={setFilterCopy.clearAllAria}
-              className="relative ml-auto shrink-0 cursor-pointer border-0 bg-transparent p-0
+              className="relative shrink-0 cursor-pointer border-0 bg-transparent p-0
                          font-mono text-[11px] leading-[14px] underline whitespace-nowrap
                          text-[color:var(--fg-muted)]
                          after:absolute after:left-1/2 after:top-1/2 after:h-[34px]

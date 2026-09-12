@@ -853,3 +853,20 @@ describe("SetGridView — a stale filter a complete set does not apply", () => {
     expect(screen.queryByRole("button", { name: /Clear every filter/ })).toBeNull();
   });
 });
+
+// Review round 4: the chip row promised "the clipped item is a chip and never Clear", and
+// nothing delivered it — Clear was the last item inside the scrolling strip, and a phone's
+// overflow starts at the LEADING edge, so the only way out of three filters sat off-screen.
+describe("SetGridView — Clear is not inside the scrolling strip", () => {
+  it("scrolls the chips and leaves Clear outside that scroll", () => {
+    search = "m=1&r=rare&c=W";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    const scroller = row.querySelector(".overflow-x-auto") as HTMLElement;
+    const clear = screen.getByRole("button", { name: /Clear every filter/ });
+    expect(scroller).not.toBeNull();
+    expect(scroller.querySelectorAll("span > button").length).toBe(3);
+    expect(scroller.contains(clear)).toBe(false);
+    expect(row.contains(clear)).toBe(true);
+  });
+});
