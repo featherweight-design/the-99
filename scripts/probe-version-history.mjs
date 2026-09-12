@@ -195,6 +195,43 @@ const readStamps = (page) =>
 // The `finally` drains this, and versions, version cards and games cascade.
 const createdDeckIds = [];
 
+/**
+ * A legendary creature the template's commander is not, so one version can be
+ * piloted by somebody else and the rail has a helm change to describe. Read out of
+ * the catalog rather than hard-coded: the name has to resolve, or the sentence the
+ * check looks for is correctly absent and the check would fail for the wrong reason.
+ */
+async function otherCommander(template) {
+  const { rows } = await pool.query(
+    `select oracle_id, name from cards
+       where type_line ilike 'Legendary Creature%' and oracle_id <> $1
+       order by oracle_id limit 1`,
+    [template.commander_oracle_id],
+  );
+  if (rows.length === 0) throw new Error("No second legendary creature in the catalog.");
+  return rows[0];
+}
+
+/**
+ * The sentence the v3 panel should carry, assembled from the same names the
+ * loader will resolve. Built here rather than pattern-matched in the browser: an
+ * arrow is drawn elsewhere in the panel, so only the names make the check specific.
+ */
+async function helmSentence(template, helm) {
+  const named = async (oracleId) => {
+    if (!oracleId) return null;
+    const { rows } = await pool.query(`select name from cards where oracle_id = $1 limit 1`, [
+      oracleId,
+    ]);
+    return rows[0]?.name ?? null;
+  };
+  const primary = await named(template.commander_oracle_id);
+  const partner = await named(template.partner_oracle_id);
+  if (primary === null) throw new Error("The template's commander name does not resolve.");
+  const from = partner === null ? primary : `${primary} & ${partner}`;
+  return `${from} → ${helm.name}`;
+}
+
 /** A 99-row deck owned by the signed-in account, plus three committed versions. */
 async function buildDeck(userId, template) {
   const { rows } = await pool.query(
@@ -213,6 +250,10 @@ async function buildDeck(userId, template) {
   // draws is the ordering the loader read rather than an insertion accident.
   const versions = [];
   const notes = [null, "swapped the ramp", null];
+  // v3 took a new commander, so its panel has a helm sentence to draw and the
+  // probe can see it at both widths. v1 and v2 kept the template's, which is also
+  // what proves the sentence is absent on a version that changed no commander.
+  const helm = await otherCommander(template);
   for (const number of [1, 2, 3]) {
     const age = `${(4 - number) * 20} days`;
     const v = await pool.query(
@@ -224,8 +265,8 @@ async function buildDeck(userId, template) {
         deckId,
         number,
         notes[number - 1],
-        template.commander_oracle_id,
-        template.partner_oracle_id,
+        number === 3 ? helm.oracle_id : template.commander_oracle_id,
+        number === 3 ? null : template.partner_oracle_id,
         age,
       ],
     );
@@ -249,7 +290,7 @@ async function buildDeck(userId, template) {
     }
     versions.push({ id: versionId, number });
   }
-  return { deckId, versions };
+  return { deckId, versions, helm: await helmSentence(template, helm) };
 }
 
 /**
@@ -401,6 +442,15 @@ try {
         `${viewport.label} · both directions are stated with their counts`,
         /in · 2/i.test(panel.text) && /out · 2/i.test(panel.text),
         panel.text.slice(0, 120),
+      );
+      // v3 committed under a different commander, and who was at the helm is the
+      // version's substance rather than its chrome. Checked at both widths because
+      // the panel's header is desktop-only: a sentence living inside it would draw a
+      // commander-only commit as a version that changed nothing on a phone.
+      check(
+        `${viewport.label} · the helm change is stated`,
+        panel.text.includes(deck.helm),
+        deck.helm,
       );
     }
 

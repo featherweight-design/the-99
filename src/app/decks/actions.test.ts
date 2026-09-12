@@ -67,6 +67,21 @@ const stub = vi.hoisted(() => {
     return found;
   };
 
+  // The numeric bound values, for a predicate the stub has to compare rather than
+  // match — `lt(deckVersions.number, n)`.
+  const paramNumbers = (condition: unknown): number[] => {
+    const found: number[] = [];
+    const walk = (node: unknown) => {
+      const value = (node as { value?: unknown } | undefined)?.value;
+      if (typeof value === "number") found.push(value);
+      for (const chunk of (node as { queryChunks?: unknown[] } | undefined)?.queryChunks ?? []) {
+        walk(chunk);
+      }
+    };
+    walk(condition);
+    return found;
+  };
+
   // A per-test fake for db.select chains
   type SelectBuilder = {
     from: (table: unknown) => SelectFromBuilder;
@@ -100,9 +115,22 @@ const stub = vi.hoisted(() => {
             // `deckId` is left alone, so a test that does not care about the
             // guard does not have to name one.
             const bound = paramValues(condition);
-            return state.deckVersions.filter(
-              (row) => row.deckId === undefined || bound.includes(row.deckId as string),
-            );
+            // The `lt(number, ...)` half as well, because the predecessor read is
+            // exactly "the highest number below this one": a stub that ignored it
+            // would hand back the asked-for version itself as its own predecessor
+            // and the test would pass on a wrong answer. Sorted descending here,
+            // which is the order both reads of this table ask for.
+            const below = paramNumbers(condition)[0];
+            return state.deckVersions
+              .filter((row) => row.deckId === undefined || bound.includes(row.deckId as string))
+              .filter(
+                (row) =>
+                  below === undefined ||
+                  row.number === undefined ||
+                  (row.number as number) < below,
+              )
+              .slice()
+              .sort((a, b) => (b.number as number) - (a.number as number));
           }
           if (tableName === "deck_cards") return state.deckRows as Record<string, unknown>[];
           return state.collectionItems;
@@ -1201,13 +1229,27 @@ describe("getVersionDiff", () => {
 
   // The predecessor is not a parameter: the action reads it, so no caller can ask
   // for v7 against v2 and get a payload drawn under the words "what v7 changed".
-  // Which row the read hands back is the stub's own artifact — the ordering by
-  // `number` is proved against a real Postgres by `pnpm probe:versions`.
+  // Three versions, so the read has a wrong answer available to it: the asked-for
+  // version itself, and the one two behind.
   it("reads the predecessor itself rather than taking one from the caller", async () => {
-    stub.state.deckVersions.push({ id: VERSION_ID, number: 2, deckId: DECK_ID });
+    const V1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const V2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    stub.state.deckVersions.push(
+      { id: V1, number: 1, deckId: DECK_ID },
+      { id: V2, number: 2, deckId: DECK_ID },
+      { id: VERSION_ID, number: 3, deckId: DECK_ID },
+    );
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]?.[0]).toBe(VERSION_ID);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2]);
+  });
+
+  // A v1 has nothing before it, and the diff loader is told so explicitly rather
+  // than being handed some other version's id.
+  it("names no predecessor for the first version", async () => {
+    stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
+    await getVersionDiff(DECK_ID, VERSION_ID);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null]);
   });
 });
 

@@ -212,6 +212,21 @@ describe("VersionDiff", () => {
     expect(await screen.findByText(copy.commanderChange("Korvold", "Prosper"))).toBeInTheDocument();
   });
 
+  // The panel's header is desktop-only, so a helm sentence inside it would leave a
+  // commander-only commit reading as a version that changed nothing at 390px.
+  it("draws the helm sentence at both widths", async () => {
+    getVersionDiff.mockResolvedValueOnce({ in: [card()], out: [] });
+    mount({
+      version: version({ commanderOracleId: "prosper", commanderName: "Prosper" }),
+      previous: version({ number: 1 }),
+    });
+    const line = await screen.findByText(copy.commanderChange("Korvold", "Prosper"));
+    expect(line.className).not.toContain("hidden");
+    for (let node = line.parentElement; node !== null; node = node.parentElement) {
+      expect(node.className).not.toContain("hidden");
+    }
+  });
+
   // A partner swap changes who is at the helm as much as a commander swap does.
   // Naming only the primary rendered `Korvold → Korvold`, which says nothing.
   it("names both sides of the helm when only the partner moved", async () => {

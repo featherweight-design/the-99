@@ -71,7 +71,15 @@ export async function listDeckGames(deckId: string, userId: string): Promise<Dec
     .from(deckGames)
     // LEFT, never inner: an unstamped game is history the log still has to draw,
     // and an inner join would delete it from the list to avoid printing a dash.
-    .leftJoin(deckVersions, eq(deckVersions.id, deckGames.versionId))
+    // Scoped to the same deck as well as the id, because `version_id` is a
+    // foreign key to `deck_versions.id` alone: a row pointing at another deck's
+    // version would otherwise be stamped with that deck's `vN` here while
+    // `listVersions` leaves it out of its games-held tally, and the two surfaces
+    // would disagree. Out of scope, the join misses and the game reads unstamped.
+    .leftJoin(
+      deckVersions,
+      and(eq(deckVersions.id, deckGames.versionId), eq(deckVersions.deckId, deckGames.deckId)),
+    )
     .where(and(eq(deckGames.deckId, deckId), eq(deckGames.userId, userId)))
     .orderBy(desc(deckGames.playedAt), desc(deckGames.createdAt));
 

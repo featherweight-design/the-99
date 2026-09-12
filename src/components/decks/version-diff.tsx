@@ -312,11 +312,6 @@ export function VersionDiff({
           >
             {version.note ?? copy.noNote}
           </p>
-          {commanderMoved && (
-            <p className="m-0 mt-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-              {copy.commanderChange(from, to)}
-            </p>
-          )}
         </div>
         {initial ? (
           // The v1 header carries its figures as text rather than as stat boxes:
@@ -360,6 +355,17 @@ export function VersionDiff({
           </div>
         )}
       </div>
+
+      {/* Outside the header, which is desktop-only: who was at the helm is the
+          version's substance and not its chrome, and a phone that lost the
+          sentence would draw a commander-only commit as a version that changed
+          nothing. One element at both widths rather than a phone copy beside a
+          desktop one. */}
+      {commanderMoved && (
+        <p className="m-0 mb-[12px] md:-mt-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">
+          {copy.commanderChange(from, to)}
+        </p>
+      )}
 
       {initial ? (
         <InitialPanel deckId={deckId} version={version} />
