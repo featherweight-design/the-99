@@ -100,9 +100,18 @@ export function DeckSortMenu({
         // chassis is compact to 999, so an `sm:h-[32px]` would drop the target
         // through the floor across the whole 640-999 band — where this is the
         // only route to the sort.
-        className="flex h-[44px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] py-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] min-[1000px]:h-[32px]"
+        // Named for assistive tech at every width; the words are drawn only
+        // where they fit. At 320px the compact row is search, Filters and this
+        // — three controls that cannot also carry "Sort · last played" without
+        // wrapping, which decision 18 forbids outright — so compact draws the
+        // glyph alone in a 44px square and wide draws the full label at 32px.
+        aria-label={refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+        className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] min-[1000px]:h-[32px] min-[1000px]:w-auto min-[1000px]:px-[14px]"
       >
-        {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+        <span aria-hidden className="min-[1000px]:hidden">⇅</span>
+        <span aria-hidden className="hidden min-[1000px]:inline">
+          {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+        </span>
       </button>
 
       {open && (

@@ -171,6 +171,21 @@ describe("FilterChassis", () => {
     expect(frame().className).toContain("px-[16px]");
   });
 
+  it("draws a swatch per value a chip's label collapsed", () => {
+    // A colour chip reads "3 colours" rather than splitting into three chips,
+    // so the swatches are the only thing saying which three. Dropping them —
+    // which the first adapter did — leaves the reader a count and no values.
+    const { container } = render(
+      <FilterChassis
+        {...base}
+        controls={null}
+        chips={[{ key: "colors", label: "2 colours", dots: ["#111", "#222"], onRemove: () => {} }]}
+      />,
+    );
+    const swatches = container.querySelectorAll("[data-chassis-row='chips'] span[aria-hidden] span");
+    expect(swatches).toHaveLength(2);
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,

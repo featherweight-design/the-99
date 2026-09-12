@@ -100,6 +100,10 @@ export function FilterRack({
   const chassisChips: FilterChip[] = chipsFor(params, lane).map((chip) => ({
     key: chip.key,
     label: chip.label,
+    // The colour chip collapses its values to a count, so the swatches are the
+    // only thing that says which hues are lit. Dropping them made "2 colours"
+    // mean two unnamed colours.
+    dots: chip.dots,
     onRemove: () => onChange({ ...params, ...chip.next }),
   }));
 

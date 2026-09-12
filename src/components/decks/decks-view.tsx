@@ -272,7 +272,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                     aria-label={refreshCopy.filters.searchPlaceholder}
                     aria-haspopup="dialog"
                     aria-expanded={sheet.open}
-                    className="flex h-[34px] w-[34px] flex-none cursor-pointer items-center justify-center rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)]"
+                    className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)]"
                   >
                     <SearchIcon size={16} />
                   </button>
@@ -281,7 +281,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                   onClick={() => setSheet({ open: true, focusSearch: false })}
                   aria-haspopup="dialog"
                   aria-expanded={sheet.open}
-                  className={`flex h-[34px] cursor-pointer items-center gap-[7px] rounded-[9px] border border-solid bg-transparent px-[12px] font-sans text-[13px] ${
+                  className={`flex h-[44px] cursor-pointer items-center gap-[7px] rounded-[9px] border border-solid bg-transparent px-[12px] font-sans text-[13px] ${
                     active > 0
                       ? "border-[color:var(--accent)] text-[color:var(--fg)]"
                       : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"

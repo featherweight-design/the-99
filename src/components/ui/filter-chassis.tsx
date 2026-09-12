@@ -28,6 +28,13 @@ export type FilterChip = {
   key: string;
   /** What the chip reads. `Status · Playing`, `3 colours`. */
   label: string;
+  /**
+   * CSS colours drawn as leading swatches, one per value the label collapsed.
+   * A colour chip reads "3 colours" rather than splitting into three chips, so
+   * without these the reader is told how many are on and never which — the
+   * swatches are the only thing that says so.
+   */
+  dots?: readonly string[];
   onRemove: () => void;
 };
 
@@ -169,6 +176,17 @@ export function FilterChassis({
                 "px-[8px] py-[3px] font-mono text-[11px] leading-[14px] text-[color:var(--fg-body)]",
               ].join(" ")}
             >
+              {chip.dots && chip.dots.length > 0 && (
+                <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
+                  {chip.dots.map((fill, i) => (
+                    <span
+                      key={i}
+                      className="h-[8px] w-[8px] flex-none rounded-full"
+                      style={{ background: fill }}
+                    />
+                  ))}
+                </span>
+              )}
               {chip.label}
               <button
                 type="button"
