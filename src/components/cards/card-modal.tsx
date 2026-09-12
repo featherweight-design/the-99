@@ -372,7 +372,15 @@ export function CardModal({
       imageUri: at.imageUri ?? card.imageUri,
       flavorName: null,
     }];
-    return { ...card, printings, preferredPrinting: at };
+    // The title follows the art. `printedName` is a CARD-level field, set from whichever
+    // printing the collection resolved to — so left alone it would print the owned
+    // holding's flavour name over the printing the cell actually opened at, which is the
+    // pairing `BrowseCard` documents and this whole branch exists to keep. Derived from the
+    // row the preview resolves to: the injected row carries no flavour name, so an
+    // unowned target falls back to the oracle name, which is the honest answer for a
+    // printing the reader has no copy of.
+    const row = printings.find((p) => matchesPreference(p, at));
+    return { ...card, printings, preferredPrinting: at, printedName: row?.flavorName ?? null };
   }, [card, pick, picked, openAtPrinting]);
   const resolved = resolvedPrinting(preview);
   // The picker is about the printings you OWN — every string it renders says so, and picking
@@ -508,7 +516,7 @@ export function CardModal({
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
-  const faces = faceNames(printedNameOf(card));
+  const faces = faceNames(printedNameOf(preview));
 
   function onFlip() {
     const next = !flipped;
@@ -678,14 +686,14 @@ export function CardModal({
                   className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
                   style={{ color: "var(--fg)" }}
                 >
-                  {printedNameOf(card)}
+                  {printedNameOf(preview)}
                 </h3>
                 {/* The oracle name — absent, not blank, when the printing prints
                     its own name. A reserved empty line would spend 23px on every
                     ordinary card to make the ordinary case look incomplete. The
                     tighter gap above binds the two names into one unit; the
                     looser one below keeps the type line a separate fact. */}
-                {card.printedName && (
+                {preview.printedName && (
                   <p
                     className="flex items-baseline gap-[6px] text-[13px] md:text-[13.5px] mt-[5px] md:mt-[6px] mb-0"
                     style={{ color: "var(--fg-body)" }}
@@ -704,7 +712,7 @@ export function CardModal({
                     what keeps the type line from joining the name pair. */}
                 <p
                   className={`text-[13px] md:text-[14px] ${
-                    card.printedName ? "mt-[10px]" : "mt-[4px] md:mt-[6px]"
+                    preview.printedName ? "mt-[10px]" : "mt-[4px] md:mt-[6px]"
                   }`}
                   style={{ color: "var(--fg-muted)" }}
                 >

@@ -761,7 +761,7 @@ describe("CardModal opened at a printing it does not own", () => {
 
   // The injected row is art for the face and nothing else. The picker counts and lists what
   // the reader OWNS, and a printing they do not own appearing in "N printings you own" is
-  // the same defect this file already covers for the catalog list one describe block up —
+  // the same defect this file already covers for the catalog list one describe block above —
   // reached the other way, through the caller rather than through the fetch.
   it("leaves the picker counting only what the reader owns", async () => {
     const twoOwned: BrowseCard = {
@@ -867,5 +867,57 @@ describe("CardModal opened at a printing it does not own", () => {
     );
     expect(backgrounds(container).some((b) => b.includes("tla-282"))).toBe(true);
     expect(backgrounds(container).some((b) => b.includes("representative"))).toBe(false);
+  });
+});
+
+// `printedName` is a CARD-level field, resolved from whatever printing the collection
+// picked. Opening at a different printing therefore printed the owned holding's flavour
+// name over the target printing's art — the pairing `BrowseCard` documents, broken by the
+// very branch that exists to keep it.
+describe("CardModal title under an opened-at printing", () => {
+  const flavoured: BrowseCard = {
+    ...card,
+    quantity: 2,
+    printedName: "Lonely Sandbar Vista",
+    printings: [{
+      setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+      quantity: 2, finishes: { nonfoil: 2 },
+      imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+      flavorName: "Lonely Sandbar Vista",
+    }],
+  };
+
+  it("falls back to the oracle name for a printing the reader does not own", () => {
+    render(
+      <CardModal
+        card={flavoured}
+        openAtPrinting={{
+          setCode: "TLA", collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+    expect(screen.queryByText("Lonely Sandbar Vista")).toBeNull();
+  });
+
+  it("keeps the flavour name when that IS the printing being shown", () => {
+    render(
+      <CardModal
+        card={flavoured}
+        openAtPrinting={{ setCode: "SLD", collectorNumber: "1500" }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
+  });
+
+  it("leaves an ordinary open untouched", () => {
+    render(
+      <CardModal card={flavoured} position={1} total={1}
+        onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
   });
 });
