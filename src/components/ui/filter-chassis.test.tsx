@@ -211,6 +211,24 @@ describe("FilterChassis", () => {
     expect(row.querySelector(".ml-auto")).toBeNull();
   });
 
+  it("forwards a custom announcement through to the live region", () => {
+    // ResultLine is tested in isolation, so a regression dropping either prop
+    // HERE would lose /collection's richer announcements with every other test
+    // still green.
+    const { container, rerender } = render(
+      <FilterChassis {...base} controls={null} chips={[]} announce="Red added." announceId={1} />,
+    );
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+    // Same sentence, new event: the id is what makes it speak again.
+    rerender(
+      <FilterChassis {...base} controls={null} chips={[]} announce="" announceId={1} />,
+    );
+    rerender(
+      <FilterChassis {...base} controls={null} chips={[]} announce="Red added." announceId={2} />,
+    );
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,

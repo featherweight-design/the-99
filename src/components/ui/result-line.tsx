@@ -120,10 +120,13 @@ export function ResultLine({
     // silence every ordinary announcement.
     lastAnnounce.current = identity;
     const message = fresh ? (announce as string) : line;
-    // A custom message is already debounced by whoever composed it —
-    // `FilterPanel` waits 300ms on `onAnnounce` before it ever reaches this
-    // prop — so debouncing again would put it 600ms behind the keystroke that
-    // caused it. Only the line this component composes itself waits.
+    // A custom message is delivered as given. It is composed by the surface for
+    // a specific action, and this component adds no debounce of its own to it —
+    // some callers send immediately (`FilterPanel`'s arrow-key and first-option
+    // announcements, and the sort control) while only its search-match effect
+    // waits 300ms. Waiting again here would put that one roughly 600ms behind
+    // the keystroke and delay every other one for no reason. The line this
+    // component composes itself is the only thing that waits.
     if (fresh) {
       setAnnouncement(message);
       return;
