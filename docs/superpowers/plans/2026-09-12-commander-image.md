@@ -66,9 +66,11 @@ moved from 📐 to 🟢. No code.
    with an override kept only on the one legacy row whose shipped value disagrees with its own rule;
    `vertical` becomes an override too, kept only on width 203, since one ramp function now serves both
    strategies. New rows: 285 → `flatStop 300`, 340 → `356`, 560 → `584`; 230 keeps its shipped 240;
-   every row a stated band can draw is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`
-   — the two legacy widths keep their own shipped ground and, on 203, its vertical ramp, until their
-   consumers retire.
+   every row a stated band can draw is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`.
+   **The two legacy widths keep every value they ship with** — 203 its `clearTo`-by-derivation and its
+   vertical ramp, 99 its `maskEnd 62`, `sharpAlpha 80`, `sharpOpacity .95`, `--surface-inset` ground
+   and `clearTo 58` — until their consumers retire, because a transitional table that "tidies" a
+   number changes a band nobody asked it to.
    **The transitional table is six rows, not four.** `203` and `99` are the two aspect-ratio bands'
    own derived widths — `round(148 × 1.37)` and `round(72 × 1.37)`, which is what the primitive
    already computes for them — so the legacy `band` prop resolves through the same table rather than
@@ -162,7 +164,7 @@ phone control, `spine-mobile.test.tsx` and `spine-desktop.test.tsx`.
 `hero-commander.tsx` (render 01 → 288, `labelAtPx` **46** — the verdict's corrected measurement, since
 the block is a padded ROW and 38 counted one of its two insets — three pinned elements condensed to one row,
 `Start this deck` cut and `See the pool` promoted to the filled treatment) and `resume-decks.tsx`
-(render 02 → a **168 cover** band — the round's one strategy flip and its largest reversal, A4). The
+(render 02 → a **168 cover** band at `labelAtPx` **53** — the round's one strategy flip and its largest reversal, A4). The
 resume row's commander name is cut **on single-commander rows only**; a pair's band shows one of two
 commanders, so the shortened pair line stays (verdict finding 6). The to-buy clause is cut outright.
 
@@ -172,7 +174,8 @@ Tests in the same PR: `hero-commander.test.tsx` and `resume-decks.test.tsx`, bot
 With the last consumer migrated, this PR deletes `COVER_SCRIM_STOPS.top`, the `labelEdge` prop and its
 class hook, `legacyBottomScrimStops`, the `203` and `99` portrait rows with their `clearTo` and
 `vertical` overrides, `.art-wash-scrim-cover-top` and its reduced-transparency override in `globals.css`, the
-`148` and `72` height arms, and the `min-h-[104px]` floors in `hero-commander.tsx` and `deck-card.tsx`
+`148`, `168` and `72` height arms — `168`'s last consumer is `spine-desktop.tsx`, which migrates one
+slice earlier, so the whole `Band` type goes here and not in pieces — and the `min-h-[104px]` floors in `hero-commander.tsx` and `deck-card.tsx`
 (verdict finding 4). `.art-wash-art { opacity: … !important }` **stays**, and
 `--art-wash-reduced-opacity` stays a ceiling published per layer through `Math.min` — never applied
 flat. Resume last means a revert touches one file.
