@@ -80,6 +80,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   foreign key's `on delete set null`, which no unit test in this repository can reach. It
   writes a fixture under a per-run `user_id` and deletes it in a `finally`; point it at
   `local-dev` or a scratch Neon branch, **never production**.
+- `pnpm probe:stats` proves the deck-stats loader against a real Postgres by calling the
+  real `loadDeckStats` — a deck the player does not own is refused, both commanders are
+  folded into the curve and the spread despite not being `deck_cards` rows, a grouped game
+  tally comes back as a record, and each deck's cost is its own. The pure half is unit
+  tested; only a database can answer whether the loader assembles the right rows. Same
+  fixture discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed
+  at `local-dev` or a scratch branch, **never production**.
 - `pnpm probe:writer-version` proves the `commander_scores` writer stamp against a real Postgres:
   a writer that announces `app.writer_version` keeps it, one that says nothing has every row it
   touches marked stale, and the announcement does not outlive its transaction. That last one is

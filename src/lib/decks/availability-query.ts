@@ -380,7 +380,21 @@ export type DeckBuyRow = { deckId: string; oracleId: string; quantity: number };
  * seniority is measured against every claim there is, and the commander is
  * admitted here only once the deck page can render its ownership.
  */
-export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
+export async function loadDeckBuyRows(
+  userId: string,
+  /**
+   * Narrows the rows RETURNED, never the model they are computed from.
+   * Seniority is a question about every deck the player owns — a deck's bill
+   * depends on who else is holding the copies — so the claim model below stays
+   * user-wide however few decks the caller wants an answer for. Passing a deck
+   * here saves pricing rows the caller will not read, not a scan.
+   */
+  deckIds?: string[],
+): Promise<DeckBuyRow[]> {
+  if (deckIds && deckIds.length === 0) return [];
+  // sql.param for the same reason it is used elsewhere in this file: a bare
+  // array expands to a parenthesised parameter list, not to an array.
+  const onlyDecks = sql.param(deckIds ?? null);
   const rows = await db.execute<{
     deck_id: string;
     oracle_id: string;
@@ -441,6 +455,7 @@ export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
       (s.quantity - greatest(s.owned - s.senior, 0))::int as quantity
     from supply s
     where s.quantity - greatest(s.owned - s.senior, 0) > 0
+      and (${onlyDecks}::uuid[] is null or s.deck_id = any(${onlyDecks}::uuid[]))
   `);
 
   return rows.rows.map((r) => ({
