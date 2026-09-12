@@ -115,12 +115,16 @@ already explains why — or draw an explicit unknown. Design's call, and it is q
 
 **The two surfaces fail differently, and only one of them currently fails at all.** `/commanders`
 loads the rollup and already has the vocabulary for losing it — `availOk: false` disables
-`Free cards only` and draws its struck segment with a banner saying why. **`/commanders/[slug]` does
-not read availability at all today** (it scores one commander and reads synergy cards; there is no
-`loadAvailability`, no `availOk`, no banner). So the hero's marker is new data on that route, and its
-failure path has to be designed rather than inherited: if the rollup throws there, the hero has
-nothing to fall back on and would silently look free — the exact outcome this section forbids. Design
-should rule on the hero's degraded state as its own question, not as "the same as the list".
+`Free cards only` and draws its struck segment with a banner saying why. **`/commanders/[slug]` reads availability
+on ONE path and not the other.** Arriving with `?avail=free`, it calls `rankFree` and `loadFreePool`,
+both of which load the rollup — and when either fails it silently falls back to the canonical score,
+which is the page's whole degraded story today. Arriving without it, the page never touches
+availability at all: it scores one commander and reads synergy cards.
+
+So the hero's marker is new data on the default path, and its failure signal has to be designed
+rather than inherited — there is no banner on this route to lean on, and a silent fallback is exactly
+what would make the hero look free on no evidence. Design should rule on the hero's degraded state as
+its own question, not as "the same as the list".
 
 The row and the hero each need to say one of:
 

@@ -221,12 +221,16 @@ fold; both sit with the parity brief in 📐 rather than taking a backlog rank o
 during a concurrent run, so this tracker records their arrival without claiming them; whoever runs
 the audit commits the folder in the same PR as the verdict.
 
-**The legend gap the amendments exposed is still open.** #286 and #287 were `type: design` **and**
-`type: bug`, and the legend has no state for a design defect against an already-shipped surface:
+**The legend gap the amendments exposed is PARTLY closed.** #286 and #287 were `type: design` **and**
+`type: bug`, and the legend had no state for a design defect against an already-shipped surface:
 🕰️ means a design cycle that has not started, which understates a live defect, and 🟢 means a
 handoff has landed, which was not yet true while they sat here. They passed through 🎨 because
-design was genuinely being produced for them. The next defect of this class will hit the same
-gap, and it is worth closing rather than resolving case by case.
+design was genuinely being produced for them.
+
+⚖️ (added 2026-09-12) covers the half where **eng has already built the fix** and Design owes a
+yes/no. It does not cover the other half — a live design defect on a shipped surface where nothing
+is built yet and Design has to draw first, which is where #286 and #287 actually sat. That case still
+has no state, and is still worth closing rather than resolving one ticket at a time.
 
 ---
 
