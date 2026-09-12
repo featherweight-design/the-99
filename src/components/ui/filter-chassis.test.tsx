@@ -289,4 +289,31 @@ describe("FilterChassis", () => {
     );
     expect(container.querySelectorAll("[aria-live]")).toHaveLength(1);
   });
+
+  it("catches focus when a form change unmounts whatever held it", async () => {
+    // A form change unmounts controls, and an unmount is not a close: the path
+    // that hands focus back to a trigger never runs, so focus falls to `body`
+    // and the next Tab restarts at the top of the document.
+    const { container, rerender } = render(
+      <FilterChassis {...base} form="compact" controls={<button type="button">Filter</button>} chips={[]} />,
+    );
+    screen.getByRole("button", { name: "Filter" }).focus();
+    rerender(
+      <FilterChassis {...base} form="wide" controls={<button type="button">Filter</button>} chips={[]} />,
+    );
+    // `body` is what focus falls to; the rescue runs on the next frame.
+    (document.activeElement as HTMLElement)?.blur();
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(container.querySelector("[data-chassis-row='controls']")).toHaveFocus();
+  });
+
+  it("leaves focus alone on mount, on a route the reader has not clicked into", () => {
+    // Ungated, the rescue would take focus off the top of every route that
+    // loaded, because `document.activeElement` is `body` until something is
+    // clicked.
+    const { container } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
+  });
+
 });

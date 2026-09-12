@@ -170,6 +170,34 @@ export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
   silentResult, resultTrailing, announce, announceId, revision, scrollCompactControls, warnResult,
 }: FilterChassisProps) {
+  const controlsRef = React.useRef<HTMLDivElement>(null);
+  // A form change unmounts controls: the compact triggers and the wide form's
+  // panels are different elements, and a mount that keys on the form remounts
+  // its panels outright. Whatever held focus goes with them, and an unmount is
+  // not a close — `FilterPanel.close()` is the path that hands focus back to a
+  // trigger, and it never runs. Focus falls to `body`, so the next Tab starts
+  // from the top of the document rather than the filters the reader was in.
+  //
+  // Asks the only question that matters after the unmount, as the set surface
+  // does: is focus now on nothing, or on something with no box? Either way it
+  // lands on the control row, which is where the reader already was.
+  //
+  // Only on a CHANGE. On mount `document.activeElement` is `body` on any page
+  // the reader has not clicked into yet, so an ungated version would take focus
+  // off the top of every route the moment it loaded.
+  const lastForm = React.useRef(form);
+  React.useEffect(() => {
+    if (lastForm.current === form) return;
+    lastForm.current = form;
+    const id = requestAnimationFrame(() => {
+      const active = document.activeElement as HTMLElement | null;
+      if (!active || active === document.body || active.getClientRects().length === 0) {
+        controlsRef.current?.focus();
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [form]);
+
   return (
     <div
       // The horizontal padding follows the chassis's own form, not a Tailwind
@@ -188,7 +216,12 @@ export function FilterChassis({
           between: a sort landing on its own line reads as a bug, which is what
           R1's wrapping row was reported as. `min-w-0` on the leading group is
           what makes search the only shrinking child. */}
-      <div className="flex items-center gap-[8px]" data-chassis-row="controls">
+      <div
+        ref={controlsRef}
+        tabIndex={-1}
+        className="flex items-center gap-[8px] outline-none"
+        data-chassis-row="controls"
+      >
         {/* No `overflow-hidden` here, ever. `FilterPanel` puts its desktop
             popover in an absolutely positioned descendant of its own relative
             root — its popover is `absolute` with a computed `left` — so clipping this group hides

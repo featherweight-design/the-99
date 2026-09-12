@@ -22,7 +22,8 @@ import { collectionFilterCopy } from "../../lib/copy/collection";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { ColourPips } from "../ui/colour-pips";
-import { FilterChassis, type FilterChip } from "../ui/filter-chassis";
+import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../ui/filter-chassis";
+import { useMinWidth } from "../ui/use-min-width";
 import { SearchField } from "../ui/text-field";
 import { FilterPanel } from "../ui/filter-panel";
 // Placeholder copy differs by breakpoint (§Copy (placeholders)) and the
@@ -128,6 +129,12 @@ export function FilterBar({
   onViewChange: (v: ViewMode) => void;
 }) {
   const isDesktop = useIsDesktop();
+  // The CHASSIS's breakpoint, not this file's. `useIsDesktop` is 768 and the
+  // chassis switches at 1000, so deriving the form from it rendered the wide,
+  // no-wrap treatment across 768-999 — a route-specific breakpoint, which is
+  // the thing one shared frame exists to prevent. `isDesktop` still governs
+  // what it always did here, like the search placeholder.
+  const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
   function toggleColor(c: string) {
     const has = filters.colors.includes(c);
@@ -141,7 +148,7 @@ export function FilterBar({
     // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop, border-bottom 1px --border, z-index 2
     <div className="md:sticky md:top-0 md:z-[2]" style={{ background: "var(--bg)" }}>
       <FilterChassis
-        form={isDesktop ? "wide" : "compact"}
+        form={wide ? "wide" : "compact"}
         // This route has no compact filter surface, so its controls stay inline
         // and scroll — which is what it shipped before the chassis. Without it
         // the pips plus four triggers run off a 390px screen.
@@ -159,9 +166,9 @@ export function FilterBar({
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
-          key={isDesktop ? "wide" : "compact"}
+          key={wide ? "wide" : "compact"}
           desktopRowMinPx={44}
-          compact={!isDesktop}
+          compact={!wide}
           copy={collectionFilterCopy.sort}
           options={buildSortOptions(sort, sortDirection)}
           selected={[sort]}
@@ -225,7 +232,7 @@ export function FilterBar({
             (decision 17): it existed to explain five abstract squares, and the
             symbols explain themselves. */}
         <ColourPips
-          form={isDesktop ? "wide" : "sheet"}
+          form={wide ? "wide" : "sheet"}
           value={filters.colors}
           onToggle={(code) => toggleColor(code)}
         />
@@ -240,9 +247,9 @@ export function FilterBar({
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
-          key={isDesktop ? "wide" : "compact"}
+          key={wide ? "wide" : "compact"}
           desktopRowMinPx={44}
-          compact={!isDesktop}
+          compact={!wide}
           copy={collectionFilterCopy.type}
           options={typeOptions}
           selected={filters.types}
@@ -269,9 +276,9 @@ export function FilterBar({
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
-          key={isDesktop ? "wide" : "compact"}
+          key={wide ? "wide" : "compact"}
           desktopRowMinPx={44}
-          compact={!isDesktop}
+          compact={!wide}
           copy={collectionFilterCopy.set}
           options={setOptions}
           selected={filters.setCodes}
@@ -302,9 +309,9 @@ export function FilterBar({
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
-          key={isDesktop ? "wide" : "compact"}
+          key={wide ? "wide" : "compact"}
           desktopRowMinPx={44}
-          compact={!isDesktop}
+          compact={!wide}
           copy={collectionFilterCopy.availability}
           options={availabilityOptions.map((o) => ({
             ...o,
