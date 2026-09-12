@@ -44,8 +44,13 @@ moved from 📐 to 🟢. No code.
    The `band` arm keeps every shipped geometry and retires with its last consumer in PRs 4 and 6, so
    a surface changes height when its own PR says so and not before.
 2. The new prop is **`labelAtPx`**, pixels from the foot, and `bottomScrimStops` takes
-   `(labelAtPx, band)` in the same commit — emitting
-   `[[0,0], [0,(band−1.48·at)/band×100], [73,(band−at)/band×100], [73,100]]`. **No one-argument
+   `(labelAtPx, band, hold = 73)` in the same commit — emitting
+   `[[0,0], [0,(band−1.48·at)/band×100], [hold,(band−at)/band×100], [hold,100]]`. **The hold is a
+   parameter and `left-portrait` passes 78**: 73 was measured against the cover band's 0.8 art, and a
+   portrait's sharp layer draws at 0.92, where the same hold leaves `--fg-body` at 4.33:1 over a
+   white pixel in all six themes — which is why the hand-written column being deleted held at 78.
+   One function, one shape, and the one number that has to answer to the art beneath it stays
+   answerable. The contrast suite carries the same constant. **No one-argument
    function named `bottomScrimStops` survives**, which is the point: the percentage ramp continues
    under its own name, `legacyBottomScrimStops(pct)`, so the two units can never be passed through one
    signature. Leaving them sharing a name is how the round ships inverted.
@@ -148,7 +153,8 @@ phone control, `spine-mobile.test.tsx` and `spine-desktop.test.tsx`.
 
 ### PR 6 — home, and the old path deleted
 
-`hero-commander.tsx` (render 01 → 288, `labelAt` **38**, three pinned elements condensed to one row,
+`hero-commander.tsx` (render 01 → 288, `labelAtPx` **46** — the verdict's corrected measurement, since
+the block is a padded ROW and 38 counted one of its two insets — three pinned elements condensed to one row,
 `Start this deck` cut and `See the pool` promoted to the filled treatment) and `resume-decks.tsx`
 (render 02 → a **168 cover** band — the round's one strategy flip and its largest reversal, A4). The
 resume row's commander name is cut **on single-commander rows only**; a pair's band shows one of two
