@@ -180,6 +180,67 @@ async function run() {
       return link ? link.getAttribute('href').split('/').pop() : null;
     });
     if (!code) throw new Error("No set to probe: the index listed none and PROBE_SET was unset.");
+
+    // The index row, while we are on it (addendum R2 §30). The extras figure ranks UNDER
+    // the base ratio rather than trailing a code and a year, and takes --fg-muted — which
+    // is a resolved colour question no JSDOM test can answer.
+    const indexRow = await page.evaluate(() => {
+      const root = getComputedStyle(document.documentElement);
+      const value = (name) => root.getPropertyValue(name).trim();
+      const probe = (raw) => {
+        const el = document.createElement("span");
+        el.style.color = raw;
+        document.body.appendChild(el);
+        const resolved = getComputedStyle(el).color;
+        el.remove();
+        return resolved;
+      };
+      const extras = [...document.querySelectorAll("a[href^='/collection/sets/'] span")]
+        .find((el) => /^\d+ \/ \d+ extras$/.test(el.textContent.trim()));
+      if (!extras) return null;
+      // The innermost match: the ratio's wrapper also contains the extras line, so its own
+      // bottom edge sits BELOW the figure this check is measuring against it.
+      const ratio = [...extras.closest("a").querySelectorAll("span")]
+        .filter((el) => el.childElementCount === 0)
+        .find((el) => /^\d+ \/ \d+ · \d+%$/.test(el.textContent.trim()));
+      return {
+        text: extras.textContent.trim(),
+        colour: getComputedStyle(extras).color,
+        muted: probe(value("--fg-muted")),
+        locked: probe(value("--fg-locked")),
+        size: parseFloat(getComputedStyle(extras).fontSize),
+        ratioSize: ratio ? parseFloat(getComputedStyle(ratio).fontSize) : null,
+        below: ratio
+          ? Math.round(extras.getBoundingClientRect().top - ratio.getBoundingClientRect().bottom)
+          : null,
+        label: extras.closest("a").getAttribute("aria-label") ?? "",
+      };
+    });
+    if (indexRow === null) {
+      console.log("\n  (no indexed row with extras on this fixture — §30 checks skipped)\n");
+    } else {
+      failures += !report(
+        "the extras figure resolves to --fg-muted, not --fg-locked",
+        indexRow.colour === indexRow.muted && indexRow.colour !== indexRow.locked,
+        `${indexRow.colour} (muted ${indexRow.muted}, locked ${indexRow.locked})`,
+      );
+      failures += !report(
+        "it sits under the base ratio rather than beside the year",
+        indexRow.below !== null && indexRow.below >= 0,
+        `${indexRow.below}px below the ratio`,
+      );
+      failures += !report(
+        "it is one type step down from the ratio",
+        indexRow.ratioSize !== null && indexRow.size < indexRow.ratioSize,
+        `${indexRow.size}px under ${indexRow.ratioSize}px`,
+      );
+      failures += !report(
+        "the row's accessible name carries it",
+        indexRow.label.includes("extras"),
+        `label ${JSON.stringify(indexRow.label)}`,
+      );
+    }
+
     console.log(`\nProbing /collection/sets/${code} at 1280x900\n`);
 
     await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });

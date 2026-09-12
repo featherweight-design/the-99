@@ -49,14 +49,16 @@ describe("SetIndexView — S2 populated", () => {
   it("names the ratio for a screen reader rather than leaving it as two numbers", () => {
     render(<SetIndexView sets={[set({})]} cardCount={1200} onSearch={noSearch} />);
     expect(screen.getByRole("link", {
-      name: "Edge of Eternities: you have 62 of 276 in the base run",
+      // The extras clause is appended in addendum R2 §30: the label is explicit, so it
+      // replaces every descendant and a visible figure absent from it reaches nobody.
+      name: "Edge of Eternities: you have 62 of 276 in the base run, and 4 of 123 extras",
     })).toBeInTheDocument();
   });
 
   it("says you have none rather than reading 0 of 276 aloud", () => {
     render(<SetIndexView sets={[set({ owned: 0, percent: 0 })]} cardCount={1} onSearch={noSearch} />);
     expect(screen.getByRole("link", {
-      name: "Edge of Eternities: you have none of 276 in the base run",
+      name: "Edge of Eternities: you have none of 276 in the base run, and 4 of 123 extras",
     })).toBeInTheDocument();
   });
 
@@ -175,7 +177,9 @@ describe("SetIndexView — completion is exact", () => {
         onSearch={noSearch}
       />,
     );
-    expect(screen.getByText("275 / 276 · 100%")).toHaveStyle({ color: "var(--fg-muted)" });
+    // --fg-body, not --success. The ratio brightened in addendum R2 §30 so that it outranks
+    // the extras figure now printed under it; the success treatment is still exact.
+    expect(screen.getByText("275 / 276 · 100%")).toHaveStyle({ color: "var(--fg-body)" });
   });
 
   it("gives it to a set that is genuinely complete", () => {
@@ -285,5 +289,88 @@ describe("SetIndexView — recovering from a failed search", () => {
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "   " } });
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets");
     replaceState.mockRestore();
+  });
+});
+
+// Addendum R2 §30 — the extras figure is a figure, so it ranks under the figure of its own
+// kind instead of trailing a code and a year at --fg-faint.
+describe("SetIndexView — the extras figure", () => {
+  const row = () => screen.getByRole("link", { name: /Edge of Eternities/ });
+
+  it("prints it under the base ratio rather than beside the year", () => {
+    render(<SetIndexView sets={[set({})]} cardCount={1200} onSearch={noSearch} />);
+    expect(screen.getByText("4 / 123 extras")).toBeInTheDocument();
+    expect(screen.queryByText(/EOE · 2026 · /)).toBeNull();
+  });
+
+  it("takes --fg-muted, never --fg-locked: it is text and owes 4.5:1", () => {
+    render(<SetIndexView sets={[set({})]} cardCount={1200} onSearch={noSearch} />);
+    expect(screen.getByText("4 / 123 extras")).toHaveStyle({ color: "var(--fg-muted)" });
+  });
+
+  // With both at --fg-muted the only ranking left between the two figures is 1px of type.
+  it("brightens the base ratio to --fg-body so the two figures rank", () => {
+    render(<SetIndexView sets={[set({})]} cardCount={1200} onSearch={noSearch} />);
+    expect(screen.getByText("62 / 276 · 22%")).toHaveStyle({ color: "var(--fg-body)" });
+  });
+
+  it("shows the line when none of the extras are owned", () => {
+    render(
+      <SetIndexView sets={[set({ extrasOwned: 0, extrasTotal: 98 })]} cardCount={1200}
+        onSearch={noSearch} />,
+    );
+    expect(screen.getByText("0 / 98 extras")).toBeInTheDocument();
+  });
+
+  // A finished base run with 119 extras outstanding must not read as a finished set.
+  it("keeps the extras line muted on a complete row, where the ratio goes to --success", () => {
+    render(
+      <SetIndexView sets={[set({ owned: 276, percent: 100, extrasOwned: 18, extrasTotal: 123 })]}
+        cardCount={1200} onSearch={noSearch} />,
+    );
+    expect(screen.getByText("276 / 276 · 100%")).toHaveStyle({ color: "var(--success)" });
+    expect(screen.getByText("18 / 123 extras")).toHaveStyle({ color: "var(--fg-muted)" });
+  });
+
+  it("never prints 0 / 0 extras", () => {
+    render(
+      <SetIndexView sets={[set({ extrasOwned: 0, extrasTotal: 0 })]} cardCount={1200}
+        onSearch={noSearch} />,
+    );
+    expect(screen.queryByText(/extras/)).toBeNull();
+  });
+
+  it("gives an unindexed row no second line at all", () => {
+    render(
+      <SetIndexView sets={[set({ baseSetSize: null, percent: null })]} cardCount={1200}
+        onSearch={noSearch} />,
+    );
+    expect(screen.getByText("not indexed yet")).toBeInTheDocument();
+    expect(screen.queryByText(/extras/)).toBeNull();
+  });
+
+  // The row is one <Link> with an explicit aria-label, which replaces everything its
+  // descendants contribute — so a visible figure absent from it is announced to nobody.
+  it("appends the figure to the row's accessible name", () => {
+    render(<SetIndexView sets={[set({})]} cardCount={1200} onSearch={noSearch} />);
+    expect(row()).toHaveAccessibleName(
+      "Edge of Eternities: you have 62 of 276 in the base run, and 4 of 123 extras",
+    );
+  });
+
+  it("appends it to the zero-owned name too", () => {
+    render(<SetIndexView sets={[set({ owned: 0, percent: 0 })]} cardCount={1200}
+      onSearch={noSearch} />);
+    expect(row()).toHaveAccessibleName(
+      "Edge of Eternities: you have none of 276 in the base run, and 4 of 123 extras",
+    );
+  });
+
+  it("leaves the name alone when there is no figure to append", () => {
+    render(<SetIndexView sets={[set({ extrasTotal: 0, extrasOwned: 0 })]} cardCount={1200}
+      onSearch={noSearch} />);
+    expect(row()).toHaveAccessibleName(
+      "Edge of Eternities: you have 62 of 276 in the base run",
+    );
   });
 });
