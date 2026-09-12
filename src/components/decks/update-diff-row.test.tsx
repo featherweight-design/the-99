@@ -7,6 +7,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { DiffRowIn, DiffRowOut, type DiffRowCard } from "./update-diff-row";
@@ -35,6 +36,33 @@ function draw(node: React.ReactNode) {
 afterEach(cleanup);
 
 describe("the review page's mounting", () => {
+  it("names the deck sleeving the copy, and stacks the row on the phone", () => {
+    const row = draw(
+      <DiffRowIn
+        review
+        card={card({ committed: true, manaCost: "{1}{U}" })}
+        sourceLine={null}
+        heldBy="Kess Storm"
+        action={<button type="button">Pull it</button>}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.heldBy("Kess Storm"))).toBeTruthy();
+    // Two lines on the phone, one flat flex line above it — the wrappers
+    // dissolve at `md`, so the desktop row keeps every other row's anatomy.
+    expect(row.className).toContain("flex-col");
+    expect(row.className).toContain("md:flex-row");
+    const lines = Array.from(row.children) as HTMLElement[];
+    expect(lines).toHaveLength(2);
+    for (const line of lines) expect(line.className).toContain("md:contents");
+    // The meta line is indented to the name's own text.
+    expect(lines[1].className).toContain("pl-[16px]");
+  });
+
+  it("keeps one line on a row with nothing to decide", () => {
+    const row = draw(<DiffRowIn review card={card({ manaCost: "{1}{U}" })} sourceLine={null} />);
+    expect(row.className).not.toContain("flex-col");
+  });
+
   it("draws the cost in the column the source line reserved", () => {
     const row = draw(<DiffRowIn review card={card({ manaCost: "{1}{U}" })} sourceLine={null} />);
     // The pips are decorative; the cost is spoken once, by the run itself.

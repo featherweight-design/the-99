@@ -42,7 +42,8 @@ const GUARD_ACTION = `${ACTION_BOX} text-[color:var(--fg)] no-underline`;
  *  two-line sentence — which made a guarded row a different width from a
  *  pullable one. The sentence lives in the action's accessible name. */
 const GUARD_TAG =
-  "font-mono rounded-[4px] px-[5px] py-[1px] text-[9.5px] uppercase tracking-[0.1em] flex-none";
+  "font-mono rounded-[4px] px-[5px] py-[1px] text-[9.5px] uppercase tracking-[0.1em] flex-none " +
+  "[border:1px_solid_var(--accent-shadow)]";
 
 export type PullControlProps = {
   /** The deck being reviewed — the one that gains the copy. */
@@ -76,10 +77,7 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
         <span
           className={GUARD_TAG}
           aria-hidden="true"
-          style={{
-            color: "var(--fg-muted)",
-            background: "color-mix(in oklab, var(--fg-muted) 10%, transparent)",
-          }}
+          style={{ color: "var(--fg-muted)" }}
         >
           {copy.commanderGuardTag}
         </span>
@@ -93,14 +91,11 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
   // the way forward is that deck — a live link, not a disabled `Pull it`.
   if (claim.pending) {
     return (
-      <span className="inline-flex items-center gap-[6px] flex-none">
+      <span className="inline-flex items-center gap-[5px] flex-none">
         <span
           className={GUARD_TAG}
           aria-hidden="true"
-          style={{
-            color: "var(--warning)",
-            background: "color-mix(in oklab, var(--warning) 13%, transparent)",
-          }}
+          style={{ color: "var(--warning)" }}
         >
           {copy.pullGuardTag}
         </span>

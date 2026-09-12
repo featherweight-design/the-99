@@ -172,6 +172,9 @@ function Column({
                   card={card}
                   review
                   sourceLine={null}
+                  // The deck the pull would raid, named on the row rather than
+                  // only inside the control's accessible name.
+                  heldBy={pullClaim?.name ?? null}
                   siblings={siblings}
                   describedBy={word ? wordId : undefined}
                   recount={recount}

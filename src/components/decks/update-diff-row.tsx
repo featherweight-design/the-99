@@ -24,6 +24,7 @@
 //   putting a card back means adding it to the deck.
 
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { Availability } from "../../lib/decks/availability";
 import type { PriceFact } from "../../lib/decks/price";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
@@ -52,7 +53,14 @@ const OPEN_CARD_HINT = "open card →";
  * whose alignment is its whole legibility.
  */
 const ROW_BOX = "min-h-[44px] md:min-h-[40px] px-[8px] md:px-[9px]";
-const ROW_BOX_ACTION = "min-h-[44px] px-[8px] md:pl-[9px] md:pr-[6px]";
+const ROW_BOX_ACTION = "min-h-[44px] p-[8px] md:py-0 md:pl-[9px] md:pr-[6px]";
+
+/** A pull-bearing row is two lines on the phone and one above it: the control is
+ *  44px and the holding deck, the price and the button together are wider than
+ *  390px leaves after a card name. The `md:contents` on each line dissolves the
+ *  grouping, so the desktop row is the same flat flex line every other row is. */
+const ROW_SHELL_STACKED = `flex flex-col items-stretch gap-[8px] md:flex-row md:items-center md:gap-[10px] ${ROW_RADIUS}`;
+const STACK_LINE = "flex items-center gap-[9px] md:contents";
 
 /** What the update flow has always drawn. `DiffRowOut` reserves its right edge
  *  for the keep control; `DiffRowIn` has no action in that flow. */
@@ -207,6 +215,17 @@ function OpenHint() {
       className="hidden md:group-hover:inline flex-none font-mono text-[10px] text-[color:var(--fg-faint)]"
     >
       {OPEN_CARD_HINT}
+    </span>
+  );
+}
+
+/** Which deck is sleeving the copy this row wants. Drawn on a sleeved add only,
+ *  where it is the subject of the pull beside it — the reader is deciding whether
+ *  to take a card out of a named deck, and the name is the whole question. */
+function HeldBy({ deck }: { deck: string }) {
+  return (
+    <span className="flex-none truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
+      {deckVersioningCopy.review.heldBy(deck)}
     </span>
   );
 }
@@ -389,6 +408,7 @@ export function DiffRowIn({
   action = null,
   recount,
   review = false,
+  heldBy = null,
 }: {
   card: DiffRowCard;
   sourceLine: number | null;
@@ -397,16 +417,15 @@ export function DiffRowIn({
   recount?: DiffRowRecount;
   /** The review page's box, hover fill and pointer hint — see `DiffRowOut`. */
   review?: boolean;
+  /** The deck sleeving the copy, on a sleeved add. Null on a free or unowned one,
+   *  which no deck holds. */
+  heldBy?: string | null;
 } & DiffRowNameExtras) {
-  return (
-    <div
-      className={[
-        ROW_SHELL,
-        review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_IN_IMPORT,
-        ROW_PLATE,
-        review ? ROW_PLATE_HOVER : "",
-      ].join(" ")}
-    >
+  // Two lines on the phone, one above it. Only a row carrying a decision earns
+  // the second line: a plain add has nothing on its right but a tag.
+  const stacked = review && action !== null;
+  const nameLine = (
+    <>
       <OwnershipDot owned={card.owned} committed={card.committed} size={7} />
       <DiffRowName
         oracleId={card.oracleId}
@@ -418,6 +437,11 @@ export function DiffRowIn({
       />
       {review ? <OpenHint /> : null}
       {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
+    </>
+  );
+  const metaLine = (
+    <>
+      {heldBy ? <HeldBy deck={heldBy} /> : null}
       {/* The slot sits BEFORE the trailing column, not after it. The name is the
           only flexible item, so anything that can disappear has to sit on the
           name's side of the fixed column — with the slot trailing, an owned row's
@@ -427,6 +451,10 @@ export function DiffRowIn({
           action is the row's other item that can be absent, so it sits on the
           name's side of the one fixed column. */}
       {action}
+    </>
+  );
+  const trailing = (
+    <>
       {/* One trailing column, whichever mounting is drawing: the import's line
           number, or the cost track that the deleted type label paid for. They
           are never both — a row with a printed cost is the review page's, which
@@ -446,6 +474,9 @@ export function DiffRowIn({
           card.manaCost ? "flex" : "hidden md:flex",
           "items-center justify-end font-mono text-[11px] min-w-[54px] flex-none",
           "text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]",
+          // The cost rides the name line on a stacked phone row, and stays the
+          // row's last item above it — the one place the two orders disagree.
+          stacked ? "md:order-last" : "",
         ].join(" ")}
       >
         {card.manaCost ? (
@@ -462,6 +493,34 @@ export function DiffRowIn({
           ""
         )}
       </span>
+    </>
+  );
+  return (
+    <div
+      className={[
+        stacked ? ROW_SHELL_STACKED : ROW_SHELL,
+        review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_IN_IMPORT,
+        ROW_PLATE,
+        review ? ROW_PLATE_HOVER : "",
+      ].join(" ")}
+    >
+      {stacked ? (
+        <>
+          <span className={`${STACK_LINE} min-w-0`}>
+            {nameLine}
+            {trailing}
+          </span>
+          {/* The meta line is indented to the name's own text, so the deck being
+              raided reads as a fact about the card above it. */}
+          <span className={`${STACK_LINE} pl-[16px] md:pl-0`}>{metaLine}</span>
+        </>
+      ) : (
+        <>
+          {nameLine}
+          {metaLine}
+          {trailing}
+        </>
+      )}
     </div>
   );
 }

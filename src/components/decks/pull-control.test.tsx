@@ -162,4 +162,22 @@ describe("PullControl", () => {
     expect(pull).toContain("font-sans");
     expect(open).toContain("font-sans");
   });
+
+  // The guard tag is the buy tag's shape — a bordered mono plate, not a fill of
+  // its own — and it is grouped 5px from the action beside it, so a guarded row
+  // is the same width class as a pullable one.
+  it("draws the guard tag in the buy tag's shape", () => {
+    const { container } = render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claim={{ ...FREE_TO_PULL, pending: true }}
+        onPulled={noop}
+      />,
+    );
+    const tag = screen.getByText(copy.pullGuardTag);
+    expect(tag.className).toContain("[border:1px_solid_var(--accent-shadow)]");
+    expect(tag.className).toContain("tracking-[0.1em]");
+    expect((container.firstElementChild as HTMLElement).className).toContain("gap-[5px]");
+  });
 });
