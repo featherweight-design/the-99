@@ -42,11 +42,32 @@ const both = 2;
 describe("DiscoveryRow", () => {
   // §4 — the wash owns one band, which states its own height. The row's old
   // floor let a long tag sentence stretch the wash and over-scale the crop.
-  it("confines the wash to a 148px band", () => {
-    const { container } = row();
-    expect(container.firstElementChild?.className).not.toContain("min-h-[148px]");
+  // 208, the row band: a full-width result row you scan down is the one class
+  // priced by scroll, so it is the shortest of the three bands that grew. The
+  // height is still stated rather than a floor — the sharp portrait resolves
+  // `auto 100%` against it, so a row grown by a long tag sentence would
+  // over-scale the crop.
+  it("confines the wash to a 208px band", () => {
+    // With a crop, because the portrait's own width is asserted below and the
+    // gradient fallback draws no sharp layer to measure.
+    const { container } = row({ artCropUri: "https://example.test/crop.jpg" });
     const band = container.querySelector<HTMLElement>(".discovery-band")!;
-    expect(band.style.height).toBe("148px");
+    // On the BAND, which is what would carry a floor — the row wrapper never had
+    // one, so asserting there passed whatever the band did. And no floor at all
+    // rather than "not the old one": a regression restoring `min-h-[148px]` has
+    // to fail this.
+    expect(band.className).not.toMatch(/min-h-\[/);
+    expect(band.style.height).toBe("208px");
+    expect(band.firstElementChild).toHaveAttribute("data-art-wash-band", "208");
+    // Keyed to the rank column, which is the taller of the row's two blocks.
+    // Pinned for the same reason the band is: the probe validates the hold
+    // against this number rather than deciding it.
+    expect(band.firstElementChild).toHaveAttribute("data-art-wash-label-at", "56");
+    // The portrait's own width, which is the crop this row settles. Nothing else
+    // pins it: the band and the label figure would both survive a change to 230
+    // or 340, and the reader would get a different crop with every check green.
+    const sharp = band.querySelector<HTMLElement>(".art-wash-art")!;
+    expect(sharp.style.width).toBe("285px");
   });
 
   it("keeps the data zone off the art", () => {

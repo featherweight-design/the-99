@@ -342,10 +342,28 @@ export function DiscoveryRow({
       {/* §4 — the wash owns one band, and the band states its height in px:
           decision 8 derives the portrait's geometry from that figure, so a row
           grown by a long tag sentence used to over-scale the crop. */}
-      <div className="discovery-band relative overflow-hidden" style={{ height: 148 }}>
+      <div className="discovery-band relative overflow-hidden" style={{ height: 208 }}>
         <ArtWash
           strategy="left-portrait"
-          band={148}
+          height={208}
+          // 285 is `208 × 1.37`, the crop's own aspect: the height is chosen for
+          // what the box is for — a full-width result row you scan down — and the
+          // portrait follows from it.
+          portrait={285}
+          // The block's measured height in pixels from the foot, keyed to the
+          // TALLEST UNPLATED INK this one wash sits under — which is the rank
+          // column, not the name. Desktop stacks 24px of padding under a 19px
+          // rank at 1, a 7px gap and a 6px diamond: 56. The identity column
+          // beside it is 43, and keying to that left the top of the rank on a
+          // rising ramp, because a rank is ink on this band exactly as the name
+          // is. The support chip plates itself and stands outside the
+          // measurement.
+          //
+          // The owned lane's row is 63 for the same reason read the other way:
+          // its identity column carries a type line the rank column's height does
+          // not beat. Two rows of one class differ here because their blocks
+          // differ, not because their bands do.
+          labelAtPx={56}
           artCropUri={item.artCropUri}
           colorIdentity={item.colorIdentity}
         />
@@ -355,6 +373,12 @@ export function DiscoveryRow({
             support count is what this lane's default rank is on. ── */}
         <div className="relative flex h-full items-end gap-[10px] p-[12px_13px] sm:hidden">
           <span
+            // `data-wash-label` here too: the rank is unplated ink on this wash
+            // at BOTH widths, and marking only the identity column left the phone
+            // measurement short of the ink it has to clear. Desktop's rank is what
+            // the figure is keyed to; the phone's is shorter, and the probe takes
+            // the taller of whatever is marked.
+            data-wash-label
             className="font-mono font-[600] shrink-0"
             // minWidth, not width: a two-digit rank in a fixed box crowds the
             // name beside it. The floor still aligns the single digits, which
@@ -372,10 +396,14 @@ export function DiscoveryRow({
             {rank}
           </span>
 
-          <div className="flex-1 min-w-0 flex items-center gap-[6px]">
+          {/* `data-wash-label` marks the INK the ramp exists for, not the
+              breakpoint wrapper around it: that wrapper is `h-full` and spans the
+              whole band. The support chip beside this column plates itself and
+              stands outside the measurement by design. */}
+          <div data-wash-label className="flex-1 min-w-0 flex items-center gap-[6px]">
             <span
               className="font-display font-[600] truncate"
-              style={{ fontSize: 14.5, color: "var(--fg)", textShadow: INK_SHADOW }}
+              style={{ fontSize: 14.5, lineHeight: 1.2, color: "var(--fg)", textShadow: INK_SHADOW }}
             >
               {item.name}
             </span>
@@ -418,8 +446,14 @@ export function DiscoveryRow({
             alignItems: "end",
           }}
         >
-          {/* Rank column. Brass at rank 1, and the diamond below it. */}
-          <div className="flex flex-col items-center gap-[7px]">
+          {/* Rank column. Brass at rank 1, and the diamond below it.
+
+              `data-wash-label` because this is the TALLEST unplated ink on the
+              band — 24px of padding under a 19px numeral, a 7px gap and a 6px
+              diamond — and it is what `labelAtPx` is keyed to. Marking only the
+              identity column left the probe measuring 43 while the figure was 56,
+              so the one thing that figure exists for went unchecked. */}
+          <div data-wash-label className="flex flex-col items-center gap-[7px]">
             <span
               className="font-mono font-[600]"
               style={{
@@ -444,7 +478,7 @@ export function DiscoveryRow({
             />
           </div>
 
-          <div className="flex items-center gap-[8px]" style={{ minWidth: 0 }}>
+          <div data-wash-label className="flex items-center gap-[8px]" style={{ minWidth: 0 }}>
             <h3
               className="font-display font-[600] m-0 truncate"
               style={{

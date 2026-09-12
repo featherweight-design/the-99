@@ -113,14 +113,14 @@ describe("FullCardTrigger placement", () => {
   // `overflow-hidden`, and 9px of an overhanging target is clipped out of its own
   // hit area.
   //
-  // `hero` is still top-right. It moves to the bottom corner in the change that
-  // moves the identity pips into the label block — that block reaches both bottom
-  // corners today, so a plate there would land on the type line.
-  it("keeps the hero's top-right corner with a band tap target", () => {
+  // Bottom-right now: the pips left the band's top edge for the label block, and
+  // that block reserves this corner with its own right padding.
+  it("sits in the hero's bottom-right corner with a band tap target", () => {
     const { container } = mount(<FullCardTrigger oracleId="o-atraxa" />);
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.top).toBe("47px");
+    expect(pill.style.top).toBe("");
     expect(pill.style.right).toBe("7px");
+    expect(pill.style.bottom).toBe("6px");
     expect(container.querySelector('[aria-hidden="true"].inset-0')).not.toBeNull();
   });
 
@@ -129,7 +129,7 @@ describe("FullCardTrigger placement", () => {
   // it rather than drawn separately.
   it("lands the drawn plate at every placement's named inset", () => {
     const drawn = {
-      hero: { top: 56, right: 16 },
+      hero: { right: 16, bottom: 15 },
       "commander-desktop": { left: 12, bottom: 12 },
       "deck-desktop": { left: 16, bottom: 14 },
       "deck-mobile": { top: 13, right: 16 },

@@ -11,19 +11,19 @@ import { PENDING_OPACITY } from "./pending";
     page's mobile art header and `commander-desktop` its desktop card frame; the
     two `deck-*` values are the deck header at its two widths.
 
-    `hero` is the exception NOT yet resolved: it stays at `top: 56, right: 16`
-    here, and moves to the corner its block leaves free in the slice that makes
-    that block one row — see its own entry below. `deck-mobile` is the one
-    placement that stays at a top edge for good, and the exception is earned
-    rather than inherited: that band centres its title and carries the rename
-    pencil beside it, so the block holds both bottom corners. */
+    `hero` moved to the bottom corner in this slice, now that the identity pips
+    it used to stack under sit beside the name inside the label block — and that
+    block reserves this corner with its own right padding, so the plate lands on
+    the band rather than on the type line. `deck-mobile` is the one placement
+    that stays at a top edge, and the exception is earned rather than inherited:
+    that band centres its title and carries the rename pencil beside it, so the
+    block holds both bottom corners. */
 const PLACEMENT = {
-  // Still top-right, and it moves to `right: 16, bottom: 15` in the same change
-  // that moves the identity pips into the label block. That block currently spans
-  // `left: 16` to `right: 16` and ends at `bottom: 15`, so a 26px plate in the
-  // bottom-right corner today would sit on the type line it has not yet made room
-  // for — and `z-[2]` would put it over the name rather than under it.
-  hero: { top: 56, right: 16 },
+  // Bottom-right. `top: 56` existed only to stack this control below the identity
+  // pips, and those now sit beside the name inside the label block — which also
+  // reserves this corner with its own right padding, so the plate lands on the
+  // band rather than on the type line.
+  hero: { right: 16, bottom: 15 },
   // Inside the 63/88 frame's own bottom-left. The frame has no ink of its own —
   // the name and type line sit below it — so the control only has the art to
   // clear.

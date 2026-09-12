@@ -235,41 +235,70 @@ export function CommanderDetail({
       <SelectableLiveAnnouncer cards={synergyCards} />
       {/* ── Mobile: art header band ─────────────────────────────────── */}
       <div
+        // A page header, stated in px. The 1.6/1 ratio made this band 244px at
+        // 390 and 328px on a 520px phone — a header whose height was a function
+        // of the device rather than of the job, and the taller of the two
+        // scaled its own darkness with it.
         className="sm:hidden relative flex-none overflow-hidden"
-        style={{ aspectRatio: "1.6 / 1" }}
+        style={{ height: 288 }}
       >
         <ArtWash
           strategy="cover"
-          labelEdge="bottom"
-          // The block's top edge as a percentage of the 1.6/1 band, taken at
-          // its tallest: a commander name that wraps to two lines at 25px puts
-          // the rank line at 55% rather than the 66% a one-line name would.
-          // The ramp is keyed to the worst case because the alternative is ink
-          // above the dark value on exactly the names that need it most.
-          labelAt={55}
+          height={288}
+          // The block's MEASURED height at 390px, in pixels from the foot, keyed
+          // to the worst case exactly as the percentage was: a 25px name wrapping
+          // to two lines. Adding it up — 15 bottom inset, a 12.5px type line at
+          // 1.2 for 15, a 4px gap, two 25px name lines at 1.15 for 58, another
+          // 4px gap and an 11px rank line at 1.2 for 13 — gives 109. Every line
+          // box in the block states its own leading for exactly this reason: an
+          // inherited 1.5 would make this figure a function of the app's body
+          // leading, and the round's own failure is a `labelAt` that describes a
+          // block other than the one drawn.
+          //
+          // NOT the handoff's 57, which is the one figure in that package that
+          // cannot be reconciled with the block it describes: a single 25px name
+          // line is 29px on its own, and this block carries a rank line and a type
+          // line besides. The rule is the handoff's — measure the block, key the
+          // ramp to its wrapped height — and only its arithmetic is wrong, which
+          // its own open item 2 predicted by asking for this to be measured
+          // rather than trusted.
+          labelAtPx={109}
           artCropUri={c.artCropUri}
           colorIdentity={c.colorIdentity}
         />
 
-        {/* Mana identity pips (top-right) */}
-        <div className="absolute" style={{ top: 14, right: 16 }}>
-          <IdentityPips colorIdentity={c.colorIdentity} size={12} />
-        </div>
-
-        {/* ⛶ Card details trigger (client component) */}
+        {/* ⛶ Card details trigger (client component). Its `hero` placement moves
+            to the bottom-right corner in this same change, because this is the
+            change that empties the top edge — the pips are in the block now —
+            and the change that reserves the corner with the block's own right
+            padding. */}
         <FullCardTrigger oracleId={c.oracleId} />
 
         {/* Art header overlay (bottom) — pointer-events-none so taps fall
-            through to the full-band card-details trigger */}
+            through to the full-band card-details trigger.
+
+            `paddingRight` clears the 44px target in the corner, the way the deck
+            tile's block clears its overflow control. Without it the name would
+            run under a plate drawn over it. */}
         <div
+          // The hook a browser probe reads to find the label block. Shape cannot
+          // find it: a band's own breakpoint wrapper is a positioned child that
+          // spans the whole band, so a probe picking the lowest child measures
+          // the band and reports a block starting at its top edge.
+          data-wash-label
           className="absolute pointer-events-none"
-          style={{ left: 16, right: 16, bottom: 15 }}
+          style={{ left: 16, right: 16, bottom: 15, paddingRight: 40 }}
         >
           {/* --fg-body, not --accent: the accent measured below the floor on art. */}
           <p
             className="m-0 font-mono uppercase"
             style={{
               fontSize: 11,
+              // Stated, not inherited. `labelAtPx` is this block's measured
+              // height, and a line box inheriting the app's 1.5 makes that
+              // measurement a function of a global — change the body leading and
+              // the ramp lands inside the name.
+              lineHeight: 1.2,
               letterSpacing: "0.14em",
               color: "var(--fg-body)",
               textShadow: "0 1px 3px rgba(0,0,0,0.8)",
@@ -278,22 +307,46 @@ export function CommanderDetail({
             Rank {rank}
             {isBestFit ? " · your best fit" : ""}
           </p>
-          <h1
-            className="font-display font-[700] m-0"
-            style={{
-              fontSize: 25,
-              color: "var(--fg)",
-              lineHeight: 1.15,
-              marginTop: 4,
-              textShadow: COVER_INK_SHADOW,
-            }}
-          >
-            {c.name}
-          </h1>
+          {/* The pips arrive here from the band's top edge. Beside the name, as
+              every other band in the app already draws them — five plated
+              swatches in a corner would be five plates for a decorative
+              `aria-hidden` read, and moving them is what leaves this band's top
+              edge empty. `items-end`, NOT `items-baseline`: a flex container
+              baseline-aligns to a multi-line item's FIRST baseline, so the very
+              two-line name this block is sized for would have put the swatches
+              beside line one. Bottom-aligning holds them on the last line, which
+              is the only line they sit beside on a single-line name too. */}
+          <div className="flex items-end gap-[8px]" style={{ marginTop: 4 }}>
+            <h1
+              className="font-display font-[700] m-0 min-w-0"
+              style={{
+                fontSize: 25,
+                color: "var(--fg)",
+                lineHeight: 1.15,
+                textShadow: COVER_INK_SHADOW,
+                // Two lines is a CEILING, not an estimate — which is what makes
+                // `labelAtPx` a measurement rather than a hope. Without the
+                // clamp a long name on a narrow phone grows the block past 109
+                // and the hold starts below its top edge, printing the first line
+                // on a rising ramp: the round's own failure, from the other
+                // direction.
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {c.name}
+            </h1>
+            <IdentityPips colorIdentity={c.colorIdentity} size={10} />
+          </div>
           <p
-            className="m-0"
+            // One line, for the same reason the name is clamped to two: a type
+            // line that wraps is a block taller than the ramp was measured for.
+            className="m-0 truncate"
             style={{
               fontSize: 12.5,
+              lineHeight: 1.2,
               color: "var(--fg-body)",
               marginTop: 4,
               textShadow: COVER_INK_SHADOW,

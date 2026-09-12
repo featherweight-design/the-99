@@ -152,11 +152,11 @@ const PARSE_STOPS = `
   };
 `;
 
-// The 148 band's two scrims, as the browser computes them. JSDOM applies no CSS,
-// so this is the only place the ruling is answerable: one vertical ramp at both
-// widths, and a horizontal scrim that leaves the portrait alone until the
-// fade-out starts.
-const READ_148_SCRIMS = `() => {
+// A row band's scrims, as the browser computes them. jsdom applies no CSS, so
+// this is the only place the ruling is answerable: a horizontal scrim that leaves
+// the portrait alone until its own fade-out starts. The vertical ramp is asserted
+// per band by `checkBands`, with the surface named.
+const READ_ROW_SCRIMS = `() => {
   ${PARSE_STOPS}
   const band = document.querySelector('.discovery-band, .rec-band');
   if (!band) return null;
@@ -181,19 +181,24 @@ const READ_148_SCRIMS = `() => {
 /** A cover scrim's stops, as `{ alpha, position }`, read off the computed value.
     An omitted `/ alpha` is alpha 1 — the browser drops it, exactly as it drops a
     gradient's default 180deg. */
-const READ_COVER_STOPS = `(edge) => {
+const READ_COVER_STOPS = `() => {
   ${PARSE_STOPS}
   // Laid-out bands only. The commander detail hero's band is wrapped in
   // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
   // selector while drawing nothing — counting it would report a phone-only
   // treatment as shipping on both widths.
-  return [...document.querySelectorAll('.art-wash-scrim-cover-' + edge)]
+  // One class. A migrated band carries `.art-wash-scrim-cover` and names no
+  // edge, so a reader asking for `-bottom` found nothing on the very surface this
+  // slice migrates — and then failed it for drawing no cover band at all.
+  return [...document.querySelectorAll('.art-wash-scrim-cover')]
     .filter((s) => s.getClientRects().length)
     .map((s) => {
       const image = getComputedStyle(s).backgroundImage;
       return parseStops(image);
     });
 }`;
+
+
 
 
 /** Every band that has taken a stated height, with the ramp it draws. Selected by
@@ -353,6 +358,53 @@ const VIEWPORTS = [
   ["desktop", 1440, 900],
 ];
 
+/** A stated band's LABEL BLOCK against the ramp its own `labelAtPx` produced.
+    This is the check the round's own failure asks for: `labelAtPx` is the
+    block's measured height, an intended number puts the hold where the block
+    ENDS rather than where it starts, and its first line then prints on
+    unscrimmed art.
+
+    The block is found by `data-wash-label`, never by shape. A band's breakpoint
+    wrapper is a positioned child that spans the whole band, so picking the
+    lowest child measures the band and reports every block as starting at its top
+    edge — a false pass and a false failure in one. The hook is on the ink the
+    ramp exists for, which is also why a plated chip beside that ink is outside
+    the measurement: a plate needs no ramp.
+
+    Both directions are reported. A hold far above the block is a band veiling
+    art it did not need to; a hold below the block is the defect. */
+const READ_BLOCK_VS_HOLD = `() => {
+  ${PARSE_STOPS}
+  return [...document.querySelectorAll('[data-art-wash-band]')]
+    .filter((root) => root.getClientRects().length)
+    .map((root) => {
+      const band = root.parentElement;
+      const bandBox = band.getBoundingClientRect();
+      const labels = [...band.querySelectorAll('[data-wash-label]')]
+        .filter((el) => el.getClientRects().length)
+        .map((el) => el.getBoundingClientRect());
+      const scrims = [...root.querySelectorAll('.art-wash-scrim')];
+      const image = scrims.length ? getComputedStyle(scrims.at(-1)).backgroundImage : '';
+      // The shared parser, which is the point of having one: this reader had its
+      // own copy with single-escaped patterns, and a template literal eats a
+      // single backslash — so the regex was malformed and the stop list empty.
+      const stops = parseStops(image).map((stop) => stop.position);
+      return {
+        declared: Number(root.getAttribute('data-art-wash-band')),
+        band: Math.round(bandBox.height),
+        // The tallest laid-out block, since one wash can sit under two of them at
+        // two breakpoints and the ramp has to clear the taller.
+        blockFromFoot: labels.length
+          ? Math.round(Math.max(...labels.map((r) => bandBox.bottom - r.top)))
+          : null,
+        holdPct: stops.length >= 3 ? stops[2] : null,
+        // The vertical ramp is the gradient that states NO angle: a browser omits
+        // the default 180deg, so testing for it would skip every ramp there is.
+        vertical: !/^linear-gradient\\(\\s*90deg/.test(image),
+      };
+    });
+}`;
+
 /** Every commander thumb on the page, as drawn. Five renders each invented one of
     these, at five geometries and three ring alphas; the convergence is its own
     change, and this reads what is there so the before and after are the same
@@ -409,6 +461,144 @@ const READ_UNMARKED_FACES = `() => {
       return Math.round(r.width) + '×' + Math.round(r.height);
     });
 }`;
+
+/** The stated bands on whatever surface is loaded, and the one measurement the
+    round's own failure asks for: the label block's real top edge against the
+    ramp's hold. A routine rather than an inline block, for the same reason the
+    chrome checks are one — the migrated 288px detail band is on the commander
+    DETAIL page, which the list loop never visits, so measuring only there would
+    have left the surface with the largest block in the round unchecked. */
+async function checkBands(page, label, note) {
+  // A stated band owns its height and labels at its foot. The ramp is the
+  // round's load-bearing change and it is checked as arithmetic, not as a
+  // prop: the hold has to sit where the block's top edge is, and a px
+  // `labelAt` pushed through a percentage signature lands it at less than
+  // half the band instead.
+  const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
+  note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
+  // An empty census is not a pass, and zero is exactly what a reverted migration
+  // or a vanished render produces. The check is the count of wash layers NOT
+  // inside a stated band: no per-route table, and it cannot go quiet.
+  // BANDS, not scrim layers: a `left-portrait` band draws a horizontal scrim and
+  // a vertical ramp, so counting layers reported one unmigrated band as two.
+  // Each scrim's own root is the band, so the distinct roots are the count.
+  //
+  // A COUNTDOWN, not a failure. Surfaces migrate one slice at a time, so an
+  // unstated band is the expected state of everything not yet done — failing it
+  // would fail the probe on the round's own intermediate steps. What makes the
+  // end state safe is structural rather than a check: the last slice deletes the
+  // legacy props, after which the type system forbids an unstated band and there
+  // is nothing left for a check to catch.
+  const unstated = await page.evaluate(
+    `new Set(
+      [...document.querySelectorAll('.art-wash-scrim')]
+        .filter((s) => s.getClientRects().length)
+        .filter((s) => !s.closest('[data-art-wash-band]'))
+        .map((s) => s.parentElement),
+    ).size`,
+  );
+  if (unstated) {
+    note(`  ${label}: ${unstated} band(s) not yet stated — surfaces still to migrate`);
+  }
+  for (const band of stated) {
+    if (!SETTLED_BANDS.some((h) => `${h}px` === band.declared)) {
+      note(`  FAIL ${label}: band declares ${band.declared || "no height"}, outside the settled set`);
+    }
+    if (Math.abs(band.laid - Number.parseInt(band.declared, 10)) > 1) {
+      note(`  FAIL ${label}: band declares ${band.declared} and lays out at ${band.laid}px`);
+    }
+    if (band.ramped && band.verticals !== 1) {
+      note(
+        `  FAIL ${label}: ${band.declared} band paints ${band.verticals} vertical ramps, expected exactly 1`,
+      );
+    }
+    if (!band.ramped) {
+      // A flat band: its ink starts past the portrait's flat stop and stands on
+      // the row's own ground, so there is no ramp to measure — but it has to
+      // draw NONE, not merely be excused from the check. The marker is a
+      // declaration, and a band that declares itself flat while still painting a
+      // ramp is darkening art nobody decided to darken.
+      if (band.verticals !== 0) {
+        note(
+          `  FAIL ${label}: ${band.declared} band declares itself flat and paints ${band.verticals} vertical ramps`,
+        );
+      } else {
+        note(`  ${label}: ${band.declared} band is flat — no ramp to check`);
+      }
+      continue;
+    }
+    if (band.stops.length !== 4) {
+      note(`  FAIL ${label}: ${band.declared} band computed ${band.stops.length} stops, expected 4`);
+      continue;
+    }
+    if (band.stops[0].alpha !== 0 || band.stops[1].alpha !== 0) {
+      note(`  FAIL ${label}: ${band.declared} band veils its top: ${JSON.stringify(band.stops.slice(0, 2))}`);
+    }
+    if (band.stops[3].alpha !== band.stops[2].alpha) {
+      note(`  FAIL ${label}: ${band.declared} band does not hold to its foot: ${JSON.stringify(band.stops.slice(2))}`);
+    }
+    // The hold compared to the exact figure its own `labelAtPx` implies, rather
+    // than to a threshold. A generic "below half" test passes the very regression
+    // it was written for: 57 or 83 read as a percentage on a 288 band lands at
+    // 57% or 83%, both perfectly ordinary-looking numbers, and only
+    // `(band − at) / band` tells them from the 80% and 71% expected.
+    const at = band.labelAtPx;
+    if (at === null) {
+      note(`  FAIL ${label}: ${band.declared} band publishes no label-at figure to check its hold against`);
+    } else {
+      const height = Number.parseInt(band.declared, 10);
+      const expected = Math.round(((height - at) / height) * 100);
+      if (band.stops[2].unit !== "%") {
+        // A px hold is not comparable to a percentage, and silently reading 46px
+        // as 46% is this round's own bug moved into the probe.
+        note(
+          `  FAIL ${label}: ${band.declared} band holds at ${band.stops[2].position}${band.stops[2].unit}, expected a percentage`,
+        );
+      } else if (Math.abs(band.stops[2].position - expected) > 1) {
+        note(`  FAIL ${label}: ${band.declared} band holds at ${band.stops[2].position}%, expected ${expected}% for a ${at}px block`);
+      }
+    }
+  }
+
+  // The block against the ramp, which is the one measurement the round's own
+  // failure asks for: a `labelAtPx` derived from an intended block rather
+  // than a measured one holds the scrim where the block ENDS, and its first
+  // line then prints on unscrimmed art.
+  for (const b of await page.evaluate(`(${READ_BLOCK_VS_HOLD})()`)) {
+    // Only an intentionally flat band is skipped. A non-flat band missing its
+    // label hook or its hold is the check's own machinery gone — removing the
+    // marker would otherwise make this pass rather than report, which is the
+    // failure mode every other check in this file was fixed for.
+    if (!b.vertical) {
+      note(`  ${label}: ${b.declared} band is flat — no ramp to compare a block against`);
+      continue;
+    }
+    if (b.blockFromFoot === null) {
+      note(`  FAIL ${label}: ${b.declared} band draws no [data-wash-label] — nothing to measure the ramp against`);
+      continue;
+    }
+    if (b.holdPct === null) {
+      note(`  FAIL ${label}: ${b.declared} band's ramp has no hold stop to compare`);
+      continue;
+    }
+    const blockPct = 100 - (b.blockFromFoot / b.band) * 100;
+    note(`  ${label}: ${b.declared} band's block starts ${b.blockFromFoot}px off the foot (${blockPct.toFixed(0)}%), hold at ${b.holdPct}%`);
+    // One direction fails, and only one. `labelAtPx` is keyed to the WORST case
+    // by design — the wrapped title, the taller of two breakpoint blocks — so on
+    // the narrower width the hold legitimately sits above the block that is
+    // drawn, and failing that would fail the build for doing what the round
+    // decided. A hold BELOW the block is the defect: ink standing on a ramp that
+    // has not finished climbing. Above it is reported, because a large gap is
+    // how an over-generous figure shows up.
+    const slack = 200 / b.band;
+    if (b.holdPct > blockPct + slack) {
+      note(`  FAIL ${label}: the ${b.declared} band's hold sits BELOW its block — ink on a rising ramp`);
+    } else if (b.holdPct < blockPct - 10) {
+      note(`  ${label}: the ${b.declared} band's hold sits ${(blockPct - b.holdPct).toFixed(0)} points above this block — keyed to a taller one`);
+    }
+  }
+
+}
 
 /** THE PLATE and the thumbs, on whatever surface is loaded. A routine rather than
     an inline block, because the controls this measures live on the commander and
@@ -492,10 +682,12 @@ async function checkChrome(page, label, note) {
 const READERS = {
   READ_WASHES,
   READ_ART_LAYERS_PER_BAND,
-  READ_148_SCRIMS,
+  READ_ROW_SCRIMS,
   READ_COVER_STOPS,
   READ_STATED_BANDS,
+  READ_BLOCK_VS_HOLD,
   READ_THUMBS,
+  READ_UNMARKED_FACES,
   READ_PLATES,
   READ_PLATE_HIT,
 };
@@ -562,135 +754,49 @@ try {
         if (g.reducedVar !== "1") note(`  FAIL gradient reduced var ${g.reducedVar}, expected 1`);
       }
 
-      // This round's cover ruling: a top-labelled band holds one thin value from
-      // the trough to the foot instead of climbing back to 50%. Every chip down
-      // there — the deck tile's status pill, the ready-to-build fit chip — is
-      // opaque on its own, so that climb was washing the crop for nothing. A
-      // rising final stop is the lift reverting.
-      const tops = await page.evaluate(`(${READ_COVER_STOPS})("top")`);
-      for (const stops of tops) {
+      // Every cover band on the route, in one shape: whatever the label edge, a
+      // ramp must not climb back at the foot. That climb washed the crop to
+      // protect chips which are opaque on their own — the deck tile's status
+      // pill, the ready-to-build fit chip — and a rising final stop is it
+      // reverting.
+      const covers = await page.evaluate(`(${READ_COVER_STOPS})()`);
+      note(`  cover bands: ${covers.length}`);
+      for (const stops of covers) {
         const [last, prior] = [stops.at(-1), stops.at(-2)];
         if (!last || !prior) {
-          note(`  FAIL top cover scrim computed ${stops.length} stops, expected 4`);
+          note(`  FAIL ${vpName} ${routeName}: cover scrim computed ${stops.length} stops, expected 4`);
         } else if (last.alpha > prior.alpha + 0.001) {
-          note(`  FAIL top cover scrim climbs at the foot: ${prior.alpha} to ${last.alpha}`);
+          note(`  FAIL ${vpName} ${routeName}: cover scrim climbs at the foot: ${prior.alpha} to ${last.alpha}`);
         }
       }
-      // The commander-image round's census. A top-labelled band is now a band
-      // that has not migrated yet, so the count is progress rather than a
-      // failure — until the last one goes, at which point the top scrim, its
-      // `labelEdge` prop and its stylesheet override are all deletable and this
-      // line becomes the check that they stayed deleted.
-      note(`  top-labelled bands still drawing: ${tops.length}`);
-
-      // A stated band owns its height and labels at its foot. The ramp is the
-      // round's load-bearing change and it is checked as arithmetic, not as a
-      // prop: the hold has to sit where the block's top edge is, and a px
-      // `labelAt` pushed through a percentage signature lands it at less than
-      // half the band instead.
-      const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
-      note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
-      // An empty census is not a pass. Every wash laid out on this route has to
-      // be a STATED band once its surface has migrated, so the check is the
-      // count of bands that are not — which needs no per-route table and cannot
-      // go quiet when a migration disappears or reverts to the legacy arm.
-      // BANDS, not scrim layers: a `left-portrait` band draws a horizontal scrim
-      // and a vertical ramp, so counting layers reported one unmigrated band as
-      // two and inflated the countdown. Each scrim's own root is the band, so the
-      // distinct roots are the count.
-      const unstated = await page.evaluate(
-        `new Set(
-          [...document.querySelectorAll('.art-wash-scrim')]
-            .filter((s) => s.getClientRects().length)
-            .filter((s) => !s.closest('[data-art-wash-band]'))
-            .map((s) => s.parentElement),
-        ).size`,
+      // A countdown while the round is in flight: an edge class means a band that
+      // has not migrated, and the last of them retires with the `labelEdge` prop
+      // in the final slice — after which the class cannot be emitted at all.
+      const edged = await page.evaluate(
+        `document.querySelectorAll('.art-wash-scrim-cover-top, .art-wash-scrim-cover-bottom').length`,
       );
-      if (unstated) {
-        note(`  ${unstated} wash layer(s) on an unstated band — surfaces still to migrate`);
-      }
-      for (const band of stated) {
-        if (!SETTLED_BANDS.some((h) => `${h}px` === band.declared)) {
-          note(`  FAIL band declares ${band.declared || "no height"}, outside the settled set`);
-        }
-        if (Math.abs(band.laid - Number.parseInt(band.declared, 10)) > 1) {
-          note(`  FAIL band declares ${band.declared} and lays out at ${band.laid}px`);
-        }
-        if (band.ramped && band.verticals !== 1) {
-          note(
-            `  FAIL ${band.declared} band paints ${band.verticals} vertical ramps, expected exactly 1`,
-          );
-        }
-        if (!band.ramped) {
-          // A flat band: its ink starts past the portrait's flat stop and stands
-          // on the row's own ground, so there is no ramp to measure — but it
-          // has to draw NONE, not merely be excused from the check. The marker
-          // is a declaration, and a band that declares itself flat while still
-          // painting a ramp is darkening art nobody decided to darken.
-          if (band.verticals !== 0) {
-            note(
-              `  FAIL ${band.declared} band declares itself flat and paints ${band.verticals} vertical ramps`,
-            );
-          } else {
-            note(`  ${band.declared} band is flat — no ramp to check`);
-          }
-          continue;
-        }
-        if (band.stops.length !== 4) {
-          note(`  FAIL stated band computed ${band.stops.length} stops, expected 4`);
-          continue;
-        }
-        if (band.stops[0].alpha !== 0 || band.stops[1].alpha !== 0) {
-          note(`  FAIL stated band veils its top: ${JSON.stringify(band.stops.slice(0, 2))}`);
-        }
-        if (band.stops[3].alpha !== band.stops[2].alpha) {
-          note(`  FAIL stated band does not hold to its foot: ${JSON.stringify(band.stops.slice(2))}`);
-        }
-        // The hold compared to the exact figure its own `labelAtPx` implies,
-        // rather than to a threshold. A generic "below half" test passes the very
-        // regression it was written for: 57 or 83 read as a percentage on a 288
-        // band lands at 57% or 83%, both perfectly ordinary-looking numbers, and
-        // only `(band − at) / band` tells them from the 80% and 71% expected.
-        const at = band.labelAtPx;
-        if (at === null) {
-          note(`  FAIL stated band publishes no label-at figure to check its hold against`);
-        } else {
-          const height = Number.parseInt(band.declared, 10);
-          const expected = Math.round(((height - at) / height) * 100);
-          if (band.stops[2].unit !== "%") {
-            // A px hold is not comparable to a percentage, and silently reading
-            // 46px as 46% is this round's own bug moved into the probe.
-            note(
-              `  FAIL ${band.declared} band holds at ${band.stops[2].position}${band.stops[2].unit}, expected a percentage`,
-            );
-          } else if (Math.abs(band.stops[2].position - expected) > 1) {
-            note(`  FAIL ${band.declared} band holds at ${band.stops[2].position}%, expected ${expected}% for a ${at}px block`);
-          }
-        }
-      }
+      if (edged) note(`  ${edged} band(s) still name a label edge — surfaces still to migrate`);
+
+      await checkBands(page, `${vpName} ${routeName}`, note);
 
       await checkChrome(page, `${vpName} ${routeName}`, note);
     }
 
-    // Ratification 2 — the 148 band's vertical damping, at this viewport. This
-    // load also serves the accessibility checks below, which measure the same page.
+    // The row band, at this viewport. Both commander rows declare 208 now, so
+    // the old check's "148 band" reporting named a geometry that no longer
+    // exists — and its ramp/scrim counts are what `checkBands` already asserts
+    // per band, with the surface named. What is NOT covered there is the
+    // horizontal scrim leaving the portrait unwashed out to its clear stop, so
+    // that is what stays. This load also serves the accessibility checks below.
     await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
-    const scrims = await page.evaluate(`(${READ_148_SCRIMS})()`);
+    const scrims = await page.evaluate(`(${READ_ROW_SCRIMS})()`);
     if (!scrims?.length) {
-      note(`  FAIL no scrim layers found on the 148 band`);
+      note(`  FAIL no scrim layers found on the row band`);
     } else {
       const painted = scrims.filter((s) => s.display !== "none");
-      const ramps = painted.filter((s) => s.ramp);
       const horizontals = painted.filter((s) => s.horizontal);
-      note(
-        `${vpName} 148 band: ${ramps.length} vertical ramp, ${horizontals.length} horizontal scrim`,
-      );
-      // One ramp at both widths. The rows are `items-end` either way, so the
-      // phone's label block sits inside the desktop's and a single hold covers
-      // both — the breakpoint-swapped flat hold this replaced darkened the whole
-      // band to protect its bottom third.
-      if (ramps.length !== 1) note(`  FAIL expected exactly one vertical ramp to paint`);
+      note(`${vpName} row band: ${horizontals.length} horizontal scrim`);
       if (horizontals.length !== 1) note(`  FAIL expected exactly one horizontal scrim to paint`);
       else {
         // The first two stops BY INDEX, not a pattern anywhere in the gradient:
@@ -723,7 +829,7 @@ try {
       await page.goto(`${BASE}${slug}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
       await page.screenshot({ path: `/tmp/art-wash-${vpName}-detail.png`, fullPage: false });
-      const bottoms = await page.evaluate(`(${READ_COVER_STOPS})("bottom")`);
+      const bottoms = await page.evaluate(`(${READ_COVER_STOPS})()`);
       // Desktop draws no bottom-labelled band at all — the treatment is the
       // phone's — so an empty list is the desktop answer, not a silent pass.
       note(`${vpName} ${slug}: ${bottoms.length} bottom-labelled cover bands`);
@@ -734,6 +840,8 @@ try {
         note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
       }
       await checkChrome(page, `${vpName} ${slug}`, note);
+      // The 288 detail band, which no list route draws.
+      await checkBands(page, `${vpName} ${slug}`, note);
 
       for (const stops of bottoms) {
         const clear = stops.slice(0, 2).every((s) => s.alpha === 0);
@@ -921,8 +1029,11 @@ try {
       }
       await page.screenshot({ path: `/tmp/art-wash-${vpName}-deck.png`, fullPage: false });
       await checkChrome(page, `${vpName} ${deckHref}`, note);
-      const deckBands = await page.evaluate(`(${READ_STATED_BANDS})()`);
-      note(`${vpName} ${deckHref}: ${deckBands.length} stated band(s)`);
+      // The full band checks, not a count. This route's washes are legacy until
+      // the spines migrate, so what it reports today is the unmigrated-band
+      // countdown — and the moment they do migrate, every declared-versus-laid
+      // height and every hold on this page is checked without another edit here.
+      await checkBands(page, `${vpName} ${deckHref}`, note);
       walkedADeck = true;
       break;
     }
