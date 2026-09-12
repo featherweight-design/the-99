@@ -337,6 +337,12 @@ export function CollectionBrowser({
       // filter set, and the string quotes that figure. At most one of the two
       // selections moves per change, so the first non-null wins outright.
       const message =
+        // Short-circuits the per-dimension chain: with every filter emptied at
+        // once, whichever dimension answered first would name itself as the
+        // thing that changed.
+        (intent === "clear-all"
+          ? collectionChassisCopy.announceClearedAll(totalQuantity)
+          : null) ??
         setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity, intent) ??
         typeChangeAnnouncement(filters, f, cards, typeOptions, totalQuantity, intent) ??
         colorChangeAnnouncement(filters, f, cards, colorOptions, totalQuantity, intent) ??
@@ -384,7 +390,7 @@ export function CollectionBrowser({
   const clearAllFilters = () =>
     updateFilters(
       { search: "", colors: [], types: [], setCodes: [], availability: [] },
-      "clear-sets",
+      "clear-all",
     );
   const windowed = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 

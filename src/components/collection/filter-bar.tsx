@@ -51,6 +51,14 @@ const COLLECTION_VIEWS: readonly [ViewToggleOption<ViewMode>, ViewToggleOption<V
  * cannot tell them apart — the caller says which it was.
  */
 export type FilterChangeIntent =
+  /**
+   * The chassis's Clear, which empties every dimension at once. It is its own
+   * intent because the per-dimension announcements are tried in order and the
+   * first to claim the change wins — so reusing `clear-sets` here had a colour
+   * or type clear announce "Set filter cleared.", which is simply not what
+   * happened.
+   */
+  | "clear-all"
   | "clear-sets"
   | "clear-types"
   | "clear-colors"

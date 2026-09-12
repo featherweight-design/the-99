@@ -123,30 +123,38 @@ describe("collectionChips", () => {
 });
 
 describe("collectionChassisCopy.result", () => {
-  it("drops the ratio when nothing is filtered out", async () => {
+  // Moved to the three-figure signature 3b introduces: /collection counts
+  // distinct names and copies separately, and the result line has to say which
+  // is which. The two-figure cases these replace asserted a shape that only
+  // existed between 3a and this change.
+  it("states both figures at rest, because they count different things", async () => {
     const { collectionChassisCopy } = await import("../copy/collection");
-    // "1,240 of 1,240" is a fact nobody asked for.
-    expect(collectionChassisCopy.result(1240, 1240)).toBe("1,240 cards");
+    expect(collectionChassisCopy.result(1240, 1240, 2933, false)).toBe(
+      "Showing 1,240 unique · 2,933 total",
+    );
   });
 
-  it("singularises a collection of one", async () => {
+  it("states the survivors against the total once filtered", async () => {
     const { collectionChassisCopy } = await import("../copy/collection");
-    expect(collectionChassisCopy.result(1, 1)).toBe("1 card");
-  });
-
-  it("states the ratio once something is filtered", async () => {
-    const { collectionChassisCopy } = await import("../copy/collection");
-    expect(collectionChassisCopy.result(412, 1240)).toBe("412 of 1,240 cards match");
+    expect(collectionChassisCopy.result(412, 1240, 2933, true)).toBe("Showing 412 of 2,933");
   });
 
   it("pins the locale, so a European reader does not get 1.240", async () => {
     const { collectionChassisCopy } = await import("../copy/collection");
-    expect(collectionChassisCopy.result(1000, 2000)).toContain("1,000");
-    expect(collectionChassisCopy.result(1000, 2000)).not.toContain("1.000");
+    const line = collectionChassisCopy.result(1000, 1000, 2000, false);
+    expect(line).toContain("1,000");
+    expect(line).not.toContain("1.000");
   });
+});
 
-  // 3b replaces this with a three-figure version carrying `/collection`'s own
-  // two sentences, because the route counts distinct names and copies
-  // separately and the chassis result line has to say which is which. These
-  // cases move with it.
+describe("collectionChassisCopy.announceClearedAll", () => {
+  it("names the clear as every filter, not one dimension", async () => {
+    const { collectionChassisCopy } = await import("../copy/collection");
+    // The per-dimension announcements are tried in order, so reusing a
+    // dimension's intent for the chassis's Clear had a colour clear announce
+    // "Set filter cleared."
+    expect(collectionChassisCopy.announceClearedAll(2933)).toBe(
+      "Filters cleared. 2,933 cards shown.",
+    );
+  });
 });

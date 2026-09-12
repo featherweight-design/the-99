@@ -44,6 +44,9 @@ export const collectionChassisCopy = {
     filtered
       ? `Showing ${shown.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`
       : `Showing ${unique.toLocaleString("en-US")} unique · ${total.toLocaleString("en-US")} total`,
+  /** The chassis's Clear — every dimension at once, named as such. */
+  announceClearedAll: (total: number) =>
+    `Filters cleared. ${total.toLocaleString("en-US")} cards shown.`,
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
     search: (q: string) => `"${q}"`,
