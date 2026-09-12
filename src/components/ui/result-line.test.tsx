@@ -50,6 +50,26 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
   });
 
+  it("speaks a custom message even when the count has not moved", () => {
+    // A filter that narrows to the same number still changed something, and
+    // the surface has a sentence for it. Watching the line alone never says it.
+    const { rerender, container } = render(<ResultLine line="41 decks" />);
+    rerender(<ResultLine line="41 decks" announce="EOE added. 41 decks shown." />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe(
+      "EOE added. 41 decks shown.",
+    );
+  });
+
+  it("does not let an empty announce silence the line", () => {
+    // The caller's initial value is the empty string, which is not null — so
+    // `announce ?? line` would suppress every ordinary announcement.
+    const { rerender, container } = render(<ResultLine line="41 decks" announce="" />);
+    rerender(<ResultLine line="12 of 41 decks" announce="" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
+  });
+
   it("stays quiet for a change the sheet has already announced", () => {
     // Dismissed past the debounce: the sheet spoke it, and repeating it here is
     // the same count twice.
@@ -59,6 +79,15 @@ describe("ResultLine", () => {
     rerender(<ResultLine line="12 of 41 decks" />);
     act(() => vi.advanceTimersByTime(300));
     expect(container.querySelector("[role='status']")?.textContent).toBe("");
+  });
+
+  it("never repeats a custom message on a later line change", () => {
+    const { rerender, container } = render(<ResultLine line="41 decks" />);
+    rerender(<ResultLine line="41 decks" announce="EOE added. 41 decks shown." />);
+    act(() => vi.advanceTimersByTime(300));
+    rerender(<ResultLine line="9 of 41 decks" announce="EOE added. 41 decks shown." />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("9 of 41 decks");
   });
 
   it("is the one live region, and it is atomic", () => {

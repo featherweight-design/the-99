@@ -48,8 +48,18 @@ export function ResultLine({
   const announced = useRef<string | null>(null);
   // When the current silence began, or null if not silent.
   const silentSince = useRef<number | null>(null);
+  // The `announce` last seen, so a message is spoken once and never re-used.
+  const lastAnnounce = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (announced.current === null || announced.current === line) {
+    // Both halves matter. A custom message can arrive while the count holds —
+    // a filter that narrows to the same number still changed something — so
+    // watching `line` alone would never speak it. And `announce ?? line` is
+    // wrong in the other direction: the caller's initial value is the empty
+    // string, which is not null, so it would silence every ordinary
+    // announcement rather than falling through to the line.
+    const fresh = announce !== undefined && announce !== "" && announce !== lastAnnounce.current;
+    lastAnnounce.current = announce;
+    if (!fresh && (announced.current === null || announced.current === line)) {
       announced.current = line;
       return;
     }
@@ -79,7 +89,11 @@ export function ResultLine({
       return;
     }
     announced.current = line;
-    const t = setTimeout(() => setAnnouncement(announce ?? line), ANNOUNCE_DELAY_MS);
+    // `fresh` is the guard, not `announce ?? line`: the caller's initial value
+    // is the empty string, which is not null, so the nullish fallback would
+    // silence every ordinary announcement.
+    const message = fresh ? (announce as string) : line;
+    const t = setTimeout(() => setAnnouncement(message), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
   }, [line, announce, silent]);
 
