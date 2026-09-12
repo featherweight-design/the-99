@@ -108,18 +108,18 @@ the two disagree.
 
 ---
 
-## §4 Constraint — three of the four figures are already on screen somewhere
+## §4 Constraint — three of the four figures are already spoken for
 
-This is the part a new stats block can most easily get wrong. The record and the mana figure are
-each a statement of the *same* number this block would restate, both governed by ratified property
-tables — the record is on screen today, the mana figure is drawn and specified but not yet built —
-so a block that words either one differently makes the app disagree with itself.
+Two of them are on screen today — the record, and cost on four surfaces. The third, the mana
+figure, is ratified in a property table and **not built yet**. All three are governed by rulings a
+new block can contradict, which is what this section is for; only the first two can be contradicted
+by something a player is looking at right now.
 Cost is the harder case and a different one: the surfaces printing it today do not all print one
 number, which is the finding below rather than an invariant to preserve.
 
 **Play record — the Games tab already states it, and its property table forbids one phrasing.**
-`games-panel.tsx:33-43` builds the record line, `game-headline.ts:38` reads
-`summary.record`, and `docs/superpowers/design-tables/game-log.md:121` rules that the tab's own
+`game-headline.ts:38-42` derives the record string and `games-panel.tsx:198-207` renders it
+(`:33-43` is the live-region announcement, not the visible line), and `docs/superpowers/design-tables/game-log.md:121` rules that the tab's own
 count is *"games logged, never the record"*. Its ink is not uniform and Design should not assume it
 is: the standalone N=1 record renders `text-fg-body` (`games-panel.tsx:205-207`), while at N≥2 the
 record is a clause inside the sub-line and takes `--accent` (`games-panel.tsx:59`, and `--accent` is
@@ -129,9 +129,9 @@ a stats block that relabels either one is an amendment to that table.
 **Mana curve — the deck page is *specified* to state a mana value, as a single number that moves.**
 This one is ratified but **not yet built**: the copy strings exist (`copy/deck-versioning.ts:371-372`)
 and `draft-state.ts:343` computes `manaValueBefore`, but no component renders the strip — deck
-versioning's five UI surfaces are in progress, not shipped
+versioning's five UI surfaces are **unstarted and unblocked**
 (`docs/superpowers/design-pipeline-status.md:102`). It constrains this brief anyway, because the
-vocabulary is locked and the surface is coming.
+vocabulary is ratified and the surface is coming.
 `versions.ts:246` `versionManaValue` feeds that figure, and deck
 versioning Surface 2's what-changed strip is specified to draw it as the first of six cells with the copy
 `the curve comes down` / `the curve goes up` (`deck-versioning-surface-2.md:183`, cell inventory at

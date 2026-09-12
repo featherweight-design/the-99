@@ -162,8 +162,11 @@ chassis that also filters by folder is the outcome this section exists to preven
 **One engineering fact bears on the choice and should not be inferred either way.** Filters on
 `/decks` are client-side over an already-loaded list, written to the URL with `replaceState` and no
 navigation (`decks-view.tsx:103-107`); the folder is a column on every deck the page already loaded
-(`read.ts:636-637`). So (a) is nearly free, and (b) is a routing decision rather than a data one —
-the payload is the same list under both, and neither branch needs a new query.
+(`read.ts:636-637`). So (a) is nearly free and (b) is a routing decision rather than a data one:
+the deck payload is the same list under both. The one addition either branch may need is
+`listFolders` (`folders.ts:58`) — `/decks` loads the deck list and the shopping roll-up and nothing
+else today (`src/app/decks/page.tsx:32-43`), and a deck row cannot name a folder holding no decks,
+so any surface that shows empty shelves reads that query as well.
 
 ---
 
