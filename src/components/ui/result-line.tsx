@@ -39,18 +39,38 @@ export function ResultLine({
   // What was last announced. Null until the line first changes, which is what
   // keeps the chassis from reading its own count out on arrival.
   const announced = useRef<string | null>(null);
+  // When the current silence began, or null if not silent.
+  const silentSince = useRef<number | null>(null);
   useEffect(() => {
     if (announced.current === null || announced.current === line) {
       announced.current = line;
       return;
     }
-    // Stamped only when the announcement is actually scheduled. Stamping
-    // before the silent return marked a change as announced that never was, so
-    // a reader who toggled a filter inside the sheet and dismissed it before
-    // the sheet's own 300ms fired heard nothing at all: the line matched
-    // `announced.current`, and the region stayed quiet for a change it had
-    // never spoken.
-    if (silent) return;
+    // Silence is a handover, not a mute: while the sheet is open it owns the
+    // region and announces the same count on the same 300ms debounce. Two
+    // failures sit either side of that.
+    //
+    // Stamping before the silent return loses the announcement entirely when
+    // the reader dismisses the sheet inside 300ms — the sheet's timer dies with
+    // its unmount and the line already looks spoken. Never stamping speaks it
+    // twice when they dismiss after 300ms, because the sheet said it and then
+    // this does too.
+    //
+    // The two cases are separated by how long the silence lasted, which is the
+    // one thing this component can measure: shorter than the debounce and the
+    // sheet cannot have spoken, so this does.
+    if (silent) {
+      if (silentSince.current === null) silentSince.current = performance.now();
+      return;
+    }
+    const silentFor =
+      silentSince.current === null ? null : performance.now() - silentSince.current;
+    silentSince.current = null;
+    if (silentFor !== null && silentFor >= ANNOUNCE_DELAY_MS) {
+      // The sheet already said it. Record it as spoken and stay quiet.
+      announced.current = line;
+      return;
+    }
     announced.current = line;
     const t = setTimeout(() => setAnnouncement(line), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);

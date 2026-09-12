@@ -39,17 +39,26 @@ describe("ResultLine", () => {
     expect(screen.getByText("12 of 41 decks")).toBeTruthy();
   });
 
-  it("still announces a change made while it was silent, once it is not", () => {
-    // The sheet is silent while open. A reader who toggles a filter and then
-    // dismisses the sheet before its own announcement fires must still hear the
-    // count — stamping the line as announced during the silence lost it.
+  it("speaks a change the sheet had no time to announce", () => {
+    // Dismissed inside the debounce: the sheet's own timer died with its
+    // unmount, so this is the only thing that can say the count.
     const { rerender, container } = render(<ResultLine line="41 decks" silent />);
     rerender(<ResultLine line="12 of 41 decks" silent />);
-    act(() => vi.advanceTimersByTime(1000));
-    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+    act(() => vi.advanceTimersByTime(100));
     rerender(<ResultLine line="12 of 41 decks" />);
     act(() => vi.advanceTimersByTime(300));
     expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
+  });
+
+  it("stays quiet for a change the sheet has already announced", () => {
+    // Dismissed past the debounce: the sheet spoke it, and repeating it here is
+    // the same count twice.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<ResultLine line="12 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
   });
 
   it("is the one live region, and it is atomic", () => {

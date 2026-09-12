@@ -1,5 +1,6 @@
 "use client";
 
+
 // The phone filter surface. Same `DeckFilters` in, same whole-new-value out as
 // the desktop column, through the same `toggleIn` — which is what stops the two
 // from ever disagreeing. Neither reads or writes a URL; the view does.
@@ -12,8 +13,9 @@
 // has nowhere to put it (plan ruling 6). Everything else is the column's
 // vocabulary re-drawn as chips at the 44px touch floor.
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { deckChassisCopy } from "../../lib/copy/filter-chassis";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
   COLOUR_ORDER,
@@ -136,6 +138,24 @@ function SheetBody({
   autoFocusSearch,
 }: Omit<DeckFilterSheetProps, "open">) {
   const dialog = useRef<HTMLDivElement>(null);
+
+  // The sheet is `aria-modal`, so the chassis's result line sits outside it and
+  // is not a surface assistive tech can be relied on to read. Without a region
+  // in here a filter changed inside the sheet is announced nowhere. Debounced
+  // at the same 300ms as every other count in this codebase, so four taps are
+  // one number — and the chassis stays silent while this is open, the two
+  // handing over on dismissal.
+  const [announcement, setAnnouncement] = useState("");
+  const announced = useRef<number | null>(null);
+  useEffect(() => {
+    if (announced.current === null || announced.current === shown) {
+      announced.current = shown;
+      return;
+    }
+    announced.current = shown;
+    const t = setTimeout(() => setAnnouncement(deckChassisCopy.result(shown, total)), 300);
+    return () => clearTimeout(t);
+  }, [shown, total]);
   // Focus trap, Escape and focus-return, shared with every other dialog here.
   // Escape never restores the filters the reader arrived with: filtering
   // already happened as they ticked, so there is nothing to undo and swiping
@@ -264,6 +284,9 @@ function SheetBody({
           </button>
         </div>
       </div>
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </span>
     </div>
   );
 }

@@ -336,6 +336,10 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
             chips={chassisChips}
             onClearAll={() => onFilters(EMPTY_FILTERS)}
             resultLine={deckChassisCopy.result(shown.length, decks.length)}
+            // The sheet is aria-modal and now carries its own region, so the
+            // chassis's goes quiet while it is open rather than announcing the
+            // same count from behind the modal.
+            silentResult={!wide && sheet.open}
             after={
               /* Unmounted when wide, never merely hidden. Resizing from compact
                  to wide with the sheet open would otherwise leave an
