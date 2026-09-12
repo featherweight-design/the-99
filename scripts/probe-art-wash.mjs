@@ -172,9 +172,9 @@ const READ_STATED_BANDS = `() => {
       const scrims = [...root.querySelectorAll('.art-wash-scrim')];
       const s = scrims.at(-1);
       const image = s ? getComputedStyle(s).backgroundImage : '';
-      const stops = (image.match(/[a-z-]+\([^()]*\)\s+[\d.]+%/g) ?? []).map((stop) => {
-        const alpha = stop.match(/\/\s*([\d.]+)\)/);
-        return { alpha: alpha ? Number(alpha[1]) : 1, position: Number(stop.match(/([\d.]+)%$/)[1]) };
+      const stops = (image.match(/[a-z-]+\\([^()]*\\)\\s+[\\d.]+%/g) ?? []).map((stop) => {
+        const alpha = stop.match(/\\/\\s*([\\d.]+)\\)/);
+        return { alpha: alpha ? Number(alpha[1]) : 1, position: Number(stop.match(/([\\d.]+)%$/)[1]) };
       });
       return {
         declared: root.getAttribute('data-art-wash-band') + 'px',
@@ -188,7 +188,7 @@ const READ_STATED_BANDS = `() => {
         // cover band — which draws exactly one scrim, its ramp — would report
         // itself flat and skip the hold checks silently. The horizontal scrim is
         // the one that states an angle, so the ramp is anything that does not.
-        ramped: scrims.length > 1 || !/^linear-gradient\(\s*90deg/.test(image),
+        ramped: scrims.length > 1 || !/^linear-gradient\\(\\s*90deg/.test(image),
         stops,
       };
     });
@@ -212,8 +212,8 @@ const READ_PLATES = `() => {
       // every opacity from the plate up to the band is folded in.
       let composited = 1;
       const declared = p ? p.backgroundColor : '';
-      const alpha = /(?:rgba|\/)/.test(declared) && /[\d.]+\s*\)$/.test(declared)
-        ? Number(declared.match(/([\d.]+)\s*\)$/)[1])
+      const alpha = /(?:rgba|\\/)/.test(declared) && /[\\d.]+\\s*\\)$/.test(declared)
+        ? Number(declared.match(/([\\d.]+)\\s*\\)$/)[1])
         : 1;
       for (let el = plate; el && el !== document.body; el = el.parentElement) {
         composited *= Number(getComputedStyle(el).opacity || 1);
@@ -358,6 +358,30 @@ async function checkChrome(page, label, note) {
   const thumbs = await page.evaluate(`(${READ_THUMBS})()`);
   if (thumbs.length) {
     note(`${label}: ${thumbs.length} commander thumb(s) at ${[...new Set(thumbs.map((t) => t.box.join("×")))].join(", ")}`);
+  }
+}
+
+/** Every reader in this file travels to the browser as a template literal, so a
+    regex written with single escapes loses them before the browser ever parses
+    it: `\(` becomes `(` and `\s` becomes `s`, and the generated function throws
+    a SyntaxError that surfaces as a mysteriously empty result. Parsing each one
+    here turns that into a loud failure at startup rather than a silent gap in
+    coverage — it is the same class of bug as a check that cannot fail. */
+const READERS = {
+  READ_WASHES,
+  READ_ART_LAYERS_PER_BAND,
+  READ_148_SCRIMS,
+  READ_COVER_STOPS,
+  READ_STATED_BANDS,
+  READ_THUMBS,
+  READ_PLATES,
+  READ_PLATE_HIT,
+};
+for (const [name, source] of Object.entries(READERS)) {
+  try {
+    new Function(`return (${source})`);
+  } catch (error) {
+    throw new Error(`${name} does not parse as a browser function: ${error.message}`);
   }
 }
 
@@ -546,22 +570,34 @@ try {
     // written down, so no deck id is hard-coded.
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
-    const deckHref = await page.evaluate(
-      `document.querySelector('a[href^="/decks/"]:not([href$="/import"])')?.getAttribute('href') ?? null`,
+    // Every deck link, not the first one. `/decks/new` is a link on this page too
+    // and would take the probe to the creation picker; and a deck whose commander
+    // has no crop draws no control AT ALL by ruling, so the first real deck can
+    // legitimately have none. Walk them until one shows the control, which is
+    // what `probe-commander-card-details.mjs` already does.
+    const deckHrefs = await page.evaluate(
+      `[...document.querySelectorAll('a[href^="/decks/"]')]
+        .map((a) => a.getAttribute('href'))
+        .filter((href) => /^\\/decks\\/[^/]+$/.test(href) && href !== '/decks/new')`,
     );
-    if (!deckHref) {
-      note(`  FAIL no deck link on /decks to follow — the deck header's chrome goes unchecked`);
-    } else {
+    let walkedADeck = false;
+    for (const deckHref of deckHrefs.slice(0, 5)) {
       await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
-      await page.screenshot({ path: `/tmp/art-wash-${vpName}-deck.png`, fullPage: false });
       const deckPlates = await page.evaluate(`(${READ_PLATES})()`);
       if (!deckPlates.length) {
-        note(`  FAIL no card-details control on ${deckHref} — the deck header draws one at both widths`);
+        note(`${vpName} ${deckHref}: no card-details control — this commander has no crop`);
+        continue;
       }
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-deck.png`, fullPage: false });
       await checkChrome(page, `${vpName} ${deckHref}`, note);
       const deckBands = await page.evaluate(`(${READ_STATED_BANDS})()`);
       note(`${vpName} ${deckHref}: ${deckBands.length} stated band(s)`);
+      walkedADeck = true;
+      break;
+    }
+    if (!walkedADeck) {
+      note(`  FAIL no deck page drew a card-details control — the deck header's chrome goes unchecked`);
     }
 
     // The two accessibility mechanisms, on the surface that carries every case.
