@@ -31,6 +31,7 @@ import {
   loadVersionShape,
 } from "../src/lib/decks/draft-state";
 import { computeRoleCounts } from "../src/lib/decks/mix";
+import { restoreDraftFromVersion } from "../src/lib/decks/versions";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -238,6 +239,30 @@ try {
   //    Through the same `computeRoleCounts` the strip uses, so the figure the
   //    cells read is the figure proved here.
   check("the fold counts copies, not rows", computeRoleCounts(shape).land, 12);
+
+  // 8. THE DISCARD. `restoreDraftFromVersion` replaces `deck_cards` with the
+  //    newest version's list, and takes the deck's unresolved paste lines with
+  //    it. Those lines are not `deck_cards` rows, so the wholesale delete does
+  //    not reach them and no version stores them: left behind, the deck would
+  //    land on its committed list and still draw a banner asking the player to
+  //    resolve lines belonging to an edit that no longer exists.
+  await fixture.execute(sql`
+    insert into deck_unresolved_rows (deck_id, raw_name, quantity, source_line)
+    values (${deck.id}, 'Definitely Not A Card', 1, 3)
+  `);
+  const outcome = await restoreDraftFromVersion(deck.id, v2.id);
+  check("a discard restores the newest version", outcome, "restored");
+  const { rows: [restored] } = await fixture.execute<{ n: number }>(sql`
+    select count(*)::int as n from deck_cards where deck_id = ${deck.id}
+  `);
+  check("the draft holds exactly the version's cards", restored?.n, 2);
+  const { rows: [left] } = await fixture.execute<{ n: number }>(sql`
+    select count(*)::int as n from deck_unresolved_rows where deck_id = ${deck.id}
+  `);
+  check("…and no unresolved line survives it", left?.n, 0);
+  //    A version behind the newest is refused rather than written: restoring it
+  //    would overwrite v2's own cards with the list before them.
+  check("an older version is refused", await restoreDraftFromVersion(deck.id, v1.id), "moved");
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);

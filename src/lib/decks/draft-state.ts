@@ -118,8 +118,9 @@ async function readSnapshot(deckId: string) {
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
-/** Name, type line and mana value per card — the columns every draft figure is
- *  built from, read over the whole draft because the mana value averages it. */
+/** Name, type line and mana value per card, over the CHANGED cards. The strip's
+ *  average reads the whole draft through `loadDraftShape`, which is its own
+ *  three-column query; nothing here needs a row the draft did not touch. */
 function loadNameFacts(oracleIds: string[]) {
   return db.select({
     oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
@@ -209,14 +210,11 @@ async function readDraft(
   const changedIds = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
   if (changedIds.length === 0) return bare(empty);
 
-  // Over the WHOLE draft rather than only the changed cards: the mana value below
-  // averages every row the draft holds, and a row whose cmc was missing from this
-  // map would average as a zero. Basics come out of both lists for the reason the
-  // commit receipt drops them: they are outside the availability model, so
-  // neither list has a figure to print.
-  const facts = await loadNameFacts([
-    ...new Set([...changedIds, ...draft.map((c) => c.oracleId)]),
-  ]);
+  // The changed cards alone. Basics come out of both lists below for the reason
+  // the commit receipt drops them: they are outside the availability model, so
+  // neither list has a figure to print — which is why this read covers them and
+  // the maps built from it do not.
+  const facts = await loadNameFacts(changedIds);
   const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
   const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
   const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
@@ -229,9 +227,9 @@ async function readDraft(
   }
 
   const changed = [...adds, ...removes].map((c) => c.oracleId);
-  // Changed cards only, per `DraftState.names`: `facts` spans the whole draft
-  // because the mana average needs every row, and a consumer enumerating this map
-  // would otherwise draw cards the draft never touched.
+  // Filtered even so: `facts` covers the changed BASICS too, and a consumer
+  // enumerating this map would otherwise draw a basic land the deck's other
+  // figures deliberately say nothing about.
   const changedSet = new Set(changed);
   const names = new Map(
     facts.filter((f) => changedSet.has(f.oracleId)).map((f) => [f.oracleId, f.name]),

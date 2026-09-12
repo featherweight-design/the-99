@@ -21,11 +21,11 @@ describe("averageManaValue", () => {
     expect(averageManaValue([{ cmc: 0, quantity: 37, typeLine: "Land" }])).toBeNull();
   });
 
-  it("rounds to one decimal, the only precision the cell draws", () => {
+  it("does not round, so a caller can draw the precision it wants", () => {
     expect(averageManaValue([
       { cmc: 1, quantity: 1, typeLine: "Artifact" },
       { cmc: 2, quantity: 1, typeLine: "Artifact" },
       { cmc: 2, quantity: 1, typeLine: "Artifact" },
-    ])).toBe(1.7);
+    ])).toBeCloseTo(5 / 3, 10);
   });
 });

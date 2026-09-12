@@ -318,8 +318,14 @@ export const deckVersioningCopy = {
         adds > 0 ? `the ${adds} you added` : null,
         removes > 0 ? `the ${removes} you cut` : null,
       ].filter(Boolean).join(" and ");
+      // No named card means a basics-only draft, and nothing else: the sheet is
+      // only up while something differs, and a difference that names no card is
+      // a basic-land edit. So the sentence names THAT rather than claiming the
+      // draft holds nothing — the land count is the work being thrown away, and
+      // it needs no argument of its own to be known.
       if (!lost) {
-        return `${back}Nothing in this draft is stored anywhere, so this cannot be undone.`;
+        return `${back}The basic lands you changed are not stored anywhere, so this `
+          + "cannot be undone.";
       }
       const single = adds > 0 && removes > 0 ? null : adds || removes;
       return `${back}${lost.charAt(0).toUpperCase()}${lost.slice(1)} ` +

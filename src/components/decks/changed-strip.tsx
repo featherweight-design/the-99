@@ -159,8 +159,20 @@ export function ChangedStrip({ before, after }: ChangedStripProps) {
 
   // Two decimals, both figures, so the pair reads as one measurement — `3.4 →
   // 3.14` would look like a different kind of number on each side of the arrow.
+  // Rounded here rather than in `averageManaValue`, which answers the exact
+  // average: the cell's precision is the cell's business.
+  const manaValueText = manaValue !== null ? manaValue.toFixed(2) : null;
+  const manaValueBeforeText = manaValueBefore !== null ? manaValueBefore.toFixed(2) : null;
+  // Compared as DRAWN, not as averaged. Two averages differing in the fourth
+  // decimal print the same two decimals, and an arrow between two identical
+  // figures tinted `--success` states a movement the reader cannot see.
   const movedCurve =
-    manaValue !== null && manaValueBefore !== null && manaValue !== manaValueBefore;
+    manaValueText !== null && manaValueBeforeText !== null
+    && manaValueText !== manaValueBeforeText;
+  // Direction off the exact averages, which cannot tie once the drawn figures
+  // differ.
+  const curveDown =
+    manaValue !== null && manaValueBefore !== null && manaValue < manaValueBefore;
 
   return (
     <>
@@ -168,28 +180,18 @@ export function ChangedStrip({ before, after }: ChangedStripProps) {
           average: an all-land list has no curve, and a dash there would be a
           figure standing in for one. */}
       <div className="flex gap-[7px] md:gap-[10px] mb-[11px] md:mb-[10px]">
-        {manaValue !== null && (
+        {manaValueText !== null && (
           <StripCell
             label={copy.manaValue}
-            before={manaValueBefore !== null ? manaValueBefore.toFixed(2) : null}
-            after={manaValue.toFixed(2)}
+            before={manaValueBeforeText}
+            after={manaValueText}
             // A curve coming down is the improvement, which is the only reason
             // the cell has a colour at all: there is no recommended mana value
             // for it to be short of.
             afterTone={
-              !movedCurve
-                ? "var(--fg)"
-                : manaValue < (manaValueBefore ?? 0)
-                  ? "var(--success)"
-                  : "var(--warning)"
+              !movedCurve ? "var(--fg)" : curveDown ? "var(--success)" : "var(--warning)"
             }
-            note={
-              !movedCurve
-                ? null
-                : manaValue < (manaValueBefore ?? 0)
-                  ? copy.manaValueDown
-                  : copy.manaValueUp
-            }
+            note={!movedCurve ? null : curveDown ? copy.manaValueDown : copy.manaValueUp}
             noteTone="var(--fg-locked)"
             hiddenOnPhone={false}
           />

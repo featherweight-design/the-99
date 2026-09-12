@@ -66,9 +66,10 @@ describe("deckVersioningCopy", () => {
     expect(copy.discard.consequence(1, "12 Sep", 99, 1, 0)).toContain(
       "The 1 you added is not stored anywhere",
     );
-    // A basics-only draft is a real, committable change that names no card.
+    // A basics-only draft is a real, committable change that names no card — so
+    // the sentence names the land edit rather than saying nothing is at stake.
     expect(copy.discard.consequence(1, "12 Sep", 99, 0, 0)).toContain(
-      "Nothing in this draft is stored anywhere",
+      "The basic lands you changed are not stored anywhere",
     );
   });
 
