@@ -124,14 +124,42 @@ engineering** — the R3 files were locked and unedited on the first round for t
 reason, and the addendum itself names that precedent. Every contradiction is resolved here
 instead, and this document is what the plan's global constraints are written from.
 
-## `FilterPanel`'s marker is a tick, not a diamond
+## Three things the rarity panel cannot do unforked, and what was done instead
 
-§28 draws the rarity panel's marker as "a rotated diamond filled `--accent` when on".
-`filter-panel.tsx` draws a square-and-tick under multi-select and a round dot under single.
-**The mount wins**: §28's own named dependency is *"mounts `filter-panel.tsx` … If this page
-lands first it must not fork either"*, and a marker shape is exactly the kind of detail a
-fork would re-derive by hand. The marker is the chassis package's to change, in one place,
-for all four routes.
+§28's named dependency is *"mounts `filter-panel.tsx` … If this page lands first it must not
+fork either"*, and that constraint decides all three. In each case the panel's own behaviour
+is taken and the drawing is what gives.
+
+**The marker.** §28 draws "a rotated diamond filled `--accent` when on". The panel draws a
+square-and-tick under multi-select and a round dot under single. A marker shape is exactly
+the kind of detail a fork would re-derive by hand; it is the chassis package's to change, in
+one place, for four routes.
+
+**The footer.** §28 draws `n of 4 on` beside a `Clear rarity`. The panel's `single` mode
+drops the desktop footer, and `single` is the mode this control needs — `multi` exposes
+`aria-multiselectable="true"` and promises a second value the caller then silently discards.
+**A correct promise to a screen reader outranks a duplicated one to a mouse**, and the chip
+line carries the same removal one row down. Build took `single`.
+
+**Opening on the current value.** ADDENDUM-STATES §4 says *"Opening lands focus on the
+current value, not the first row."* The panel's non-searchable open path calls
+`openPanel(false)`, which leaves `activeCode` null. Unmet, and not forked around. It is a
+one-line change in the shared panel and belongs in the chassis package, where four routes
+get it.
+
+None of the three blocks the build, and all three are the same trade the addendum itself
+chose when it named the mount as the dependency. **Design to ratify.**
+
+## What review changed in the implementation
+
+Two findings that arrived through this PR were behaviour, not documentation, and are fixed
+in PRs 3 and 4 rather than carried:
+
+- The rarity panel announced itself as multi-selectable (above).
+- The result line chose its wording from the badge's count, which deliberately excludes the
+  query — so a query-only search stated the whole set's figures over a grid showing four.
+  **The badge counts controls hidden behind the sheet; the line describes the page.** They
+  are different questions and now read different values.
 
 ## Sequencing: the chassis pip has shipped, `/collection` has not adopted it
 

@@ -77,10 +77,10 @@ browser probes via `scripts/probe-sets.mjs`.
 - [ ] **Step 6 — Gate and commit.**
 
 **Watch for:** the one-column case falls out of the declaration already — do not add a
-breakpoint for it. Its threshold is 302px of *content* (`2 × 146 + 10`), which is ~334px of
-viewport; `ADDENDUM-STATES`'s "~330px" is the viewport figure. At 330px of content the
-declaration still gives two tracks of 160, so a probe asserting one column there would be
-asserting the wrong boundary.
+breakpoint for it. **The boundary is 302px of content** (`2 × 146 + 10`), about 334px of
+viewport. `ADDENDUM-STATES` labels its "~330px" as content, but at 330px of content the
+declaration still gives two tracks of 160 — so read it as the viewport figure it matches,
+and assert 302 content / 334 viewport, not 330 of either.
 
 ---
 
@@ -99,8 +99,9 @@ asserting the wrong boundary.
 - [ ] **Step 3 — Run, verify failure.**
 - [ ] **Step 4 — Implement.** Move the figure out of the `CODE · YEAR · n/m extras` line and
   under the base ratio, one type step down, at `--fg-muted`. Brighten the base ratio to
-  `--fg-body`. Carry the existing `extrasTotal > 0` guard with it. Append the clause to
-  both `ratioAria` and `zeroAria`.
+  `--fg-body`. The guard becomes `counted && indexed && extrasTotal > 0` — the shipped one
+  omits `indexed`, so an unindexed row with extras would print a second line the four-case
+  table forbids. Append the clause to both `ratioAria` and `zeroAria`.
 - [ ] **Step 5 — Run, verify pass. Gate and commit.**
 
 **Watch for:** `--fg-locked` is wrong here — the figure is text and owes 4.5:1.
@@ -132,9 +133,12 @@ vocabulary.
 - [ ] **Step 4 — Pips.** Replace `ColorFilterRow` with `ColourPips`, `form="wide"` on the
   control row and `form="sheet"` in the phone sheet.
 - [ ] **Step 5 — Rarity.** Replace the four letter buttons with `FilterPanel`,
-  `searchable={false}`, `widthPx={280}`, `selectionMode="multi"` with a caller-enforced
-  single-select `onToggle` (picking the lit value clears it). The phone sheet gets a 44px
-  chip group from `rarity.options`, after the pips.
+  `searchable={false}`, `widthPx={280}`, **`selectionMode="single"`** — `multi` would expose
+  `aria-multiselectable="true"` for a control that holds one value. The off state is the
+  caller's: `onToggle` returns an empty selection when the lit value is picked again, which
+  is how *all* is reached. Mount it **on the breakpoint, never CSS-hidden** — the panel holds
+  its own open state and picks popover or sheet off the same hook. The phone sheet gets a
+  44px chip group from `rarity.options`, after the pips.
 - [ ] **Step 6 — Chips.** Clear leaves the control row for the chip line's trailing edge,
   past one active control. Row 2 prints the rest line rather than collapsing. Desktop never
   wraps; phone scrolls horizontally from its trailing edge and never wraps, chip target
@@ -175,8 +179,10 @@ vocabulary.
   `aether` case specifically rather than trusting the normaliser to cover it.
 - [ ] **Step 4 — Failing tests on the view.** The field is first in the control row and the
   only shrinking child; it is on the phone's persistent row and never in the sheet; the
-  badge does not count it; `Clear all filters` clears it; the cost strip and `Send N`
-  re-scope with it; the zero-with-a-query branch names the query and offers
+  badge does not count it, **while the result line does** — the badge counts the dimensions
+  hidden behind the sheet, the line describes the page, and reading one off the other makes
+  a query-only search state the whole set's figures; `Clear all filters` clears it; the cost
+  strip and `Send N` re-scope with it; the zero-with-a-query branch names the query and offers
   `Clear the search` before `Clear all filters`; with missing-only on and every match owned,
   the shipped `headingOwnsAll("cards matching “plains”")` branch carries it.
 - [ ] **Step 5 — Implement.** `SearchField` from `ui/text-field.tsx`, placeholder
@@ -206,6 +212,7 @@ name — the defect `MissingOnlyToggle` already exists to avoid on this page.
   `EMPTY_FILTERS` gains `query: ""`. Callers of `applyFilters` pass a whole
   `SetGridFilters` and need no change — but three **reset literals** do:
   `setFilters({ colors: [], rarities: [], missingOnly: false })` at `set-grid-view.tsx:432`,
-  `:497` and `:584` stop satisfying the type the moment the field lands. Replace all three
-  with `EMPTY_FILTERS` rather than adding `query: ""` to each, so the next field costs
-  nothing.
+  `:497` and `:584` stop satisfying the type the moment the field lands — and so does the
+  round-trip fixture at `filters.test.ts:73`, which builds a bare object. Replace the three
+  resets with `EMPTY_FILTERS` rather than adding `query: ""` to each, so the next field costs
+  nothing, and give the fixture a query so the round trip proves the new key too.
