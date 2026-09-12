@@ -74,6 +74,15 @@ text below it. That is the game log's existing behaviour at that width — every
 already shifts with it — and it is outside this property table, so the stamp inherits it rather than
 restyling shipped chrome. Desktop is aligned: both stamps at left 293.
 
+**Discrepancy 55 — the v1 panel is drawn at 390px, against the property table's `—`.** Errata,
+not a gap. The `—` in that row records that no phone frame in the handoff draws the v1 panel; it is
+a canvas absence, and the table marked it a discrepancy rather than a stated absence for exactly
+that reason. A version that is a deck's only version is the commonest v1 there is, and a phone
+reader opening its row would get an empty panel where the desktop gets `Initial`, one sentence and
+the way into the list. Mobile/desktop parity in one PR is the standing rule, and nothing in
+§Surfaces 4, §Copy per state or READINESS 8 names the phone as an exception. The property table's
+row stands corrected to `drawn` at both widths.
+
 **Gap 4 — the active Versions-tab treatment is unreachable.** The `/versions` route draws its own
 header rather than the builder shell's tab strip, exactly as the sibling `/changes` route does.
 The tab is the way *in* from the deck page; once on the route, the way back is the deck-name link.

@@ -6,9 +6,13 @@ import type { VersionSummary } from "../../lib/decks/versions";
 
 // The rail never fetches. Only an opened row does, and the diff's own suite
 // covers that — here the mock exists so mounting the rail does not reach a
-// module that throws at import in a browser.
+// module that throws at import in a browser, and so the rail's own cache can be
+// asserted by counting reads.
+const getVersionDiff = vi.fn<
+  (deckId: string, versionId: string) => Promise<{ in: never[]; out: never[] }>
+>(async () => ({ in: [], out: [] }));
 vi.mock("../../app/decks/actions", () => ({
-  getVersionDiff: async () => ({ in: [], out: [] }),
+  getVersionDiff: (deckId: string, versionId: string) => getVersionDiff(deckId, versionId),
 }));
 
 const copy = deckVersioningCopy.history;
@@ -146,6 +150,32 @@ describe("VersionHistory", () => {
     const open = await screen.findByRole("button", { expanded: true });
     const panelId = open.getAttribute("aria-controls")!;
     expect(document.getElementById(panelId)).not.toBeNull();
+  });
+
+  // A closed row has no panel in the document, and `aria-controls` naming an id
+  // nothing has is a broken relationship rather than a harmless one.
+  it("names no panel while the row is closed", () => {
+    mount(THREE);
+    for (const row of screen.getAllByRole("button", { expanded: false })) {
+      expect(row).not.toHaveAttribute("aria-controls");
+    }
+  });
+
+  // Closing a row unmounts the panel that read the diff, so without the rail
+  // holding them a reader flipping between two versions pays for the first twice.
+  it("reads a version's diff once per visit however often it is opened", async () => {
+    getVersionDiff.mockClear();
+    mount(THREE);
+    const open = (i: number) =>
+      fireEvent.click(screen.getAllByRole("button", { expanded: false })[i]);
+    open(0);
+    await screen.findByRole("button", { expanded: true });
+    open(0);
+    await screen.findByRole("button", { expanded: true });
+    // Back to the first, whose panel was unmounted in between.
+    fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+    await screen.findByRole("button", { expanded: true });
+    expect(getVersionDiff.mock.calls.filter((c) => c[1] === "v_3")).toHaveLength(1);
   });
 
   // Two open panels would put two card lists on a page whose point is the rail.

@@ -587,7 +587,7 @@ mono caption treatment as the v2 panel, reading `v1 opened — there is no prede
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| rendered | **— (the whole v1 panel is not drawn at 390px)** (Discrepancy 55) | drawn |
+| rendered | drawn — **errata**: no phone frame draws this panel, which is a canvas absence rather than a stated one (Discrepancy 55). Parity ships in one PR, and a deck's only version is the commonest v1 a phone reader opens. | drawn |
 | background | — | `#1A160F` (`--surface-rail`) |
 | border | — | `1px solid #2A241D` (`--elevated`) |
 | border-radius | — | `12px` |

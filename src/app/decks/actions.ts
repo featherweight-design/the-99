@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, lte, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
@@ -1525,30 +1525,43 @@ export async function discardDeckDraft(
 /**
  * What one version changed, read when its row on the history page is opened.
  *
- * `loadVersionDiff` reads by version id alone, so both ids are checked against
- * this deck before it runs: without that, a signed-in account could read any
- * other player's version list by posting their version ids alongside a deck of
- * its own. Returning empty lists rather than throwing keeps a stale row — a
- * version deleted in another tab — from breaking the page.
+ * The predecessor is the SERVER's to name, not the caller's. This is a public
+ * server action, so a caller that supplied it could ask for v7 against v2 and
+ * get a payload the rail would draw under the words "what v7 changed" — true of
+ * no commit anybody made. Resolving it from `number` here means the answer means
+ * one thing.
+ *
+ * `loadVersionDiff` reads by version id alone, so the version is checked against
+ * this deck first: without that, a signed-in account could read another player's
+ * list by posting their version id alongside a deck of its own. Returning empty
+ * lists rather than throwing keeps a stale row — a version deleted in another
+ * tab — from breaking the page.
  */
 export async function getVersionDiff(
   deckId: string,
   versionId: string,
-  previousVersionId: string | null,
 ): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] }> {
   const empty = { in: [], out: [] };
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(versionId)) return empty;
-  if (previousVersionId !== null && !isUuid(previousVersionId)) return empty;
   await requireDeck(deckId, userId);
 
-  const asked = previousVersionId === null ? [versionId] : [versionId, previousVersionId];
-  const mine = await db.select({ id: deckVersions.id })
+  const [asked] = await db.select({ number: deckVersions.number })
     .from(deckVersions)
-    .where(and(eq(deckVersions.deckId, deckId), inArray(deckVersions.id, asked)));
-  if (mine.length !== asked.length) return empty;
+    .where(and(eq(deckVersions.deckId, deckId), eq(deckVersions.id, versionId)))
+    .limit(1);
+  if (!asked) return empty;
 
-  return loadVersionDiff(versionId, previousVersionId);
+  // The highest number below this one, which is the predecessor even across a
+  // gap — no path deletes a version today, and a hole in the run would still
+  // make the version before it the one this commit was cut from.
+  const [previous] = await db.select({ id: deckVersions.id })
+    .from(deckVersions)
+    .where(and(eq(deckVersions.deckId, deckId), lt(deckVersions.number, asked.number)))
+    .orderBy(desc(deckVersions.number))
+    .limit(1);
+  // A v1 has none, and `loadVersionDiff` answers that with two empty lists.
+  return loadVersionDiff(versionId, previous?.id ?? null);
 }
 
 /**

@@ -23,8 +23,10 @@
 // feature look dead. The script copies a 99-row template into one deck owned by
 // the account it signs in as, writes three versions against it (v1 the template
 // list, v2 a two-for-two swap with a note, v3 a swap with no note), and logs two
-// games — one stamped to v2, one with no version at all. The deck goes in a
-// `finally`; versions, version cards and games follow it by cascade.
+// games — one stamped to v2, one with no version at all. It also writes a second
+// deck under a synthetic `user_id` no account maps to, which is the only way to
+// ask the route to refuse a reader. Both decks go in a `finally`; versions,
+// version cards and games follow them by cascade.
 //
 // Point it at `local-dev` or a scratch Neon branch — NEVER production. It writes.
 //
@@ -142,7 +144,12 @@ const readPanel = (page, panelId) =>
     return {
       headings: [...panel.querySelectorAll("h2,h3")].map((h) => h.innerText.replace(/\n/g, " ")),
       pending: panel.querySelector("[data-pending-mark]") !== null,
-      names: [...panel.querySelectorAll("li")].map((li) => li.innerText.split("\n")[0]).slice(0, 6),
+      // Diff rows carry their own hook: they are not list items, and counting
+      // `li` here found nothing and reported it as "none" — a gap-shaped reading
+      // of a working panel.
+      names: [...panel.querySelectorAll("[data-version-diff-row]")]
+        .map((row) => row.innerText.split("\n")[0])
+        .slice(0, 6),
       text: panel.innerText.replace(/\n/g, " · ").slice(0, 400),
     };
   }, panelId);
@@ -225,6 +232,36 @@ async function buildDeck(userId, template) {
   return { deckId, versions };
 }
 
+/**
+ * A deck belonging to somebody else, so the guard has something to refuse.
+ *
+ * Owned by a synthetic `user_id` no Clerk account maps to, which is the point: the
+ * signed-in reader can post its id into the URL and the route has to answer 404
+ * rather than draw a stranger's list. It carries one version, because a route that
+ * 404s on an empty rail would pass this check for the wrong reason.
+ */
+async function buildForeignDeck(template) {
+  const { rows } = await pool.query(
+    `insert into decks (user_id, name, commander_oracle_id, partner_oracle_id, filled)
+       values ($1, $2, $3, $4, true) returning id`,
+    [
+      `probe_foreign_${Date.now()}`,
+      "Probe · somebody else's deck",
+      template.commander_oracle_id,
+      template.partner_oracle_id,
+    ],
+  );
+  const deckId = rows[0].id;
+  await pool.query(
+    `insert into deck_versions
+       (deck_id, number, note, commander_oracle_id, partner_oracle_id,
+        committed_at, commander_since)
+     values ($1, 1, null, $2, $3, now(), now())`,
+    [deckId, template.commander_oracle_id, template.partner_oracle_id],
+  );
+  return deckId;
+}
+
 /** Two games: one played under v2, one with no version at all. */
 async function logGames(userId, deckId, v2) {
   await pool.query(
@@ -238,6 +275,7 @@ async function logGames(userId, deckId, v2) {
 await clerkSetup();
 const browser = await chromium.launch();
 let deck = null;
+let foreignDeckId = null;
 try {
   const context = await browser.newContext({ viewport: VIEWPORTS[1] });
   const page = await context.newPage();
@@ -250,8 +288,19 @@ try {
   ).rows[0];
   if (!template) throw new Error(`No template deck ${TEMPLATE}.`);
   deck = await buildDeck(userId, template);
+  foreignDeckId = await buildForeignDeck(template);
   await logGames(userId, deck.deckId, deck.versions[1].id);
   console.log(`signed in as ${userId} · deck ${deck.deckId}`);
+
+  // ── The guard, once: a rail is not width-dependent in whom it refuses.
+  const refused = await page.goto(`${BASE}/decks/${foreignDeckId}/versions`, {
+    waitUntil: "domcontentloaded",
+  });
+  const refusedStatus = refused?.status() ?? null;
+  const leaked = /v1|committed/i.test(await page.evaluate(() => document.body.innerText));
+  console.log(`\n########## another player's deck · /decks/<id>/versions`);
+  console.log(`  status: ${refusedStatus} (expect 404)`);
+  console.log(`  rail drawn: ${leaked ? "YES — LEAK" : "no (correct)"}`);
 
   for (const viewport of VIEWPORTS) {
     const vpContext = await browser.newContext({ viewport });
@@ -326,6 +375,7 @@ try {
   // The deck, and nothing else: versions, version cards and games all cascade,
   // and the run writes no collection row to take back.
   if (deck) await pool.query(`delete from decks where id = $1`, [deck.deckId]);
+  if (foreignDeckId) await pool.query(`delete from decks where id = $1`, [foreignDeckId]);
   await pool.end();
   await browser.close();
 }

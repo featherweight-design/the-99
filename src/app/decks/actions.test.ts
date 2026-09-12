@@ -34,6 +34,10 @@ const stub = vi.hoisted(() => {
     redirectTarget: null as string | null,
     // Rows returned when querying `deck_games` (used by deleteGame's pairing check)
     deckGames: [] as { id: string; deckId: string }[],
+    // Rows returned when querying `deck_versions`. Ordered as the caller asked
+    // for them: the stub cannot sort, so a test that cares about which row comes
+    // back first states that order here.
+    deckVersions: [] as Record<string, unknown>[],
     // Delete calls tracked as { table, id } — the id lifted out of the eq() condition
     deleteCalls: [] as { table: string; id: string | null }[],
     // Every path passed to revalidatePath, in order
@@ -71,6 +75,9 @@ const stub = vi.hoisted(() => {
     from?: unknown;
     where: (condition?: unknown) => PromiseLike<Record<string, unknown>[]> & {
       limit: (n: number) => Promise<Record<string, unknown>[]>;
+      orderBy: (...args: unknown[]) => {
+        limit: (n: number) => Promise<Record<string, unknown>[]>;
+      };
     };
     innerJoin: (table: unknown, condition: unknown) => SelectFromBuilder;
     orderBy: (...args: unknown[]) => SelectFromBuilder;
@@ -85,6 +92,7 @@ const stub = vi.hoisted(() => {
           if (tableName === "cards") return state.cards;
           if (tableName === "decks") return state.decks;
           if (tableName === "deck_games") return state.deckGames;
+          if (tableName === "deck_versions") return state.deckVersions;
           if (tableName === "deck_cards") return state.deckRows as Record<string, unknown>[];
           return state.collectionItems;
         };
@@ -93,7 +101,12 @@ const stub = vi.hoisted(() => {
           // onto its emptiness check and most other callers await directly.
           where: () => Object.assign(
             Promise.resolve(rowsFor()),
-            { limit: async (n: number) => rowsFor().slice(0, n) },
+            {
+              limit: async (n: number) => rowsFor().slice(0, n),
+              // The stub does not sort, so an ordered read hands back the rows in
+              // the order the test listed them.
+              orderBy: () => ({ limit: async (n: number) => rowsFor().slice(0, n) }),
+            },
           ),
           innerJoin: () => {
             // After innerJoin, the result is collection_items + cards join
@@ -286,6 +299,7 @@ vi.mock("../../lib/decks/versions", () => ({
   versionCards: vi.fn(),
   commitVersion: vi.fn(),
   restoreDraftFromVersion: vi.fn(),
+  loadVersionDiff: vi.fn(async () => ({ in: [], out: [] })),
 }));
 vi.mock("../../lib/decks/availability-query", () => ({
   loadAvailability: vi.fn(async () => new Map()),
@@ -298,11 +312,12 @@ vi.mock("../../lib/decks/draft-state", () => ({
 }));
 
 import {
-  commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, logGame,
+  commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
   pullCardFromDeck, restoreAutoCards,
 } from "./actions";
 import {
-  commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
+  commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
+  versionLiveAt,
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { loadDraftState } from "../../lib/decks/draft-state";
@@ -380,6 +395,7 @@ beforeEach(() => {
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
   stub.state.unresolvedRows = 0;
+  stub.state.deckVersions.length = 0;
 });
 
 describe("createDeck — filled baseline", () => {
@@ -832,10 +848,16 @@ describe("logGame", () => {
   });
 
   // Neither action changes deck membership, so the collection and commander
-  // surfaces must not be revalidated.
+  // surfaces must not be revalidated. The version rail is in the set because a
+  // logged game moves the games-held tally it draws against a past version.
   it("revalidates only the deck surfaces", async () => {
     await logGame("deck_1", { result: "draw", podSize: 3, worked: [], hurt: [] });
-    expect(stub.state.revalidated).toEqual(["/decks/deck_1", "/decks", "/"]);
+    expect(stub.state.revalidated).toEqual([
+      "/decks/deck_1",
+      "/decks/deck_1/versions",
+      "/decks",
+      "/",
+    ]);
   });
 });
 
@@ -851,7 +873,12 @@ describe("deleteGame", () => {
     const result = await deleteGame("deck_1", "game_1");
     expect(result).toEqual({ ok: true });
     expect(stub.state.deleteCalls).toEqual([{ table: "deck_games", id: "game_1" }]);
-    expect(stub.state.revalidated).toEqual(["/decks/deck_1", "/decks", "/"]);
+    expect(stub.state.revalidated).toEqual([
+      "/decks/deck_1",
+      "/decks/deck_1/versions",
+      "/decks",
+      "/",
+    ]);
   });
 
   // The axis rows go with it through ON DELETE CASCADE. An explicit delete of
@@ -1129,6 +1156,38 @@ describe("discardDeckDraft", () => {
     const result = await discardDeckDraft(DECK_ID, "nope");
     expect(result.ok).toBe(false);
     expect(restoreDraftFromVersion).not.toHaveBeenCalled();
+  });
+});
+
+describe("getVersionDiff", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(loadVersionDiff).mockResolvedValue({ in: [], out: [] });
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+  });
+
+  it("refuses an id that is not a uuid without reading a diff", async () => {
+    expect(await getVersionDiff(DECK_ID, "not-a-uuid")).toEqual({ in: [], out: [] });
+    expect(loadVersionDiff).not.toHaveBeenCalled();
+  });
+
+  // `loadVersionDiff` reads by version id alone, so without this check a signed-in
+  // account could read another player's list by posting their version id alongside
+  // a deck of its own.
+  it("returns empty lists for a version that is not this deck's", async () => {
+    expect(await getVersionDiff(DECK_ID, VERSION_ID)).toEqual({ in: [], out: [] });
+    expect(loadVersionDiff).not.toHaveBeenCalled();
+  });
+
+  // The predecessor is not a parameter: the action reads it, so no caller can ask
+  // for v7 against v2 and get a payload drawn under the words "what v7 changed".
+  // Which row the read hands back is the stub's own artifact — the ordering by
+  // `number` is proved against a real Postgres by `pnpm probe:versions`.
+  it("reads the predecessor itself rather than taking one from the caller", async () => {
+    stub.state.deckVersions.push({ id: VERSION_ID, number: 2 });
+    await getVersionDiff(DECK_ID, VERSION_ID);
+    expect(loadVersionDiff).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]?.[0]).toBe(VERSION_ID);
   });
 });
 

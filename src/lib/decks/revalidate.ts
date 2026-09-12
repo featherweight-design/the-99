@@ -12,14 +12,19 @@
  */
 
 /**
- * The deck itself, the index, and the home dashboard. Home lists the three most
- * recent decks with a card count each, so a create or a delete changes which
- * decks it names and a rename or a membership change alters what it says about
- * one of them. (The order is by `createdAt` and does not move — see
- * `listRecentDecks`.)
+ * The deck itself, its version rail, the index, and the home dashboard. Home
+ * lists the three most recent decks with a card count each, so a create or a
+ * delete changes which decks it names and a rename or a membership change alters
+ * what it says about one of them. (The order is by `createdAt` and does not move
+ * — see `listRecentDecks`.)
+ *
+ * The rail is here rather than in `claimSurfaces` because everything on it moves
+ * on writes that carry no claim: it draws the deck's name in its one way back, a
+ * row per version, and each version's games-held tally. A commit adds a row, a
+ * rename changes the header, and logging a game moves a tally.
  */
 export function deckSurfaces(deckId: string): string[] {
-  return [`/decks/${deckId}`, "/decks", "/"];
+  return [`/decks/${deckId}`, `/decks/${deckId}/versions`, "/decks", "/"];
 }
 
 /**

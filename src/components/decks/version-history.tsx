@@ -19,7 +19,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { VersionSummary } from "../../lib/decks/versions";
-import { VersionDiff } from "./version-diff";
+import { VersionDiff, type VersionDiffPayload } from "./version-diff";
 
 const copy = deckVersioningCopy.history;
 
@@ -165,7 +165,10 @@ function RailRow({
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      aria-controls={panelId}
+      // Only while the panel is in the document: a closed row unmounts its panel,
+      // and `aria-controls` pointing at an id nothing has is a broken
+      // relationship for a screen reader. `unresolved-row.tsx` does the same.
+      aria-controls={open ? panelId : undefined}
       className={[
         "w-full text-left rounded-[9px]",
         "px-[12px] py-[11px] md:px-[14px] md:py-[12px] min-h-[64px] md:min-h-0",
@@ -244,6 +247,14 @@ export function VersionHistory({
 }) {
   const panelPrefix = useId();
   const [openId, setOpenId] = useState<string | null>(null);
+  // Every diff this visit has read, keyed on version id. Held by the rail because
+  // closing a row unmounts the panel that fetched it, so A → B → A would
+  // otherwise read A twice; held here and not in a module so it dies with the
+  // route, which is what makes a commit elsewhere need no invalidation. See
+  // AGENTS.md, "Caching a list a reader flips between". One `useState` rather than
+  // a ref: the map is read while rendering the panel's initial state, which is
+  // what a ref must not be used for.
+  const [cache] = useState<Map<string, VersionDiffPayload>>(() => new Map());
 
   return (
     <div className="mx-auto" style={{ maxWidth: 1180 }}>
@@ -283,6 +294,7 @@ export function VersionHistory({
                   version={version}
                   previous={previous}
                   panelId={panelId}
+                  cache={cache}
                 />
               )}
             </div>

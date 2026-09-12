@@ -27,6 +27,9 @@ import { DecklistGroupHeader } from "./decklist-group-header";
 
 const copy = deckVersioningCopy.history;
 
+/** The two lists one version's row opens. */
+export type VersionDiffPayload = { in: VersionDiffCard[]; out: VersionDiffCard[] };
+
 /** A card on one side of the diff, grouped by type the way every other card list
  *  in this app is grouped. `cardTypeGroup` rather than a field on the payload:
  *  the snapshot stores quantities, and the type line is what the join brings. */
@@ -47,7 +50,10 @@ function DiffCardRow({ card }: { card: VersionDiffCard }) {
     ? deckImportCopy.update.diff.recountedItem(card.name, String(card.from), String(card.to))
     : card.name;
   return (
-    <div className="flex items-center gap-[9px] min-h-[44px] md:min-h-[38px] px-[8px] md:px-[9px] rounded-[7px] bg-[color:var(--surface)] border border-solid border-[color:var(--border)]">
+    <div
+      data-version-diff-row
+      className="flex items-center gap-[9px] min-h-[44px] md:min-h-[38px] px-[8px] md:px-[9px] rounded-[7px] bg-[color:var(--surface)] border border-solid border-[color:var(--border)]"
+    >
       <span className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[12.5px] md:text-[13px] text-[color:var(--fg)]">
         {name}
       </span>
@@ -79,6 +85,7 @@ function Column({
   headingTone,
   cards,
   hiddenOnPhone,
+  headingOnPhone,
 }: {
   heading: string;
   /** `--success` coming in, `--warning` going out. The direction is the one fact
@@ -86,13 +93,18 @@ function Column({
   headingTone: string;
   cards: VersionDiffCard[];
   hiddenOnPhone: boolean;
+  /** The phone normally reads the direction off the pressed segment, so the
+   *  header is desktop-only. A version that only added or only cut has no pair to
+   *  press, and without this the phone would draw an unlabelled list of names
+   *  with nothing anywhere saying which way they went. */
+  headingOnPhone: boolean;
 }) {
   return (
     <section
       className={`flex-1 min-w-0 flex-col ${hiddenOnPhone ? "hidden md:flex" : "flex"}`}
     >
       <h3
-        className="hidden md:block font-mono text-[10px] uppercase tracking-[0.14em] m-0 pb-[8px] mb-[11px] [border-bottom:1px_solid_var(--elevated)]"
+        className={`${headingOnPhone ? "block" : "hidden"} md:block font-mono text-[10px] uppercase tracking-[0.14em] m-0 pb-[8px] mb-[11px] [border-bottom:1px_solid_var(--elevated)]`}
         style={{ color: headingTone }}
       >
         {heading}
@@ -191,6 +203,7 @@ export function VersionDiff({
   version,
   previous,
   panelId,
+  cache,
 }: {
   deckId: string;
   version: VersionSummary;
@@ -199,23 +212,36 @@ export function VersionDiff({
   previous: VersionSummary | null;
   /** Owned by the rail, which points its row's `aria-controls` at it. */
   panelId: string;
+  /** The rail's own map of the diffs this visit has already read, keyed on
+   *  version id — closing a row unmounts this panel, so without it A → B → A
+   *  pays for A twice. Owned by the rail and not by a module, so it dies with the
+   *  route and needs no invalidation: see AGENTS.md, "Caching a list a reader
+   *  flips between". */
+  cache: Map<string, VersionDiffPayload>;
 }) {
   const initial = previous === null;
-  const [diff, setDiff] = useState<{ in: VersionDiffCard[]; out: VersionDiffCard[] } | null>(
-    initial ? { in: [], out: [] } : null,
+  const [diff, setDiff] = useState<VersionDiffPayload | null>(
+    initial ? { in: [], out: [] } : cache.get(version.id) ?? null,
   );
   // Phone only, and it decides which column is on screen rather than which one is
   // drawn twice.
   const [shown, setShown] = useState<"in" | "out">("in");
 
   useEffect(() => {
-    if (initial) return;
+    // A diff already in hand is either the rail's cached copy — read out of the
+    // same map while this panel's initial state was built, which is where a cache
+    // decision belongs — or one this panel already read. Either way there is
+    // nothing to fetch.
+    if (initial || diff !== null) return;
     let live = true;
     // A refusal comes back as two empty lists, which draw as no columns at all —
     // the same rendering as a version that changed nothing, and the honest one:
-    // there is nothing this panel can say about a diff it was not given.
-    getVersionDiff(deckId, version.id, previous.id)
+    // there is nothing this panel can say about a diff it was not given. It is
+    // deliberately NOT filed: a failed read should be retried when the reader
+    // asks again, not remembered as this version's answer.
+    getVersionDiff(deckId, version.id)
       .then((result) => {
+        cache.set(version.id, result);
         if (live) setDiff(result);
       })
       .catch(() => {
@@ -224,7 +250,7 @@ export function VersionDiff({
     return () => {
       live = false;
     };
-  }, [deckId, initial, previous, version.id]);
+  }, [cache, deckId, diff, initial, version.id]);
 
   const inCount = diff?.in.length ?? 0;
   const outCount = diff?.out.length ?? 0;
@@ -372,6 +398,7 @@ export function VersionDiff({
                 headingTone="var(--success)"
                 cards={diff.in}
                 hiddenOnPhone={segmented && shown !== "in"}
+                headingOnPhone={!segmented}
               />
             )}
             {outCount > 0 && (
@@ -380,6 +407,7 @@ export function VersionDiff({
                 headingTone="var(--warning)"
                 cards={diff.out}
                 hiddenOnPhone={segmented && shown !== "out"}
+                headingOnPhone={!segmented}
               />
             )}
           </div>

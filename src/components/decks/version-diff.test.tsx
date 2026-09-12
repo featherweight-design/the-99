@@ -5,15 +5,14 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
 
 const getVersionDiff = vi.fn<
-  (deckId: string, versionId: string, previousId: string | null) => Promise<{
+  (deckId: string, versionId: string) => Promise<{
     in: VersionDiffCard[];
     out: VersionDiffCard[];
   }>
 >(async () => ({ in: [], out: [] }));
 
 vi.mock("../../app/decks/actions", () => ({
-  getVersionDiff: (deckId: string, versionId: string, previousId: string | null) =>
-    getVersionDiff(deckId, versionId, previousId),
+  getVersionDiff: (deckId: string, versionId: string) => getVersionDiff(deckId, versionId),
 }));
 
 const copy = deckVersioningCopy.history;
@@ -58,6 +57,7 @@ function mount(props: Partial<Parameters<typeof VersionDiff>[0]> = {}) {
       version={version()}
       previous={version({ number: 1, manaValue: 3.4, note: null })}
       panelId="panel_1"
+      cache={new Map()}
       {...props}
     />,
   );
@@ -91,12 +91,67 @@ describe("VersionDiff", () => {
   });
 
   // A version's cards are read on open, not with the rail — a ten-version deck
-  // would otherwise pay ten diffs to draw ten closed rows.
-  it("reads the diff on open, against the version before it", async () => {
+  // would otherwise pay ten diffs to draw ten closed rows. The predecessor is not
+  // passed: the server resolves it, so no caller can ask for a mismatched pair.
+  it("reads the diff on open, naming only the version", async () => {
     getVersionDiff.mockResolvedValueOnce({ in: [card()], out: [] });
     mount();
     await screen.findByText("Sol Ring");
-    expect(getVersionDiff).toHaveBeenCalledWith("deck_1", "v_2", "v_1");
+    expect(getVersionDiff).toHaveBeenCalledWith("deck_1", "v_2");
+  });
+
+  // A diff already read this visit is served from the rail's map. Closing a row
+  // unmounts this panel, so without it a reader flipping A → B → A pays twice.
+  it("serves a diff the rail already holds without reading again", async () => {
+    const cache = new Map([["v_2", { in: [card({ name: "Wastes" })], out: [] }]]);
+    mount({ cache });
+    expect(await screen.findByText("Wastes")).toBeInTheDocument();
+    expect(getVersionDiff).not.toHaveBeenCalled();
+  });
+
+  it("files a diff it read into the rail's map", async () => {
+    const cache = new Map<string, { in: VersionDiffCard[]; out: VersionDiffCard[] }>();
+    getVersionDiff.mockResolvedValueOnce({ in: [card()], out: [] });
+    mount({ cache });
+    await screen.findByText("Sol Ring");
+    expect(cache.get("v_2")?.in).toHaveLength(1);
+  });
+
+  // A failed read is not this version's answer, so it is not remembered — the
+  // next open asks again.
+  it("does not file a failed read", async () => {
+    getVersionDiff.mockRejectedValueOnce(new Error("nope"));
+    const cache = new Map<string, { in: VersionDiffCard[]; out: VersionDiffCard[] }>();
+    mount({ cache });
+    await screen.findByText(copy.diffNote);
+    expect(cache.has("v_2")).toBe(false);
+  });
+
+  // The phone reads the direction off the pressed segment, so the column header is
+  // desktop-only — except when there is only one column, which leaves nothing
+  // pressed and no word anywhere saying which way the names went.
+  it("draws the column heading on the phone when there is only one column", async () => {
+    getVersionDiff.mockResolvedValueOnce({ in: [card()], out: [] });
+    const { container } = mount();
+    await screen.findByText("Sol Ring");
+    const heading = [...container.querySelectorAll("h3")].find(
+      (h) => h.textContent === copy.diffIn(1),
+    )!;
+    expect(heading.className).toContain("block");
+    expect(heading.className).not.toContain("hidden");
+  });
+
+  it("keeps the column heading off the phone when both columns are drawn", async () => {
+    getVersionDiff.mockResolvedValueOnce({
+      in: [card()],
+      out: [card({ oracleId: "out", name: "Mind Stone", from: 1, to: 0 })],
+    });
+    const { container } = mount();
+    await screen.findByText("Sol Ring");
+    const heading = [...container.querySelectorAll("h3")].find(
+      (h) => h.textContent === copy.diffIn(1),
+    )!;
+    expect(heading.className).toContain("hidden");
   });
 
   it("shows the one loading mark while the diff is in flight", () => {
