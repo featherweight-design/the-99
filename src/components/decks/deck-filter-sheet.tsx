@@ -1,15 +1,21 @@
 "use client";
 
+
 // The phone filter surface. Same `DeckFilters` in, same whole-new-value out as
 // the desktop column, through the same `toggleIn` — which is what stops the two
 // from ever disagreeing. Neither reads or writes a URL; the view does.
 //
-// The sheet carries the sort as well as the filters, because the phone header
+// The sheet carries the filters. It used to carry the sort too, because the
+// phone header had nowhere to put it; §3.4 retires that group now the chassis
+// gives sort its own slot on both forms.
+//
+// Historic note, kept because it explains the shape: the phone header
 // has nowhere to put it (plan ruling 6). Everything else is the column's
 // vocabulary re-drawn as chips at the 44px touch floor.
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { deckChassisCopy } from "../../lib/copy/filter-chassis";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
   COLOUR_ORDER,
@@ -17,18 +23,26 @@ import {
   STATUS_ORDER,
   type PlayedWindow,
 } from "../../lib/decks/filter";
-import { DECK_SORT_LABELS, DECK_SORT_ORDER, type DeckSort } from "../../lib/decks/sort";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
 import {
-  ColourSwatch,
   PLAYED_LABEL,
   STATUS_COPY_KEY,
   SearchField,
   toggleIn,
-  type FilterChromeProps,
 } from "./deck-filter-column";
+import type { DeckFilters } from "../../lib/decks/filter";
+import { ColourPips } from "../ui/colour-pips";
 
-type DeckFilterSheetProps = FilterChromeProps & {
+/**
+ * Filters only. The sheet carried the sort until §3.4 retired that group — the
+ * chassis gives sort its own slot on both forms — so these props no longer
+ * inherit the sort state nothing in here reads.
+ */
+type DeckFilterSheetProps = {
+  filters: DeckFilters;
+  onChange: (next: DeckFilters) => void;
+  shown: number;
+  total: number;
   open: boolean;
   onDismiss: () => void;
   autoFocusSearch: boolean;
@@ -118,14 +132,30 @@ export function DeckFilterSheet({ open, ...rest }: DeckFilterSheetProps) {
 function SheetBody({
   filters,
   onChange,
-  sort,
-  onSortChange,
   shown,
   total,
   onDismiss,
   autoFocusSearch,
 }: Omit<DeckFilterSheetProps, "open">) {
   const dialog = useRef<HTMLDivElement>(null);
+
+  // The sheet is `aria-modal`, so the chassis's result line sits outside it and
+  // is not a surface assistive tech can be relied on to read. Without a region
+  // in here a filter changed inside the sheet is announced nowhere. Debounced
+  // at the same 300ms as every other count in this codebase, so four taps are
+  // one number — and the chassis stays silent while this is open, the two
+  // handing over on dismissal.
+  const [announcement, setAnnouncement] = useState("");
+  const announced = useRef<number | null>(null);
+  useEffect(() => {
+    if (announced.current === null || announced.current === shown) {
+      announced.current = shown;
+      return;
+    }
+    announced.current = shown;
+    const t = setTimeout(() => setAnnouncement(deckChassisCopy.result(shown, total)), 300);
+    return () => clearTimeout(t);
+  }, [shown, total]);
   // Focus trap, Escape and focus-return, shared with every other dialog here.
   // Escape never restores the filters the reader arrived with: filtering
   // already happened as they ticked, so there is nothing to undo and swiping
@@ -137,27 +167,18 @@ function SheetBody({
   // pressed `Filter decks` is not what they asked for.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: autoFocusSearch ? undefined : dialog });
 
-  const sortChips = useRef<(HTMLButtonElement | null)[]>([]);
-  function stepSort(from: number, e: React.KeyboardEvent) {
-    const dir =
-      e.key === "ArrowRight" || e.key === "ArrowDown"
-        ? 1
-        : e.key === "ArrowLeft" || e.key === "ArrowUp"
-          ? -1
-          : 0;
-    if (dir === 0) return;
-    e.preventDefault();
-    const next = (from + dir + DECK_SORT_ORDER.length) % DECK_SORT_ORDER.length;
-    sortChips.current[next]?.focus();
-    onSortChange(DECK_SORT_ORDER[next]);
-  }
 
   const c = refreshCopy.filters;
 
   return (
     // z-50, not z-40: the phone tab bar is z-40 and paints later, so at z-40 it
     // sits over the sheet's own footer and Clear cannot be clicked at all.
-    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:hidden">
+    // Visible wherever the chassis is compact. This was `sm:hidden`, which is
+    // 640px: between 640 and 999 the compact triggers opened this dialog and
+    // CSS hid it, leaving the filters unreachable across that whole band.
+    // `max-[999px]:flex` rather than a `sm:` utility, because the chassis owns
+    // the breakpoint and Tailwind has no stop at 1000.
+    <div className="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex">
       <div
         aria-hidden="true"
         onClick={onDismiss}
@@ -193,28 +214,19 @@ function SheetBody({
           autoFocus={autoFocusSearch}
         />
 
-        <Group heading={c.sortHeading}>
-          <div role="radiogroup" aria-label={c.sortHeading} className="flex flex-wrap gap-[8px]">
-            {DECK_SORT_ORDER.map((option: DeckSort, i) => (
-              <Chip
-                key={option}
-                role="radio"
-                chipRef={(node) => {
-                  sortChips.current[i] = node;
-                }}
-                label={DECK_SORT_LABELS[option]}
-                on={sort === option}
-                // Roving: the chosen order is the group's one tab stop, so the
-                // arrows move inside the group rather than Tab walking past
-                // three stops. Selection follows focus, matching FacetStrip.
-                tabIndex={sort === option ? 0 : -1}
-                onKeyDown={(e) => stepSort(i, e)}
-                // Radio, not checkbox: clicking the one already on leaves it on,
-                // because a list is always in some order.
-                onToggle={() => onSortChange(option)}
-              />
-            ))}
-          </div>
+
+        <Group heading={c.colourHeading}>
+          {/* The same control the wide form draws. It was `ColourSwatch`, which
+              made the phone a different visual AND a different role — checkbox
+              against the pips' switch — for one filter. Decision 22 also puts
+              the pips first in the sheet. */}
+          <ColourPips
+            form="sheet"
+            value={filters.colours}
+            onToggle={(code) =>
+              onChange({ ...filters, colours: toggleIn(COLOUR_ORDER, filters.colours, code) })
+            }
+          />
         </Group>
 
         <Group heading={c.statusHeading}>
@@ -236,21 +248,6 @@ function SheetBody({
           </div>
         </Group>
 
-        <Group heading={c.colourHeading}>
-          <div className="flex gap-[8px]">
-            {COLOUR_ORDER.map((code) => (
-              <ColourSwatch
-                key={code}
-                code={code}
-                size="sheet"
-                on={filters.colours.includes(code)}
-                onToggle={() =>
-                  onChange({ ...filters, colours: toggleIn(COLOUR_ORDER, filters.colours, code) })
-                }
-              />
-            ))}
-          </div>
-        </Group>
 
         <Group heading={c.lastPlayedHeading}>
           <div className="flex flex-wrap gap-[8px]">
@@ -287,6 +284,9 @@ function SheetBody({
           </button>
         </div>
       </div>
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </span>
     </div>
   );
 }

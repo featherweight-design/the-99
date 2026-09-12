@@ -232,7 +232,7 @@ export function FilterSheet({
             // Search is not in this sheet, so Clear does not reach it: clearing
             // a query the reader cannot see from here would be a control acting
             // outside its own frame.
-            onClick={() => onChange({ ...defaultParams(lane), q: params.q })}
+            onClick={() => onChange({ ...defaultParams(lane), q: params.q, order: params.order })}
             disabled={active === 0}
             className={[
               "font-sans text-[13.5px] font-medium",

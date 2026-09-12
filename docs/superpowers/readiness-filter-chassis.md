@@ -69,7 +69,7 @@ are real and one apparent delta is not:
   (`src/components/ui/use-is-desktop.ts:8`). The chassis switches form at 1000px (decision 18, with
   §7's correction). **At 768–999px the compact chassis would open a desktop popover** — the phone frame with the desktop
   panel inside it. The panel must take its breakpoint from the caller rather than reading its own.
-- **Desktop option rows are `min-h-[40px]`** (`filter-panel.tsx:465`) and the chassis needs
+- **Desktop option rows were `min-h-[40px]`** (`filter-panel.tsx`, the option row's class list) and the chassis needs
   **44px** — `STATES-filter-chassis.md:85-87` specifies the panel's rows, and the handoff's 34px
   figure is the *control* rhythm for triggers and fields, not the rows inside a panel. An earlier
   draft of this section compared the two and called it a rhythm mismatch, which would have let an
@@ -82,7 +82,7 @@ are real and one apparent delta is not:
 ### One composition problem, deferred with its route
 
 `FilterPanel`'s compact branch is itself a fixed `aria-modal` sheet with its own scrim
-(`filter-panel.tsx:879-894`). The chassis phone form is also a sheet. Mounting one inside the other
+(`filter-panel.tsx`, the compact branch's scrim and sheet). The chassis phone form is also a sheet. Mounting one inside the other
 puts two modal dialogs and two scrims on screen, which no focus contract survives.
 
 **This does not arise in PR 1 or PR 2.** `/decks` has no searchable dimension — its five are a
@@ -131,19 +131,24 @@ than a second dialog.
    one thing. Ship 1000 — see §7 for why not 900 — and watch it. Recorded so the first report of a half-width laptop getting the
    phone treatment is recognised as a known trade rather than a bug.
 
-## §4 Dependency — owned by another agent
+## §4 Dependency — resolved, and the blocker was never real
 
-**Set collections' Task 9 must land, and must land with its test rewritten — before the
-`/collection` slice, not before the build.** That route mounts the control the task extracts;
-`/decks` and the commander lanes touch none of the files it does, so they proceed in parallel. The
-plan slices the work by route for exactly this reason. The task requires a verbatim extraction while its test expects
-`getByRole("button")` named `/red/i` carrying `aria-pressed`; `color-pip.tsx:17-21` emits
-`role="switch"` with `aria-checked` and the accessible name `Filter by R`. All three assertions fail
-against the real component.
+**Corrected 2026-09-12.** This section said set collections' Task 9 could not pass as written and
+that the `/collection` slice waited on it. Both halves were wrong.
 
-That plan is not this run's work and is in flight elsewhere. It is recorded here because the
-`/collection` slice cannot start before it, and because the same round supplies a better accessible name —
-`chassisCopy.colour.pipAria` — for whoever rewrites the test.
+Task 9 is built. Its shipped test is
+`src/components/collection/color-filter-row.test.tsx`, and it asserts
+`getAllByRole("switch")`, `{ name: "Filter by R" }` and `toBeChecked()` — the real component's
+contract, from that task's first commit. The failing assertions I quoted (`getByRole("button")`,
+`/red/i`, `aria-pressed`) existed only in the plan document, which its author hit, recognised as
+a contradiction, and wrote around; the doc itself is fixed on `feat/set-collections` at `4bcade9`.
+
+**The error was mine and it is worth naming.** I read the plan's test block and concluded the task
+could not pass without checking whether a test file existed. A plan is a statement of intent; the
+tree is the fact. That is the same failure as citing a document for something it does not say, which
+this audit has now made three times.
+
+**`/collection` is therefore unblocked**, and PR 3 can start whenever the chassis lands.
 
 ## §5 What the handoff got right that is worth naming
 
@@ -185,7 +190,7 @@ audited it.
 | `STATES` §181: the shipped panels share `useDialogA11y`, roving radiogroups and selection-follows-focus | They do not. `filter-panel.tsx` has its own panel and listbox key handling; `rack/select.tsx` has its own focus and menu logic | The "no new pattern" justification is what makes the a11y work look free. It is not free — the shared behaviour has to be written |
 | `STATES` §104 lists only `Set` as searchable | `Printed in` is searchable too, per the canvas | Moot this round — `Printed in` is cut — but it must be settled before that dimension lands |
 | Decision 18 derives the 900px switch from a 887px total | **The stated minimums total 987px**, and the switch moves to **1000px** — see §7 | At 900 the wide form wraps, which is the defect the decision exists to prevent |
-| `STATES` §112 gives the wide panel `role="menu"` | `FilterPanel` renders `role="dialog"` containing a `role="listbox"` of `role="option"` rows (`filter-panel.tsx:546,863-877`) | A `menu` wrapper is invalid around those descendants. The shipped semantics stand; the contract in STATES does not |
+| `STATES` §112 gives the wide panel `role="menu"` | `FilterPanel` renders `role="dialog"` containing a `role="listbox"` of `role="option"` rows (all three in `filter-panel.tsx`; line numbers omitted deliberately — this file is edited by the chassis work and every number in this table drifted once already) | A `menu` wrapper is invalid around those descendants. The shipped semantics stand; the contract in STATES does not |
 | Asset delivery left open — "static assets, a sprite or a hotlink are all viable" | Ruled in finding 3: five static SVGs in the repository | The handoff reopens a decision this audit closed |
 | `Printed in` drawn and specified as this round's new dimension | Cut from the round, on Design's own recommendation | Tracker, plan and this verdict all say cut; the handoff is the only document that still says otherwise |
 
@@ -217,6 +222,5 @@ The two alternatives, recorded so the choice is legible rather than because they
 
 **This never blocked the build or this verdict.** The figure is derived from
 `/collection`'s seven controls; `/decks` has five and `/commanders` four, so PRs 1b and 2 are not at
-risk. `/collection` is PR 3, which waits on set collections' Task 9 regardless. The question needs an
-answer before that PR, not before this one — which is why the verdict stays 🟢 and this section names
+risk. `/collection` is PR 3. The question needs an answer before that PR, not before this one — which is why the verdict stays 🟢 and this section names
 the deadline instead of holding the round.

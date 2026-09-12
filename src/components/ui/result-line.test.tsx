@@ -27,6 +27,40 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
   });
 
+  it("goes quiet when another surface owns the region", () => {
+    // The compact sheet is aria-modal and carries its own region. With both
+    // live a filter change is announced twice, from inside the modal and from
+    // the page behind it.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+    // The visible line still draws — only the announcement stops.
+    expect(screen.getByText("12 of 41 decks")).toBeTruthy();
+  });
+
+  it("speaks a change the sheet had no time to announce", () => {
+    // Dismissed inside the debounce: the sheet's own timer died with its
+    // unmount, so this is the only thing that can say the count.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(100));
+    rerender(<ResultLine line="12 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("12 of 41 decks");
+  });
+
+  it("stays quiet for a change the sheet has already announced", () => {
+    // Dismissed past the debounce: the sheet spoke it, and repeating it here is
+    // the same count twice.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="12 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<ResultLine line="12 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

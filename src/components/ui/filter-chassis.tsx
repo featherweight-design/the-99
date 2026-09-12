@@ -28,6 +28,13 @@ export type FilterChip = {
   key: string;
   /** What the chip reads. `Status · Playing`, `3 colours`. */
   label: string;
+  /**
+   * CSS colours drawn as leading swatches, one per value the label collapsed.
+   * A colour chip reads "3 colours" rather than splitting into three chips, so
+   * without these the reader is told how many are on and never which — the
+   * swatches are the only thing that says so.
+   */
+  dots?: readonly string[];
   onRemove: () => void;
 };
 
@@ -67,6 +74,24 @@ export type FilterChassisProps = {
    * one thing.
    */
   form: "wide" | "compact";
+  /**
+   * Rendered after the three rows, inside the frame. This is the phone sheet's
+   * home: it is an `aria-modal` dialog that belongs to the chassis's own
+   * `Filters` trigger, and mounting it outside the frame would put the dialog
+   * and the control that opens it in two different subtrees.
+   *
+   * Closed, a sheet returns null — never a hidden duplicate of the controls it
+   * replaces, which is what `use-min-width.ts` exists to prevent.
+   */
+  after?: React.ReactNode;
+  /**
+   * Silence the result line's region while another surface owns the reader's
+   * attention. The compact sheet is `aria-modal` and carries its own region, so
+   * with both live a filter change is announced twice — once inside the modal
+   * and once from the page behind it, which some assistive tech reads and some
+   * does not. The line still draws; only the region goes quiet.
+   */
+  silentResult?: boolean;
 };
 
 /**
@@ -92,7 +117,7 @@ const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
-  controls, sort, chips, onClearAll, resultLine, form,
+  controls, sort, chips, onClearAll, resultLine, form, after, silentResult,
 }: FilterChassisProps) {
   return (
     <div
@@ -115,7 +140,7 @@ export function FilterChassis({
       <div className="flex items-center gap-[8px]" data-chassis-row="controls">
         {/* No `overflow-hidden` here, ever. `FilterPanel` puts its desktop
             popover in an absolutely positioned descendant of its own relative
-            root (`filter-panel.tsx:806-874`), so clipping this group hides
+            root — its popover is `absolute` with a computed `left` — so clipping this group hides
             every panel the chassis opens — and it clips focus outlines with
             them. `min-w-0` is what lets the group shrink; the shrinking is
             constrained on the one control that may shrink, not by a clip. */}
@@ -159,6 +184,17 @@ export function FilterChassis({
                 "px-[8px] py-[3px] font-mono text-[11px] leading-[14px] text-[color:var(--fg-body)]",
               ].join(" ")}
             >
+              {chip.dots && chip.dots.length > 0 && (
+                <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
+                  {chip.dots.map((fill, i) => (
+                    <span
+                      key={i}
+                      className="h-[8px] w-[8px] flex-none rounded-full"
+                      style={{ background: fill }}
+                    />
+                  ))}
+                </span>
+              )}
               {chip.label}
               <button
                 type="button"
@@ -177,11 +213,11 @@ export function FilterChassis({
           ))
         )}
 
-        {/* Present and inert, never absent. `rack/chip-line.tsx:74-79` states
-            the reason — the affordance is part of what the row teaches, and a
-            button that comes and goes has to be re-found — and the commander
-            routes migrate onto this frame, so removing it would take away an
-            established way out and change the focusable structure with it. */}
+        {/* Present and inert, never absent. The rule comes from the rack's own
+            `ChipLine`, which this frame replaced: the affordance is part of what
+            the row teaches, and a button that comes and goes has to be re-found.
+            No line reference, because that component is deleted — the rule
+            outlived it, which is the point of moving it here. */}
         <button
           type="button"
           disabled={chips.length === 0}
@@ -203,8 +239,10 @@ export function FilterChassis({
 
       {/* Row 3 — the chassis's only live region. */}
       <div data-chassis-row="result">
-        <ResultLine line={resultLine} />
+        <ResultLine line={resultLine} silent={silentResult} />
       </div>
+
+      {after}
     </div>
   );
 }

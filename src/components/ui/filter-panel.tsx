@@ -60,6 +60,9 @@ export type FilterPanelOption = {
   leadingGlyph?: ReactNode;
 };
 
+/** Desktop option-row minimum height, when the caller does not ask for a taller one. */
+const DESKTOP_ROW_MIN = 40;
+
 /** Desktop popover width, when the caller does not ask for a narrower one. */
 const POPOVER_WIDTH = 340;
 /** Smallest gap the popover keeps between itself and the viewport edge. */
@@ -97,6 +100,8 @@ export function FilterPanel({
   disabled = false,
   disabledAriaLabel,
   widthPx = POPOVER_WIDTH,
+  desktopRowMinPx = DESKTOP_ROW_MIN,
+  compact,
   footerStatus = true,
   selectionMode = "multi",
   showCounts = true,
@@ -126,6 +131,24 @@ export function FilterPanel({
    */
   widthPx?: number;
   /**
+   * Desktop option-row minimum height. 40 is what every collection mount has
+   * always drawn and stays the default; the filter chassis passes 44, which
+   * `STATES-filter-chassis.md:85-87` specifies for a panel opened from it.
+   * A prop rather than a fork — the readiness verdict's §2 ruling is that this
+   * component is parameterised and mounted, never duplicated.
+   */
+  desktopRowMinPx?: number;
+  /**
+   * Force the compact (sheet) form regardless of this component's own
+   * breakpoint. `useIsDesktop()` is 768px and the filter chassis switches at
+   * 1000, so a chassis mount that did not pass this would open a desktop
+   * popover inside the compact frame across the whole 768-999 band.
+   *
+   * Undefined keeps the component's own query, which is what every collection
+   * mount predating the chassis relies on.
+   */
+  compact?: boolean;
+  /**
    * Whether the footer carries the "N of M selected" text. Type ▾ is drawn
    * without it — and must be, since footerTotal counts cards, which would be a
    * lie about a list of types.
@@ -142,7 +165,8 @@ export function FilterPanel({
   /** Writes to the filter bar's single live region. */
   onAnnounce?: (message: string) => void;
 }) {
-  const isDesktop = useIsDesktop();
+  const ownBreakpoint = useIsDesktop();
+  const isDesktop = compact === undefined ? ownBreakpoint : !compact;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
@@ -457,13 +481,17 @@ export function FilterPanel({
         aria-posinset={posInSet}
         aria-setsize={setSize}
         title={option.label}
+        style={isDesktop ? { minHeight: desktopRowMinPx } : undefined}
         onClick={() => toggle(option)}
         className={[
           // items-center per §Option row, at the cost of a wrapped two-line name
           // centring its checkbox instead of aligning it to the first line —
           // deliberate, against misaligning every single-line row by ~4px.
           "flex items-center gap-[12px] md:gap-[11px] px-[16px] md:px-[14px] py-[12px] md:py-[9px]",
-          "min-h-[48px] md:min-h-[40px]",
+          // Phone stays 48 — already past the 44px floor. Desktop's minimum is
+          // the caller's, applied inline because Tailwind cannot compile an
+          // interpolated class and this value is a prop.
+          "min-h-[48px]",
           option.disabled ? "pointer-events-none opacity-[0.42]" : "cursor-pointer",
           // The keyboard-active row never also takes the hover fill (§Keyboard-
           // active: "Hover fill — none, never combined"). The class is withheld

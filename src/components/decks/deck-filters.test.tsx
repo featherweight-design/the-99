@@ -1,38 +1,52 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { EMPTY_FILTERS, STATUS_ORDER } from "../../lib/decks/filter";
-import { DeckFilterColumn } from "./deck-filter-column";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { EMPTY_FILTERS } from "../../lib/decks/filter";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 
+/**
+ * The desktop column is gone — `decks-view.tsx` mounts the shared
+ * `FilterChassis`, which is what returns its 262px to the deck grid. The
+ * behaviours it used to carry did not go with it: the sheet draws the same six
+ * statuses, the same swatches and the same Clear, so these cases follow them
+ * there rather than being deleted with the component.
+ *
+ * The chassis's own wide-form panels are covered in `decks-view.test.tsx`.
+ */
 function props(over = {}) {
   return {
     filters: EMPTY_FILTERS,
     onChange: vi.fn(),
-    sort: "lastPlayed" as const,
-    onSortChange: vi.fn(),
     shown: 6,
     total: 6,
     ...over,
   };
 }
 
-describe("DeckFilterColumn", () => {
+describe("Deck filters — the sheet the chassis opens on the phone", () => {
+  // Two cases left with the column rather than moving to the sheet: it printed
+  // a "1 status on" / "all statuses on" summary above its Clear, and the
+  // handoff's §3.3 retires that line along with the column's two footer
+  // Clears. The chassis states what is on in its chip row instead, where every
+  // dimension reports itself rather than statuses alone.
+
   it("renders all six statuses whether or not any deck has them", () => {
-    render(<DeckFilterColumn {...props()} />);
+    render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
     for (const label of ["Draft", "Building", "Over", "Unresolved", "To buy", "Complete"]) {
       expect(screen.getByRole("checkbox", { name: label })).toBeInTheDocument();
     }
   });
 
   it("shows no per-row counts", () => {
-    render(<DeckFilterColumn {...props()} />);
+    render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
     expect(screen.getByRole("checkbox", { name: "Draft" }).textContent).toBe("Draft");
   });
 
   it("toggles a status on without disturbing the others", () => {
     const onChange = vi.fn();
     render(
-      <DeckFilterColumn
+      <DeckFilterSheet
+        open
+        onDismiss={() => {}} autoFocusSearch={false}
         {...props({ filters: { ...EMPTY_FILTERS, statuses: ["Over"] }, onChange })}
       />,
     );
@@ -45,7 +59,9 @@ describe("DeckFilterColumn", () => {
   it("toggles a status back off", () => {
     const onChange = vi.fn();
     render(
-      <DeckFilterColumn
+      <DeckFilterSheet
+        open
+        onDismiss={() => {}} autoFocusSearch={false}
         {...props({ filters: { ...EMPTY_FILTERS, statuses: ["Draft"] }, onChange })}
       />,
     );
@@ -53,47 +69,34 @@ describe("DeckFilterColumn", () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ statuses: [] }));
   });
 
-  it("summarises what is on, and keeps Clear at every state", () => {
-    const { rerender } = render(<DeckFilterColumn {...props()} />);
-    expect(screen.getByText("all statuses on")).toBeInTheDocument();
-    // Drawn present whether or not anything is on: a control that appears the
-    // moment you tick a box moves the footer under the reader's cursor.
-    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
-
-    rerender(
-      <DeckFilterColumn {...props({ filters: { ...EMPTY_FILTERS, statuses: ["Draft"] } })} />,
-    );
-    expect(screen.getByText("1 status on")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+  // The sheet draws `ColourPips` now, the same control the wide form uses —
+  // a `switch` rather than the old swatch's `checkbox`, so the phone and the
+  // desktop stop disagreeing about what this filter even is.
+  it("gives every colour pip an accessible name", () => {
+    render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
+    expect(screen.getByRole("switch", { name: "White" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Green" })).toBeInTheDocument();
   });
 
-  it("reads all six ticked as all statuses on, not six", () => {
-    render(<DeckFilterColumn {...props({ filters: { ...EMPTY_FILTERS, statuses: [...STATUS_ORDER] } })} />);
-    expect(screen.getByText("all statuses on")).toBeInTheDocument();
-  });
-
-  it("gives every colour swatch an accessible name", () => {
-    render(<DeckFilterColumn {...props()} />);
-    expect(screen.getByRole("checkbox", { name: "White" })).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Green" })).toBeInTheDocument();
-  });
-
-  it("clears every filter but never the sort", () => {
+  // "Clears every filter but never the sort" moved to `decks-view.test.tsx`.
+  // The sheet no longer takes sort state at all, so asserting `onSortChange`
+  // went uncalled here would assert nothing: the prop is not in its contract,
+  // and the real claim is about what the view does to the URL.
+  it("clears every filter it owns", () => {
     const onChange = vi.fn();
-    const onSortChange = vi.fn();
     render(
-      <DeckFilterColumn
+      <DeckFilterSheet
+        open
+        onDismiss={() => {}}
+        autoFocusSearch={false}
         {...props({
           filters: { statuses: ["Draft"], colours: ["R"], played: "never", search: "krenko" },
           onChange,
-          onSortChange,
-          sort: "name",
         })}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(onChange).toHaveBeenCalledWith(EMPTY_FILTERS);
-    expect(onSortChange).not.toHaveBeenCalled();
   });
 });
 
@@ -148,15 +151,10 @@ describe("DeckFilterSheet", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("offers the three sort orders, one of them pressed", () => {
-    render(<DeckFilterSheet {...props()} open onDismiss={vi.fn()} autoFocusSearch={false} />);
-    const group = screen.getByRole("group", { name: "Sort" });
-    expect(within(group).getAllByRole("radio")).toHaveLength(3);
-    expect(within(group).getByRole("radio", { checked: true })).toHaveAccessibleName(
-      "last played",
-    );
-  });
-
+  // The sheet's sort group is retired by §3.4: the chassis gives sort its own
+  // trailing slot on both forms, so the phone no longer reaches it through the
+  // filter sheet and a second copy here would be two controls for one value.
+  // `deck-sort-menu.test.tsx` covers the surviving one.
   it("singularises its dismiss button", () => {
     render(
       <DeckFilterSheet {...props({ shown: 1 })} open onDismiss={vi.fn()} autoFocusSearch={false} />,

@@ -71,16 +71,17 @@ Set collections is being built right now by another agent. Its plan touches
 `collection/rows-view.tsx`. It touches **none** of `deck-filter-column.tsx`,
 `deck-filter-sheet.tsx`, `decks-view.tsx` or `rack/*`.
 
-So PR 1 and PR 2 have no file overlap with that build and start immediately. PR 3 waits for its
-Task 9, which also needs its test rewritten before it can pass — handed off separately, and not
-this run's work.
+So PR 1 and PR 2 have no file overlap with that build and start immediately. **PR 3 waited for that
+build's Task 9 and no longer does** — the task is built and its shipped test always matched the real
+component; only its plan document carried the broken assertions, and its author corrected them. See
+the PR 3 section below.
 
 | PR | Scope | Blocked by |
 |---|---|---|
 | 1a | Pip assets, `ColourPips`, `FilterChassis`, `ResultLine`'s move | nothing |
-| 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a |
-| 2 | `/commanders` and `/discover` | 1b |
-| 3 | `/collection` | 2, and set collections' Task 9 |
+| 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a ✅ |
+| 2 | `/commanders` and `/discover` | 1b ✅ — shipped in the same PR |
+| 3 | `/collection` | 2 — **not** Task 9, which is built; see below |
 
 **1a and 1b were one PR in the first draft of this plan.** They are split because the primitives
 are self-contained and fully tested while the `/decks` mount is a real refactor of `decks-view.tsx`
@@ -192,23 +193,60 @@ option set differs by lane; both lanes render one chassis.
 
 ## PR 3 — `/collection`
 
-Blocked on set collections' Task 9, which must land with its test rewritten.
+**Unblocked.** An earlier revision of this plan said Task 9 had to land first and had to be rewritten.
+It is built, and its test never carried the assertions this plan quoted — those were in its own plan
+document, which its author corrected. Nothing is waiting.
 
-- `filter-bar.tsx`'s five `FilterPanel` mounts move into chassis slots.
-- The `COLOR` caption goes (decision 17) — it existed to explain five abstract squares, and the pips
-  explain themselves.
+### What the extraction gives PR 3
+
+```
+// src/components/collection/color-filter-row.tsx
+export function ColorFilterRow({
+  selected,   // string[]
+  onToggle,   // (color: string) => void
+  className = "hidden md:flex",   // visibility only
+})
+```
+
+Verbatim from `filter-bar.tsx` — same classes, same tokens, same `ColorPip` — and mounted there
+already. **It takes no surface flag and must not grow one**, which is the same rule this chassis
+carries for `ColourPips`.
+
+### Two changes to `/collection` that landed with set collections
+
+Both are in `filter-bar.tsx`'s and `rows-view.tsx`'s current shape and will be there when this PR
+starts. Neither is negotiable from this side.
+
+1. **`FilterBar` takes a required `hasCollection: boolean`.** It drives the `By set` entry pill, and
+   it comes from the page's `stats.totalCards > 0` rather than from `cards` — deliberately, because
+   a collection of unmatched rows would otherwise read as no collection at all.
+2. **`rows-view.tsx` changed shape (§1b).** The identity pips moved out of the leading slot into a
+   76/90px cost track, and the phone grid template went from `38px 1fr auto` to
+   `38px 1fr 76px auto`. `BrowseCard` gained `cmc`.
+
+### The accessible-name ruling this PR carries
+
+`ColorFilterRow` names its pips `Filter by R`. `ColourPips` names them `Red`. When `/collection`
+mounts the chassis pip, **the chassis name wins** and that test takes a one-line update.
+
+This is the chassis's call rather than set collections', which is why that build correctly left it
+alone: the name belongs to a control four routes share, and changing it inside one route's PR would
+have moved a contract the other three read. The reasoning is in the readiness verdict's §5b — `R`
+is a letter rather than a colour, and `role="switch"` already announces the state, so neither the
+hue code nor a `, on` suffix earns its place in the name.
+
+### The work itself
+
+- `filter-bar.tsx`'s five `FilterPanel` mounts move into chassis slots, at `desktopRowMinPx={44}`.
+- The `COLOR` caption goes (decision 17) — it existed to explain five abstract squares.
 - The view toggle moves to the result line's trailing edge (decision 21).
-- The compact form is the route that conforms least today and is drawn in full at §3b.
-- The extracted `color-filter-row.tsx` is replaced by `ColourPips`. **Coordinate before starting** —
-  that file is the other agent's output and the set pages mount it too, so this is the one place the
-  two rounds meet.
-
-**The set pages inherit the new pip.** Brief §5 and readiness §2: there is one colour control and
-the set pages mount it. The new pip sits on `--surface-sunken` there, which no audit has measured —
-readiness finding 1 requires a fresh six-theme contrast check on that ground as part of this PR, not
-an assumption that the four routes' figures carry over.
-
----
+- `ColorFilterRow` is replaced by `ColourPips`. **The set pages mount it too**, so the new pip
+  reaches them: readiness finding 1 requires a fresh six-theme contrast check on `--surface-sunken`,
+  which no audit has measured, rather than assuming the four routes' figures carry over.
+- `bodyOneFix` needs the per-filter count query `/collection` does not have (readiness finding 4).
+- **The composition problem lands here**: `FilterPanel`'s compact branch is its own `aria-modal`
+  sheet, and `Set ▾` is the searchable dimension that needs it. Solve it as a nested list rather
+  than a second dialog.
 
 ## Open, and deliberately not closed here
 
@@ -226,3 +264,46 @@ an assumption that the four routes' figures carry over.
   roving radiogroups and selection-follows-focus. They do not: `filter-panel.tsx` has its own panel
   and listbox key handling and `rack/select.tsx` has its own focus and menu logic. Budget for the
   shared behaviour as new work in whichever PR first needs it.
+
+
+---
+
+## What 1b actually did, where it departed from this plan
+
+- **Some of the column's siblings stayed; `ColourSwatch` did not.** `DeckFilterColumn` is deleted,
+  and so is `ColourSwatch` — the sheet draws `ColourPips` too, so a second colour control with a
+  second ARIA role had no consumer left. `SearchField`, `PLAYED_LABEL`, `STATUS_COPY_KEY` and
+  `toggleIn` are genuinely shared with the sheet and remain in `deck-filter-column.tsx`, alongside a
+  header saying why the file outlived its namesake.
+- **The chip loses its lowercase.** `/decks`' own chip row lowercased every label
+  (`refreshCopy.filters.chipRemoveAria`). The shared chip cannot: the same control carries
+  `/collection`'s set names, and "duskmourn" is wrong in a way "draft" never was.
+- **Two tests left with the column.** It printed a `1 status on` / `all statuses on` summary above
+  its Clear, and §3.3 retires that line with the column's two footer Clears. The chip row states
+  what is on instead, for every dimension rather than statuses alone.
+- **`deck-filters.test.tsx` follows the sheet.** The behaviours it covered — six statuses whatever
+  the decks hold, toggling one without disturbing the others, named colour swatches, clear-but-never-
+  the-sort — all still exist there, so the cases moved rather than being deleted with the component.
+- **Counts are filter-aware.** A status row's count is what survives the *other* active filters,
+  which is what makes a zero meaningful: it means "nothing given the colours already on", not
+  "no deck has ever had this status".
+
+
+## PR 2 landed with 1b rather than after it
+
+The rack turned out to be the chassis already — a frame wrapping a control row,
+a chip line, a result line and a sheet — so migrating it was mostly deletion,
+and holding it back would have left two frames drawing the same three rows for
+no reason. Both routes ship in the same PR.
+
+What the migration removed rather than rewrote: `ChipLine` and the rack's
+`ResultLine` wrapper are gone. `chipsFor` and `resultSentence` survive them,
+because those are the lane-shaped halves the chassis cannot derive — which
+chips exist and what each unsets, and how a lane words its own count. Their
+tests follow them, and the behaviours that moved to the chassis are covered
+once in `filter-chassis.test.tsx` and `ui/result-line.test.tsx` rather than
+twice.
+
+Decision 16 holds: the match modifier is untouched, still inside
+`ColourControl`, which is why that component stays rather than being replaced
+by `ColourPips` on these two lanes. Availability remains owned-lane only.

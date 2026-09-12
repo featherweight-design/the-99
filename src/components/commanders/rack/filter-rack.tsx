@@ -19,19 +19,21 @@
 
 import { useState } from "react";
 import {
+  defaultParams,
   activeControlCount,
   type Lane,
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
 import { filterCopy } from "../../../lib/copy/lanes";
-import { useIsWide } from "../../ui/use-is-wide";
+import { useMinWidth } from "../../ui/use-min-width";
 import { AvailabilityControl } from "./availability-control";
-import { ChipLine } from "./chip-line";
+import { chipsFor } from "./chip-line";
+import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../../ui/filter-chassis";
 import { ColourControl } from "./colour-control";
 import { FilterSheet } from "./filter-sheet";
 import { OrderControl } from "./order-control";
 import { ORDER_OPTIONS } from "./order-options";
-import { ResultLine } from "./result-line";
+import { resultSentence } from "./result-line";
 import { SearchControl } from "./search-control";
 
 export function FilterRack({
@@ -56,8 +58,30 @@ export function FilterRack({
       a list already in memory. */
   orderPending?: boolean;
 }) {
-  const wide = useIsWide();
+  // The chassis's breakpoint, not this file's own: `useIsWide` is 1024 and the
+  // chassis switches at 1000, which would leave these two lanes compact from
+  // 1000-1023 while `/decks` was already wide — a route-specific breakpoint,
+  // which is the thing one frame exists to stop.
+  const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Same reason as `decks-view.tsx`: unmounting the sheet at the breakpoint
+  // does not close it, so crossing back would remount an open modal. Adjusted
+  // during render rather than in an effect, which this repo's lint rejects.
+  // `FilterSheet` focuses its own dialog and has no focus-return cleanup, so
+  // closing it at the breakpoint removes the focused element and focus falls to
+  // `<body>`. The wide form's search field takes it, exactly as `/decks` does.
+  const [handOffFocus, setHandOffFocus] = useState(false);
+  const [wasWide, setWasWide] = useState(wide);
+  if (wasWide !== wide) {
+    setWasWide(wide);
+    if (wide && sheetOpen) {
+      setSheetOpen(false);
+      setHandOffFocus(true);
+    } else if (!wide && handOffFocus) {
+      setHandOffFocus(false);
+    }
+  }
   const orders = ORDER_OPTIONS[lane];
 
   // The badge is `activeControlCount` and nothing else — not the chip count,
@@ -69,10 +93,18 @@ export function FilterRack({
       value={params.q}
       onChange={(q) => onChange({ ...params, q })}
       wide={wide}
+      autoFocus={handOffFocus}
     />
   );
+  // Keyed on the form so both popover controls get fresh state across the
+  // breakpoint. `RackSelect` holds its own `open`, and the wide menu and the
+  // compact radio group are two branches of it: without this, a desktop menu
+  // left open vanishes on the way to compact and reappears unprompted on the
+  // way back — the same stale-open bug the sheet had, in a control that has no
+  // unmount to hide it.
   const order = (
     <OrderControl
+      key={wide ? "wide" : "compact"}
       value={params.order}
       options={orders}
       onChange={(next) => onChange({ ...params, order: next })}
@@ -88,14 +120,63 @@ export function FilterRack({
     />
   );
 
+  // `chipsFor` already knows every dimension and how to unset one; the chassis
+  // needs only a label and a callback, so this is a shape change rather than a
+  // second source of truth about what is on.
+  const chassisChips: FilterChip[] = chipsFor(params, lane).map((chip) => ({
+    key: chip.key,
+    label: chip.label,
+    // The colour chip collapses its values to a count, so the swatches are the
+    // only thing that says which hues are lit. Dropping them made "2 colours"
+    // mean two unnamed colours.
+    dots: chip.dots,
+    onRemove: () => onChange({ ...params, ...chip.next }),
+  }));
+
   return (
-    <div className="flex flex-col gap-[11px] border-0 border-b border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] pt-[12px] pb-[10px] lg:px-[22px] lg:pt-[14px] lg:pb-[12px]">
-      {wide ? (
+    <FilterChassis
+      form={wide ? "wide" : "compact"}
+      chips={chassisChips}
+      onClearAll={() =>
+        // `defaultParams` resets the order too, and this control's accessible
+        // name promises the sort is unchanged. Order lives in the chassis's
+        // own slot now, so clearing a filter must not move it — on discover it
+        // would also fire a fresh request for a ranking nobody asked for.
+        onChange({ ...defaultParams(lane), order: params.order })
+      }
+      resultLine={`${resultSentence(shown, total, lane)}${
+        excludedByExactly === null
+          ? ""
+          : ` — ${filterCopy.match.excludedAside(excludedByExactly)}`
+      }`}
+      // Compact's persistent row is `search · sort · Filters` (STATES §156), so
+      // the trigger joins the trailing cluster rather than sitting in the
+      // controls ahead of it. Wide keeps sort alone past the hairline, where
+      // the five filter controls are all inline.
+      // The sheet is aria-modal and carries its own region, so the chassis's
+      // stays quiet while it is open rather than announcing the same count from
+      // behind the modal.
+      silentResult={!wide && sheetOpen}
+      sort={
+        wide ? (
+          order
+        ) : (
+          // The slot wrapper spaces the leading group, the hairline and this
+          // slot — not the controls inside it, so the pair needs its own gap or
+          // the trigger sits flush against the order glyph.
+          <div className="flex items-center gap-[8px]">
+            {order}
+            <FiltersTrigger badge={active} onClick={() => setSheetOpen(true)} expanded={sheetOpen} />
+          </div>
+        )
+      }
+      controls={
+        wide ? (
         // Leading-edge reading order (readiness decision 2): the controls run
         // left to right in the order a reader would reach for them, and each
         // lane's own control sits where its question is asked. Frame `I1`'s
         // trailing arrangement is deliberately not built.
-        <div className="flex flex-wrap items-center gap-[14px]">
+        <>
           {search}
           <ColourControl
             colors={params.colors}
@@ -108,44 +189,24 @@ export function FilterRack({
               nothing here — not a greyed stand-in. */}
           {lane === "owned" && (
             <AvailabilityControl
+              key={wide ? "wide" : "compact"}
               value={params.avail}
               onChange={(avail) => onChange({ ...params, avail })}
               wide
             />
           )}
-          {/* Order trails on both lanes, and stays put on discover even though
-              two of its options now decide what the lane is ranked on: one
-              shared control in two places by lane would have to be re-found on
-              every lane flip. */}
-          <div className="ml-auto">{order}</div>
-        </div>
+        </>
       ) : (
         // The persistent row: search · order · `Filters`, all 44px. Everything
         // else is in the sheet, which is why search is here and not there — and
         // why the badge cannot count it.
-        <div className="flex items-center gap-[8px]">
-          <div className="min-w-0 flex-1">{search}</div>
-          {order}
-          <FiltersTrigger
-            badge={active}
-            onClick={() => setSheetOpen(true)}
-            expanded={sheetOpen}
-          />
-        </div>
-      )}
-
-      <ChipLine params={params} lane={lane} onChange={onChange} wide={wide} />
-
-      <ResultLine
-        shown={shown}
-        total={total}
-        lane={lane}
-        excludedByExactly={excludedByExactly}
-      />
-
-      {/* Closed, this returns null: the sheet is never a hidden duplicate of
-          the controls it replaces. */}
-      {!wide && (
+        <div className="min-w-0 flex-auto">{search}</div>
+      )
+      }
+      after={
+        /* Closed, this returns null: the sheet is never a hidden duplicate of
+           the controls it replaces. */
+        !wide && (
         <FilterSheet
           open={sheetOpen}
           onOpenChange={setSheetOpen}
@@ -155,8 +216,9 @@ export function FilterRack({
           shown={shown}
           total={total}
         />
-      )}
-    </div>
+      )
+      }
+    />
   );
 }
 

@@ -16,9 +16,8 @@
 // only the message waits, so a reader typing four letters hears one count
 // rather than four. `filter-panel.tsx` debounces its own count the same way.
 
-import { ResultLine as SharedResultLine } from "../../ui/result-line";
 import type { Lane } from "../../../lib/commanders/lane-params";
-import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
+import { commandersCopy, discoverCopy } from "../../../lib/copy/lanes";
 
 /** The sentence the rack and the sheet header both print. The sheet draws it
     silently — this lane has one live region and it is the result line. */
@@ -27,28 +26,8 @@ export function resultSentence(shown: number, total: number, lane: Lane): string
   return shown === total ? copy.rest(total) : copy.filtered(shown, total);
 }
 
-// The announce behaviour now lives in `ui/result-line.tsx`, which the filter
-// chassis mounts. This file keeps the lane-shaped wrapper — `resultSentence`
-// and the `Exactly` aside both read lane copy — and delegates the rest, so
-// there is one debounce and one live region in the codebase rather than two
-// that can drift. The rack is retired into the chassis in a later PR; until
-// then both callers share this implementation.
-
-export function ResultLine({
-  shown,
-  total,
-  lane,
-  excludedByExactly,
-}: {
-  shown: number;
-  total: number;
-  lane: Lane;
-  /** Null unless `Exactly` is active AND it costs rows `Any` would have shown. */
-  excludedByExactly: number | null;
-}) {
-  const aside =
-    excludedByExactly === null
-      ? ""
-      : ` — ${filterCopy.match.excludedAside(excludedByExactly)}`;
-  return <SharedResultLine line={`${resultSentence(shown, total, lane)}${aside}`} />;
-}
+// What survives of the rack's result line: the sentence, which reads lane copy
+// and is the one thing the chassis cannot derive for itself. The announce
+// behaviour and the live region live in `ui/result-line.tsx`, which the chassis
+// mounts; the lane-shaped wrapper that delegated to it is gone now that the
+// rack is a chassis mount and composes the sentence itself.

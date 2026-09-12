@@ -1,69 +1,36 @@
-import { act, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { ResultLine } from "./result-line";
+import { describe, expect, it } from "vitest";
+import { resultSentence } from "./result-line";
+import { filterCopy } from "../../../lib/copy/lanes";
 
-describe("ResultLine", () => {
+// The component these cases used to render is gone: the rack is a
+// `FilterChassis` mount now, and the chassis draws `ui/result-line.tsx`.
+// The live region, the atomic announcement and the 300ms debounce are covered
+// there, once, in `src/components/ui/result-line.test.tsx`.
+//
+// What stayed here is the sentence, which is the half the chassis cannot
+// derive: it reads lane copy, and the two lanes word the same count
+// differently.
+describe("resultSentence", () => {
   it("states the lane at rest rather than printing a ratio", () => {
-    render(<ResultLine shown={148} total={148} lane="owned" excludedByExactly={null} />);
-    expect(screen.getByText("148 commanders you own and haven't built")).toBeInTheDocument();
+    expect(resultSentence(148, 148, "owned")).toBe("148 commanders you own and haven't built");
   });
 
   it("never prints a denominator equal to its numerator", () => {
-    render(<ResultLine shown={3301} total={3301} lane="discover" excludedByExactly={null} />);
-    expect(screen.queryByText(/3,301 of 3,301/)).not.toBeInTheDocument();
+    expect(resultSentence(3301, 3301, "discover")).not.toMatch(/3,301 of 3,301/);
   });
 
   it("prints the ratio once something is filtered", () => {
-    render(<ResultLine shown={4} total={148} lane="owned" excludedByExactly={null} />);
-    expect(screen.getByText("4 of 148 commanders match")).toBeInTheDocument();
+    expect(resultSentence(4, 148, "owned")).toBe("4 of 148 commanders match");
   });
 
-  // The plan's version of this assertion had no `selector`. A function matcher
-  // reading `el.textContent` matches every ancestor too — `<body>` and the
-  // render container hold the same text — so `getByText` threw on three
-  // matches however the component was written. Scoping the query to the drawn
-  // paragraph is the assertion the plan meant: one element carries the whole
-  // sentence, aside included.
-  it("appends the Exactly aside to the same line, not a second one", () => {
-    render(<ResultLine shown={2} total={148} lane="owned" excludedByExactly={6} />);
-    expect(
-      screen.getByText(
-        (_, el) =>
-          el?.textContent === "2 of 148 commanders match — Exactly excludes 6 that Any would show",
-        { selector: "p" },
-      ),
-    ).toBeInTheDocument();
+  it("words the two lanes differently at rest", () => {
+    expect(resultSentence(9, 9, "owned")).not.toBe(resultSentence(9, 9, "discover"));
   });
 
-  it("is the only live region on the lane", () => {
-    const { container } = render(
-      <ResultLine shown={4} total={148} lane="owned" excludedByExactly={null} />,
-    );
-    expect(container.querySelectorAll("[aria-live]")).toHaveLength(1);
-  });
-
-  // Filtering is immediate and only the message waits: a reader typing four
-  // letters hears the count once, not once per keystroke.
-  it("draws a new count at once but waits 300ms to announce it", () => {
-    vi.useFakeTimers();
-    try {
-      const { rerender, container } = render(
-        <ResultLine shown={148} total={148} lane="owned" excludedByExactly={null} />,
-      );
-      const live = () => container.querySelector("[aria-live]")?.textContent;
-      expect(live()).toBe("");
-
-      rerender(<ResultLine shown={9} total={148} lane="owned" excludedByExactly={null} />);
-      expect(container.querySelector("p")?.textContent).toBe("9 of 148 commanders match");
-      expect(live()).toBe("");
-
-      rerender(<ResultLine shown={4} total={148} lane="owned" excludedByExactly={null} />);
-      act(() => {
-        vi.advanceTimersByTime(300);
-      });
-      expect(live()).toBe("4 of 148 commanders match");
-    } finally {
-      vi.useRealTimers();
-    }
+  // The aside is appended to this sentence by the caller rather than opening a
+  // second line — a second line would move the list under the reader's eye.
+  it("composes with the Exactly aside on one line", () => {
+    const line = `${resultSentence(2, 148, "owned")} — ${filterCopy.match.excludedAside(6)}`;
+    expect(line).toBe("2 of 148 commanders match — Exactly excludes 6 that Any would show");
   });
 });

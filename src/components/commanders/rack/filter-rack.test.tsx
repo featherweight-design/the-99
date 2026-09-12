@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultParams, type Lane, type LaneParams } from "@/lib/commanders/lane-params";
 import { FilterRack } from "./filter-rack";
+import { filterCopy } from "@/lib/copy/lanes";
 
 function stubWidth(wide: boolean) {
   vi.stubGlobal(
@@ -20,6 +21,7 @@ function renderRack(
   shown = 148,
   total = 148,
   orderPending = false,
+  excludedByExactly: number | null = null,
 ) {
   return render(
     <FilterRack
@@ -28,7 +30,7 @@ function renderRack(
       onChange={() => {}}
       shown={shown}
       total={total}
-      excludedByExactly={null}
+      excludedByExactly={excludedByExactly}
       orderPending={orderPending}
     />,
   );
@@ -37,6 +39,49 @@ function renderRack(
 afterEach(() => vi.unstubAllGlobals());
 
 describe("FilterRack", () => {
+  it("preserves a non-default ranking when the sheet's own Clear is pressed", () => {
+    // Forced compact and actually opened, because the first version of this
+    // test guarded on `queryByRole` and could pass without ever reaching the
+    // sheet — in wide it matched the chassis's Clear instead, and in compact it
+    // matched nothing at all.
+    stubWidth(false);
+    const seen: LaneParams[] = [];
+    render(
+      <FilterRack
+        params={{ ...defaultParams("owned"), order: "name", colors: ["r"] }}
+        lane="owned"
+        onChange={(next) => seen.push(next)}
+        shown={4}
+        total={148}
+        excludedByExactly={null}
+        orderPending={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: filterCopy.sheet.trigger }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Clear" }));
+    expect(seen.length).toBeGreaterThan(0);
+    for (const next of seen) expect(next.order).toBe("name");
+  });
+  it("passes the Exactly aside through to the chassis result line", () => {
+    const { container } = renderRack(
+      "owned",
+      { ...defaultParams("owned"), colors: ["u", "b"], match: "exactly" },
+      2,
+      148,
+      false,
+      6,
+    );
+    const result = container.querySelector("[data-chassis-row='result']");
+    expect(result?.textContent).toContain("2 of 148 commanders match");
+    expect(result?.textContent).toContain("Exactly excludes 6 that Any would show");
+  });
+
+  it("draws no aside when nothing is excluded", () => {
+    const { container } = renderRack("owned");
+    expect(container.querySelector("[data-chassis-row='result']")?.textContent)
+      .not.toContain("Exactly excludes");
+  });
+
   // The two rankings are order values now, not a control of their own, so
   // discover's rack carries no second single-select beside order.
   it("opens the discover rack on the fit ranking, as an order", () => {

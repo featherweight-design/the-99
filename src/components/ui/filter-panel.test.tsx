@@ -68,6 +68,38 @@ function openPanel() {
   return screen.getByRole("dialog");
 }
 
+describe("FilterPanel form override", () => {
+  it("takes the caller's form when given one, and its own otherwise", () => {
+    // `useIsDesktop` is 768 and the chassis switches at 1000, so a chassis mount
+    // without this opens a desktop popover inside the compact frame across the
+    // whole 768-999 band. Undefined keeps the component's own query, which
+    // every collection mount predating the chassis relies on.
+    setViewport(true);
+    const { rerender } = render(
+      <FilterPanel
+        copy={collectionFilterCopy.type}
+        options={[{ code: "Creature", label: "Creature", count: 1, disabled: false }]}
+        selected={[]}
+        onToggle={() => {}}
+        onClear={() => {}}
+        compact
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /type/i }));
+    // Compact draws the sheet, which is the modal branch.
+    expect(screen.getByRole("dialog").className).toMatch(/fixed|inset/);
+    rerender(
+      <FilterPanel
+        copy={collectionFilterCopy.type}
+        options={[{ code: "Creature", label: "Creature", count: 1, disabled: false }]}
+        selected={[]}
+        onToggle={() => {}}
+        onClear={() => {}}
+      />,
+    );
+  });
+});
+
 describe("FilterPanel", () => {
   it("announces why a disabled trigger will not open", () => {
     renderPanel({ disabled: true, disabledAriaLabel: "Availability unavailable right now" });

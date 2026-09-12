@@ -7,6 +7,8 @@
 // equivalent — neither route captioned its colour control at all.
 
 import { filterCopy } from "./lanes";
+import { refreshCopy } from "./refresh";
+import type { FilterPanelCopy } from "./collection";
 
 export const chassisCopy = {
   chips: {
@@ -58,6 +60,68 @@ export const chassisCopy = {
      */
     names: filterCopy.colour.names,
   },
+} as const;
+
+/**
+ * `/decks`' two panel dimensions. Both are `FilterPanel` mounts, so both owe the
+ * full `FilterPanelCopy` contract — the panel is mounted and parameterised, never
+ * forked, which is the readiness verdict's §2 ruling.
+ *
+ * Every string that `refreshCopy` already owns is read from there rather than
+ * restated: `/decks` had these words before it had a chassis, and two
+ * definitions of "Status" would be two things to keep in step.
+ */
+const deckPanel = (
+  dimension: string,
+  countNoun: (n: number) => string,
+): FilterPanelCopy => ({
+  triggerLabel: dimension,
+  triggerOne: (name) => `${dimension} · ${name}`,
+  triggerAriaCollapsed: `${dimension} filter`,
+  triggerAriaWithSelection: (n) => `${dimension} filter, ${n} on`,
+
+  panelAriaLabel: `${dimension} options`,
+  sheetTitle: dimension,
+  // Neither dimension is searchable: status has six values and last-played two,
+  // which is a list you read rather than one you hunt through.
+  searchPlaceholder: "",
+  searchAriaLabel: "",
+  clearSearch: "",
+
+  groupDefault: dimension,
+  groupSelected: (n) => `${n} on`,
+  groupMatches: (n) => countNoun(n),
+
+  optionAria: (name, count) => `${name}, ${countNoun(count)}`,
+  optionAriaUnavailable: (name) => `${name}, no decks`,
+
+  // `FilterPanel` formats the count before calling this, so `total` arrives as
+  // "1,000" and `Number(total)` would be NaN — a player with four figures of
+  // decks would hear "NaN decks". The string is used as given; only the
+  // singular needs a case.
+  footerTotal: (total) => `${total} ${total === "1" ? "deck" : "decks"}`,
+  footerSelected: (n, total) => `${n} of ${total} on`,
+  clear: refreshCopy.filters.clear,
+  done: "Done",
+  closeLabel: `Close ${dimension.toLowerCase()} filter`,
+
+  emptyTitle: "Nothing here",
+  emptyBody: (query) => ({ before: "No ", query, after: " to show" }),
+
+  announceMatches: (n) => countNoun(n),
+  announceAdded: (name, n, shown, total) => `${name} on. ${shown} of ${total} decks.`,
+  announceRemoved: (name, n, shown, total) => `${name} off. ${shown} of ${total} decks.`,
+  announceCleared: (total) => `Filters cleared. ${total} decks.`,
+});
+
+const deckCount = (n: number) => `${n} ${n === 1 ? "deck" : "decks"}`;
+
+export const deckChassisCopy = {
+  status: deckPanel(refreshCopy.filters.statusHeading, deckCount),
+  played: deckPanel(refreshCopy.filters.lastPlayedHeading, deckCount),
+  /** Row 3. The count the header used to print, now the chassis's result line. */
+  result: (shown: number, total: number) =>
+    shown === total ? deckCount(total) : `${shown} of ${deckCount(total)} match`,
 } as const;
 
 /**

@@ -1,7 +1,13 @@
 "use client";
 
-// The desktop `Sort · last played` trigger and its menu. Phone has no sort
-// trigger at all — the sheet carries the order there (table §Ambiguities 2).
+// The `Sort · last played` trigger and its menu, at every width.
+//
+// The phone used to have no sort trigger and reached the order through the
+// filter sheet (table §Ambiguities 2). The chassis gives sort its own trailing
+// slot past a hairline on both forms (decision 11), so the sheet's sort group
+// is retired and this is the one control for the value — which is why the
+// trigger has to clear 44px on the compact form rather than staying at the
+// desktop's 32.
 //
 // Not `FilterPanel`, which is the collection bar's control: its trigger is a
 // 44px pill with a chevron and its own type scale, and every one of those is a
@@ -77,8 +83,11 @@ export function DeckSortMenu({
     move(to);
   }
 
+  // Visible at every width: the chassis gives sort its own trailing slot past a
+  // hairline on both forms (decision 11), so the phone no longer reaches it
+  // through the filter sheet.
   return (
-    <div ref={root} className="relative hidden sm:block">
+    <div ref={root} className="relative">
       <button
         ref={trigger}
         type="button"
@@ -86,9 +95,23 @@ export function DeckSortMenu({
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] py-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)]"
+        // 44px on the compact form, 32 on the wide one, switching at the
+        // CHASSIS breakpoint rather than Tailwind's `sm`. `sm:` is 640 and the
+        // chassis is compact to 999, so an `sm:h-[32px]` would drop the target
+        // through the floor across the whole 640-999 band — where this is the
+        // only route to the sort.
+        // Named for assistive tech at every width; the words are drawn only
+        // where they fit. At 320px the compact row is search, Filters and this
+        // — three controls that cannot also carry "Sort · last played" without
+        // wrapping, which decision 18 forbids outright — so compact draws the
+        // glyph alone in a 44px square and wide draws the full label at 32px.
+        aria-label={refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+        className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] min-[1000px]:h-[32px] min-[1000px]:w-auto min-[1000px]:px-[14px]"
       >
-        {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+        <span aria-hidden className="min-[1000px]:hidden">⇅</span>
+        <span aria-hidden className="hidden min-[1000px]:inline">
+          {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+        </span>
       </button>
 
       {open && (

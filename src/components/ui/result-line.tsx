@@ -21,20 +21,60 @@ import { useEffect, useRef, useState } from "react";
 
 const ANNOUNCE_DELAY_MS = 300;
 
-export function ResultLine({ line }: { line: string }) {
+export function ResultLine({
+  line,
+  silent,
+}: {
+  line: string;
+  /**
+   * Stop announcing while another surface owns the region. The compact sheet is
+   * `aria-modal` and carries its own, so with both live a filter change is
+   * announced twice — once inside the modal and once from the page behind it,
+   * which some assistive tech reads and some does not. The line still draws;
+   * only the region goes quiet.
+   */
+  silent?: boolean;
+}) {
   const [announcement, setAnnouncement] = useState("");
   // What was last announced. Null until the line first changes, which is what
   // keeps the chassis from reading its own count out on arrival.
   const announced = useRef<string | null>(null);
+  // When the current silence began, or null if not silent.
+  const silentSince = useRef<number | null>(null);
   useEffect(() => {
     if (announced.current === null || announced.current === line) {
+      announced.current = line;
+      return;
+    }
+    // Silence is a handover, not a mute: while the sheet is open it owns the
+    // region and announces the same count on the same 300ms debounce. Two
+    // failures sit either side of that.
+    //
+    // Stamping before the silent return loses the announcement entirely when
+    // the reader dismisses the sheet inside 300ms — the sheet's timer dies with
+    // its unmount and the line already looks spoken. Never stamping speaks it
+    // twice when they dismiss after 300ms, because the sheet said it and then
+    // this does too.
+    //
+    // The two cases are separated by how long the silence lasted, which is the
+    // one thing this component can measure: shorter than the debounce and the
+    // sheet cannot have spoken, so this does.
+    if (silent) {
+      if (silentSince.current === null) silentSince.current = performance.now();
+      return;
+    }
+    const silentFor =
+      silentSince.current === null ? null : performance.now() - silentSince.current;
+    silentSince.current = null;
+    if (silentFor !== null && silentFor >= ANNOUNCE_DELAY_MS) {
+      // The sheet already said it. Record it as spoken and stay quiet.
       announced.current = line;
       return;
     }
     announced.current = line;
     const t = setTimeout(() => setAnnouncement(line), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
-  }, [line]);
+  }, [line, silent]);
 
   return (
     <>
