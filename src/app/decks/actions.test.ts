@@ -921,6 +921,23 @@ describe("commitDeckVersion", () => {
     expect(commitVersion).not.toHaveBeenCalled();
   });
 
+  // A Server Action's arguments are wire input, so the signature is a claim about
+  // the caller and not a guarantee. Without the guard the value reaches
+  // `note.trim()` and throws a TypeError, which the action has no result shape for.
+  it("refuses a note that is not a string", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    const result = await commitDeckVersion(DECK_ID, 7 as unknown as string);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  it("commits with no note when none was given", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    const result = await commitDeckVersion(DECK_ID, undefined as unknown as string);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything());
+  });
+
   it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     await commitDeckVersion(DECK_ID, null);

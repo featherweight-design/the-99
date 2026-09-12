@@ -208,6 +208,17 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
             join decks d on d.id = v.deck_id
            where d.user_id = $1 and vc.oracle_id = ci.oracle_id
         )
+        -- Nor anybody's commander. A commander is a column on the deck, not a
+        -- deck_cards or deck_version_cards row, so the two exclusions above cannot
+        -- see one — and the claim model counts a commander as a hard claim. Picked
+        -- as the fixture card, it would add a holder this fixture never built, and
+        -- the row would draw a guard tag or no control while the probe still
+        -- reported on the pull control.
+        and not exists (
+          select 1 from decks d
+           where d.user_id = $1
+             and ci.oracle_id in (d.commander_oracle_id, d.partner_oracle_id)
+        )
       group by ci.oracle_id, c.name
      having sum(ci.quantity) = 1
       limit 1`,

@@ -1343,6 +1343,14 @@ export async function commitDeckVersion(
 ): Promise<CommitResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  // A Server Action's arguments arrive over the wire, so the declared type is a
+  // claim about the caller rather than a guarantee: anything at all can be posted
+  // here. An absent note is legitimate, a non-string one is not, and refusing it
+  // by name is what keeps `note.trim()` below from throwing a TypeError the action
+  // has no result shape for.
+  if (note !== null && note !== undefined && typeof note !== "string") {
+    return { ok: false, message: "We couldn't save that note." };
+  }
   try {
     await requireDeck(deckId, userId);
   } catch {
