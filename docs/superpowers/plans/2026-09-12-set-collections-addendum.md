@@ -12,8 +12,9 @@ copy module. Neither depends on anything. Finding 3 is one conformance change ac
 rack — Design ruled it explicitly indivisible — and finding 4 lands in it or after it, never
 before.
 
-**Tech stack:** Next.js 16 App Router, React 19, Tailwind 4, Vitest, Playwright-free
-browser probes via `scripts/probe-sets.mjs`.
+**Tech stack:** Next.js 16 App Router, React 19, Tailwind 4, Vitest, and Playwright-backed
+browser probes via `scripts/probe-sets.mjs` — it launches Chromium and signs in through
+Clerk's test instance, so it is run by hand and is not part of `pnpm test`.
 
 **Spec:** `design/design_handoff_the99_set_collections/ADDENDUM-README.md`,
 `ADDENDUM-STATES.md`, `addendum copy strings.ts`.
@@ -59,8 +60,13 @@ browser probes via `scripts/probe-sets.mjs`.
 - [ ] **Step 1 — Failing test.** In `set-cell.test.tsx`, walk **every rendered element**,
   not the root: the component puts sizes on the root button, the inner plate and the name,
   so a root-only assertion passes while the plate still carries `h-[162px]`. Assert no
-  element's class list matches `(md:)?[wh]-[\d+px]`, and that the plate carries
-  `aspect-[63/88]`. In
+  element's class list carries a width or height that is a MEASUREMENT at any breakpoint —
+  an arbitrary value (`w-[116px]`), a scale step (`h-10`) or a fraction (`w-1/2`) — while
+  allowing `w-full`, which is the cell taking the track's width and so is the ruling rather
+  than a breach of it. Test the matcher itself: a regex that matches nothing passes every
+  assertion while proving nothing. Assert the plate carries `aspect-[63/88]`, and check
+  inline `style.width`/`style.height` on the cell and the plate too — the by-name marker
+  inside carries a deliberate 7px box and is a glyph, not the cell. In
   `set-grid-view.test.tsx`, assert the grid's `gridTemplateColumns` is
   `repeat(auto-fill, minmax(146px, 1fr))` and that the string contains no `auto-fit`.
 - [ ] **Step 2 — Run, verify failure.** `pnpm vitest run src/components/sets`
@@ -122,8 +128,12 @@ vocabulary.
   `filterCopy.chips.clearAll` (`Clear all filters`) rather than adding the addendum's
   lowercase variants — the addendum's own note says to do this once the chassis lands, and
   it has. Add the page's own `clearAllAria` (`Clear every filter and the search`), the chip
-  labels, and a `FilterPanelCopy` block for rarity whose `triggerLabel` is
-  `setFilterCopy.rarity.all` and whose `triggerOne` produces `Rarity · uncommon`.
+  labels, and a `FilterPanelCopy` block for rarity that READS `setFilterCopy.rarity.all`
+  and `.value` rather than restating them — one source, or a later copy edit makes the
+  trigger disagree with the chips beside it. `FilterPanel` hands `triggerOne` the option's
+  `label`, which is Title Case (`Uncommon`), so lowercase it on the way in: the trigger
+  reads `Rarity · uncommon`, matching the `042 · uncommon` caption below it, while the
+  sheet's chips stay Title Case because a chip is a control and not a caption.
   Retire `setFilterCopy.rarity.letters`.
 - [ ] **Step 2 — Failing tests**, one per state in ADDENDUM-STATES §1–5, each asserting the
   must-nots as well: row 2 present at rest; no phone badge at zero; no opacity on an unlit
