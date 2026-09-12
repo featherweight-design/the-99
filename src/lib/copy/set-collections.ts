@@ -52,7 +52,8 @@ export const setsIndexCopy = {
   // The locale is pinned: an unpinned toLocaleString formats differently in the browser
   // than in the server runtime, and a four-figure count would hydrate mismatched.
   restLine: (sets: number, cards: number) =>
-    `${sets === 1 ? "1 set" : `${sets} sets`} · ${cards.toLocaleString("en-US")} cards`,
+    `${sets === 1 ? "1 set" : `${sets} sets`}`
+    + ` · ${cards.toLocaleString("en-US")} ${cards === 1 ? "card" : "cards"}`,
 
   // Search active. The second clause only prints when newToYou > 0.
   resultLine: (matched: number, newToYou: number) => {

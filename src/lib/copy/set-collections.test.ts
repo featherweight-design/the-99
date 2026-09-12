@@ -148,4 +148,21 @@ describe("set-collections copy — counts of one", () => {
     expect(setPageCopy.cost.sendAria(1, "$2.00")).toContain("1 missing card,");
     expect(setPageCopy.cost.sendAria(2, "$4.00")).toContain("2 missing cards,");
   });
+
+  // Reachable the moment a collection holds one card, which is every collection's first
+  // state: `1 set · 1 cards`.
+  it("counts a one-card collection", () => {
+    expect(setsIndexCopy.restLine(1, 1)).toBe("1 set · 1 card");
+    expect(setsIndexCopy.restLine(1, 2)).toBe("1 set · 2 cards");
+    expect(setsIndexCopy.restLine(3, 1200)).toBe("3 sets · 1,200 cards");
+  });
+
+  // Two are deliberately left as they are, and this records why so the next sweep does not
+  // re-litigate them.
+  it("leaves the two that are already correct alone", () => {
+    // `sendCappedAria` only renders past the 99-card cap, so `n` can never be 1.
+    expect(setPageCopy.cost.sendCappedAria(99)).toContain("first 99 missing cards");
+    // `missingOnly` reads "1 missing", which is adjectival and correct.
+    expect(setPageCopy.result.missingOnly(1)).toMatch(/^1 missing ·/);
+  });
 });
