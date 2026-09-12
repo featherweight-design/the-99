@@ -18,10 +18,14 @@ I open the new 'Card details' on the Commander details page do I see that the ca
 
 Queried against the staging branch (`br-polished-pond-a6e63y0b`), both rows identical:
 
-| Card | Helms a deck? | In a deck's 99? | Committed? |
-|---|---|---|---|
-| Meren of Clan Nel Toth | no | HD Tune - Sultai Arisen | yes, version 1 |
-| Kotis, Sibsig Champion | no | HD Tune - Sultai Arisen | yes, version 1 |
+| Card | Helms a deck? | In a deck's 99? | Committed? | Owned | Claimed by committed decks |
+|---|---|---|---|---|---|
+| Meren of Clan Nel Toth | no | HD Tune - Sultai Arisen | yes, version 1 | 1 | 1 |
+| Kotis, Sibsig Champion | no | HD Tune - Sultai Arisen | yes, version 1 | 1 | 1 |
+
+The last two columns are what make the paragraph below exact rather than likely: owned 1, claimed 1,
+so `free` is 0 and the state is `hard`. Membership in a committed deck alone would not prove it — a
+player with three copies and one sleeved still has two free.
 
 Three facts follow, and the design turns on all three.
 
@@ -29,7 +33,8 @@ Three facts follow, and the design turns on all three.
 deck (`getRankedList` via `loadBuiltCommanderIds`, both columns since #516). Neither of these does.
 A commander sitting in someone else's 99 is still a commander you have never built around.
 
-**Their only copy is sleeved.** The deck holding them has a committed version, so the claim is
+**No copy is free — and for these two, that is their only copy.** The deck holding them has a
+committed version, so the claim is
 `hard` — `availabilityState` in `src/lib/decks/availability.ts:114`. Building around either means
 physically pulling the card out of a finished deck. That is a different kind of "unavailable" from a
 brew that merely lists it (`soft`), and the app already draws that distinction everywhere else.

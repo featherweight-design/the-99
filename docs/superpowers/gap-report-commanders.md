@@ -37,7 +37,7 @@ this inventory keeps describing what a reader can actually reach.
 ## Accepted deviations (documented, not gaps)
 
 - **Breakpoint:** table says 768px; implementation uses Tailwind `sm:` (640px), consistent with shipped #5/#6 surfaces.
-- **Lightbox overlay `position: fixed`:** table's `absolute` assumed a root mount point; the component mounts inside the 236px art header, where `absolute` clips the overlay. `fixed` covers the viewport as designed.
+- ~~**Lightbox overlay `position: fixed`:** table's `absolute` assumed a root mount point; the component mounts inside the 236px art header, where `absolute` clips the overlay. `fixed` covers the viewport as designed.~~ **Historical as of 2026-09-12** — `CommanderLightbox` no longer exists. The shared card modal that replaced it draws its own `fixed inset-0` backdrop and mounts through `CardDetailProvider`, so neither the deviation nor the clipping it worked around survives. See `design/design_handoff_the99_amendments/PARITY-lightbox-to-modal.md`.
 - **P/T line omitted** on detail oracle panel: schema lacks power/toughness — tracked as issue #20.
 - **Compare button** styled-only stub (no compare surface in v1).
 - **W/U mana pip text colors** not specified in the table — generic `#C6B79A` fallback used.

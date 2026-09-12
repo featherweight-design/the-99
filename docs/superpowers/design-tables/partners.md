@@ -632,7 +632,7 @@ beside the name field — never in the dock (dock stays summary + button only).
 | portrait position | absolute; left 0; top 0; bottom 0 | same |
 | portrait width | 99 (= band 72 × 1.37) | 99 |
 | portrait background | **primary** `art_crop` `left center / auto 100%` | same |
-| portrait opacity | 0.85 | 0.85 |
+| portrait opacity | ~~0.85~~ **0.95** (the lift; `PORTRAIT_BANDS[72].sharpOpacity`) | ~~0.85~~ **0.95** |
 | portrait mask-image | linear-gradient(90deg,#000 0 62%,transparent 100%) | same |
 | scrim position | absolute; inset 0 | absolute; inset 0 |
 | scrim background | linear-gradient(90deg, color-mix(in oklab, var(--surface-inset) 22%, transparent) 0px, color-mix(in oklab, var(--surface-inset) 18%, transparent) 58px, color-mix(in oklab, var(--surface-inset) 80%, transparent) 99px, var(--surface-inset) 138px) | same |
