@@ -58,7 +58,6 @@ export function ResultLine({
     // string, which is not null, so it would silence every ordinary
     // announcement rather than falling through to the line.
     const fresh = announce !== undefined && announce !== "" && announce !== lastAnnounce.current;
-    lastAnnounce.current = announce;
     if (!fresh && (announced.current === null || announced.current === line)) {
       announced.current = line;
       return;
@@ -78,6 +77,10 @@ export function ResultLine({
     // sheet cannot have spoken, so this does.
     if (silent) {
       if (silentSince.current === null) silentSince.current = performance.now();
+      // `lastAnnounce` is deliberately NOT stamped here. Marking a message as
+      // seen while returning without scheduling it is how the sibling ref lost
+      // an announcement one round ago: silence ends, `fresh` reads false, and
+      // the richer sentence is replaced by the bare count.
       return;
     }
     const silentFor =
@@ -92,7 +95,16 @@ export function ResultLine({
     // `fresh` is the guard, not `announce ?? line`: the caller's initial value
     // is the empty string, which is not null, so the nullish fallback would
     // silence every ordinary announcement.
+    lastAnnounce.current = announce;
     const message = fresh ? (announce as string) : line;
+    // A custom message is already debounced by whoever composed it —
+    // `FilterPanel` waits 300ms on `onAnnounce` before it ever reaches this
+    // prop — so debouncing again would put it 600ms behind the keystroke that
+    // caused it. Only the line this component composes itself waits.
+    if (fresh) {
+      setAnnouncement(message);
+      return;
+    }
     const t = setTimeout(() => setAnnouncement(message), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
   }, [line, announce, silent]);

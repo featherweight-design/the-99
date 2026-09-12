@@ -90,6 +90,30 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("9 of 41 decks");
   });
 
+  it("keeps a custom message queued through a silence", () => {
+    // Stamping it as seen while returning without scheduling it is how the
+    // sibling ref lost an announcement: silence ends, `fresh` reads false, and
+    // the bare count replaces the sentence the surface composed.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    rerender(<ResultLine line="41 decks" announce="EOE added. 41 decks shown." silent />);
+    act(() => vi.advanceTimersByTime(100));
+    rerender(<ResultLine line="41 decks" announce="EOE added. 41 decks shown." />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe(
+      "EOE added. 41 decks shown.",
+    );
+  });
+
+  it("does not debounce a message its author already debounced", () => {
+    // FilterPanel waits 300ms on onAnnounce before this prop ever sees it, so a
+    // second wait would put the sentence 600ms behind the keystroke.
+    const { rerender, container } = render(<ResultLine line="41 decks" />);
+    rerender(<ResultLine line="41 decks" announce="EOE added. 41 decks shown." />);
+    expect(container.querySelector("[role='status']")?.textContent).toBe(
+      "EOE added. 41 decks shown.",
+    );
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");
