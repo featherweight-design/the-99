@@ -665,6 +665,36 @@ describe("the pending-change notes are the row view's, because the mark is", () 
     ).not.toBeInTheDocument();
   });
 
+  // A spent slot draws the undo receipt instead of the row, and the receipt
+  // carries no brass rule — so its change is real in the draft and invisible in
+  // the list. Counting it would promise a mark the reader can hunt for and never
+  // find, in the one moment the list is already mid-edit.
+  it("leaves a spent slot's change out of both figures", () => {
+    renderDecklist([drawOwned], {
+      filter: "all",
+      spentSlot: rampOwned,
+      pendingChanges: new Map([
+        [drawOwned.oracleId, { from: 0, to: 1 }],
+        [rampOwned.oracleId, { from: 1, to: 0 }],
+      ]),
+    });
+
+    expect(
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.changeListCaption(2)),
+    ).not.toBeInTheDocument();
+    // The spent card's own group heading — Ramp holds nothing else here, so a
+    // note there would be a note over a group with no marked row in it.
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(1)),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(2)),
+    ).not.toBeInTheDocument();
+  });
+
   it("says neither in card view, where no tile draws the rule", () => {
     renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
 

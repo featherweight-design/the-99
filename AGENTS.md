@@ -102,7 +102,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   row, an unowned add with a live price is quoted and one that has never been stocked is
   counted out of the coverage, and a row's `quantity` is the delta rather than the copy count.
   Those figures come out of a snapshot transaction, a diff, a claim read, a price join and a
-  collection lookup at once, which no unit test here can assemble. Same fixture discipline as
+  collection lookup, which no unit test here can assemble. Only the diff is transaction-bound:
+  the claim, price and collection reads run after that transaction closes, deliberately, because
+  a claim is point-in-time whatever boundary is drawn around it — another deck can commit between
+  the read and the reader's click — and what makes a pull safe is the server action re-reading
+  every claim in its own transaction and refusing with a named reason. The draft's figures may
+  therefore mix times, which is the contract, not a gap in it. Same fixture discipline as
   `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a
   scratch branch, **never production**.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).

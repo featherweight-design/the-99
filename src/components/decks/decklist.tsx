@@ -211,6 +211,18 @@ export function Decklist({
       : null;
   const listedCards = spentCard ? [...visibleCards, spentCard] : visibleCards;
 
+  // A spent slot draws the undo receipt and returns before the brass rule
+  // (`decklist-row.tsx:282`), so a pending change on that card is a mark the
+  // reader cannot see. Every figure that counts marks reads these two rather
+  // than `pendingChanges` directly — the caption, the group note and Shopping's
+  // own caption all answer "how many marked rows are on this screen".
+  const isMarked = (c: DeckDetailCard) =>
+    pendingChanges.has(c.oracleId) && c.oracleId !== spentCard?.oracleId;
+  const markedPendingCount =
+    spentCard && pendingChanges.has(spentCard.oracleId)
+      ? pendingChanges.size - 1
+      : pendingChanges.size;
+
   // Group the visible cards
   const groups =
     grouping === "type" ? groupByCardType(listedCards) : groupByRole(listedCards);
@@ -252,9 +264,7 @@ export function Decklist({
     // caption counting rows the reader cannot see would be a caption about
     // nothing, and no caption at all leaves the rule unexplained.
     const markedOnScreen = new Set(
-      [...missingCards, ...spokenForCards]
-        .filter((c) => pendingChanges.has(c.oracleId))
-        .map((c) => c.oracleId),
+      [...missingCards, ...spokenForCards].filter(isMarked).map((c) => c.oracleId),
     ).size;
 
     // Build shopping groups: only roles that have ROLE_TARGETS (no land or other).
@@ -625,16 +635,16 @@ export function Decklist({
         )}
         {/* Said once for the whole list rather than once per marked row: at
             nineteen adds the per-row version is nineteen copies of one
-            sentence. The whole draft's figure here, because this list holds
-            every changed row; Shopping draws its own caption over the subset it
-            shows. List
+            sentence. The draft's figure less any spent slot, because this list
+            holds every changed row that still draws a rule; Shopping draws its
+            own caption over the subset it shows. List
             view only, with `groupChangeNote` below it, for the same reason: the
             brass rule lives on the row, and the card view draws tiles that carry
             no mark at all. A sentence pointing at a marker nobody can see is
             worse than silence. */}
-        {pendingChanges.size > 0 && view === "list" && (
+        {markedPendingCount > 0 && view === "list" && (
           <p className="m-0 mb-[8px] font-mono text-[10px] text-[color:var(--fg-faint)]">
-            {deckVersioningCopy.pending.changeListCaption(pendingChanges.size)}
+            {deckVersioningCopy.pending.changeListCaption(markedPendingCount)}
           </p>
         )}
         {groups.map(([label, groupCards]) => {
@@ -644,7 +654,7 @@ export function Decklist({
           // card view's tiles draw the other half nowhere.
           const changedInGroup =
             view === "list"
-              ? groupCards.filter((c) => pendingChanges.has(c.oracleId)).length
+              ? groupCards.filter(isMarked).length
               : 0;
           return (
             <DecklistGroup
