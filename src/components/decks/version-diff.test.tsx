@@ -208,22 +208,18 @@ describe("VersionDiff", () => {
     expect(screen.getByText(deckVersioningCopy.changed.manaValue)).toBeInTheDocument();
   });
 
-  it("shows the one loading mark while the diff is in flight", () => {
+  // The surface takes no SVG and no motion, and Design drew no loading state for
+  // it, so the wait is the space the diff will occupy and nothing else. Asserted
+  // here rather than in the browser probe: the read settles in a few
+  // milliseconds, so which frame a probe catches is a race and this is not.
+  it("holds the panel's space, unmarked, while the diff is in flight", () => {
     getVersionDiff.mockReturnValueOnce(new Promise(() => {}));
     const { container } = mount();
-    expect(container.querySelector("[data-pending-mark]")).not.toBeNull();
-  });
-
-  // READINESS 19 forbids motion anywhere on this surface, and the mark's pulse is
-  // motion whether or not the reader was watching when the read started. Asserted
-  // here rather than in the browser probe: the read settles in a few milliseconds,
-  // so which frame a probe catches is a race and this is not.
-  it("holds the loading mark still", () => {
-    getVersionDiff.mockReturnValueOnce(new Promise(() => {}));
-    const { container } = mount();
-    const mark = container.querySelector("[data-pending-mark]")!;
-    expect(mark.querySelectorAll(".anim-dots")).toHaveLength(0);
-    expect(mark.innerHTML).not.toMatch(/anim-/);
+    const pending = container.querySelector("[data-diff-pending]");
+    expect(pending).not.toBeNull();
+    expect(pending!.textContent).toBe("");
+    expect(container.querySelectorAll("svg")).toHaveLength(0);
+    expect(container.innerHTML).not.toMatch(/anim-/);
   });
 
   // A v1 has nothing before it to compare against, so there is no diff to fetch
@@ -236,7 +232,7 @@ describe("VersionDiff", () => {
       "/decks/deck_1",
     );
     expect(getVersionDiff).not.toHaveBeenCalled();
-    expect(container.querySelector("[data-pending-mark]")).toBeNull();
+    expect(container.querySelector("[data-diff-pending]")).toBeNull();
   });
 
   it("says which commander took over when the version changed one", async () => {
@@ -333,6 +329,6 @@ describe("VersionDiff", () => {
     getVersionDiff.mockRejectedValueOnce(new Error("nope"));
     const { container } = mount();
     await screen.findByText(copy.diffUnavailable);
-    expect(container.querySelector("[data-pending-mark]")).toBeNull();
+    expect(container.querySelector("[data-diff-pending]")).toBeNull();
   });
 });

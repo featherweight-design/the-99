@@ -148,8 +148,10 @@ describe("BuilderTabs — the version route", () => {
     expect(screen.queryByRole("link", { name: /Versions/ })).toBeNull();
   });
 
-  // The link is a sibling of the tabs, so its keys reach the tablist's handler.
-  // Acting on them would move the selected tab while the reader is tabbing past.
+  // The link is a sibling of the tablist rather than a child, so its keys never
+  // reach that handler and the selected tab cannot move while the reader tabs
+  // past. Asserted rather than assumed: nesting the link inside the tablist to
+  // tidy the markup would silently give the handler its arrow keys.
   it("ignores arrow keys pressed on the link", () => {
     const onViewChange = vi.fn();
     render(<BuilderTabs tabs={three} view="deck" onViewChange={onViewChange} links={[LINK]} />);

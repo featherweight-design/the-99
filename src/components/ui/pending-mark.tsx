@@ -13,14 +13,7 @@ import { CrownDiamonds, crownBox, type CrownGeometry } from "./crown";
 const GEOMETRY: CrownGeometry = { small: 8, large: 11, gap: 5 };
 const WIDTH = 28;
 
-/**
- * `still` is for a surface whose design forbids motion outright — the version
- * rail and the diff it opens, where READINESS 19 allows the commit sheet's open
- * and close and nothing else. The same mark at the same size with its pulse off:
- * such a surface neither takes a drawing of its own nor goes quiet about a wait
- * it is in the middle of.
- */
-export function PendingMark({ still = false }: { still?: boolean } = {}) {
+export function PendingMark() {
   const { width, height } = crownBox(GEOMETRY);
   return (
     <svg
@@ -31,7 +24,7 @@ export function PendingMark({ still = false }: { still?: boolean } = {}) {
       height={Math.round((WIDTH * height) / width)}
       className="block"
     >
-      <CrownDiamonds geometry={GEOMETRY} fill="currentColor" pulse={!still} />
+      <CrownDiamonds geometry={GEOMETRY} fill="currentColor" pulse />
     </svg>
   );
 }

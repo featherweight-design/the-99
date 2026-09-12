@@ -21,7 +21,6 @@ import { formatDeckDate } from "../../lib/decks/format";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
-import { PendingMark } from "../ui/pending-mark";
 import { CostTrack } from "../ui/cost-pips";
 import { DecklistGroupHeader } from "./decklist-group-header";
 
@@ -370,17 +369,13 @@ export function VersionDiff({
       {initial ? (
         <InitialPanel deckId={deckId} version={version} />
       ) : diff === null ? (
-        // The app's one loading mark, at the size every other in-flight control
-        // wears it. No new drawing, and no sentence for a wait that is one query.
-        //
-        // `still`, though: READINESS 19 forbids motion anywhere on this surface,
-        // and the mark's pulse is motion whether or not the reader was watching
-        // when it started. Not replaced by a placeholder of its own — Design drew
-        // no loading state here, so a new one would be a drawing engineering
-        // invented.
-        <div className="flex justify-center py-[18px] text-[color:var(--fg-faint)]">
-          <PendingMark still />
-        </div>
+        // The panel's height, held empty. Two absences decide this between them:
+        // the surface takes no SVG — every mark on it is a CSS disc, a border or a
+        // text glyph — and Design drew no loading state for it, so a disc or a
+        // sentence of engineering's own invention is the other thing it must not
+        // be. What is left is the space the diff will occupy, so the row does not
+        // jump when a read that takes one query comes back.
+        <div data-diff-pending className="h-[48px]" />
       ) : diff === "unavailable" ? (
         // Never `noChange`: the read was refused or failed, so the app knows
         // nothing about what this version moved.

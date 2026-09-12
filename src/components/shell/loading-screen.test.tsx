@@ -13,6 +13,15 @@ describe("LoadingScreen", () => {
     expect(container.querySelectorAll(".anim-dots")).toHaveLength(3);
   });
 
+  // READINESS 19 forbids motion on the version rail, and the crown's pulse is
+  // motion the reader meets on the way there. Same screen, same words, no
+  // animation class anywhere in it.
+  it("holds the crown still when the segment forbids motion", () => {
+    const { container } = render(<LoadingScreen copy={copy} still />);
+    expect(container.querySelectorAll("svg")).toHaveLength(1);
+    expect(container.innerHTML).not.toMatch(/anim-/);
+  });
+
   it("renders heading and status only — a screen up for under a second gets no paragraph", () => {
     const { container } = render(<LoadingScreen copy={copy} />);
     expect(screen.getByText(copy.heading)).toBeInTheDocument();
