@@ -107,13 +107,13 @@ function MetaLine({
     parts.push(copy.gamesHeld(version.gamesHeld));
   }
   return (
-    <div
-      className={`font-mono text-[10px] text-[color:var(--fg-faint)] ${
+    <span
+      className={`block font-mono text-[10px] text-[color:var(--fg-faint)] ${
         phone ? "mt-[4px]" : "mt-[2px]"
       }`}
     >
       {parts.join(" · ")}
-    </div>
+    </span>
   );
 }
 

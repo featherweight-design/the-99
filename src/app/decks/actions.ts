@@ -1533,24 +1533,26 @@ export async function discardDeckDraft(
  *
  * `loadVersionDiff` reads by version id alone, so the version is checked against
  * this deck first: without that, a signed-in account could read another player's
- * list by posting their version id alongside a deck of its own. Returning empty
- * lists rather than throwing keeps a stale row — a version deleted in another
- * tab — from breaking the page.
+ * list by posting their version id alongside a deck of its own. A refusal is
+ * `null` rather than two empty lists, because two empty lists are also the honest
+ * answer for a version that changed nothing, and the caller caches what it is
+ * given — a refusal filed under that version id would outlive the refusal.
+ * Returning null rather than throwing keeps a stale row — a version deleted in
+ * another tab — from breaking the page.
  */
 export async function getVersionDiff(
   deckId: string,
   versionId: string,
-): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] }> {
-  const empty = { in: [], out: [] };
+): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] } | null> {
   const userId = await requireUserId();
-  if (!isUuid(deckId) || !isUuid(versionId)) return empty;
+  if (!isUuid(deckId) || !isUuid(versionId)) return null;
   await requireDeck(deckId, userId);
 
   const [asked] = await db.select({ number: deckVersions.number })
     .from(deckVersions)
     .where(and(eq(deckVersions.deckId, deckId), eq(deckVersions.id, versionId)))
     .limit(1);
-  if (!asked) return empty;
+  if (!asked) return null;
 
   // The highest number below this one, which is the predecessor even across a
   // gap — no path deletes a version today, and a hole in the run would still

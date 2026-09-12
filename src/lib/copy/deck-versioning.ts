@@ -385,6 +385,11 @@ export const deckVersioningCopy = {
     diffOut: (n: number) => `Out · ${n}`,
     diffNote:
       "no ownership dot, no prices, no pull offers — this is what the deck was, not what it needs",
+    // A version with a predecessor and no card movement: the note, the commander
+    // or the basics moved instead. Without this the panel opens on nothing at all,
+    // which reads as a failed read rather than as an answer. No count in it — a
+    // zero delta is an absence, not a figure.
+    noChange: "no cards moved in or out of this version",
 
     initialHeading: "Initial",
     initialBody:

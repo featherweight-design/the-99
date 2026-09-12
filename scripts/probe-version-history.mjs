@@ -156,6 +156,13 @@ const readPanel = (page, panelId) =>
       names: [...panel.querySelectorAll("[data-version-diff-row]")]
         .map((row) => row.innerText.split("\n")[0])
         .slice(0, 6),
+      // The v1 arm's one way on, which is the whole reason that arm is not an
+      // empty panel: `getAttribute` rather than `.href`, so the check reads the
+      // route the app wrote instead of an absolutised copy of it.
+      links: [...panel.querySelectorAll("a")].map((a) => ({
+        text: a.innerText.trim(),
+        href: a.getAttribute("href"),
+      })),
       text: panel.innerText.replace(/\n/g, " · ").slice(0, 400),
     };
   }, panelId);
@@ -376,6 +383,17 @@ try {
         panel.names.length > 0,
         panel.names.join(", ") || "none",
       );
+      // v3 took two cards back and dropped two, so both directions are stated with
+      // their figures. Read off the panel's text rather than its headings because
+      // the phone moves those counts into the segmented pair, where they are button
+      // labels — the counts are the ruling, and the element carrying them is not.
+      // Case-insensitive: the desktop column heading is uppercased in CSS, which
+      // `innerText` reports, so the same copy reads `In · 2` and `IN · 2`.
+      check(
+        `${viewport.label} · both directions are stated with their counts`,
+        /in · 2/i.test(panel.text) && /out · 2/i.test(panel.text),
+        panel.text.slice(0, 120),
+      );
     }
 
     // The v1 row is the initial arm: no diff to fetch, and a browse link instead.
@@ -397,6 +415,20 @@ try {
         `${viewport.label} · the first version states no delta`,
         v1Panel.names.length === 0,
         v1Panel.names.join(", ") || "none",
+      );
+      // Naming no cards is also what a blank panel does, so the arm has to be
+      // recognised by what it says rather than by what it omits: the word the
+      // design gives that state, and the sentence explaining why there is no diff.
+      check(
+        `${viewport.label} · the first version explains itself`,
+        /Initial/.test(v1Panel.text) && /nothing before it to compare/.test(v1Panel.text),
+        v1Panel.text.slice(0, 160),
+      );
+      const browse = v1Panel.links.find((a) => /^Browse the \d+ cards/.test(a.text));
+      check(
+        `${viewport.label} · the first version offers the list instead`,
+        browse !== undefined && browse.href === `/decks/${deck.deckId}`,
+        browse ? `${browse.text} → ${browse.href}` : v1Panel.links.map((a) => a.text).join(", ") || "no link",
       );
     }
 
@@ -428,6 +460,28 @@ try {
       `${viewport.label} · the stamps read v2 and —`,
       stamped.some((s) => s.stamp === "v2") && stamped.some((s) => s.stamp === "—"),
       stamped.map((s) => s.stamp).join(", "),
+    );
+    // The slot is a reserved width, not a box that sizes to its text: `v2` and the
+    // em dash are different lengths, and a slot that shrank to each would put the
+    // two readings on different verticals down the log.
+    const widths = new Set(stamped.map((s) => s.width));
+    check(
+      `${viewport.label} · the stamp slot is one reserved width`,
+      widths.size === 1 && [...widths][0] === 44,
+      [...widths].join(", "),
+    );
+    check(
+      `${viewport.label} · the stamp is set at 10.5px`,
+      stamped.every((s) => s.fontSize === "10.5px"),
+      [...new Set(stamped.map((s) => s.fontSize))].join(", "),
+    );
+    // A version and its absence are not the same statement, so they are not the
+    // same ink: the em dash is the fainter of the two.
+    const inkOf = (value) => stamped.find((s) => s.stamp === value)?.color ?? null;
+    check(
+      `${viewport.label} · a version and its absence take different inks`,
+      inkOf("v2") !== null && inkOf("—") !== null && inkOf("v2") !== inkOf("—"),
+      `v2 ${inkOf("v2")} · — ${inkOf("—")}`,
     );
     const lefts = new Set(stamped.map((s) => s.left));
     // Reported, not asserted. Below `md:` the meta cell to the stamp's left sizes to

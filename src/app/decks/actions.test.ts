@@ -1167,15 +1167,17 @@ describe("getVersionDiff", () => {
   });
 
   it("refuses an id that is not a uuid without reading a diff", async () => {
-    expect(await getVersionDiff(DECK_ID, "not-a-uuid")).toEqual({ in: [], out: [] });
+    expect(await getVersionDiff(DECK_ID, "not-a-uuid")).toBeNull();
     expect(loadVersionDiff).not.toHaveBeenCalled();
   });
 
   // `loadVersionDiff` reads by version id alone, so without this check a signed-in
   // account could read another player's list by posting their version id alongside
-  // a deck of its own.
-  it("returns empty lists for a version that is not this deck's", async () => {
-    expect(await getVersionDiff(DECK_ID, VERSION_ID)).toEqual({ in: [], out: [] });
+  // a deck of its own. Null rather than two empty lists, because two empty lists
+  // are a real answer for a version that moved no cards, and the caller caches
+  // what it is given.
+  it("refuses a version that is not this deck's", async () => {
+    expect(await getVersionDiff(DECK_ID, VERSION_ID)).toBeNull();
     expect(loadVersionDiff).not.toHaveBeenCalled();
   });
 

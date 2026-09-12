@@ -234,15 +234,14 @@ export function VersionDiff({
     // nothing to fetch.
     if (initial || diff !== null) return;
     let live = true;
-    // A refusal comes back as two empty lists, which draw as no columns at all —
-    // the same rendering as a version that changed nothing, and the honest one:
-    // there is nothing this panel can say about a diff it was not given. It is
-    // deliberately NOT filed: a failed read should be retried when the reader
-    // asks again, not remembered as this version's answer.
+    // A refusal is null, and is deliberately NOT filed: a read that was refused
+    // should be retried when the reader asks again, not remembered as this
+    // version's answer. It draws as two empty lists, which is the honest rendering
+    // — there is nothing this panel can say about a diff it was not given.
     getVersionDiff(deckId, version.id)
       .then((result) => {
-        cache.set(version.id, result);
-        if (live) setDiff(result);
+        if (result !== null) cache.set(version.id, result);
+        if (live) setDiff(result ?? { in: [], out: [] });
       })
       .catch(() => {
         if (live) setDiff({ in: [], out: [] });
@@ -411,9 +410,18 @@ export function VersionDiff({
               />
             )}
           </div>
-          <p className="hidden md:block m-0 mt-[14px] font-mono text-[10px] text-[color:var(--fg-locked)]">
-            {copy.diffNote}
-          </p>
+          {inCount === 0 && outCount === 0 ? (
+            // Both widths, unlike `diffNote` below it: this is the panel's whole
+            // content, not a caveat about a list, and a phone that drew nothing
+            // would read as a read that failed.
+            <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">
+              {copy.noChange}
+            </p>
+          ) : (
+            <p className="hidden md:block m-0 mt-[14px] font-mono text-[10px] text-[color:var(--fg-locked)]">
+              {copy.diffNote}
+            </p>
+          )}
         </>
       )}
     </div>

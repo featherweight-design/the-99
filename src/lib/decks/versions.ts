@@ -308,10 +308,13 @@ export async function listVersions(deckId: string): Promise<VersionSummary[]> {
 
   // Grouped in the database rather than counted per row, and by version id
   // rather than by deck: a game's stamp is the version that was live the night
-  // it was played, so the tally is already per-version in the column.
+  // it was played, so the tally is already per-version in the column. The deck id
+  // is redundant against those version ids and is in the predicate anyway, because
+  // `deck_games` is indexed on `(deck_id, played_at)` and a filter on the
+  // unindexed `version_id` alone cannot use it.
   const games = await db.select({ versionId: deckGames.versionId, n: count() })
     .from(deckGames)
-    .where(inArray(deckGames.versionId, ids))
+    .where(and(eq(deckGames.deckId, deckId), inArray(deckGames.versionId, ids)))
     .groupBy(deckGames.versionId);
 
   // The distinct commanders across every version, resolved once: a deck that has

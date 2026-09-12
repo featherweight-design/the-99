@@ -8,7 +8,7 @@ const getVersionDiff = vi.fn<
   (deckId: string, versionId: string) => Promise<{
     in: VersionDiffCard[];
     out: VersionDiffCard[];
-  }>
+  } | null>
 >(async () => ({ in: [], out: [] }));
 
 vi.mock("../../app/decks/actions", () => ({
@@ -123,8 +123,29 @@ describe("VersionDiff", () => {
     getVersionDiff.mockRejectedValueOnce(new Error("nope"));
     const cache = new Map<string, { in: VersionDiffCard[]; out: VersionDiffCard[] }>();
     mount({ cache });
-    await screen.findByText(copy.diffNote);
+    await screen.findByText(copy.noChange);
     expect(cache.has("v_2")).toBe(false);
+  });
+
+  // A refusal resolves rather than throwing, and comes back null so that it is
+  // distinguishable from two empty lists — which are a real answer for a version
+  // that moved no cards, and would otherwise be remembered as this version's.
+  it("does not file a refused read", async () => {
+    getVersionDiff.mockResolvedValueOnce(null);
+    const cache = new Map<string, { in: VersionDiffCard[]; out: VersionDiffCard[] }>();
+    mount({ cache });
+    await screen.findByText(copy.noChange);
+    expect(cache.has("v_2")).toBe(false);
+  });
+
+  // A note-only or commander-only commit moves no cards, and no eligibility test
+  // stops one: only a v1 must be exactly the body's size. Without a line saying so
+  // the panel opens on nothing, which reads as a read that failed.
+  it("says no cards moved when a version has no delta", async () => {
+    getVersionDiff.mockResolvedValueOnce({ in: [], out: [] });
+    mount();
+    expect(await screen.findByText(copy.noChange)).toBeInTheDocument();
+    expect(screen.queryByText(copy.diffNote)).toBeNull();
   });
 
   // The phone reads the direction off the pressed segment, so the column header is
@@ -239,7 +260,7 @@ describe("VersionDiff", () => {
   it("settles into an empty panel when the read fails", async () => {
     getVersionDiff.mockRejectedValueOnce(new Error("nope"));
     const { container } = mount();
-    await screen.findByText(copy.diffNote);
+    await screen.findByText(copy.noChange);
     expect(container.querySelector("[data-pending-mark]")).toBeNull();
   });
 });
