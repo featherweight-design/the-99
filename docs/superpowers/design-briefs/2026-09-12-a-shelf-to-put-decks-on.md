@@ -56,10 +56,15 @@ one unlabelled group of everything unfiled.
 
 - **§3.1 The nav model.** This is the substance. `/decks` today is one flat grid with no hierarchy
   of any kind. Folders introduce a level above the decks, and the app's only navigation is the
-  five-item primary nav (`shell/nav.tsx:35-39`: Home, Collection, Commanders, Discover, Decks) —
-  there is no sub-nav, no breadcrumb and no in-route hierarchy anywhere to copy. Design says what
-  the level looks like, whether it has its own URL, and whether a folder is a place you go or a
-  grouping you see. **§5 constrains this answer.**
+  five-item primary nav (`shell/nav.tsx:35-39`: Home, Collection, Commanders, Discover, Decks).
+  There is one existing in-app hierarchy to draw on and it is a thin one: the set pages carry a
+  single-line breadcrumb — a `--fg-faint` mono line above the title
+  (`src/app/collection/sets/page.tsx:30-32`, and a linked form at
+  `src/app/collection/sets/[code]/page.tsx:24-26`). That is a route-to-route trail between two real
+  pages, not a level *inside* a route, which is what folders need; Design should say whether folders
+  extend that pattern or need their own. Design also says what the level looks like, whether it has
+  its own URL, and whether a folder is a place you go or a grouping you see. **§5 constrains this
+  answer.**
 - **§3.2 Empty states, of which there are three and they are not the same.** No folders exist at
   all; a folder exists and holds nothing; every deck is unfiled while folders exist. The route also
   already has a zero state for *no decks* (`DecksZero`, `decks-view.tsx:220-221`) and a separate
@@ -109,11 +114,13 @@ The filter chassis is live right now. `docs/superpowers/readiness-filter-chassis
 **🟢 Green, audited 2026-09-11 at R2**, and the tracker
 (`docs/superpowers/design-pipeline-status.md:64`) has the build starting immediately, sliced by
 route, with `/decks` in the first slice. The handoff is `design/design_handoff_the99_filter_chassis/`.
-Its README (`:84`) states the chassis "holds five dimensions, mounts on four routes, and opens every
-dimension with one panel shape"; `/decks` supplies those five — search, status, colour,
-played-window, sort. Decision 19 (`README.md:192-193`) is the load-bearing one here: **"The chassis
-has slots, not a dimension list, and four control types fill them."** There is a chip line with a
-`Clear all filters` at its trailing edge (`README.md:150`).
+Its README (`:84`) states the chassis "holds five dimensions, mounts on four routes, and opens
+every dimension with one panel shape"; on `/decks` those are search, status, colour and the
+played-window. **Sort is not among them** — decision 19 (`README.md:192-193`) is the load-bearing
+ruling here, and it gives the chassis "slots, not a dimension list": a field slot, a pip slot, an
+ordered run of dimension slots, and **a trailing slot for sort**, which is why `Clear all filters`
+(`README.md:150`) clears every dimension and never the sort. So the question below is whether a
+folder is one more dimension slot in that ordered run.
 
 **The chassis handoff says nothing about deck folders** — verified by search across its README and
 `STATES-filter-chassis.md`; the only `folder` in either is `README.md:39` describing its own
@@ -125,9 +132,8 @@ every other dimension opens, appearing in the same chip line, cleared by the sam
 filters`. Consequences: folders inherit a frame that is drawn, audited and about to be built, and
 `/decks` goes from five dimensions to six on a chassis whose density was proved at five. It also
 makes a folder *combinable* — folder plus status plus colour — and makes "which folder am I in"
-survive only as long as a filter chip does. And `Clear all filters`
-(`README.md:150`) would drop the folder along with everything else, returning the reader to all
-decks — nothing is lost but the shelf they were standing in, which may be the right behaviour or may
+survive only as long as a filter chip does. And `Clear all filters` would drop the folder along with every other dimension, returning the
+reader to all decks — nothing is lost but the shelf they were standing in, which may be the right behaviour or may
 be the tell that this branch is wrong.
 
 **(b) A folder is a nav level above the filters.** The chassis stays at five dimensions and filters

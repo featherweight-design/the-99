@@ -21,17 +21,29 @@ else**, in a shape a new block must not contradict.
 | Play record | `stats.ts:35` `playRecord`, `stats.ts:51` `recordFromCounts` | `{ wins, losses, draws, played }` |
 | Colour identity spread | `stats.ts:121` `colourSpread` | `{ W, U, B, R, G, colourless, copies }` |
 | Mana curve | `stats.ts:190` `manaCurve` | `{ buckets: [0…7], copies, average, lands }` |
-| Cost to complete | `shopping-rollup.ts` via `stats-query.ts:37` `DeckStats.cost` | `{ copies, cents, pricedCopies }` |
+| Cost to complete | `shopping-rollup.ts` via `stats-query.ts:37` `DeckStats.cost` | `{ copies, cents, pricedCopies }`, **or `null`** |
 
 `loadDeckStats` (`stats-query.ts:84`) answers for every deck at once and `loadOneDeckStats`
 (`stats-query.ts:187`) narrows to one, so Home's roll-up and a deck page cost the same round trips.
 `sumPlayRecords` (`stats.ts:67`) and `sumColourSpreads` (`stats.ts:136`) exist for the roll-up
 specifically — see decision 2.
 
-Two computed properties Design should know before drawing:
+**`cost` is nullable, and null is not zero.** A deck with nothing to buy has no roll-up entry at
+all and `cost` is `null` (`stats-query.ts:47`, assigned at `:179`) — that is the finished deck.
+`{ copies: 3, cents: 0, pricedCopies: 0 }` is a different state entirely: three copies to buy and no
+price for any of them, because the feed omits an out-of-stock card rather than pricing it at zero.
+Both must draw differently from each other, and neither may draw as `$0.00`.
+
+**Both commanders are in the colour spread and the curve.** They are not `deck_cards` rows, so the
+loader reads them separately and folds them in at one copy each (`stats-query.ts:143-159`). A deck's
+`copies` is therefore the 99 *plus* its commander — 100 for a single-commander deck, and the pair
+already counts as two of its own 99. Any denominator a surface prints must be `copies` as returned,
+not a hard 99, or the figures on screen will not add up to the ones computed.
+
+Two further computed properties Design should know before drawing:
 
 - **The colour figures sum to more than the deck.** A multi-colour card counts once per colour, not
-  fractionally, so a 99-card Golgari deck can report 60 black and 55 green. `copies` is carried
+  fractionally, so a Golgari deck can report 60 black and 55 green over 100 copies. `copies` is carried
   beside the five for exactly this reason, and any share drawn from these figures divides by
   `copies`, never by their sum. The rule is documented at `stats.ts:97-119`.
 - **The curve has eight buckets and bucket 7 is a ceiling** (`stats.ts:153`), lands excluded and
@@ -57,10 +69,12 @@ Two computed properties Design should know before drawing:
 - **§3.1 The block's shape at both breakpoints.** Four figures of four different shapes — a
   record, a five-way distribution, an eight-bucket series and a money figure — have to sit together
   as one block on a phone and on a desktop. This is the substance of the handoff.
-- **§3.2 What a deck with no games shows.** Three of the four figures exist for a brand-new deck;
-  the record does not. `0–0` is a figure nobody played, and an omitted row leaves a hole in a
-  four-part block. §5 records how the Games tab already answers a closely related question, and
-  the answer here should not contradict it.
+- **§3.2 What a deck with no games shows.** The record is never absent — `recordFromCounts([])`
+  returns all zeroes (`stats.ts:51`), so the loader always hands the block a record. The question is
+  what the block does with it: `0–0` is a figure nobody played, and an omitted row leaves a hole in
+  a four-part block. The Games tab answers the same question at its own altitude by **replacing**
+  the panel at zero rather than drawing an aggregate of nothing (`games-panel.tsx:148-151`), so
+  whatever the block does should not contradict it.
 - **§3.3 Whether the curve is a chart or a row of counts.** Eight buckets is small enough to print
   as numbers and shaped enough to draw as bars. The choice changes how much vertical room the
   block needs and whether the phone frame can carry the same drawing as desktop.
