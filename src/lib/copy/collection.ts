@@ -57,8 +57,8 @@ export const collectionChassisCopy = {
       : `Showing ${unique.toLocaleString("en-US")} unique · ${total.toLocaleString("en-US")} total`,
   /** The chassis's Clear — every dimension at once, named as such. */
   announceClearedAll: (total: number) =>
-    // Through the shared helper, or a one-card collection announces
-    // "1 cards shown."
+    // Through the shared helper, which singularises: a one-card collection
+    // reads "1 card shown." where the raw count read "1 cards shown."
     `Filters cleared. ${cards(total)} shown.`,
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
