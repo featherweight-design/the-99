@@ -123,8 +123,9 @@ picker's selected summary and partner slot are measured rather than assumed.
 ### PR 4 — the commander surfaces
 
 `detail.tsx` (render 04 → 288, `IdentityPips` retired from the band into the block, `Card details` to
-the bottom corner, `labelAt` **measured at 288** rather than inherited from 248 — the handoff's own
-open item 2), `rec-card.tsx` and `discovery-row.tsx` (148 → **208** with a 285 portrait, and the literal `148`
+the bottom corner, and `labelAtPx` **109** — measured, not the handoff's 57, which cannot hold a block
+whose 25px name alone is 29px; its own open item 2 asked for this figure to be measured at 288 rather
+than trusted), `rec-card.tsx` and `discovery-row.tsx` (148 → **208** with a 285 portrait, and the literal `148`
 retires). **Their `labelAtPx` figures differ — 46 discovery, 63 the owned lane** — because one wash
 sits under two breakpoint subtrees on each row and the desktop block is the taller: the owned lane's
 carries a type line under its name and discovery's does not. The handoff gives both 46, which is the
@@ -141,7 +142,9 @@ asserting the old band is not a slice, it is a red gate.
 `all owned` and `never played` cut, `labelAt 46`) **with** `deck-card-overflow.tsx` gaining the 26px
 plate inside its phone 44px target — same PR, non-negotiable, because the top scrim is the only thing
 carrying that glyph today. Then `spine-mobile.tsx` and `spine-desktop.tsx` in one PR, since they are
-separated by CSS and not by a branch: both to **288**, mobile at `labelAtPx 83` and keeping its top-right `Card details` control measured off the
+separated by CSS and not by a branch: both to **288**, mobile at `labelAtPx` **90** — measured against the two-line ceiling its own clamp
+imposes, where the handoff's 83 was measured against a third line — and keeping its top-right
+`Card details` control measured off the
 three-line wrap, desktop to the 560 portrait at a 592 inset above ~1200px of row and the 340 portrait
 at a 364 inset below it, and the rename pencil to the inline unplated glyph on both frames — `--fg-muted`
 as drawn, asserted at 3:1 with the reason in the test (verdict finding 9). The desktop header mounts

@@ -198,6 +198,29 @@ handoff says so in the imperative for whoever builds it.
 
 ---
 
+## §5c The seven figures that ship, in one place
+
+Every `labelAt` in this round, measured. STATES and the plan are both **superseded
+by this table** wherever they disagree with it, and the build matches it:
+
+| render | ships | the handoff said |
+|---|---|---|
+| 01 home hero | **46** | 38 (STATES), 46 (§3.2), 63 (decision 7) |
+| 02 resume row | **53** | 40 |
+| 04 commander detail, mobile | **109** | 57 |
+| 06 discovery row | **56** | 46 |
+| 07 owned-lane row | **63** | 46 |
+| 08 deck tile | **46** | 46 ✓ |
+| 09 deck spine, phone | **90** | 83 |
+
+One of seven survives as given. The rule that produced them is the handoff's and
+is right — measure the block, key the ramp to its wrapped worst case — and every
+correction is arithmetic against the block that ships: a padded row counted on
+one side, a name clamped to two lines rather than three, a rank column that is
+ink like any other, a desktop block taller than the phone's under one shared
+wash. `wash-contrast.test.ts` holds all seven, and the browser probe compares each
+against the block it measures on the laid-out page.
+
 ## §6 Errata against the handoff, carried here rather than sent back
 
 None of these changes a drawing. **This table is the correction of record**; the handoff's documents
