@@ -249,6 +249,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                   </div>
                   <FilterPanel
                     desktopRowMinPx={44}
+                    compact={!wide}
                     copy={deckChassisCopy.status}
                     options={statusOptions}
                     selected={state.filters.statuses}
@@ -274,6 +275,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                   />
                   <FilterPanel
                     desktopRowMinPx={44}
+                    compact={!wide}
                     copy={deckChassisCopy.played}
                     options={playedOptions}
                     selected={state.filters.played ? [state.filters.played] : []}

@@ -101,6 +101,7 @@ export function FilterPanel({
   disabledAriaLabel,
   widthPx = POPOVER_WIDTH,
   desktopRowMinPx = DESKTOP_ROW_MIN,
+  compact,
   footerStatus = true,
   selectionMode = "multi",
   showCounts = true,
@@ -138,6 +139,16 @@ export function FilterPanel({
    */
   desktopRowMinPx?: number;
   /**
+   * Force the compact (sheet) form regardless of this component's own
+   * breakpoint. `useIsDesktop()` is 768px and the filter chassis switches at
+   * 1000, so a chassis mount that did not pass this would open a desktop
+   * popover inside the compact frame across the whole 768-999 band.
+   *
+   * Undefined keeps the component's own query, which is what every collection
+   * mount predating the chassis relies on.
+   */
+  compact?: boolean;
+  /**
    * Whether the footer carries the "N of M selected" text. Type ▾ is drawn
    * without it — and must be, since footerTotal counts cards, which would be a
    * lie about a list of types.
@@ -154,7 +165,8 @@ export function FilterPanel({
   /** Writes to the filter bar's single live region. */
   onAnnounce?: (message: string) => void;
 }) {
-  const isDesktop = useIsDesktop();
+  const ownBreakpoint = useIsDesktop();
+  const isDesktop = compact === undefined ? ownBreakpoint : !compact;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
