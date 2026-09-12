@@ -40,6 +40,16 @@ export type PrintingPrices = {
   byScryfallId: Record<string, PriceFact>;
   /** By `SETCODE|collectorNumber`, uppercased set — the same printing, named the other way. */
   byPrintingKey: Record<string, PriceFact>;
+  /**
+   * Fallback keys that name more than one catalog printing.
+   *
+   * `printings` is keyed by `scryfall_id` alone and puts no uniqueness on
+   * (set_code, collector_number) (`db/schema.ts:65-73`), so two variants can
+   * share one — and a single-valued index would keep whichever row the unordered
+   * result yielded last. A holding with no id of its own would then be priced
+   * from a coin toss between siblings. These keys answer nothing instead.
+   */
+  ambiguousKeys: string[];
   /** The newest `as_of` in the WHOLE table, which is what liveness is measured against. */
   newestAsOf: Date | null;
 };
@@ -58,11 +68,21 @@ export function priceKeyFor(p: { setCode: string; collectorNumber: string }): st
 export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
   const byScryfallId: Record<string, PriceFact> = {};
   const byPrintingKey: Record<string, PriceFact> = {};
+  // Which catalog printings each fallback key names. Counted over every row, not
+  // only the priced ones: a key naming two printings of which one is priced is
+  // still a key that names two printings.
+  const idsPerKey = new Map<string, Set<string>>();
   let newestAsOf: Date | null = null;
 
   for (const r of rows) {
     if (newestAsOf === null && r.newest_as_of !== null) {
       newestAsOf = parseAsOf(r.newest_as_of);
+    }
+    if (r.set_code !== null && r.collector_number !== null && r.scryfall_id !== null) {
+      const key = priceKeyFor({ setCode: r.set_code, collectorNumber: r.collector_number });
+      const ids = idsPerKey.get(key) ?? new Set<string>();
+      ids.add(r.scryfall_id);
+      idsPerKey.set(key, ids);
     }
     if (r.as_of === null) continue;
     const fact: PriceFact = {
@@ -77,7 +97,14 @@ export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
     }
   }
 
-  return { byScryfallId, byPrintingKey, newestAsOf };
+  const ambiguousKeys = [...idsPerKey]
+    .filter(([, ids]) => ids.size > 1)
+    .map(([key]) => key);
+  // Dropped rather than left for `priceFor` to step around, so the map never holds
+  // a figure that cannot be attributed to one printing.
+  for (const key of ambiguousKeys) delete byPrintingKey[key];
+
+  return { byScryfallId, byPrintingKey, newestAsOf, ambiguousKeys };
 }
 
 /**
@@ -110,6 +137,9 @@ export function priceFor(
   // key, miss, and report that the store had answered about a printing nobody
   // named.
   if (printing.setCode === "" || printing.collectorNumber === "") return null;
+  // A key the catalog gives to two printings names neither of them. Silence, not
+  // `no stock`: the store was never asked about a printing this holding can name.
+  if (prices.ambiguousKeys.includes(priceKeyFor(printing))) return null;
   // The figure follows the printing the ENTRY names, which is not always the
   // printing whose art is drawn: where the exact row carries no image,
   // `resolveImageUri` falls back to the set's representative. The entry is still

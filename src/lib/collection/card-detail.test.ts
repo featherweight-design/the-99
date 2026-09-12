@@ -161,10 +161,11 @@ describe("loadCardDetail availability", () => {
     exactImageUri: null,
     representativeImageUri: null,
   };
-  const EMPTY_PRICES = { byScryfallId: {}, byPrintingKey: {}, newestAsOf: null };
+  const EMPTY_PRICES = { byScryfallId: {}, byPrintingKey: {}, ambiguousKeys: [], newestAsOf: null };
   const PRICES = {
     byScryfallId: { "s-1": { cents: 241, foilCents: null, etchedCents: null, asOf: new Date("2026-09-08T09:00:00Z") } },
     byPrintingKey: {},
+    ambiguousKeys: [],
     newestAsOf: new Date("2026-09-08T09:00:00Z"),
   };
   const availability = {

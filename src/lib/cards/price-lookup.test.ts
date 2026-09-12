@@ -97,6 +97,34 @@ describe("priceFor", () => {
     expect(priceFor(null, { scryfallId: "s-1", setCode: "C21", collectorNumber: "263" })).toBeNull();
   });
 
+  it("refuses a fallback key the catalog gives to two printings", () => {
+    // `printings` puts no uniqueness on (set_code, collector_number), so two
+    // variants can share one. A single-valued index would keep whichever row came
+    // last and price a holding from a coin toss between siblings.
+    const collided = indexPriceRows([
+      row({ scryfall_id: "s-a", collector_number: "263", price_cents: 100 }),
+      row({ scryfall_id: "s-b", collector_number: "263", price_cents: 5000 }),
+    ]);
+
+    expect(collided.ambiguousKeys).toEqual(["C21|263"]);
+    expect(collided.byPrintingKey["C21|263"]).toBeUndefined();
+    // The holding that names no id of its own gets silence, not one of the two.
+    expect(priceFor(collided, { setCode: "C21", collectorNumber: "263" })).toBeNull();
+    // A holding that DOES name its printing is unaffected: the id is exact.
+    expect(priceFor(collided, { scryfallId: "s-b", setCode: "C21", collectorNumber: "263" }))
+      .toEqual({ fact: expect.objectContaining({ cents: 5000 }) });
+  });
+
+  it("counts a collision even when only one of the two is priced", () => {
+    const collided = indexPriceRows([
+      row({ scryfall_id: "s-a", collector_number: "263" }),
+      row({ scryfall_id: "s-b", collector_number: "263", as_of: null, price_cents: null }),
+    ]);
+
+    expect(collided.ambiguousKeys).toEqual(["C21|263"]);
+    expect(priceFor(collided, { setCode: "C21", collectorNumber: "263" })).toBeNull();
+  });
+
   it("never falls back to another printing of the same card", () => {
     // The figure sits under this printing's art. A sibling's price there would be
     // a number no copy of this card has.
