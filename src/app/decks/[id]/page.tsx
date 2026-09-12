@@ -21,6 +21,7 @@ import { readFillPasses } from "../../../lib/decks/fill-passes";
 import { deckBodySize } from "../../../lib/decks/deck-size";
 import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks/draft-state";
 import { computeRoleCounts } from "../../../lib/decks/mix";
+import { isUuid } from "../../../lib/uuid";
 
 export default async function DeckBuilderPage({
   params,
@@ -31,6 +32,9 @@ export default async function DeckBuilderPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
+  // See the note in `versions/page.tsx`: a malformed segment reaching a uuid
+  // column is a 500 where the route means not-found.
+  if (!isUuid(id)) notFound();
   const userId = await requireUserId();
 
   const detail = await getDeckDetail(id, userId);

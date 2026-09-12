@@ -9,6 +9,7 @@ import {
 } from "../../../../lib/decks/draft-state";
 import { ReviewChanges } from "../../../../components/decks/review-changes";
 import { admitsReview } from "./admits-review";
+import { isUuid } from "../../../../lib/uuid";
 
 export default async function ChangesPage({
   params,
@@ -19,6 +20,9 @@ export default async function ChangesPage({
 }) {
   const { id } = await params;
   const { commit } = await searchParams;
+  // See the note in `versions/page.tsx`: a malformed segment reaching a uuid
+  // column is a 500 where the route means not-found.
+  if (!isUuid(id)) notFound();
   const userId = await requireUserId();
 
   // The ownership guard every deck route carries. `loadDraftRows` takes a

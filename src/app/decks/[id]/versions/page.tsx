@@ -5,9 +5,15 @@ import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
 import { listVersions } from "../../../../lib/decks/versions";
 import { VersionHistory } from "../../../../components/decks/version-history";
+import { isUuid } from "../../../../lib/uuid";
 
 export default async function VersionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // The segment is whatever was typed, and `decks.id` is a uuid column: Postgres
+  // rejects a malformed uuid with an error of its own, which reaches the reader
+  // as a 500 where this route means to answer not-found. Every page under
+  // `/decks/[id]` carries this line, and `uuid-guard.test.ts` holds them to it.
+  if (!isUuid(id)) notFound();
   const userId = await requireUserId();
 
   // `listVersions` takes no `userId` — it reads by deck id alone, so this guard
