@@ -10,10 +10,12 @@ The verdict is the build contract. Where the handoff and the verdict disagree, t
 ## What ships
 
 Four band heights — **288** page headers, **248** the deck cell, **208** result rows, **168** the
-resume cell — plus thumbs at **44×62** and **64×89** and the two card faces unchanged. Text at the
-bottom edge on all fifteen renders, no top scrim anywhere, `labelAt` in **pixels from the foot**, one
+resume cell — plus thumbs at **44×62** and **64×89**. The two card faces keep their **geometry**;
+their ring alpha and drop shadow converge with everything else in PR 3. Text at the bottom edge on
+**every band** — the eight washed renders; the five thumbs and two faces carry no label at all, which
+is why they have nothing to move. No top scrim anywhere, `labelAt` in **pixels from the foot**, one
 opaque plate for every control that sits over art, one thumb plate for the five renders that each
-invented one, and an empty top edge everywhere.
+invented one, and an empty top edge on **fourteen of the fifteen** (see the verdict on render 09).
 
 ## Slicing
 
@@ -38,14 +40,15 @@ moved from 📐 to 🟢. No code.
 
 `src/components/ui/art-wash.tsx`, `full-card-trigger.tsx`, and both test files.
 
-1. `height: 168 | 208 | 248 | 288` replaces `band: 168 | 148 | 72`. The 148 and 72 arms retire with
-   their last consumers in PRs 4 and 6, so this PR accepts all six values and the three retiring ones
-   keep their shipped geometry until then.
-2. `labelAt` becomes **pixels from the foot** and `bottomScrimStops` gains its second argument in the
-   same commit — `(labelAtPx, band)`, emitting
-   `[[0,0], [0,(band−1.48·at)/band×100], [73,(band−at)/band×100], [73,100]]`. The one-argument
-   percentage signature does not survive this PR in any form; leaving it callable is how the round
-   ships inverted.
+1. `height: 168 | 208 | 248 | 288` is added beside `band: 168 | 148 | 72` rather than replacing it.
+   The `band` arm keeps every shipped geometry and retires with its last consumer in PRs 4 and 6, so
+   a surface changes height when its own PR says so and not before.
+2. The new prop is **`labelAtPx`**, pixels from the foot, and `bottomScrimStops` takes
+   `(labelAtPx, band)` in the same commit — emitting
+   `[[0,0], [0,(band−1.48·at)/band×100], [73,(band−at)/band×100], [73,100]]`. **No one-argument
+   function named `bottomScrimStops` survives**, which is the point: the percentage ramp continues
+   under its own name, `legacyBottomScrimStops(pct)`, so the two units can never be passed through one
+   signature. Leaving them sharing a name is how the round ships inverted.
 3. `PORTRAIT_BANDS` becomes `PORTRAITS`, **keyed by portrait width** — 230 / 285 / 340 / 560 — per
    verdict §2. Every column in it is a function of width, and one 288px band needs two portraits.
    **The width is an explicit prop** (`portrait`), not derived from the band: `height × 1.37` gives
@@ -58,7 +61,11 @@ moved from 📐 to 🟢. No code.
    `vertical` becomes an override too, kept only on width 203, since one ramp function now serves both
    strategies. New rows: 285 → `flatStop 300`, 340 → `356`, 560 → `584`; 230 keeps its shipped 240;
    every row is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`.
-4. **THE PLATE**: `background: var(--bg)`, `1px solid var(--border-strong)`, radius 7, no
+4. **Deleted here, and only these:** `OVER_ART_PLATE` and the assertion holding it in step with a
+   hard-coded Tailwind class. `COVER_SCRIM_STOPS.top`, the `labelEdge` prop, its class hook, the
+   stylesheet override and the two `min-h-[104px]` floors all survive to PR 6, because their
+   consumers do.
+5. **THE PLATE**: `background: var(--bg)`, `1px solid var(--border-strong)`, radius 7, no
    `backdrop-filter`, icon only, a 26px box centred in a 44px target, `aria-label` required.
    `full-card-trigger.tsx` loses its words and its `72%` class, and its `hero` placement moves to the
    bottom corner the block does not reach. `OVER_ART_PLATE` and its assertion are deleted, which
@@ -67,11 +74,11 @@ moved from 📐 to 🟢. No code.
    what makes the control clickable rather than merely visible — and the 44px target is pulled 9px
    inward rather than overhung, because every band it sits on is `overflow-hidden` and an overhanging
    target loses that 9px out of its own hit area.
-5. `wash-contrast.test.ts` moves with it, as the handoff requires: the two top-ramp tests retire with
+6. `wash-contrast.test.ts` moves with it, as the handoff requires: the two top-ramp tests retire with
    the top scrim, `BOTTOM_SURFACES` becomes `(labelAtPx, band)` pairs for all six values, the plate
    test becomes the opaque assertion (`--fg` on `--bg`, 12.06–15.65:1 measured), and the vertical-ramp
    helper goes. `THEMES.size === 6` is untouched.
-6. `scripts/probe-art-wash.mjs` is **extended, never duplicated**: each stated band's declared height
+7. `scripts/probe-art-wash.mjs` is **extended, never duplicated**: each stated band's declared height
    against its laid-out height, the ramp's hold position (below half the band is the signature of a px
    value read as a percentage), a **census** of bands that have not migrated, and per card-details
    control its target size, its drawn size, whether the fill resolves opaque and whether
@@ -109,7 +116,7 @@ asserting the old band is not a slice, it is a red gate.
 `all owned` and `never played` cut, `labelAt 46`) **with** `deck-card-overflow.tsx` gaining the 26px
 plate inside its phone 44px target — same PR, non-negotiable, because the top scrim is the only thing
 carrying that glyph today. Then `spine-mobile.tsx` and `spine-desktop.tsx` in one PR, since they are
-separated by CSS and not by a branch: both to **288**, mobile at `labelAt 83` measured off the
+separated by CSS and not by a branch: both to **288**, mobile at `labelAtPx 83` and keeping its top-right `Card details` control measured off the
 three-line wrap, desktop to the 560 portrait at a 592 inset above ~1200px of row and the 340 portrait
 at a 364 inset below it, and the rename pencil to the inline unplated glyph on both frames — `--fg-muted`
 as drawn, asserted at 3:1 with the reason in the test (verdict finding 9). The desktop header mounts
