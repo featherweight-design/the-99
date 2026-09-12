@@ -81,7 +81,8 @@ the PR 3 section below.
 | 1a | Pip assets, `ColourPips`, `FilterChassis`, `ResultLine`'s move | nothing |
 | 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a ✅ |
 | 2 | `/commanders` and `/discover` | 1b ✅ — shipped in the same PR |
-| 3 | `/collection` | 2 — **not** Task 9, which is built; see below |
+| 3a | `/collection`'s chip derivation, copy, and the chassis slots it needs | 2 ✅ |
+| 3b | `/collection` mounts the chassis; `ChipRow` retires | 3a |
 
 **1a and 1b were one PR in the first draft of this plan.** They are split because the primitives
 are self-contained and fully tested while the `/decks` mount is a real refactor of `decks-view.tsx`
@@ -307,3 +308,41 @@ twice.
 Decision 16 holds: the match modifier is untouched, still inside
 `ColourControl`, which is why that component stays rather than being replaced
 by `ColourPips` on these two lanes. Availability remains owned-lane only.
+
+
+---
+
+## PR 3 split: 3a lands the parts, 3b does the migration
+
+`/collection` turned out to be the least like the other three. It already has a chip row and a
+result count — in `browser.tsx`'s `ChipRow`, not in the bar — so this is a **replacement** rather
+than the addition it was on `/decks`, and three things have to be reconciled rather than mounted.
+
+**3a (this PR)** lands what the migration consumes, all of it tested and none of it mounted:
+
+- `src/lib/collection/chips.ts` — the derivation, in the shape `chipLabels` and `chipsFor` already
+  have on the other routes. One chip per control; a bare code when a set's option is filtered out.
+- `collectionChassisCopy` in `src/lib/copy/collection.ts` — the result line the route never had.
+- `FilterChassis` gains `resultTrailing` (decision 21's home for the view toggle and the `By set`
+  link, both of which change *what surface you are on*) and `announce`.
+- **The six-theme contrast check readiness finding 1 asked for.** The pip floors at **7.61:1**
+  (R, kaldheim, on `--surface-rail`) across `--surface-sunken`, `--bg` and `--surface-rail` — so the
+  set pages, which mount the same control, inherit a verified figure rather than an assumed one.
+
+**3b must reconcile three conflicts, and none is mechanical:**
+
+1. **`ChipRow`'s `onClearAll` resets the sort** (`browser.tsx`, `updateSort("name", …)`). The
+   chassis's clear names itself "Clear all filters. The sort is unchanged." One of them has to give,
+   and it is not the chassis — but that is a visible behaviour change on this route and belongs in
+   the PR description rather than a diff.
+2. **The bar owns a live region and the chassis owns row 3.** Two regions is the chorus this
+   codebase warns about in both files. `announce` exists so the bar's richer messages — "EOE added.
+   3 sets, 120 of 400 cards shown." — survive through the single region, but the bar's own
+   `<span role="status">` has to go in the same change.
+3. **`ChipRow` counts three things** — `resultCount`, `uniqueCount`, `totalQuantity` — where the
+   chassis's result line states one. Decide which figure the line carries before wiring it, because
+   "1,240 cards" meaning copies and meaning distinct names are different sentences.
+
+**Also in 3b:** `ColourPips` replaces `ColorFilterRow` *and* the mobile Color panel, the `COLOR`
+caption goes with the row that carried it (decision 17), and the five `FilterPanel` mounts take
+`desktopRowMinPx={44}`.

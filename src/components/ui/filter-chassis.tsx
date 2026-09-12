@@ -92,6 +92,15 @@ export type FilterChassisProps = {
    * does not. The line still draws; only the region goes quiet.
    */
   silentResult?: boolean;
+  /**
+   * Row 3's trailing edge. `/collection` puts its view toggle here
+   * (decision 21) alongside the `By set` link: both change WHAT SURFACE YOU ARE
+   * ON rather than what is in the list, which is the distinction the control
+   * row is for, so neither belongs among the filters.
+   */
+  resultTrailing?: React.ReactNode;
+  /** Announced in place of the result line — see `ResultLine`. */
+  announce?: string;
 };
 
 /**
@@ -117,7 +126,8 @@ const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
-  controls, sort, chips, onClearAll, resultLine, form, after, silentResult,
+  controls, sort, chips, onClearAll, resultLine, form, after,
+  silentResult, resultTrailing, announce,
 }: FilterChassisProps) {
   return (
     <div
@@ -238,8 +248,11 @@ export function FilterChassis({
       </div>
 
       {/* Row 3 — the chassis's only live region. */}
-      <div data-chassis-row="result">
-        <ResultLine line={resultLine} silent={silentResult} />
+      <div className="flex items-center gap-[10px]" data-chassis-row="result">
+        <ResultLine line={resultLine} announce={announce} silent={silentResult} />
+        {resultTrailing && (
+          <div className="ml-auto flex items-center gap-[8px]">{resultTrailing}</div>
+        )}
       </div>
 
       {after}

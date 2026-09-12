@@ -23,9 +23,16 @@ const ANNOUNCE_DELAY_MS = 300;
 
 export function ResultLine({
   line,
+  announce,
   silent,
 }: {
   line: string;
+  /**
+   * Announced instead of `line` when the surface has something more specific to
+   * say. `/collection`'s panels report which value changed — "EOE added. 3
+   * sets, 120 of 400 cards shown." — which the line's bare count cannot.
+   */
+  announce?: string;
   /**
    * Stop announcing while another surface owns the region. The compact sheet is
    * `aria-modal` and carries its own, so with both live a filter change is
@@ -72,9 +79,9 @@ export function ResultLine({
       return;
     }
     announced.current = line;
-    const t = setTimeout(() => setAnnouncement(line), ANNOUNCE_DELAY_MS);
+    const t = setTimeout(() => setAnnouncement(announce ?? line), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
-  }, [line, silent]);
+  }, [line, announce, silent]);
 
   return (
     <>

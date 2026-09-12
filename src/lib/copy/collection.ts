@@ -19,6 +19,24 @@ import { availabilityCopy } from "./availability";
  */
 const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")} cards`);
 
+/**
+ * `/collection`'s chassis rows. The route had no chip line and no result line
+ * before the chassis — it stated its count nowhere, which is why the count
+ * helper above existed only inside announcements.
+ */
+export const collectionChassisCopy = {
+  result: (shown: number, total: number) =>
+    shown === total ? cards(total) : `${shown.toLocaleString("en-US")} of ${cards(total)} match`,
+  chip: {
+    /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
+    search: (q: string) => `"${q}"`,
+    colours: (n: number) => (n === 1 ? "1 colour" : `${n} colours`),
+    types: (n: number, first: string) => (n === 1 ? first : `${n} types`),
+    sets: (n: number, first: string) => (n === 1 ? first : `${n} sets`),
+    availability: (n: number, first: string) => (n === 1 ? first : `${n} states`),
+  },
+} as const;
+
 export const collectionFilterCopy = {
   set: {
     // Trigger
