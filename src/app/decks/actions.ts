@@ -1411,18 +1411,33 @@ export async function commitDeckVersion(
     const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
     const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
 
-    // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim,
-    // and the answer wanted is the one that held before this commit landed.
-    const availability = await loadAvailability(userId, {
-      oracleIds: adds.map((a) => a.oracleId),
-      excludeDeckId: deckId,
-    });
-    // hardDecks, not the raw claims: a BREW "holding" a card holds nothing, and
-    // naming it would offer a pull against a list that was never sleeved.
-    const claimants = new Map(
-      [...availability].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
-    );
-    const buy = bucketAdds(adds, claimants).filter((a) => a.bucket !== "free");
+    // A first version buys nothing. `previous` is null, so `before` is empty and
+    // `diff.adds` is the whole deck — every card the player already owns and has
+    // been holding in this brew. Asked about those, the availability model
+    // answers 0 free for all of them: a brew's own live rows are claims, and
+    // `excludeDeckId` subtracts them from a total that already counted them, so
+    // each card appears spoken for by the very list asking about it. The receipt
+    // would read as a 99-card purchase. The design says the same thing from the
+    // other side — see `commit.lede`, where a first commit is one of the cases
+    // that leaves a figure at zero.
+    const buy = previous
+      ? bucketAdds(
+          adds,
+          // Deliberately off `db` rather than `tx`: this asks what OTHER decks
+          // claim, and the answer wanted is the one that held before this commit
+          // landed. hardDecks, not the raw claims: a BREW "holding" a card holds
+          // nothing, and naming it would offer a pull against a list that was
+          // never sleeved.
+          new Map(
+            [
+              ...(await loadAvailability(userId, {
+                oracleIds: adds.map((a) => a.oracleId),
+                excludeDeckId: deckId,
+              })),
+            ].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
+          ),
+        ).filter((a) => a.bucket !== "free")
+      : [];
 
     // `cardCount` comes back off the rows the snapshot was written from, rather
     // than being counted here from `draft`: a path that inserts a card the deck

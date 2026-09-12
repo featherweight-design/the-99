@@ -127,6 +127,7 @@ function Column({
   siblings,
   descriptionId,
   hiddenOnPhone,
+  phoneHeading,
   onPulled,
   newestAsOf,
   claimsKnown,
@@ -143,6 +144,9 @@ function Column({
    *  draw from one `useId` rather than two. */
   descriptionId: string;
   hiddenOnPhone: boolean;
+  /** True when this is the only column on the page, so the phone has no segmented
+   *  pair naming the direction and the heading has to. */
+  phoneHeading: boolean;
   onPulled: () => void;
   /** The newest `as_of` in the price table, so a row can tell a live price from
    *  a sold-out printing's last one. */
@@ -176,10 +180,19 @@ function Column({
           // claimed and no route releases it, and a holder with a draft of its
           // own is a deck to open rather than a copy to take. "can be pulled"
           // on either would name an act this page will not perform.
+          //
+          // The pending guard is the one that says nothing here: `PullControl`
+          // gives its `Open →` link that exact sentence as the link's accessible
+          // name, so describing the row with it as well reads one sentence twice
+          // — once for the row, then again for the control inside it. Its bucket
+          // word is dropped with it rather than falling through, because "can be
+          // pulled" is the opposite of what that row is. The commander guard has
+          // no control at all (no route releases a commander) and a one-word
+          // visible tag, so the row is the only place its sentence can live.
           const word = pullClaim?.commander
             ? copy.commanderGuardA11y(pullClaim.name, row.name)
             : pullClaim?.pending
-              ? copy.pullGuardA11y(pullClaim.name, row.name)
+              ? null
               : bucketWord(row.bucket);
           const wordId = `${descriptionId}-${row.oracleId}`;
           const card = {
@@ -260,9 +273,16 @@ function Column({
 
   return (
     <section className={`flex-1 min-w-0 flex-col ${hiddenOnPhone ? "hidden md:flex" : "flex"}`}>
-      {/* Desktop only: at 390px the segmented pair above the column is the
-          direction, and a heading repeating it would be the same word twice. */}
-      <div className="hidden md:flex items-baseline justify-between gap-[10px] pb-[10px] mb-[14px] [border-bottom:1px_solid_var(--elevated)]">
+      {/* Hidden on the phone only while the segmented pair is above the column:
+          that pair IS the direction, and a heading repeating it would be the same
+          word twice. A lone column has no pair — the other direction is empty —
+          so without this the phone would draw an unlabelled list of cards and
+          never say which way they are going. */}
+      <div
+        className={`${
+          phoneHeading ? "flex" : "hidden"
+        } md:flex items-baseline justify-between gap-[10px] pb-[10px] mb-[14px] [border-bottom:1px_solid_var(--elevated)]`}
+      >
         <h2
           className="font-mono text-[11px] uppercase tracking-[0.16em] m-0"
           style={{ color: headingTone }}
@@ -370,6 +390,11 @@ export function ReviewChanges({
   const sleeved = state.adds.filter((a) => a.bucket === "claimed").length;
   const buy = state.adds.filter((a) => a.bucket === "unowned").length;
 
+  // A versionless deck: the page is the v1 commit surface, so the heading, the
+  // lede and the bar's CTA all name that act instead of a diff. The route admits
+  // one only when it can actually cut v1 — see its own guard.
+  const firstCommit = state.version === null;
+
   // Four figures, each dropped at nought rather than drawn as one. The purchase
   // rides on the to-buy chip because the two are one fact: a count of copies and
   // what those copies cost.
@@ -411,13 +436,15 @@ export function ReviewChanges({
             {`← ${deckName}`}
           </Link>
           <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
-            {copy.heading(inCount + outCount, state.version?.number ?? 1)}
+            {firstCommit
+              ? copy.firstHeading(cardCount)
+              : copy.heading(inCount + outCount, state.version?.number ?? 1)}
           </h1>
           {/* Desktop only. At 390px the sentence is five lines above a list the
               reader came here to read, and the pulls it describes are on that
               list with their own controls. */}
           <p className="hidden md:block mt-0 mb-[18px] max-w-[680px] text-[14px] leading-[1.6] text-[color:var(--fg-body)]">
-            {copy.lede((state.version?.number ?? 0) + 1)}
+            {firstCommit ? copy.firstLede : copy.lede((state.version?.number ?? 0) + 1)}
           </p>
         </header>
 
@@ -483,11 +510,16 @@ export function ReviewChanges({
               deckId={deckId}
               heading={copy.groupIn(inCount)}
               headingTone="var(--success)"
-              note={copy.groupInBreakdown(free, sleeved, buy)}
+              note={
+                state.claimsKnown
+                  ? copy.groupInBreakdown(free, sleeved, buy)
+                  : copy.groupInUnknown
+              }
               rows={rows.in}
               siblings={siblings}
               descriptionId={descriptionId}
               hiddenOnPhone={segmented && shown !== "in"}
+              phoneHeading={!segmented}
               newestAsOf={state.newestAsOf}
               claimsKnown={state.claimsKnown}
               // Every figure on this page is the server's — the breakdown beside
@@ -509,6 +541,7 @@ export function ReviewChanges({
               siblings={siblings}
               descriptionId={descriptionId}
               hiddenOnPhone={segmented && shown !== "out"}
+              phoneHeading={!segmented}
               newestAsOf={state.newestAsOf}
               claimsKnown={state.claimsKnown}
               onPulled={() => router.refresh()}
@@ -548,7 +581,9 @@ export function ReviewChanges({
                 {/* The released figure is the state's own `removes`, which is what
                     the sheet one click down counts: two figures under each other
                     that disagreed would be the same commit priced twice. */}
-                {copy.footer(cardCount, state.buyCount, state.removes.length)}
+                {state.claimsKnown
+                  ? copy.footer(cardCount, state.buyCount, state.removes.length)
+                  : copy.footerUnknown(cardCount, state.removes.length)}
               </span>
             </div>
           )}

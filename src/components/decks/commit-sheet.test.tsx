@@ -128,6 +128,28 @@ describe("CommitSheet", () => {
     expect(screen.queryByText("Cultivate")).toBeNull();
   });
 
+  // `buyCount` is 0 both when there is nothing to buy and when the claim read
+  // failed, and only the first of those is a fact. A footer printing the nought
+  // would tell the player their shopping is done on the strength of a read the
+  // server could not make — so the term goes rather than the figure.
+  it("drops the purchase term when the claims could not be read", () => {
+    sheet({
+      state: {
+        ...STATE_36,
+        claimsKnown: false,
+        buyCount: 0,
+        unfreeCount: 0,
+        total: null,
+        adds: STATE_36.adds.map((a) => ({ ...a, bucket: null, shortfall: 0 })),
+      },
+    });
+    expect(screen.getByText(copy.footerUnknown(CARD_COUNT, 2))).toBeTruthy();
+    expect(screen.queryByText(copy.footer(CARD_COUNT, 0, 2))).toBeNull();
+    // The money block is already absent at a nought buy count, so the footer was
+    // the last place on the sheet quoting a purchase nobody read.
+    expect(screen.queryByText(copy.buyHeading)).toBeNull();
+  });
+
   it("offers the note, and says plainly that it cannot be added later", () => {
     sheet();
     expect(screen.getByLabelText(copy.noteLabel)).toBeTruthy();

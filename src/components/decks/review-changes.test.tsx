@@ -11,7 +11,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { Availability } from "../../lib/decks/availability";
 import { cardDetailCopy } from "../cards/card-detail-provider";
-import { COMMITTED } from "./__fixtures__/draft-state";
+import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -216,9 +216,11 @@ describe("ReviewChanges", () => {
 
   // The pending guard is an `Open →` rather than a pull, because committing that
   // deck's half-finished draft from here would sweep in changes its owner never
-  // asked for — so the sentence behind the row's colour is that guard and not
-  // "can be pulled", exactly as it is on a commander's copy.
-  it("describes a pending holder's copy with the guard rather than the pull", () => {
+  // asked for. The sentence explaining that is the LINK's accessible name, so the
+  // row does not carry it a second time — a description repeating a control inside
+  // the row reads one sentence twice. "can be pulled" goes with it: it is the
+  // opposite of what this row is.
+  it("leaves a pending holder's guard to the control, and says it once", () => {
     render(
       <ReviewChanges
         deckId="d"
@@ -227,12 +229,14 @@ describe("ReviewChanges", () => {
         state={STATE} cardCount={CARD_COUNT}
       />,
     );
+    const guard = deckVersioningCopy.review.pullGuardA11y("Kykar", "Sol Ring");
     expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(screen.getByRole("link", { name: guard })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
-    ).toHaveAccessibleDescription(
-      deckVersioningCopy.review.pullGuardA11y("Kykar", "Sol Ring"),
-    );
+      screen
+        .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
+        .getAttribute("aria-describedby"),
+    ).toBeNull();
     expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
   });
 
@@ -535,5 +539,91 @@ describe("ReviewChanges", () => {
     });
     expect(screen.queryByLabelText(deckVersioningCopy.commit.noteLabel)).toBeNull();
     expect(window.location.search).toBe("?filter=shopping");
+  });
+  // A versionless deck has no predecessor to diff against, so `loadDraftState`
+  // gives it no change lists at all. Read through the committed copy this page
+  // would head itself "0 changes since v1" over a lede about what a draft costs —
+  // both false of a list that IS v1. The route admits a brew only when it can cut
+  // v1, so this pair is the whole page.
+  it("names the act rather than a diff on a deck with no version yet", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [] }}
+        state={BREW}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: deckVersioningCopy.review.firstHeading(CARD_COUNT) }),
+    ).toBeTruthy();
+    expect(screen.getByText(deckVersioningCopy.review.firstLede)).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.heading(0, 1))).toBeNull();
+  });
+
+  // A failed claim read leaves every add's bucket null, so all three terms of the
+  // breakdown come back at nought. Printed as themselves they read "nothing to
+  // buy" — the one thing the page must not say about a read it could not make.
+  it("says the claims were unreadable rather than printing three noughts", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: null })], out: [] }}
+        state={{ ...STATE, claimsKnown: false }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText(deckVersioningCopy.review.groupInUnknown)).toBeTruthy();
+    expect(
+      screen.queryByText(deckVersioningCopy.review.groupInBreakdown(0, 0, 0)),
+    ).toBeNull();
+  });
+
+  // The same false zero in the bar: `buyCount` is 0 both when there is nothing to
+  // buy and when the claims could not be read, and only the first is a fact.
+  it("drops the footer's purchase term when the claims could not be read", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: null })], out: [] }}
+        state={{ ...STATE, claimsKnown: false }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByText(
+        deckVersioningCopy.review.footerUnknown(CARD_COUNT, STATE.removes.length),
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(deckVersioningCopy.review.footer(CARD_COUNT, 0, STATE.removes.length)),
+    ).toBeNull();
+  });
+
+  // The heading hides on the phone only because the segmented pair above it is
+  // already naming the direction. A lone column has no pair, so hiding it there
+  // leaves the phone an unlabelled list of cards with no way to tell which way
+  // they are going.
+  it("keeps the lone column's heading on the phone, and drops it beside a pair", () => {
+    const headingOf = () =>
+      screen.getByRole("heading", { name: deckVersioningCopy.review.groupIn(1) })
+        .parentElement as HTMLElement;
+    const { unmount } = render(
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+    );
+    expect(headingOf().className).not.toContain("hidden");
+    unmount();
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(headingOf().className).toContain("hidden");
   });
 });

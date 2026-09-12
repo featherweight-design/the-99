@@ -30,32 +30,40 @@ export default async function ChangesPage({
   // runs the whole diff, availability and price chain twice for one page.
   const { state, rows } = await loadDraftRows(id, userId);
 
+  // The spine's `Commit as v1` offer, re-derived: a versionless list exactly its
+  // pair-aware body size with nothing unresolved. `commitDeckVersion` enforces
+  // this too, and has to — this only decides what the page is for.
+  const firstCommitReady =
+    detail.built === deckBodySize(detail.partner !== null) && detail.unresolvedRows.length === 0;
+
   // A committed or discarded draft leaves this page with nothing to review, and a
   // bare empty state would read as a bug. The deck page is where the version line
   // now is, so that is where the reader goes.
   //
   // `changeCount` counts NAMED rows, which is not the same question as "is there
-  // anything to commit". A basics-only edit names no card, and a brew has no
-  // version to diff against at all — both have a version to cut, and both would
-  // be bounced straight back to the deck page by a count alone.
+  // anything to commit": a basics-only edit names no card and still has a version
+  // to cut, so a count alone would bounce it.
   //
-  // `?commit=1` is deliberately NOT an exception to this test. The two cases it
-  // used to excuse are both named above, so all the query could still let through
-  // is a clean committed deck — where the sheet would offer a version identical
-  // to the one behind it.
+  // A brew is the third case, and it is the readiness test rather than the bare
+  // absence of a version. Its draft has no change lists at all — there is nothing
+  // to diff against — so the page is purely the v1 commit surface, and a brew
+  // that cannot cut v1 has no reason to be here. Admitting one drew an empty page
+  // under a heading counting changes against a version it does not have, over a
+  // bar offering a commit the server then refused.
+  //
+  // `?commit=1` is deliberately NOT an exception to this test: a stale or
+  // hand-typed link would otherwise open the sheet over a 63-card brew.
   const hasSomethingToCommit =
-    changeCount(state) > 0 || state.basicsChanged || state.version === null;
+    changeCount(state) > 0 ||
+    state.basicsChanged ||
+    (state.version === null && firstCommitReady);
   if (!hasSomethingToCommit) redirect(`/decks/${id}`);
 
   // `?commit=1` is the banner's CTA arriving — §Surfaces 5's second entry point
-  // into the one commit surface. On a brew it is the spine's `Commit as v1`
-  // instead, and that offer is gated on a whole list, so an arriving URL is held
-  // to the same test: a stale or hand-typed link would otherwise open the sheet
-  // over a 63-card brew. `commitDeckVersion` enforces this too, and has to — this
-  // only decides whether the sheet is worth opening.
-  const firstCommitReady =
-    detail.built === deckBodySize(detail.partner !== null) && detail.unresolvedRows.length === 0;
-  const wantsCommit = commit === "1" && (state.version !== null || firstCommitReady);
+  // into the one commit surface — or, on a brew, the spine's `Commit as v1`. No
+  // further test of its own: the guard above already refused every deck this page
+  // would open the sheet over in error.
+  const wantsCommit = commit === "1";
 
   return (
     <ReviewChanges

@@ -103,7 +103,14 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
 
   const footer = (
     <span className="font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]">
-      {copy.footer(cardCount, state.buyCount, released)}
+      {/* `buyCount` is 0 both when there is nothing to buy and when the claim read
+          failed, and only the first of those is a fact. An unknown purchase drops
+          the term rather than printing a nought that reads as a finished shopping
+          list — the same call the pending banner and the review page's own
+          breakdown make. */}
+      {state.claimsKnown
+        ? copy.footer(cardCount, state.buyCount, released)
+        : copy.footerUnknown(cardCount, released)}
     </span>
   );
 

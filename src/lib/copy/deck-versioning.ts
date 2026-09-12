@@ -130,6 +130,17 @@ export const deckVersioningCopy = {
       "Nothing here is a decision except the pulls. The list on the deck page is already " +
       `this list — this page exists to show you what it costs before you lock it in as v${version}.`,
 
+    // A versionless deck reaches this page to cut v1, and neither line above can
+    // describe it: there is no predecessor to count changes against, so the pair
+    // would read "0 changes since v1" over a sentence about what a draft costs.
+    // Nothing is coming in or going out either — the whole list is v1 — so the
+    // page is the commit surface and these two say so.
+    firstHeading: (n: number) => `${plural(n, "card")}, ready for v1`,
+    firstLede:
+      "This deck has no version yet, so there is nothing to compare it against. Committing " +
+      "freezes the list exactly as it stands and starts claiming its cards against your " +
+      "other decks.",
+
     chipIn: "in",
     chipOut: "out",
     chipBuy: "to buy",
@@ -163,6 +174,16 @@ export const deckVersioningCopy = {
     outNote: (n: number) =>
       `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit. No per-row ` +
       "toggle: putting one back is adding it to the deck, and the deck page already does that.",
+
+    // The breakdown and the footer each carry a purchase figure, and a failed
+    // claim read leaves every add's bucket null — so all three terms of the
+    // breakdown and the footer's `buy` come back at nought for a question nobody
+    // answered. Printed as themselves they read as "nothing to buy", which is the
+    // one thing the page must not say on a read it could not make. Same call the
+    // pending banner makes when `claimsKnown` is false.
+    groupInUnknown: "we couldn't read what your other decks hold",
+    footerUnknown: (cards: number, released: number) =>
+      `${plural(cards, "card")} · ${released} back in the pool`,
 
     footer: (cards: number, buy: number, released: number) =>
       `${plural(cards, "card")} · ${buy} to buy · ${released} back in the pool`,
@@ -229,6 +250,12 @@ export const deckVersioningCopy = {
     cancel: "Cancel",
     footer: (cards: number, buy: number, released: number) =>
       `${plural(cards, "card")} · ${buy} to buy · ${released} released`,
+    // The same line with the purchase term taken out, for the draft whose claim
+    // read came back null. A failed read buckets every add as `null` with no
+    // shortfall, so `buyCount` is 0 by absence rather than by fact, and "0 to
+    // buy" would state the opposite of what is known.
+    footerUnknown: (cards: number, released: number) =>
+      `${plural(cards, "card")} · ${released} released`,
 
     refused: "We couldn't commit that version. Your changes are still here.",
     announced: (version: number, cards: number, buy: number) =>
