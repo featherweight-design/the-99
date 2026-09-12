@@ -14,8 +14,25 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  * A card owned in four printings has four of these — a single resolved URI on BrowseCard
  * could not represent that, which is why the modal caption reads set + collector number here.
  */
+import type { PrintingPrices } from "../cards/price-lookup";
+
 export type BrowsePrinting = {
   setCode: string;           // uppercased for display; stored lowercase
+  /**
+   * The printing's catalog id, where the holding names one. Optional for the reason
+   * `layout` and `availability` are: fixtures and tests build `BrowsePrinting`
+   * literals that never touch the catalog.
+   *
+   * Absent is a real state, not a gap to paper over: `collection_items.scryfall_id`
+   * is nullable, and a bare `Name,Qty` import carries neither an id nor a collector
+   * number. A reader that needs the printing's own row — the price is the one that
+   * does — asks by this id, falls back to `(setCode, collectorNumber)`, and says
+   * nothing when neither names a printing. It must NOT fall through to the
+   * representative printing the way `resolveImageUri` does: a representative is a
+   * different collector number in the same set, so its price would be another
+   * printing's figure under this printing's art.
+   */
+  scryfallId?: string;
   /** From the `sets` catalog. Null when no row exists — callers fall back to setCode. */
   setName: string | null;
   collectorNumber: string;   // "" for exports that carry no collector number
@@ -84,6 +101,18 @@ export type BrowseCard = {
    * "Absent" and "read failed" both correctly render nothing.
    */
   availability?: Availability | null;
+  /**
+   * What the feed last carried for each of this card's printings, indexed both
+   * ways `BrowsePrinting` can name one. Optional for the same reason
+   * `availability` is: only `loadCardDetail` sets it, because only the modal
+   * draws a figure, and the list payload must never carry prices for 2,472 cards
+   * so one of them can be opened.
+   *
+   * Null means the read failed or never ran — which the modal renders as silence,
+   * not as `no stock`. `no stock` is what the store answered; null is nobody
+   * having asked.
+   */
+  prices?: PrintingPrices | null;
   printings: BrowsePrinting[];
   setCodes: string[];
   primarySetCode: string;
@@ -221,6 +250,11 @@ export type RawCollectionRow = {
    */
   preferredSetCode: string | null;
   preferredCollectorNumber: string | null;
+  /**
+   * The holding's own `collection_items.scryfall_id`. Null on a name-only import.
+   * Not an image tier — the id of the printing this row IS.
+   */
+  scryfallId: string | null;
   /** Tier 1 — the printing joined on collection_items.scryfall_id. */
   exactImageUri: string | null;
   /** Tier 2 — the representative printing for (oracle_id, set_code). */
@@ -314,6 +348,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
     const setCode = r.setCode.toUpperCase();
     const printing: BrowsePrinting = {
       setCode,
+      scryfallId: r.scryfallId ?? undefined,
       setName: r.setName,
       collectorNumber: r.collectorNumber,
       releasedAt: r.releasedAt,
@@ -368,6 +403,10 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // coalesce a null onto the same value — belt and braces, in the spirit of
       // the image line above.
       seen.flavorName ??= printing.flavorName;
+      // Two finishes of one printing are two collection rows sharing one catalog id,
+      // so this can only ever coalesce a null onto the same value — the same belt and
+      // braces as the two lines above.
+      seen.scryfallId ??= printing.scryfallId;
     } else {
       printings.set(printingKey, printing);
     }
@@ -606,6 +645,9 @@ export async function selectCollectionRows(
       releasedAt: sets.releasedAt,
       preferredSetCode: cardArtPreferences.setCode,
       preferredCollectorNumber: cardArtPreferences.collectorNumber,
+      // The holding's own printing id, for readers that ask the catalog about this
+      // exact printing rather than about the card. Null on a name-only import.
+      scryfallId: collectionItems.scryfallId,
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,

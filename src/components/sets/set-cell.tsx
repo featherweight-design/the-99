@@ -19,9 +19,10 @@
 //
 // Owned and missing geometry is IDENTICAL, so the grid never reflows when a filter flips.
 
-import { priceOf, priceState, formatCents, type PriceFact } from "../../lib/decks/price";
+import { formatCents, priceOf, priceState, type PriceFact } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { PriceTag } from "../cards/price-tag";
 import type { Cell } from "../../lib/sets/completion";
 
 // The cell carries NO width or height literal, at any width (addendum R2 §27). The grid
@@ -29,55 +30,6 @@ import type { Cell } from "../../lib/sets/completion";
 // identical-geometry constraint the grid depends on true by construction rather than by two
 // pairs of breakpointed literals somebody has to keep in step. It also means the one grid
 // declaration is the whole density: change the track minimum and every cell follows.
-
-function PriceTag({ fact, newestAsOf }: { fact: PriceFact | null; newestAsOf: Date | null }) {
-  const state = priceState(fact, newestAsOf);
-  const cents = fact ? priceOf(fact, state) : null;
-
-  // `no stock` holds the slot's height rather than collapsing it, so a row of cells does
-  // not go ragged where the feed has nothing.
-  if (cents === null) {
-    // `no stock` covers two histories and the accessible name must not merge them: a card
-    // the feed has never carried was never for sale here, and a sold-out one was.
-    // Three states behind one tag: never carried, carried and sold out, and carried with
-    // no usable figure. `priceState` returns `absent` for the first and the third, and the
-    // presence of a row is what tells them apart.
-    const label = state === "soldOut"
-      ? setPageCopy.cellPrice.soldOut
-      : fact
-        ? setPageCopy.cellPrice.noFigure
-        : setPageCopy.cellPrice.neverStocked;
-    return (
-      <span
-        className="inline-block rounded-[4px] px-[5px] py-[2px] font-mono text-[10px]"
-        style={{ color: "var(--fg-locked)", border: "1px dashed var(--fg-locked)" }}
-        aria-label={label}
-      >
-        {setPageCopy.cell.noStock}
-      </span>
-    );
-  }
-
-  const money = formatCents(cents);
-  // `priceState` collapses foil-only and etched-only into `foilOnly`, so the WORD comes
-  // from which column supplied the figure — the same rule the shipped buy tag applies in
-  // `qualifierOf`. Calling an etched-only printing "foil" names a finish the reader cannot
-  // buy.
-  const qualifier = state === "foilOnly"
-    ? (fact?.foilCents !== null && fact?.foilCents !== undefined
-        ? priceCopy.tag.foil
-        : priceCopy.tag.etched)
-    : null;
-  return (
-    <span
-      className="inline-block rounded-[4px] px-[5px] py-[2px] font-mono text-[10px]"
-      style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}
-      aria-label={qualifier ? setPageCopy.cell.qualifiedPriceAria(qualifier, money) : undefined}
-    >
-      {qualifier ? setPageCopy.cell.qualifiedPrice(qualifier, money) : money}
-    </span>
-  );
-}
 
 export function SetCell({
   cell,

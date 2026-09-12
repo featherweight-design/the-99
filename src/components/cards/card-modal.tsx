@@ -24,6 +24,9 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
+import { PriceTag } from "./price-tag";
+import { OVER_ART_PLATE } from "../ui/art-wash";
+import { priceFor } from "../../lib/cards/price-lookup";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -574,6 +577,17 @@ export function CardModal({
     ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
+  // The figure belongs to the printing on screen, so it is resolved from the same
+  // object the art and the `Set` caption read — a pick moves four things together
+  // or none of them (card-detail R2, §1). `null` means draw nothing at all: either
+  // no price read reached us, or the holding names no printing to ask about.
+  // `{ fact: null }` is the other silence-adjacent state and is NOT silence — the
+  // store answered, and the answer was that it has never carried this printing.
+  const price = priceFor(card.prices, resolved);
+  const priceTag = price ? (
+    <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} />
+  ) : null;
+
   return (
     // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
     // dim tracks the theme; blurred collection behind is decorative and out-of-scope
@@ -658,26 +672,56 @@ export function CardModal({
               />
             )}
           </div>
+          {/* The figure, 9px under the sharp art and centred on it (card-detail R2,
+              table row 1.1). Last in the column, so the absent state removes it
+              without moving anything above. Over the wash it takes the shipped
+              over-art plate — the token expression, not a raw rgba, or it would
+              not survive the six themes (erratum E3). */}
+          {!compactArt && priceTag && (
+            <div
+              className="relative z-[1] mt-[9px] flex justify-center"
+              data-testid="modal-price-mobile"
+            >
+              <span
+                className="inline-flex rounded-[5px] p-[2px]"
+                style={{
+                  background: `color-mix(in oklab, var(--bg) ${OVER_ART_PLATE}%, transparent)`,
+                }}
+              >
+                {priceTag}
+              </span>
+            </div>
+          )}
           {compactArt && (
-            // The dialog's accessible name still comes from the h3 below, which stays in the
-            // DOM (display:none on phone) — this copy is the visual half of the same heading.
-            <div aria-hidden className="relative z-[1] min-w-0" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-              <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
-                {/* The same source as the h3 below it — these are two halves of one
-                    heading, and reading them off different objects is how the compact
-                    header ended up naming a printing the art is not showing. */}
-                {printedNameOf(preview)}
+            <div className="relative z-[1] min-w-0">
+              {/* The dialog's accessible name still comes from the h3 below, which stays in
+                  the DOM (display:none on phone) — this copy is the visual half of the same
+                  heading. */}
+              <div aria-hidden style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
+                  {/* The same source as the h3 below it — these are two halves of one
+                      heading, and reading them off different objects is how the compact
+                      header ended up naming a printing the art is not showing. */}
+                  {printedNameOf(preview)}
+                </div>
+                <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
+                  {card.typeLine}
+                </p>
               </div>
-              <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
-                {card.typeLine}
-              </p>
+              {/* The tag survives the collapse and moves into the name block (card-detail
+                  R2, table rows 2.1-2.2): a 72px thumb has no room beneath it. It sits
+                  OUTSIDE the aria-hidden heading above, or the figure would be invisible to
+                  assistive tech (erratum E10). */}
+              {priceTag && (
+                <div className="mt-[6px]" data-testid="modal-price-compact">{priceTag}</div>
+              )}
             </div>
           )}
         </div>
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
         <div
-          className="hidden md:flex items-center justify-center flex-none"
+          className="hidden md:flex flex-col items-center justify-center flex-none"
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
           <div
@@ -696,6 +740,12 @@ export function CardModal({
               />
             )}
           </div>
+          {/* 10px under the art, centred on the card (table row 1.1). Desktop sits on
+              flat `--bg` and needs no plate — that is the one difference between the
+              two widths. */}
+          {priceTag && (
+            <div className="mt-[10px]" data-testid="modal-price-desktop">{priceTag}</div>
+          )}
         </div>
 
         {/* Content column — mobile: flex-1 padding 20px; desktop: padding 30px 32px.

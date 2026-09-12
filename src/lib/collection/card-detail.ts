@@ -3,6 +3,7 @@
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
 
 import { cache } from "react";
+import type { PrintingPrices } from "../cards/price-lookup";
 import type { BrowseCard, BrowsePrinting } from "./browse";
 import {
   aggregateCollection,
@@ -57,6 +58,8 @@ export function catalogCard(
       scryfallId: p.scryfallId,
       printing: {
         setCode: p.setCode.toUpperCase(),
+        // This row IS the printing, so its id is never inferred here.
+        scryfallId: p.scryfallId,
         setName: p.setName,
         collectorNumber: p.collectorNumber,
         releasedAt: p.releasedAt,
@@ -149,7 +152,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       const { loadAvailability } = await import("../decks/availability-query");
       return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
     })().catch(() => null);
-    return { ...owned[0], availability };
+    return { ...owned[0], availability, prices: await pricesFor(oracleId) };
   }
 
   const { db } = await import("../../db");
@@ -189,5 +192,19 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
     .leftJoin(sets, eq(sets.code, printings.setCode))
     .where(eq(printings.oracleId, oracleId));
-  return catalogCard(card, printingRows);
+  return { ...catalogCard(card, printingRows), prices: await pricesFor(oracleId) };
 });
+
+/**
+ * The card's prices, or null. Swallowed for the same reason the availability read
+ * above is: a feed that cannot be reached costs the reader a figure, never the
+ * card. Null and "the feed has never carried this printing" are different states
+ * and the modal draws both as silence — the distinction matters only in that
+ * neither may ever be drawn as a price of nothing.
+ */
+async function pricesFor(oracleId: string): Promise<PrintingPrices | null> {
+  return (async () => {
+    const { loadPrintingPrices } = await import("../cards/prices");
+    return loadPrintingPrices(oracleId);
+  })().catch(() => null);
+}
