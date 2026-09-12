@@ -48,7 +48,8 @@ export const chassisCopy = {
      * three" and "exactly these three" produce the same chip for two filters
      * that return very different lists.
      */
-    collapsedExactly: (count: number) => `Exactly ${count} colours`,
+    collapsedExactly: (count: number) =>
+      `Exactly ${count} ${count === 1 ? "colour" : "colours"}`,
     /** The five hues, in WUBRG order, with the names the lanes already use. */
     /**
      * Keyed lowercase by `lanes.ts`; the pips look up through a lowercased

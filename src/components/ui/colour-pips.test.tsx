@@ -87,3 +87,13 @@ describe("ColourPips", () => {
     expect(screen.getByRole("switch", { name: "Blue" })).toHaveAttribute("aria-checked", "false");
   });
 });
+
+describe("chassisCopy.colour", () => {
+  it("singularises the exact-colour chip", async () => {
+    const { chassisCopy } = await import("../../lib/copy/filter-chassis");
+    // `Exactly` can be on with one pip lit, so this branch reaches count 1 —
+    // unlike `collapsed`, which only ever draws past one.
+    expect(chassisCopy.colour.collapsedExactly(1)).toBe("Exactly 1 colour");
+    expect(chassisCopy.colour.collapsedExactly(3)).toBe("Exactly 3 colours");
+  });
+});
