@@ -995,3 +995,19 @@ describe("SetGridView — row 3's box is unconditional", () => {
     expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
   });
 });
+
+// §28 drew a 34px chip target as a granted exception, and its own open item 3 defers the
+// chip line's pixels to the chassis package — which ships 44 (`filter-chassis.tsx`,
+// `collection/chip-row.tsx`). The anchoring to the × is what makes 44 safe between chips
+// sitting 6px apart, and it is what the chassis relies on too.
+describe("SetGridView — chip targets follow the chassis", () => {
+  it("gives the chip's × and the Clear control a 44px hit area", () => {
+    search = "m=1&r=rare&c=W";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    for (const button of row.querySelectorAll("button")) {
+      expect(button.className).toMatch(/after:h-\[44px\]/);
+      expect(button.className).not.toMatch(/after:h-\[34px\]/);
+    }
+  });
+});

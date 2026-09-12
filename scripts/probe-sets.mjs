@@ -554,7 +554,7 @@ async function run() {
         setIsComplete
           ? "two filters on draw two chips (complete set: missing-only is not applied)"
           : "three filters on draw three chips",
-        three.chips >= (setIsComplete ? 2 : 3),
+        three.chips === (setIsComplete ? 2 : 3),
         `${three.chips} chip removals`,
       );
     }

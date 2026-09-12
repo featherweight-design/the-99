@@ -625,9 +625,11 @@ export function SetGridView(props: SetGridViewProps) {
               // chassis draws it: chips sit 6px apart, so a 44px overlay centred on a whole
               // chip would overlap its neighbour and a tap near the boundary would remove
               // the wrong filter. Anchored to the x, the nearest competing target is a full
-              // chip away. 34px rather than 44 is the refresh's granted exception on its own
-              // test — a chip is a shortcut, never the only route, and every value it
-              // removes is also removable at 44px on the row or in the sheet.
+              // chip away — which is also why 44px is safe here, and why the chassis uses
+              // it. §28 drew 34 as a granted exception, and its own open item 3 defers:
+              // "The chassis names the line and its position but not its pixels; if that
+              // package specs them differently, it wins and this page follows." It does
+              // (`filter-chassis.tsx`, `collection/chip-row.tsx`), so this follows.
               <span
                 key={chip.key}
                 className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap
@@ -645,8 +647,8 @@ export function SetGridView(props: SetGridViewProps) {
                   aria-label={chassisCopy.chips.removeAria(chip.label)}
                   className="relative cursor-pointer border-0 bg-transparent p-0
                              text-[color:var(--fg-muted)]
-                             after:absolute after:left-1/2 after:top-1/2 after:h-[34px]
-                             after:w-[34px] after:-translate-x-1/2 after:-translate-y-1/2
+                             after:absolute after:left-1/2 after:top-1/2 after:h-[44px]
+                             after:w-[44px] after:-translate-x-1/2 after:-translate-y-1/2
                              after:content-['']"
                 >
                   ×
@@ -670,7 +672,7 @@ export function SetGridView(props: SetGridViewProps) {
               className="relative shrink-0 cursor-pointer border-0 bg-transparent p-0
                          font-mono text-[11px] leading-[14px] underline whitespace-nowrap
                          text-[color:var(--fg-muted)]
-                         after:absolute after:left-1/2 after:top-1/2 after:h-[34px]
+                         after:absolute after:left-1/2 after:top-1/2 after:h-[44px]
                          after:min-w-[44px] after:w-full after:-translate-x-1/2
                          after:-translate-y-1/2 after:content-['']"
             >
