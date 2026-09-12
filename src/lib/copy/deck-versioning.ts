@@ -50,14 +50,20 @@ export const deckVersioningCopy = {
     // `unfree` counts ROWS and `buy` counts COPIES, and they are not the same
     // number: one card wanted three times with no free copy is one row and three
     // copies. The sentence says both, so it takes both.
+    //
+    // "short of spare copies", never "has no free copy": a row wanting five with
+    // one spare in the collection is unfree and is not uncovered, and the
+    // narrower sentence would tell that player their own copy does not exist.
     money: (unfree: number, adds: number, buy: number, total: string) =>
-      `${unfree} of the ${adds} ${unfree === 1 ? "has" : "have"} no free copy, so this commit ` +
-      `will ask for ${buy} to buy · ${total}.`,
+      `${unfree} of the ${adds} ${unfree === 1 ? "is" : "are"} short of spare copies, ` +
+      `so this commit will ask for ${buy} to buy · ${total}.`,
     moneyPulls: (n: number) =>
       n === 1
         ? "1 of those is sleeved in another deck and can be pulled instead."
         : `${n} of those are sleeved in other decks and can be pulled instead.`,
-    moneyNone: "Every card coming in has a free copy, so this commit asks for nothing.",
+    // The positive counterpart of `money`, in the same words: covered means
+    // enough spare copies for what the row asks, not one copy owned.
+    moneyNone: "Every card coming in has enough spare copies, so this commit asks for nothing.",
 
     reviewCta: (n: number) => `Review ${plural(n, "change")}`,
     reviewLink: "review changes",
@@ -68,23 +74,46 @@ export const deckVersioningCopy = {
     addPullHint: (deck: string) => `or pull from ${deck}`,
     removeHint: "back in the pool on commit",
 
-    // The decklist mark is a 3px --accent left rule on the row, not a chip: the
+    // The decklist mark is a 2px --accent left rule on the row — the Component
+    // notes table's width, which overrides §Surfaces' 3px prose — not a chip: the
     // card-rows floor makes horizontal room the binding constraint, and a chip would
     // take ~86px of name width on each of nineteen rows. The rule is absorbed by the
     // row's own padding. This string is the row's ACCESSIBLE NAME only — it is never
     // rendered visually.
     addMarkA11y: "pending add",
-    // Said once above the list instead of once per row.
-    addListCaption: (n: number) =>
-      `the brass rule marks the ${plural(n, "row")} this draft added`,
+    // A recounted row prints `Sol Ring 1 → 2` beside the name, but the name's
+    // accessible label is the card's whole printed name and carries no count, so
+    // the pair would never be spoken. It rides the same description as the word.
+    addMarkRecountedA11y: (from: number, to: number) =>
+      `pending add, was ${from}, now ${to}`,
+    // The same rule on a row whose count came DOWN — state 11 is `+1 / −1`, so a
+    // cut of two copies out of three is as much a ruled row as an add is. It
+    // cannot borrow the word above: the card is in v2, and calling the row a
+    // pending add would say the opposite of what happened to it.
+    cutMarkRecountedA11y: (from: number, to: number) =>
+      `pending cut, was ${from}, now ${to}`,
+    // Said once above the list instead of once per row. `changed`, not `added`:
+    // the same rule marks a row the draft cut copies from.
+    changeListCaption: (n: number) =>
+      `the brass rule marks the ${plural(n, "row")} this draft changed`,
     // On the group heading, so grouping by type also maps where the draft happened.
-    groupAddNote: (n: number) => `${n} added in this draft`,
+    groupChangeNote: (n: number) => `${n} changed in this draft`,
     // The list toolbar's right slot, replacing "n cards are yours now" while a draft exists.
+    // `differ from`, not `not in yet`: a row that held three copies and now holds
+    // one is in the version, at a count the version does not have.
     toolbarNote: (n: number, version: number) =>
-      `${n} of these ${n === 1 ? "is" : "are"} not in v${version} yet`,
+      `${n} of these ${n === 1 ? "differs" : "differ"} from v${version}`,
+    // The mix strip's header, beside the EDHREC source line: which list the five
+    // figures below were counted from. Drawn only while a draft exists — on a
+    // clean deck there is one list, and naming it would raise a question the
+    // reader does not have.
+    mixStripDraftNote: "· reading the draft",
     // The mix cell's bottom-left slot takes the previous figure instead of the
     // recommendation while a draft exists — but ONLY when the figure actually moved.
     mixCellWas: (n: number) => `was ${n}`,
+    // The caption above is not part of the cell's accessible name — a figure's and
+    // a button's name come from `aria-label` — so the move is appended to it.
+    mixCellWasA11y: (base: string, n: number) => `${base}, was ${n}`,
 
     // Committed and clean: the whole of versioning's permanent footprint.
     versionLine: (version: number, date: string) => `v${version} · committed ${date}`,
@@ -145,14 +174,19 @@ export const deckVersioningCopy = {
     lede: (version: number, unfree: number, removed: number) => {
       const head = `v${version} becomes the deck's list immediately.`;
       // A first commit, an all-free draft and a basics-only draft each leave one of
-      // these figures at zero, and "The 0 cards with no free copy" explains a
+      // these figures at zero, and "The 0 cards short of spare copies" explains a
       // consequence nobody is facing. Only the halves that moved are named, and a
       // draft with neither says nothing further — the lede alone is the whole fact.
+      //
+      // "short of spare copies" is the banner's own wording, for the banner's own
+      // reason: `unfree` counts a row a player holds one copy of and wants five,
+      // and that row is not a card they own none of.
       const clauses = [
         unfree === 1
-          ? "the one card with no free copy keeps its buy tag until you actually buy it"
+          ? "the one card short of spare copies keeps its buy tag until you actually buy it"
           : unfree > 1
-            ? `the ${unfree} cards with no free copy keep their buy tags until you actually buy them`
+            ? `the ${unfree} cards short of spare copies keep their buy tags until you ` +
+              "actually buy them"
             : null,
         removed > 0
           ? `the ${removed} you cut ${removed === 1 ? "is" : "are"} back in the pool the moment ` +

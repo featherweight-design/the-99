@@ -19,6 +19,8 @@
 // out. Staleness stops being something each card asserts badly and becomes one
 // fact about the table, disclosed once on the strip.
 
+import { priceCopy } from "../copy/price";
+
 export type PriceFact = {
   cents: number | null;
   foilCents: number | null;
@@ -111,6 +113,28 @@ export function formatCents(cents: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+/**
+ * `foil` and `etched` each name which printing the figure belongs to, so the figure is
+ * incomplete without it: a foil-only `$9.40` stated bare is the normal
+ * printing's price, which is a figure the feed never gave.
+ *
+ * Lives here rather than in `BuyTag` because two surfaces format the same fact —
+ * the tag draws the qualifier in its own ink, and the pending banner arrives
+ * with the figure already a string.
+ */
+export function priceQualifier(fact: PriceFact, state: PriceState): string | null {
+  if (state !== "foilOnly") return null;
+  return fact.foilCents !== null ? priceCopy.tag.foil : priceCopy.tag.etched;
+}
+
+/** The figure and its qualifier as one run, for a caller with nowhere to put a span. */
+export function formatPriceFigure(fact: PriceFact, state: PriceState): string | null {
+  const cents = priceOf(fact, state);
+  if (cents === null) return null;
+  const qualifier = priceQualifier(fact, state);
+  return qualifier ? `${formatCents(cents)} ${qualifier}` : formatCents(cents);
 }
 
 export type PricedCard = {

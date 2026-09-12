@@ -9,6 +9,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 
 // ── Server-action mocks ───────────────────────────────────────────────────────
 vi.mock("../../app/decks/actions", () => ({
@@ -69,6 +71,8 @@ function renderDecklist(
     filled?: boolean;
     fetchCard?: (oracleId: string) => Promise<unknown>;
     spentSlot?: DeckDetailCard | null;
+    filter?: "all" | "shopping";
+    pendingChanges?: ReadonlyMap<string, { from: number; to: number }>;
   } = {},
 ) {
   const deckEdits = {
@@ -97,10 +101,11 @@ function renderDecklist(
           bodySize={99}
           filled={opts.filled ?? false}
           spentSlot={opts.spentSlot ?? null}
-          filter="shopping"
+          filter={opts.filter ?? "shopping"}
           grouping="role"
           onFilterChange={vi.fn()}
           onGroupingChange={vi.fn()}
+          pendingChanges={opts.pendingChanges}
           shoppingFigures={opts.shoppingFigures === undefined ? {} : opts.shoppingFigures}
         />
       </AddOptimisticCardProvider>
@@ -606,6 +611,102 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByText(recommendationsCopy.shopping.emptyCoveredHeading),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// Both pending notes promise a visual mapping: the caption says the brass rule
+// marks the changed rows, and the group note says how many of a heading's rows the
+// draft changed. Only `decklist-row.tsx` draws that rule — `DeckCardTile` carries
+// no pending mark at all — so in card view each sentence would point at a marker
+// the reader cannot find. `toolbarNote` states a count and no marker, so it
+// stays in both views; the test below holds that distinction in place.
+describe("the pending-change notes are the row view's, because the mark is", () => {
+  const pendingChanges = new Map([["sol-ring", { from: 0, to: 1 }]]);
+
+  it("captions the list and heads the group in list view", () => {
+    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
+
+    expect(
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(deckVersioningCopy.pending.groupChangeNote(1)),
+    ).toBeInTheDocument();
+  });
+
+  // Shopping's rows are the same `DecklistRow`, so they carry the same brass
+  // rule and need the same sentence. The figure is the marks on screen, not the
+  // whole draft: this list is a subset, and a caption counting rows the reader
+  // cannot see would be a caption about nothing.
+  it("captions Shopping over the marked rows it actually shows", () => {
+    renderDecklist([rampUnowned, drawUnowned], {
+      filter: "shopping",
+      pendingChanges: new Map([
+        [rampUnowned.oracleId, { from: 0, to: 1 }],
+        // In the draft, not in this list — an owned add is nothing to buy.
+        ["sol-ring", { from: 0, to: 1 }],
+      ]),
+    });
+
+    expect(
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).toBeInTheDocument();
+  });
+
+  it("says nothing in Shopping when none of its rows is a changed one", () => {
+    renderDecklist([rampUnowned, drawUnowned], {
+      filter: "shopping",
+      pendingChanges: new Map([["sol-ring", { from: 0, to: 1 }]]),
+    });
+
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).not.toBeInTheDocument();
+  });
+
+  // A spent slot draws the undo receipt instead of the row, and the receipt
+  // carries no brass rule — so its change is real in the draft and invisible in
+  // the list. Counting it would promise a mark the reader can hunt for and never
+  // find, in the one moment the list is already mid-edit.
+  it("leaves a spent slot's change out of both figures", () => {
+    renderDecklist([drawOwned], {
+      filter: "all",
+      spentSlot: rampOwned,
+      pendingChanges: new Map([
+        [drawOwned.oracleId, { from: 0, to: 1 }],
+        [rampOwned.oracleId, { from: 1, to: 0 }],
+      ]),
+    });
+
+    expect(
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.changeListCaption(2)),
+    ).not.toBeInTheDocument();
+    // The spent card's own group heading — Ramp holds nothing else here, so a
+    // note there would be a note over a group with no marked row in it.
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(1)),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(2)),
+    ).not.toBeInTheDocument();
+  });
+
+  it("says neither in card view, where no tile draws the rule", () => {
+    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0],
+    );
+
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(1)),
     ).not.toBeInTheDocument();
   });
 });

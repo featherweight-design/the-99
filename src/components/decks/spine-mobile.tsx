@@ -17,11 +17,18 @@ import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
+import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 
-export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) {
+export function SpineMobile({
+  deck,
+  counts,
+  status,
+  onExport,
+  offerFirstCommit,
+}: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
   const { built } = counts;
@@ -325,7 +332,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
       </div>
 
       <div
-        className="flex justify-center"
+        className="flex flex-wrap justify-center"
         style={{ padding: "4px 16px 14px", gap: 8 }}
       >
         {built > 0 && (
@@ -360,6 +367,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
             Export
           </button>
         )}
+        {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
       </div>
     </header>
   );

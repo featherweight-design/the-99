@@ -29,16 +29,16 @@ describe("deckVersioningCopy", () => {
   it("agrees with a figure of one across the module", () => {
     expect(copy.pending.since(1, 2)).toBe("1 change since v2");
     expect(copy.pending.reviewCta(1)).toBe("Review 1 change");
-    expect(copy.pending.money(1, 4, 1, "$2.00")).toContain("1 of the 4 has no free copy");
+    expect(copy.pending.money(1, 4, 1, "$2.00")).toContain("1 of the 4 is short of spare copies");
     expect(copy.pending.moneyPulls(1)).toBe(
       "1 of those is sleeved in another deck and can be pulled instead.",
     );
-    expect(copy.pending.toolbarNote(1, 3)).toBe("1 of these is not in v3 yet");
+    expect(copy.pending.toolbarNote(1, 3)).toBe("1 of these differs from v3");
     expect(copy.review.heading(1, 2)).toBe("1 change since v2");
     expect(copy.review.outNote(1)).toMatch(/^it goes back in the pool/);
     expect(copy.review.footer(1, 0, 0)).toContain("1 card ·");
     expect(copy.commit.lede(2, 1, 1)).toContain(
-      "The one card with no free copy keeps its buy tag until you actually buy it",
+      "The one card short of spare copies keeps its buy tag until you actually buy it",
     );
     expect(copy.commit.lede(2, 1, 1)).toContain("the 1 you cut is back in the pool");
     expect(copy.commit.buyBackLink(1)).toBe("the 1 row is on the review page ↑");
@@ -70,7 +70,7 @@ describe("deckVersioningCopy", () => {
       "v2 becomes the deck's list immediately. The 3 you cut are back in the pool the moment you commit.",
     );
     expect(copy.commit.lede(2, 2, 0)).toBe(
-      "v2 becomes the deck's list immediately. The 2 cards with no free copy keep their buy tags " +
+      "v2 becomes the deck's list immediately. The 2 cards short of spare copies keep their buy tags " +
         "until you actually buy them.",
     );
     expect(copy.commit.lede(1, 0, 0)).toBe("v1 becomes the deck's list immediately.");
@@ -84,7 +84,7 @@ describe("deckVersioningCopy", () => {
   it("counts rows and copies separately in the money line", () => {
     // One card wanted three times is one unfree row and three copies to buy.
     expect(copy.pending.money(1, 4, 3, "$6.00")).toBe(
-      "1 of the 4 has no free copy, so this commit will ask for 3 to buy · $6.00.",
+      "1 of the 4 is short of spare copies, so this commit will ask for 3 to buy · $6.00.",
     );
   });
 

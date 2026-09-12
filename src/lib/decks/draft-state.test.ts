@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 import type { Availability, DeckClaim } from "./availability";
 import { summarisePrices } from "./price";
 import {
-  bucketDraftAdds, changeCount, hasChanges, releasableClaims, unfreeAdds,
-  type DraftState,
+  bucketDraftAdds, changeCount, hasChanges, pullHints, releasableClaims, unfreeAdds,
+  type DraftAdd, type DraftState,
 } from "./draft-state";
 
 const state = (over: Partial<DraftState> = {}): DraftState => ({
   version: null, adds: [], addChanges: [], removes: [], basicsChanged: false,
-  names: new Map(), claimsKnown: true, buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
+  names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
+  claimsKnown: true,
+  buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
   pricedCopies: 0, newestAsOf: null,
   manaValue: null, manaValueBefore: null, ...over,
 });
@@ -97,5 +99,38 @@ describe("releasableClaims", () => {
 
   it("reads a card nobody claims as nothing to release", () => {
     expect(releasableClaims(undefined)).toEqual([]);
+  });
+});
+
+describe("pullHints", () => {
+  const claim = (over: Partial<DeckClaim> = {}): DeckClaim => ({
+    id: "d-1", name: "Kykar, Wind's Fury", quantity: 1,
+    mature: true, pending: false, commander: false, ...over,
+  });
+  const add = (over: Partial<DraftAdd> = {}): DraftAdd => ({
+    oracleId: "o1", needed: 1, shortfall: 1, bucket: "claimed", heldBy: [], ...over,
+  });
+  const availability = (claims: DeckClaim[]): Map<string, Availability> =>
+    new Map([["o1", { owned: 1, hard: 1, soft: 0, free: 0, claims }]]);
+
+  it("names the releasable holder of a claimed add", () => {
+    expect(pullHints([add()], availability([claim()])).get("o1")).toBe("Kykar, Wind's Fury");
+  });
+
+  // The row is free because the collection has a spare copy. Another deck
+  // holding one too changes nothing: there is no purchase to avoid, and
+  // `pullableCount` does not count the row either.
+  it("offers no pull on a free add, even when a releasable deck holds one", () => {
+    expect(pullHints([add({ bucket: "free", shortfall: 0 })], availability([claim()])).size).toBe(0);
+  });
+
+  it("offers no pull when every holder is refused", () => {
+    expect(pullHints([add()], availability([claim({ pending: true })])).size).toBe(0);
+  });
+
+  // The failed claim read: nothing is known about who holds the card, so no
+  // offer can be made — the same degradation every other figure takes.
+  it("offers no pull when the claim read failed", () => {
+    expect(pullHints([add({ bucket: null, shortfall: 0 })], null).size).toBe(0);
   });
 });

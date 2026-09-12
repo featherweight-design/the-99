@@ -12,12 +12,14 @@ import { computeRoleCounts } from "../../lib/decks/mix";
 import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { GroupToggle, type AutoControls, type DeckView } from "./group-toggle";
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
+import type { PendingChangeMove } from "./pending-change";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
@@ -91,7 +93,22 @@ type DecklistProps = {
   newestAsOf?: Date | null;
   /** Built on the server; see BuilderShell. */
   provenance?: ProvenanceForm | null;
+  /**
+   * The cards this deck's draft changed against its newest version (#389), each
+   * against its quantity move. Empty on a brew and on a committed deck with
+   * nothing pending, which is why every note below is gated on the map's size
+   * rather than on a second flag. Nothing here reads a move — the notes count
+   * rows — but the rows read the same map through `PendingChangeProvider`, which is
+   * where the pair is printed.
+   */
+  pendingChanges?: ReadonlyMap<string, PendingChangeMove>;
+  /** The newest version's number, for the toolbar note. Null on a brew. */
+  pendingVersion?: number | null;
 };
+
+/** Module-scoped, so the default does not hand a fresh map to the provider on
+ *  every render and remount the rows under it. */
+const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
 
 export function Decklist({
   deckId,
@@ -119,12 +136,22 @@ export function Decklist({
   shoppingFigures = {},
   newestAsOf = null,
   provenance = null,
+  pendingChanges = EMPTY_PENDING_CHANGES,
+  pendingVersion = null,
 }: DecklistProps) {
   // The view does not persist and does not touch the URL: it is one visit's
   // reading preference, where `/collection`'s `?view=` answers a browse
   // surface's different question. Held here because nothing above the list
   // reads it.
   const [view, setView] = useState<DeckView>("list");
+
+  // The toolbar's right slot while a draft exists. Needs both answers: a deck
+  // with no version has no vN to count against, and a set with nothing in it has
+  // nothing to count. Null in either case, and the kept note keeps the slot.
+  const draftNote =
+    pendingChanges.size > 0 && pendingVersion !== null
+      ? deckVersioningCopy.pending.toolbarNote(pendingChanges.size, pendingVersion)
+      : null;
 
   // undefined = no figure line on the row. That is the All view's answer, and
   // also the outage's: with EDHREC unreachable we know nothing about any of
@@ -184,6 +211,18 @@ export function Decklist({
       : null;
   const listedCards = spentCard ? [...visibleCards, spentCard] : visibleCards;
 
+  // A spent slot draws the undo receipt and returns before the brass rule
+  // (`decklist-row.tsx:282`), so a pending change on that card is a mark the
+  // reader cannot see. Every figure that counts marks reads these two rather
+  // than `pendingChanges` directly — the caption, the group note and Shopping's
+  // own caption all answer "how many marked rows are on this screen".
+  const isMarked = (c: DeckDetailCard) =>
+    pendingChanges.has(c.oracleId) && c.oracleId !== spentCard?.oracleId;
+  const markedPendingCount =
+    spentCard && pendingChanges.has(spentCard.oracleId)
+      ? pendingChanges.size - 1
+      : pendingChanges.size;
+
   // Group the visible cards
   const groups =
     grouping === "type" ? groupByCardType(listedCards) : groupByRole(listedCards);
@@ -217,6 +256,16 @@ export function Decklist({
     const notSpent = (c: DeckDetailCard) => c.oracleId !== spentCard?.oracleId;
     const spokenForCards = listedCards.filter(isSpokenFor);
     const missingCards = listedCards.filter((c) => !c.owned);
+
+    // The marked rows this branch actually draws — the three groups below hold
+    // every row it has. The rows carry the brass rule here exactly as they do
+    // under All, so the caption has to come with them; what changes is the
+    // figure, which counts the marks on screen rather than the whole draft. A
+    // caption counting rows the reader cannot see would be a caption about
+    // nothing, and no caption at all leaves the rule unexplained.
+    const markedOnScreen = new Set(
+      [...missingCards, ...spokenForCards].filter(isMarked).map((c) => c.oracleId),
+    ).size;
 
     // Build shopping groups: only roles that have ROLE_TARGETS (no land or other).
     const shoppingGroups = SHOPPING_ROLE_ORDER.flatMap((role) => {
@@ -305,6 +354,7 @@ export function Decklist({
             keepAllPending={keepAllPending}
             autoControls={autoControls}
             shoppingCards={shoppingList}
+            draftNote={draftNote}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
@@ -369,6 +419,7 @@ export function Decklist({
           priceSummary={priceSummary}
           provenance={provenance}
           shoppingCards={shoppingList}
+          draftNote={draftNote}
         />
 
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
@@ -396,6 +447,12 @@ export function Decklist({
                     String(spokenForN),
                   )}
           </p>
+
+          {markedOnScreen > 0 && (
+            <p className="m-0 mb-[14px] font-mono text-[10px] text-[color:var(--fg-faint)]">
+              {deckVersioningCopy.pending.changeListCaption(markedOnScreen)}
+            </p>
+          )}
 
           {/* Role groups */}
           {shoppingGroups.map(({ role, label, cards: groupCards, gapClause }) => (
@@ -546,6 +603,7 @@ export function Decklist({
         priceSummary={priceSummary}
         provenance={provenance}
         shoppingCards={shoppingList}
+        draftNote={draftNote}
       />
 
       {/* Grouped card rows */}
@@ -575,18 +633,52 @@ export function Decklist({
             {addPanelCopy.emptyList}
           </p>
         )}
-        {groups.map(([label, groupCards]) => (
-          <DecklistGroup
-            key={label}
-            deckId={deckId}
-            label={label}
-            cards={groupCards}
-            view={view}
-            spentOracleId={spentCard?.oracleId}
-            siblings={orderedIds}
-            newestAsOf={newestAsOf}
-          />
-        ))}
+        {/* Said once for the whole list rather than once per marked row: at
+            nineteen adds the per-row version is nineteen copies of one
+            sentence. The draft's figure less any spent slot, because this list
+            holds every changed row that still draws a rule; Shopping draws its
+            own caption over the subset it shows. List
+            view only, with `groupChangeNote` below it, for the same reason: the
+            brass rule lives on the row, and the card view draws tiles that carry
+            no mark at all. A sentence pointing at a marker nobody can see is
+            worse than silence. */}
+        {markedPendingCount > 0 && view === "list" && (
+          <p className="m-0 mb-[8px] font-mono text-[10px] text-[color:var(--fg-faint)]">
+            {deckVersioningCopy.pending.changeListCaption(markedPendingCount)}
+          </p>
+        )}
+        {groups.map(([label, groupCards]) => {
+          // Omitted at zero rather than printed as `0 changed in this draft`: a
+          // group the draft did not touch has nothing to say about it.
+          // List view only: this note is the heading's half of one mark, and the
+          // card view's tiles draw the other half nowhere.
+          const changedInGroup =
+            view === "list"
+              ? groupCards.filter(isMarked).length
+              : 0;
+          return (
+            <DecklistGroup
+              key={label}
+              deckId={deckId}
+              label={label}
+              cards={groupCards}
+              view={view}
+              spentOracleId={spentCard?.oracleId}
+              siblings={orderedIds}
+              newestAsOf={newestAsOf}
+              note={
+                changedInGroup > 0
+                  ? deckVersioningCopy.pending.groupChangeNote(changedInGroup)
+                  : undefined
+              }
+              // Brass, the same brass as the rules below it: this note is the
+              // heading's half of one mark. The quiet default belongs to the
+              // unresolved group's note, which describes rows rather than
+              // pointing at them.
+              noteColor="var(--accent)"
+            />
+          );
+        })}
 
         {/* Pinned last, after every type or role group. */}
         <UnresolvedGroup

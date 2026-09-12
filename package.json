@@ -31,7 +31,8 @@
     "probe:folders": "tsx scripts/probe-folders.ts",
     "probe:stats": "tsx scripts/probe-deck-stats.ts",
     "probe:writer-version": "node scripts/probe-writer-version.mjs",
-    "probe:draft": "tsx scripts/probe-draft-state.ts"
+    "probe:draft": "tsx scripts/probe-draft-state.ts",
+    "probe:pending": "node scripts/probe-pending-banner.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",

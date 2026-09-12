@@ -82,3 +82,21 @@ export function colorLabel(identity: string[]): string {
   }
   return "Multi";
 }
+
+/**
+ * A committed date, as a version line and the history list print it: `1 Sep 2026`.
+ *
+ * The year is always carried, unlike the game log's own `formatPlayed`, which
+ * drops it inside the current year to fit a fixed meta slot. A version is a
+ * historical record a player reads years later, and the one thing it must never
+ * be is ambiguous about which September.
+ *
+ * Composed rather than handed whole to Intl, and `en-US` rather than `en-GB`,
+ * for the reason the game log gives: en-GB abbreviates September as `Sept`.
+ * UTC, because `committed_at` is stamped by the database in UTC and a local
+ * boundary would render one day on the server and another in the browser.
+ */
+export function formatDeckDate(date: Date): string {
+  const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+  return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`;
+}

@@ -52,6 +52,14 @@ type GroupToggleProps = {
       Required, not defaulted: an empty list renders the strip with no link at
       all, so a caller that forgot it would ship a silently link-less strip. */
   shoppingCards: { name: string; quantity: number }[];
+  /**
+   * The draft's own note for this slot (#389, surface 1) — `n of these are not
+   * in vN yet`. While it is set the auto cluster's kept note stands down: the
+   * slot holds one sentence, and "37 cards are yours now" beside "12 of these
+   * are not in v2 yet" is two counts of the same list that answer different
+   * questions. The bulk controls themselves are untouched.
+   */
+  draftNote?: string | null;
 };
 
 export function GroupToggle({
@@ -71,6 +79,7 @@ export function GroupToggle({
   priceSummary = null,
   provenance = null,
   shoppingCards,
+  draftNote = null,
 }: GroupToggleProps) {
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px.
@@ -125,10 +134,23 @@ export function GroupToggle({
             Absent at zero, disabled only while one of its own writes runs. Not
             gated on autoCount here: state 7 keeps the kept-note after the last
             auto card goes, and the component decides its own absence. */}
+        {/* The draft's note, in the slot the kept note otherwise holds. Its own
+            element rather than a value passed through the auto cluster: the
+            cluster is absent entirely on a deck the fill never ran on, and the
+            draft note has to survive that. */}
+        {draftNote && (
+          <span className="font-mono text-[11.5px] text-fg-locked hidden md:inline">
+            {draftNote}
+          </span>
+        )}
+
         {autoControls && (
           <ClearAutoButton
             count={autoCount}
-            keptCount={keptCount}
+            // Zeroed while the draft speaks for this slot — see `draftNote`.
+            // The cluster's own absence test reads it, so a deck with no auto
+            // cards left drops the wrapper rather than keeping an empty one.
+            keptCount={draftNote ? 0 : keptCount}
             onClear={autoControls.onClear}
             pending={sweepPending}
             onKeepAll={autoControls.onKeepAll}

@@ -1,5 +1,6 @@
 // Role Counter Strip — §Role Counter Strip — 5 cells.
 // Server component — recomputes role counts from detail.cards.
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import {
   computeRoleCounts,
@@ -30,6 +31,13 @@ type RoleCounterStripProps = {
    *  straight through to each cell so a short cell reads as a short-in-filled-deck
    *  rather than as an ordinary short. Defaults to false. */
   justFilled?: boolean;
+  /** The role counts the newest committed version held (#389). Absent on a brew
+   *  and on a committed deck with nothing pending. A cell whose figure has not
+   *  moved keeps its recommendation line, so an unchanged role says nothing new.
+   *  Must be the same fold as `counts` below — the caller runs
+   *  `computeRoleCounts` over the version's cards — or the two figures in one
+   *  cell are measuring different things. */
+  wasCounts?: Record<MixRole, number>;
 } & (
   | { onSeeShelf: (role: MixRole) => void; rolesWithShelves: ReadonlySet<MixRole> }
   | { onSeeShelf?: never; rolesWithShelves?: never }
@@ -42,6 +50,7 @@ export function RoleCounterStrip({
   onSeeShelf,
   rolesWithShelves,
   justFilled = false,
+  wasCounts,
 }: RoleCounterStripProps) {
   const counts = computeRoleCounts(cards);
 
@@ -82,6 +91,20 @@ export function RoleCounterStrip({
         >
           {RECOMMENDED_MIX_SOURCE_LINE}
         </span>
+
+        {/* §Strip header — the draft sub-run (#389, surface 1). `wasCounts` is
+            the draft's own presence: absent on a brew and on a committed deck
+            with nothing pending, which is exactly when the figures below have
+            only one list to have come from. It rides the source line's size and
+            breakpoint so the two read as one sentence. */}
+        {wasCounts && (
+          <span
+            className="hidden md:inline font-mono text-[10.5px] tracking-[0.06em]"
+            style={{ color: "var(--accent)" }}
+          >
+            {deckVersioningCopy.pending.mixStripDraftNote}
+          </span>
+        )}
       </div>
 
       {/* Role cells row */}
@@ -94,6 +117,7 @@ export function RoleCounterStrip({
             target={RECOMMENDED_MIX[role].target}
             advisory={RECOMMENDED_MIX[role].advisory}
             justFilled={justFilled}
+            was={wasCounts?.[role] !== counts[role] ? wasCounts?.[role] : undefined}
             onSeeShelf={
               onSeeShelf &&
               counts[role] < RECOMMENDED_MIX[role].target &&

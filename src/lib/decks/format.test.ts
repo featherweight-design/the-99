@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colorLabel, deckIdentity } from "./format";
+import { colorLabel, deckIdentity, formatDeckDate } from "./format";
 
 describe("deckIdentity", () => {
   it("orders a lone primary WUBRG, so its pips match a pair's", () => {
@@ -101,5 +101,26 @@ describe("colorLabel", () => {
     expect(colorLabel(["W", "U", "B", "R", "R"])).toBe("Multi");
     expect(colorLabel(["W", "W", "U", "U", "B", "B"])).toBe("Multi");
     expect(colorLabel(["W", "W"])).toBe("Multi");
+  });
+});
+
+describe("formatDeckDate", () => {
+  it("prints the version line's shape, year always carried", () => {
+    expect(formatDeckDate(new Date("2026-09-01T12:00:00Z"))).toBe("1 Sep 2026");
+  });
+
+  // The reason the formatter reads UTC throughout rather than the runtime's
+  // zone: this instant is 1 September in UTC and 31 August in the Americas, and
+  // a version stamped by the database must render as one date everywhere.
+  it("reads the UTC day, not the runtime's", () => {
+    expect(formatDeckDate(new Date("2026-09-01T00:30:00Z"))).toBe("1 Sep 2026");
+    expect(formatDeckDate(new Date("2026-09-01T23:30:00Z"))).toBe("1 Sep 2026");
+  });
+
+  // A year boundary is where a mixed-zone formatter is wrong by a whole year,
+  // not a day — the failure the always-carried year exists to make visible.
+  it("keeps day, month and year on the same side of a year boundary", () => {
+    expect(formatDeckDate(new Date("2026-01-01T00:00:00Z"))).toBe("1 Jan 2026");
+    expect(formatDeckDate(new Date("2025-12-31T23:59:59Z"))).toBe("31 Dec 2025");
   });
 });

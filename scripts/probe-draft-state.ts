@@ -23,7 +23,14 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { changeCount, hasChanges, loadDraftRows, loadDraftState } from "../src/lib/decks/draft-state";
+import {
+  changeCount,
+  hasChanges,
+  loadDraftRows,
+  loadDraftState,
+  loadVersionShape,
+} from "../src/lib/decks/draft-state";
+import { computeRoleCounts } from "../src/lib/decks/mix";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -203,6 +210,34 @@ try {
   check("an add reads as unowned", rows.in.every((r) => !r.owned), true);
   //    A cut makes no purchase decision, whatever the claim read said.
   check("an out row carries no bucket", rows.out[0]?.bucket, null);
+
+  // 7. THE VERSION'S SHAPE. What the mix strip's `was n` figures are counted
+  //    from, and the one read here that goes through the catalog rather than the
+  //    diff: `deck_version_cards` stores an oracle id and a quantity and no type
+  //    line at all, so a broken join returns nothing and every previous count
+  //    silently disappears rather than failing. A second version carries a basic
+  //    land at 12 copies, because the fold is per-copy and a role read off a row
+  //    count would pass on a quantity of one.
+  const { rows: [v2] } = await fixture.execute<{ id: string; committed_at: string }>(sql`
+    insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+    values (${deck.id}, 2, now(), ${card.commander}, now()) returning id, committed_at
+  `);
+  await fixture.execute(sql`
+    insert into deck_version_cards (version_id, oracle_id, quantity, since) values
+      (${v2.id}, ${card.kept}, 1, ${v2.committed_at}),
+      (${v2.id}, ${card.basic}, 12, ${v2.committed_at})
+  `);
+  const shape = await loadVersionShape(v2.id);
+  check("the version's cards come back", shape.length, 2);
+  check(
+    "the catalog join carried a type line for every one",
+    shape.every((s) => s.typeLine.length > 0),
+    true,
+  );
+  check("a basic land folds to the land role", shape.filter((s) => s.role === "land").length, 1);
+  //    Through the same `computeRoleCounts` the strip uses, so the figure the
+  //    cells read is the figure proved here.
+  check("the fold counts copies, not rows", computeRoleCounts(shape).land, 12);
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);

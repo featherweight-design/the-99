@@ -5,13 +5,20 @@
 
 import { useId } from "react";
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CostPips, parseManaCost } from "../ui/cost-pips";
+import {
+  COST_PIP_CAP,
+  COST_PIP_SIZE,
+  COST_TRACK,
+  CostPips,
+  parseManaCost,
+} from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_SHELL as SHARED_ROW_SHELL } from "../ui/row-shell";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -30,6 +37,8 @@ import {
   useReportRemoveFailure,
 } from "./optimistic-deck";
 import { usePassMark } from "./pass-mark";
+import { usePendingChange } from "./pending-change";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -44,14 +53,10 @@ const ROW_SHELL = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[44px] md:min-h-[34p
 
 const ROW_SHELL_META = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h-[34px]`;
 
-/** Desktop pip metrics. The track never widens: a variable track would put the
- *  pips of adjacent rows on different vertical lines, which is the failure the
- *  search row's fixed slot exists to prevent. */
-const PIP_TRACK = 40;
-const PIP_SIZE_DESKTOP = 12;
-const PIP_CAP = 5;
-/** Phone pips ride the meta line at its own size, plain and uncapped — there
- *  the line is theirs alone and has the width to spend. */
+/** Phone pips ride the meta line at their own size, plain and uncapped — there
+ *  the line is theirs alone and has the width to spend. Desktop takes the shared
+ *  `COST_*` metrics: the track never widens, because a variable track would put
+ *  the pips of adjacent rows on different vertical lines. */
 const PIP_SIZE_PHONE = 13;
 
 interface DecklistRowProps {
@@ -110,10 +115,22 @@ export function DecklistRow({
   // there is room to spare the two are identical — grow still takes the slack.
   const nameBlockClass = "flex-auto min-w-0 flex items-center gap-[6px]";
 
+  // The draft changed this card (#389, surface 1), and the move that changed it.
+  // Read this high because the count glyph below depends on it: a row whose
+  // count merely moved prints `1 → 2` in the name's place, and `×2` beside that
+  // is the second figure saying the same thing.
+  const pendingChange = usePendingChange();
+  const pendingMove = pendingChange?.moves.get(card.oracleId);
+  const isPendingChange = pendingMove !== undefined;
+  // A move out of a count the version already held, as against a card it did
+  // not hold at all. Only the former has a pair to print, and it prints the same
+  // pair whichever way the count went.
+  const recounted = pendingMove && pendingMove.from > 0 && pendingMove.to > 0 ? pendingMove : null;
+
   // Multi-copy count (addendum C5): one row per card, the count inline after
   // the name. aria-hidden because the ✕ beside it already speaks the same
   // figure in prose — a reader that voiced both would say the number twice.
-  const quantityGlyph = card.quantity > 1 && (
+  const quantityGlyph = card.quantity > 1 && !recounted && (
     <span
       aria-hidden
       className="flex-none font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]"
@@ -162,6 +179,18 @@ export function DecklistRow({
   // modal — one tap away on this very name — is the recovery path for the clip.
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
+  // What the row prints. A recounted row carries its pair inline with the name,
+  // because the brass rule says only "the draft touched this" and a reader
+  // looking at `Sol Ring` cannot tell 1 → 2 from a card that was not there.
+  // The accessible name stays `fullName`: the pair is about the deck's count,
+  // not about which card this is.
+  const rowLabel = recounted
+    ? deckImportCopy.update.diff.recountedItem(
+        displayName,
+        String(recounted.from),
+        String(recounted.to),
+      )
+    : displayName;
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -191,11 +220,33 @@ export function DecklistRow({
   // the decklist by Tab never leaves focus mode — so the pass that placed the
   // card would go unspoken to exactly the reader the mark is drawn for.
   const markDescriptionId = useId();
-  const describedBy = marked ? markDescriptionId : undefined;
+  // The draft's own id rather than a share of the pass mark's (#389, surface 1):
+  // a row can be both a pending add and the marked pass's card, and
+  // `aria-describedby` takes both ids in reading order where one string could
+  // only replace the other.
+  const pendingDescriptionId = useId();
+  // §Errata: the dot is decorative and the word it used to carry belongs to the
+  // row. Said through the name's description rather than as the dot's own label
+  // so the two facts about the card — which card, and whether it is owned —
+  // arrive as one announcement instead of a stray word before the name.
+  const availabilityWord = card.owned ? "Owned" : "Not owned";
+  const availabilityDescriptionId = useId();
+  const describedBy =
+    [
+      availabilityDescriptionId,
+      marked ? markDescriptionId : null,
+      isPendingChange ? pendingDescriptionId : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
   // The mark is an inset edge for the same reason the over tint is an inset
   // ring: 3px of real border would shunt one row's contents sideways.
   const rowEdges: string[] = [];
   if (marked) rowEdges.push("inset 3px 0 0 0 var(--accent)");
+  // 2px, the Component notes table's width, and behind the pass mark's 3px when
+  // a row carries both — the first shadow listed paints on top, and the wider
+  // rule is the one that would otherwise show a seam under the narrower.
+  if (isPendingChange) rowEdges.push("inset 2px 0 0 0 var(--accent)");
   if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
 
   function handleRemove() {
@@ -244,12 +295,17 @@ export function DecklistRow({
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
         style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
       >
-        {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
-        <OwnershipDot
-          owned={card.owned}
-          className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
-          label={card.owned ? "Owned" : "Not owned"}
-        />
+        {/* Ownership dot: solid green (owned) vs dashed hollow (unowned).
+            No label — unlabelled it marks itself aria-hidden, which is the
+            §Errata ruling: the word is the row's, said below. */}
+        <OwnershipDot owned={card.owned} className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]" />
+
+        {/* The word the dot used to carry. Ahead of the pass mark and the draft
+            mark in `describedBy`, so a reader hears the card, then whether they
+            own it, then what the deck has done with it. */}
+        <span id={availabilityDescriptionId} className="sr-only">
+          {availabilityWord}
+        </span>
 
         {/* Card name — the click target for the detail modal (#127).
             Any row with a meta line — a Shopping row, or since #350 any row
@@ -279,7 +335,7 @@ export function DecklistRow({
                 describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
               >
-                {displayName}
+                {rowLabel}
               </CardDetailTrigger>
               <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
@@ -327,7 +383,7 @@ export function DecklistRow({
               describedBy={describedBy}
               style={{ color: "var(--fg)" }}
             >
-              {displayName}
+              {rowLabel}
             </CardDetailTrigger>
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
@@ -345,9 +401,9 @@ export function DecklistRow({
           <span className="hidden md:flex flex-none items-center">
             <CostPips
               cost={cost}
-              size={PIP_SIZE_DESKTOP}
-              track={PIP_TRACK}
-              cap={PIP_CAP}
+              size={COST_PIP_SIZE}
+              track={COST_TRACK}
+              cap={COST_PIP_CAP}
               spoken
             />
           </span>
@@ -434,6 +490,29 @@ export function DecklistRow({
         {markLabel && (
           <span id={markDescriptionId} className="sr-only">
             {topOffCopy.ledger.markedRow(markLabel)}
+          </span>
+        )}
+
+        {/* The pending change's whole visible treatment is the brass rule, which a
+            screen reader cannot see. The word rides the name's accessible
+            description instead — never rendered visually, because the
+            card-rows floor makes name width the binding constraint and a chip
+            would spend ~86px of it on every added row. A recounted row's pair
+            rides this description too, because the name's accessible label is
+            the printed name and the visible `1 → 2` is not part of it. */}
+        {isPendingChange && (
+          <span id={pendingDescriptionId} className="sr-only">
+            {recounted
+              ? recounted.to > recounted.from
+                ? deckVersioningCopy.pending.addMarkRecountedA11y(
+                    recounted.from,
+                    recounted.to,
+                  )
+                : deckVersioningCopy.pending.cutMarkRecountedA11y(
+                    recounted.from,
+                    recounted.to,
+                  )
+              : deckVersioningCopy.pending.addMarkA11y}
           </span>
         )}
 

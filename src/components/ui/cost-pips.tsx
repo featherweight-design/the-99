@@ -30,6 +30,19 @@ export function parseManaCost(cost: string): string[] {
 const SHINGLE_FROM = 3;
 const SHINGLE_OVERLAP = 5;
 
+/**
+ * The cost track every surface that draws costs in a column shares.
+ *
+ * Exported rather than repeated per caller because the shingle arithmetic above
+ * is derived from exactly these three numbers: five `COST_PIP_SIZE` pips
+ * overlapping by `SHINGLE_OVERLAP` measure `COST_TRACK` precisely. A caller that
+ * picked its own track would either misalign against the rows beside it or burst
+ * a track this module still believes is 40px wide.
+ */
+export const COST_TRACK = 40;
+export const COST_PIP_CAP = 5;
+export const COST_PIP_SIZE = 12;
+
 type CostPipsProps = {
   cost: string;
   /** Pip diameter. 12px in the decklist's desktop track, 13px on the phone meta line. */

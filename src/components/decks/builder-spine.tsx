@@ -48,6 +48,8 @@ interface BuilderSpineProps {
    * `counts` would name a different status than the page it sits on.
    */
   status: StatusPill;
+  /** Passed straight through to both widths — see `SpineBandProps`. */
+  offerFirstCommit?: boolean;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -246,11 +248,24 @@ export function BuilderSpine({
   overCommittedCard,
   onShowShopping,
   status,
+  offerFirstCommit,
 }: BuilderSpineProps) {
   return (
     <>
-    <SpineDesktop deck={deck} counts={counts} status={status} onExport={onExport} />
-    <SpineMobile deck={deck} counts={counts} status={status} onExport={onExport} />
+    <SpineDesktop
+      deck={deck}
+      counts={counts}
+      status={status}
+      onExport={onExport}
+      offerFirstCommit={offerFirstCommit}
+    />
+    <SpineMobile
+      deck={deck}
+      counts={counts}
+      status={status}
+      onExport={onExport}
+      offerFirstCommit={offerFirstCommit}
+    />
 
     {/* Below the spine and above the decklist, per the canvas: it is a claim
         about the whole deck, and every group heading under it is a claim about

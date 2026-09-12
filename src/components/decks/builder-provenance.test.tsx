@@ -129,15 +129,20 @@ describe("BuilderShell — the mark", () => {
     });
 
     const marker = screen.getByText(ledger.markedRow(ledger.passLabel("1")));
-    const described = document.querySelectorAll(`[aria-describedby="${marker.id}"]`);
+    // A containment selector, not an equality one: every row now describes its
+    // name with the availability word as well (§Errata), so the mark's id shares
+    // the attribute rather than owning it.
+    const described = document.querySelectorAll(`[aria-describedby~="${marker.id}"]`);
     expect(marker.id).not.toBe("");
     expect(described).toHaveLength(1);
 
     // And it is the marked card's own name that points at it. The other auto
-    // card is in the deck but not in this pass, so its name describes nothing
-    // rather than borrowing a neighbour's.
+    // card is in the deck but not in this pass, so its name describes only its
+    // own availability rather than borrowing a neighbour's mark.
     expect(described[0].textContent).toBe("Card 0");
-    expect(screen.getByText("Card 1").closest("button")).not.toHaveAttribute("aria-describedby");
+    expect(
+      screen.getByText("Card 1").closest("button")?.getAttribute("aria-describedby"),
+    ).not.toContain(marker.id);
   });
 
   it("drops a mark whose pass is gone from the incoming summaries", async () => {
