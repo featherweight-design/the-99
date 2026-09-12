@@ -82,9 +82,35 @@ describe("FilterChassis", () => {
     expect(onClearAll).toHaveBeenCalled();
   });
 
-  it("offers no clear-all when there is nothing to clear", () => {
+  it("keeps clear-all mounted and inert at rest, never absent", () => {
+    // `rack/chip-line.tsx:74-79` states the reason: the affordance is part of
+    // what the row teaches, and a button that comes and goes has to be
+    // re-found. The commander routes migrate onto this frame, so dropping it
+    // would remove an established way out and change the focusable structure.
     render(<FilterChassis {...base} controls={null} chips={[]} />);
-    expect(screen.queryByText("Clear all filters")).toBeNull();
+    const clear = screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." });
+    expect(clear).toBeDisabled();
+  });
+
+  it("enables clear-all once there is something to clear", () => {
+    render(<FilterChassis {...base} controls={null} chips={[chip("a", "Status · Playing")]} />);
+    expect(screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." }))
+      .toBeEnabled();
+  });
+
+  it("sizes the chip row from a stated line-height, not an inherited one", () => {
+    // The first floor was 22px against a chip that measured 24.5 — 11px text at
+    // Tailwind's inherited 1.5 plus padding and borders. Both branches now state
+    // leading-[14px], so 14 + 6 + 2 is arithmetic anybody can check.
+    const { container, rerender } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    const row = () => container.querySelector("[data-chassis-row='chips']") as HTMLElement;
+    expect(row().style.minHeight).toBe("22px");
+    expect(container.querySelector("[data-chassis-row='chips'] span")!.className)
+      .toContain("leading-[14px]");
+    rerender(<FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />);
+    expect(row().style.minHeight).toBe("22px");
+    expect(container.querySelector("[data-chassis-row='chips'] span")!.className)
+      .toContain("leading-[14px]");
   });
 
   it("gives a chip's remove a real 44px target without growing the chip", () => {

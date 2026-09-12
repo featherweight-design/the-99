@@ -70,13 +70,23 @@ export type FilterChassisProps = {
 };
 
 /**
- * Row 2's reserved height, in px. A chip draws at 11px over `py-[3px]` inside a
- * 1px border — 22px — while `No filters on` is a bare line box at roughly 16px.
- * Without a floor the row grows the moment the first filter goes on, which
- * moves row 3 and the list beneath it: exactly the motion decision 2 exists to
- * prevent, and the reason the rest state prints a line instead of collapsing.
+ * Row 2's reserved height, in px, derived rather than eyeballed — the first
+ * attempt at this floor was 22 and the chip is taller than that.
+ *
+ * A chip is `text-[11px]` over `py-[3px]` inside two 1px borders. Its height is
+ * therefore the line box plus 8, and the line box is whatever line-height
+ * applies — which is why the chip states its own (`leading-[14px]`) instead of
+ * inheriting Tailwind's 1.5, where 11px yields 16.5 and the arithmetic stops
+ * being a whole number anybody can check.
+ *
+ * 14 + 6 + 2 = 22. The rest state's `No filters on` takes the same
+ * `leading-[14px]` so both branches occupy the same box, and the floor holds
+ * whichever is showing. Without it the row grows the moment the first filter
+ * goes on, moving row 3 and the list beneath it — the motion decision 2 exists
+ * to prevent, and the reason the rest state prints a line instead of collapsing.
  */
-const CHIP_ROW_MIN_PX = 22;
+const CHIP_LINE_HEIGHT_PX = 14;
+const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 
 /** The width at which the control row would have to wrap, so it changes form instead. */
 export const CHASSIS_WIDE_MIN_PX = 1000;
@@ -129,62 +139,66 @@ export function FilterChassis({
         data-chassis-row="chips"
       >
         {chips.length === 0 ? (
-          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+          <span className="font-mono text-[11px] leading-[14px] text-[color:var(--fg-faint)] py-[3px]">
             {chassisCopy.chips.none}
           </span>
         ) : (
-          <>
-            {chips.map((chip) => (
-              // The chip is a span and the ✕ inside it is the button, which is
-              // how `collection/chip-row.tsx:186-203` does it and why. Making
-              // the whole chip the target and centring a 44px overlay on it
-              // looks equivalent and is not: chips sit 6px apart, so adjacent
-              // overlays overlap and a tap near the boundary removes the
-              // neighbour's filter. Anchored to the ✕, the nearest competing
-              // target is a full chip-width away.
-              <span
-                key={chip.key}
-                className={[
-                  "inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[7px]",
-                  "border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)]",
-                  "px-[8px] py-[3px] font-mono text-[11px] text-[color:var(--fg-body)]",
-                ].join(" ")}
-              >
-                {chip.label}
-                <button
-                  type="button"
-                  onClick={chip.onRemove}
-                  aria-label={chassisCopy.chips.removeAria(chip.label)}
-                  className={[
-                    "relative cursor-pointer border-0 bg-transparent p-0",
-                    "text-[color:var(--fg-faint)]",
-                    "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
-                    "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
-                  ].join(" ")}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-            <button
-              type="button"
-              onClick={onClearAll}
-              aria-label={chassisCopy.chips.clearAllAria}
-              // Same hit-area treatment as the chip beside it: an overlay
-              // rather than padding, so the control clears 44px without the
-              // chip line growing. Overlooked when the chips got theirs — one
-              // control in a row is never the whole class.
+          chips.map((chip) => (
+            // The chip is a span and the ✕ inside it is the button, which is
+            // how `collection/chip-row.tsx:186-203` does it and why. Making
+            // the whole chip the target and centring a 44px overlay on it
+            // looks equivalent and is not: chips sit 6px apart, so adjacent
+            // overlays overlap and a tap near the boundary removes the
+            // neighbour's filter. Anchored to the ✕, the nearest competing
+            // target is a full chip-width away.
+            <span
+              key={chip.key}
               className={[
-                "relative cursor-pointer border-0 bg-transparent p-0",
-                "font-mono text-[11px] text-[color:var(--fg-muted)] underline",
-                "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px]",
-                "after:w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+                "inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[7px]",
+                "border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)]",
+                "px-[8px] py-[3px] font-mono text-[11px] leading-[14px] text-[color:var(--fg-body)]",
               ].join(" ")}
             >
-              {chassisCopy.chips.clearAll}
-            </button>
-          </>
+              {chip.label}
+              <button
+                type="button"
+                onClick={chip.onRemove}
+                aria-label={chassisCopy.chips.removeAria(chip.label)}
+                className={[
+                  "relative cursor-pointer border-0 bg-transparent p-0",
+                  "text-[color:var(--fg-faint)]",
+                  "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
+                  "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+                ].join(" ")}
+              >
+                ×
+              </button>
+            </span>
+          ))
         )}
+
+        {/* Present and inert, never absent. `rack/chip-line.tsx:74-79` states
+            the reason — the affordance is part of what the row teaches, and a
+            button that comes and goes has to be re-found — and the commander
+            routes migrate onto this frame, so removing it would take away an
+            established way out and change the focusable structure with it. */}
+        <button
+          type="button"
+          disabled={chips.length === 0}
+          onClick={onClearAll}
+          aria-label={chassisCopy.chips.clearAllAria}
+          className={[
+            "relative ml-auto shrink-0 border-0 bg-transparent p-0",
+            "font-mono text-[11px] leading-[14px] underline",
+            "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px]",
+            "after:w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+            chips.length === 0
+              ? "cursor-default text-[color:var(--fg-locked)]"
+              : "cursor-pointer text-[color:var(--fg-muted)]",
+          ].join(" ")}
+        >
+          {chassisCopy.chips.clearAll}
+        </button>
       </div>
 
       {/* Row 3 — the chassis's only live region. */}

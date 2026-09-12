@@ -124,7 +124,9 @@ New `src/components/ui/filter-chassis.tsx`. Three rows, always all three (decisi
 1. Controls — full width, never wraps, two forms switching at 1000px (decision 18).
 2. The chip line — prints `no filters on` at rest rather than collapsing (decision 2). This is the
    line that makes the frame a fixed height, so it must not be conditionally rendered.
-3. The result line — `rack/result-line.tsx` **moved, not rewritten** (decision 13).
+3. The result line — `rack/result-line.tsx` **moved, not rewritten** (decision 13). The rack's file
+   stays as a lane-shaped wrapper that delegates to the shared one, so there is one debounce and one
+   live region rather than two that can drift; it retires with the rack in PR 2.
 
 Slots, not a dimension list (decision 19): four control types — field, trigger+panel, segmented,
 pips — and a route fills the slots it has. Sort occupies a separated trailing slot past a hairline
