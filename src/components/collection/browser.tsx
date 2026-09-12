@@ -328,9 +328,22 @@ export function CollectionBrowser({
 
 
   const [announcement, setAnnouncement] = useState("");
+  const [announceSeq, setAnnounceSeq] = useState(0);
+
+  /**
+   * The one way an announcement is published. Every writer goes through it —
+   * filter changes, sort, the panels' arrow-key and search-match messages —
+   * because `ResultLine` prefers the id over the text as the event's identity.
+   * A writer that set the message without bumping the sequence would have every
+   * later message read as the same event and go unspoken until some other path
+   * moved the counter.
+   */
+  const publishAnnouncement = useCallback((message: string) => {
+    setAnnouncement(message);
+    setAnnounceSeq((n) => n + 1);
+  }, []);
   // Bumped whenever an announcement is published, so a repeated sentence is a
   // new event rather than an unchanged string the live region would not re-read.
-  const [announceSeq, setAnnounceSeq] = useState(0);
 
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
@@ -353,14 +366,11 @@ export function CollectionBrowser({
         availabilityChangeAnnouncement(
           filters, f, cards, availabilityOptions, totalQuantity, intent,
         );
-      if (message) {
-        setAnnouncement(message);
-        setAnnounceSeq((n) => n + 1);
-      }
+      if (message) publishAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
     },
-    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity],
+    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
   );
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
@@ -497,7 +507,7 @@ export function CollectionBrowser({
         availabilityOptions={availabilityOptions}
         availabilityOk={availabilityOk}
         announcement={announcement}
-        onAnnounce={setAnnouncement}
+        onAnnounce={publishAnnouncement}
         onFiltersChange={updateFilters}
         sortDirection={sortDirection}
         onSortChange={updateSort}
