@@ -16,7 +16,6 @@
 import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CSSProperties } from "react";
 import { unstable_rethrow } from "next/navigation";
-import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import type { ImportCommanderCandidate } from "../../app/decks/import-actions";
@@ -29,6 +28,7 @@ import { PartnerSlot } from "./partner-slot";
 import { PrimaryButton } from "@/components/ui/button";
 import { SearchField, TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
+import { CommanderThumb } from "../ui/commander-thumb";
 
 const copy = deckImportCopy.commander;
 
@@ -502,7 +502,6 @@ export function CreatePicker(props: CreatePickerProps) {
                 const isSelected = pairing
                   ? partnerId === c.oracleId
                   : selectedId === c.oracleId;
-                const gradient = commanderGradient(c.colorIdentity);
                 return (
                   <li key={c.oracleId}>
                     <button
@@ -516,16 +515,11 @@ export function CreatePicker(props: CreatePickerProps) {
                       ].join(" ")}
                       aria-pressed={isSelected}
                     >
-                      {/* §Commander picker row — art thumb: 34×48px mobile / 40×56px desktop */}
-                      <div
-                        className="shrink-0 rounded-[6px] w-[34px] h-[48px] md:w-[40px] md:h-[56px]"
-                        style={{
-                          background: c.imageUri
-                            ? `url(${c.imageUri}) center/cover`
-                            : gradient,
-                          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-                        }}
-                      />
+                      {/* §Commander picker row — the app's row thumb, one size at
+                          both widths. It drew 34×48 on a phone and 40×56 on a
+                          desktop for the same job, which is a viewport choosing
+                          a size rather than the thumb's purpose choosing it. */}
+                      <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} />
 
                       {/* Name + pips + meta caption */}
                       <div className="flex-1 min-w-0">
@@ -634,17 +628,13 @@ export function CreatePicker(props: CreatePickerProps) {
                 </p>
               )}
               <div className="flex items-start gap-[12px]">
-                {/* §Selected summary — card art: 44×62px, br 7px */}
-                <div
-                  className="shrink-0 rounded-[7px]"
-                  style={{
-                    width: 44,
-                    height: 62,
-                    background: selected.imageUri
-                      ? `url(${selected.imageUri}) center/cover`
-                      : commanderGradient(selected.colorIdentity),
-                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-                  }}
+                {/* §Selected summary — the summary thumb, which is the larger of
+                    the two: this stands for a choice already made rather than
+                    identifying one row among several. */}
+                <CommanderThumb
+                  imageUri={selected.imageUri}
+                  colorIdentity={selected.colorIdentity}
+                  size="summary"
                 />
                 <div className="min-w-0">
                   {/* §Selected summary — commander name: Cinzel 600 15px var(--fg) */}

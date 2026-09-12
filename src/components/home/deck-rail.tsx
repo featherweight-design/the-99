@@ -10,13 +10,13 @@
 // draws the section and nothing around it.
 
 import Link from "next/link";
-import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
+import { CommanderThumb } from "../ui/commander-thumb";
 
 const partnerCopy = deckImportCopy.commander;
 
@@ -119,18 +119,20 @@ function PhoneRow({
       }`}
       style={keyline(deck)}
     >
-      {/* The art spine is phone's alone. 56px is the touch target, and the
-          height it buys is what the chip fills. The stripes are the fallback
-          for a commander whose printing carries no image, the same one the
-          tile and the hero use. */}
-      <span
-        className="h-[36px] w-[26px] flex-none rounded-[4px]"
-        aria-hidden
-        style={{
-          background: deck.commanderImageUri
-            ? `${cssUrl(deck.commanderImageUri)} center/cover`
-            : ART_STRIPES,
-        }}
+      {/* The art spine is phone's alone, and it is now the app's one thumb
+          rather than this row's own 26×36: five renders each drew a commander at
+          thumb size and the five disagreed about all of geometry, radius, crop
+          and ring. The row grows with it — 62px of thumb plus its padding puts
+          the row past the 56px floor, which was a touch target rather than a
+          drawn height.
+
+          The identity gradient arrives with the shared thumb. This row drew the
+          stripes for every imageless commander, including the ones whose colours
+          we know; an identity is a real signal and the rest of the app already
+          draws it. */}
+      <CommanderThumb
+        imageUri={deck.commanderImageUri}
+        colorIdentity={deck.commanderColorIdentity}
       />
 
       <span className="flex min-w-0 flex-auto flex-col gap-[3px]">

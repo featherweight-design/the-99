@@ -154,3 +154,29 @@ describe("create surfaces — a redirecting action is not a failure", () => {
     expect(await screen.findAllByText(FAILED)).not.toHaveLength(0);
   });
 });
+
+describe("CreatePreFilled — the desktop card face", () => {
+  // The two card faces converge on one ring alpha and one shadow, and nothing
+  // else covered this one: these tests exercise submission and errors, and the
+  // browser census measures `[data-commander-thumb]` elements — which a 220px
+  // face deliberately is not, since the player is meant to read the printing.
+  it("rings and shadows the face at the converged values", () => {
+    const { container } = render(
+      <CreatePreFilled
+        oracleId="oracle-1"
+        name="Greta, Sweettooth Scourge"
+        typeLine="Legendary Creature — Human Peasant"
+        colorIdentity={["B", "G"]}
+        imageUri={null}
+      />,
+    );
+    const face = Array.from(container.querySelectorAll<HTMLElement>("div")).find(
+      (el) => el.style.aspectRatio === "63/88",
+    )!;
+    expect(face.style.boxShadow).toContain("inset 0 0 0 1px rgba(0,0,0,0.4)");
+    expect(face.style.boxShadow).toContain("0 20px 50px rgba(0,0,0,0.5)");
+    // The 24px offset was this face's own drift, and `.3` the other's ring.
+    expect(face.style.boxShadow).not.toContain("24px");
+    expect(face.style.boxShadow).not.toContain("0.3)");
+  });
+});

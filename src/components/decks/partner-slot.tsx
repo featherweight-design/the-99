@@ -13,7 +13,7 @@
 // `Commander` / `Partner` eyebrows, which appear with the slot and never before
 // it, and it is what leaves a single-commander sidebar pixel-identical to today.
 
-import { commanderGradient } from "../../lib/collection/gradients";
+import { CommanderThumb } from "../ui/commander-thumb";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { partnerAbilityLabel, type PartnerAbility } from "../../lib/decks/partner";
 
@@ -52,9 +52,15 @@ type PartnerSlotProps = {
 
 // Dashed means not settled — the app's existing vocabulary for a soft claim, and
 // a line style rather than an alpha fade, so it reads in greyscale. Carried by
-// both the empty plate and the filled one: a partner is optional throughout, and
-// Create is never blocked on it.
-const PLATE = "w-[38px] h-[54px] flex-none rounded-[6px] border border-dashed border-[color:var(--border-dashed)]";
+// the EMPTY plate alone now: a partner is optional throughout and Create is
+// never blocked on it, but a slot that holds one is settled, and drawing the dash
+// over a filled thumb said the opposite while also giving that thumb two edges.
+/** The EMPTY slot alone. It matches the thumb's box so the row does not move
+    when a partner arrives, and keeps the dashed border it always had — the app's
+    own vocabulary for an unsettled claim, shared with Building's chip. A filled
+    slot draws `CommanderThumb` and no dash. */
+const EMPTY_PLATE =
+  "w-[44px] h-[62px] flex-none rounded-[6px] border border-dashed border-[color:var(--border-dashed)]";
 
 export function PartnerSlot({
   primaryName,
@@ -86,17 +92,14 @@ export function PartnerSlot({
             aria-label={partner.ariaLabel}
             className="flex items-center gap-[11px] min-h-[44px]"
           >
-            <div
-              className={PLATE}
-              style={{
-                // `--elevated` under the art, as the shipped thumbs do: art is
-                // fetched, and a plate with nothing behind it flashes the card
-                // beneath through a 6px radius while it loads.
-                background: partner.imageUri
-                  ? `url(${partner.imageUri}) center top/cover, var(--elevated)`
-                  : commanderGradient(partner.colorIdentity),
-                boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-              }}
+            {/* The filled slot draws the app's row thumb and nothing of its
+                own. It keeps no dashed border: the dash says *no partner yet*,
+                and a slot holding one is not an unsettled claim. The empty plate
+                below still carries it, which is the whole point of the
+                vocabulary. */}
+            <CommanderThumb
+              imageUri={partner.imageUri}
+              colorIdentity={partner.colorIdentity}
             />
             <div className="min-w-0 flex-1">
               <p
@@ -149,7 +152,7 @@ export function PartnerSlot({
           aria-label={copy.addPartnerAria(primaryName)}
           className="w-full flex items-center gap-[11px] min-h-[44px] text-left"
         >
-          <span className={PLATE} />
+          <span className={EMPTY_PLATE} />
           <span className="min-w-0 flex-1">
             <span
               className="block font-display font-semibold"

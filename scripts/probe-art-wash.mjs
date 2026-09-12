@@ -311,30 +311,102 @@ const READ_PLATE_HIT = `() => {
     });
 }`;
 
+// The scrims outlive the art under `forced-colors`, so they are what proves the
+// band kept its height when the photograph left.
+const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
+
+const ROUTES = [
+  ["home", "/"],
+  ["decks", "/decks"],
+  ["commanders", "/commanders"],
+  // `/discover`, not `/commanders?lane=discover`. The two lanes became two
+  // routes; that query parameter is not one the app reads, so the entry loaded
+  // `/commanders` a second time and every discovery row went unchecked while the
+  // report named them.
+  ["discover", "/discover"],
+];
+
+/** The four bands this round settles. A stated band outside the set is either a
+    fifth number nobody decided or an aspect ratio that survived the migration. */
+const SETTLED_BANDS = [168, 208, 248, 288];
+
+/** The two thumb boxes. A third is a render that kept its own geometry. */
+const THUMB_BOXES = ["44×62", "64×89"];
+
+/** One ring alpha, replacing `.35` on two thumbs and `.3` on the card faces. All
+    three are inset shadows, so the alpha is the only thing that distinguishes the
+    converged ring from the drift it replaced — and it is matched on its own,
+    because `rgba(0, 0, 0, 0.4)` contains commas: a `inset[^,]*rgba(…)` pattern
+    cannot cross them and failed every migrated thumb. The `inset` keyword is
+    asserted separately beside it. */
+/** No route-wide exemption, deliberately. The decks zero state's card fan was
+    the reason one existed, and that fan paints `bg-[color:var(--surface-inset)]`
+    — a background COLOUR — so the sweep's own filter, which requires an image or
+    a gradient, never saw it. An exemption keyed to a route excused every unmarked
+    card face on `/decks/<id>` as well, which is a real surface with real thumbs.
+    Nothing is excused now, and nothing needs to be. */
+
+const THUMB_RING_RE = /rgba\(0,\s*0,\s*0,\s*0\.4\)/;
+
+const VIEWPORTS = [
+  ["mobile", 375, 812],
+  ["desktop", 1440, 900],
+];
+
 /** Every commander thumb on the page, as drawn. Five renders each invented one of
     these, at five geometries and three ring alphas; the convergence is its own
     change, and this reads what is there so the before and after are the same
     measurement. The ring comes off the computed shadow rather than a class,
     because three of the five set it inline. */
 const READ_THUMBS = `() => {
-  return [...document.querySelectorAll('span[aria-hidden="true"], div')]
-    .filter((el) => {
-      const r = el.getBoundingClientRect();
-      // A card-face thumb, not a pip or a spacer: the 63/88 frame is the shape
-      // this looks for, at anything bigger than an icon and smaller than a page.
-      const ratio = r.height ? r.width / r.height : 0;
-      return r.width >= 24 && r.width <= 120 && ratio > 0.6 && ratio < 0.85;
-    })
+  // Selected by the primitive's own marker, never by shape. Matching on a 63/88
+  // aspect also catches the decks zero state's decorative card fan, which then
+  // fails assertions about a treatment it has nothing to do with — a false
+  // failure teaches a reader to ignore the probe.
+  return [...document.querySelectorAll('[data-commander-thumb]')]
+    .filter((el) => el.getClientRects().length)
     .map((el) => {
       const s = getComputedStyle(el);
       const r = el.getBoundingClientRect();
       return {
+        size: el.getAttribute('data-commander-thumb'),
         box: [Math.round(r.width), Math.round(r.height)],
         radius: s.borderTopLeftRadius,
         shadow: s.boxShadow,
         position: s.backgroundPosition,
         hasArt: s.backgroundImage.includes('url('),
       };
+    });
+}`;
+
+/** Anything shaped like a card face that carries NO marker. The marked census
+    above cannot see a render that was never migrated — an unmarked 34×48 is
+    simply absent from it, and the two-box assertions then pass over a surface
+    that still draws its own geometry. This is the other half of that check, and
+    it has to tolerate one real decorative case: the decks zero state draws a
+    card fan at nearly this aspect, which is an illustration rather than a
+    commander. */
+const READ_UNMARKED_FACES = `() => {
+  return [...document.querySelectorAll('div, span')]
+    .filter((el) => {
+      if (el.hasAttribute('data-commander-thumb')) return false;
+      if (el.closest('[data-commander-thumb]')) return false;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      const ratio = r.width / r.height;
+      // A card-face box: bigger than an icon, smaller than a page, at 63/88.
+      // 24, not 28: the deck rail's own 26×36 render is the narrowest thing this
+      // sweep exists to catch, and a 28px floor would have excluded exactly the
+      // render whose migration it is checking.
+      if (r.width < 24 || r.width > 120 || ratio < 0.6 || ratio > 0.85) return false;
+      // Art or a gradient behind it, so a bare spacer with those proportions is
+      // not reported as a render.
+      const bg = getComputedStyle(el).backgroundImage;
+      return bg.includes('url(') || bg.includes('gradient');
+    })
+    .map((el) => {
+      const r = el.getBoundingClientRect();
+      return Math.round(r.width) + '×' + Math.round(r.height);
     });
 }`;
 
@@ -378,13 +450,36 @@ async function checkChrome(page, label, note) {
     }
   }
 
-  // The thumbs, as a census rather than as assertions: the five renders that draw
-  // one still disagree about every dimension of it, and asserting a settled box
-  // before the change that settles it would make this probe fail against its own
-  // build. The boxes are printed so the convergence has a before.
+  // The thumbs. The census becomes assertions now that the five renders share one
+  // treatment: two boxes and one ring, or the convergence has not reached every
+  // render.
   const thumbs = await page.evaluate(`(${READ_THUMBS})()`);
   if (thumbs.length) {
     note(`${label}: ${thumbs.length} commander thumb(s) at ${[...new Set(thumbs.map((t) => t.box.join("×")))].join(", ")}`);
+  }
+  // The unmarked half. A render that never migrated carries no marker, so the
+  // census above is blind to it and its assertions pass over a surface still
+  // drawing 34×48. Reported everywhere and failed everywhere except the decks
+  // list, whose zero state draws a decorative card fan at nearly this aspect.
+  const unmarked = await page.evaluate(`(${READ_UNMARKED_FACES})()`);
+  if (unmarked.length) {
+    note(`  FAIL ${label}: ${unmarked.length} unmarked card-face box(es) at ${[...new Set(unmarked)].join(", ")}`);
+  }
+
+  for (const t of thumbs) {
+    const box = t.box.join("×");
+    if (!THUMB_BOXES.includes(box)) note(`  FAIL thumb at ${box}, outside the two settled boxes`);
+    if (t.radius !== "6px") note(`  FAIL thumb radius ${t.radius}, expected 6px`);
+    // The alpha, not just the word `inset`: the whole point of the convergence is
+    // that `.3` and `.35` became `.4`, and all three are inset shadows. The
+    // browser resolves the alpha to `0.4`, so the string is the check.
+    if (!t.shadow.includes("inset")) note(`  FAIL thumb ring is not inset: ${t.shadow}`);
+    if (!THUMB_RING_RE.test(t.shadow)) note(`  FAIL thumb ring is not the one alpha: ${t.shadow}`);
+    // `center top`, not `center`: a centred crop of a 63/88 frame at 44px wide is
+    // mostly type box, and the face is at the top of the card.
+    if (t.hasArt && !t.position.startsWith("50% 0")) {
+      note(`  FAIL thumb crops from ${t.position}, expected center top`);
+    }
   }
 }
 
@@ -411,30 +506,6 @@ for (const [name, source] of Object.entries(READERS)) {
     throw new Error(`${name} does not parse as a browser function: ${error.message}`);
   }
 }
-
-// The scrims outlive the art under `forced-colors`, so they are what proves the
-// band kept its height when the photograph left.
-const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
-
-const ROUTES = [
-  ["home", "/"],
-  ["decks", "/decks"],
-  ["commanders", "/commanders"],
-  // `/discover`, not `/commanders?lane=discover`. The two lanes became two
-  // routes; that query parameter is not one the app reads, so the entry loaded
-  // `/commanders` a second time and every discovery row went unchecked while the
-  // report named them.
-  ["discover", "/discover"],
-];
-
-/** The four bands this round settles. A stated band outside the set is either a
-    fifth number nobody decided or an aspect ratio that survived the migration. */
-const SETTLED_BANDS = [168, 208, 248, 288];
-
-const VIEWPORTS = [
-  ["mobile", 375, 812],
-  ["desktop", 1440, 900],
-];
 
 const findings = [];
 const note = (line) => {
@@ -673,6 +744,151 @@ try {
           note(`  FAIL bottom cover scrim does not hold to the foot: ${JSON.stringify(stops.slice(-2))}`);
         }
       }
+    }
+
+    // The deck-creation surfaces, which is where four of the five thumbs live and
+    // where none of the list routes reaches. Every one of them is a screen where a
+    // player chooses or commits to a commander, which is the brief's own finding
+    // about why they had never been through the wash system: the picker's
+    // candidate rows and its selected summary on one door, the pre-filled flow's
+    // thumb on the other.
+    //
+    // Each entry names what it MUST draw. A census that only rejects a box
+    // outside the allow-list passes silently when a thumb is missing altogether,
+    // which is the same vacuity as running the check on a route that draws none.
+    // Read off Home, which is where the pre-filled door is entered from: the
+    // ready-to-build hero links to `/decks/new?commander=<oracleId>`, and the
+    // commanders list links by slug, which that route does not take.
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    const commanderOracleId = await page.evaluate(
+      `document.querySelector('a[href*="/decks/new?commander="]')?.getAttribute('href') ?? null`,
+    );
+    // The pre-filled door's thumb is the PHONE's: desktop draws a 220px card face
+    // instead, which is a different render of the same commander and not a thumb
+    // at all. Requiring the thumb at both widths failed a correct build.
+    const CREATE_SURFACES = [
+      ["the picker's candidate rows", "/decks/new", ["44×62"]],
+      ...(commanderOracleId
+        ? [["the pre-filled door", commanderOracleId, vpName === "mobile" ? ["64×89"] : []]]
+        : []),
+    ];
+    for (const [what, path, required] of CREATE_SURFACES) {
+      await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(900);
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-create-${required[0]}.png` });
+      const drawn = await page.evaluate(`(${READ_THUMBS})()`);
+      const boxes = new Set(drawn.map((t) => t.box.join("×")));
+      note(`${vpName} ${what}: ${drawn.length} thumb(s) at ${[...boxes].join(", ") || "none"}`);
+      if (!required.length) {
+        note(`  (no thumb required at this width — the desktop door draws a card face)`);
+      }
+      for (const box of required) {
+        if (!boxes.has(box)) note(`  FAIL ${what} draws no ${box} thumb`);
+      }
+      await checkChrome(page, `${vpName} ${what}`, note);
+    }
+
+    // The picker's OTHER two renders. Its candidate rows draw at rest; the
+    // selected summary and the partner slot only exist after a pick, so a probe
+    // that loads the route and stops sees one of three. It presses a candidate,
+    // which is the only way to reach them.
+    await page.goto(`${BASE}/decks/new`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(900);
+    const candidates = page.locator('li button[aria-pressed]');
+    const candidateCount = await candidates.count();
+    if (!candidateCount) {
+      note(`  FAIL no candidate row on /decks/new — the picker's selected summary goes unchecked`);
+    } else {
+      // Walk candidates until one can PAIR, and then actually pair it. The
+      // partner slot is the fifth thumb: its EMPTY state mounts once a
+      // partner-capable commander is selected, and its FILLED state — the one
+      // drawing `CommanderThumb` — only after a partner is chosen. Stopping at
+      // the empty slot would have censused four of five renders while the code
+      // claimed all five, and clicking only the first row usually reaches
+      // neither.
+      //
+      // Every candidate, not a capped prefix: a pairable commander can sort
+      // anywhere in the owned list, and a probe that gives up after twelve and
+      // logs a note is a probe that passes while the render goes unverified.
+      let pairing = false;
+      for (let i = 0; i < candidateCount; i++) {
+        await candidates.nth(i).click();
+        await page.waitForTimeout(350);
+        const addPartner = page.getByRole("button", { name: /^Add a partner for / });
+        if (!(await addPartner.count())) continue;
+
+        note(`${vpName} the picker: candidate ${i + 1} can pair`);
+        // The empty slot, which keeps the dash and the thumb's own box so the row
+        // does not move when a partner arrives.
+        const emptyPlate = await page.evaluate(
+          `document.querySelectorAll('[class*="border-dashed"][class*="w-[44px]"]').length`,
+        );
+        if (!emptyPlate) note(`  FAIL the empty partner slot draws no 44×62 dashed plate`);
+
+        await addPartner.click();
+        await page.waitForTimeout(400);
+        const partnerCandidate = page.locator('li button[aria-pressed]').first();
+        if (!(await partnerCandidate.count())) {
+          note(`  FAIL pairing mode offered no partner to choose`);
+          break;
+        }
+        await partnerCandidate.click();
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: `/tmp/art-wash-${vpName}-picker-paired.png` });
+        const paired = await page.evaluate(`(${READ_THUMBS})()`);
+        note(`${vpName} the picker, partner chosen: ${paired.length} thumb(s) at ${[...new Set(paired.map((t) => t.box.join("×")))].join(", ")}`);
+        // Scoped to the slot's own group, not to the page's box set: the picker
+        // still draws its candidate rows after pairing and those are 44×62 too,
+        // so a set membership test stays true even if the filled slot stops
+        // drawing its thumb entirely. The row thumbs are what would have made
+        // this pass while measuring nothing.
+        const slotThumb = await page.evaluate(
+          `(() => {
+            // Laid out only: both responsive copies of the slot are in the DOM,
+            // and on desktop the hidden one comes FIRST — so taking the first
+            // match measures a 0x0 element and reports a failure about the copy
+            // that is correctly hidden.
+            const el = [...document.querySelectorAll('[role="group"] [data-commander-thumb]')]
+              .find((c) => c.getClientRects().length);
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return [Math.round(r.width), Math.round(r.height)];
+          })()`,
+        );
+        if (!slotThumb) {
+          note(`  FAIL the filled partner slot draws no thumb of its own`);
+        } else if (slotThumb.join("×") !== "44×62") {
+          note(`  FAIL the filled partner slot's thumb is ${slotThumb.join("×")}, expected 44×62`);
+        }
+        await checkChrome(page, `${vpName} the picker, paired`, note);
+        pairing = true;
+        break;
+      }
+      if (!pairing) {
+        note(`  FAIL none of the ${candidateCount} candidates can pair — the partner slot's two states go unverified`);
+      }
+
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-picker-selected.png` });
+      const picked = await page.evaluate(`(${READ_THUMBS})()`);
+      const boxes = new Set(picked.map((t) => t.box.join("×")));
+      note(`${vpName} the picker, one commander picked: ${picked.length} thumb(s) at ${[...boxes].join(", ")}`);
+      // The summary is the reason for the click — a 64×89 appearing is the proof
+      // the click reached that state rather than pressing something inert — but
+      // it is DESKTOP's: the summary lives in a `hidden md:block` sidebar and the
+      // phone's dock is text-only, so requiring it at both widths would fail
+      // every mobile run for drawing exactly what it should.
+      if (vpName === "desktop" && !boxes.has("64×89")) {
+        note(`  FAIL the picker's selected summary draws no 64×89 thumb`);
+      }
+      if (vpName === "mobile" && boxes.has("64×89")) {
+        note(`  FAIL a summary thumb drew on the phone, whose dock is text-only`);
+      }
+      await checkChrome(page, `${vpName} the picker, picked`, note);
+    }
+    if (!commanderOracleId) {
+      note(`  FAIL no /decks/new?commander= link found — the pre-filled door goes unchecked`);
     }
 
     // The deck header, which is the other surface drawing this control — and the
