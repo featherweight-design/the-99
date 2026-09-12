@@ -101,6 +101,100 @@ describe("getRankedList", () => {
     expect(persistScores.mock.calls[0]?.[1]).toHaveLength(2);
   });
 
+  // A degraded row the list does not show is a row nobody is looking at. Left in
+  // the set, a built commander EDHREC does not index would put every request into
+  // the recompute branch — which is the EDHREC fanout — for a row that is then
+  // filtered out of the answer.
+  it("ignores a built commander's degradation rather than recomputing for it", async () => {
+    loadScores.mockResolvedValue({
+      items: [item("kept", 90), item("built", 95)],
+      degradedOracleIds: ["built"],
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
+
+    const list = await getRankedList("user_1");
+
+    expect(recommendCommanders).not.toHaveBeenCalled();
+    expect(list.items.map((i) => i.oracleId)).toEqual(["kept"]);
+  });
+
+  // And it repairs the moment something reads it: deleting the deck takes the
+  // commander out of `built`, which stops the filter removing it AND stops this
+  // one ignoring its degradation.
+  it("recomputes for that same row once its deck is gone", async () => {
+    loadScores.mockResolvedValue({
+      items: [item("kept", 90), item("was-built", 95)],
+      degradedOracleIds: ["was-built"],
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set<string>());
+    recommendCommanders.mockResolvedValue({
+      results: [item("kept", 90), item("was-built", 95)],
+      degraded: false,
+      uniqueCardsRead: 10,
+      candidateCount: 2,
+    });
+
+    await getRankedList("user_1");
+
+    expect(recommendCommanders).toHaveBeenCalled();
+  });
+
+  it("still recomputes when a VISIBLE row is degraded", async () => {
+    loadScores.mockResolvedValue({
+      items: [item("kept", 90), item("built", 95)],
+      degradedOracleIds: ["kept"],
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
+    recommendCommanders.mockResolvedValue({
+      results: [item("kept", 90), item("built", 95)],
+      degraded: false,
+      uniqueCardsRead: 10,
+      candidateCount: 2,
+    });
+
+    await getRankedList("user_1");
+
+    expect(recommendCommanders).toHaveBeenCalled();
+  });
+
+  // The banner over the list is a claim about the rows in the list. A recompute
+  // reports degradation across everything it scored, which now includes built
+  // commanders, so the flag is read back off the visible rows.
+  it("does not raise the outage banner for a built commander's outage", async () => {
+    loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+    recommendCommanders.mockResolvedValue({
+      results: [
+        { ...item("kept", 90), synergyState: "ok" },
+        { ...item("built", 95), synergyState: "degraded" },
+      ],
+      degraded: true,
+      uniqueCardsRead: 10,
+      candidateCount: 2,
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
+
+    const list = await getRankedList("user_1");
+
+    expect(list.items.map((i) => i.oracleId)).toEqual(["kept"]);
+    expect(list.degraded).toBe(false);
+  });
+
+  it("still raises it when a visible row is the degraded one", async () => {
+    loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+    recommendCommanders.mockResolvedValue({
+      results: [
+        { ...item("kept", 90), synergyState: "degraded" },
+        { ...item("built", 95), synergyState: "ok" },
+      ],
+      degraded: true,
+      uniqueCardsRead: 10,
+      candidateCount: 2,
+    });
+    loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
+
+    expect((await getRankedList("user_1")).degraded).toBe(true);
+  });
+
   it("skips the deck read entirely for an empty collection", async () => {
     getCollectionStats.mockResolvedValue({ uniqueCards: 0 });
     loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });

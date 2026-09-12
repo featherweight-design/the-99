@@ -30,6 +30,25 @@ export type CommanderRankings = {
   availOk: boolean;
 };
 
+/**
+ * Bumped when a deployment changes what this payload SAYS for unchanged rows.
+ *
+ * It rides in the cache key, so a bump is a new entry and the old one is simply
+ * never asked for again. The tag is not enough on its own: it is dropped by the
+ * reader's own writes, and a payload assembled before the deploy would otherwise
+ * go on being served — for up to the hour ceiling, to a reader who writes
+ * nothing — without this module running at all. `commander_scores`' own staleness
+ * check lives behind `loadScores`, which a cache hit never reaches.
+ *
+ * 2 — built commanders are no longer dropped from the persisted score set, so a
+ * list assembled by version 1 can be short a commander whose deck has since been
+ * deleted.
+ */
+const PAYLOAD_VERSION = 2;
+
+/** The cache key this payload is filed under, version included. */
+export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];
+
 export async function loadCommanderRankings(userId: string): Promise<CommanderRankings> {
   const { items, degraded, uniqueCardsRead, candidateCount } = await getRankedList(userId);
 

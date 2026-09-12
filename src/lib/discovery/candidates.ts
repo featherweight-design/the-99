@@ -1,4 +1,4 @@
-import { and, eq, ilike, inArray, notInArray, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards,
@@ -9,6 +9,7 @@ import {
   sets,
 } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
+import { notBuiltBy } from "../decks/built";
 
 export type CandidateSqlRow = {
   oracleId: string;
@@ -193,13 +194,21 @@ export async function loadNameMatches(
 
 /** The commanders this player has already built around — the scope exclusion,
     read as a set rather than as the `NOT IN` the candidate query applies, because
-    the lookup has to tell a built commander from a missing one. */
+    the lookup has to tell a built commander from a missing one.
+
+    BOTH HALVES OF A PAIR. A partner helms its deck exactly as the primary does,
+    so a list answering "what should I build next" that named it was offering the
+    player a deck they are already holding. It is read here rather than in the
+    candidate query's `NOT IN` because `partner_oracle_id` is nullable, and a
+    `NOT IN (subquery)` yielding one NULL returns no rows at all — the hazard
+    `unbuiltCommanders` documents, out of reach only while the column it reads is
+    `notNull()`. Filtering nulls out in TypeScript has no such edge. */
 export async function loadBuiltCommanderIds(userId: string): Promise<Set<string>> {
   const rows = await db
-    .select({ oracleId: decks.commanderOracleId })
+    .select({ oracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId })
     .from(decks)
     .where(eq(decks.userId, userId));
-  return new Set(rows.map((r) => r.oracleId));
+  return new Set(rows.flatMap((r) => (r.partnerOracleId ? [r.oracleId, r.partnerOracleId] : [r.oracleId])));
 }
 
 /**
@@ -370,26 +379,21 @@ export function discoverCandidates(userId: string, collectionOracleIds: string[]
  * param. It also makes an empty collection the harmless case it should be,
  * where the `NOT IN ()` a bare array would emit is a syntax error.
  *
- * The NULL hazard `unbuiltCommanders` documents is out of reach on both sides:
- * `commander_oracle_id` is `notNull()`, and the array is oracle ids read out of
- * the collection rather than a subquery that could yield one.
+ * The NULL hazard `notBuiltBy` documents is out of reach on both sides: this
+ * array is oracle ids read out of the collection rather than a subquery that
+ * could yield one.
  */
 function unownedCommanders(collectionOracleIds: string[]) {
   return sql`${commanderSupport.commanderOracleId} <> all(${sql.param(collectionOracleIds)}::uuid[])`;
 }
 
 function unbuiltCommanders(userId: string) {
-  // `notInArray` emits `NOT IN (subquery)`, which returns NOTHING — not "all
-  // rows" — the moment the subquery yields a single NULL. It is safe only
-  // because `decks.commanderOracleId` is `notNull()`. If that column ever
-  // becomes nullable, this query silently returns zero candidates.
-  const built = db
-    .select({ oracleId: decks.commanderOracleId })
-    .from(decks)
-    .where(eq(decks.userId, userId));
-
+  // `notBuiltBy` carries the reasoning for both columns and for the `not exists`
+  // form; it is shared with the detail page's rank window, which has to exclude
+  // exactly the same commanders or the two screens disagree about a rank.
   return and(
     eq(cards.commanderLegal, true),
-    notInArray(commanderSupport.commanderOracleId, built),
+    notBuiltBy(userId, commanderSupport.commanderOracleId),
   );
 }
+

@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, decks } from "../../db/schema";
+import { cards, collectionItems } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
@@ -117,6 +117,27 @@ export function byScoreThenOracleId(
  * Pure post-processing step: assigns unique slugs in rank order and wraps
  * counts. Exported for unit testing without a live database.
  */
+/**
+ * SLUG STABILITY, and the one migration it cost.
+ *
+ * Suffixes are assigned in rank order over every candidate, BUILT ONES INCLUDED,
+ * which is what decouples a slug from deck state: building a deck around one of
+ * two same-named commanders no longer renumbers the other, and deleting that deck
+ * does not renumber it back. The slug moves only when the score moves.
+ *
+ * The writer before this one excluded built commanders before scoring, so a
+ * collision group's suffixes depended on which of its members had decks. Those
+ * sets are all condemned by `SCORE_WRITER_CURRENT`, so every slug is recomputed
+ * once — and inside a collision group a link made before that recompute can now
+ * name a different member, or a built one, which has no page and 404s.
+ *
+ * MEASURED, because the size of that is the whole question: on the production
+ * catalog there are ZERO commander-legal names carried by more than one oracle
+ * id, and zero inside any collection in the database. The group this can reach is
+ * empty today. It is written down rather than engineered around because a
+ * redirect would have to guess which member of a collision group an old link
+ * meant, and guessing is what the dedup exists to prevent.
+ */
 export function finalizeRecommendations(
   results: (CommanderScore & { synergyState: SynergyState })[],
   uniqueCardsRead: number,
@@ -195,22 +216,18 @@ export async function recommendCommanders(
 ): Promise<RecommendResult> {
   const { collection, uniqueCardsRead } = await loadCollectionPool(userId);
 
-  // A commander you have already built a deck around is not a recommendation —
-  // the page's whole question is "what should I build next", and answering it
-  // with a deck the user is already holding wastes the top of the list. The
-  // detail page deliberately does not filter: arriving there from a deck link
-  // should still render.
-  const built = new Set(
-    (await db
-      .select({ oracleId: decks.commanderOracleId })
-      .from(decks)
-      .where(eq(decks.userId, userId))
-    ).map((d) => d.oracleId),
-  );
-
-  const candidates = collection.filter(
-    (c) => isCommanderCandidate(c) && !built.has(c.oracleId),
-  );
+  // EVERY commander candidate the collection holds, built ones included. The
+  // "what should I build next" exclusion is the READ's, in `getRankedList`, and
+  // it must not be applied here: this result is what `persistScores` writes, and
+  // that write deletes every row it does not name. Filtering first therefore
+  // evicted a commander from `commander_scores` the moment a deck was built
+  // around it — and because a warm store short-circuits the recompute, deleting
+  // that deck never brought it back. Only a fresh CSV upload, which clears the
+  // table outright, did.
+  //
+  // Scoring a handful of built commanders costs their EDHREC resolves, and those
+  // are already in the same cache read below.
+  const candidates = collection.filter(isCommanderCandidate);
 
   // One cache read for the whole fanout — a per-commander SELECT here meant
   // ~196 round-trips on every compute, warm or cold.

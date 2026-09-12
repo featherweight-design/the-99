@@ -14,7 +14,7 @@ import {
   toScoreRow,
 } from "./store";
 import type { RankedCommander } from "./recommend";
-import { RANK_SCORE_UNWRITTEN } from "../../db/schema";
+import { RANK_SCORE_UNWRITTEN, SCORE_WRITER_CURRENT } from "../../db/schema";
 
 const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   oracleId: "11111111-1111-1111-1111-111111111111",
@@ -124,16 +124,28 @@ describe("rowToListItem", () => {
 function fakeDb(confirmedAt: Date | null) {
   const inserted: unknown[][] = [];
   let deleted = false;
+  let conflictSet: Record<string, unknown> | null = null;
+  const executed: string[] = [];
   const tx = {
+    execute: async (q: unknown) => {
+      executed.push(JSON.stringify(q));
+    },
     select: () => ({ from: () => ({ where: async () => [{ at: confirmedAt }] }) }),
     delete: () => ({ where: async () => { deleted = true; } }),
     insert: () => ({
-      values: (rows: unknown[]) => ({ onConflictDoUpdate: async () => { inserted.push(rows); } }),
+      values: (rows: unknown[]) => ({
+        onConflictDoUpdate: async (arg: { set: Record<string, unknown> }) => {
+          inserted.push(rows);
+          conflictSet = arg.set;
+        },
+      }),
     }),
   };
   return {
     db: { transaction: (cb: (t: typeof tx) => Promise<void>) => cb(tx) },
     wrote: () => ({ deleted, insertedRows: inserted.flat().length }),
+    conflictSet: () => conflictSet,
+    executed: () => executed,
   };
 }
 
@@ -165,6 +177,37 @@ describe("persistScores generation guard", () => {
     await persistScores("user_1", [ranked()], null);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  // Most of a set's rows already exist, so the conflict path is the one that
+  // runs. A version left out of it survives the recompute meant to heal it, and
+  // `loadScores` condemns the set again on the very next read — a recompute on
+  // every request, for good.
+  it("carries the writer version through the conflict path, not only the insert", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime());
+
+    expect(Object.keys(fake.conflictSet() ?? {})).toContain("writerVersion");
+  });
+
+  // The trigger in 0027 stamps every row a transaction touches as stale unless it
+  // sees this setting, which is what stops an older deployment's upsert leaving a
+  // truncated set marked current. `scripts/probe-writer-version.mjs` proves the
+  // trigger itself; this proves the announcement is made.
+  it("announces its writer version inside the transaction", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime());
+
+    const announced = fake.executed().join(" ");
+    expect(announced).toContain("set_config");
+    expect(announced).toContain("app.writer_version");
+    expect(announced).toContain(String(SCORE_WRITER_CURRENT));
   });
 
   it("drops the write when the first-ever confirm lands mid-compute", async () => {
@@ -220,8 +263,10 @@ describe("isSchemaLagError", () => {
 });
 
 describe("loadScores and the rows a mid-deploy write left behind", () => {
-  // The one shape of row this cannot serve: written after 0017 added `rank_score` but
-  // before the deployment that fills it went live, so the column holds only its default.
+  // Two shapes this cannot serve, one sentinel each: a row written after 0017
+  // added `rank_score` but before the deployment that fills it went live, and a
+  // row written by a writer older than `SCORE_WRITER_CURRENT` — which, for
+  // version 1, means a set with its built commanders deleted out of it.
   const row = (over: Record<string, unknown> = {}) => ({
     oracleId: "11111111-1111-1111-1111-111111111111",
     slug: "atraxa-praetors-voice",
@@ -239,6 +284,7 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
     name: "Atraxa, Praetors' Voice",
     colorIdentity: ["W", "U", "B", "G"],
     imageUri: "https://x.test/a.jpg",
+    writerVersion: SCORE_WRITER_CURRENT,
     ...over,
   });
 
@@ -269,6 +315,24 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
     stub.db.select = resolvingSelect([row(), row({ rankScore: RANK_SCORE_UNWRITTEN })]);
     const { items } = await loadScores("user_1");
     expect(items).toEqual([]);
+  });
+
+  // Version 1 is a set written before built commanders were scored, so rows are
+  // missing from it — and it is neither empty nor degraded, so nothing else would
+  // ever mark it stale.
+  it("reads an older writer's rows as a miss", async () => {
+    stub.db.select = resolvingSelect([row({ writerVersion: 1 })]);
+    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+  });
+
+  it("condemns a set where only one row predates the current writer", async () => {
+    stub.db.select = resolvingSelect([row(), row({ writerVersion: 1 })]);
+    const { items } = await loadScores("user_1");
+    expect(items).toEqual([]);
+  });
+
+  it("names the current writer on every row it writes", () => {
+    expect(toScoreRow("user_1", ranked()).writerVersion).toBe(SCORE_WRITER_CURRENT);
   });
 });
 

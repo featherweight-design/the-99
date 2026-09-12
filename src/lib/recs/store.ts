@@ -1,10 +1,13 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderScores, csvUploads, type RoleCounts } from "../../db/schema";
+import {
+  cards, commanderScores, csvUploads, SCORE_WRITER_CURRENT, type RoleCounts,
+} from "../../db/schema";
 import { receiptsPreview } from "./format";
 import { measurableTotalFor } from "./score";
 import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
+import { notBuiltBy } from "../decks/built";
 
 // Postgres codes meaning the schema is behind the code: 42P01 undefined_table,
 // 42703 undefined_column. commander_scores is a cache and both readers already
@@ -56,6 +59,9 @@ export function toScoreRow(userId: string, r: RankedCommander) {
     receipts: receiptsPreview(r.overlapOwned),
     colorPoolSize: r.colorPoolSize,
     roleCounts: r.roleCounts,
+    // Named on every insert, which is what makes the column's default a sentinel
+    // for rows an older deployment wrote. See `SCORE_WRITER_CURRENT`.
+    writerVersion: SCORE_WRITER_CURRENT,
     computedAt: new Date(),
   };
 }
@@ -130,6 +136,15 @@ export async function persistScores(
   const rows = ranked.map((r) => toScoreRow(userId, r));
   const keep = rows.map((r) => r.oracleId);
   await db.transaction(async (tx) => {
+    // Announce which writer this is, transaction-locally. The trigger added in
+    // 0027 stamps every row this transaction touches as version 1 unless it sees
+    // this — which is how an older deployment's upsert is stopped from leaving a
+    // truncated set marked current, whether it arrives by rollback or as a
+    // compute that was already in flight at cutover. A writer that says nothing
+    // is, by definition, one that predates the marker.
+    await tx.execute(
+      sql`select set_config('app.writer_version', ${String(SCORE_WRITER_CURRENT)}, true)`,
+    );
     const [gen] = await tx
       .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
       .from(csvUploads)
@@ -157,6 +172,11 @@ export async function persistScores(
           receipts: sql`excluded.receipts`,
           colorPoolSize: sql`excluded.color_pool_size`,
           roleCounts: sql`excluded.role_counts`,
+          // Load-bearing, not bookkeeping. Most of this set's rows already exist,
+          // so without it a row written by an older writer keeps that version
+          // through the very recompute meant to heal it — `loadScores` condemns
+          // the set again on the next read, and every request recomputes forever.
+          writerVersion: sql`excluded.writer_version`,
           computedAt: sql`excluded.computed_at`,
         },
       });
@@ -183,6 +203,7 @@ export async function loadScores(
         receipts: commanderScores.receipts,
         colorPoolSize: commanderScores.colorPoolSize,
         roleCounts: commanderScores.roleCounts,
+        writerVersion: commanderScores.writerVersion,
         name: cards.name,
         typeLine: cards.typeLine,
         colorIdentity: cards.colorIdentity,
@@ -206,6 +227,17 @@ export async function loadScores(
     // than the row that gives it away.
     if (rows.some((r) => r.rankScore < 0)) return { items: [], degradedOracleIds: [] };
 
+    // The same rule for the same reason, one sentinel later. A set written before
+    // the writer scored built commanders has those rows deleted out of it, and is
+    // neither empty nor degraded — so serving it would go on hiding a commander
+    // whose deck has since been deleted, for as long as nothing else invalidated
+    // the set. One stale row condemns the set: `persistScores` writes a user's
+    // rows in one transaction, so the rest is no more current than the row that
+    // gives it away.
+    if (rows.some((r) => r.writerVersion < SCORE_WRITER_CURRENT)) {
+      return { items: [], degradedOracleIds: [] };
+    }
+
     return {
       items: rows.map(rowToListItem),
       degradedOracleIds: rows.filter((r) => r.synergyState === "degraded").map((r) => r.oracleId),
@@ -214,6 +246,54 @@ export async function loadScores(
     if (!isSchemaLagError(err)) throw err;
     return { items: [], degradedOracleIds: [] };
   }
+}
+
+/**
+ * The rows a rank may be counted over: this user's, from a set no older writer
+ * touched, minus the commanders that already helm a deck.
+ *
+ * Exported so the emitted SQL is assertable — every clause here is a rule stated
+ * somewhere else as well, and the failure mode of each is a number on one screen
+ * disagreeing with the same number on another.
+ *
+ * Staleness is a property of the SET, not of the row, which is the same rule
+ * `loadScores` applies and has to be: a row-level filter would quietly rank the
+ * current rows of a mixed set, and that is a rank counted over a set the list has
+ * already thrown away. One stale row refuses the whole set and the caller falls
+ * through to the computed list.
+ *
+ * BOTH sentinels, for that same reason. `loadScores` condemns a set for an
+ * unwritten `rank_score` as well as for an older writer, and a window that knew
+ * only about one of them would hand a detail page a rank off a set the list is
+ * recomputing — the two surfaces disagreeing about one commander, which is the
+ * failure this whole rule exists to prevent.
+ *
+ * The built exclusion is here because the store deliberately HOLDS built
+ * commanders — it is what `persistScores` writes from, and dropping them there is
+ * what used to evict a commander permanently when a deck was built around it —
+ * while the list deliberately does not draw them. A window counted over rows the
+ * list does not show is a rank that disagrees with it: the commander at the top
+ * of the page would read `Rank #2` because a built commander outscored it.
+ *
+ * A built commander therefore resolves nowhere through this query, which is where
+ * it resolved before the store held it at all: `resolveCommanderSlug` falls
+ * through to the owned list (which excludes it) and then to discovery (which
+ * excludes what the player owns), and its detail page 404s. That is a separate
+ * question, and not one to settle by handing out a rank no list agrees with.
+ */
+export function rankableScoreRows(userId: string) {
+  return and(
+    eq(commanderScores.userId, userId),
+    sql`not exists (
+      select 1 from ${commanderScores} stale
+      where stale.user_id = ${userId}
+        and (
+          stale.writer_version < ${SCORE_WRITER_CURRENT}
+          or stale.rank_score < ${0}
+        )
+    )`,
+    notBuiltBy(userId, commanderScores.oracleId),
+  );
 }
 
 /**
@@ -238,7 +318,21 @@ export async function findScoredCommander(
           anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),
         })
         .from(commanderScores)
-        .where(eq(commanderScores.userId, userId)),
+        // The window runs over the UNBUILT rows, the same population the list
+        // shows. The store holds every scored commander, built ones included —
+        // it is what `persistScores` writes from, and dropping them there is what
+        // used to evict a commander permanently when a deck was built around it
+        // — but a rank counted over rows the list does not draw is a rank that
+        // disagrees with the list: the commander at the top of the page would
+        // read `Rank #2` because a built commander outscored it.
+        //
+        // A built commander therefore resolves nowhere here, which is where it
+        // resolved before this store held it at all: `resolveCommanderSlug` falls
+        // through to the owned list (which excludes it) and then to discovery
+        // (which excludes what the player owns). Its detail page 404s, exactly as
+        // it did before — a separate question from this one, and not one to
+        // settle by handing out a rank no list agrees with.
+        .where(rankableScoreRows(userId)),
     );
     const [row] = await db
       .with(ranked)

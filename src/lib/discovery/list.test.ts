@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPoolRollup } from "../recs/pool-rollup";
-import { assembleDiscovery } from "./list";
+import { assembleDiscovery, discoveryKey } from "./list";
 
 // `collectionSupport` defaults to `ownedSupport` — the two are equal for every
 // ranking except a free-pool one, so a test that says nothing about the pool gets
@@ -174,5 +174,19 @@ describe("assembleDiscovery", () => {
     for (const key of ["oracleId", "collectionSupport", "counts", "imageUri"]) {
       expect(first).not.toHaveProperty(key);
     }
+  });
+});
+
+// A payload assembled by an earlier deployment is not invalidated by the tag —
+// that only drops on the reader's own writes — so the key carries the version of
+// the code that produced it. Without the bump, a cached page kept offering a
+// commander the player had already built with as a partner.
+describe("discoveryKey", () => {
+  it("files a payload under its sort and its version", () => {
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v2"]);
+  });
+
+  it("keeps two sorts apart", () => {
+    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
   });
 });
