@@ -101,6 +101,8 @@ export type FilterChassisProps = {
   resultTrailing?: React.ReactNode;
   /** Announced in place of the result line — see `ResultLine`. */
   announce?: string;
+  /** Identity of that announcement, so a repeated sentence still speaks. */
+  announceId?: string | number;
 };
 
 /**
@@ -127,7 +129,7 @@ export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
-  silentResult, resultTrailing, announce,
+  silentResult, resultTrailing, announce, announceId,
 }: FilterChassisProps) {
   return (
     <div
@@ -249,7 +251,7 @@ export function FilterChassis({
 
       {/* Row 3 — the chassis's only live region. */}
       <div className="flex items-center gap-[10px]" data-chassis-row="result">
-        <ResultLine line={resultLine} announce={announce} silent={silentResult} />
+        <ResultLine line={resultLine} announce={announce} announceId={announceId} silent={silentResult} />
         {resultTrailing && (
           <div className="ml-auto flex items-center gap-[8px]">{resultTrailing}</div>
         )}

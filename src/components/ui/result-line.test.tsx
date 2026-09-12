@@ -148,6 +148,18 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("7 of 41 decks");
   });
 
+  it("speaks the same sentence twice when the caller says it is a new event", () => {
+    // FilterPanel emits the same option string for a repeated keystroke, and a
+    // caller holding it in state re-publishes a value that has not changed. Text
+    // alone as identity would swallow the second one.
+    const { rerender, container } = render(<ResultLine line="41 decks" />);
+    rerender(<ResultLine line="41 decks" announce="Red added." announceId={1} />);
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+    rerender(<ResultLine line="41 decks" announce="" announceId={1} />);
+    rerender(<ResultLine line="41 decks" announce="Red added." announceId={2} />);
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

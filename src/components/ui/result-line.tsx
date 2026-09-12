@@ -24,6 +24,7 @@ const ANNOUNCE_DELAY_MS = 300;
 export function ResultLine({
   line,
   announce,
+  announceId,
   silent,
 }: {
   line: string;
@@ -33,6 +34,15 @@ export function ResultLine({
    * sets, 120 of 400 cards shown." — which the line's bare count cannot.
    */
   announce?: string;
+  /**
+   * Identity of the announcement, when the surface can raise the same sentence
+   * twice. Text alone cannot serve as identity — `FilterPanel` emits the same
+   * option string for a repeated keystroke, and a caller holding it in state
+   * re-publishes a value that has not changed — so an event that says the same
+   * words as the last one would never be spoken. Bump this per action and the
+   * same sentence speaks again.
+   */
+  announceId?: string | number;
   /**
    * Stop announcing while another surface owns the region. The compact sheet is
    * `aria-modal` and carries its own, so with both live a filter change is
@@ -53,7 +63,7 @@ export function ResultLine({
   // would suppress a count nobody had said.
   const silentSince = useRef<number | null>(null);
   // The `announce` last seen, so a message is spoken once and never re-used.
-  const lastAnnounce = useRef<string | undefined>(undefined);
+  const lastAnnounce = useRef<string | number | undefined>(undefined);
   useEffect(() => {
     // Both halves matter. A custom message can arrive while the count holds —
     // a filter that narrows to the same number still changed something — so
@@ -61,7 +71,10 @@ export function ResultLine({
     // wrong in the other direction: the caller's initial value is the empty
     // string, which is not null, so it would silence every ordinary
     // announcement rather than falling through to the line.
-    const fresh = announce !== undefined && announce !== "" && announce !== lastAnnounce.current;
+    // Identity is `announceId` when the caller supplies one, and the text
+    // otherwise — so a surface that can repeat a sentence stays able to.
+    const identity = announceId ?? announce;
+    const fresh = announce !== undefined && announce !== "" && identity !== lastAnnounce.current;
     if (!fresh && (announced.current === null || announced.current === line)) {
       announced.current = line;
       return;
@@ -105,7 +118,7 @@ export function ResultLine({
     // `fresh` is the guard, not `announce ?? line`: the caller's initial value
     // is the empty string, which is not null, so the nullish fallback would
     // silence every ordinary announcement.
-    lastAnnounce.current = announce;
+    lastAnnounce.current = identity;
     const message = fresh ? (announce as string) : line;
     // A custom message is already debounced by whoever composed it —
     // `FilterPanel` waits 300ms on `onAnnounce` before it ever reaches this
@@ -117,7 +130,7 @@ export function ResultLine({
     }
     const t = setTimeout(() => setAnnouncement(message), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
-  }, [line, announce, silent]);
+  }, [line, announce, announceId, silent]);
 
   return (
     <>
