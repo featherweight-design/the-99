@@ -27,6 +27,25 @@ export function cardFacet(typeLine: string): CardFacet {
   return "other";
 }
 
+/**
+ * Whether the card is played as a land rather than cast for mana.
+ *
+ * DELIBERATELY NOT `cardFacet(typeLine) === "land"`, and the two answer
+ * different questions. `cardFacet` buckets a row for a grouping strip and puts
+ * a land creature — Dryad Arbor, `Land Creature — Forest Dryad` — under
+ * creature, because that is the pill a player looks for it under. This one
+ * decides whether a card contributed a mana value to a curve or an average, and
+ * a land creature did not: it was played as a land.
+ *
+ * The FRONT FACE only, for the same reason `cardFacet` reads it: that is the
+ * face played from hand, so a `Creature // Land` back does not drop a creature
+ * out of the curve. Both live in this file so the two answers are visibly
+ * different rather than accidentally divergent.
+ */
+export function isLandFace(typeLine: string): boolean {
+  return /\bland\b/.test(typeLine.split(" // ")[0].toLowerCase());
+}
+
 /** The singular noun `SynergyRow` prints in its type column when the panel is
  *  on the `All` facet — property table Slot 3, "Content (`All` facet): Card
  *  type bucket only, e.g. 'Creature'". Under any single facet the row prints
