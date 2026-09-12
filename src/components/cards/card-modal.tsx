@@ -491,7 +491,7 @@ export function CardModal({
 
   // The base resolves off `preview`, so it names the printing actually on screen; the count
   // is of what the reader OWNS, so an injected row is art and not a holding.
-  const caption = printingCaption(preview, card.printings);
+  const caption = printingCaption(preview, ownedPrintings);
 
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
   // region is instantiated twice and each instance needs its own id for aria-controls.
@@ -632,7 +632,10 @@ export function CardModal({
             // DOM (display:none on phone) — this copy is the visual half of the same heading.
             <div aria-hidden className="relative z-[1] min-w-0" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
               <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
-                {card.name}
+                {/* The same source as the h3 below it — these are two halves of one
+                    heading, and reading them off different objects is how the compact
+                    header ended up naming a printing the art is not showing. */}
+                {printedNameOf(preview)}
               </div>
               <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
                 {card.typeLine}

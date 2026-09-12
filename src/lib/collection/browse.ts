@@ -490,7 +490,14 @@ export function printingCaption(
     : primary.collectorNumber
       ? `${primary.setCode} · ${primary.collectorNumber}`
       : primary.setCode;
-  const others = countFrom.length - 1;
+  // Minus the resolved one, but only when it is IN the list being counted. Opened at a
+  // printing the reader does not own, the resolved row is not one of their holdings — so
+  // subtracting it there hid a printing they do own, and two owned printings reported one.
+  const resolvedIsCounted =
+    primary !== undefined
+    && countFrom.some((p) => p.setCode === primary.setCode
+      && p.collectorNumber === primary.collectorNumber);
+  const others = countFrom.length - (resolvedIsCounted ? 1 : 0);
   return others > 0 ? `${base} +${others} more` : base;
 }
 

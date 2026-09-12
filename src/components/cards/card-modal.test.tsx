@@ -797,9 +797,11 @@ describe("CardModal opened at a printing it does not own", () => {
     );
     // Two, not three: the injected TLA row is not a holding.
     expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
-    // And the caption counts the same two. `+2 more` would be the injected row joining a
-    // figure whose contract is "other printings you own".
-    expect(screen.queryByText(/\+2 more/)).toBeNull();
+    // The caption counts the reader's OWN printings, and the resolved row is not one of
+    // them — so both are "other printings owned" and the figure is 2, not 1. Subtracting a
+    // resolved row that is not in the list hid a printing they hold.
+    expect(screen.getAllByText(/\+2 more/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/\+3 more/)).toBeNull();
     expect(screen.queryByText(/3 printings you own/)).toBeNull();
     // And it is not offered as something to pick. Expanded, because the tiles are the
     // other half of the claim: a count that is right over a list that is wrong still
@@ -814,9 +816,10 @@ describe("CardModal opened at a printing it does not own", () => {
     expect(screen.queryAllByRole("radio", { name: /TLA/ })).toHaveLength(0);
   });
 
-  // One holding means no `+N more` at all. The injected row made the suffix appear, so an
-  // owned card with a single copy was captioned as though a second printing existed.
-  it("adds no `more` suffix when the reader owns one printing", () => {
+  // The suffix counts printings the reader OWNS besides the one on screen. Opened at a
+  // printing they do not own, their single holding is one such — so `+1 more` is true here,
+  // where it was the injected row counting itself before.
+  it("counts the one owned printing as other than the one being shown", () => {
     render(
       <CardModal
         card={ownedElsewhere}
@@ -832,8 +835,7 @@ describe("CardModal opened at a printing it does not own", () => {
         onNext={null}
       />,
     );
-    expect(screen.queryByText(/more/)).toBeNull();
-    expect(screen.getAllByText(/TLA · 282/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/TLA · 282 \+1 more/).length).toBeGreaterThan(0);
   });
 
   // A row can match by set and collector number and still hold the WRONG art:
