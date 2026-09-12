@@ -25,8 +25,9 @@ three weeks ago, and I would rather have that confirmed than discover it in a bu
 > defect's 1.38:1 is against `--bg`, on two controls rather than three. See
 > `docs/superpowers/readiness-filter-chassis.md` §6.
  Six themes, two decimals. The floor is
-  **9.51:1** and the treatment's own state carrier (`--accent` ring) floors at **4.42:1**. Both
-  clear their floors everywhere.
+  **7.77:1** — the handoff computed 9.51 from three assumed hexes, all of which were wrong; the
+  fetched `B` `#CAC5C0`, `R` `#E49977` and `G` `#A3C095` are darker. The treatment's own state
+  carrier (`--accent` ring) floors at **4.42:1**. Both clear their floors everywhere.
 - **The dimming defect it uncovers.** The shipped unlit pip measures **1.37:1** against **`--bg`**
   on the rack and **1.49:1** against `--surface-sunken` on collection — **two** live controls under
   the 3:1 non-text floor today, not three: `/decks`' `ColourSwatch` carries no opacity at all. Not a
@@ -94,13 +95,14 @@ independently of this round, and `chassisCopy.colour.pipAria` replaces it.
 
 ### Asset delivery is unspecified and one option is bad
 Five theme-independent SVGs, cacheable forever, appearing in the filter chrome of four routes plus
-the set pages. Static assets, a sprite or a hotlink are all viable; **hotlinking a third party into
-the chrome of four routes is the one choice Design would push back on**, because a slow or failed
-fetch takes out the only carrier of a filter's identity. The frames in the canvas hotlink for
-convenience and each pip sits on its own correctly-coloured ground, which is also the fallback I
-would ship.
+the set pages. **Ruled by the audit: five static SVGs committed to `public/mana/`.** Design's own
+push-back is the reason — hotlinking a third party into the chrome of four routes makes a slow or
+failed fetch take out the only carrier of a filter's identity — and a sprite loses nothing but
+gains nothing either, while five files stay diffable and let `cost-pips.tsx` adopt them later
+without unpacking anything. The frames in the canvas hotlink for convenience; that is a canvas
+convenience and not a shipping fallback.
 
-### Three pip hexes are assumed
+### Three pip hexes are assumed — fetched by the audit, and all three were wrong
 `W` = `#F8F6D8` and `WU`'s blue half = `#C1D7E9` are quoted in the brief. `B`, `R` and `G` are the
 canonical values and are not quoted anywhere I could read; the table assumes `#CBC2BF`, `#F9AA8F`,
 `#9BD3AE`. Confirm on first fetch. The floor has 6.5 points of headroom over 3:1, so this is a
@@ -120,7 +122,9 @@ the brief's own ruling, and the pips here are drawn so the two can converge with
 honest in the wide form below 887px, and 900 is that plus a margin. But it means a small laptop in a
 half-width window gets the phone treatment on a pointer device, where a 44px target row and a bottom
 sheet are both slightly wrong. The alternative — a per-route switch — makes the breakpoint a
-per-route fact and the chassis stops being one thing. I would ship 900 and watch it.
+per-route fact and the chassis stops being one thing. **Ship 1000 and watch it** — the minimums
+total 987px rather than the 887px this section derived the 900 from, so at 900 the row wraps, which
+is the defect the rule exists to prevent.
 
 **Chip-line length at `/collection`.** Five dimensions of chips plus `Clear all filters` on one
 line is drawn at two active. At five it wraps, and the result line follows it down. Acceptable, and
