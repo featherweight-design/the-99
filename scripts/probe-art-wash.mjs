@@ -467,6 +467,18 @@ try {
       // half the band instead.
       const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
       note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
+      // An empty census is not a pass. Every wash laid out on this route has to
+      // be a STATED band once its surface has migrated, so the check is the
+      // count of bands that are not — which needs no per-route table and cannot
+      // go quiet when a migration disappears or reverts to the legacy arm.
+      const unstated = await page.evaluate(
+        `[...document.querySelectorAll('.art-wash-scrim')]
+          .filter((s) => s.getClientRects().length)
+          .filter((s) => !s.closest('[data-art-wash-band]')).length`,
+      );
+      if (unstated) {
+        note(`  ${unstated} wash layer(s) on an unstated band — surfaces still to migrate`);
+      }
       for (const band of stated) {
         if (!SETTLED_BANDS.some((h) => `${h}px` === band.declared)) {
           note(`  FAIL band declares ${band.declared || "no height"}, outside the settled set`);
