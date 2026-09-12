@@ -652,6 +652,7 @@ export function CardModal({
           {/* §Mobile: Art Image — 180px, aspect 63/88, radius 10px. Past the overflow
               threshold it collapses to a 72px thumbnail and the name comes with it. */}
           <div
+            data-testid="modal-art-mobile"
             className={`relative z-[1] rounded-[10px] ${compactArt ? "flex-none" : "mx-auto"}`}
             style={{
               width: compactArt ? 72 : 180, aspectRatio: "63/88",
@@ -718,6 +719,7 @@ export function CardModal({
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
           <div
+            data-testid="modal-art-desktop"
             className="relative w-full rounded-[12px]"
             style={{
               aspectRatio: "63/88",

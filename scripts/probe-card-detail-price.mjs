@@ -89,11 +89,13 @@ async function readPrice(page) {
         // The gap between the art and the tag, measured rather than asserted from
         // the class list — a margin a sibling collapses is a margin that is not there.
         gapFromArt: (() => {
-          // Both breakpoint trees are mounted at once, so the first 63/88 box in the
-          // dialog is the phone's even on a desktop viewport — and its `md:hidden`
-          // ancestor gives it a zero rect, which would make this measurement a
-          // fiction. The visible one is the one being drawn.
-          const art = [...document.querySelectorAll('[role="dialog"] [style*="63/88"]')]
+          // By test id, NOT by `[style*="63/88"]`: Chromium serialises the inline
+          // style as `aspect-ratio: 63 / 88`, spaces and all, so that selector
+          // matches nothing and the measurement silently became null. Both
+          // breakpoint trees are mounted at once, so the visible box is still the
+          // one to measure.
+          const art = ["modal-art-desktop", "modal-art-mobile"]
+            .flatMap((t) => [...document.querySelectorAll(`[data-testid="${t}"]`)])
             .find((n) => n.getBoundingClientRect().width > 0);
           if (!art) return null;
           return Math.round(node.getBoundingClientRect().top - art.getBoundingClientRect().bottom);
@@ -106,6 +108,25 @@ async function readPrice(page) {
       compact: read("modal-price-compact"),
     };
   });
+}
+
+/**
+ * The gap between the art's bottom edge and the tag's top, which is the placement
+ * ruling itself. One pixel of tolerance for sub-pixel layout; anything more is the
+ * tag having left the art.
+ */
+function assertGap(where, placement, expected) {
+  if (!placement) {
+    console.log(`\nFAIL: ${where} drew no price tag at all.`);
+    process.exitCode = 1;
+    return;
+  }
+  if (placement.gapFromArt === null || Math.abs(placement.gapFromArt - expected) > 1) {
+    console.log(
+      `\nFAIL: ${where} tag sits ${placement.gapFromArt}px under the art, expected ${expected}px.`,
+    );
+    process.exitCode = 1;
+  }
 }
 
 async function openCard(page, name) {
@@ -127,8 +148,12 @@ try {
   const page = await context.newPage();
   await signIn(page);
   await openCard(page, CARD);
+  const desktop = await readPrice(page);
   console.log(`\n── desktop · ${CARD} ──`);
-  console.log(JSON.stringify(await readPrice(page), null, 2));
+  console.log(JSON.stringify(desktop, null, 2));
+  // The placement is the ruling; a price node that has drifted away from the art
+  // satisfies nothing. Table row 1.1: 10px under the art at desktop, 9px at phone.
+  assertGap("desktop", desktop.desktop, 10);
 
   // A pick must move the figure with the art. Same card, different printing.
   const trigger = page.locator('button[aria-label*="printings owned"]').last();
@@ -202,8 +227,10 @@ try {
   const phonePage = await phone.newPage();
   await signIn(phonePage);
   await openCard(phonePage, CARD);
+  const phoneRead = await readPrice(phonePage);
   console.log(`\n── phone · ${CARD} ──`);
-  console.log(JSON.stringify(await readPrice(phonePage), null, 2));
+  console.log(JSON.stringify(phoneRead, null, 2));
+  assertGap("phone", phoneRead.mobile, 9);
 
   const phoneTrigger = phonePage.locator('button[aria-label*="printings owned"]').first();
   if (await phoneTrigger.count()) {
