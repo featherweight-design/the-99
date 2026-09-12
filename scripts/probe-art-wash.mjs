@@ -178,6 +178,9 @@ const READ_STATED_BANDS = `() => {
       });
       return {
         declared: root.getAttribute('data-art-wash-band') + 'px',
+        labelAtPx: root.hasAttribute('data-art-wash-label-at')
+          ? Number(root.getAttribute('data-art-wash-label-at'))
+          : null,
         laid: Math.round(root.getBoundingClientRect().height),
         // Read off the primitive's own marker, never inferred from the scrims.
         // A band that draws no ramp BY INTENT and a band that lost its ramp are
@@ -487,11 +490,20 @@ try {
         if (band.stops[3].alpha !== band.stops[2].alpha) {
           note(`  FAIL stated band does not hold to its foot: ${JSON.stringify(band.stops.slice(2))}`);
         }
-        // The hold's position is the block's top edge as a fraction of the band.
-        // Below half is the signature of a px value read as a percentage — the one
-        // failure that looks like success in a screenshot of a short band.
-        if (band.stops[2].position < 50) {
-          note(`  FAIL stated band holds at ${band.stops[2].position}% — a px labelAt read as a percentage`);
+        // The hold compared to the exact figure its own `labelAtPx` implies,
+        // rather than to a threshold. A generic "below half" test passes the very
+        // regression it was written for: 57 or 83 read as a percentage on a 288
+        // band lands at 57% or 83%, both perfectly ordinary-looking numbers, and
+        // only `(band − at) / band` tells them from the 80% and 71% expected.
+        const at = band.labelAtPx;
+        if (at === null) {
+          note(`  FAIL stated band publishes no label-at figure to check its hold against`);
+        } else {
+          const height = Number.parseInt(band.declared, 10);
+          const expected = Math.round(((height - at) / height) * 100);
+          if (Math.abs(band.stops[2].position - expected) > 1) {
+            note(`  FAIL ${band.declared} band holds at ${band.stops[2].position}%, expected ${expected}% for a ${at}px block`);
+          }
         }
       }
 

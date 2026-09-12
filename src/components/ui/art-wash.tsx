@@ -359,6 +359,12 @@ export function ArtWash(props: ArtWashProps) {
         // check to one strategy's class would silently stop covering the other.
         // Absent on a legacy band, which is what makes the census meaningful.
         data-art-wash-band={legacy ? undefined : height}
+        // The block this band's ramp was keyed to, in px. Published because a
+        // probe cannot otherwise tell a correct hold from a plausible one: a 57
+        // read as a percentage on a 288 band lands at 57%, which is a perfectly
+        // ordinary-looking number, and only the expected `(band − at) / band`
+        // exposes it. With this, that comparison is exact rather than a threshold.
+        data-art-wash-label-at={legacy || props.labelAtPx === "flat" ? undefined : props.labelAtPx}
         // Stated when the band draws NO vertical ramp by intent, so a probe can
         // tell that from a ramp that went missing: both look like one 90deg
         // scrim, and one of them is a band whose ink is standing on a rising
@@ -410,6 +416,7 @@ export function ArtWash(props: ArtWashProps) {
     <div
       aria-hidden="true"
       data-art-wash-band={stated ? props.height : undefined}
+      data-art-wash-label-at={stated ? props.labelAtPx : undefined}
       className={`pointer-events-none overflow-hidden ${stated ? "absolute inset-x-0 top-0" : "absolute inset-0"}`}
       // R6 ruling 1: the plate is a loading device, not a ground. With no art
       // there is nothing to load, so an artless band grounds in `var(--bg)`
