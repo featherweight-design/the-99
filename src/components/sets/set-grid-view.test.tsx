@@ -59,6 +59,16 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
   );
 }
 
+/**
+ * Rarity is a trigger and a panel since addendum R2 §28, not four letter buttons: four
+ * values, single-select, with an off state is the chassis's own test for a panel dimension.
+ * So a test that wants a rarity opens the trigger first.
+ */
+function pickRarity(label: string) {
+  fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${label},`) }));
+}
+
 const replaceState = vi.spyOn(window.history, "replaceState");
 
 beforeEach(() => {
@@ -356,9 +366,18 @@ describe("SetGridView — phone and desktop are one document", () => {
   });
 
   it("puts the filters behind a sheet on the phone, with a count badge", () => {
-    search = "c=W&m=1";
+    search = "c=W&r=rare";
     view([p("1"), p("2")], ["1"]);
     expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
+  });
+
+  // Addendum R2 §28: the badge counts DIMENSIONS only. Missing-only is a control on the
+  // row beside the badge, so counting it states the same fact twice in one glance — and it
+  // put a `1` on `Filters` with nothing behind `Filters`.
+  it("leaves missing-only out of the badge, which sits beside it", () => {
+    search = "m=1";
+    view([p("1"), p("2")], ["1"]);
+    expect(screen.queryByRole("button", { name: /filter(s)? on/ })).toBeNull();
   });
 
   it("keeps the cost strip when the filters match nothing", () => {
@@ -372,7 +391,7 @@ describe("SetGridView — phone and desktop are one document", () => {
   it("treats rarity as single select rather than a union", () => {
     search = "r=common";
     view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
-    fireEvent.click(screen.getByRole("button", { name: "Rare" }));
+    pickRarity("Rare");
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?r=rare");
   });
 
@@ -451,7 +470,7 @@ describe("SetGridView — the URL wins over a local override", () => {
         staleAsOf={null}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Rare" }));
+    pickRarity("Rare");
     expect(screen.getAllByRole("button", { name: /not in your collection/ })).toHaveLength(1);
 
     // Back to a genuinely different URL. (Setting it to the same string would not be a
@@ -585,5 +604,130 @@ describe("SetGridView — the cell forwards its full-size art", () => {
         imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg",
       },
     );
+  });
+});
+
+// Addendum R2 §28 — the rack conforms to the filter chassis. Every state from
+// ADDENDUM-STATES §1-5, and what each must NOT do, which is half of what the file says.
+describe("SetGridView — the rack, chassis-conformant", () => {
+  const chips = () => document.querySelector("[data-set-chips]") as HTMLElement;
+  const chipLabels = () =>
+    [...chips().querySelectorAll("span")]
+      .filter((el) => el.querySelector("button"))
+      .map((el) => el.textContent?.replace("×", "").trim());
+
+  // ——— 1 · Rest ———
+  it("prints the rest line rather than collapsing row 2", () => {
+    view([p("1"), p("2")], ["1"]);
+    expect(chips()).toBeInTheDocument();
+    expect(screen.getByText("No filters on")).toBeInTheDocument();
+  });
+
+  it("offers no Clear at rest", () => {
+    view([p("1"), p("2")], ["1"]);
+    expect(screen.queryByRole("button", { name: /Clear all filters/ })).toBeNull();
+  });
+
+  // The whole reason the line exists: this bar is inside a sticky head, and a height that
+  // changed with the filter state would move the grid under the reader's thumb.
+  it("reserves the chip row's height whether or not a chip is in it", () => {
+    view([p("1"), p("2")], ["1"]);
+    expect(chips().style.minHeight).toBe("22px");
+  });
+
+  // ——— 2 · One filter on ———
+  it("shows the chip but no Clear at one filter, where two shorter routes already exist", () => {
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    expect(chipLabels()).toEqual(["Rare"]);
+    expect(screen.queryByRole("button", { name: /Clear all filters/ })).toBeNull();
+  });
+
+  // ——— 3 · Several filters on ———
+  it("orders chips by dimension, never by click order", () => {
+    search = "m=1&r=rare&c=W";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    expect(chipLabels()).toEqual(["White", "Rare", "Missing only"]);
+  });
+
+  it("collapses colour past one pip rather than drawing a chip per hue", () => {
+    search = "c=W,U,B";
+    view([p("1"), p("2")], []);
+    expect(chipLabels()).toContain("3 colours");
+    expect(chipLabels()).not.toContain("White");
+  });
+
+  it("offers Clear all filters past one active control", () => {
+    search = "m=1&c=W";
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: /Clear every filter/ })).toBeInTheDocument();
+  });
+
+  it("clears every dimension from that one control", () => {
+    search = "m=1&c=W";
+    view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /Clear every filter/ }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("removes one dimension from a chip's own ×", () => {
+    search = "m=1&c=W";
+    view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter: White" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?m=1");
+  });
+
+  // ——— 4 · The rarity panel ———
+  it("mounts rarity as a trigger, not four letter buttons", () => {
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: /Filter by rarity/ })).toBeInTheDocument();
+    for (const letter of ["C", "U", "R", "M"]) {
+      expect(screen.queryByRole("button", { name: letter })).toBeNull();
+    }
+  });
+
+  it("carries no search field: four values have nothing to search", () => {
+    view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    const boxes = screen.queryAllByRole("searchbox");
+    expect(boxes.filter((b) => /rarit/i.test(b.getAttribute("aria-label") ?? ""))).toHaveLength(0);
+  });
+
+  // Single-select, and picking the lit value is how `all` is reached — the panel's own
+  // `single` mode has no off state, so the rule is the caller's.
+  it("replaces the lit value rather than unioning, and clears when picked again", () => {
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    pickRarity("Rare");
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("counts its rows off the same filtered computation the result line reads", () => {
+    // One rare and two commons; with no other filter on, the rows say so.
+    view([
+      p("1", { rarity: "rare" }), p("2", { rarity: "common" }), p("3", { rarity: "common" }),
+    ], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    expect(screen.getByRole("option", { name: /^Rare, 1 cell/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /^Common, 2 cells/ })).toBeInTheDocument();
+  });
+
+  // ——— The pips ———
+  it("mounts the chassis pips rather than a dimmed token square", () => {
+    const { container } = view([p("1"), p("2")], []);
+    const pips = [...container.querySelectorAll<HTMLElement>('[role="switch"]')];
+    expect(pips.length).toBeGreaterThanOrEqual(5);
+    // An unlit pip carries no opacity, no tint and no rim — the dimming is exactly what
+    // the shipped control got wrong, at 1.38:1.
+    for (const pip of pips) {
+      expect(pip.style.opacity).toBe("");
+      expect(pip.className).not.toMatch(/opacity-/);
+    }
+  });
+
+  it("names each pip by its colour, never by its letter", () => {
+    view([p("1"), p("2")], []);
+    expect(screen.getAllByRole("switch", { name: "White" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("switch", { name: "Filter by W" })).toBeNull();
   });
 });

@@ -493,6 +493,58 @@ async function run() {
       `${phoneRarity} visible rarity captions`,
     );
 
+    // The rack (addendum R2 §28). Its height must not depend on the filter state — it lives
+    // inside a sticky head — and an unlit pip must carry no opacity. Both are resolved-style
+    // questions; neither is answerable in JSDOM.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const rackAt = async (query) => {
+      await page.goto(`${BASE}/collection/sets/${code}${query}`, { waitUntil: "networkidle" });
+      await waitForCells(page);
+      return page.evaluate(() => {
+        const chipRow = document.querySelector("[data-set-chips]");
+        if (!chipRow) return null;
+        const head = chipRow.closest("[class*='sticky']") ?? chipRow.parentElement;
+        return {
+          head: Math.round(head.getBoundingClientRect().height),
+          chips: chipRow.querySelectorAll("span > button").length,
+          pipOpacities: [...document.querySelectorAll('[role="switch"]')]
+            .filter((el) => el.getClientRects().length > 0)
+            .map((el) => getComputedStyle(el).opacity),
+          inFlowPanel: (() => {
+            const panel = document.querySelector('[role="dialog"]');
+            return panel ? getComputedStyle(panel).position : null;
+          })(),
+        };
+      });
+    };
+    const rest = await rackAt("");
+    const one = await rackAt("?c=W");
+    const three = await rackAt("?c=W&r=rare&m=1");
+    if (rest === null) {
+      failures += !report("the chip row is on the page", false, "no [data-set-chips]");
+    } else {
+      failures += !report(
+        "the head's height does not move with the filter state",
+        rest.head === one.head && one.head === three.head,
+        `rest ${rest.head}px, one ${one.head}px, three ${three.head}px`,
+      );
+      failures += !report(
+        "no unlit pip is dimmed — the shipped control's 1.38:1 is what this replaces",
+        rest.pipOpacities.length >= 5 && rest.pipOpacities.every((o) => Number(o) === 1),
+        `opacities ${rest.pipOpacities.join(", ") || "(none)"}`,
+      );
+      failures += !report(
+        "three dimensions on produce three chips",
+        three.chips >= 3,
+        `${three.chips} chip removals`,
+      );
+    }
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
     const phoneControls = await page.evaluate(() => {
       const visible = (el) => el.getClientRects().length > 0;
       const byName = (re) => [...document.querySelectorAll("button")]

@@ -23,13 +23,16 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { useSearchParams } from "next/navigation";
-import { ColorFilterRow, WUBRG } from "../collection/color-filter-row";
+import { ColourPips } from "../ui/colour-pips";
+import { FilterPanel } from "../ui/filter-panel";
+import { chassisCopy } from "../../lib/copy/filter-chassis";
 import { GhostButton } from "../ui/button";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { parseAsOf, type PriceFact } from "../../lib/decks/price";
 import {
-  applyFilters, parseFilters, RARITIES, serialiseFilters, type SetGridFilters,
+  applyFilters, EMPTY_FILTERS, parseFilters, RARITIES, serialiseFilters,
+  type SetGridFilters,
 } from "../../lib/sets/filters";
 import { sectionsOf, type Cell } from "../../lib/sets/completion";
 import { costToComplete } from "../../lib/sets/cost";
@@ -259,8 +262,65 @@ export function SetGridView(props: SetGridViewProps) {
   // `effective`, not `filters`: at 100% missing-only is dropped from what is applied, and
   // counting the raw value showed "1 filter on" with a Clear button for a filter that is
   // neither applied nor reachable.
-  const filtersOn =
-    effective.colors.length + effective.rarities.length + (effective.missingOnly ? 1 : 0);
+  //
+  // The BADGE counts only what the sheet holds (§28): missing-only sits on the phone row
+  // beside the badge, so counting it is the same fact twice in one glance.
+  const filtersOn = effective.colors.length + effective.rarities.length;
+  const anyFilterOn = filtersOn > 0 || effective.missingOnly;
+
+  // The chip line, in DIMENSION order and never click order — a line that re-orders itself
+  // as you use it is a line you have to re-read. Colour collapses past one pip rather than
+  // printing one chip per hue.
+  const chips: { key: string; label: string; onRemove: () => void }[] = [];
+  if (effective.colors.length === 1) {
+    const only = effective.colors[0];
+    chips.push({
+      key: `c-${only}`,
+      label: setFilterCopy.chip.colourOne(
+        chassisCopy.colour.names[only.toLowerCase() as "w" | "u" | "b" | "r" | "g"],
+      ),
+      onRemove: () => setFilters({ ...filters, colors: [] }),
+    });
+  } else if (effective.colors.length > 1) {
+    chips.push({
+      key: "c",
+      label: setFilterCopy.chip.colour(effective.colors.length),
+      onRemove: () => setFilters({ ...filters, colors: [] }),
+    });
+  }
+  if (effective.rarities.length > 0) {
+    const r = effective.rarities[0] as "common" | "uncommon" | "rare" | "mythic";
+    chips.push({
+      key: `r-${r}`,
+      label: setFilterCopy.chip.rarity(r),
+      onRemove: () => setFilters({ ...filters, rarities: [] }),
+    });
+  }
+  if (effective.missingOnly) {
+    chips.push({
+      key: "m",
+      label: setFilterCopy.chip.missingOnly,
+      onRemove: () => setFilters({ ...filters, missingOnly: false }),
+    });
+  }
+  const clearAll = () => setFilters(EMPTY_FILTERS);
+
+  // Per-row counts from the ONE filtered computation, so the panel never disagrees with
+  // the result line beside it. Rarity is excluded from its own counts — a panel whose rows
+  // read 0 for every value but the lit one tells the reader nothing about what picking a
+  // different one would do.
+  const rarityCounts = (() => {
+    const pool = applyFilters(
+      [...sections.base, ...sections.extras],
+      { ...effective, rarities: [] },
+    );
+    const counts = new Map<string, number>();
+    for (const c of pool) {
+      const r = (c.rarity ?? "").toLowerCase();
+      counts.set(r, (counts.get(r) ?? 0) + 1);
+    }
+    return counts;
+  })();
 
   return (
     <div>
@@ -372,7 +432,12 @@ export function SetGridView(props: SetGridViewProps) {
             sheet. The desktop rack was previously mounted directly at every width, which
             put five 15px pips below the 44px target and wrapped the controls into the
             head. */}
-        <div className="mt-[10px] flex flex-wrap items-center gap-[8px]">
+        {/* Row 1 of three. The rack is three FIXED rows — controls, chips, result — and its
+            height never depends on the filter state, which matters more here than on any
+            other route: this bar lives inside a sticky head, and every height change under
+            a reader's thumb moves the grid they are reading. `flex-nowrap`, because a
+            control landing on its own line is the same defect by another route. */}
+        <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
@@ -395,49 +460,127 @@ export function SetGridView(props: SetGridViewProps) {
             ) : null}
           </button>
 
-          {/* The colour and rarity racks are desktop-only; Missing-only is mounted ONCE
+          {/* The colour and rarity controls are desktop-only; Missing-only is mounted ONCE
               and shown at both widths, which is what keeps one control with one
-              accessible name in the document. */}
-          <ColorFilterRow
-            containerRef={desktopRackRef}
-            className="hidden md:flex"
-            selected={filters.colors}
-            onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
-          />
+              accessible name in the document.
 
-          <div className="hidden items-center gap-[4px] md:flex">
-            {RARITIES.map((r) => {
-              const on = filters.rarities.includes(r);
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  aria-pressed={on}
-                  aria-label={setFilterCopy.rarity.options[r]}
-                  onClick={() => setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) })}
-                  className={[
-                    "min-h-[44px] md:min-h-[32px] rounded-[6px] px-[9px] font-mono text-[11px] border",
-                    "hover:bg-[color:var(--elevated)]",
-                    on
-                      ? "text-[color:var(--accent)] border-[color:var(--accent)]"
-                      : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
-                  ].join(" ")}
-                >
-                  {setFilterCopy.rarity.letters[r]}
-                </button>
-              );
-            })}
+              The pips are the chassis's, mounted and never forked. The control they
+              replace drew a token square at `opacity .34-.40` when unlit, measuring
+              1.38:1; these are Scryfall's own full-colour symbols, undimmed, with a 2px
+              --accent ring as the entire lit treatment. A fork here is how six themes of
+              measurement get re-derived by hand. */}
+          <div ref={desktopRackRef} className="hidden md:flex">
+            <ColourPips
+              value={filters.colors}
+              form="wide"
+              onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
+            />
+          </div>
+
+          {/* Four values, single-select, with an off state — the chassis's own test makes
+              that a panel rather than a segmented run or four buttons. `selectionMode`
+              stays `multi` because the panel's `single` mode has no off state and drops
+              the footer with it; the single-select rule is the caller's, one line below,
+              and it is what lets picking the lit value reach `all`. */}
+          <div className="hidden md:block">
+            <FilterPanel
+              copy={setFilterCopy.rarityPanel}
+              searchable={false}
+              widthPx={280}
+              footerStatus
+              options={RARITIES.map((r) => ({
+                code: r,
+                label: setFilterCopy.rarity.options[r],
+                count: rarityCounts.get(r) ?? 0,
+                disabled: (rarityCounts.get(r) ?? 0) === 0 && !filters.rarities.includes(r),
+              }))}
+              selected={filters.rarities}
+              onToggle={(code) =>
+                setFilters({ ...filters, rarities: pickRarity(filters.rarities, code) })}
+              onClear={() => setFilters({ ...filters, rarities: [] })}
+            />
           </div>
 
           {complete ? null : <MissingOnlyToggle filters={filters} onChange={setFilters} />}
+        </div>
 
-          {filtersOn > 0 ? (
-            <GhostButton
-              className="hidden md:inline-flex"
-              onClick={() => setFilters({ colors: [], rarities: [], missingOnly: false })}
+        {/* Row 2 — the chip line, present at rest rather than conditionally rendered. The
+            line IS the invariant that keeps the head's height constant; collapsing it is
+            the bug the three-row rule exists to forbid.
+
+            At desktop it can never reach two lines: three dimensions cap the widest
+            possible line at ~380px of 1100, so the chassis's one legitimate height change
+            is unreachable here. At phone the chips scroll horizontally and never wrap, and
+            the strip starts at its TRAILING edge so the clipped item is a chip rather than
+            the way out. */}
+        <div
+          data-set-chips
+          className="mt-[8px] flex items-center gap-[6px] overflow-x-auto md:overflow-visible
+                     md:flex-wrap"
+          style={{ minHeight: 22 }}
+        >
+          {chips.length === 0 ? (
+            <span
+              className="font-mono text-[11px] leading-[14px] py-[3px] whitespace-nowrap"
+              style={{ color: "var(--fg-faint)" }}
             >
-              {setFilterCopy.clear}
-            </GhostButton>
+              {chassisCopy.chips.none}
+            </span>
+          ) : (
+            chips.map((chip) => (
+              // The chip is a span and the x inside it is the button, exactly as the
+              // chassis draws it: chips sit 6px apart, so a 44px overlay centred on a whole
+              // chip would overlap its neighbour and a tap near the boundary would remove
+              // the wrong filter. Anchored to the x, the nearest competing target is a full
+              // chip away. 34px rather than 44 is the refresh's granted exception on its own
+              // test — a chip is a shortcut, never the only route, and every value it
+              // removes is also removable at 44px on the row or in the sheet.
+              <span
+                key={chip.key}
+                className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap
+                           rounded-[7px] px-[8px] py-[3px] font-mono text-[11px] leading-[14px]"
+                style={{
+                  color: "var(--fg-body)",
+                  background: "var(--surface-sunken)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.onRemove}
+                  aria-label={chassisCopy.chips.removeAria(chip.label)}
+                  className="relative cursor-pointer border-0 bg-transparent p-0
+                             text-[color:var(--fg-muted)]
+                             after:absolute after:left-1/2 after:top-1/2 after:h-[34px]
+                             after:w-[34px] after:-translate-x-1/2 after:-translate-y-1/2
+                             after:content-['']"
+                >
+                  ×
+                </button>
+              </span>
+            ))
+          )}
+
+          {/* Past ONE active control only. At one filter the chip's own x and the lit
+              control beside it are both shorter routes off, and a third control there is
+              noise. Not a GhostButton: it was the only one in a row of 32px hairlines, and
+              the chassis's answer to "what should this button look like" is that it is not
+              a button on that row at all. */}
+          {chips.length > 1 ? (
+            <button
+              type="button"
+              onClick={clearAll}
+              aria-label={setFilterCopy.clearAllAria}
+              className="relative ml-auto shrink-0 cursor-pointer border-0 bg-transparent p-0
+                         font-mono text-[11px] leading-[14px] underline whitespace-nowrap
+                         text-[color:var(--fg-muted)]
+                         after:absolute after:left-1/2 after:top-1/2 after:h-[34px]
+                         after:min-w-[44px] after:w-full after:-translate-x-1/2
+                         after:-translate-y-1/2 after:content-['']"
+            >
+              {chassisCopy.chips.clearAll}
+            </button>
           ) : null}
         </div>
 
@@ -445,35 +588,27 @@ export function SetGridView(props: SetGridViewProps) {
             controls at a 44px target. */}
         {sheetOpen && !isDesktop ? (
           <FilterSheet onClose={() => setSheetOpen(false)}>
+            {/* Pips lead every sheet in the app, and they are the chassis's pips here too —
+                a sheet that drew its own would be the fork §28 names. 44px is a real touch
+                target, which the `sheet` form is what provides. */}
             <p className="font-mono text-[10px] mb-[10px]" style={{ color: "var(--fg-faint)" }}>
               {setFilterCopy.colourLabel}
             </p>
-            <div className="mb-[16px] flex flex-wrap gap-[8px]">
-              {WUBRG.map((c) => {
-                const on = filters.colors.includes(c);
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={on}
-                    aria-label={setFilterCopy.colourAria(c)}
-                    onClick={() => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
-                    className={[
-                      "min-h-[44px] min-w-[44px] rounded-[8px] px-[12px] font-mono text-[13px] border",
-                      on
-                        ? "text-[color:var(--accent)] border-[color:var(--accent)]"
-                        : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
-                    ].join(" ")}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
+            <div className="mb-[16px]">
+              <ColourPips
+                value={filters.colors}
+                form="sheet"
+                onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
+              />
             </div>
 
             <p className="font-mono text-[10px] mb-[10px]" style={{ color: "var(--fg-faint)" }}>
               {setFilterCopy.rarity.label}
             </p>
+            {/* A 44px chip group, not the desktop trigger: four short values is what a chip
+                group is for, and a panel behind a panel is two dialogs deep. Wrapping to
+                two rows is allowed HERE and nowhere else — a sheet may change height, the
+                control row inside the sticky head may not. */}
             <div className="mb-[16px] flex flex-wrap gap-[8px]">
               {RARITIES.map((r) => {
                 const on = filters.rarities.includes(r);
@@ -498,10 +633,8 @@ export function SetGridView(props: SetGridViewProps) {
             </div>
 
             <div className="flex items-center gap-[10px]">
-              <GhostButton
-                onClick={() => setFilters({ colors: [], rarities: [], missingOnly: false })}
-              >
-                {setFilterCopy.clear}
+              <GhostButton onClick={clearAll} disabled={!anyFilterOn}>
+                {chassisCopy.chips.clearAll}
               </GhostButton>
               <button
                 type="button"
@@ -586,7 +719,7 @@ export function SetGridView(props: SetGridViewProps) {
           // Turns missing-only off and keeps the rest: the promised correction is "show
           // the ones you DO own that match", not "discard what you filtered to".
           onShowAll={() => setFilters({ ...filters, missingOnly: false })}
-          onClearAll={() => setFilters({ colors: [], rarities: [], missingOnly: false })}
+          onClearAll={clearAll}
         />
       ) : (
         <>
@@ -771,7 +904,7 @@ function ZeroResults({
         <GhostButton onClick={missingOnly ? onShowAll : onClearAll}>
           {missingOnly
             ? setPageCopy.zeroResults.showAll(ownedCount)
-            : setPageCopy.zeroResults.clear}
+            : chassisCopy.chips.clearAll}
         </GhostButton>
       </div>
     </EmptyState>
