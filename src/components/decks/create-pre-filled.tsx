@@ -13,6 +13,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
+import { CommanderThumb, THUMB_RING } from "../ui/commander-thumb";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -129,16 +130,10 @@ export function CreatePreFilled({
             className="md:hidden flex gap-[14px] rounded-[12px] p-[14px] mb-[24px]"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
-            {/* §Commander art thumb mobile: 58×81px, br 8px, inset shadow */}
-            <div
-              className="shrink-0 rounded-[8px]"
-              style={{
-                width: 58,
-                height: 81,
-                background: imageUri ? `url(${imageUri}) center/cover` : gradient,
-                boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-              }}
-            />
+            {/* §Commander art thumb mobile — the summary thumb: this flow's
+                commander is already chosen, so it takes the same box the
+                picker's selected summary does. */}
+            <CommanderThumb imageUri={imageUri} colorIdentity={colorIdentity} size="summary" />
             <div className="flex flex-col justify-center min-w-0">
               {/* §Commander name mobile: Cinzel 600 16px var(--fg) */}
               <p
@@ -165,7 +160,10 @@ export function CreatePreFilled({
               aspectRatio: "63/88",
               borderRadius: 12,
               background: imageUri ? `url(${imageUri}) center/cover` : gradient,
-              boxShadow: "0 24px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
+              // The two card faces converge: `0 20px 50px` is the commander
+              // page's, and the 24px offset here was drift rather than a second
+              // decision. The ring takes the app's one thumb alpha with it.
+              boxShadow: `0 20px 50px rgba(0,0,0,0.5), ${THUMB_RING}`,
             }}
           />
           {/* No pip inset on the art: the locked "Color identity" row to the

@@ -242,6 +242,31 @@ const READ_STATED_BANDS = `() => {
     });
 }`;
 
+/** Every commander thumb on the page, as drawn. Five renders each invented one
+    of these, so the check is that the page now shows exactly two boxes and one
+    ring — and the ring is read off the computed shadow rather than the class,
+    because three of the five set it inline. */
+const READ_THUMBS = `() => {
+  return [...document.querySelectorAll('span[aria-hidden="true"]')]
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      // A card-face thumb, not a pip or a spacer: the 63/88 frame is the shape
+      // this looks for, at anything bigger than an icon.
+      const ratio = r.height ? r.width / r.height : 0;
+      return r.width >= 24 && ratio > 0.6 && ratio < 0.85;
+    })
+    .map((el) => {
+      const s = getComputedStyle(el);
+      return {
+        box: [Math.round(el.getBoundingClientRect().width), Math.round(el.getBoundingClientRect().height)],
+        radius: s.borderTopLeftRadius,
+        shadow: s.boxShadow,
+        position: s.backgroundPosition,
+        hasArt: s.backgroundImage.includes('url('),
+      };
+    });
+}`;
+
 /** THE PLATE, per control. The target and the drawn box are two elements — a
     44px plate would be a panel and a 26px button would miss the touch floor — so
     both are measured, and the plate's own background is read resolved: an
@@ -310,6 +335,33 @@ const READ_PLATE_HIT = `() => {
       };
     });
 }`;
+
+// The scrims outlive the art under `forced-colors`, so they are what proves the
+// band kept its height when the photograph left.
+const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
+
+const ROUTES = [
+  ["home", "/"],
+  ["decks", "/decks"],
+  ["commanders", "/commanders"],
+  // `/discover`, not `/commanders?lane=discover`. The two lanes became two
+  // routes; that query parameter is not one the app reads, so the entry loaded
+  // `/commanders` a second time and every discovery row went unchecked while the
+  // report named them.
+  ["discover", "/discover"],
+];
+
+/** The four bands this round settles. A stated band outside the set is either a
+    fifth number nobody decided or an aspect ratio that survived the migration. */
+const SETTLED_BANDS = [168, 208, 248, 288];
+
+/** The two thumb boxes. A third is a render that kept its own geometry. */
+const THUMB_BOXES = ["44×62", "64×89"];
+
+const VIEWPORTS = [
+  ["mobile", 375, 812],
+  ["desktop", 1440, 900],
+];
 
 /** Every commander thumb on the page, as drawn. Five renders each invented one of
     these, at five geometries and three ring alphas; the convergence is its own

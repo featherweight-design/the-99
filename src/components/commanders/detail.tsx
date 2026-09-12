@@ -14,6 +14,7 @@ import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
 import { IdentityPips } from "./commander-art";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
+import { THUMB_RING } from "../ui/commander-thumb";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
@@ -476,8 +477,10 @@ export function CommanderDetail({
               backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center",
-              boxShadow:
-                "inset 0 0 0 1px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.5)",
+              // One ring alpha across every card face and thumb in the app: `.4`
+              // is `IdentityPips`' own, and this face shipped `.3` while two
+              // thumbs shipped `.35`.
+              boxShadow: `${THUMB_RING}, 0 20px 50px rgba(0,0,0,0.5)`,
             }}
           >
             <FullCardTrigger oracleId={c.oracleId} placement="commander-desktop" />
