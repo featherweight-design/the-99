@@ -65,7 +65,9 @@ before the build rather than during it.
 
 ## The dependency, sequenced ahead of this
 
-**Set collections' Task 9 must land first and must land with its test rewritten.** The brief
+**Set collections' Task 9 must land before the `/collection` slice — not before the build.**
+`/decks`, `/commanders` and `/discover` share no files with that task and start now; the plan slices
+the work by route for exactly this reason. The brief
 already flags this and it is worth restating because the chassis lands on its output: the task
 expects `getByRole("button")` with `aria-pressed`, and `color-pip.tsx` emits `role="switch"` with
 `aria-checked` and the accessible name `Filter by R`. A verbatim extraction — which the same task
@@ -93,7 +95,7 @@ independently of this round, and `chassisCopy.colour.pipAria` replaces it.
 
 ## Still open, not blocking
 
-### Asset delivery is unspecified and one option is bad
+### Asset delivery — RULED: five static SVGs in `public/mana/`
 Five theme-independent SVGs, cacheable forever, appearing in the filter chrome of four routes plus
 the set pages. **Ruled by the audit: five static SVGs committed to `public/mana/`.** Design's own
 push-back is the reason — hotlinking a third party into the chrome of four routes makes a slow or
@@ -102,10 +104,12 @@ gains nothing either, while five files stay diffable and let `cost-pips.tsx` ado
 without unpacking anything. The frames in the canvas hotlink for convenience; that is a canvas
 convenience and not a shipping fallback.
 
-### Three pip hexes are assumed — fetched by the audit, and all three were wrong
-`W` = `#F8F6D8` and `WU`'s blue half = `#C1D7E9` are quoted in the brief. `B`, `R` and `G` are the
-canonical values and are not quoted anywhere I could read; the table assumes `#CBC2BF`, `#F9AA8F`,
-`#9BD3AE`. Confirm on first fetch. The floor has 6.5 points of headroom over 3:1, so this is a
+### Three pip hexes were assumed — the audit fetched them, and all three were wrong
+**Resolved, no longer a confirm-on-fetch item.** `W` `#F8F6D8` and `U` `#C1D7E9` are correct as
+quoted. The three assumed values are not: `B` is **`#CAC5C0`**, `R` is **`#E49977`** and `G` is
+**`#A3C095`**. All three are darker than assumed, so the floor moves from 9.51:1 down to
+**7.77:1** — still clearing 3:1, with **4.77** points of headroom rather than 6.5. Build against the
+fetched values.
 provenance note rather than a risk.
 
 ### Hybrid pips are specified but not exercised
