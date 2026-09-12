@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GameHistoryRow } from "./game-history-row";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckGame } from "../../lib/decks/games";
 
 const deleteGame = vi.fn<(deckId: string, gameId: string) => Promise<{ ok: boolean; message?: string }>>(
@@ -16,6 +17,7 @@ const GAME: DeckGame = {
   result: "loss",
   podSize: 4,
   playedAt: new Date("2026-09-01T12:00:00"),
+  versionNumber: 3,
   worked: ["engine"],
   hurt: ["speed", "mana"],
 };
@@ -43,6 +45,29 @@ describe("GameHistoryRow", () => {
   it("puts the pod size before the date in the meta slot", () => {
     mount();
     expect(screen.getByText(gameLogCopy.history.meta("4", "1 Sep"))).toBeInTheDocument();
+  });
+
+  // §Surfaces 5 — the stamp answers "which list was on the table", which is the
+  // whole reason a game is worth reading back months later.
+  it("stamps the row with the version that was on the table", () => {
+    mount();
+    expect(screen.getByText(deckVersioningCopy.stamp.value(3))).toBeInTheDocument();
+  });
+
+  // A game logged before versioning arrived has no version to point at. The
+  // slot is still drawn, so the marks of every row stay on one vertical.
+  it("draws a dash, not an empty slot, for a game with no version", () => {
+    mount({ ...GAME, versionNumber: null });
+    expect(screen.getByText(deckVersioningCopy.stamp.absent)).toBeInTheDocument();
+    expect(screen.queryByText(deckVersioningCopy.stamp.value(3))).toBeNull();
+  });
+
+  // The stamp is a fact about the game, not a route to the version.
+  it("draws the stamp bare — no chip, no plate, no link", () => {
+    mount();
+    const stamp = screen.getByText(deckVersioningCopy.stamp.value(3));
+    expect(screen.queryByRole("link", { name: /v3/ })).toBeNull();
+    expect(stamp.className).not.toMatch(/\brounded|\bbg-|\bborder\b/);
   });
 
   it("shows an em dash rather than an empty slot when nothing was marked", () => {

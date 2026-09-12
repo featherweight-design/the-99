@@ -1,6 +1,6 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { deckGames, deckGameAxes } from "../../db/schema";
+import { deckGames, deckGameAxes, deckVersions } from "../../db/schema";
 import { GAME_AXIS_KEYS, type AxisPolarity, type GameAxisKey } from "./game-axes";
 import { playRecord } from "./stats";
 
@@ -9,6 +9,15 @@ export type DeckGame = {
   result: "win" | "loss" | "draw";
   podSize: number;
   playedAt: Date;
+  /**
+   * The version that was on the table the night this game was played, or null.
+   *
+   * Null is a real state and not a failure: games logged before versioning
+   * arrived have no version to point at, and `on delete set null` means a
+   * version deleted out from under a game leaves the game standing. The row
+   * renders it as a dash rather than dropping the slot.
+   */
+  versionNumber: number | null;
   worked: GameAxisKey[];
   hurt: GameAxisKey[];
 };
@@ -57,8 +66,20 @@ export async function listDeckGames(deckId: string, userId: string): Promise<Dec
       result: deckGames.result,
       podSize: deckGames.podSize,
       playedAt: deckGames.playedAt,
+      versionNumber: deckVersions.number,
     })
     .from(deckGames)
+    // LEFT, never inner: an unstamped game is history the log still has to draw,
+    // and an inner join would delete it from the list to avoid printing a dash.
+    // Scoped to the same deck as well as the id, because `version_id` is a
+    // foreign key to `deck_versions.id` alone: a row pointing at another deck's
+    // version would otherwise be stamped with that deck's `vN` here while
+    // `listVersions` leaves it out of its games-held tally, and the two surfaces
+    // would disagree. Out of scope, the join misses and the game reads unstamped.
+    .leftJoin(
+      deckVersions,
+      and(eq(deckVersions.id, deckGames.versionId), eq(deckVersions.deckId, deckGames.deckId)),
+    )
     .where(and(eq(deckGames.deckId, deckId), eq(deckGames.userId, userId)))
     .orderBy(desc(deckGames.playedAt), desc(deckGames.createdAt));
 
@@ -89,6 +110,7 @@ export async function listDeckGames(deckId: string, userId: string): Promise<Dec
     result: row.result as DeckGame["result"],
     podSize: row.podSize,
     playedAt: row.playedAt,
+    versionNumber: row.versionNumber,
     worked: byGame.get(row.id)!.worked,
     hurt: byGame.get(row.id)!.hurt,
   }));

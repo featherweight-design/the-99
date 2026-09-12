@@ -4,12 +4,13 @@
 // means "which deck is this card already in", so nothing here says "committed
 // cards". A VERSION is a snapshot; the DRAFT is `deck_cards`.
 
-import { and, desc, eq, lte } from "drizzle-orm";
+import { and, count, desc, eq, inArray, lte } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  deckCards, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
+  cards, deckCards, deckGames, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
 } from "../../db/schema";
-import type { CardQty } from "./draft-diff";
+import { type CardQty, draftDiff } from "./draft-diff";
+import { averageManaValue } from "./mana-value";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -257,4 +258,182 @@ export async function restoreDraftFromVersion(
     }
     return "restored";
   });
+}
+
+/** One row of the version rail: the snapshot, plus what it changed and how long
+ *  it was on the table. */
+export type VersionSummary = DeckVersion & {
+  cardCount: number;
+  /** Cards whose count went up against the predecessor. Nought on a v1, which
+   *  renders as `initial` rather than `+99`. */
+  adds: number;
+  removes: number;
+  manaValue: number | null;
+  gamesHeld: number;
+  /** Resolved so the detail can say `Korvold → Prosper` rather than two uuids.
+   *  Null when the catalog no longer describes that commander. */
+  commanderName: string | null;
+  partnerName: string | null;
+};
+
+/**
+ * Every version of a deck, newest first.
+ *
+ * Four queries for the whole history, never four per version: a ten-version
+ * deck read one version at a time is thirty round trips to Neon for a page that
+ * draws ten rows. The per-version arithmetic is then pure — `draftDiff` and
+ * `averageManaValue`, the same two functions the review page folds — so the rail
+ * and the review page cannot disagree about what a change is.
+ *
+ * Takes no `userId`: it reads by deck id alone, so every caller owes its own
+ * ownership guard.
+ */
+export async function listVersions(deckId: string): Promise<VersionSummary[]> {
+  const versions = await db.select()
+    .from(deckVersions)
+    .where(eq(deckVersions.deckId, deckId))
+    .orderBy(desc(deckVersions.number));
+  if (versions.length === 0) return [];
+  const ids = versions.map((v) => v.id);
+
+  const rows = await db.select({
+    versionId: deckVersionCards.versionId,
+    oracleId: deckVersionCards.oracleId,
+    quantity: deckVersionCards.quantity,
+    cmc: cards.cmc,
+    typeLine: cards.typeLine,
+  }).from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(inArray(deckVersionCards.versionId, ids));
+
+  // Grouped in the database rather than counted per row, and by version id
+  // rather than by deck: a game's stamp is the version that was live the night
+  // it was played, so the tally is already per-version in the column. The deck id
+  // is redundant against those version ids and is in the predicate anyway, because
+  // `deck_games` is indexed on `(deck_id, played_at)` and a filter on the
+  // unindexed `version_id` alone cannot use it.
+  const games = await db.select({ versionId: deckGames.versionId, n: count() })
+    .from(deckGames)
+    .where(and(eq(deckGames.deckId, deckId), inArray(deckGames.versionId, ids)))
+    .groupBy(deckGames.versionId);
+
+  // The distinct commanders across every version, resolved once: a deck that has
+  // never swapped commander asks for one name, and one that has swapped twice
+  // asks for three — never one query per version.
+  const commanderIds = [...new Set(
+    versions.flatMap((v) => [v.commanderOracleId, v.partnerOracleId]),
+  )].filter((id): id is string => id !== null);
+  const named = await db.select({ oracleId: cards.oracleId, name: cards.name })
+    .from(cards)
+    .where(inArray(cards.oracleId, commanderIds));
+  const nameBy = new Map(named.map((c) => [c.oracleId, c.name]));
+
+  const byVersion = new Map<string, typeof rows>(ids.map((id) => [id, []]));
+  for (const row of rows) byVersion.get(row.versionId)!.push(row);
+  const gamesBy = new Map(games.map((g) => [g.versionId!, Number(g.n)]));
+
+  // Ascending, so each version's predecessor is the one before it in the walk.
+  const ascending = [...versions].reverse();
+  return ascending.map((version, i) => {
+    const mine = byVersion.get(version.id)!;
+    // A v1 has no predecessor, so it has no diff — never a diff against the
+    // empty list, which would report ninety-nine decisions nobody took.
+    const diff = i === 0 ? null : draftDiff(mine, byVersion.get(ascending[i - 1]!.id)!);
+    return {
+      ...version,
+      cardCount: mine.reduce((n, r) => n + r.quantity, 0),
+      adds: diff?.adds.length ?? 0,
+      removes: diff?.removes.length ?? 0,
+      manaValue: averageManaValue(mine),
+      gamesHeld: gamesBy.get(version.id) ?? 0,
+      commanderName: nameBy.get(version.commanderOracleId) ?? null,
+      partnerName: version.partnerOracleId === null
+        ? null
+        : nameBy.get(version.partnerOracleId) ?? null,
+    };
+  }).reverse();
+}
+
+/** A card named on one side of a version's diff. No ownership, no price and no
+ *  availability: this is what the deck WAS, and an offer against a list from
+ *  three months ago is an offer about a deck that no longer exists. */
+export type VersionDiffCard = {
+  oracleId: string;
+  name: string;
+  typeLine: string;
+  manaCost: string | null;
+  /** The copy counts either side of the change, for a quantity move's
+   *  `{name} {from} → {to}`. A card that arrived or left reads 0 on one side. */
+  from: number;
+  to: number;
+};
+
+/**
+ * What one version changed against the version before it.
+ *
+ * `previousVersionId` is null for a v1, which returns two empty lists rather
+ * than diffing against nothing — the caller draws the initial arm instead.
+ *
+ * Read on open rather than with the rail: a ten-version deck would otherwise pay
+ * ten diffs to draw ten closed rows.
+ */
+export async function loadVersionDiff(
+  versionId: string,
+  previousVersionId: string | null,
+): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] }> {
+  if (previousVersionId === null) return { in: [], out: [] };
+
+  const rows = await db.select({
+    versionId: deckVersionCards.versionId,
+    oracleId: deckVersionCards.oracleId,
+    quantity: deckVersionCards.quantity,
+    name: cards.name,
+    typeLine: cards.typeLine,
+    manaCost: cards.manaCost,
+  }).from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(inArray(deckVersionCards.versionId, [versionId, previousVersionId]));
+
+  const describe = new Map(rows.map((r) => [r.oracleId, r]));
+  const { adds, removes } = draftDiff(
+    rows.filter((r) => r.versionId === versionId),
+    rows.filter((r) => r.versionId === previousVersionId),
+  );
+  const card = (change: { oracleId: string; from: number; to: number }): VersionDiffCard | null => {
+    const described = describe.get(change.oracleId);
+    // A card the catalog no longer describes. Dropping it is the only honest
+    // rendering — a row with no name and no type is not a row.
+    if (!described) return null;
+    return {
+      oracleId: change.oracleId,
+      name: described.name,
+      typeLine: described.typeLine,
+      manaCost: described.manaCost,
+      from: change.from,
+      to: change.to,
+    };
+  };
+  return {
+    in: adds.map(card).filter((c): c is VersionDiffCard => c !== null),
+    out: removes.map(card).filter((c): c is VersionDiffCard => c !== null),
+  };
+}
+
+/**
+ * The average mana value of a version's list — the strip's `was 7`.
+ *
+ * A join rather than a second query over `versionCards`: the snapshot stores
+ * quantities only, and the figure needs each card's cost and type line. Null
+ * when the version was all land, which `averageManaValue` decides.
+ */
+export async function versionManaValue(versionId: string): Promise<number | null> {
+  const rows = await db.select({
+    cmc: cards.cmc,
+    quantity: deckVersionCards.quantity,
+    typeLine: cards.typeLine,
+  })
+    .from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .where(eq(deckVersionCards.versionId, versionId));
+  return averageManaValue(rows);
 }

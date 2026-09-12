@@ -113,6 +113,19 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   it replaced matched nothing and then deleted the freshly restored row. Same fixture discipline as
   `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a
   scratch branch, **never production**.
+- `pnpm probe:versions` walks the version rail and the game-log stamp in a real browser at
+  390x844 and 1300x900, because four of their rulings are only answerable there: that
+  `/decks/[id]/versions` refuses a deck the reader does not own — the not-found page, and no rail;
+  the response itself is a 200 because the route streams behind `versions/loading.tsx`, so the
+  status is flushed before the guard throws — that a row's diff is fetched
+  when the row opens rather than shipped with the page, that nothing on either surface carries a
+  transition or animation (READINESS 19 forbids motion outright, and a count of 0 is the only way
+  to show it), and the stamp slot's width and ink. It signs in through Clerk's dev instance —
+  see the local-auth note in memory — writes its own deck, three versions and two games under the
+  account it signed in as, and deletes the deck in a `finally`; versions, version cards and games
+  cascade. Point it at `local-dev`, **never production**. What it measured on the phone: the two
+  stamps do not share a vertical, because the meta cell to their left sizes to its date text below
+  `md:` — the game log's existing behaviour, not this surface's.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 

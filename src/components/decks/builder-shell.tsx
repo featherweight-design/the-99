@@ -34,6 +34,7 @@ import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 // Types only: `games.ts` reaches for the database, and a value import from a
 // "use client" module would drag drizzle into the browser bundle.
 import type { DeckGame, GameSummary } from "../../lib/decks/games";
@@ -909,6 +910,19 @@ export function BuilderShell({
                       : gameLogCopy.tab.ariaNone,
                 },
               ]}
+              // The newest version's NUMBER is the count of versions: commitVersion
+              // computes it as max + 1 under a lock, so it cannot skip. That is why
+              // the version rail costs this route no query and no new prop.
+              links={
+                draft?.version
+                  ? [{
+                      href: `/decks/${deck.id}/versions`,
+                      label: deckVersioningCopy.history.tab,
+                      count: draft.version.number,
+                      accessibleName: deckVersioningCopy.history.tabAria(draft.version.number),
+                    }]
+                  : undefined
+              }
               view={view}
               onViewChange={setView}
             >

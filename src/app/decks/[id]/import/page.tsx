@@ -7,9 +7,13 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckDetail } from "../../../../lib/decks/read";
 import { UpdateEntry } from "../../../../components/decks/update-entry";
+import { isUuid } from "../../../../lib/uuid";
 
 export default async function UpdateDeckPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // See the note in `versions/page.tsx`: a malformed segment reaching a uuid
+  // column is a 500 where the route means not-found.
+  if (!isUuid(id)) notFound();
   const userId = await requireUserId();
 
   const detail = await getDeckDetail(id, userId);

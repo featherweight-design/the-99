@@ -126,3 +126,36 @@ describe("BuilderTabs — three tabs", () => {
     expect(tabs()[1].textContent).toBe("Games");
   });
 });
+
+describe("BuilderTabs — the version route", () => {
+  const three = [DECK_TAB, CONSIDER_TAB, GAMES_TAB];
+  const LINK = {
+    href: "/decks/d/versions",
+    label: "Versions",
+    count: 3,
+    accessibleName: "Versions, 3 versions committed",
+  };
+
+  it("renders the routing link outside the tablist, so the roving tabindex still owns three tabs", () => {
+    render(<BuilderTabs tabs={three} view="deck" onViewChange={vi.fn()} links={[LINK]} />);
+    const link = screen.getByRole("link", { name: "Versions, 3 versions committed" });
+    expect(screen.getByRole("tablist").contains(link)).toBe(false);
+    expect(tabs()).toHaveLength(3);
+  });
+
+  it("omits the link entirely when there is nothing to route to", () => {
+    render(<BuilderTabs tabs={three} view="deck" onViewChange={vi.fn()} links={[]} />);
+    expect(screen.queryByRole("link", { name: /Versions/ })).toBeNull();
+  });
+
+  // The link is a sibling of the tablist rather than a child, so its keys never
+  // reach that handler and the selected tab cannot move while the reader tabs
+  // past. Asserted rather than assumed: nesting the link inside the tablist to
+  // tidy the markup would silently give the handler its arrow keys.
+  it("ignores arrow keys pressed on the link", () => {
+    const onViewChange = vi.fn();
+    render(<BuilderTabs tabs={three} view="deck" onViewChange={onViewChange} links={[LINK]} />);
+    fireEvent.keyDown(screen.getByRole("link", { name: LINK.accessibleName }), { key: "ArrowRight" });
+    expect(onViewChange).not.toHaveBeenCalled();
+  });
+});

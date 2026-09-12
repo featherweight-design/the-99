@@ -1,12 +1,12 @@
 "use server";
 
-import { and, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, lte, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
 import {
   cards, collectionItems, deckCards, deckGameAxes, deckGames, decks,
-  deckUnresolvedRows, fillPassCards, fillPasses,
+  deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
@@ -17,7 +17,8 @@ import { mergeEdhrecData } from "../../lib/edhrec/merge";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { hardDecks } from "../../lib/decks/availability";
 import {
-  commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
+  commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
+  versionLiveAt, type VersionDiffCard,
 } from "../../lib/decks/versions";
 import {
   bucketAdds, draftDiff, type BucketedAdd, type DraftChange,
@@ -1519,6 +1520,50 @@ export async function discardDeckDraft(
     return { ok: false, message: "We couldn't discard those changes. Nothing has changed." };
   }
   return { ok: true };
+}
+
+/**
+ * What one version changed, read when its row on the history page is opened.
+ *
+ * The predecessor is the SERVER's to name, not the caller's. This is a public
+ * server action, so a caller that supplied it could ask for v7 against v2 and
+ * get a payload the rail would draw under the words "what v7 changed" — true of
+ * no commit anybody made. Resolving it from `number` here means the answer means
+ * one thing.
+ *
+ * `loadVersionDiff` reads by version id alone, so the version is checked against
+ * this deck first: without that, a signed-in account could read another player's
+ * list by posting their version id alongside a deck of its own. A refusal is
+ * `null` rather than two empty lists, because two empty lists are also the honest
+ * answer for a version that changed nothing, and the caller caches what it is
+ * given — a refusal filed under that version id would outlive the refusal.
+ * Returning null rather than throwing keeps a stale row — a version deleted in
+ * another tab — from breaking the page.
+ */
+export async function getVersionDiff(
+  deckId: string,
+  versionId: string,
+): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] } | null> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId) || !isUuid(versionId)) return null;
+  await requireDeck(deckId, userId);
+
+  const [asked] = await db.select({ number: deckVersions.number })
+    .from(deckVersions)
+    .where(and(eq(deckVersions.deckId, deckId), eq(deckVersions.id, versionId)))
+    .limit(1);
+  if (!asked) return null;
+
+  // The highest number below this one, which is the predecessor even across a
+  // gap — no path deletes a version today, and a hole in the run would still
+  // make the version before it the one this commit was cut from.
+  const [previous] = await db.select({ id: deckVersions.id })
+    .from(deckVersions)
+    .where(and(eq(deckVersions.deckId, deckId), lt(deckVersions.number, asked.number)))
+    .orderBy(desc(deckVersions.number))
+    .limit(1);
+  // A v1 has none, and `loadVersionDiff` answers that with two empty lists.
+  return loadVersionDiff(versionId, previous?.id ?? null);
 }
 
 /**

@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { deleteGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckGame } from "../../lib/decks/games";
 import { MutationError } from "./mutation-error";
 
@@ -81,6 +82,23 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
 
       <span className="flex-none md:w-[132px] font-mono text-[11px] tabular-nums text-fg-faint">
         {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt))}
+      </span>
+
+      {/* The version that was on the table. A fixed slot, drawn even when the
+          game has none: the dash keeps the marks that follow it on one vertical,
+          and an absent stamp is history rather than a gap. On the phone the meta
+          cell to its left sizes to its own text, so the whole sequence shifts
+          with the date's width — that is the log's existing behaviour at that
+          width and the stamp inherits it rather than fixing it. */}
+      <span
+        className={
+          "flex-none w-[44px] font-mono text-[10.5px] tabular-nums " +
+          (game.versionNumber === null ? "text-fg-locked" : "text-fg-faint")
+        }
+      >
+        {game.versionNumber === null
+          ? deckVersioningCopy.stamp.absent
+          : deckVersioningCopy.stamp.value(game.versionNumber)}
       </span>
 
       <span className="flex-1 min-w-0 flex flex-wrap gap-[6px]">

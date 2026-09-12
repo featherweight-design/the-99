@@ -34,6 +34,10 @@ const stub = vi.hoisted(() => {
     redirectTarget: null as string | null,
     // Rows returned when querying `deck_games` (used by deleteGame's pairing check)
     deckGames: [] as { id: string; deckId: string }[],
+    // Rows returned when querying `deck_versions`. Ordered as the caller asked
+    // for them: the stub cannot sort, so a test that cares about which row comes
+    // back first states that order here.
+    deckVersions: [] as Record<string, unknown>[],
     // Delete calls tracked as { table, id } — the id lifted out of the eq() condition
     deleteCalls: [] as { table: string; id: string | null }[],
     // Every path passed to revalidatePath, in order
@@ -63,6 +67,21 @@ const stub = vi.hoisted(() => {
     return found;
   };
 
+  // The numeric bound values, for a predicate the stub has to compare rather than
+  // match — `lt(deckVersions.number, n)`.
+  const paramNumbers = (condition: unknown): number[] => {
+    const found: number[] = [];
+    const walk = (node: unknown) => {
+      const value = (node as { value?: unknown } | undefined)?.value;
+      if (typeof value === "number") found.push(value);
+      for (const chunk of (node as { queryChunks?: unknown[] } | undefined)?.queryChunks ?? []) {
+        walk(chunk);
+      }
+    };
+    walk(condition);
+    return found;
+  };
+
   // A per-test fake for db.select chains
   type SelectBuilder = {
     from: (table: unknown) => SelectFromBuilder;
@@ -71,6 +90,9 @@ const stub = vi.hoisted(() => {
     from?: unknown;
     where: (condition?: unknown) => PromiseLike<Record<string, unknown>[]> & {
       limit: (n: number) => Promise<Record<string, unknown>[]>;
+      orderBy: (...args: unknown[]) => {
+        limit: (n: number) => Promise<Record<string, unknown>[]>;
+      };
     };
     innerJoin: (table: unknown, condition: unknown) => SelectFromBuilder;
     orderBy: (...args: unknown[]) => SelectFromBuilder;
@@ -81,19 +103,49 @@ const stub = vi.hoisted(() => {
     return {
       from: (table: unknown) => {
         const tableName = nameOf(table);
-        const rowsFor = () => {
+        const rowsFor = (condition?: unknown) => {
           if (tableName === "cards") return state.cards;
           if (tableName === "decks") return state.decks;
           if (tableName === "deck_games") return state.deckGames;
+          if (tableName === "deck_versions") {
+            // The one table whose predicate the stub models, because the guard
+            // under test is exactly "this version belongs to this deck": a stub
+            // that ignored the deck id would pass on an empty table and prove
+            // only that a missing version is refused. A fixture row with no
+            // `deckId` is left alone, so a test that does not care about the
+            // guard does not have to name one.
+            const bound = paramValues(condition);
+            // The `lt(number, ...)` half as well, because the predecessor read is
+            // exactly "the highest number below this one": a stub that ignored it
+            // would hand back the asked-for version itself as its own predecessor
+            // and the test would pass on a wrong answer. Sorted descending here,
+            // which is the order both reads of this table ask for.
+            const below = paramNumbers(condition)[0];
+            return state.deckVersions
+              .filter((row) => row.deckId === undefined || bound.includes(row.deckId as string))
+              .filter(
+                (row) =>
+                  below === undefined ||
+                  row.number === undefined ||
+                  (row.number as number) < below,
+              )
+              .slice()
+              .sort((a, b) => (b.number as number) - (a.number as number));
+          }
           if (tableName === "deck_cards") return state.deckRows as Record<string, unknown>[];
           return state.collectionItems;
         };
         const builder: SelectFromBuilder = {
           // Thenable rather than async, because `fillDeck` chains `.limit(1)`
           // onto its emptiness check and most other callers await directly.
-          where: () => Object.assign(
-            Promise.resolve(rowsFor()),
-            { limit: async (n: number) => rowsFor().slice(0, n) },
+          where: (condition: unknown) => Object.assign(
+            Promise.resolve(rowsFor(condition)),
+            {
+              limit: async (n: number) => rowsFor(condition).slice(0, n),
+              // The stub does not sort, so an ordered read hands back the rows in
+              // the order the test listed them.
+              orderBy: () => ({ limit: async (n: number) => rowsFor(condition).slice(0, n) }),
+            },
           ),
           innerJoin: () => {
             // After innerJoin, the result is collection_items + cards join
@@ -286,6 +338,7 @@ vi.mock("../../lib/decks/versions", () => ({
   versionCards: vi.fn(),
   commitVersion: vi.fn(),
   restoreDraftFromVersion: vi.fn(),
+  loadVersionDiff: vi.fn(async () => ({ in: [], out: [] })),
 }));
 vi.mock("../../lib/decks/availability-query", () => ({
   loadAvailability: vi.fn(async () => new Map()),
@@ -298,11 +351,12 @@ vi.mock("../../lib/decks/draft-state", () => ({
 }));
 
 import {
-  commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, logGame,
+  commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
   pullCardFromDeck, restoreAutoCards,
 } from "./actions";
 import {
-  commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
+  commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
+  versionLiveAt,
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { loadDraftState } from "../../lib/decks/draft-state";
@@ -380,6 +434,7 @@ beforeEach(() => {
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
   stub.state.unresolvedRows = 0;
+  stub.state.deckVersions.length = 0;
 });
 
 describe("createDeck — filled baseline", () => {
@@ -832,10 +887,16 @@ describe("logGame", () => {
   });
 
   // Neither action changes deck membership, so the collection and commander
-  // surfaces must not be revalidated.
+  // surfaces must not be revalidated. The version rail is in the set because a
+  // logged game moves the games-held tally it draws against a past version.
   it("revalidates only the deck surfaces", async () => {
     await logGame("deck_1", { result: "draw", podSize: 3, worked: [], hurt: [] });
-    expect(stub.state.revalidated).toEqual(["/decks/deck_1", "/decks", "/"]);
+    expect(stub.state.revalidated).toEqual([
+      "/decks/deck_1",
+      "/decks/deck_1/versions",
+      "/decks",
+      "/",
+    ]);
   });
 });
 
@@ -851,7 +912,12 @@ describe("deleteGame", () => {
     const result = await deleteGame("deck_1", "game_1");
     expect(result).toEqual({ ok: true });
     expect(stub.state.deleteCalls).toEqual([{ table: "deck_games", id: "game_1" }]);
-    expect(stub.state.revalidated).toEqual(["/decks/deck_1", "/decks", "/"]);
+    expect(stub.state.revalidated).toEqual([
+      "/decks/deck_1",
+      "/decks/deck_1/versions",
+      "/decks",
+      "/",
+    ]);
   });
 
   // The axis rows go with it through ON DELETE CASCADE. An explicit delete of
@@ -1129,6 +1195,61 @@ describe("discardDeckDraft", () => {
     const result = await discardDeckDraft(DECK_ID, "nope");
     expect(result.ok).toBe(false);
     expect(restoreDraftFromVersion).not.toHaveBeenCalled();
+  });
+});
+
+describe("getVersionDiff", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(loadVersionDiff).mockResolvedValue({ in: [], out: [] });
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+  });
+
+  it("refuses an id that is not a uuid without reading a diff", async () => {
+    expect(await getVersionDiff(DECK_ID, "not-a-uuid")).toBeNull();
+    expect(loadVersionDiff).not.toHaveBeenCalled();
+  });
+
+  // `loadVersionDiff` reads by version id alone, so without this check a signed-in
+  // account could read another player's list by posting their version id alongside
+  // a deck of its own. Null rather than two empty lists, because two empty lists
+  // are a real answer for a version that moved no cards, and the caller caches
+  // what it is given.
+  it("refuses a version that is not this deck's", async () => {
+    // A real version, filed under another deck — not an absent row. An empty
+    // table would pass this test against a guard that only checked existence.
+    stub.state.deckVersions.push({
+      id: VERSION_ID,
+      number: 2,
+      deckId: "99999999-9999-4999-8999-999999999999",
+    });
+    expect(await getVersionDiff(DECK_ID, VERSION_ID)).toBeNull();
+    expect(loadVersionDiff).not.toHaveBeenCalled();
+  });
+
+  // The predecessor is not a parameter: the action reads it, so no caller can ask
+  // for v7 against v2 and get a payload drawn under the words "what v7 changed".
+  // Three versions, so the read has a wrong answer available to it: the asked-for
+  // version itself, and the one two behind.
+  it("reads the predecessor itself rather than taking one from the caller", async () => {
+    const V1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const V2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    stub.state.deckVersions.push(
+      { id: V1, number: 1, deckId: DECK_ID },
+      { id: V2, number: 2, deckId: DECK_ID },
+      { id: VERSION_ID, number: 3, deckId: DECK_ID },
+    );
+    await getVersionDiff(DECK_ID, VERSION_ID);
+    expect(loadVersionDiff).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2]);
+  });
+
+  // A v1 has nothing before it, and the diff loader is told so explicitly rather
+  // than being handed some other version's id.
+  it("names no predecessor for the first version", async () => {
+    stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
+    await getVersionDiff(DECK_ID, VERSION_ID);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null]);
   });
 });
 
