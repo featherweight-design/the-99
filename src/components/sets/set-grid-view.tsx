@@ -266,7 +266,12 @@ export function SetGridView(props: SetGridViewProps) {
   // The BADGE counts only what the sheet holds (§28): missing-only sits on the phone row
   // beside the badge, so counting it is the same fact twice in one glance.
   const filtersOn = effective.colors.length + effective.rarities.length;
-  const anyFilterOn = filtersOn > 0 || effective.missingOnly;
+  // The sheet's Clear reads the RAW filters, not `effective`. At 100% missing-only is
+  // dropped from what is applied, but `m=1` can still be in the URL — a reader completes a
+  // set with it set — and gating Clear on `effective` left that parameter with no way out
+  // of the UI, ready to reactivate the moment the set stopped being complete.
+  const anyFilterOn =
+    filters.colors.length > 0 || filters.rarities.length > 0 || filters.missingOnly;
 
   // The chip line, in DIMENSION order and never click order — a line that re-orders itself
   // as you use it is a line you have to re-read. Colour collapses past one pip rather than
@@ -433,10 +438,15 @@ export function SetGridView(props: SetGridViewProps) {
             put five 15px pips below the 44px target and wrapped the controls into the
             head. */}
         {/* Row 1 of three. The rack is three FIXED rows — controls, chips, result — and its
-            height never depends on the filter state, which matters more here than on any
+            height never depends on THE FILTER STATE, which matters more here than on any
             other route: this bar lives inside a sticky head, and every height change under
             a reader's thumb moves the grid they are reading. `flex-nowrap`, because a
-            control landing on its own line is the same defect by another route. */}
+            control landing on its own line is the same defect by another route.
+
+            Row 3 is absent on an unindexed set, which is not an exception to that: an
+            unindexed set has no cells in either section, so there is no count to state and
+            no grid beneath the head for a height change to move. The invariant is about the
+            rack not moving what the reader is reading, and there is nothing there to move. */}
         <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
           <button
             type="button"
@@ -482,7 +492,13 @@ export function SetGridView(props: SetGridViewProps) {
               stays `multi` because the panel's `single` mode has no off state and drops
               the footer with it; the single-select rule is the caller's, one line below,
               and it is what lets picking the lit value reach `all`. */}
-          <div className="hidden md:block">
+          {/* MOUNTED on the breakpoint, never CSS-hidden. `FilterPanel` holds its own open
+              state and picks popover or sheet off the same `useIsDesktop`: hidden with
+              `display:none` it would keep that state across a resize, put its mobile dialog
+              inside an invisible ancestor, and hand focus to a panel nobody can see. The
+              phone's rarity control is the chip group in the sheet, and this is the other
+              half of that one-control-per-width rule. */}
+          {isDesktop ? (
             <FilterPanel
               copy={setFilterCopy.rarityPanel}
               searchable={false}
@@ -499,7 +515,7 @@ export function SetGridView(props: SetGridViewProps) {
                 setFilters({ ...filters, rarities: pickRarity(filters.rarities, code) })}
               onClear={() => setFilters({ ...filters, rarities: [] })}
             />
-          </div>
+          ) : null}
 
           {complete ? null : <MissingOnlyToggle filters={filters} onChange={setFilters} />}
         </div>

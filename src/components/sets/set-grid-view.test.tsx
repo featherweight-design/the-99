@@ -60,6 +60,21 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
 }
 
 /**
+ * The rarity trigger is MOUNTED on the breakpoint rather than CSS-hidden — `FilterPanel`
+ * holds its own open state and picks popover or sheet off the same hook, so hiding it with
+ * `display:none` would keep that state across a resize. JSDOM reports no width, so a test
+ * that wants the desktop control has to say so.
+ */
+function stubDesktop(wide: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: wide, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    }),
+  );
+}
+
+/**
  * Rarity is a trigger and a panel since addendum R2 §28, not four letter buttons: four
  * values, single-select, with an off state is the chassis's own test for a panel dimension.
  * So a test that wants a rarity opens the trigger first.
@@ -72,6 +87,7 @@ function pickRarity(label: string) {
 const replaceState = vi.spyOn(window.history, "replaceState");
 
 beforeEach(() => {
+  vi.unstubAllGlobals();
   search = "";
   replaceState.mockClear();
   openCard.mockClear();
@@ -389,6 +405,7 @@ describe("SetGridView — phone and desktop are one document", () => {
   });
 
   it("treats rarity as single select rather than a union", () => {
+    stubDesktop(true);
     search = "r=common";
     view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
     pickRarity("Rare");
@@ -453,6 +470,7 @@ describe("SetGridView — the phone filter sheet is a real dialog", () => {
 
 describe("SetGridView — the URL wins over a local override", () => {
   it("adopts filters the reader navigated to with Back", () => {
+    stubDesktop(true);
     // The local override is keyed on the URL it wrote. Without that key, Back changed the
     // query string while the grid went on rendering the filters just navigated away from.
     const { rerender } = render(
@@ -679,6 +697,7 @@ describe("SetGridView — the rack, chassis-conformant", () => {
 
   // ——— 4 · The rarity panel ———
   it("mounts rarity as a trigger, not four letter buttons", () => {
+    stubDesktop(true);
     view([p("1"), p("2")], []);
     expect(screen.getByRole("button", { name: /Filter by rarity/ })).toBeInTheDocument();
     for (const letter of ["C", "U", "R", "M"]) {
@@ -687,6 +706,7 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   });
 
   it("carries no search field: four values have nothing to search", () => {
+    stubDesktop(true);
     view([p("1"), p("2")], []);
     fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
     const boxes = screen.queryAllByRole("searchbox");
@@ -696,6 +716,7 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   // Single-select, and picking the lit value is how `all` is reached — the panel's own
   // `single` mode has no off state, so the rule is the caller's.
   it("replaces the lit value rather than unioning, and clears when picked again", () => {
+    stubDesktop(true);
     search = "r=rare";
     view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
     pickRarity("Rare");
@@ -703,6 +724,7 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   });
 
   it("counts its rows off the same filtered computation the result line reads", () => {
+    stubDesktop(true);
     // One rare and two commons; with no other filter on, the rows say so.
     view([
       p("1", { rarity: "rare" }), p("2", { rarity: "common" }), p("3", { rarity: "common" }),
@@ -729,5 +751,40 @@ describe("SetGridView — the rack, chassis-conformant", () => {
     view([p("1"), p("2")], []);
     expect(screen.getAllByRole("switch", { name: "White" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("switch", { name: "Filter by W" })).toBeNull();
+  });
+});
+
+// Review round 1 on the rack: three states that are reachable and were not covered.
+describe("SetGridView — the rack's edges", () => {
+  it("keeps the sheet's Clear live for a stale m=1 on a complete set", () => {
+    // At 100% missing-only is dropped from what is APPLIED, but the parameter can still be
+    // in the URL — a reader completes a set with it set. Gating Clear on the applied value
+    // left it with no way out of the UI.
+    search = "m=1";
+    view([p("1")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const clear = screen.getAllByRole("button", { name: /Clear all filters/ })
+      .find((b) => b.closest('[role="dialog"]'));
+    expect(clear).toBeDefined();
+    expect(clear).not.toBeDisabled();
+    fireEvent.click(clear as HTMLElement);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  // The desktop trigger is mounted on the breakpoint rather than CSS-hidden, so it cannot
+  // keep an open state across a resize, hide its mobile dialog inside a display:none
+  // ancestor, or hold focus in a panel nobody can see.
+  it("mounts the rarity trigger only at desktop", () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: /Filter by rarity/ })).toBeInTheDocument();
+  });
+
+  it("does not mount it at phone, where the sheet's chip group is the control", () => {
+    stubDesktop(false);
+    view([p("1"), p("2")], []);
+    expect(screen.queryByRole("button", { name: /Filter by rarity/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getByRole("button", { name: "Rare" })).toBeInTheDocument();
   });
 });
