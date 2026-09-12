@@ -154,6 +154,12 @@ export function FilterBar({
         revision={revision}
         warnResult={warnResult}
         sort={<FilterPanel
+          // Keyed on the form: `FilterPanel` holds its own `open` and has no
+          // reset, so a sheet opened below the breakpoint would still be open
+          // as a desktop popover after a resize — a modal appearing without a
+          // trigger click. The deck sheet and the rack's popovers carry the
+          // same fix.
+          key={isDesktop ? "wide" : "compact"}
           desktopRowMinPx={44}
           compact={!isDesktop}
           copy={collectionFilterCopy.sort}
@@ -229,6 +235,12 @@ export function FilterBar({
             The vocabulary is fixed and short, so there is nothing to search and
             no footer total worth showing. */}
         <FilterPanel
+          // Keyed on the form: `FilterPanel` holds its own `open` and has no
+          // reset, so a sheet opened below the breakpoint would still be open
+          // as a desktop popover after a resize — a modal appearing without a
+          // trigger click. The deck sheet and the rack's popovers carry the
+          // same fix.
+          key={isDesktop ? "wide" : "compact"}
           desktopRowMinPx={44}
           compact={!isDesktop}
           copy={collectionFilterCopy.type}
@@ -252,6 +264,12 @@ export function FilterBar({
         {/* Set ▾ — the designed searchable multi-select panel (#86). Rows carry
             the set abbreviation, which is also what the search matches (#118). */}
         <FilterPanel
+          // Keyed on the form: `FilterPanel` holds its own `open` and has no
+          // reset, so a sheet opened below the breakpoint would still be open
+          // as a desktop popover after a resize — a modal appearing without a
+          // trigger click. The deck sheet and the rack's popovers carry the
+          // same fix.
+          key={isDesktop ? "wide" : "compact"}
           desktopRowMinPx={44}
           compact={!isDesktop}
           copy={collectionFilterCopy.set}
@@ -279,6 +297,12 @@ export function FilterBar({
             no search, no footer total. Rows carry the marker's glyph so the
             menu and the list agree about what each state looks like. */}
         <FilterPanel
+          // Keyed on the form: `FilterPanel` holds its own `open` and has no
+          // reset, so a sheet opened below the breakpoint would still be open
+          // as a desktop popover after a resize — a modal appearing without a
+          // trigger click. The deck sheet and the rack's popovers carry the
+          // same fix.
+          key={isDesktop ? "wide" : "compact"}
           desktopRowMinPx={44}
           compact={!isDesktop}
           copy={collectionFilterCopy.availability}
