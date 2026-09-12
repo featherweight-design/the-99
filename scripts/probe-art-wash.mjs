@@ -471,10 +471,17 @@ try {
       // be a STATED band once its surface has migrated, so the check is the
       // count of bands that are not — which needs no per-route table and cannot
       // go quiet when a migration disappears or reverts to the legacy arm.
+      // BANDS, not scrim layers: a `left-portrait` band draws a horizontal scrim
+      // and a vertical ramp, so counting layers reported one unmigrated band as
+      // two and inflated the countdown. Each scrim's own root is the band, so the
+      // distinct roots are the count.
       const unstated = await page.evaluate(
-        `[...document.querySelectorAll('.art-wash-scrim')]
-          .filter((s) => s.getClientRects().length)
-          .filter((s) => !s.closest('[data-art-wash-band]')).length`,
+        `new Set(
+          [...document.querySelectorAll('.art-wash-scrim')]
+            .filter((s) => s.getClientRects().length)
+            .filter((s) => !s.closest('[data-art-wash-band]'))
+            .map((s) => s.parentElement),
+        ).size`,
       );
       if (unstated) {
         note(`  ${unstated} wash layer(s) on an unstated band — surfaces still to migrate`);
