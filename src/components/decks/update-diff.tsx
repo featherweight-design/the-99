@@ -13,9 +13,33 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { DeckUpdatePreview } from "../../app/decks/update-actions";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { CardDetailProvider } from "../cards/card-detail-provider";
-import { DiffRowIn, DiffRowOut, DiffRowUnchanged, DiffRowUnnamed } from "./update-diff-row";
+import { cardTypeGroup, groupByCardType } from "../../lib/decks/grouping";
+import { DecklistGroupHeader } from "./decklist-group-header";
+import {
+  DiffRowIn, DiffRowKeep, DiffRowOut, DiffRowUnchanged, DiffRowUnnamed,
+} from "./update-diff-row";
 
 const copy = deckImportCopy.update.diff;
+
+/**
+ * The rows of one group, under a card-type heading each, capped at what the
+ * disclosure is showing.
+ *
+ * The cap is applied to the FLATTENED grouped order rather than to the preview's
+ * own, and then the survivors are grouped again: sliced the other way round, the
+ * four visible rows would be the first four of the paste and the headings above
+ * them would count rows the disclosure is still hiding.
+ *
+ * `cardTypeGroup` is derived here because a preview row carries `typeLine` and no
+ * group — the grouping is #389's, and the update flow's payload predates it.
+ */
+function typeGroups<T extends { oracleId: string; name: string; typeLine: string }>(
+  rows: T[],
+  shown: number,
+) {
+  const grouped = groupByCardType(rows.map((r) => ({ ...r, cardTypeGroup: cardTypeGroup(r.typeLine) })));
+  return groupByCardType(grouped.flatMap(([, groupRows]) => groupRows).slice(0, shown));
+}
 
 /** Rows shown before the disclosure takes over. Four at both widths — the cap is
  *  about the shape of the page, not the space available. */
@@ -87,6 +111,26 @@ function Group({
         </button>
       )}
     </section>
+  );
+}
+
+/** A card-type heading and the rows filed under it, inside one of the flow's four
+ *  groups. The shipped decklist header, so the type reads the same here as it
+ *  does on the deck page the paste is about to change. */
+function TypeGroup({
+  label,
+  count,
+  children,
+}: {
+  label: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mb-[12px] last:mb-0">
+      <DecklistGroupHeader label={label} count={count} />
+      <div className="flex flex-col gap-[6px]">{children}</div>
+    </div>
   );
 }
 
@@ -262,19 +306,29 @@ export function UpdateDiff({
             total={preview.out.length}
           >
             {(shown) =>
-              preview.out.slice(0, shown).map((row) => (
-                <DiffRowOut
-                  key={row.oracleId}
-                  card={row}
-                  kept={kept.has(row.oracleId)}
-                  onToggle={() =>
-                    setKept((prev) => {
-                      const next = new Set(prev);
-                      if (!next.delete(row.oracleId)) next.add(row.oracleId);
-                      return next;
-                    })
-                  }
-                />
+              typeGroups(preview.out, shown).map(([group, rows]) => (
+                <TypeGroup key={group} label={group} count={rows.length}>
+                  {rows.map((row) => (
+                    <DiffRowOut
+                      key={row.oracleId}
+                      card={row}
+                      kept={kept.has(row.oracleId)}
+                      action={
+                        <DiffRowKeep
+                          name={row.name}
+                          kept={kept.has(row.oracleId)}
+                          onToggle={() =>
+                            setKept((prev) => {
+                              const next = new Set(prev);
+                              if (!next.delete(row.oracleId)) next.add(row.oracleId);
+                              return next;
+                            })
+                          }
+                        />
+                      }
+                    />
+                  ))}
+                </TypeGroup>
               ))
             }
           </Group>
@@ -291,9 +345,13 @@ export function UpdateDiff({
             total={preview.in.length}
           >
             {(shown) =>
-              preview.in
-                .slice(0, shown)
-                .map((row) => <DiffRowIn key={row.oracleId} card={row} sourceLine={row.sourceLine} />)
+              typeGroups(preview.in, shown).map(([group, rows]) => (
+                <TypeGroup key={group} label={group} count={rows.length}>
+                  {rows.map((row) => (
+                    <DiffRowIn key={row.oracleId} card={row} sourceLine={row.sourceLine} />
+                  ))}
+                </TypeGroup>
+              ))
             }
           </Group>
         )}
@@ -390,9 +448,15 @@ function UnchangedGroup({ rows }: { rows: DeckUpdatePreview["unchanged"] }) {
         {expanded ? copy.showFewer : copy.unchangedDisclosure(String(rows.length))}
       </button>
       {expanded && (
-        <div id={rowsId} className="mt-[10px] flex flex-col gap-[6px]">
-          {rows.map((row) => (
-            <DiffRowUnchanged key={row.oracleId} card={row} />
+        <div id={rowsId} className="mt-[10px] flex flex-col">
+          {/* Expanded, so every row is shown — the cap belongs to the four
+              capped groups, and this one is all-or-nothing. */}
+          {typeGroups(rows, rows.length).map(([group, groupRows]) => (
+            <TypeGroup key={group} label={group} count={groupRows.length}>
+              {groupRows.map((row) => (
+                <DiffRowUnchanged key={row.oracleId} card={row} />
+              ))}
+            </TypeGroup>
           ))}
         </div>
       )}

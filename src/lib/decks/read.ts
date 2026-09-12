@@ -26,7 +26,6 @@ import {
   cardTypeGroup,
   deckCounts,
   unresolvedCardCount,
-  type CardTypeGroup,
   type DeckDetailCard,
   type DeckUnresolvedRow,
 } from "./grouping";

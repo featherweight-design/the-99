@@ -7,6 +7,7 @@ import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DraftState } from "../../lib/decks/draft-shape";
+import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import type { DeckDetail } from "../../lib/decks/read";
 
 vi.mock("../../app/decks/actions", () => ({
@@ -74,43 +75,6 @@ function makeDeck(
     })),
   } as unknown as DeckDetail;
 }
-
-/** A draft whose deck has never been committed — every figure empty, because a
- *  brew has no version for anything to be pending against. */
-const BREW: DraftState = {
-  version: null,
-  adds: [],
-  addChanges: [],
-  removes: [],
-  basicsChanged: false,
-  names: new Map(),
-  costs: new Map(),
-  prices: new Map(),
-  pullFrom: new Map(),
-  claimsKnown: true,
-  buyCount: 0,
-  unfreeCount: 0,
-  pullableCount: 0,
-  total: null,
-  pricedCopies: 0,
-  newestAsOf: null,
-  manaValue: null,
-  manaValueBefore: null,
-};
-
-const COMMITTED: DraftState = {
-  ...BREW,
-  version: {
-    id: "v",
-    number: 1,
-    committedAt: new Date("2026-09-01T00:00:00Z"),
-    note: null,
-    commanderOracleId: "korvold",
-    partnerOracleId: null,
-    commanderSince: new Date("2026-08-01T00:00:00Z"),
-    partnerSince: null,
-  },
-};
 
 async function mount(deck: DeckDetail, draft: DraftState | null) {
   await act(async () => {

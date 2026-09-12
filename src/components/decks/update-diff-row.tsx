@@ -8,6 +8,20 @@
 // has happened, and nothing has happened yet — the group heading, its count and
 // its sentence carry that fact. The row stays a legible card with a control on
 // it, the same principle as the add panel's spent slot.
+//
+// Two rows here are mounted twice over — by the update flow and by #389's review
+// page — and that is why neither draws a type label and why neither owns its own
+// action any more:
+//
+// - the type is a HEADING over the rows that share it, said once instead of once
+//   per row. Both mountings group by `groupByCardType`, so the label carried
+//   nothing the group above it does not. `DiffRowCard.typeLine` stays on the type
+//   because the grouping reads it, and stops being drawn. `DiffRowUnnamed` is
+//   untouched: an unmatched line has no type to group under.
+// - the decision is the mounting's, passed in. The update flow's `Keep` is
+//   `DiffRowKeep` in `DiffRowOut`'s action slot; the review page's is a pull. A
+//   row that owned both would be a row that offers a Keep on a surface where
+//   putting a card back means adding it to the deck.
 
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { Availability } from "../../lib/decks/availability";
@@ -111,16 +125,22 @@ function DiffRowName({
   oracleId,
   name,
   tone,
+  siblings,
+  describedBy,
 }: {
   oracleId: string;
   name: string;
   tone: string;
+  siblings?: string[];
+  describedBy?: string;
 }) {
   return (
     <CardDetailTrigger
       oracleId={oracleId}
       name={name}
       title={name}
+      siblings={siblings}
+      describedBy={describedBy}
       className="flex-auto min-w-0 truncate text-left text-[13.5px]"
       style={{ color: tone }}
     >
@@ -129,16 +149,40 @@ function DiffRowName({
   );
 }
 
-/** A row of `Coming out`. The only row in the flow with a decision on it. */
+/** What both mountings pass through to the name, and neither of them owns.
+ *
+ *  `siblings` is the list the modal's Prev/Next pages: the update flow has no
+ *  single ordered change set to hand over — its rows are four groups, two of them
+ *  collapsed — so it passes nothing and the modal reads "1 of 1". The review page
+ *  has exactly one, across both columns.
+ *
+ *  `describedBy` is text that QUALIFIES the card in its row rather than renaming
+ *  the trigger. The review page carries the availability word there so the buy
+ *  tag's colour is not the only statement of it. */
+type DiffRowNameExtras = {
+  siblings?: string[];
+  describedBy?: string;
+};
+
+/** A row of `Coming out`. Whether it carries a decision is the mounting's call:
+ *  the update flow puts its `Keep` toggle in the action slot, and the review page
+ *  puts a `Pull it` control there. */
 export function DiffRowOut({
   card,
-  kept,
-  onToggle,
+  kept = false,
+  action = null,
+  siblings,
+  describedBy,
 }: {
   card: DiffRowCard;
-  kept: boolean;
-  onToggle: () => void;
-}) {
+  /** Plate-and-seam only, and the update flow's alone: a kept removal is tinted,
+   *  and the review page has nothing to keep. */
+  kept?: boolean;
+  /** Whatever this mounting's decision is. `null` renders no control and no
+   *  reserved box, because a row with nothing to decide should not hold a gap
+   *  where a button would be. */
+  action?: React.ReactNode;
+} & DiffRowNameExtras) {
   return (
     <div
       className={[
@@ -149,31 +193,50 @@ export function DiffRowOut({
       ].join(" ")}
     >
       <OwnershipDot owned={card.owned} size={7} />
-      <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
+      <DiffRowName
+        oracleId={card.oracleId}
+        name={card.name}
+        tone="var(--fg)"
+        siblings={siblings}
+        describedBy={describedBy}
+      />
       <Marker auto={card.auto} />
       <AvailabilitySlot card={card} seam={kept ? SEAM_KEPT : SEAM_SURFACE} selfClaimed />
-      {/* Desktop only: the phone row has no width for it, and the name plus the
-          hand-added marker are what the decision turns on. */}
-      <span className="hidden md:block font-mono text-[10px] w-[120px] flex-none truncate text-[color:var(--fg-locked)]">
-        {card.typeLine}
-      </span>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-pressed={kept}
-        aria-label={copy.keepAria(card.name)}
-        className={[
-          `font-mono text-[11.5px] ${ROW_RADIUS} h-[38px] md:h-[34px] min-w-[64px] flex-none`,
-          "flex items-center justify-center cursor-pointer bg-transparent transition-colors",
-          kept
-            ? "text-[color:var(--accent)] [border:1px_solid_var(--accent)] [background:color-mix(in_oklab,var(--accent)_10%,transparent)]"
-            : "text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:hover:[border-color:var(--accent)] md:hover:text-[color:var(--accent-hover)]",
-        ].join(" ")}
-      >
-        <span className="md:hidden">{kept ? copy.keptMobile : copy.keep}</span>
-        <span className="hidden md:inline">{kept ? copy.kept : copy.keep}</span>
-      </button>
+      {action}
     </div>
+  );
+}
+
+/** The update flow's `Keep`, which used to be written inside the row above.
+ *  Unchanged ink, unchanged `aria-pressed`, unchanged accessible name — only
+ *  where it is written down moved, so the review page can put its own control in
+ *  the same place without inheriting a decision it does not offer. */
+export function DiffRowKeep({
+  name,
+  kept,
+  onToggle,
+}: {
+  name: string;
+  kept: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={kept}
+      aria-label={copy.keepAria(name)}
+      className={[
+        `font-mono text-[11.5px] ${ROW_RADIUS} h-[38px] md:h-[34px] min-w-[64px] flex-none`,
+        "flex items-center justify-center cursor-pointer bg-transparent transition-colors",
+        kept
+          ? "text-[color:var(--accent)] [border:1px_solid_var(--accent)] [background:color-mix(in_oklab,var(--accent)_10%,transparent)]"
+          : "text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:hover:[border-color:var(--accent)] md:hover:text-[color:var(--accent-hover)]",
+      ].join(" ")}
+    >
+      <span className="md:hidden">{kept ? copy.keptMobile : copy.keep}</span>
+      <span className="hidden md:inline">{kept ? copy.kept : copy.keep}</span>
+    </button>
   );
 }
 
@@ -183,24 +246,29 @@ export function DiffRowOut({
 export function DiffRowIn({
   card,
   sourceLine,
+  siblings,
+  describedBy,
 }: {
   card: DiffRowCard;
   sourceLine: number | null;
-}) {
+} & DiffRowNameExtras) {
   return (
     <div className={`${ROW_SHELL} min-h-[44px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]`}>
       <OwnershipDot owned={card.owned} size={7} />
-      <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
-      {/* The slot sits BEFORE the type line, not after it. The name is the only
+      <DiffRowName
+        oracleId={card.oracleId}
+        name={card.name}
+        tone="var(--fg)"
+        siblings={siblings}
+        describedBy={describedBy}
+      />
+      {/* The slot sits BEFORE the line number, not after it. The name is the only
           flexible item, so anything that can disappear has to sit on the name's
-          side of the fixed columns — with the slot trailing, an owned row's type
-          line landed a tag's width right of an unowned row's. */}
+          side of the fixed columns — with the slot trailing, an owned row's line
+          number landed a tag's width right of an unowned row's. */}
       <AvailabilitySlot card={card} seam={SEAM_SURFACE} selfClaimed={false} />
-      <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
-        {card.typeLine}
-      </span>
-      {/* The line number keeps its width and is tabular, so the type line lands
-          in the same place however many digits the source line has. */}
+      {/* The line number keeps its width and is tabular, so it lands in the same
+          place however many digits the source line has. */}
       <span
         // `whitespace-nowrap` because the string has a space in it: a long line
         // number would otherwise wrap and take the row's height with it. The
@@ -250,9 +318,6 @@ export function DiffRowUnchanged({
         name={card.name}
         tone="var(--fg-body)"
       />
-      <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
-        {card.typeLine}
-      </span>
     </div>
   );
 }
