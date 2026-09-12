@@ -85,8 +85,10 @@ moved from 📐 to 🟢. No code.
    `backdrop-filter`, icon only, a 26px box centred in a 44px target, `aria-label` required.
    `full-card-trigger.tsx` loses its words and its `72%` class, and its `hero` placement moves to the
    bottom corner the block does not reach. `OVER_ART_PLATE` and its assertion are deleted, which
-   takes `full-card-trigger.test.tsx` with it: that file asserts the old top-right placement, the
-   visible words and the 72% class, so it migrates in the same PR. `z-[2]` (PR #534) is kept — it is
+   **migrates `full-card-trigger.test.tsx` in the same PR** — that file asserts the old top-right
+   placement, the visible words and the 72% class, so those three assertions change. Nothing in it is
+   deleted: opening the modal, `aria-busy`, the band tap target and all four placements are
+   load-bearing and stay, with the plate and the icon-only name asserted alongside them. `z-[2]` (PR #534) is kept — it is
    what makes the control clickable rather than merely visible — and the 44px target is pulled 9px
    inward rather than overhung, because every band it sits on is `overflow-hidden` and an overhanging
    target loses that 9px out of its own hit area.
