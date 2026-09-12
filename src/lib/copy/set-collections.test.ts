@@ -105,3 +105,18 @@ describe("setFilterCopy", () => {
     }
   });
 });
+
+describe("setsIndexCopy.row — the extras figure's plural", () => {
+  // The noun agrees with the denominator, which is what it counts. Every other plural in
+  // this file carries an explicit singular; this one shipped without.
+  it("says extra when the set has one", () => {
+    expect(setsIndexCopy.row.extrasLine(0, 1)).toBe("0 / 1 extra");
+    expect(setsIndexCopy.row.extrasLine(1, 1)).toBe("1 / 1 extra");
+    expect(setsIndexCopy.row.extrasAria(1, 1)).toBe(", and 1 of 1 extra");
+  });
+
+  it("says extras otherwise", () => {
+    expect(setsIndexCopy.row.extrasLine(4, 123)).toBe("4 / 123 extras");
+    expect(setsIndexCopy.row.extrasAria(4, 123)).toBe(", and 4 of 123 extras");
+  });
+});

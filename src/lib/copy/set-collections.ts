@@ -73,12 +73,18 @@ export const setsIndexCopy = {
       `${name}: you have none of ${total} in the base run`,
     // Visible, under the base ratio, one type step down. Lowercase, so it reads as a unit
     // on a figure rather than as a heading.
-    extrasLine: (have: number, total: number) => `${have} / ${total} extras`,
+    //
+    // The noun agrees with the DENOMINATOR, which is what it counts: a set with a single
+    // extra printing reads `0 / 1 extra` and `1 / 1 extra`, never `1 / 1 extras`. Rare and
+    // reachable — one variant in a small set is all it takes.
+    extrasLine: (have: number, total: number) =>
+      `${have} / ${total} ${total === 1 ? "extra" : "extras"}`,
     // MANDATORY, not optional. The row is one <Link> with an explicit aria-label, which
     // REPLACES everything its descendants contribute — so a second visible figure that is
     // not in the label is announced to nobody. Appended to ratioAria / zeroAria, never
     // rendered on its own.
-    extrasAria: (have: number, total: number) => `, and ${have} of ${total} extras`,
+    extrasAria: (have: number, total: number) =>
+      `, and ${have} of ${total} ${total === 1 ? "extra" : "extras"}`,
   },
 
   firstRun: {
