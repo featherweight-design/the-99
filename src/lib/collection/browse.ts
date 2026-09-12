@@ -344,6 +344,11 @@ export function comparePrintings(a: BrowsePrinting, b: BrowsePrinting): number {
 export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
   const byOracle = new Map<string, BrowseCard>();
   const printingsByOracle = new Map<string, Map<string, BrowsePrinting>>();
+  // Printing entries whose rows disagreed about which catalog printing they are.
+  // Tracked rather than inferred from the entry, because "id dropped for
+  // disagreeing" and "never had one" look identical on the entry itself and must
+  // not be allowed to heal when a third row arrives carrying an id.
+  const ambiguousIds = new Set<string>();
   for (const r of rows) {
     const setCode = r.setCode.toUpperCase();
     const printing: BrowsePrinting = {
@@ -403,10 +408,18 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // coalesce a null onto the same value — belt and braces, in the spirit of
       // the image line above.
       seen.flavorName ??= printing.flavorName;
-      // Two finishes of one printing are two collection rows sharing one catalog id,
-      // so this can only ever coalesce a null onto the same value — the same belt and
-      // braces as the two lines above.
-      seen.scryfallId ??= printing.scryfallId;
+      // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
+      // share a catalog id, but the import path already records that they can
+      // disagree and rules that null is the honest answer when they do
+      // (`pending.ts:30-33`). The same rule holds here for a stronger reason: this
+      // id is what a price is looked up by, so keeping whichever row was processed
+      // first would put one printing's figure under an entry that is not certainly
+      // that printing. Dropped, the entry falls back to its (set, collector number)
+      // identity, which is the thing the rows DO agree on.
+      if (seen.scryfallId !== printing.scryfallId) {
+        ambiguousIds.add(`${r.oracleId}|${printingKey}`);
+      }
+      if (ambiguousIds.has(`${r.oracleId}|${printingKey}`)) seen.scryfallId = undefined;
     } else {
       printings.set(printingKey, printing);
     }

@@ -69,7 +69,12 @@ async function signIn(page) {
 async function readPrice(page) {
   return page.evaluate(() => {
     const read = (id) => {
-      const node = document.querySelector(`[data-testid="${id}"]`);
+      // Both breakpoint trees are mounted at once and separated by CSS, so the
+      // first node with a given test id is not necessarily the one being painted —
+      // and a hidden one measures zero, which would make every figure below a
+      // fiction. The visible one is the placement under test.
+      const node = [...document.querySelectorAll(`[data-testid="${id}"]`)]
+        .find((n) => n.getBoundingClientRect().width > 0);
       if (!node) return null;
       const tag = node.querySelector("span[class*='font-mono']") ?? node;
       const style = getComputedStyle(tag);
@@ -142,29 +147,33 @@ try {
       const wasChecked = await tiles.evaluateAll((nodes) =>
         nodes.findIndex((n) => n.getAttribute("aria-checked") === "true"),
       );
-      await tiles.nth(1).click();
-      await page.waitForTimeout(1_200);
-      const after = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
-      console.log("\n── after picking the second printing ──");
-      console.log(JSON.stringify({ before, after }, null, 2));
+      try {
+        await tiles.nth(1).click();
+        await page.waitForTimeout(1_200);
+        const after = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
+        console.log("\n── after picking the second printing ──");
+        console.log(JSON.stringify({ before, after }, null, 2));
       // What can be asserted without knowing the feed: the pick landed, and the tag
       // was re-resolved rather than left behind as a node from the previous printing.
       // Whether the FIGURE differs is not assertable here — two printings of one card
       // may legitimately cost the same — so the two are printed for a human to read
       // against each other, and only the pick itself fails the probe.
-      if (before.caption === after.caption) {
-        console.log("\nFAIL: the pick did not change the resolved printing, so the tag proves nothing.");
-        process.exitCode = 1;
+        if (before.caption === after.caption) {
+          console.log("\nFAIL: the pick did not change the resolved printing, so the tag proves nothing.");
+          process.exitCode = 1;
+        }
+      } finally {
+        // Put the account back where it was found, including when the read or the
+        // assertion above threw. A probe that leaves a preference behind is a probe
+        // nobody can run twice and trust the second result.
+        if (wasChecked >= 0) {
+          await tiles.nth(wasChecked).click();
+        } else {
+          const forget = page.getByRole("button", { name: /forget|clear/i }).first();
+          if (await forget.count()) await forget.click();
+        }
+        await page.waitForTimeout(1_000);
       }
-      // Put the account back where it was found. A probe that leaves a preference
-      // behind is a probe nobody can run twice and trust the second result.
-      if (wasChecked >= 0) {
-        await tiles.nth(wasChecked).click();
-      } else {
-        const forget = page.getByRole("button", { name: /forget|clear/i }).first();
-        if (await forget.count()) await forget.click();
-      }
-      await page.waitForTimeout(1_000);
     } else {
       console.log("\n(only one printing owned — the pick check needs a card with several)");
     }

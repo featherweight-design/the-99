@@ -149,6 +149,30 @@ describe("aggregateCollection", () => {
     expect(agg.printings[0].quantity).toBe(3);
   });
 
+  it("drops the id where two rows of one printing disagree about it", () => {
+    // The import path already rules this: rows that share oracle, set, collector
+    // number and finish but name different printings cannot both be right, and null
+    // is the honest answer (`pending.ts:30-33`). Here it matters more, because this
+    // id is what a price is looked up by — the entry falls back to the (set,
+    // collector number) identity the rows do agree on.
+    const [agg] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil" }),
+      raw({ scryfallId: "s-other", finish: "foil" }),
+    ]);
+
+    expect(agg.printings[0].scryfallId).toBeUndefined();
+  });
+
+  it("does not let a later row heal an id that was dropped for disagreeing", () => {
+    const [agg] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil" }),
+      raw({ scryfallId: "s-other", finish: "foil" }),
+      raw({ scryfallId: "s-263", finish: "etched" }),
+    ]);
+
+    expect(agg.printings[0].scryfallId).toBeUndefined();
+  });
+
   it("keeps oracle metadata from the first row seen", () => {
     const [agg] = aggregateCollection([
       raw({ oracleText: "Tap: Add {C}{C}.", cardImageUri: "img.png" }),
