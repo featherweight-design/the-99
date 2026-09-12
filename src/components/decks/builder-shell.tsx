@@ -126,6 +126,9 @@ interface BuilderShellProps {
   /** The role counts the newest version held, for the mix cells' `was n` line.
       Derived by the route from the same `computeRoleCounts` the strip uses. */
   wasCounts?: Record<MixRole, number>;
+  /** Cards in the version a discard would land on, straight through to the
+      banner — see `pending-banner.tsx`. Absent draws no `Discard` at all. */
+  versionCards?: number;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -157,6 +160,7 @@ export function BuilderShell({
   gameSummary = NO_GAMES,
   draft = null,
   wasCounts,
+  versionCards,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -850,7 +854,7 @@ export function BuilderShell({
                 that this list is not the deck's committed one yet, which every
                 count below it is then read against. */}
             {draft && (
-              <PendingBanner state={draft} deckId={deck.id} />
+              <PendingBanner state={draft} deckId={deck.id} versionCards={versionCards} />
             )}
 
             {/* Above the coverage strip and the tabs, because what it says is

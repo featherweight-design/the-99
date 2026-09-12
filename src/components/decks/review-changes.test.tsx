@@ -10,6 +10,7 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { Availability } from "../../lib/decks/availability";
+import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardDetailCopy } from "../cards/card-detail-provider";
 import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
@@ -28,6 +29,12 @@ const browseCard = (oracleId: string, name: string): BrowseCard => ({
 });
 
 const STATE = COMMITTED;
+
+/** The shape strip's two whole lists, empty here: what this suite asserts is the
+ *  two columns, and `changed-strip.test.tsx` owns every figure the strip draws
+ *  from them. Empty `before` is also what keeps the strip silent about movement,
+ *  so nothing it draws can be mistaken for a column's own figure. */
+const SHAPE: { before: ShapeCard[]; after: ShapeCard[] } = { before: [], after: [] };
 
 /** The server's count of the list a commit would freeze, handed down to the sheet
  *  at the foot of the page. Nothing here counts rows to get it. */
@@ -72,7 +79,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     // Twice each, and one markup: the phone segment and the desktop direction
@@ -87,7 +94,7 @@ describe("ReviewChanges", () => {
 
   it("files a quantity move as one row carrying from → to, never a bare name", () => {
     render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(screen.getByText(/1 → 2/)).toBeTruthy();
   });
@@ -95,7 +102,7 @@ describe("ReviewChanges", () => {
   // A whole add and a whole cut are what the column heading already says, so a
   // `0 → 1` beside them would restate the column the row is standing in.
   it("says nothing about copies on a card arriving or leaving whole", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.queryByText(/\d+ → \d+/)).toBeNull();
   });
 
@@ -105,7 +112,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "unowned" })], out: [] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     const describedBy = screen
@@ -121,7 +128,7 @@ describe("ReviewChanges", () => {
   // `free` on every surface in the app — so there is no colour for a word to be
   // the alternative to.
   it("describes nothing on a row the player already has a free copy of", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(
       screen.getByRole("button", { name: /Sol Ring/ }).getAttribute("aria-describedby"),
     ).toBeNull();
@@ -135,6 +142,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
+        {...SHAPE}
         state={{ ...STATE, removes: [{ oracleId: "o1", from: 3, to: 1 }] }}
         cardCount={CARD_COUNT}
       />,
@@ -147,7 +155,7 @@ describe("ReviewChanges", () => {
   // The lede names the version the player is about to cut, not the one they are
   // standing on: the whole page exists to be read before that number exists.
   it("heads the page with the version behind it and the version ahead", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.getByText(deckVersioningCopy.review.heading(1, 1))).toBeTruthy();
     expect(screen.getByText(deckVersioningCopy.review.lede(2))).toBeTruthy();
   });
@@ -168,7 +176,7 @@ describe("ReviewChanges", () => {
             }),
           ],
         }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getAllByRole("button", { name: PULL_NAME })).toHaveLength(1);
@@ -182,7 +190,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row(), row({ oracleId: "o2", name: "Mox", bucket: "unowned" })], out: [] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
@@ -210,6 +218,7 @@ describe("ReviewChanges", () => {
           ],
           out: [],
         }}
+        {...SHAPE}
         state={{ ...STATE, pullableCount: 0 }}
         cardCount={CARD_COUNT}
       />,
@@ -235,6 +244,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ pending: true }) })], out: [] }}
+        {...SHAPE}
         state={STATE} cardCount={CARD_COUNT}
       />,
     );
@@ -258,7 +268,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
@@ -274,7 +284,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     const sentence = deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring");
@@ -293,7 +303,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     const describedBy = screen
@@ -322,7 +332,7 @@ describe("ReviewChanges", () => {
           })],
           out: [],
         }}
-        state={{ ...STATE, claimsKnown: false, newestAsOf: new Date("2026-09-08") }}
+        {...SHAPE} state={{ ...STATE, claimsKnown: false, newestAsOf: new Date("2026-09-08") }}
         cardCount={CARD_COUNT}
       />,
     );
@@ -346,6 +356,7 @@ describe("ReviewChanges", () => {
           })],
           out: [],
         }}
+        {...SHAPE}
         state={{ ...STATE, newestAsOf: new Date("2026-09-08") }}
         cardCount={CARD_COUNT}
       />,
@@ -361,6 +372,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
+        {...SHAPE}
         state={{ ...STATE, removes: [{ oracleId: "o1", from: 3, to: 1 }] }}
         cardCount={CARD_COUNT}
       />,
@@ -389,7 +401,7 @@ describe("ReviewChanges", () => {
           ],
           out: [],
         }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     // Drawn as Llanowar Elves (Creatures), then Mox and Sol Ring (Artifacts, by
@@ -411,7 +423,7 @@ describe("ReviewChanges", () => {
     // heading's.
     const segment = deckVersioningCopy.review.groupIn(1);
     const { unmount } = render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(screen.queryByRole("button", { name: segment })).toBeNull();
     unmount();
@@ -420,7 +432,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getByRole("button", { name: segment })).toBeTruthy();
@@ -431,7 +443,7 @@ describe("ReviewChanges", () => {
   // they were editing to know where it goes.
   it("links back to the deck by name", () => {
     render(
-      <ReviewChanges deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     const back = screen.getByRole("link", { name: /Korvold/ });
     expect(back.getAttribute("href")).toBe("/decks/d7");
@@ -447,7 +459,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
-        state={{ ...STATE, buyCount: 3, total: "$28.40", pullableCount: 0 }}
+        {...SHAPE} state={{ ...STATE, buyCount: 3, total: "$28.40", pullableCount: 0 }}
         cardCount={CARD_COUNT}
       />,
     );
@@ -470,7 +482,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ from: 3, to: 1 })], out: [] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getByText(/3 → 1/)).toBeTruthy();
@@ -485,7 +497,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
-        state={STATE} cardCount={CARD_COUNT}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(
@@ -502,7 +514,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
-        state={{ ...STATE, buyCount: 3 }}
+        {...SHAPE} state={{ ...STATE, buyCount: 3 }}
         cardCount={CARD_COUNT}
       />,
     );
@@ -519,9 +531,50 @@ describe("ReviewChanges", () => {
     // One element ordered twice rather than two subtrees: the note reads first on
     // the phone and last above it, and the DOM holds it once either way.
     expect(note.className).toContain("order-first md:order-last");
-    // Discard arrives with plan Task 19; nothing stands in for it here.
+    // Three items in the bar, and the third is Discard. It shares the phone's
+    // button row with the commit — one wrapper, which dissolves above the
+    // breakpoint so all three sit on one line.
+    const discard = screen.getByRole("button", {
+      name: deckVersioningCopy.pending.discardCta,
+    });
+    expect(bar.contains(discard)).toBe(true);
+    const buttonRow = discard.parentElement as HTMLElement;
+    expect(buttonRow.contains(cta)).toBe(true);
+    expect(buttonRow.className).toContain("md:contents");
+  });
+
+  // The question replaces the bar's own body, exactly as it replaces the banner's
+  // card on the deck page: the figures the commit would freeze have no business
+  // being drawn under a question about throwing the draft away.
+  it("puts the discard confirm in the bar, in place of its controls", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        {...SHAPE}
+        state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }).click();
+    });
+    const question = screen.getByText(
+      deckVersioningCopy.discard.question(STATE.addChanges.length + STATE.removes.length),
+    );
+    const bar = question.closest("div")?.parentElement as HTMLElement;
+    expect(bar.className).toContain("[border-top:1px_solid_var(--border-strong)]");
+    // No second wording for this door, and no figures beside the question.
     expect(
-      screen.queryByRole("button", { name: deckVersioningCopy.pending.discardCta }),
+      screen.queryByText(
+        deckVersioningCopy.review.footer(CARD_COUNT, STATE.buyCount, STATE.removes.length),
+      ),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", {
+        name: deckVersioningCopy.pending.commitCta((STATE.version?.number ?? 0) + 1),
+      }),
     ).toBeNull();
   });
 
@@ -537,7 +590,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
-        state={STATE}
+        {...SHAPE} state={STATE}
         cardCount={CARD_COUNT}
       />,
     );
@@ -552,7 +605,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
-        state={STATE}
+        {...SHAPE} state={STATE}
         cardCount={CARD_COUNT}
         commitOpen
       />,
@@ -578,6 +631,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
+        {...SHAPE}
         state={STATE}
         cardCount={CARD_COUNT}
         commitOpen
@@ -600,6 +654,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [] }}
+        {...SHAPE}
         state={BREW}
         cardCount={CARD_COUNT}
       />,
@@ -622,6 +677,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [] }}
+        {...SHAPE}
         state={{ ...STATE, basicsChanged: true }}
         cardCount={CARD_COUNT}
       />,
@@ -642,6 +698,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [] }}
+        {...SHAPE}
         state={STATE}
         cardCount={CARD_COUNT}
       />,
@@ -659,6 +716,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: null })], out: [] }}
+        {...SHAPE}
         state={{ ...STATE, claimsKnown: false }}
         cardCount={CARD_COUNT}
       />,
@@ -677,6 +735,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: null })], out: [] }}
+        {...SHAPE}
         state={{ ...STATE, claimsKnown: false }}
         cardCount={CARD_COUNT}
       />,
@@ -700,7 +759,7 @@ describe("ReviewChanges", () => {
       screen.getByRole("heading", { name: deckVersioningCopy.review.groupIn(1) })
         .parentElement as HTMLElement;
     const { unmount } = render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(headingOf().className).not.toContain("hidden");
     unmount();
@@ -709,6 +768,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
+        {...SHAPE}
         state={STATE} cardCount={CARD_COUNT}
       />,
     );

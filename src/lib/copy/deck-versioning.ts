@@ -274,6 +274,11 @@ export const deckVersioningCopy = {
       `${plural(cards, "card")} · ${released} released`,
 
     refused: "We couldn't commit that version. Your changes are still here.",
+    // A transport failure, which is not a refusal: the write may have landed and
+    // the reply may have been what was lost. `refused` promises the draft is
+    // intact, and this is the one path that cannot promise it, so it says what is
+    // true and names the re-read that will settle it.
+    unresolved: "We lost the answer to that commit. Re-reading the deck to see whether it landed.",
     announced: (version: number, cards: number, buy: number) =>
       `Committed v${version}. ${plural(cards, "card")}, ${buy} to buy.`,
     // The same line with the purchase clause taken out, for the commit whose claim
@@ -301,7 +306,12 @@ export const deckVersioningCopy = {
   discard: {
     // The number is in the question AND on the button: two changes and thirty-six
     // are different acts behind one word.
-    question: (n: number) => `Discard ${plural(n, "change")}?`,
+    //
+    // At zero it is the draft that is named instead. A basics-only draft has
+    // changes — `basicsChanged` is what keeps the banner up — and names no card,
+    // so `changeCount` is 0 and "Discard 0 changes?" would ask about nothing on
+    // a surface that is only there because something moved.
+    question: (n: number) => (n === 0 ? "Discard this draft?" : `Discard ${plural(n, "change")}?`),
     consequence: (version: number, date: string, cards: number, adds: number, removes: number) => {
       const back = `The deck goes back to v${version} as committed on ${date} — ` +
         `${plural(cards, "card")}. `;
@@ -313,19 +323,32 @@ export const deckVersioningCopy = {
         adds > 0 ? `the ${adds} you added` : null,
         removes > 0 ? `the ${removes} you cut` : null,
       ].filter(Boolean).join(" and ");
+      // No named card means a basics-only draft, and nothing else: the sheet is
+      // only up while something differs, and a difference that names no card is
+      // a basic-land edit. So the sentence names THAT rather than claiming the
+      // draft holds nothing — the land count is the work being thrown away, and
+      // it needs no argument of its own to be known.
       if (!lost) {
-        return `${back}Nothing in this draft is stored anywhere, so this cannot be undone.`;
+        return `${back}The basic lands you changed are not stored anywhere, so this `
+          + "cannot be undone.";
       }
       const single = adds > 0 && removes > 0 ? null : adds || removes;
       return `${back}${lost.charAt(0).toUpperCase()}${lost.slice(1)} ` +
         `${single === 1 ? "is" : "are"} not stored anywhere, so this cannot be undone.`;
     },
-    confirm: (n: number) => `Discard ${plural(n, "change")}`,
+    // Same zero branch as the question, and for the same reason.
+    confirm: (n: number) => (n === 0 ? "Discard the draft" : `Discard ${plural(n, "change")}`),
     cancel: "Keep editing",
     pending: "Discarding…",
     announced: (n: number, version: number) =>
-      `${plural(n, "change")} discarded. Back to v${version}.`,
+      n === 0
+        ? `Draft discarded. Back to v${version}.`
+        : `${plural(n, "change")} discarded. Back to v${version}.`,
     refused: "We couldn't discard those changes. Nothing has changed.",
+    // The same distinction the commit sheet draws, and it matters more here: the
+    // restore may have committed before the reply was lost, so "nothing has
+    // changed" could be the opposite of the truth about a list that is gone.
+    unresolved: "We lost the answer to that discard. Re-reading the deck to see whether it landed.",
   },
 
   /* ---- §Surfaces 4 · versions (the fourth tab) and the diff ---- */
@@ -374,10 +397,7 @@ export const deckVersioningCopy = {
     under: (rec: number) => `still under rec ${rec}`,
     body: "Body",
     bodyOver: (n: number) => `${n} over, not blocked`,
-    // The six cells, in order. `body` above is the hero's over-cap line, NOT a strip cell.
-    cells: ["manaValue", "ramp", "draw", "removal", "wipes", "land"] as const,
     shapeHeading: "How the deck's shape moves",
-    shapeRow: (before: number, after: number) => `${before} → ${after}`,
     delta: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0"),
   },
 

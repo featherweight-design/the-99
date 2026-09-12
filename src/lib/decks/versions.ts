@@ -6,9 +6,10 @@
 
 import { and, desc, eq, lte } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, deckCards, deckVersionCards, deckVersions, decks } from "../../db/schema";
+import {
+  deckCards, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
+} from "../../db/schema";
 import type { CardQty } from "./draft-diff";
-import { averageManaValue } from "./mana-value";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -196,9 +197,22 @@ async function commitVersionIn(
  * list the player committed to, so nothing in it is an unclaimed suggestion,
  * and leaving the flag set would let a later sweep delete cards out of a
  * committed deck.
+ *
+ * `versionId` is what the caller believes the newest version to be, and it is
+ * re-checked under the lock rather than trusted. A commit landing between the
+ * caller's read and this transaction moves the deck on: restoring the older
+ * list then would overwrite a version's own cards with the one behind it and
+ * leave the deck reading as a draft against a version nobody edited. "moved"
+ * is that case, and nothing is written — the caller sends the reader back to a
+ * page that now says something different. A deck holding no version at all is
+ * the same answer: there is nothing behind the draft to land on, and emptying
+ * it would delete a whole brew.
  */
-export async function restoreDraftFromVersion(deckId: string, versionId: string): Promise<void> {
-  await db.transaction(async (tx) => {
+export async function restoreDraftFromVersion(
+  deckId: string,
+  versionId: string,
+): Promise<"restored" | "moved"> {
+  return db.transaction(async (tx) => {
     // The same `for update` commitVersion takes, and for the same reason: this
     // reads a list and then replaces `deck_cards` wholesale, so an add landing
     // from another tab in between is thrown away without a trace.
@@ -216,9 +230,11 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
     await tx.select({ oracleId: deckCards.oracleId })
       .from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
-    const [version] = await tx.select().from(deckVersions)
-      .where(and(eq(deckVersions.id, versionId), eq(deckVersions.deckId, deckId)));
-    if (!version) throw new Error("version not found");
+    // Read under the lock, and compared rather than fetched by id: the question
+    // is not whether the caller's version exists but whether it is still the
+    // one the draft sits on top of.
+    const newest = await newestVersion(deckId, tx);
+    if (!newest || newest.id !== versionId) return "moved";
 
     const rows = await tx.select({
       oracleId: deckVersionCards.oracleId,
@@ -226,6 +242,12 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
     }).from(deckVersionCards).where(eq(deckVersionCards.versionId, versionId));
 
     await tx.delete(deckCards).where(eq(deckCards.deckId, deckId));
+    // Unresolved paste lines go with the draft. They are not `deck_cards` rows,
+    // so the delete above does not reach them, and no version stores them — a
+    // commit refuses to cut v1 while any exist. Left behind, a discard would
+    // land the deck on its committed list and still draw the banner asking the
+    // player to resolve lines from an edit that no longer exists.
+    await tx.delete(deckUnresolvedRows).where(eq(deckUnresolvedRows.deckId, deckId));
     if (rows.length > 0) {
       await tx.insert(deckCards).values(
         rows.map((r) => ({
@@ -233,24 +255,6 @@ export async function restoreDraftFromVersion(deckId: string, versionId: string)
         })),
       );
     }
+    return "restored";
   });
-}
-
-/**
- * The average mana value of a version's list — the strip's `was 7`.
- *
- * A join rather than a second query over `versionCards`: the snapshot stores
- * quantities only, and the figure needs each card's cost and type line. Null
- * when the version was all land, which `averageManaValue` decides.
- */
-export async function versionManaValue(versionId: string): Promise<number | null> {
-  const rows = await db.select({
-    cmc: cards.cmc,
-    quantity: deckVersionCards.quantity,
-    typeLine: cards.typeLine,
-  })
-    .from(deckVersionCards)
-    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
-    .where(eq(deckVersionCards.versionId, versionId));
-  return averageManaValue(rows);
 }

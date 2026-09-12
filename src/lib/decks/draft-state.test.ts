@@ -11,8 +11,7 @@ const state = (over: Partial<DraftState> = {}): DraftState => ({
   names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
   claimsKnown: true,
   buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
-  pricedCopies: 0, newestAsOf: null,
-  manaValue: null, manaValueBefore: null, ...over,
+  pricedCopies: 0, newestAsOf: null, ...over,
 });
 
 describe("changeCount / hasChanges", () => {

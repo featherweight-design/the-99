@@ -16,6 +16,15 @@
 //      bucketed `claimed` and a holder is releasable — a second deck, sleeved, not
 //      pending, holding the one copy the player owns. That is a claim query, not a
 //      prop, and it is the whole reason this surface exists.
+//   5. THE WHAT-CHANGED STRIP STANDS THREE CELLS DOWN. Six cells at 1300px and
+//      three at 390px, and the verdict line under each is desktop-only — which
+//      cell is drawn at which width is a fact about a rendered box.
+//   6. DISCARD IS TWO CLICKS IN THE PLACE THE QUESTION WAS ASKED. The confirm
+//      replaces the body of whichever surface raised it, so the trigger is out of
+//      the document while it is up, focus is carried by hand to the way out and
+//      back to the trigger on a cancel, and the answers swap order under 768px.
+//      None of that is reachable where nothing has a box. The discard itself runs
+//      once, last: it overwrites the only copy of the draft with the version.
 //
 // THE FIXTURE IS THIS SCRIPT'S OWN. The probe account is not the account that owns
 // local-dev's decks, and a deck page the signed-in player does not own is a 404 —
@@ -109,6 +118,13 @@ const readReview = (page) =>
       return r.width > 0 && r.height > 0;
     };
     const buttons = [...document.querySelectorAll("button")];
+    // `textContent`, never `innerText`, for anything matched by its words: every
+    // label and heading on this surface is a mono uppercase class, and `innerText`
+    // returns the transformed glyphs while `textContent` returns what the copy
+    // module wrote. A match on `innerText` silently finds only the cells that are
+    // hidden at that width, where no transform is applied — which is exactly how
+    // this reader first reported the three stood-down cells and nothing else.
+    const text = (el) => (el?.textContent ?? "").replace(/\s+/g, " ").trim();
     return {
       url: location.pathname + location.search,
       h1: document.querySelector("h1")?.innerText ?? null,
@@ -145,6 +161,93 @@ const readReview = (page) =>
           .map((h) => h.innerText)
           .find((t) => /^Commit this list as v\d+$/.test(t ?? "")) ?? null,
       cancel: buttons.some((b) => b.innerText.trim() === "Cancel"),
+      // The what-changed strip: six cells and the type-distribution rows under
+      // them. Anchored on the cell labels and on the section's own heading —
+      // neither the cells nor the rows carry an id, and both are the same
+      // geometry as the deck page's mix strip, which this page does not draw.
+      shape: (() => {
+        const labels = ["Mana value", "Ramp", "Draw", "Removal", "Wipes", "Land"];
+        const cells = [...document.querySelectorAll("p")]
+          .filter((p) => labels.includes(text(p)))
+          .map((p) => {
+            const cell = p.parentElement;
+            const lines = [...cell.querySelectorAll(":scope > p")];
+            const figures = lines[1];
+            const after = figures?.querySelector("span:last-child");
+            return {
+              label: text(p),
+              figures: figures ? text(figures) : null,
+              afterColor: after ? getComputedStyle(after).color : null,
+              note: lines[2] ? text(lines[2]) : null,
+              noteVisible: visible(lines[2]),
+              visible: visible(cell),
+              width: Math.round(cell.getBoundingClientRect().width),
+            };
+          });
+        const section = [...document.querySelectorAll("section")].find(
+          (s) => text(s.querySelector("h2")) === "How the deck's shape moves",
+        );
+        const moves = section
+          ? [...section.querySelectorAll(":scope > div > div")].map((row) => {
+              const spans = [...row.querySelectorAll(":scope > span")];
+              const pair = spans[1];
+              const afterFigure = pair?.querySelector("span");
+              const bar = row.querySelector(":scope > div");
+              return {
+                group: spans[0] ? text(spans[0]) : null,
+                pair: pair ? text(pair) : null,
+                pairColor: pair ? getComputedStyle(pair).color : null,
+                // The one gap the verify pass found: the after figure carries the
+                // deck's own ink and the figure before the arrow does not.
+                afterColor: afterFigure ? getComputedStyle(afterFigure).color : null,
+                delta: spans[2] ? text(spans[2]) : null,
+                barVisible: visible(bar),
+              };
+            })
+          : null;
+        return { cells, moves };
+      })(),
+      discardTriggers: buttons
+        .filter((b) => b.innerText.trim() === "Discard")
+        .map((b) => ({
+          width: Math.round(b.getBoundingClientRect().width),
+          height: Math.round(b.getBoundingClientRect().height),
+        })),
+      // The confirm, wherever it was raised: it replaces the body of the surface
+      // that raised it, so the same reading serves the banner and the apply bar.
+      discardConfirm: (() => {
+        const question = [...document.querySelectorAll("span")].find((s) =>
+          /^Discard (this draft|\d+ changes?)\?$/.test(text(s)),
+        );
+        if (!question) return null;
+        const box = question.parentElement;
+        const why = box.querySelector("p");
+        const style = getComputedStyle(box);
+        return {
+          question: text(question),
+          questionColor: getComputedStyle(question).color,
+          consequence: why ? text(why) : null,
+          // The version clause, drawn in the reading ink at 600. Absent means the
+          // sentence rendered whole, which is the fallback and not a pass.
+          stamp: text(why?.querySelector("b")) || null,
+          rule: `${style.borderLeftWidth} ${style.borderLeftColor}`,
+          answers: [...box.querySelectorAll("button")].map((b) => {
+            const r = b.getBoundingClientRect();
+            return {
+              label: b.innerText.trim(),
+              color: getComputedStyle(b).color,
+              background: getComputedStyle(b).backgroundColor,
+              border: getComputedStyle(b).borderColor,
+              height: Math.round(r.height),
+              // Which answer is the higher one on the page: at 390px the safe one
+              // is, because the thumb reaches the bottom row first.
+              top: Math.round(r.top),
+              describesWhy: !!why && b.getAttribute("aria-describedby") === why.id,
+            };
+          }),
+          focused: document.activeElement?.innerText?.trim() ?? null,
+        };
+      })(),
     };
   });
 
@@ -297,6 +400,42 @@ async function addOneBasic(deckId) {
   return rows[0].name;
 }
 
+/** What the confirm says and wears, printed the same way at both doors. */
+function reportConfirm(seen, width) {
+  const confirm = seen.discardConfirm;
+  if (!confirm) {
+    console.log(`  confirm: DID NOT OPEN`);
+    return;
+  }
+  console.log(`  question: "${confirm.question}" ${confirm.questionColor}`);
+  console.log(`  consequence: ${confirm.consequence}`);
+  console.log(`  version clause in the reading ink: ${confirm.stamp ?? "NOT SPLIT OUT"}`);
+  console.log(`  left rule: ${confirm.rule} (expect 3px of --danger)`);
+  for (const answer of confirm.answers) {
+    console.log(
+      `    "${answer.label}" ${answer.height}px at y=${answer.top} · ink ${answer.color} · ` +
+        `fill ${answer.background} · border ${answer.border} · ` +
+        `points at the consequence: ${answer.describesWhy ? "yes" : "NO"}`,
+    );
+  }
+  // DOM order, which the confirm draws as the way out first and the destructive
+  // answer second — the phone stack is the DOM order and desktop reverses it.
+  const [safe, danger] = confirm.answers;
+  if (danger && safe) {
+    // The pair stacks below 768px, and stacked it puts the way out on top: the
+    // thumb reaches the bottom row first and the bottom row would otherwise be
+    // the unrecoverable one. Keyed on the width rather than the label, which
+    // starts with the device name and never with the figure.
+    const stacked = width < 768;
+    console.log(
+      `  order: ${safe.top < danger.top ? "way out on top" : "act on top"} (expect ${
+        stacked ? "way out on top" : "act on top"
+      })`,
+    );
+  }
+  console.log(`  focus: ${confirm.focused} (expect Keep editing)`);
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
 let underReview = null;
@@ -393,6 +532,102 @@ try {
     console.log(`  footer: ${seen.footer ?? "absent"}`);
     console.log(`  commit CTA: ${seen.commitCta ?? "absent"}`);
 
+    // 2b. The what-changed strip. Three cells stand down at 390px, and every cell
+    // draws a movement rather than a figure against a bar, so what is being read
+    // is the pair and the verdict under it.
+    // Visible, not matched: `cells` holds all six paragraphs at both widths and
+    // records visibility per cell, so a raw length prints 6 on the phone and says
+    // nothing about the three-cell contract this line exists to check.
+    console.log(
+      `  strip cells: ${seen.shape.cells.filter((c) => c.visible).length} visible` +
+        ` of ${seen.shape.cells.length}`,
+    );
+    for (const cell of seen.shape.cells) {
+      console.log(
+        `    "${cell.label}" ${cell.visible ? `${cell.width}px` : "HIDDEN"} · ` +
+          `${cell.figures} · after ${cell.afterColor} · ` +
+          `note ${cell.note ?? "none"}${cell.note && !cell.noteVisible ? " (hidden)" : ""}`,
+      );
+    }
+    console.log(
+      `  type moves: ${
+        seen.shape.moves === null ? "section absent" : `${seen.shape.moves.length} row(s)`
+      }`,
+    );
+    for (const move of seen.shape.moves ?? []) {
+      console.log(
+        `    ${move.group}: ${move.pair} ${move.delta} · pair ${move.pairColor} · ` +
+          `after ${move.afterColor} · bar ${move.barVisible ? "drawn" : "hidden"}`,
+      );
+    }
+
+    // 2c. Discard, raised from the apply bar. The question replaces the bar's own
+    // body, so the trigger is gone while it is up and the way out holds focus —
+    // neither is reachable from jsdom, where nothing has a box.
+    console.log(`\n########## ${label} · DISCARD from the apply bar`);
+    console.log(
+      `  trigger: ${
+        seen.discardTriggers.length === 0
+          ? "ABSENT"
+          : `${seen.discardTriggers[0].width}x${seen.discardTriggers[0].height}`
+      }`,
+    );
+    if (seen.discardTriggers.length > 0) {
+      await vpPage.getByRole("button", { name: "Discard", exact: true }).click();
+      await vpPage.waitForTimeout(350);
+      seen = await readReview(vpPage);
+      reportConfirm(seen, width);
+      if (seen.discardConfirm) {
+        await vpPage.getByRole("button", { name: "Keep editing" }).click();
+        await vpPage.waitForTimeout(350);
+        seen = await readReview(vpPage);
+        console.log(`  after Keep editing · confirm: ${seen.discardConfirm ? "STILL UP" : "gone"}`);
+        console.log(
+          `  after Keep editing · trigger back: ${seen.discardTriggers.length > 0 ? "yes" : "NO"}`,
+        );
+        console.log(
+          `  after Keep editing · focus: ${await vpPage.evaluate(
+            () => document.activeElement?.innerText?.trim() ?? null,
+          )} (expect Discard)`,
+        );
+      }
+    }
+
+    // 2d. The same question from the deck page's banner, which is the other host.
+    // The banner's card is what the confirm replaces there, so the reading proves
+    // the third of the banner's three controls opens it on that surface too.
+    await vpPage.goto(`${BASE}/decks/${underReview.deckId}`, { waitUntil: "networkidle" });
+    await vpPage.waitForTimeout(900);
+    let onDeck = await readReview(vpPage);
+    console.log(`\n########## ${label} · DISCARD from the deck-page banner`);
+    console.log(
+      `  trigger: ${
+        onDeck.discardTriggers.length === 0
+          ? "ABSENT"
+          : `${onDeck.discardTriggers[0].width}x${onDeck.discardTriggers[0].height}`
+      }`,
+    );
+    if (onDeck.discardTriggers.length > 0) {
+      await vpPage.getByRole("button", { name: "Discard", exact: true }).click();
+      await vpPage.waitForTimeout(350);
+      onDeck = await readReview(vpPage);
+      reportConfirm(onDeck, width);
+      if (onDeck.discardConfirm) {
+        await vpPage.getByRole("button", { name: "Keep editing" }).click();
+        await vpPage.waitForTimeout(350);
+        onDeck = await readReview(vpPage);
+        console.log(`  after Keep editing · confirm: ${onDeck.discardConfirm ? "STILL UP" : "gone"}`);
+        console.log(
+          `  after Keep editing · trigger back: ${onDeck.discardTriggers.length > 0 ? "yes" : "NO"}`,
+        );
+      }
+    }
+    await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
+      waitUntil: "networkidle",
+    });
+    await vpPage.waitForTimeout(900);
+    seen = await readReview(vpPage);
+
     // 3. The phone's other segment, and the column swap. Above the breakpoint the
     // segments are still in the DOM and measure 0x0 — both columns are drawn, so
     // there is nothing to switch between and nothing to click.
@@ -466,6 +701,71 @@ try {
       `draft ${held.in_draft} (expect v2 · 0 · 0)`,
   );
   await pullContext.close();
+
+  // 6. The discard itself, once and last: it overwrites the only copy of the draft
+  // with the version behind it, so every reading above would change under it. What
+  // is being proved is the write, the move off the page, and what the deck holds
+  // afterwards — a discard that left one changed row would still look right.
+  const discardContext = await browser.newContext({ viewport: VIEWPORTS[1] });
+  const discardPage = await discardContext.newPage();
+  await signIn(discardPage);
+  await discardPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
+    waitUntil: "networkidle",
+  });
+  await discardPage.waitForTimeout(900);
+  console.log(`\n########## discard · 1300x900`);
+  const beforeDiscard = await pool.query(
+    `select count(*) from deck_cards dc
+       where dc.deck_id = $1
+         and not exists (
+           select 1 from deck_version_cards vc
+            where vc.version_id = $2 and vc.oracle_id = dc.oracle_id
+              and vc.quantity = dc.quantity)`,
+    [underReview.deckId, underReview.versionId],
+  );
+  console.log(`  rows differing from v1 before: ${beforeDiscard.rows[0].count} (expect > 0)`);
+  await discardPage.getByRole("button", { name: "Discard", exact: true }).click();
+  await discardPage.waitForTimeout(400);
+  reportConfirm(await readReview(discardPage), VIEWPORTS[1].width);
+  await discardPage.getByRole("button", { name: /^Discard (the draft|\d+ changes?)$/ }).click();
+  await discardPage.waitForTimeout(2500);
+  const afterDiscard = await readReview(discardPage);
+  console.log(`  after · url: ${afterDiscard.url} (expect /decks/<id>, off the review page)`);
+  console.log(
+    `  after · announcement: ${await discardPage.evaluate(
+      () => document.getElementById("draft-announcer")?.textContent ?? null,
+    )}`,
+  );
+  // The navigation takes the confirm and everything focused near it, so the deck
+  // page's version line takes focus off the body — the one sentence naming the
+  // list the deck is on now, which is what the draft just stopped being. The
+  // hash that carried the handoff is spent on arrival.
+  console.log(
+    `  after · focus: ${await discardPage.evaluate(
+      () => document.activeElement?.textContent?.trim().slice(0, 60) ?? null,
+    )} (expect the version line)`,
+  );
+  console.log(
+    `  after · hash: "${await discardPage.evaluate(() => window.location.hash)}" (expect empty)`,
+  );
+  const settled = await pool.query(
+    `select
+       (select count(*) from deck_cards where deck_id = $1) as draft_rows,
+       (select count(*) from deck_version_cards where version_id = $2) as version_rows,
+       (select count(*) from deck_cards dc
+          where dc.deck_id = $1
+            and not exists (
+              select 1 from deck_version_cards vc
+               where vc.version_id = $2 and vc.oracle_id = dc.oracle_id
+                 and vc.quantity = dc.quantity)) as differing`,
+    [underReview.deckId, underReview.versionId],
+  );
+  const back = settled.rows[0];
+  console.log(
+    `  after · draft ${back.draft_rows} rows · v1 ${back.version_rows} rows · ` +
+      `differing ${back.differing} (expect equal counts and 0 differing)`,
+  );
+  await discardContext.close();
 } finally {
   // The two decks, and nothing else: versions and cards go with them by cascade,
   // and the run writes no collection row to take back — the claimed card was one

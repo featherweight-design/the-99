@@ -83,8 +83,20 @@ export default async function DeckBuilderPage({
   // only when there is a draft to compare against, and through the same
   // `computeRoleCounts` the strip itself uses — two folds would put two
   // different decks in one cell.
-  const wasCounts = hasChanges(draft) && draft.version
-    ? computeRoleCounts(await loadVersionShape(draft.version.id))
+  //
+  // The same read answers what a discard lands on. Two reads of one version's
+  // cards for two figures folded out of them would be a second query for
+  // nothing, and the discard confirm is drawn in exactly the case this read is
+  // taken in: a draft, with a version behind it.
+  const versionShape = hasChanges(draft) && draft.version
+    ? await loadVersionShape(draft.version.id)
+    : null;
+  const wasCounts = versionShape ? computeRoleCounts(versionShape) : undefined;
+  // Copies, not rows — the figure the decklist prints, and what the reader is
+  // being told they land on. `undefined` where the shape was not read, which is
+  // the absence `PendingBanner` draws no `Discard` for.
+  const versionCards = versionShape
+    ? versionShape.reduce((n, card) => n + card.quantity, 0)
     : undefined;
 
   // Summarised here rather than in the panel: the function is pure and this is
@@ -167,6 +179,7 @@ export default async function DeckBuilderPage({
       fillPasses={fillPasses}
       draft={draft}
       wasCounts={wasCounts}
+      versionCards={versionCards}
       games={games}
       gameSummary={gameSummary}
       // Left in the URL rather than swept with a router.replace. Stripping it

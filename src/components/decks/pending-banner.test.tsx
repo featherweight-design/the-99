@@ -1,11 +1,22 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { priceCopy } from "../../lib/copy/price";
 import type { DraftState } from "../../lib/decks/draft-shape";
-import { COMMIT_RECEIPT_HASH } from "./draft-announcer";
+import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH, DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PendingBanner } from "./pending-banner";
+
+vi.mock("../../app/decks/actions", () => ({ discardDeckDraft: vi.fn() }));
+// The banner gives its body to `DiscardConfirm`, which asks the router for the
+// re-read it does when a discard's outcome cannot be known.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
+afterEach(() => {
+  // Lives outside React's tree, so `cleanup` does not take it: an announcement
+  // left behind would be read as the next test's.
+  document.getElementById(DRAFT_ANNOUNCER_ID)?.remove();
+});
 
 const copy = deckVersioningCopy.pending;
 
@@ -37,8 +48,6 @@ const empty: DraftState = {
   total: null,
   pricedCopies: 0,
   newestAsOf: null,
-  manaValue: 3.1,
-  manaValueBefore: 3.4,
 };
 
 const withChanges = (adds: number, removes: number): DraftState => ({
@@ -97,6 +106,15 @@ describe("PendingBanner", () => {
     expect(document.activeElement).toBe(screen.getByText(copy.versionLine(2, "1 Sep 2026")));
     // And the hash goes, so a reload or a back-forward return does not re-fire a
     // receipt for a commit minutes old.
+    expect(window.location.hash).toBe("");
+  });
+
+  // A discard made from the review page navigates for the same reason and after
+  // the more destructive of the two acts, so it lands on the same line.
+  it("takes focus on the version line when a discard lands it here", () => {
+    history.replaceState(null, "", `/decks/d${DISCARD_RECEIPT_HASH}`);
+    render(<PendingBanner state={empty} deckId="d" />);
+    expect(document.activeElement).toBe(screen.getByText(copy.versionLine(2, "1 Sep 2026")));
     expect(window.location.hash).toBe("");
   });
 
@@ -305,5 +323,30 @@ describe("PendingBanner", () => {
     // And offers no review of it: the page names cards, this draft names none,
     // and the route sends a changeless visit back here unless it asked to commit.
     expect(screen.queryByRole("link", { name: copy.reviewLink })).toBeNull();
+  });
+
+  // The confirm replaces the card's body rather than standing beside it: a
+  // question about throwing the changes away, asked over a list of them, leaves
+  // the figures it is about to destroy drawn underneath it.
+  it("gives its whole body to the discard confirm", () => {
+    render(
+      <PendingBanner state={withChanges(19, 17)} deckId="d" versionCards={99} />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: copy.discardCta }).click();
+    });
+    expect(screen.getByText(deckVersioningCopy.discard.question(36))).toBeTruthy();
+    expect(screen.queryByText(copy.label)).toBeNull();
+    expect(screen.queryByText(copy.counts(19, 0))).toBeNull();
+    expect(screen.queryByRole("link", { name: copy.commitCta(3) })).toBeNull();
+    expect(screen.queryByRole("link", { name: copy.reviewCta(36) })).toBeNull();
+  });
+
+  // The confirm names how many cards the version it lands on holds, and that
+  // figure is the page's to supply. Without it the offer is withheld rather than
+  // the question asked with a gap in it.
+  it("offers no discard where the version's own size is unknown", () => {
+    render(<PendingBanner state={withChanges(19, 17)} deckId="d" />);
+    expect(screen.queryByRole("button", { name: copy.discardCta })).toBeNull();
   });
 });

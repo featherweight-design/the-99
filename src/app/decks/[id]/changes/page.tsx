@@ -4,7 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckReviewHeader } from "../../../../lib/decks/read";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
-import { changeCount, loadDraftRows } from "../../../../lib/decks/draft-state";
+import {
+  changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
+} from "../../../../lib/decks/draft-state";
 import { ReviewChanges } from "../../../../components/decks/review-changes";
 import { admitsReview } from "./admits-review";
 
@@ -68,12 +70,32 @@ export default async function ChangesPage({
   });
   if (!admitted) redirect(`/decks/${id}`);
 
+  // The shape strip's two lists, each a read of its own: neither a version's
+  // cards nor the header loader's figures carry the role and type line the strip
+  // tallies by. Read after the admission test, not before it, so a visit that
+  // redirects pays for neither. A brew gets a null `before` rather than a skipped
+  // strip — the deck still has a shape, and what it has is no previous figure to
+  // compare it against.
+  //
+  // Outside the snapshot the state and the rows came out of, deliberately, and on
+  // the same terms as the claim and price reads there: an edit landing between
+  // the two would make the strip's figures a moment older than the columns', and
+  // every write to this deck revalidates the page that drew them. Folding two
+  // more round trips into that transaction would hold it open to buy consistency
+  // between two readings of a list the reader is about to commit anyway.
+  const [before, after] = await Promise.all([
+    state.version ? loadVersionShape(state.version.id) : Promise.resolve(null),
+    loadDraftShape(id),
+  ]);
+
   return (
     <ReviewChanges
       deckId={id}
       deckName={detail.name}
       rows={rows}
       state={state}
+      before={before}
+      after={after}
       commitOpen={wantsCommit}
       // `built`, not `total`: the snapshot holds the matched cards, and `total`
       // adds the unresolved lines no version can freeze.

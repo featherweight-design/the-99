@@ -114,9 +114,6 @@ export type DraftState = {
    * repeats the whole price read or prints a sold-out card at its last price.
    */
   newestAsOf: Date | null;
-  /** The draft's average, and the version's. Both null on an all-land list. */
-  manaValue: number | null;
-  manaValueBefore: number | null;
 };
 
 /** `adds.length + removes.length` — the figure every count chip is built on.

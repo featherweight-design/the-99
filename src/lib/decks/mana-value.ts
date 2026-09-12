@@ -9,8 +9,14 @@ import { isLandFace } from "../cards/facet";
 export type ManaValueCard = { cmc: number; quantity: number; typeLine: string };
 
 /**
- * Quantity-weighted, lands excluded, rounded to one decimal — null when the
- * list is all land or empty.
+ * Quantity-weighted, lands excluded, unrounded — null when the list is all land
+ * or empty.
+ *
+ * Unrounded because the precision belongs to whoever draws the figure. The
+ * what-changed strip prints two decimals and decides the curve moved by
+ * comparing the two figures it printed; an average already rounded to a tenth
+ * would pad to `1.70` and would call a real movement inside that tenth no
+ * movement at all.
  *
  * Lands are out because a land's mana value is 0 by definition, not by choice:
  * averaging 37 zeroes into the figure would report every Commander deck as a
@@ -32,5 +38,5 @@ export function averageManaValue(cards: ManaValueCard[]): number | null {
     total += card.cmc * card.quantity;
   }
   if (spells === 0) return null;
-  return Math.round((total / spells) * 10) / 10;
+  return total / spells;
 }

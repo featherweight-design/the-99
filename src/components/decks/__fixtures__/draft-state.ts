@@ -26,8 +26,6 @@ export const BREW: DraftState = {
   total: null,
   pricedCopies: 0,
   newestAsOf: null,
-  manaValue: null,
-  manaValueBefore: null,
 };
 
 /** The same deck with a v1 behind it. Still no changes: the lists a surface

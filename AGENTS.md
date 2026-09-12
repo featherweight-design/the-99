@@ -98,16 +98,19 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm probe:draft` proves the draft readers against a real Postgres by calling the real
   `loadDraftState` and `loadDraftRows` — a brew has no version rather than an empty change
   list, a draft identical to its version is clean, a basics-only edit names no card and still
-  counts as a change, `names` covers the changed cards only while the mana average reads every
-  row, an unowned add with a live price is quoted and one that has never been stocked is
-  counted out of the coverage, and a row's `quantity` is the delta rather than the copy count.
+  counts as a change, `names` covers the changed cards only, an unowned add with a live
+  price is quoted and one that has never been stocked is counted out of the coverage, and
+  a row's `quantity` is the delta rather than the copy count.
   Those figures come out of a snapshot transaction, a diff, a claim read, a price join and a
   collection lookup, which no unit test here can assemble. Only the diff is transaction-bound:
   the claim, price and collection reads run after that transaction closes, deliberately, because
   a claim is point-in-time whatever boundary is drawn around it — another deck can commit between
   the read and the reader's click — and what makes a pull safe is the server action re-reading
   every claim in its own transaction and refusing with a named reason. The draft's figures may
-  therefore mix times, which is the contract, not a gap in it. Same fixture discipline as
+  therefore mix times, which is the contract, not a gap in it. Its last step is a two-connection
+  race rather than a figure: a card removal that starts while a discard holds the `deck_cards` row
+  lock resumes to find its row deleted and writes nothing, where the single unconditional statement
+  it replaced matched nothing and then deleted the freshly restored row. Same fixture discipline as
   `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a
   scratch branch, **never production**.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).

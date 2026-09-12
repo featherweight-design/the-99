@@ -4,6 +4,12 @@
 
 export type MixRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 
+// The order every strip draws the five roles in. It lives beside RECOMMENDED_MIX
+// because two surfaces now draw the same five cells — the deck page's mix strip
+// and the review page's what-changed strip — and a second copy of this array is
+// how the two come to disagree about which cell is third.
+export const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
+
 // ---------------------------------------------------------------------------
 // computeRoleCounts — quantity-weighted tally from server-computed card.role
 // ---------------------------------------------------------------------------

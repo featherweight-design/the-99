@@ -630,13 +630,25 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   // Decrement multiples (basics); delete the row once quantity would hit 0.
-  const decremented = await db.update(deckCards)
-    .set({ quantity: sql`${deckCards.quantity} - 1` })
-    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId), gt(deckCards.quantity, 1)))
-    .returning({ oracleId: deckCards.oracleId });
-  if (decremented.length === 0) {
-    await db.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
-  }
+  //
+  // Both halves take the row's own lock, in one transaction, because the choice
+  // between them is read-then-write and `restoreDraftFromVersion` replaces
+  // `deck_cards` wholesale under that same lock. Run unlocked, a removal that
+  // waited out a restore would find its decrement matching nothing and fall
+  // through to an unconditional delete — taking a card straight back out of the
+  // list the restore had just put back, with nothing recording it. Locking
+  // first turns that case into the right answer instead: the row this removal
+  // named is gone, so there is nothing to remove.
+  await db.transaction(async (tx) => {
+    const [row] = await tx.select({ quantity: deckCards.quantity })
+      .from(deckCards)
+      .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)))
+      .for("update");
+    if (!row) return;
+    const where = and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
+    if (row.quantity > 1) await tx.update(deckCards).set({ quantity: row.quantity - 1 }).where(where);
+    else await tx.delete(deckCards).where(where);
+  });
   revalidateClaims(deckId, userId);
 }
 
@@ -1483,17 +1495,29 @@ export async function commitDeckVersion(
  * Throw the draft away and put the newest version's list back.
  *
  * Destructive and unrecoverable — the draft is not versioned — so the caller
- * confirms first. A deck with no version has nothing to restore TO, and
- * silently emptying it would delete a whole brew.
+ * confirms first.
+ *
+ * `expectedVersionId` is the version the caller told the player they were
+ * landing on. It is checked against the newest one under the restore's own
+ * lock, so a commit from another tab — or a deck holding no version at all —
+ * refuses this write rather than quietly landing somewhere the confirmation
+ * never named. The refusal revalidates: whatever the player is looking at is
+ * out of date either way.
  */
-export async function discardDeckDraft(deckId: string): Promise<DeckMutationResult> {
+export async function discardDeckDraft(
+  deckId: string,
+  expectedVersionId: string,
+): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  if (!isUuid(deckId) || !isUuid(expectedVersionId)) {
+    return { ok: false, message: "We couldn't find that deck." };
+  }
   await requireDeck(deckId, userId);
-  const version = await newestVersion(deckId);
-  if (!version) return { ok: false, message: "This deck has no version to go back to." };
-  await restoreDraftFromVersion(deckId, version.id);
+  const outcome = await restoreDraftFromVersion(deckId, expectedVersionId);
   revalidateClaims(deckId, userId);
+  if (outcome === "moved") {
+    return { ok: false, message: "We couldn't discard those changes. Nothing has changed." };
+  }
   return { ok: true };
 }
 

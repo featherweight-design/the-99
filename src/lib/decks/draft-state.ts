@@ -21,8 +21,7 @@ import { hardDecks, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
 import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./price";
-import { averageManaValue } from "./mana-value";
-import { newestVersion, versionCards, versionManaValue } from "./versions";
+import { newestVersion, versionCards } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
 
@@ -119,8 +118,9 @@ async function readSnapshot(deckId: string) {
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
-/** Name, type line and mana value per card — the columns every draft figure is
- *  built from, read over the whole draft because the mana value averages it. */
+/** Name, type line and mana value per card, over the CHANGED cards. The strip's
+ *  average reads the whole draft through `loadDraftShape`, which is its own
+ *  three-column query; nothing here needs a row the draft did not touch. */
 function loadNameFacts(oracleIds: string[]) {
   return db.select({
     oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
@@ -197,7 +197,6 @@ async function readDraft(
     claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
     pricedCopies: 0, newestAsOf: null,
-    manaValue: null, manaValueBefore: null,
   };
   const bare = (state: DraftState): DraftRead => ({
     state, availability: null, prices: null, names: new Map(), detail: new Map(),
@@ -211,14 +210,11 @@ async function readDraft(
   const changedIds = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
   if (changedIds.length === 0) return bare(empty);
 
-  // Over the WHOLE draft rather than only the changed cards: the mana value below
-  // averages every row the draft holds, and a row whose cmc was missing from this
-  // map would average as a zero. Basics come out of both lists for the reason the
-  // commit receipt drops them: they are outside the availability model, so
-  // neither list has a figure to print.
-  const facts = await loadNameFacts([
-    ...new Set([...changedIds, ...draft.map((c) => c.oracleId)]),
-  ]);
+  // The changed cards alone. Basics come out of both lists below for the reason
+  // the commit receipt drops them: they are outside the availability model, so
+  // neither list has a figure to print — which is why this read covers them and
+  // the maps built from it do not.
+  const facts = await loadNameFacts(changedIds);
   const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
   const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
   const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
@@ -231,9 +227,9 @@ async function readDraft(
   }
 
   const changed = [...adds, ...removes].map((c) => c.oracleId);
-  // Changed cards only, per `DraftState.names`: `facts` spans the whole draft
-  // because the mana average needs every row, and a consumer enumerating this map
-  // would otherwise draw cards the draft never touched.
+  // Filtered even so: `facts` covers the changed BASICS too, and a consumer
+  // enumerating this map would otherwise draw a basic land the deck's other
+  // figures deliberately say nothing about.
   const changedSet = new Set(changed);
   const names = new Map(
     facts.filter((f) => changedSet.has(f.oracleId)).map((f) => [f.oracleId, f.name]),
@@ -303,9 +299,6 @@ async function readDraft(
   // three more round trips.
   const pullFrom = pullHints(bucketed, availability);
 
-  const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
-  const typeByOracle = new Map(facts.map((f) => [f.oracleId, f.typeLine]));
-
   const detail = detailed
     ? new Map((await loadDetailFacts(userId, changed)).map((d) => [d.oracleId, d]))
     : new Map<string, DetailFact>();
@@ -335,12 +328,6 @@ async function readDraft(
       total: summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
       pricedCopies: summary.pricedCopies,
       newestAsOf: prices?.newestAsOf ?? null,
-      manaValue: averageManaValue(draft.map((c) => ({
-        cmc: cmcByOracle.get(c.oracleId) ?? 0,
-        quantity: c.quantity,
-        typeLine: typeByOracle.get(c.oracleId) ?? "",
-      }))),
-      manaValueBefore: await versionManaValue(version.id),
     },
     availability,
     prices,
@@ -360,6 +347,11 @@ export type ShapeCard = {
   role: DeckDetailCard["role"];
   quantity: number;
   typeLine: string;
+  /** So the strip averages its own curve off the same two lists it tallies every
+   *  other cell from. A figure carried separately would have to be computed for
+   *  a basics-only draft too, where every other draft figure is deliberately
+   *  empty — and the cell would vanish on the one edit that cannot move it. */
+  cmc: number;
 };
 
 /**
@@ -373,13 +365,37 @@ export async function loadVersionShape(versionId: string): Promise<ShapeCard[]> 
   const rows = await db.select({
     quantity: deckVersionCards.quantity,
     typeLine: cards.typeLine,
+    cmc: cards.cmc,
     oracleText: cards.oracleText,
     keywords: cards.keywords,
   }).from(deckVersionCards)
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
     .where(eq(deckVersionCards.versionId, versionId));
   return rows.map((r) => ({
-    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine,
+    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine, cmc: r.cmc,
+  }));
+}
+
+/**
+ * The same shape, read off the live draft.
+ *
+ * `getDeckDetail` would answer this too, and carries a whole deck's art, prices
+ * and availability to do it — the review route deliberately does not read one,
+ * which is why `getDeckReviewHeader` exists. Tallying the strip needs three
+ * columns per row and nothing else.
+ */
+export async function loadDraftShape(deckId: string): Promise<ShapeCard[]> {
+  const rows = await db.select({
+    quantity: deckCards.quantity,
+    typeLine: cards.typeLine,
+    cmc: cards.cmc,
+    oracleText: cards.oracleText,
+    keywords: cards.keywords,
+  }).from(deckCards)
+    .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
+    .where(eq(deckCards.deckId, deckId));
+  return rows.map((r) => ({
+    role: primaryRole(r), quantity: r.quantity, typeLine: r.typeLine, cmc: r.cmc,
   }));
 }
 
