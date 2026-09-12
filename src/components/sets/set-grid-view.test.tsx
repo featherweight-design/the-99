@@ -1049,3 +1049,15 @@ describe("SetGridView — the rarity trigger at rest", () => {
     expect(trigger.textContent).toContain("Rarity · all");
   });
 });
+
+// `overflow-x-auto` makes the OTHER axis scroll too, so a 44px pseudo target centred in a
+// 22px row is clipped to 22 and the chip keeps only its small × box. The scroller needs a
+// band for the overlay to live in — at phone, where it scrolls; desktop wraps and does not.
+describe("SetGridView — the phone chip scroller has room for its targets", () => {
+  it("gives the scrolling strip a 44px band", () => {
+    search = "m=1&r=rare&c=W";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const scroller = container.querySelector("[data-set-chips] .overflow-x-auto") as HTMLElement;
+    expect(scroller.className).toMatch(/h-\[44px\] md:h-auto/);
+  });
+});

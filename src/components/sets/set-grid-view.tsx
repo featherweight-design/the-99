@@ -652,8 +652,12 @@ export function SetGridView(props: SetGridViewProps) {
               the last flex item and a phone's overflow starts at the LEADING edge — so the
               only way out of three filters was off-screen until the reader discovered
               horizontal scrolling. Scroll the chips; keep the exit still. */}
+          {/* 44px tall at phone, and that is not spacing: `overflow-x-auto` makes the other
+              axis scroll too, so a 44px pseudo target centred in a 22px row is CLIPPED to
+              22 and the chip keeps only its small × box. The band gives the overlay
+              somewhere to be. Desktop wraps instead of scrolling and needs none of it. */}
           <div className="flex min-w-0 flex-1 items-center gap-[6px] overflow-x-auto
-                          md:flex-wrap md:overflow-visible">
+                          h-[44px] md:h-auto md:flex-wrap md:overflow-visible">
           {chips.length === 0 ? (
             <span
               className="font-mono text-[11px] leading-[14px] py-[3px] whitespace-nowrap"
