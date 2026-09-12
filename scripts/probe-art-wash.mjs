@@ -391,7 +391,10 @@ const READ_UNMARKED_FACES = `() => {
       if (!r.width || !r.height) return false;
       const ratio = r.width / r.height;
       // A card-face box: bigger than an icon, smaller than a page, at 63/88.
-      if (r.width < 28 || r.width > 120 || ratio < 0.6 || ratio > 0.85) return false;
+      // 24, not 28: the deck rail's own 26×36 render is the narrowest thing this
+      // sweep exists to catch, and a 28px floor would have excluded exactly the
+      // render whose migration it is checking.
+      if (r.width < 24 || r.width > 120 || ratio < 0.6 || ratio > 0.85) return false;
       // Art or a gradient behind it, so a bare spacer with those proportions is
       // not reported as a render.
       const bg = getComputedStyle(el).backgroundImage;
