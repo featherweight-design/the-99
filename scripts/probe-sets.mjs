@@ -522,6 +522,34 @@ async function run() {
         };
       });
     };
+    // 900px too: this page switches form at `md` (768) while the chassis frame switches at
+    // 1000, so the band between them shows the wide inline controls. Whether that wraps is
+    // the only question that matters, and it is measurable.
+    const narrowDesktop = await (async () => {
+      await page.setViewportSize({ width: 900, height: 900 });
+      await page.goto(`${BASE}/collection/sets/${code}?c=W&r=rare`, { waitUntil: "networkidle" });
+      await page.waitForSelector("[data-set-chips]", { timeout: 20_000 });
+      return page.evaluate(() => {
+        const row = document.querySelector("[data-chassis-row], [class*='flex-nowrap']");
+        if (!row) return null;
+        const kids = [...row.children].filter((c) => c.getClientRects().length > 0);
+        const tallest = Math.max(...kids.map((c) => c.getBoundingClientRect().height));
+        return {
+          wrapped: row.getBoundingClientRect().height > tallest + 2,
+          rowHeight: Math.round(row.getBoundingClientRect().height),
+          tallest: Math.round(tallest),
+        };
+      });
+    })();
+    failures += !report(
+      "the control row does not wrap at 900, between this page's md and the chassis's 1000",
+      narrowDesktop !== null && !narrowDesktop.wrapped,
+      narrowDesktop === null
+        ? "no control row found"
+        : `row ${narrowDesktop.rowHeight}px against a tallest child of ${narrowDesktop.tallest}px`,
+    );
+
+    await page.setViewportSize({ width: 1280, height: 900 });
     const rest = await rackAt("");
     const one = await rackAt("?c=W");
     // Three ACTIVE dimensions, which a complete set cannot have: at 100% the page drops

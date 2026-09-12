@@ -570,7 +570,13 @@ export function SetGridView(props: SetGridViewProps) {
               The off state is still reachable, because `onToggle` below returns an empty
               selection when the lit value is picked again — which is how `all` is reached
               and why this is not simply the panel's `single` contract as written. */}
-          {/* MOUNTED on the breakpoint, never CSS-hidden. `FilterPanel` holds its own open
+          {/* Mounted at `md`, which is this page's own switch and not the chassis frame's
+              1000. The chassis picks 1000 from `/collection`'s EIGHT controls summing to
+              987px; this row has four and a search field, and the probe measures it
+              unwrapped at 900 with two filters on. Following 1000 here would move the
+              sticky head's whole form for a band where nothing is wrong.
+
+              MOUNTED on the breakpoint, never CSS-hidden. `FilterPanel` holds its own open
               state and picks popover or sheet off the same `useIsDesktop`: hidden with
               `display:none` it would keep that state across a resize, put its mobile dialog
               inside an invisible ancestor, and hand focus to a panel nobody can see. The
