@@ -15,7 +15,8 @@ their ring alpha and drop shadow converge with everything else in PR 3. Text at 
 **every band** — the eight washed renders; the five thumbs and two faces carry no label at all, which
 is why they have nothing to move. No top scrim anywhere, `labelAt` in **pixels from the foot**, one
 opaque plate for every control that sits over art, one thumb plate for the five renders that each
-invented one, and an empty top edge on **fourteen of the fifteen** (see the verdict on render 09).
+invented one, and an empty top edge on **thirteen of the fifteen** — renders 08 and 09 keep a
+plated control, which decision 6 rules for both (see the verdict).
 
 ## Slicing
 
@@ -65,7 +66,9 @@ moved from 📐 to 🟢. No code.
    with an override kept only on the one legacy row whose shipped value disagrees with its own rule;
    `vertical` becomes an override too, kept only on width 203, since one ramp function now serves both
    strategies. New rows: 285 → `flatStop 300`, 340 → `356`, 560 → `584`; 230 keeps its shipped 240;
-   every row is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`.
+   every row a stated band can draw is `maskEnd 58`, `sharpAlpha 78`, `sharpOpacity .92`, ground `--bg`
+   — the two legacy widths keep their own shipped ground and, on 203, its vertical ramp, until their
+   consumers retire.
    **The transitional table is six rows, not four.** `203` and `99` are the two aspect-ratio bands'
    own derived widths — `round(148 × 1.37)` and `round(72 × 1.37)`, which is what the primitive
    already computes for them — so the legacy `band` prop resolves through the same table rather than
@@ -176,7 +179,7 @@ flat. Resume last means a revert touches one file.
 
 ## Out of scope, with reasons
 
-- **The deck grid's one-up breakpoint.** `decks-view.tsx:251` is out of scope on the handoff's own
+- **The deck grid's one-up breakpoint.** `decks-view.tsx:386` is out of scope on the handoff's own
   account and owned by a live filter round besides. The tile keeps its ~44% crop loss between 640 and
   699px; one capture at 640 before PR 5 merges.
 - **B9** — whether `prefers-reduced-transparency` should reach the scrim now that no band is

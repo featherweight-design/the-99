@@ -1,10 +1,13 @@
 # READINESS — One commander image (handoff R6)
 
-**Verdict: 🟢 Green.** (Build complete — see the amendments at the foot of §6, every one of them an arithmetic correction inside a rule the handoff got right.) Build starts now. Design self-assessed Green after six rounds and the audit
+**Verdict: 🟢 Green.** Build starts now — this PR is the design record and the
+plan; the six build PRs follow it. §6's amendments are every place the handoff's
+own arithmetic had to be corrected inside a rule it got right, and §5c is the one
+table that governs the figures. Build starts now. Design self-assessed Green after six rounds and the audit
 concurs: every one of the brief's five open calls is made, decision 6's enumeration is complete once
 one render added after the brief was written is folded in, and every amendment to the two ratified
-wash tables is stated individually with a verdict. Eleven findings, all engineering-resolvable, all
-ruled below. **No Design round-trip.**
+wash tables is stated individually with a verdict. Eleven findings, all engineering-resolvable, all ruled below; §6 carries more
+rows than that, because one finding can correct several statements. **No Design round-trip.**
 
 - **Handoff:** `design/design_handoff_the99_commander_image/` (R6, 2026-09-12) — committed with this
   verdict, so the record points at files a reader can open
@@ -153,7 +156,7 @@ Nothing is redrawn. The handoff stands as delivered.
     box revealed on `group-hover` (`spine-desktop.tsx:197`), and option (a) makes both frames the
     same unplated inline glyph, always present.
 11. **The deck tile's 189px column is out of scope twice over.** The handoff's recommended fix is
-    one-up below ~700px, which is a `decks-view.tsx:251` change — `sm:grid-cols-3` → a 700px
+    one-up below ~700px, which is a `decks-view.tsx:386` change — `sm:grid-cols-3` → a 700px
     breakpoint — and that file is owned by a live filter round. It is out of scope on the handoff's own
     account and unavailable on top of it. The tile ships at `0.76 : 1` between 640 and 699px, losing
     ~44% of the crop's width, with `center top` keeping the face. **One capture at 640 before the deck
@@ -225,7 +228,9 @@ against the block it measures on the laid-out page.
 
 None of these changes a drawing. **This table is the correction of record**; the handoff's documents
 are preserved exactly as delivered, each carrying a banner naming this file and the plan as the build
-contract.
+contract. It has more rows than the eleven findings above — a single finding can
+correct several statements, and each correction gets its own row so it can be
+checked one at a time.
 
 | Handoff says | Correct | Why it matters |
 |---|---|---|
