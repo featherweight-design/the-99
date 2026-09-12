@@ -698,3 +698,69 @@ describe("CardDetailProvider card cache", () => {
     await waitFor(() => expect(fetchCard.mock.calls.length).toBeGreaterThan(1));
   });
 });
+
+// The printing a caller opens at belongs to ONE card. `open` sets it in the same pass as
+// the click, but the card behind it stays whatever was painted until the read lands — so
+// opening a second card from inside an open modal put the first card's face under the
+// second card's printing for the length of that read.
+describe("CardDetailProvider open-at-printing scope", () => {
+  function Harness() {
+    const { open } = useCardDetail();
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => open("o-signet", [], {
+            setCode: "RVR", collectorNumber: "24",
+            imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+          })}
+        >
+          open signet at RVR
+        </button>
+        <button
+          type="button"
+          onClick={() => open("o-sol", [], {
+            setCode: "M21", collectorNumber: "268",
+            imageUri: "https://cards.scryfall.io/normal/m21-268.jpg",
+          })}
+        >
+          open sol at M21
+        </button>
+      </>
+    );
+  }
+
+  const backgrounds = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+      .map((el) => el.style.backgroundImage);
+
+  it("does not dress the card on screen in the printing of the one being read", async () => {
+    // The second read never settles, which is the whole window under test.
+    let release: (() => void) | null = null;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-signet") return SIGNET;
+      await new Promise<void>((resolve) => { release = resolve; });
+      return SOL;
+    });
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Harness />
+      </CardDetailProvider>,
+    );
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(backgrounds(container).some((b) => b.includes("rvr-24"))).toBe(true);
+
+    // Sol Ring is still being read; Arcane Signet is still the card on screen. It must not
+    // be wearing Sol Ring's printing.
+    await click(screen.getByRole("button", { name: "open sol at M21" }));
+    expect(backgrounds(container).some((b) => b.includes("m21-268"))).toBe(false);
+
+    // And once the read lands, the printing applies to the card it was asked for.
+    await act(async () => { release?.(); });
+    await waitFor(() =>
+      expect(backgrounds(container).some((b) => b.includes("m21-268"))).toBe(true),
+    );
+  });
+});

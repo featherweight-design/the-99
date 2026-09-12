@@ -758,4 +758,56 @@ describe("CardModal opened at a printing it does not own", () => {
     expect(backgrounds(container).some((b) => b.includes("tla-282"))).toBe(true);
     expect(backgrounds(container).some((b) => b.includes("arc.jpg"))).toBe(false);
   });
+
+  // The injected row is art for the face and nothing else. The picker counts and lists what
+  // the reader OWNS, and a printing they do not own appearing in "N printings you own" is
+  // the same defect this file already covers for the catalog list one describe block up —
+  // reached the other way, through the caller rather than through the fetch.
+  it("leaves the picker counting only what the reader owns", async () => {
+    const twoOwned: BrowseCard = {
+      ...card,
+      quantity: 93,
+      printings: [
+        {
+          setCode: "ARC", setName: "ARC", collectorNumber: "", releasedAt: "2010-06-18",
+          quantity: 90, finishes: { nonfoil: 90 },
+          imageUri: "https://cards.scryfall.io/normal/arc.jpg", flavorName: null,
+        },
+        {
+          setCode: "M21", setName: "M21", collectorNumber: "268", releasedAt: "2020-07-03",
+          quantity: 3, finishes: { nonfoil: 3 },
+          imageUri: "https://cards.scryfall.io/normal/m21-268.jpg", flavorName: null,
+        },
+      ],
+    };
+    render(
+      <CardModal
+        card={twoOwned}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    // Two, not three: the injected TLA row is not a holding.
+    expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/3 printings you own/)).toBeNull();
+    // And it is not offered as something to pick. Expanded, because the tiles are the
+    // other half of the claim: a count that is right over a list that is wrong still
+    // hands the reader a printing they cannot choose.
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", {
+        name: /printings owned/,
+      })[0]);
+    });
+    expect(screen.getAllByRole("radio", { name: /ARC/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("radio", { name: /M21/ }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("radio", { name: /TLA/ })).toHaveLength(0);
+  });
 });

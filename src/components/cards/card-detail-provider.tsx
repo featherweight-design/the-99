@@ -160,10 +160,19 @@ export function CardDetailProvider({
 }) {
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
-  // The printing the caller asked to open at, cleared when the card changes under paging:
-  // Prev/Next moves to a different card, and this belongs to the one that was clicked.
-  const [openAt, setOpenAt] =
-    useState<(PreferredPrinting & { imageUri?: string | null }) | null>(null);
+  // The printing the caller asked to open at, carrying the oracle id it belongs to.
+  //
+  // The pairing is the whole point rather than bookkeeping: `open` sets this in the same
+  // pass as the click, but the card behind it is whatever was already painted until the
+  // read lands. Held loose, that window shows the card the reader came from wearing the
+  // printing of the one they clicked — the exact mismatch this state exists to fix, in
+  // miniature. Paging is the same window from the other side. So the printing is only ever
+  // read back when the card on screen is the one it was asked for, and no code path has to
+  // remember to clear it.
+  const [openAt, setOpenAt] = useState<{
+    oracleId: string;
+    printing: PreferredPrinting & { imageUri?: string | null };
+  } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
@@ -307,7 +316,7 @@ export function CardDetailProvider({
       list?: string[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
     ) => {
-      setOpenAt(atPrinting ?? null);
+      setOpenAt(atPrinting ? { oracleId, printing: atPrinting } : null);
       void load(oracleId, list ?? []);
     },
     [load],
@@ -356,6 +365,9 @@ export function CardDetailProvider({
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
+  // See `openAt`: the printing applies to one card, and the card on screen is not always
+  // the one that was asked for.
+  const openAtPrinting = card && openAt?.oracleId === card.oracleId ? openAt.printing : null;
   const paging = index >= 0 && siblings.length > 1;
 
   return (
@@ -371,17 +383,17 @@ export function CardDetailProvider({
           // optimistic art pick across — same reason the collection browser remounts.
           key={card.oracleId}
           card={card}
-          openAtPrinting={openAt}
+          openAtPrinting={openAtPrinting}
           onArtChange={() => { evict(card.oracleId); onArtChange?.(card.oracleId); }}
           position={paging ? index + 1 : 1}
           total={paging ? siblings.length : 1}
           onClose={close}
           onPrev={paging && index > 0
-            ? () => { setOpenAt(null); void load(siblings[index - 1]); }
+            ? () => void load(siblings[index - 1])
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => { setOpenAt(null); void load(siblings[index + 1]); }
+              ? () => void load(siblings[index + 1])
               : null
           }
         />
