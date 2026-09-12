@@ -2,7 +2,7 @@
 // commit: what comes in, what goes out, and what it costs.
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
-import { getDeckDetail } from "../../../../lib/decks/read";
+import { getDeckReviewHeader } from "../../../../lib/decks/read";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import { changeCount, loadDraftRows } from "../../../../lib/decks/draft-state";
 import { ReviewChanges } from "../../../../components/decks/review-changes";
@@ -21,8 +21,9 @@ export default async function ChangesPage({
   // The ownership guard every deck route carries. `loadDraftRows` takes a
   // `userId` to scope availability, NOT to prove the deck is this reader's —
   // without this line any signed-in account could read another player's draft by
-  // id. Same two lines as `src/app/decks/[id]/page.tsx`.
-  const detail = await getDeckDetail(id, userId);
+  // id. The deck page's own loader would answer the same four questions and read
+  // a whole deck to do it, so this route has a header loader of its own.
+  const detail = await getDeckReviewHeader(id, userId);
   if (!detail) notFound();
 
   // One read, not two: `loadDraftRows` calls the same loader `loadDraftState`
@@ -34,7 +35,7 @@ export default async function ChangesPage({
   // pair-aware body size with nothing unresolved. `commitDeckVersion` enforces
   // this too, and has to — this only decides what the page is for.
   const firstCommitReady =
-    detail.built === deckBodySize(detail.partner !== null) && detail.unresolvedRows.length === 0;
+    detail.built === deckBodySize(detail.hasPartner) && detail.unresolvedCount === 0;
 
   // A committed or discarded draft leaves this page with nothing to review, and a
   // bare empty state would read as a bug. The deck page is where the version line

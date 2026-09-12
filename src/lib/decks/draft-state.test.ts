@@ -3,7 +3,7 @@ import type { Availability, DeckClaim } from "./availability";
 import { summarisePrices } from "./price";
 import {
   bucketDraftAdds, changeCount, hasChanges, pullCandidate, pullHints, releasableClaims,
-  unfreeAdds, type DraftAdd, type DraftState,
+  releasedCopies, unfreeAdds, type DraftAdd, type DraftState,
 } from "./draft-state";
 
 const state = (over: Partial<DraftState> = {}): DraftState => ({
@@ -33,6 +33,19 @@ describe("changeCount / hasChanges", () => {
 
   it("calls an untouched draft unchanged", () => {
     expect(hasChanges(state())).toBe(false);
+  });
+});
+
+// Copies, because the figure is printed beside `buyCount`, which counts copies.
+describe("releasedCopies", () => {
+  it("counts copies rather than rows", () => {
+    expect(releasedCopies(state({
+      removes: [{ oracleId: "a", from: 3, to: 1 }, { oracleId: "b", from: 1, to: 0 }],
+    }))).toBe(3);
+  });
+
+  it("releases nothing on a draft that cut nothing", () => {
+    expect(releasedCopies(state())).toBe(0);
   });
 });
 

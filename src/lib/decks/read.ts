@@ -325,6 +325,58 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   };
 }
 
+/** What the review page needs of the deck itself — and nothing else. */
+export type DeckReviewHeader = {
+  name: string;
+  /** A deck has a partner exactly when it carries a second commander id, and the
+   *  pair-aware body size is the only thing the review page asks that of. */
+  hasPartner: boolean;
+  /** Matched copies in the live list. The unresolved lines are counted separately
+   *  because no version can freeze them. */
+  built: number;
+  unresolvedCount: number;
+};
+
+/**
+ * The deck facts the review page draws, in one query.
+ *
+ * `getDeckDetail` answers the same four questions, but it is the deck PAGE's
+ * loader: it reads every card with its collection printing, the whole
+ * availability rollup and both commanders' art. The review page pays for
+ * `loadDraftRows` — its own snapshot, diff, claim, price and card-fact reads —
+ * so calling the deck page's loader beside it buys one deck's worth of queries
+ * to learn a name and two counts. Returns null for a deck this reader does not
+ * own, which is the ownership guard the route depends on.
+ */
+export async function getDeckReviewHeader(
+  deckId: string,
+  userId: string,
+): Promise<DeckReviewHeader | null> {
+  const [row] = await db
+    .select({
+      name: decks.name,
+      partnerOracleId: decks.partnerOracleId,
+      built: sql<number>`coalesce((
+        select sum(${deckCards.quantity}) from ${deckCards}
+        where ${deckCards.deckId} = ${decks.id}
+      ), 0)::int`,
+      unresolvedCount: sql<number>`(
+        select count(*) from ${deckUnresolvedRows}
+        where ${deckUnresolvedRows.deckId} = ${decks.id}
+      )::int`,
+    })
+    .from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+
+  if (!row) return null;
+  return {
+    name: row.name,
+    hasPartner: row.partnerOracleId !== null,
+    built: row.built,
+    unresolvedCount: row.unresolvedCount,
+  };
+}
+
 export type DeckListItem = {
   id: string;
   name: string;

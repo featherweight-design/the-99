@@ -75,7 +75,8 @@ const row = (oracleId: string, name: string, over: Partial<Row> = {}): Row => ({
   oracleId, name, typeLine: "Artifact", cardTypeGroup: "Artifacts",
   role: "ramp" as const, owned: false, quantity: 1, auto: false,
   printedName: null, printedSetCode: null, printedCollectorNumber: null,
-  cmc: 1, direction: "in" as const, from: 0, to: 1, bucket: "unowned" as const, ...over,
+  cmc: 1, direction: "in" as const, from: 0, to: 1, bucket: "unowned" as const,
+  shortfall: 1, ...over,
 });
 
 const ROWS_36 = {
@@ -148,6 +149,14 @@ describe("CommitSheet", () => {
     // The money block is already absent at a nought buy count, so the footer was
     // the last place on the sheet quoting a purchase nobody read.
     expect(screen.queryByText(copy.buyHeading)).toBeNull();
+  });
+
+  // COPIES released, never rows: a card cut from three copies to one puts two
+  // back, and the figure sits in the same line as a buy count of copies.
+  it("counts the released copies rather than the rows that released them", () => {
+    sheet({ state: { ...STATE_36, removes: [{ oracleId: "c0", from: 3, to: 1 }] } });
+    expect(screen.getByText(copy.footer(CARD_COUNT, STATE_36.buyCount, 2))).toBeTruthy();
+    expect(screen.queryByText(copy.footer(CARD_COUNT, STATE_36.buyCount, 1))).toBeNull();
   });
 
   it("offers the note, and says plainly that it cannot be added later", () => {

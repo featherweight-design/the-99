@@ -39,7 +39,8 @@ const row = (over: Partial<Row> = {}): Row => ({
   oracleId: "o1", name: "Sol Ring", typeLine: "Artifact", cardTypeGroup: "Artifacts",
   role: "ramp" as const, owned: true, quantity: 1, auto: false,
   printedName: null, printedSetCode: null, printedCollectorNumber: null,
-  cmc: 1, direction: "in" as const, from: 0, to: 1, bucket: "free" as const, ...over,
+  cmc: 1, direction: "in" as const, from: 0, to: 1, bucket: "free" as const,
+  shortfall: 0, ...over,
 });
 
 /** A card sleeved in one other deck. The flags are the guards `pullCandidate`
@@ -122,16 +123,20 @@ describe("ReviewChanges", () => {
     ).toBeNull();
   });
 
-  it("states the out column's rule once, and offers no per-row toggle", () => {
+  // The figure is COPIES, not rows: one card going from three copies to one puts
+  // two back in the pool, and the same note sits beside a buy count of copies.
+  it("states the out column's rule once, in copies, and offers no per-row toggle", () => {
     render(
       <ReviewChanges
         deckId="d"
         deckName="Korvold"
-        rows={{ in: [], out: [row({ direction: "out", from: 1, to: 0 })] }}
-        state={STATE} cardCount={CARD_COUNT}
+        rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
+        state={{ ...STATE, removes: [{ oracleId: "o1", from: 3, to: 1 }] }}
+        cardCount={CARD_COUNT}
       />,
     );
-    expect(screen.getByText(deckVersioningCopy.review.outNote(1))).toBeTruthy();
+    expect(screen.getByText(deckVersioningCopy.review.outNote(2))).toBeTruthy();
+    expect(screen.queryByText(deckVersioningCopy.review.outNote(1))).toBeNull();
     expect(screen.queryByRole("button", { name: /Keep/ })).toBeNull();
   });
 
@@ -319,6 +324,46 @@ describe("ReviewChanges", () => {
     );
     expect(screen.getByText(addPanelCopy.unowned.tag)).toBeTruthy();
     expect(screen.queryByText("$28.40")).toBeNull();
+  });
+
+  // `bucketAdds` files a partially covered add with no claimant under `unowned`,
+  // so the row is a card the player owns a copy of AND a purchase of the rest.
+  // Deciding the slot on `owned` drew the availability marker there and hid the
+  // price on a row this page's own buy count includes.
+  it("prices an add the player owns a copy of but must still buy copies for", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [row({
+            owned: true, from: 1, to: 4, bucket: "unowned", shortfall: 3,
+            price: { cents: 2840, foilCents: null, etchedCents: null, asOf: new Date("2026-09-08") },
+          })],
+          out: [],
+        }}
+        state={{ ...STATE, newestAsOf: new Date("2026-09-08") }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.getByText("$28.40")).toBeTruthy();
+  });
+
+  // The bar's own figure, and the sheet one click down counts the same one: both
+  // are copies, because the buy term beside them is.
+  it("counts the bar's released figure in copies", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [], out: [row({ direction: "out", from: 3, to: 1 })] }}
+        state={{ ...STATE, removes: [{ oracleId: "o1", from: 3, to: 1 }] }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(
+      screen.getByText(deckVersioningCopy.review.footer(CARD_COUNT, STATE.buyCount, 2)),
+    ).toBeTruthy();
   });
 
   // Grouped order, not the payload's: the columns group by type and sort inside a

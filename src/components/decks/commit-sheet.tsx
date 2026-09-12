@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { commitDeckVersion, type CommitResult } from "../../app/decks/actions";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import type { DraftState } from "../../lib/decks/draft-shape";
+import { releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRows } from "../../lib/decks/draft-state";
@@ -83,7 +83,8 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
   }, []);
 
   const version = (state.version?.number ?? 0) + 1;
-  const released = state.removes.length;
+  // Copies, not rows — `3 → 1` releases two. See `releasedCopies`.
+  const released = releasedCopies(state);
 
   // Copies, not rows: the two terms have to add up to the figure drawn above
   // them, and that figure is `buyCount`. `shortfall` rather than `needed` is the

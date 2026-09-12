@@ -17,7 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useState } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { pullCandidate, type DraftState } from "../../lib/decks/draft-shape";
+import { pullCandidate, releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRow, DraftRows } from "../../lib/decks/draft-state";
@@ -212,6 +212,11 @@ function Column({
             // The bucket is the server's answer to exactly that question, so
             // the dot is not left to re-derive it from the rollup.
             committed: row.bucket === "claimed",
+            // The buy tag's own question, and not one `owned` can answer: a
+            // partially covered add with no claimant is filed `unowned` while
+            // being a card the player owns a copy of. Zeroed with the price when
+            // the claim read failed, where every shortfall is 0 by absence.
+            shortfall: claimsKnown ? row.shortfall : 0,
           };
           // The row prints the pair itself, inside the name: a caption under the
           // row named the card a second time, and the card is already the row
@@ -395,6 +400,10 @@ export function ReviewChanges({
   // one only when it can actually cut v1 — see its own guard.
   const firstCommit = state.version === null;
 
+  // Copies going back in the pool, never rows: one remove of `3 → 1` releases
+  // two, and this figure is printed beside `buyCount`, which counts copies.
+  const released = releasedCopies(state);
+
   // Four figures, each dropped at nought rather than drawn as one. The purchase
   // rides on the to-buy chip because the two are one fact: a count of copies and
   // what those copies cost.
@@ -536,7 +545,7 @@ export function ReviewChanges({
               // Said once beside the heading, never per row: there is no Keep on
               // a removal here, because putting one back is adding it to the
               // deck and the deck page already does that.
-              note={copy.outNote(outCount)}
+              note={copy.outNote(released)}
               rows={rows.out}
               siblings={siblings}
               descriptionId={descriptionId}
@@ -582,8 +591,8 @@ export function ReviewChanges({
                     the sheet one click down counts: two figures under each other
                     that disagreed would be the same commit priced twice. */}
                 {state.claimsKnown
-                  ? copy.footer(cardCount, state.buyCount, state.removes.length)
-                  : copy.footerUnknown(cardCount, state.removes.length)}
+                  ? copy.footer(cardCount, state.buyCount, released)
+                  : copy.footerUnknown(cardCount, released)}
               </span>
             </div>
           )}

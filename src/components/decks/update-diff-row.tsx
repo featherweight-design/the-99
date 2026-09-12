@@ -116,6 +116,19 @@ export type DiffRowCard = {
   /** Owned but spoken for by another deck — the ownership dot's third state, and
    *  the one row that is owned and still has a price worth reading. */
   committed?: boolean;
+  /**
+   * Copies this row still has to be bought, when the caller knows.
+   *
+   * `owned` is not that answer. `bucketAdds` files a partially covered add with
+   * no claimant under `unowned` — one copy owned against an ask of four is three
+   * copies short with nobody to ask — so that row is owned, not committed, and
+   * still sends the player shopping. Without this the slot drew its availability
+   * marker and hid the price on a row the page's own buy count includes.
+   *
+   * Absent from the update flow, which knows no shortfall and keeps the reading
+   * it has always had.
+   */
+  shortfall?: number;
 };
 
 /** A copy count that moved rather than a card arriving or leaving whole. */
@@ -153,6 +166,10 @@ function Marker({ auto }: { auto: boolean }) {
  * caller says so, and the update flow, which does not pass it, keeps the reading
  * it has always had.
  *
+ * `shortfall` is the other half of that same correction, for the row that is
+ * owned and has no claimant at all: one copy held against an ask of four buys
+ * three, and neither `owned` nor `committed` says so.
+ *
  * An owned card nothing competes for draws nothing here, and that is the slot
  * being filled correctly rather than left empty: the marker returns null at
  * `free` on every surface in the app.
@@ -183,7 +200,7 @@ function AvailabilitySlot({
   selfClaimed: boolean;
   buyable?: boolean;
 }) {
-  if (buyable && (!card.owned || card.committed)) {
+  if (buyable && (!card.owned || card.committed || (card.shortfall ?? 0) > 0)) {
     return (
       <BuyTag variant="row" price={card.price ?? null} newestAsOf={card.newestAsOf ?? null} />
     );

@@ -31,7 +31,9 @@ import { cardTypeGroup, primaryRole } from "./read";
 // cannot value-import a module that reaches `db`. Re-exported here so a server
 // caller has one import for the whole model.
 export type { DraftAdd, DraftState } from "./draft-shape";
-export { changeCount, hasChanges, pullCandidate, releasableClaims } from "./draft-shape";
+export {
+  changeCount, hasChanges, pullCandidate, releasableClaims, releasedCopies,
+} from "./draft-shape";
 
 /**
  * The adds, bucketed against a claim read that may have failed.
@@ -395,6 +397,11 @@ export type DraftRow = DeckDetailCard & {
    *  leaving makes no purchase decision — and null on every `in` row when
    *  `state.claimsKnown` is false, where it means the answer is unknown. */
   bucket: AddBucket | null;
+  /** Copies this add must buy, from the same bucketing. 0 on an `out` row, on a
+   *  free add, and on every row when the claim read failed. The row needs it
+   *  because `owned` is not the question: a player holding one copy of a card
+   *  they are adding four of owns it and still buys three. */
+  shortfall: number;
 };
 
 /** Split at the source, not in the component. The review page draws two columns
@@ -462,6 +469,7 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
       from,
       to,
       bucket: add ? add.bucket : null,
+      shortfall: add ? add.shortfall : 0,
     });
   }
 

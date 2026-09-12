@@ -126,6 +126,19 @@ export function changeCount(state: DraftState): number {
   return state.adds.length + state.removes.length;
 }
 
+/**
+ * Copies going back in the pool when the draft commits.
+ *
+ * COPIES, not rows: `3 → 1` is one remove that releases two, and every surface
+ * that prints this figure prints it beside `buyCount`, which is a copy count.
+ * Counting rows there would tell a player who cut two copies of one card that
+ * one card comes back, and disagree with the claim delta the commit actually
+ * makes.
+ */
+export function releasedCopies(state: DraftState): number {
+  return state.removes.reduce((sum, r) => sum + (r.from - r.to), 0);
+}
+
 /** Whether the draft differs from the version at all. A basics-only edit counts
  *  here and in no figure, which is the only honest split: the app cannot price
  *  an Island, and it must not tell a player who cut three of them that the deck
