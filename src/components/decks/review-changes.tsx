@@ -23,6 +23,8 @@ import { pullCandidate, type DraftState } from "../../lib/decks/draft-shape";
 import type { DraftRow, DraftRows } from "../../lib/decks/draft-state";
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+import { PrimaryButton } from "../ui/button";
+import { CommitSheet } from "./commit-sheet";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { PullControl } from "./pull-control";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
@@ -37,11 +39,15 @@ type ReviewChangesProps = {
    *  or a discard. A bare "Back" would make the reader remember which deck they
    *  were editing to know where the link goes. */
   deckName: string;
-  /** Unread here: the commit sheet mounts at the foot of this component seeded
-   *  from it (Task 18). Declared now because the route is written once. */
+  /** True when the reader arrived from a deck-page CTA that means "commit this",
+   *  so the sheet at the foot is open on landing rather than behind a second
+   *  click on a page they asked to be taken to. */
   commitOpen?: boolean;
   rows: DraftRows["rows"];
   state: DraftState;
+  /** The server's count of the cards the commit would freeze, passed straight
+   *  through to the sheet — see `commit-sheet.tsx`. */
+  cardCount: number;
 };
 
 /**
@@ -304,9 +310,20 @@ function CountChip({
   );
 }
 
-export function ReviewChanges({ deckId, deckName, rows, state }: ReviewChangesProps) {
+export function ReviewChanges({
+  deckId,
+  deckName,
+  rows,
+  state,
+  cardCount,
+  commitOpen,
+}: ReviewChangesProps) {
   const descriptionId = useId();
   const router = useRouter();
+  // Seeded from the URL and owned here afterwards. Cancelling UNMOUNTS the sheet
+  // rather than hiding it, which is what leaves the note empty if it is opened
+  // again — a half-typed reason for a version nobody committed is not a draft.
+  const [commitSheetOpen, setCommitSheetOpen] = useState(commitOpen === true);
   // Phone only, and it decides which column is on screen rather than which one
   // is drawn twice: both columns are in the markup once, and the inactive one is
   // hidden below `md` and shown above it. A second mounting for the narrow
@@ -432,7 +449,9 @@ export function ReviewChanges({ deckId, deckName, rows, state }: ReviewChangesPr
 
           {/* Desktop: two equal columns, gap 22px. Phone: one at a time, because
               two ~190px columns put every card name on three lines. */}
-          <div className="flex flex-col md:flex-row md:items-start gap-[22px]">
+          {/* Named, because the commit sheet's money block links back up to the
+              rows it is quoting. */}
+          <div id="review" className="flex flex-col md:flex-row md:items-start gap-[22px]">
           {/* Empty columns are drawn as nothing at all rather than as an empty
               state: the only way to arrive with none is `?commit=1`, where the
               commit sheet is the page and a "no changes" panel above it would
@@ -474,6 +493,26 @@ export function ReviewChanges({ deckId, deckName, rows, state }: ReviewChangesPr
             />
           )}
           </div>
+
+          {commitSheetOpen ? (
+            <CommitSheet
+              deckId={deckId}
+              state={state}
+              rows={rows}
+              cardCount={cardCount}
+              onCancel={() => setCommitSheetOpen(false)}
+            />
+          ) : (
+            // The deck page's own wording for the same act, because this is the
+            // same act: a reader who came here by a different door should not
+            // have to work out that two different phrasings are one button.
+            <PrimaryButton
+              onClick={() => setCommitSheetOpen(true)}
+              className="mt-[20px] md:mt-[26px] inline-flex items-center justify-center w-full md:w-auto min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
+            >
+              {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
+            </PrimaryButton>
+          )}
         </div>
       </div>
     </CardDetailProvider>

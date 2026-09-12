@@ -18,6 +18,7 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { cardDetailCopy } from "../cards/card-detail-provider";
+import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
 
 const copy = deckVersioningCopy.review;
@@ -46,35 +47,6 @@ const GUARD_ACTION = `${ACTION_BOX} text-[color:var(--fg)] no-underline`;
 const GUARD_TAG =
   "font-mono rounded-[4px] px-[5px] py-[1px] text-[9.5px] uppercase tracking-[0.1em] flex-none " +
   "[border:1px_solid_var(--accent-shadow)]";
-
-/** The one live region the page's pulls speak through, hoisted out of React's
- *  tree and onto the document.
- *
- *  A successful pull is the last thing this control does before its row stops
- *  being a pullable row: the refresh it asks for drops the control, so a region
- *  rendered inside it would be unmounted — possibly before a screen reader had
- *  read the sentence it had just been handed. The builder shell answers the same
- *  problem by keeping its region above the rows that mutate; the review page's
- *  rows are server-rendered around this component, so the nearest host that
- *  outlives the refresh is the document itself.
- *
- *  Created empty on mount and filled later, never created with its text already
- *  in it: a region that appears in the same paint as its message is not
- *  announced at all. */
-const ANNOUNCER_ID = "pull-announcer";
-
-function pullAnnouncer(): HTMLElement {
-  const existing = document.getElementById(ANNOUNCER_ID);
-  if (existing) return existing;
-  const region = document.createElement("div");
-  region.id = ANNOUNCER_ID;
-  region.setAttribute("role", "status");
-  region.setAttribute("aria-live", "polite");
-  region.setAttribute("aria-atomic", "true");
-  region.className = "sr-only";
-  document.body.appendChild(region);
-  return region;
-}
 
 /** The row's own way into the card — a button on every deck surface in the app,
  *  and the one control on this row that the refresh keeps. It belongs to the
@@ -112,7 +84,7 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
   // The region has to be in the document before any text reaches it, which is why
   // it is put there on mount rather than on the click that fills it.
   useEffect(() => {
-    pullAnnouncer();
+    draftAnnouncer();
   }, []);
 
   // Commander first, and that order is the whole ruling: a deck with pending
@@ -197,7 +169,7 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
               // arithmetic is the server's, read after the write, so it is spoken
               // rather than only appearing when the revalidated page paints — and
               // a failed read of it says nothing about buying at all.
-              pullAnnouncer().textContent =
+              draftAnnouncer().textContent =
                 result.buy === null
                   ? deckVersioningCopy.commit.pullAnnouncedBuyUnknown(card.name, claim.name)
                   : deckVersioningCopy.commit.pullAnnounced(

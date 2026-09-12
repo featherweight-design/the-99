@@ -4,7 +4,7 @@
 // write is the pull, and `pull-control.test.tsx` owns what that control does —
 // asserted here is only which rows are given one.
 
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -28,6 +28,10 @@ const browseCard = (oracleId: string, name: string): BrowseCard => ({
 });
 
 const STATE = COMMITTED;
+
+/** The server's count of the list a commit would freeze, handed down to the sheet
+ *  at the foot of the page. Nothing here counts rows to get it. */
+const CARD_COUNT = 99;
 
 type Row = Parameters<typeof ReviewChanges>[0]["rows"]["in"][number];
 
@@ -63,7 +67,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     // Twice each, and one markup: the phone segment and the desktop direction
@@ -78,7 +82,7 @@ describe("ReviewChanges", () => {
 
   it("files a quantity move as one row carrying from → to, never a bare name", () => {
     render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} state={STATE} />,
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row({ from: 1, to: 2 })], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(screen.getByText(/1 → 2/)).toBeTruthy();
   });
@@ -86,7 +90,7 @@ describe("ReviewChanges", () => {
   // A whole add and a whole cut are what the column heading already says, so a
   // `0 → 1` beside them would restate the column the row is standing in.
   it("says nothing about copies on a card arriving or leaving whole", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.queryByText(/\d+ → \d+/)).toBeNull();
   });
 
@@ -96,7 +100,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "unowned" })], out: [] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     const describedBy = screen
@@ -112,7 +116,7 @@ describe("ReviewChanges", () => {
   // `free` on every surface in the app — so there is no colour for a word to be
   // the alternative to.
   it("describes nothing on a row the player already has a free copy of", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
     expect(
       screen.getByRole("button", { name: /Sol Ring/ }).getAttribute("aria-describedby"),
     ).toBeNull();
@@ -124,7 +128,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [], out: [row({ direction: "out", from: 1, to: 0 })] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getByText(deckVersioningCopy.review.outNote(1))).toBeTruthy();
@@ -134,7 +138,7 @@ describe("ReviewChanges", () => {
   // The lede names the version the player is about to cut, not the one they are
   // standing on: the whole page exists to be read before that number exists.
   it("heads the page with the version behind it and the version ahead", () => {
-    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />);
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />);
     expect(screen.getByText(deckVersioningCopy.review.heading(1, 1))).toBeTruthy();
     expect(screen.getByText(deckVersioningCopy.review.lede(2))).toBeTruthy();
   });
@@ -155,7 +159,7 @@ describe("ReviewChanges", () => {
             }),
           ],
         }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getAllByRole("button", { name: deckVersioningCopy.review.pull })).toHaveLength(1);
@@ -169,7 +173,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row(), row({ oracleId: "o2", name: "Mox", bucket: "unowned" })], out: [] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
@@ -184,7 +188,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
@@ -204,7 +208,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     const describedBy = screen
@@ -234,6 +238,7 @@ describe("ReviewChanges", () => {
           out: [],
         }}
         state={{ ...STATE, claimsKnown: false, newestAsOf: new Date("2026-09-08") }}
+        cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getByText(addPanelCopy.unowned.tag)).toBeTruthy();
@@ -259,7 +264,7 @@ describe("ReviewChanges", () => {
           ],
           out: [],
         }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     // Drawn as Llanowar Elves (Creatures), then Mox and Sol Ring (Artifacts, by
@@ -281,7 +286,7 @@ describe("ReviewChanges", () => {
     // heading's.
     const segment = deckVersioningCopy.review.groupIn(1);
     const { unmount } = render(
-      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />,
+      <ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
     );
     expect(screen.queryByRole("button", { name: segment })).toBeNull();
     unmount();
@@ -290,7 +295,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [row({ oracleId: "o2", name: "Mox", direction: "out", from: 1, to: 0 })] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getByRole("button", { name: segment })).toBeTruthy();
@@ -301,7 +306,7 @@ describe("ReviewChanges", () => {
   // they were editing to know where it goes.
   it("links back to the deck by name", () => {
     render(
-      <ReviewChanges deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} />,
+      <ReviewChanges deckId="d7" deckName="Korvold" rows={{ in: [row()], out: [] }} state={STATE} cardCount={CARD_COUNT} />,
     );
     const back = screen.getByRole("link", { name: /Korvold/ });
     expect(back.getAttribute("href")).toBe("/decks/d7");
@@ -318,6 +323,7 @@ describe("ReviewChanges", () => {
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
         state={{ ...STATE, buyCount: 3, total: "$28.40", pullableCount: 0 }}
+        cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getByText(deckVersioningCopy.review.chipBuy)).toBeTruthy();
@@ -339,7 +345,7 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row({ from: 3, to: 1 })], out: [] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(screen.getByText(/3 → 1/)).toBeTruthy();
@@ -354,11 +360,54 @@ describe("ReviewChanges", () => {
         deckId="d"
         deckName="Korvold"
         rows={{ in: [row()], out: [] }}
-        state={STATE}
+        state={STATE} cardCount={CARD_COUNT}
       />,
     );
     expect(
       screen.getByText(deckVersioningCopy.review.groupInBreakdown(0, 0, 0)),
+    ).toBeTruthy();
+  });
+
+  // The two deck-page CTAs that mean "commit this" link here with `?commit=1`,
+  // and the page is the commit surface — arriving that way and being shown a
+  // button that opens what you asked for is one click too many.
+  it("mounts the commit sheet at the foot, open when the reader asked for it", () => {
+    const commitCta = deckVersioningCopy.pending.commitCta(
+      (STATE.version?.number ?? 0) + 1,
+    );
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    // Folded by default: the reader came to read the columns, and the sheet is
+    // one click under them.
+    expect(screen.getByRole("button", { name: commitCta })).toBeTruthy();
+    expect(screen.queryByLabelText(deckVersioningCopy.commit.noteLabel)).toBeNull();
+
+    cleanup();
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+        commitOpen
+      />,
+    );
+    // Expanded, and the sheet's own figure is the count it was handed rather
+    // than a tally of the one row above it.
+    expect(screen.queryByRole("button", { name: commitCta })).toBeNull();
+    expect(screen.getByLabelText(deckVersioningCopy.commit.noteLabel)).toBeTruthy();
+    expect(
+      screen.getByText(
+        deckVersioningCopy.commit.footer(CARD_COUNT, STATE.buyCount, STATE.removes.length),
+      ),
     ).toBeTruthy();
   });
 });

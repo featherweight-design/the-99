@@ -217,6 +217,9 @@ export const deckVersioningCopy = {
     linkOut: "Open in Mana Pool",
 
     pullHeading: (n: number) => `Back in the pool · ${n}`,
+    // The same label without its count, for the width that draws the figure
+    // beneath it at 24px rather than inside the label (§Surfaces 3, desktop).
+    pullHeadingPlain: "Back in the pool",
     pullNote:
       "No action required — committing is what releases them. Take them out of the box " +
       "whenever you next open it.",

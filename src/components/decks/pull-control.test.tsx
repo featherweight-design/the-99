@@ -10,6 +10,7 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { cardDetailCopy } from "../cards/card-detail-provider";
+import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PullControl } from "./pull-control";
 
 vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
@@ -47,7 +48,7 @@ afterEach(() => {
   vi.clearAllMocks();
   // The live region is deliberately outside React's tree, so `cleanup` does not
   // take it: a sentence left in it would be read as the next test's.
-  document.getElementById("pull-announcer")?.remove();
+  document.getElementById(DRAFT_ANNOUNCER_ID)?.remove();
 });
 
 describe("PullControl", () => {

@@ -47,6 +47,9 @@ export default async function ChangesPage({
       rows={rows}
       state={state}
       commitOpen={wantsCommit}
+      // `built`, not `total`: the snapshot holds the matched cards, and `total`
+      // adds the unresolved lines no version can freeze.
+      cardCount={detail.built}
     />
   );
 }
