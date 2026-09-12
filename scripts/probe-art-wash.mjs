@@ -339,13 +339,12 @@ const THUMB_BOXES = ["44×62", "64×89"];
     because `rgba(0, 0, 0, 0.4)` contains commas: a `inset[^,]*rgba(…)` pattern
     cannot cross them and failed every migrated thumb. The `inset` keyword is
     asserted separately beside it. */
-/** The one surface that legitimately draws card-shaped boxes which are not
-    commander thumbs: the decks LIST's zero-state illustration. Matched exactly
-    rather than by substring — `includes("decks")` also matches every
-    `/decks/<id>` label this probe passes in, which would have excused an
-    unmigrated render on the deck page as decorative. Named rather than
-    shape-excluded, so a real one anywhere else still fails. */
-const DECORATIVE_FANS = ["decks"];
+/** No route-wide exemption, deliberately. The decks zero state's card fan was
+    the reason one existed, and that fan paints `bg-[color:var(--surface-inset)]`
+    — a background COLOUR — so the sweep's own filter, which requires an image or
+    a gradient, never saw it. An exemption keyed to a route excused every unmarked
+    card face on `/decks/<id>` as well, which is a real surface with real thumbs.
+    Nothing is excused now, and nothing needs to be. */
 
 const THUMB_RING_RE = /rgba\(0,\s*0,\s*0,\s*0\.4\)/;
 
@@ -464,13 +463,7 @@ async function checkChrome(page, label, note) {
   // list, whose zero state draws a decorative card fan at nearly this aspect.
   const unmarked = await page.evaluate(`(${READ_UNMARKED_FACES})()`);
   if (unmarked.length) {
-    const line = `${label}: ${unmarked.length} unmarked card-face box(es) at ${[...new Set(unmarked)].join(", ")}`;
-    // The label is `"<viewport> <route>"`, so the route is its last word and the
-    // match is on that word alone.
-    const route = label.split(" ").at(-1);
-    note(
-      DECORATIVE_FANS.includes(route) ? `${line} — decorative, not asserted` : `  FAIL ${line}`,
-    );
+    note(`  FAIL ${label}: ${unmarked.length} unmarked card-face box(es) at ${[...new Set(unmarked)].join(", ")}`);
   }
 
   for (const t of thumbs) {
@@ -876,7 +869,12 @@ try {
         // this pass while measuring nothing.
         const slotThumb = await page.evaluate(
           `(() => {
-            const el = document.querySelector('[role="group"] [data-commander-thumb]');
+            // Laid out only: both responsive copies of the slot are in the DOM,
+            // and on desktop the hidden one comes FIRST — so taking the first
+            // match measures a 0x0 element and reports a failure about the copy
+            // that is correctly hidden.
+            const el = [...document.querySelectorAll('[role="group"] [data-commander-thumb]')]
+              .find((c) => c.getClientRects().length);
             if (!el) return null;
             const r = el.getBoundingClientRect();
             return [Math.round(r.width), Math.round(r.height)];
