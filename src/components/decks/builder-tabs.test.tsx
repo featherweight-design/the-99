@@ -126,3 +126,34 @@ describe("BuilderTabs — three tabs", () => {
     expect(tabs()[1].textContent).toBe("Games");
   });
 });
+
+describe("BuilderTabs — the version route", () => {
+  const three = [DECK_TAB, CONSIDER_TAB, GAMES_TAB];
+  const LINK = {
+    href: "/decks/d/versions",
+    label: "Versions",
+    count: 3,
+    accessibleName: "Versions, 3 versions committed",
+  };
+
+  it("renders the routing link outside the tablist, so the roving tabindex still owns three tabs", () => {
+    render(<BuilderTabs tabs={three} view="deck" onViewChange={vi.fn()} links={[LINK]} />);
+    const link = screen.getByRole("link", { name: "Versions, 3 versions committed" });
+    expect(screen.getByRole("tablist").contains(link)).toBe(false);
+    expect(tabs()).toHaveLength(3);
+  });
+
+  it("omits the link entirely when there is nothing to route to", () => {
+    render(<BuilderTabs tabs={three} view="deck" onViewChange={vi.fn()} links={[]} />);
+    expect(screen.queryByRole("link", { name: /Versions/ })).toBeNull();
+  });
+
+  // The link is a sibling of the tabs, so its keys reach the tablist's handler.
+  // Acting on them would move the selected tab while the reader is tabbing past.
+  it("ignores arrow keys pressed on the link", () => {
+    const onViewChange = vi.fn();
+    render(<BuilderTabs tabs={three} view="deck" onViewChange={onViewChange} links={[LINK]} />);
+    fireEvent.keyDown(screen.getByRole("link", { name: LINK.accessibleName }), { key: "ArrowRight" });
+    expect(onViewChange).not.toHaveBeenCalled();
+  });
+});

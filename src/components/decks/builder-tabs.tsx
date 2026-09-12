@@ -6,6 +6,8 @@
 // counts live in the accessible names as well as the text, because "99" beside
 // "Consider" is only a number until you know what it counts.
 
+import Link from "next/link";
+
 export type BuilderView = "deck" | "consider" | "games";
 
 export interface BuilderTabSpec {
@@ -16,10 +18,26 @@ export interface BuilderTabSpec {
   accessibleName: string;
 }
 
+/** A cell in the tab row that is a ROUTE rather than a panel — #389's version
+ *  history. It reads as a peer of the three tabs and behaves as a link, which is
+ *  why it renders outside the tablist: the roving tabindex and `aria-controls`
+ *  are contracts about panels in this document, and a fourth `role="tab"`
+ *  pointing at another page would make both of them lie. */
+export interface BuilderTabLink {
+  href: string;
+  label: string;
+  /** Omitted when there is nothing to count, exactly as a tab's is. */
+  count?: number;
+  accessibleName: string;
+}
+
 interface BuilderTabsProps {
   tabs: readonly BuilderTabSpec[];
   view: BuilderView;
   onViewChange: (view: BuilderView) => void;
+  /** Empty or absent draws nothing — a cell offering a route to a page with
+   *  nothing on it is the defect `ClearAutoButton` documents at its own zero. */
+  links?: readonly BuilderTabLink[];
   /** The desktop toolbar rides the same row, pushed right. Mobile draws it below. */
   children?: React.ReactNode;
 }
@@ -80,52 +98,80 @@ function Tab({
   );
 }
 
-export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsProps) {
+export function BuilderTabs({ tabs, view, onViewChange, links, children }: BuilderTabsProps) {
   return (
     <div
       className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px]"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
-      <div
-        className="flex items-baseline gap-[16px] md:gap-[22px]"
-        role="tablist"
-        // Selection follows focus, which is the pattern's default for panels
-        // that are all cheap to render.
-        onKeyDown={(e) => {
-          // The desktop toolbar rides this row, so its sort <select> is a
-          // descendant and its own arrow/Home/End keys bubble through here.
-          // Only a tab's keys are the tablist's to act on.
-          const tab = e.target as HTMLElement;
-          if (tab.getAttribute("role") !== "tab") return;
-          // The key came from a tab, so that tab is where the move starts —
-          // reading the index off `view` instead would leave it at -1 for any
-          // caller whose tabs do not contain the selected view.
-          const current = tabs.findIndex((t) => `tab-${t.id}` === tab.id);
-          if (current < 0) return;
-          let next: number;
-          if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (current + 1) % tabs.length;
-          else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (current - 1 + tabs.length) % tabs.length;
-          else if (e.key === "Home") next = 0;
-          else if (e.key === "End") next = tabs.length - 1;
-          else return;
+      {/* The row, of which the tablist is one part: the version link and the
+          toolbar are peers of it rather than children, because a tablist owns
+          exactly the tabs that control this document's panels. */}
+      <div className="flex items-baseline gap-[16px] md:gap-[22px]">
+        <div
+          className="flex items-baseline gap-[16px] md:gap-[22px]"
+          role="tablist"
+          // Selection follows focus, which is the pattern's default for panels
+          // that are all cheap to render.
+          onKeyDown={(e) => {
+            // Guarded rather than assumed: the handler is on the container, so any
+            // focusable thing nested inside a tab would send its own arrow and
+            // Home/End keys through here. Only a tab's keys are the tablist's to
+            // act on.
+            const tab = e.target as HTMLElement;
+            if (tab.getAttribute("role") !== "tab") return;
+            // The key came from a tab, so that tab is where the move starts —
+            // reading the index off `view` instead would leave it at -1 for any
+            // caller whose tabs do not contain the selected view.
+            const current = tabs.findIndex((t) => `tab-${t.id}` === tab.id);
+            if (current < 0) return;
+            let next: number;
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (current + 1) % tabs.length;
+            else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (current - 1 + tabs.length) % tabs.length;
+            else if (e.key === "Home") next = 0;
+            else if (e.key === "End") next = tabs.length - 1;
+            else return;
 
-          e.preventDefault();
-          const id = tabs[next].id;
-          onViewChange(id);
-          document.getElementById(`tab-${id}`)?.focus();
-        }}
-      >
-        {tabs.map((tab) => (
-          <Tab
-            key={tab.id}
-            id={`tab-${tab.id}`}
-            panelId={`panel-${tab.id}`}
-            label={tab.label}
-            count={tab.count}
-            selected={view === tab.id}
-            onSelect={() => onViewChange(tab.id)}
-            accessibleName={tab.accessibleName}
-          />
+            e.preventDefault();
+            const id = tabs[next].id;
+            onViewChange(id);
+            document.getElementById(`tab-${id}`)?.focus();
+          }}
+        >
+          {tabs.map((tab) => (
+            <Tab
+              key={tab.id}
+              id={`tab-${tab.id}`}
+              panelId={`panel-${tab.id}`}
+              label={tab.label}
+              count={tab.count}
+              selected={view === tab.id}
+              onSelect={() => onViewChange(tab.id)}
+              accessibleName={tab.accessibleName}
+            />
+          ))}
+        </div>
+        {links?.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-label={link.accessibleName}
+            // The same transparent idle border the tabs carry, so the cell sits on
+            // the same baseline as them rather than 2px below it.
+            className="flex items-baseline gap-[6px] min-h-[44px] pb-[8px] md:pb-[10px] no-underline border-0 border-b-2 border-solid border-b-transparent"
+          >
+            <span className="text-[13.5px] md:text-[14px] font-medium text-[color:var(--fg-faint)]">
+              {link.label}
+            </span>
+            {typeof link.count === "number" && (
+              <span
+                aria-hidden
+                className="font-mono text-[11px] md:text-[12px] tabular-nums text-[color:var(--fg-faint)]"
+              >
+                {link.count}
+              </span>
+            )}
+          </Link>
         ))}
         {/* Desktop only: the toolbar shares the tab row, pushed right. At phone
             width it draws as its own row inside the panel body instead. */}

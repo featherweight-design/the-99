@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "../../db";
 import {
   cards, collectionItems, deckCards, deckGameAxes, deckGames, decks,
-  deckUnresolvedRows, fillPassCards, fillPasses,
+  deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
@@ -17,7 +17,8 @@ import { mergeEdhrecData } from "../../lib/edhrec/merge";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { hardDecks } from "../../lib/decks/availability";
 import {
-  commitVersion, newestVersion, restoreDraftFromVersion, versionCards, versionLiveAt,
+  commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
+  versionLiveAt, type VersionDiffCard,
 } from "../../lib/decks/versions";
 import {
   bucketAdds, draftDiff, type BucketedAdd, type DraftChange,
@@ -1519,6 +1520,35 @@ export async function discardDeckDraft(
     return { ok: false, message: "We couldn't discard those changes. Nothing has changed." };
   }
   return { ok: true };
+}
+
+/**
+ * What one version changed, read when its row on the history page is opened.
+ *
+ * `loadVersionDiff` reads by version id alone, so both ids are checked against
+ * this deck before it runs: without that, a signed-in account could read any
+ * other player's version list by posting their version ids alongside a deck of
+ * its own. Returning empty lists rather than throwing keeps a stale row — a
+ * version deleted in another tab — from breaking the page.
+ */
+export async function getVersionDiff(
+  deckId: string,
+  versionId: string,
+  previousVersionId: string | null,
+): Promise<{ in: VersionDiffCard[]; out: VersionDiffCard[] }> {
+  const empty = { in: [], out: [] };
+  const userId = await requireUserId();
+  if (!isUuid(deckId) || !isUuid(versionId)) return empty;
+  if (previousVersionId !== null && !isUuid(previousVersionId)) return empty;
+  await requireDeck(deckId, userId);
+
+  const asked = previousVersionId === null ? [versionId] : [versionId, previousVersionId];
+  const mine = await db.select({ id: deckVersions.id })
+    .from(deckVersions)
+    .where(and(eq(deckVersions.deckId, deckId), inArray(deckVersions.id, asked)));
+  if (mine.length !== asked.length) return empty;
+
+  return loadVersionDiff(versionId, previousVersionId);
 }
 
 /**

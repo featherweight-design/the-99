@@ -356,17 +356,30 @@ export const deckVersioningCopy = {
     // The tab. Count absent at zero — and at zero the TAB is absent too, because a
     // deck with no version has no history (§Decisions 4).
     tab: "Versions",
+    // The count beside the label is aria-hidden, so the cell's whole accessible
+    // name is composed here. There is no zero branch: at zero the cell is absent.
+    tabAria: (n: number) => `Versions, ${plural(n, "version")} committed`,
     heading: (n: number) => plural(n, "version"),
     manaValue: (mv: string) => `mv ${mv}`,
     current: "current",
     committed: (date: string, cards: number) =>
       `committed ${date} · ${plural(cards, "card")}`,
+    // The v1 panel's header block states the size of the list without the date
+    // beside it — the title directly to its left already carries the date, and
+    // `committed` would say it twice on one line.
+    cardCount: (cards: number) => plural(cards, "card"),
     delta: (adds: number, removes: number) => `+${adds} / −${removes}`,
     // A v1 has no predecessor. Never "+99" — the migration stamped a list that
     // was already there; ninety-nine decisions were not taken that day.
     initial: "initial",
     noNote: "no note",
     gamesHeld: (n: number) => `held ${plural(n, "game")}`,
+    // The opened panel's second stat box, which the canvas labels `Held` and
+    // fills with `3 games`. `gamesHeld` cannot serve it: a box labelled `Held`
+    // holding `held 3 games` says the verb twice. The label sits beside the
+    // figure rather than inside it, exactly as `Mana value` does.
+    heldLabel: "Held",
+    heldValue: (n: number) => plural(n, "game"),
 
     diffIn: (n: number) => `In · ${n}`,
     diffOut: (n: number) => `Out · ${n}`,
@@ -380,6 +393,10 @@ export const deckVersioningCopy = {
     initialBrowse: (cards: number) => `Browse the ${plural(cards, "card")} →`,
 
     commanderChange: (from: string, to: string) => `${from} → ${to}`,
+    /** One side of that arrow when the version was piloted by a pair. A partner
+     *  swap changes who is at the helm as much as a commander swap does, and
+     *  naming only the primary would render `Korvold → Korvold`. */
+    commanderPair: (primary: string, partner: string) => `${primary} & ${partner}`,
   },
 
   /* ---- §Surfaces 2 · the what-changed strip ----
