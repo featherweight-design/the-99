@@ -1187,6 +1187,59 @@ describe("pullCardFromDeck", () => {
     expect(stub.state.deleteCalls).toHaveLength(0);
   });
 
+  // The claim is what authorizes the pull, and it is made of decks this
+  // transaction does not otherwise touch. Those decks' rows are locked from a
+  // read taken before the transaction, so a claimant that joined since is locked
+  // by nothing — and authorizing a destructive write against half an unlocked
+  // claim is exactly the race the locks exist to close. Refuse instead.
+  it("refuses when a deck outside the locked set has joined the claim", async () => {
+    const THIRD_ID = "77777777-7777-4777-8777-777777777777";
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    // First call is the pre-transaction read that chooses the lock set; the
+    // second is the authorization, taken under those locks.
+    vi.mocked(loadAvailability)
+      .mockResolvedValueOnce(claimedBySource())
+      .mockResolvedValueOnce(
+        new Map([[CARD_A, {
+          owned: 2, hard: 2, soft: 0, free: 0,
+          claims: [
+            { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false },
+            { id: THIRD_ID, name: "Latecomer", quantity: 1, mature: true, pending: false },
+          ],
+        }]]) as unknown as Awaited<ReturnType<typeof loadAvailability>>,
+      );
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(false);
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // The same claimant, named by the read the lock set was chosen from, is locked
+  // and the pull goes through. Without this the guard above would be satisfied by
+  // refusing every pull whose card any other deck holds — which is every pull.
+  it("allows the pull when the whole claim is inside the locked set", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalled();
+  });
+
+  // The pre-transaction read only chooses locks, so losing it costs no pull the
+  // claim still supports: the set falls back to the two decks in hand, and the
+  // authorization refuses only if a third deck turns out to be holding a copy.
+  it("still pulls when the read that chooses the lock set throws", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadAvailability)
+      .mockRejectedValueOnce(new Error("claim read"))
+      .mockResolvedValueOnce(claimedBySource());
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalled();
+  });
+
   // The claim read has to be the one taken inside the transaction, or it is
   // answering for a moment already past by the time the locks are held.
   it("reads the claim inside the transaction it writes in", async () => {

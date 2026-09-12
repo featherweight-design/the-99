@@ -6,6 +6,7 @@ import { getDeckReviewHeader } from "../../../../lib/decks/read";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import { changeCount, loadDraftRows } from "../../../../lib/decks/draft-state";
 import { ReviewChanges } from "../../../../components/decks/review-changes";
+import { admitsReview } from "./admits-review";
 
 export default async function ChangesPage({
   params,
@@ -56,17 +57,16 @@ export default async function ChangesPage({
   // into the one commit surface — or, on a brew, the spine's `Commit as v1`.
   const wantsCommit = commit === "1";
 
-  // Both empty-column cases are admitted ONLY as that arrival. There is nothing
-  // to review on either — no named row to read, no cost to weigh — so a reader
-  // who did not ask for the sheet is being shown two blank columns, which is
-  // what the banner already promises they will not be (`pending-banner.tsx`).
-  // The link is still not a skeleton key: a brew has to pass the readiness test
-  // to open the sheet, or a hand-typed `?commit=1` would offer a commit over a
-  // 63-card list that the server then refuses.
-  const hasSomethingToCommit =
-    changeCount(state) > 0 ||
-    (wantsCommit && (state.basicsChanged || (state.version === null && firstCommitReady)));
-  if (!hasSomethingToCommit) redirect(`/decks/${id}`);
+  // Both empty-column cases are admitted ONLY as that arrival — see
+  // `admitsReview`, which holds the rule and is where it is tested.
+  const admitted = admitsReview({
+    changes: changeCount(state),
+    basicsChanged: state.basicsChanged,
+    hasVersion: state.version !== null,
+    firstCommitReady,
+    wantsCommit,
+  });
+  if (!admitted) redirect(`/decks/${id}`);
 
   return (
     <ReviewChanges

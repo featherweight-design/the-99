@@ -266,6 +266,26 @@ async function stage(deckId, versionId, addOracleIds, cuts) {
   }
 }
 
+/** Put one basic land into the deck, and name it. `isBasicLand` reads the type
+ *  line, so the card has to be a real catalog basic rather than any land — and a
+ *  basic is the one edit the diff counts as a change while naming no card, which
+ *  is the whole point of the basics-only case. The template is 99 non-basic
+ *  lands, so this adds rather than increments. Returns null if the catalog holds
+ *  no basic at all, so the block reports itself skipped rather than as a pass. */
+async function addOneBasic(deckId) {
+  const { rows } = await pool.query(
+    `select oracle_id, name from cards where type_line ilike 'basic land%'
+      order by name limit 1`,
+  );
+  if (rows.length === 0) return null;
+  await pool.query(
+    `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)
+       on conflict (deck_id, oracle_id) do update set quantity = deck_cards.quantity + 1`,
+    [deckId, rows[0].oracle_id],
+  );
+  return rows[0].name;
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
 let underReview = null;
@@ -306,6 +326,30 @@ try {
     });
     console.log(`\n########## ${label} · CLEAN deck`);
     console.log(`  landed on: ${new URL(vpPage.url()).pathname} (expect /decks/<id>)`);
+
+    // 1b. A BASICS-ONLY draft, which names no card and still has a version to
+    // cut. Both columns render empty on it, so the route admits it only as the
+    // banner's `?commit=1` — a direct visit would be two blank columns under a
+    // heading naming the mana base. Neither fact is reachable from jsdom: the
+    // redirect is a server decision and the diff is a real one.
+    const moved = await addOneBasic(underReview.deckId);
+    await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
+      waitUntil: "networkidle",
+    });
+    console.log(`\n########## ${label} · BASICS-ONLY draft`);
+    console.log(`  basic added: ${moved ?? "no basic in the catalog — block skipped"}`);
+    if (moved) {
+      console.log(
+        `  direct visit landed on: ${new URL(vpPage.url()).pathname} (expect /decks/<id>)`,
+      );
+      await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes?commit=1`, {
+        waitUntil: "networkidle",
+      });
+      await vpPage.waitForTimeout(900);
+      const basics = await readReview(vpPage);
+      console.log(`  ?commit=1 landed on: ${new URL(vpPage.url()).pathname} (expect /changes)`);
+      console.log(`  h1: ${basics.h1} (expect the mana base, not a change count)`);
+    }
 
     // 2. Both columns, the claimed add among them.
     await stage(underReview.deckId, underReview.versionId, [claimed.oracleId], 3);

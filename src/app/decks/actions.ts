@@ -1538,18 +1538,49 @@ export async function pullCardFromDeck(
     return { ok: false, message: "A deck can't pull a card from itself." };
   }
 
-  // One transaction, and every guard runs inside it under both decks' row locks.
+  // Which decks the claim on this card is made of, read BEFORE the transaction
+  // and used only to decide what to lock. The authorization below re-reads the
+  // claim under those locks and is the read that decides; this one just names
+  // the parties, because a lock set cannot be chosen from inside a transaction
+  // without either locking every deck the player owns or taking locks in an
+  // order a concurrent pull could deadlock against.
+  //
+  // A read that throws leaves the set at the two decks this pull is between,
+  // which is the shipped behaviour and still safe: the verification inside the
+  // transaction refuses rather than authorizing against an unlocked claimant.
+  let claimants: string[] = [];
+  try {
+    const seen = await loadAvailability(userId, {
+      oracleIds: [oracleId],
+      excludeDeckId: askingDeckId,
+    });
+    claimants = hardDecks(seen.get(oracleId) ?? { claims: [] }).map((d) => d.id);
+  } catch {
+    claimants = [];
+  }
+  // Every party, deduplicated and sorted once. Sorting the whole set — not the
+  // two decks with claimants appended — is what makes the ordering global: a
+  // concurrent pull between any other pair takes the same locks in the same
+  // sequence, so one of the two waits instead of both holding what the other
+  // needs.
+  const lockIds = [...new Set([sourceDeckId, askingDeckId, ...claimants])].sort();
+
+  // One transaction, and every guard runs inside it under every party's row lock.
   // Each guard is a decision about what a draft holds right now: read outside
   // the lock, an edit landing before the commit is swept into a version its
   // owner never asked for — the exact case the pending-changes guard exists to
   // prevent. The write is in here for its own reason: a delete that lands
   // without its commit leaves the draft short of a card the version claims.
   const outcome = await db.transaction<DeckMutationResult>(async (tx) => {
-    // BOTH deck rows, locked in sorted id order, before anything is read. The
-    // asking deck is locked because this transaction authorizes itself against
+    // EVERY party's deck row, locked in sorted id order, before anything is read.
+    // The asking deck is locked because this transaction authorizes itself against
     // that deck's claim on the card: two readers each pulling the same card for
     // the same asking deck from two different sources would otherwise both find
-    // it spoken for and release two copies for a deck that wanted one.
+    // it spoken for and release two copies for a deck that wanted one. The other
+    // claimants are locked because the claim is what authorizes the pull, and a
+    // claim is made of decks this transaction does not otherwise touch —
+    // `commitDeckVersion` takes its own deck's row lock first, so holding a
+    // claimant's row is what stops it committing a release underneath this read.
     //
     // Sorted order is what keeps that safe from deadlock. Two pulls with the
     // roles swapped — A pulling for B while B pulls for A — would otherwise each
@@ -1557,10 +1588,10 @@ export async function pullCardFromDeck(
     // the other waits at the first, which also serialises every `deck_cards`
     // lock taken below, so those need no ordering rule of their own.
     //
-    // Two statements rather than one `where in (...) order by ... for update`:
+    // A statement each rather than one `where in (...) order by ... for update`:
     // Postgres does not promise FOR UPDATE takes its locks in ORDER BY order,
     // so the ordering has to be in the statement sequence to mean anything.
-    for (const id of [sourceDeckId, askingDeckId].sort()) {
+    for (const id of lockIds) {
       await tx.select({ id: decks.id }).from(decks).where(eq(decks.id, id)).for("update");
     }
     const [deck] = await tx.select().from(decks).where(eq(decks.id, sourceDeckId));
@@ -1613,6 +1644,21 @@ export async function pullCardFromDeck(
       { oracleIds: [oracleId], excludeDeckId: askingDeckId },
       tx,
     );
+    const holders = hardDecks(askingAvailability.get(oracleId) ?? { claims: [] });
+
+    // The claim this authorizes against has to be one every party of which is
+    // locked, or the read above answers for a moment that can still move: a deck
+    // outside the lock set can commit a release between this SELECT and the
+    // decrement below, and the source would then give up a copy that was already
+    // free. The lock set was chosen from a read taken before the transaction, so
+    // a claimant that appeared since is possible — and the honest answer to it is
+    // to refuse and let the reader ask again against a page that names it, never
+    // to authorize a destructive write on a claim half of which is unlocked.
+    const unlocked = holders.find((d) => !lockIds.includes(d.id));
+    if (unlocked) {
+      return { ok: false, message: "Another deck claimed that card. Open the changes again." };
+    }
+
     const [bucketed] = bucketAdds([add], new Map(
       [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: hardDecks(a) }]),
     ));
