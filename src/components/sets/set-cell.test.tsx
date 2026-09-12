@@ -205,13 +205,16 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
 describe("SetCell — no size literal at any width", () => {
   /**
    * Any width or height that is a MEASUREMENT, at any breakpoint: an arbitrary value
-   * (`w-[116px]`), a scale step (`h-10`), or a fraction (`w-1/2`). `w-full` and `h-full` are
+   * (`w-[116px]`), a scale step (`h-10`), a fraction (`w-1/2`) or the 1px `w-px`.
+   * `w-full` and `h-full` are
    * deliberately allowed — they are the cell taking the track's width, which is the ruling
    * rather than a violation of it. The first version of this matcher recognised only
    * `md:`-prefixed `px` values, so a regression under `sm:` or a plain `w-10` would have
-   * passed a test whose whole subject is "at any width".
+   * passed a test whose whole subject is "at any width"; `w-px` is a fixed 1px and belongs
+   * in the same net.
    */
-  const sizeLiteral = /(?:^|\s)(?:[a-z0-9.]+:)*[wh]-(?:\[[^\]]*\]|\d+(?:\.\d+)?|\d+\/\d+)(?=\s|$)/;
+  const sizeLiteral =
+    /(?:^|\s)(?:[a-z0-9.]+:)*[wh]-(?:\[[^\]]*\]|px|\d+(?:\.\d+)?|\d+\/\d+)(?=\s|$)/;
 
   it("carries no width or height literal on any element it renders", () => {
     const { container } = render(<SetCell cell={cell({ owned: true, byName: true, foilOnly: true })} />);
@@ -239,6 +242,7 @@ describe("SetCell — no size literal at any width", () => {
     expect(sizeLiteral.test("group flex w-[108px] flex-col")).toBe(true);
     expect(sizeLiteral.test("relative block sm:h-[151px]")).toBe(true);
     expect(sizeLiteral.test("mt-[6px] w-10 flex")).toBe(true);
+    expect(sizeLiteral.test("flex h-px bg-[color:var(--border)]")).toBe(true);
     expect(sizeLiteral.test("mt-[2px] block w-full truncate")).toBe(false);
     expect(sizeLiteral.test("relative block aspect-[63/88] w-full")).toBe(false);
   });
