@@ -11,6 +11,7 @@ import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
+import { newestVersion } from "../../lib/decks/versions";
 import {
   deckImportMaxBytes,
   deckImportTooLargeMessage,
@@ -56,6 +57,11 @@ export type DeckUpdatePreview = {
   recounted: DeckUpdatePlan["recounted"];
   unresolved: DeckUpdatePlan["unresolved"];
   noChange: boolean;
+  /** The version the deck is sleeved as, or null for a brew. A versioned deck's
+   *  paste lands in the DRAFT and nothing it says about the deck's claims is true
+   *  until the player commits, so the preview has to say which version it is
+   *  drafting against; a brew has nothing to say and renders no notice. */
+  version: number | null;
 };
 
 export type DeckUpdateResult =
@@ -166,6 +172,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
   }
 
   const widened = await withFacts(userId, input.deckId, { out: plan.out, in: plan.in });
+  const version = await newestVersion(input.deckId);
 
   return {
     ok: true,
@@ -180,6 +187,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     recounted: plan.recounted,
     unresolved: plan.unresolved,
     noChange: plan.noChange,
+    version: version?.number ?? null,
   };
 }
 
@@ -242,7 +250,13 @@ export type ApplyDeckUpdateInput = UpdateDeckInput & {
   keep: string[];
 };
 
-export type ApplyDeckUpdateResult = { in: number; out: number; kept: number };
+export type ApplyDeckUpdateResult = {
+  in: number;
+  out: number;
+  kept: number;
+  /** The deck has a version, so the caller declines the arrival param. */
+  versioned: boolean;
+};
 
 /**
  * Applies an update in one transaction. The refusal copy says "your deck is
@@ -280,7 +294,7 @@ export async function updateDeckFromList(
 
   const keep = new Set(input.keep);
 
-  const { plan, removing, kept } = await db.transaction(async (tx) => {
+  const { plan, removing, kept, versioned } = await db.transaction(async (tx) => {
     // Lock the deck row and plan inside it, the way every other deck mutation
     // in this file's neighbour does. The plan is a statement about the deck as
     // it stands, and its `out` group is a delete list: a card added by hand in
@@ -378,9 +392,20 @@ export async function updateDeckFromList(
       );
     }
 
-    return { plan, removing, kept };
+    // A committed deck has its own account of what is pending, one scroll below
+    // where this strip would sit — and that account survives the next navigation
+    // while the strip does not. Two diffs for one deck, one of them transient, is
+    // the overlap R2 ruled on: the strip is the one that goes.
+    //
+    // Read inside the transaction, and under it: after the commit the rows are
+    // already written, so a failed read there would reject an action that had
+    // already applied the list — the caller would draw the refusal state and a
+    // retry would apply it twice.
+    const versioned = (await newestVersion(input.deckId, tx)) !== null;
+
+    return { plan, removing, kept, versioned };
   });
 
   revalidateClaims(input.deckId, userId);
-  return { in: plan.in.length, out: removing.length, kept };
+  return { in: plan.in.length, out: removing.length, kept, versioned };
 }

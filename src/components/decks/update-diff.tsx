@@ -196,6 +196,15 @@ export function UpdateDiff({
           </span>
         </p>
 
+        {/* A versioned deck's paste lands in the draft, not in the committed
+            list, and every figure below is about the draft it produces. A brew
+            has no such distinction to draw, so it says nothing. */}
+        {preview.version !== null && (
+          <p className="mt-[8px] mb-0 text-[12px] md:text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
+            {copy.draftPasteNotice(preview.version)}
+          </p>
+        )}
+
         {/* The non-fatal notes the flow surfaces. Everything else the parser
             drops — sideboard, maybeboard, a commander duplicated into the 99 — is
             dropped in silence, the rule the import already holds to. */}

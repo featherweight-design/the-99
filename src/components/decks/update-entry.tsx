@@ -153,7 +153,9 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
         // Provenance for one navigation, not deck state — the same reason the
         // import's `?imported=1` lives in the URL rather than in a column.
         router.push(
-          `/decks/${deckId}?${UPDATED_PARAM}=${result.in}-${result.out}-${result.kept}`,
+          result.versioned
+            ? `/decks/${deckId}`
+            : `/decks/${deckId}?${UPDATED_PARAM}=${result.in}-${result.out}-${result.kept}`,
         );
       } catch {
         setRefused(true);

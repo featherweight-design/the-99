@@ -1993,6 +1993,15 @@ verbatim from the handoff file, with this comment:
       // final, which on a versioned deck it is not.
 ```
 
+Then wire it, in this same task — a copy key nothing renders is a string the next
+PR has to rediscover. `DeckUpdatePreview` (`src/app/decks/update-actions.ts`)
+gains `version: number | null`, `previewDeckUpdate` fills it from the shipped
+`newestVersion(input.deckId)` it already imports, and `update-diff.tsx` renders
+the notice under the provenance line and above the note block, guarded on
+`preview.version !== null`. `update-entry.tsx` already suppresses `UPDATED_PARAM`
+on a versioned deck; the notice is the other half of that contract, which is why
+the two ship together.
+
 - [ ] **Step 3: Write the failing test**
 
 Create `src/lib/copy/deck-versioning.test.ts`. The repo's copy tests assert the
@@ -2118,7 +2127,7 @@ import {
 import { hardDecks, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices } from "./price-query";
-import { formatCents, summarisePrices, type PriceFact } from "./price";
+import { formatCents, priceOf, priceState, summarisePrices, type PriceFact } from "./price";
 import { averageManaValue } from "./mana-value";
 import { newestVersion, versionCards, versionManaValue } from "./versions";
 import { cardTypeGroup, isBasicLand, type DeckDetailCard } from "./grouping";
@@ -2146,6 +2155,20 @@ export type DraftState = {
   /** Oracle name per changed card, both lists — what the banner's inline
    *  density says at six changes or fewer. */
   names: Map<string, string>;
+  /** Printed mana cost per changed card, both lists, for the cost track the
+   *  inline density draws beside each name. Absent for a card the catalog gives
+   *  no cost, where the track draws nothing rather than a zero. */
+  costs: Map<string, string>;
+  /** One copy's price, formatted, for the adds that carry a purchase. Absent for
+   *  a free add, for every remove, and for a card the feed could not price — an
+   *  absent entry means "no figure to show", never "$0.00". A UNIT price,
+   *  matching the shipped buy tag rather than multiplying by the shortfall. */
+  prices: Map<string, string>;
+  /** Whether the claim model could be read at all. False only when the
+   *  availability read failed, and then every money figure below is zero or null
+   *  and states nothing — NOT "this commit is free", which is what an empty
+   *  claimant map would have made them say. */
+  claimsKnown: boolean;
   /** Copies the player must obtain: the shortfall over every unfree add. Not a
    *  row count — one card wanted three times is three copies. */
   buyCount: number;
@@ -2158,6 +2181,11 @@ export type DraftState = {
   /** Formatted, because the figure is only ever printed. Null when nothing
    *  priced — never "$0.00", which would claim the purchase is free. */
   total: string | null;
+  /** Copies of the purchase that carry a price, against `buyCount` copies asked
+   *  for. Kept beside `total` because a figure over partial coverage reads as a
+   *  complete one: at 4 of 9 the total is real and the purchase is bigger than
+   *  it, and `priceCopy.strip.pricedClause` is how every other surface says so. */
+  pricedCopies: number;
   /** The draft's average, and the version's. Both null on an all-land list. */
   manaValue: number | null;
   manaValueBefore: number | null;
@@ -2187,8 +2215,8 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [], basicsChanged: false,
-    names: new Map(),
-    buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
+    names: new Map(), costs: new Map(), prices: new Map(), claimsKnown: true,
+    buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null, pricedCopies: 0,
     manaValue: null, manaValueBefore: null,
   };
   // A brew has no version to differ from, so it has no draft state at all —
@@ -2204,12 +2232,19 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
   // reason the commit receipt drops them: they are outside the availability
   // model, so neither list has a figure to print for one.
   const facts = await db.select({
-    oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
+    oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
+    cmc: cards.cmc, manaCost: cards.manaCost,
   }).from(cards).where(inArray(cards.oracleId, changed));
   const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
   const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
   const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
   const names = new Map(facts.map((f) => [f.oracleId, f.name]));
+  // The cost track the inline density draws beside each changed name. A card the
+  // catalog gives no cost stays out of the map rather than entering it as a null,
+  // so its track draws nothing.
+  const costs = new Map(
+    facts.filter((f) => f.manaCost !== null).map((f) => [f.oracleId, f.manaCost as string]),
+  );
 
   // A basics-only edit: real, committable, and priceable by nothing. Every list
   // and every figure stays empty, and `basicsChanged` is the one signal that
@@ -2225,16 +2260,24 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
         oracleIds: adds.map((a) => a.oracleId), excludeDeckId: deckId,
       }).catch(() => null)
     : null;
-  const claimants = new Map(
-    [...(availability ?? new Map<string, Availability>())].map(([oracleId, a]) => [
-      oracleId,
-      // hardDecks, not the raw claims: a brew "holding" a card holds nothing.
-      { free: a.free, claims: hardDecks(a) },
-    ]),
-  );
-  const bucketed = bucketAdds(adds, claimants);
+  // A read that failed is not an empty claim model. `claimsKnown` carries the
+  // difference, and a failed read leaves every add unbucketed rather than
+  // answering "unowned" — which is what an empty claimant map would have said.
+  const claimsKnown = availability !== null;
+  const bucketed = availability
+    ? bucketAdds(adds, new Map(
+        [...availability].map(([oracleId, a]) => [
+          oracleId,
+          // hardDecks, not the raw claims: a brew "holding" a card holds nothing.
+          { free: a.free, claims: hardDecks(a) },
+        ]),
+      ))
+    : adds.map((c) => ({
+        oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
+        bucket: null, heldBy: [],
+      }));
 
-  const unfree = bucketed.filter((a) => a.bucket !== "free");
+  const unfree = bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
   const priced = unfree.length > 0
     ? await loadPrices(unfree.map((a) => a.oracleId)).catch(() => null)
     : null;
@@ -2248,6 +2291,17 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
     priced?.newestAsOf ?? null,
   );
 
+  // Unfree adds only: a free add buys nothing and a remove buys nothing, so
+  // neither carries a figure. A sold-out or unpriced card stays out of the map
+  // rather than entering it as `$0.00`.
+  const priceTags = new Map<string, string>();
+  for (const add of unfree) {
+    const fact = priced?.prices.get(add.oracleId);
+    if (!fact) continue;
+    const cents = priceOf(fact, priceState(fact, priced?.newestAsOf ?? null));
+    if (cents !== null) priceTags.set(add.oracleId, formatCents(cents));
+  }
+
   const cmcByOracle = new Map(facts.map((f) => [f.oracleId, f.cmc]));
   const typeByOracle = new Map(facts.map((f) => [f.oracleId, f.typeLine]));
 
@@ -2260,12 +2314,19 @@ export async function loadDraftState(deckId: string, userId: string): Promise<Dr
     removes,
     basicsChanged: false,
     names,
+    costs,
+    prices: priceTags,
+    claimsKnown,
     buyCount: unfree.reduce((n, a) => n + a.shortfall, 0),
     unfreeCount: unfree.length,
     pullableCount: bucketed.filter((a) =>
       a.bucket === "claimed" && releasableClaims(availability?.get(a.oracleId)).length > 0,
     ).length,
-    total: summary.totalCents > 0 ? formatCents(summary.totalCents) : null,
+    // `pricedCopies`, not a positive total: the feed can stock a card at nothing,
+    // and a real $0.00 is a price the player should see rather than a purchase
+    // the app claims it cannot quote.
+    total: summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
+    pricedCopies: summary.pricedCopies,
     manaValue: averageManaValue(draft.map((c) => ({
       cmc: cmcByOracle.get(c.oracleId) ?? 0,
       quantity: c.quantity,
@@ -2426,7 +2487,8 @@ import { changeCount, hasChanges, type DraftState } from "./draft-state";
 
 const state = (over: Partial<DraftState> = {}): DraftState => ({
   version: null, adds: [], addChanges: [], removes: [], basicsChanged: false,
-  names: new Map(), buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
+  names: new Map(), costs: new Map(), prices: new Map(), claimsKnown: true,
+  buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null, pricedCopies: 0,
   manaValue: null, manaValueBefore: null, ...over,
 });
 
@@ -2529,7 +2591,8 @@ const empty: DraftState = {
     partnerSince: null,
   },
   adds: [], addChanges: [], removes: [], basicsChanged: false, names: new Map(),
-  buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
+  costs: new Map(), prices: new Map(), claimsKnown: true,
+  buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null, pricedCopies: 0,
   manaValue: 3.1, manaValueBefore: 3.4,
 };
 
@@ -2550,6 +2613,10 @@ const withChanges = (adds: number, removes: number): DraftState => ({
   ),
   buyCount: adds, unfreeCount: adds, pullableCount: 0,
   total: adds > 0 ? "$12.00" : null,
+  // Fully covered, so the money line prints the figure alone. A fixture leaving
+  // this at 0 beside a real total describes partial coverage and draws the
+  // `pricedClause` every assertion below would then have to carry.
+  pricedCopies: adds,
 });
 
 describe("PendingBanner", () => {
@@ -2645,8 +2712,10 @@ for the first-commit offer:
 // than a mode of it.
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy, INLINE_CHANGE_MAX } from "../../lib/copy/deck-versioning";
+import { priceCopy } from "../../lib/copy/price";
 import type { DraftChange } from "../../lib/decks/draft-diff";
 import { changeCount, type DraftState } from "../../lib/decks/draft-state";
 import { formatDeckDate } from "../../lib/decks/format";
@@ -2684,6 +2753,36 @@ function changeLabel(state: DraftState, change: DraftChange): string {
   return moved
     ? deckImportCopy.update.diff.recountedItem(name, String(change.from), String(change.to))
     : name;
+}
+
+// The figure is a `<span>` inside the sentence, so the sentence is authored with a
+// placeholder and split on it rather than concatenated out of fragments here.
+const MONEY_SLOT = "\u0000";
+const MONEY_FIGURE = "font-mono text-[12px] md:text-[12.5px] text-[color:var(--warning)]";
+
+/**
+ * The money sentence, or null — the three states the comment at the call site
+ * describes. `claimsKnown` false and a null total are both reads that did not
+ * finish, and neither may be rendered as an answer.
+ */
+function moneyLine(state: DraftState): ReactNode | null {
+  if (!state.claimsKnown) return null;
+  if (state.unfreeCount === 0) return copy.moneyNone;
+  if (state.total === null) return null;
+  const partial = state.pricedCopies < state.buyCount;
+  const total = partial
+    ? `${state.total} · ${priceCopy.strip.pricedClause(state.pricedCopies, state.buyCount)}`
+    : state.total;
+  const [head, tail] = copy
+    .money(state.unfreeCount, state.addChanges.length, state.buyCount, MONEY_SLOT)
+    .split(MONEY_SLOT);
+  return (
+    <>
+      {head}
+      <span className={MONEY_FIGURE}>{total}</span>
+      {tail}
+    </>
+  );
 }
 
 export function PendingBanner({
@@ -2750,12 +2849,21 @@ export function PendingBanner({
               {" · "}
               {copy.since(n, state.version.number)}
             </p>
-            {/* Exactly one money sentence. The pull clause is a second line
-                only because it is a different offer, not a second total. */}
+            {/* Exactly one money sentence, or none. The pull clause is a second
+                line only because it is a different offer, not a second total.
+
+                Three states, and only two of them speak — `moneyLine` returns
+                null for the third. `moneyNone` claims every card coming in has a
+                free copy, so it takes a claim read that actually happened
+                (`claimsKnown`) and a genuine zero; a failed read leaves
+                `unfreeCount` at 0 and would otherwise say the commit is free.
+                When rows are unfree but nothing could be priced there IS a
+                purchase and no figure for it, so the banner states neither and
+                the review page one click away names the rows. A total over
+                partial coverage carries the shipped `pricedClause`, and `money`
+                takes `buyCount` beside the row count. */}
             <p className="m-0 text-[13px] text-[color:var(--fg-faint)]">
-              {state.unfreeCount === 0 || state.total === null
-                ? copy.moneyNone
-                : copy.money(state.unfreeCount, state.addChanges.length, state.total)}
+              {moneyLine(state)}
               {state.pullableCount > 0 && ` ${copy.moneyPulls(state.pullableCount)}`}
             </p>
           </>
