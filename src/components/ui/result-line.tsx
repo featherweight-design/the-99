@@ -126,7 +126,10 @@ export function ResultLine({
     // `fresh` is the guard, not `announce ?? line`: the caller's initial value
     // is the empty string, which is not null, so the nullish fallback would
     // silence every ordinary announcement.
-    lastAnnounce.current = identity;
+    // Stamped only for a message actually delivered. Recording the id on an
+    // ordinary line announcement would let a caller holding a stable id have
+    // its first real message read as stale and never spoken.
+    if (fresh) lastAnnounce.current = identity;
     const message = fresh ? (announce as string) : line;
     // A custom message is delivered as given. It is composed by the surface for
     // a specific action, and this component adds no debounce of its own to it —

@@ -165,6 +165,16 @@ describe("ResultLine", () => {
     expect(secondNode).not.toBe(firstNode);
   });
 
+  it("does not let a line change consume a stable announce id", () => {
+    // A caller holding one id across renders would otherwise have its first
+    // real message stamped by an ordinary count announcement and never spoken.
+    const { rerender, container } = render(<ResultLine line="41 decks" announceId={7} />);
+    rerender(<ResultLine line="12 of 41 decks" announceId={7} />);
+    act(() => vi.advanceTimersByTime(300));
+    rerender(<ResultLine line="12 of 41 decks" announce="Red added." announceId={7} />);
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Red added.");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

@@ -42,6 +42,10 @@ export type FilterChip = {
    * values into a count. "3 colours" tells a sighted reader to look at the
    * swatches; it tells everyone else nothing, and the row this chassis replaced
    * named each colour.
+   *
+   * Present, the chip hides its visible count from the accessibility tree and
+   * exposes this instead — so the names are heard reading the row, not only on
+   * entering the dismiss button.
    */
   spoken?: string;
   onRemove: () => void;
@@ -216,7 +220,19 @@ export function FilterChassis({
                   ))}
                 </span>
               )}
-              {chip.label}
+              {chip.spoken ? (
+                // The same split `buy-tag.tsx` uses: the count is for the eye,
+                // the names are for the ear. Without this a screen reader
+                // reading the row hears "2 colours" and has to enter the
+                // dismiss button to learn which two — which the row this
+                // replaces never made them do.
+                <>
+                  <span aria-hidden="true">{chip.label}</span>
+                  <span className="sr-only">{chip.spoken}</span>
+                </>
+              ) : (
+                chip.label
+              )}
               <button
                 type="button"
                 onClick={chip.onRemove}

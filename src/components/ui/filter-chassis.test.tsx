@@ -241,7 +241,11 @@ describe("FilterChassis", () => {
     );
     expect(screen.getByRole("button", { name: "Remove filter: White, Black" })).toBeTruthy();
     // The count stays on screen; only what is spoken changes.
-    expect(screen.getByText("2 colours")).toBeTruthy();
+    const count = screen.getByText("2 colours");
+    expect(count).toBeTruthy();
+    // And the names are heard reading the ROW, not only on entering the button.
+    expect(count.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("White, Black").className).toContain("sr-only");
   });
 
   it("carries exactly one live region", () => {
