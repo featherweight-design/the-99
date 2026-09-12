@@ -264,9 +264,21 @@ hue code nor a `, on` suffix earns its place in the name.
 - `filter-bar.tsx`'s five `FilterPanel` mounts move into chassis slots, at `desktopRowMinPx={44}`.
 - The `COLOR` caption goes (decision 17) — it existed to explain five abstract squares.
 - The view toggle moves to the result line's trailing edge (decision 21).
-- `ColorFilterRow` is replaced by `ColourPips`. **The set pages mount it too**, so the new pip
-  reaches them: readiness finding 1 requires a fresh six-theme contrast check on `--surface-sunken`,
-  which no audit has measured, rather than assuming the four routes' figures carry over.
+- `ColorFilterRow` is replaced by `ColourPips` **on `/collection` only**. The set pages mount
+  `ColorFilterRow` directly (`src/components/sets/set-grid-view.tsx:21,396`), so they do **not**
+  inherit the new pip by replacing that one call site — they keep the swatch row until a separate
+  slice moves them.
+
+  **This departs from the brief's §5**, which ruled that there is one colour control in the app and
+  the set pages mount it. That ruling stands as the destination; this round simply does not reach
+  it, because the set grid mounts the row directly rather than through `filter-bar.tsx`. Recorded
+  here rather than silently diverging.
+
+  It has a consequence worth stating: for as long as it holds,
+  the two surfaces draw colour differently, which is the inconsistency this whole round exists to
+  remove. The six-theme contrast figure readiness finding 1 asked for was measured anyway —
+  **7.61:1** on `--surface-rail`, the set pages' ground — so whoever migrates them has the number
+  and does not need a second audit.
 - `bodyOneFix` needs the per-filter count query `/collection` does not have (readiness finding 4).
 - **The composition problem lands here**: `FilterPanel`'s compact branch is its own `aria-modal`
   sheet, and `Set ▾` is the searchable dimension that needs it. Solve it as a nested list rather
