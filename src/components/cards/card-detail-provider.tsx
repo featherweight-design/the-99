@@ -162,13 +162,14 @@ export function CardDetailProvider({
   const [siblings, setSiblings] = useState<string[]>([]);
   // The printing the caller asked to open at, carrying the oracle id it belongs to.
   //
-  // The pairing is the whole point rather than bookkeeping: `open` sets this in the same
-  // pass as the click, but the card behind it is whatever was already painted until the
-  // read lands. Held loose, that window shows the card the reader came from wearing the
-  // printing of the one they clicked — the exact mismatch this state exists to fix, in
-  // miniature. Paging is the same window from the other side. So the printing is only ever
-  // read back when the card on screen is the one it was asked for, and no code path has to
-  // remember to clear it.
+  // Two things guard it, for two different reasons. The id pairing covers the read: `open`
+  // sets this in the same pass as the click, but the card behind it is whatever was already
+  // painted until the read lands, so held loose that window shows the card the reader came
+  // from wearing the printing of the one they clicked — the mismatch this state exists to
+  // fix, in miniature. Paging is cleared outright, because it is not a window at all: the
+  // printing belongs to the cell that was clicked, and Prev/Next has left it. The pairing
+  // alone would not do it — paging away and back would match again and resurrect a view the
+  // reader had already paged out of.
   const [openAt, setOpenAt] = useState<{
     oracleId: string;
     printing: PreferredPrinting & { imageUri?: string | null };
@@ -389,11 +390,11 @@ export function CardDetailProvider({
           total={paging ? siblings.length : 1}
           onClose={close}
           onPrev={paging && index > 0
-            ? () => void load(siblings[index - 1])
+            ? () => { setOpenAt(null); void load(siblings[index - 1]); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => void load(siblings[index + 1])
+              ? () => { setOpenAt(null); void load(siblings[index + 1]); }
               : null
           }
         />

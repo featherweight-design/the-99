@@ -463,7 +463,9 @@ export function CardModal({
     if (fallback) setAnnouncement(pickerCopy.announceReset(fallback.setName ?? fallback.setCode));
   }
 
-  const caption = printingCaption(preview);
+  // The base resolves off `preview`, so it names the printing actually on screen; the count
+  // is of what the reader OWNS, so an injected row is art and not a holding.
+  const caption = printingCaption(preview, card.printings);
 
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
   // region is instantiated twice and each instance needs its own id for aria-controls.

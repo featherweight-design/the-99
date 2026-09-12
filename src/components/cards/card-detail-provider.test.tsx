@@ -763,4 +763,44 @@ describe("CardDetailProvider open-at-printing scope", () => {
       expect(backgrounds(container).some((b) => b.includes("m21-268"))).toBe(true),
     );
   });
+
+  // Paging is not the read window from the other side — it is the reader leaving the cell.
+  // The id pairing alone would match again on the way back and resurrect a printing they
+  // had already paged out of, so Prev/Next clears outright.
+  it("does not resurrect the opened-at printing when paging back to that card", async () => {
+    const fetchCard = vi.fn(async (oracleId: string) =>
+      oracleId === "o-signet" ? SIGNET : SOL);
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <button
+          type="button"
+          onClick={() => open("o-signet", ["o-signet", "o-sol"], {
+            setCode: "RVR", collectorNumber: "24",
+            imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+          })}
+        >
+          open signet at RVR
+        </button>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await click(screen.getAllByRole("button", { name: "Next card" })[0]);
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+    await click(screen.getAllByRole("button", { name: "Previous card" })[0]);
+
+    await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
+  });
 });

@@ -797,6 +797,9 @@ describe("CardModal opened at a printing it does not own", () => {
     );
     // Two, not three: the injected TLA row is not a holding.
     expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+    // And the caption counts the same two. `+2 more` would be the injected row joining a
+    // figure whose contract is "other printings you own".
+    expect(screen.queryByText(/\+2 more/)).toBeNull();
     expect(screen.queryByText(/3 printings you own/)).toBeNull();
     // And it is not offered as something to pick. Expanded, because the tiles are the
     // other half of the claim: a count that is right over a list that is wrong still
@@ -809,5 +812,27 @@ describe("CardModal opened at a printing it does not own", () => {
     expect(screen.getAllByRole("radio", { name: /ARC/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("radio", { name: /M21/ }).length).toBeGreaterThan(0);
     expect(screen.queryAllByRole("radio", { name: /TLA/ })).toHaveLength(0);
+  });
+
+  // One holding means no `+N more` at all. The injected row made the suffix appear, so an
+  // owned card with a single copy was captioned as though a second printing existed.
+  it("adds no `more` suffix when the reader owns one printing", () => {
+    render(
+      <CardModal
+        card={ownedElsewhere}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(screen.queryByText(/more/)).toBeNull();
+    expect(screen.getAllByText(/TLA · 282/).length).toBeGreaterThan(0);
   });
 });
