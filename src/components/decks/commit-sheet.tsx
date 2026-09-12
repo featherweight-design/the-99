@@ -288,11 +288,17 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
                 // `buyCount`: a card wanted three times and held once is two.
                 // Spoken into the region that outlives this component, because the
                 // next thing that happens is leaving the page it is on.
-                draftAnnouncer().textContent = copy.announced(
-                  result.number,
-                  result.cardCount,
-                  result.buy.reduce((n, a) => n + a.shortfall, 0),
-                );
+                // A null `buy` is the write saying its claim read failed, not that
+                // the purchase came to nothing, so the clause about buying is
+                // dropped rather than spoken as a zero.
+                draftAnnouncer().textContent =
+                  result.buy === null
+                    ? copy.announcedBuyUnknown(result.number, result.cardCount)
+                    : copy.announced(
+                        result.number,
+                        result.cardCount,
+                        result.buy.reduce((n, a) => n + a.shortfall, 0),
+                      );
                 // With the receipt hash: the deck page's version line reads it,
                 // takes focus, and clears it. Without it the navigation would
                 // leave focus on the body of a page whose one changed line is

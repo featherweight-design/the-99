@@ -61,6 +61,10 @@ const claimed = (over: Partial<Availability["claims"][number]> = {}): Availabili
     ],
   }) as unknown as Availability;
 
+/** The pull's accessible name — the card and the deck it comes out of, not the
+ *  two visible words, which repeat down the column. */
+const PULL_NAME = deckVersioningCopy.review.pullA11y("Sol Ring", "Kykar");
+
 describe("ReviewChanges", () => {
   it("groups both columns by card type and heads each with its count", () => {
     render(
@@ -167,7 +171,7 @@ describe("ReviewChanges", () => {
         state={STATE} cardCount={CARD_COUNT}
       />,
     );
-    expect(screen.getAllByRole("button", { name: deckVersioningCopy.review.pull })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: PULL_NAME })).toHaveLength(1);
   });
 
   // A card nobody has sleeved has no holder to pull from, and a free copy needs
@@ -181,7 +185,7 @@ describe("ReviewChanges", () => {
         state={STATE} cardCount={CARD_COUNT}
       />,
     );
-    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
   });
 
   // `bucketAdds` calls an add free the moment the collection has a spare copy
@@ -210,7 +214,7 @@ describe("ReviewChanges", () => {
         cardCount={CARD_COUNT}
       />,
     );
-    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
     expect(screen.queryByText(deckVersioningCopy.review.heldBy("Kykar"))).toBeNull();
     expect(
       screen
@@ -235,7 +239,7 @@ describe("ReviewChanges", () => {
       />,
     );
     const guard = deckVersioningCopy.review.pullGuardA11y("Kykar", "Sol Ring");
-    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
     expect(screen.getByRole("link", { name: guard })).toBeInTheDocument();
     expect(
       screen
@@ -257,7 +261,7 @@ describe("ReviewChanges", () => {
         state={STATE} cardCount={CARD_COUNT}
       />,
     );
-    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
     expect(screen.getByText(deckVersioningCopy.review.commanderGuardTag)).toBeTruthy();
   });
 

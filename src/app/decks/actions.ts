@@ -1312,7 +1312,13 @@ export type CommitResult =
        *  that was snapshotted, not of the shopping decision. The success line
        *  prints this rather than recounting on the client. */
       cardCount: number;
-      buy: BucketedAdd[];
+      /** What the version costs, or NULL when the claim read behind it failed.
+       *  Null is "nobody could say", never "nothing": the read is a receipt, so
+       *  a failure must not cost the player a version they asked for, and an
+       *  empty list there would announce their shopping as finished on the
+       *  strength of a query that threw. Same distinction `PullResult.buy`
+       *  draws, and the same one the page's `claimsKnown` draws. */
+      buy: BucketedAdd[] | null;
       pull: DraftChange[];
     }
   | { ok: false; message: string };
@@ -1420,24 +1426,38 @@ export async function commitDeckVersion(
     // would read as a 99-card purchase. The design says the same thing from the
     // other side — see `commit.lede`, where a first commit is one of the cases
     // that leaves a figure at zero.
-    const buy = previous
-      ? bucketAdds(
+    // Deliberately off `db` rather than `tx`: this asks what OTHER decks claim, and
+    // the answer wanted is the one that held before this commit landed. That choice
+    // is also what makes the catch below safe — a query that throws on `tx` would
+    // abort the transaction and take the write with it, and one that throws on `db`
+    // leaves this transaction untouched.
+    //
+    // Caught rather than allowed to propagate, because this read is the RECEIPT and
+    // not the write: the page keeps the commit CTA live when its own claim read
+    // fails (`claimsKnown`), so a version the player is invited to cut must not be
+    // refused by a transient failure to price it. hardDecks, not the raw claims: a
+    // BREW "holding" a card holds nothing, and naming it would offer a pull against
+    // a list that was never sleeved.
+    let buy: BucketedAdd[] | null = [];
+    if (previous) {
+      try {
+        const availability = await loadAvailability(userId, {
+          oracleIds: adds.map((a) => a.oracleId),
+          excludeDeckId: deckId,
+        });
+        buy = bucketAdds(
           adds,
-          // Deliberately off `db` rather than `tx`: this asks what OTHER decks
-          // claim, and the answer wanted is the one that held before this commit
-          // landed. hardDecks, not the raw claims: a BREW "holding" a card holds
-          // nothing, and naming it would offer a pull against a list that was
-          // never sleeved.
           new Map(
-            [
-              ...(await loadAvailability(userId, {
-                oracleIds: adds.map((a) => a.oracleId),
-                excludeDeckId: deckId,
-              })),
-            ].map(([oracleId, a]) => [oracleId, { free: a.free, claims: hardDecks(a) }]),
+            [...availability].map(([oracleId, a]) => [
+              oracleId,
+              { free: a.free, claims: hardDecks(a) },
+            ]),
           ),
-        ).filter((a) => a.bucket !== "free")
-      : [];
+        ).filter((a) => a.bucket !== "free");
+      } catch {
+        buy = null;
+      }
+    }
 
     // `cardCount` comes back off the rows the snapshot was written from, rather
     // than being counted here from `draft`: a path that inserts a card the deck

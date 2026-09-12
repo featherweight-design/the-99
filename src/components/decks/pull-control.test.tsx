@@ -28,6 +28,10 @@ const FREE_TO_PULL: DeckClaim = {
 };
 const noop = () => {};
 
+/** The control's accessible name, which is not its visible words: `Pull it`
+ *  repeats down the column and says nothing about which card leaves which deck. */
+const PULL_NAME = copy.pullA11y(CARD.name, FREE_TO_PULL.name);
+
 /** The review page's row, reduced to the two things a pull depends on: the card's
  *  own trigger, which survives the refresh, and the control, which does not. */
 function Row({ pullable = true, onPulled = noop }: { pullable?: boolean; onPulled?: () => void }) {
@@ -57,7 +61,7 @@ describe("PullControl", () => {
     const onPulled = vi.fn();
     render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={onPulled} />);
     await act(async () => {
-      screen.getByRole("button", { name: copy.pull }).click();
+      screen.getByRole("button", { name: PULL_NAME }).click();
     });
     // The source deck, the card, then the deck that gains the copy.
     expect(pullCardFromDeck).toHaveBeenCalledWith("d2", "o1", "d");
@@ -76,7 +80,7 @@ describe("PullControl", () => {
     vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: null, total: null });
     render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
     await act(async () => {
-      screen.getByRole("button", { name: copy.pull }).click();
+      screen.getByRole("button", { name: PULL_NAME }).click();
     });
     const region = screen.getByRole("status");
     expect(region.textContent).toBe(
@@ -95,13 +99,13 @@ describe("PullControl", () => {
     const announced = deckVersioningCopy.commit.pullAnnounced("Sol Ring", "Atraxa", 7, "$241.00");
     const view = render(<Row />);
     await act(async () => {
-      screen.getByRole("button", { name: copy.pull }).click();
+      screen.getByRole("button", { name: PULL_NAME }).click();
     });
     const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") });
     expect(document.activeElement).toBe(trigger);
     // The refresh, as the row's parent will draw it once the server answers.
     view.rerender(<Row pullable={false} />);
-    expect(screen.queryByRole("button", { name: copy.pull })).toBeNull();
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
     expect(screen.getByRole("status").textContent).toBe(announced);
     expect(document.activeElement).toBe(trigger);
   });
@@ -113,10 +117,19 @@ describe("PullControl", () => {
     vi.mocked(pullCardFromDeck).mockRejectedValue(new Error("network"));
     render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
     await act(async () => {
-      screen.getByRole("button", { name: copy.pull }).click();
+      screen.getByRole("button", { name: PULL_NAME }).click();
     });
     expect(screen.getByRole("alert").textContent).toBe(DECK_REMOVE_FALLBACK_MESSAGE);
-    expect(screen.getByRole("button", { name: copy.pull })).toBeTruthy();
+    expect(screen.getByRole("button", { name: PULL_NAME })).toBeTruthy();
+  });
+
+  // Two words on screen, a sentence to a screen reader: a column of identical
+  // `Pull it` names says nothing about which card leaves which deck.
+  it("names the control for its card and its holder while printing the two words", () => {
+    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    const button = screen.getByRole("button", { name: PULL_NAME });
+    expect(button.textContent).toBe(copy.pull);
+    expect(PULL_NAME).not.toBe(copy.pull);
   });
 
   it("replaces the action with a tag and a route when that deck has its own draft", () => {
@@ -131,7 +144,7 @@ describe("PullControl", () => {
     expect(screen.getByText(copy.pullGuardTag)).toBeTruthy();
     // A live link, not a disabled `Pull it`: that deck is the way forward.
     expect(screen.getByRole("link", { name: /Open it to release Sol Ring/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: copy.pull })).toBeNull();
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
   });
 
   it("offers no control at all on a commander claim — no route releases it", () => {
@@ -187,7 +200,7 @@ describe("PullControl", () => {
       <PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />,
     );
     await act(async () => {
-      screen.getByRole("button", { name: copy.pull }).click();
+      screen.getByRole("button", { name: PULL_NAME }).click();
     });
     // A re-render with the same props must not re-run the write or re-derive the
     // sentence — it is held in state for exactly that reason.
@@ -209,7 +222,7 @@ describe("PullControl", () => {
     });
     render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
     await act(async () => {
-      screen.getByRole("button", { name: copy.pull }).click();
+      screen.getByRole("button", { name: PULL_NAME }).click();
     });
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("Release the card there");
@@ -218,7 +231,7 @@ describe("PullControl", () => {
     expect(alert.tagName).toBe("P");
     // The row stays pullable: what refused it was a race, and the reader can act
     // on the advice and ask again.
-    expect(screen.getByRole("button", { name: copy.pull })).toBeTruthy();
+    expect(screen.getByRole("button", { name: PULL_NAME })).toBeTruthy();
   });
 
   // Both actions stand in one box, so a guarded row is the same width and the
@@ -227,7 +240,7 @@ describe("PullControl", () => {
   // navigation.
   it("gives the guard's route the pull's geometry and the reading ink", () => {
     render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
-    const pull = screen.getByRole("button", { name: copy.pull }).className;
+    const pull = screen.getByRole("button", { name: PULL_NAME }).className;
     cleanup();
     render(
       <PullControl

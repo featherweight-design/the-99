@@ -959,6 +959,20 @@ describe("commitDeckVersion", () => {
     ]);
   });
 
+  // The version is written and the receipt is read afterwards, on `db` rather
+  // than the transaction — so a claim read that throws costs the player a
+  // figure, never the version they asked for. Null is "nobody could say": an
+  // empty list here would announce their shopping as finished.
+  it("still commits, with no buy list, when the claim read behind the receipt throws", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(loadAvailability).mockRejectedValue(new Error("claim read"));
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.buy).toBeNull();
+    expect(commitVersion).toHaveBeenCalled();
+  });
+
   // Basics are excluded from the availability model, so an added Forest comes
   // back with no row and would otherwise read as a card nobody owns — ten
   // Forests on a shopping list nobody would ever shop from.

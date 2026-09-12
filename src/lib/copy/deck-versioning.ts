@@ -154,6 +154,12 @@ export const deckVersioningCopy = {
     heldBy: (deck: string) => `in ${deck}`,
     pull: "Pull it",
     pulling: "Pulling…",
+    // Never rendered — the button's accessible name, for the same reason the two
+    // guards carry one. "Pull it" is two words repeated down a column of changed
+    // rows, and a reader tabbing through them cannot tell which card leaves which
+    // deck. The visible text stays two words because the row prints both names
+    // beside it; only the name spoken out of context has to carry them.
+    pullA11y: (card: string, deck: string) => `Pull ${card} from ${deck}.`,
     // The guard: the source deck has pending changes of its own, so committing it
     // automatically would sweep somebody's half-finished tinkering into a version.
     // The deck NAME is already on the row, so the reason is a four-letter tag beside
@@ -260,6 +266,13 @@ export const deckVersioningCopy = {
     refused: "We couldn't commit that version. Your changes are still here.",
     announced: (version: number, cards: number, buy: number) =>
       `Committed v${version}. ${plural(cards, "card")}, ${buy} to buy.`,
+    // The same line with the purchase clause taken out, for the commit whose claim
+    // read failed. The version was written and its size is known; what nobody can
+    // say is what it costs, and "0 to buy" over a failed read tells the player
+    // their shopping is finished. Same rule as `footerUnknown` and
+    // `pullAnnouncedBuyUnknown`.
+    announcedBuyUnknown: (version: number, cards: number) =>
+      `Committed v${version}. ${plural(cards, "card")}.`,
     // Nullable total, because `DraftState.total` is: a purchase where no
     // requested copy carried a price is a real purchase with no figure, and the
     // pull that produced it still has to be announced. The clause is dropped

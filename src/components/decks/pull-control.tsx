@@ -144,6 +144,9 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
         <button
           type="button"
           className={PULL_BUTTON}
+          // Named, because the visible two words repeat down the column: out of
+          // context they say nothing about which card leaves which deck.
+          aria-label={copy.pullA11y(card.name, claim.name)}
           disabled={pending}
           onClick={() => {
             setError(null);

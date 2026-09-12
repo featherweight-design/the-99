@@ -385,7 +385,9 @@ try {
   await pullPage.waitForTimeout(900);
   console.log(`\n########## pull · 1300x900`);
   console.log(`  before: ${(await readReview(pullPage)).footer ?? "absent"}`);
-  await pullPage.getByRole("button", { name: "Pull it" }).click();
+  // By the accessible name, which carries the card and the holder — the visible
+  // text is two words and the button's name is deliberately not it.
+  await pullPage.getByRole("button", { name: /^Pull .+ from .+\.$/ }).click();
   await pullPage.waitForTimeout(2500);
   const pulled = await readReview(pullPage);
   console.log(`  after · url: ${pulled.url} (expect the same page, no navigation)`);

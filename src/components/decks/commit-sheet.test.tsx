@@ -243,6 +243,25 @@ describe("CommitSheet", () => {
     expect(push).toHaveBeenCalledWith(`/decks/d${COMMIT_RECEIPT_HASH}`);
   });
 
+  // The version was written and the claim read behind the receipt was not. The
+  // commit is announced, because it happened; the shopping is the one thing
+  // nobody can speak to, and 0 there would call it finished.
+  it("announces the version and says nothing about buying when the claim read failed", async () => {
+    vi.mocked(commitDeckVersion).mockResolvedValue({
+      ok: true, number: 3, cardCount: 101, buy: null, pull: [],
+    });
+    sheet();
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    const region = screen.getByRole("status");
+    expect(region.textContent).toBe(copy.announcedBuyUnknown(3, 101));
+    // The card count is still spoken — it is the version's own figure. What is
+    // absent is any claim about shopping, including a nought one.
+    expect(region.textContent).toContain("101 cards");
+    expect(region.textContent).not.toContain("to buy");
+  });
+
   // The write decides the purchase inside its own transaction, under the deck's
   // row lock, and that decision is the one the version was written against. A
   // copy freed between this page's read and the click leaves the rendered figure
