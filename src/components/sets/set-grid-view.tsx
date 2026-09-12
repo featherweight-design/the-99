@@ -139,12 +139,25 @@ export function SetGridView(props: SetGridViewProps) {
   // without this the effect read every first render as a stranding and moved focus into the
   // rack before the reader had touched anything — a worse defect than the one it fixes.
   const focusWidth = useRef<boolean | null>(null);
+  // And only when focus was in the rack to begin with. `document.body` on its own is not
+  // evidence that a control was unmounted: a reader who clicked page whitespace and then
+  // resized would have had focus yanked into a rack they never touched. Recorded as focus
+  // MOVES, because by the time the effect runs the element that held it may be gone.
+  const focusWasInRack = useRef(false);
+  const rackRegion = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onFocusIn = () => {
+      const active = document.activeElement;
+      focusWasInRack.current =
+        active instanceof Node && (rackRegion.current?.contains(active) ?? false);
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => document.removeEventListener("focusin", onFocusIn);
+  }, []);
   useEffect(() => {
     const crossed = focusWidth.current !== null && focusWidth.current !== isDesktop;
     focusWidth.current = isDesktop;
-    if (!crossed) return;
-
-
+    if (!crossed || !focusWasInRack.current) return;
     const id = requestAnimationFrame(() => {
       const active = document.activeElement as HTMLElement | null;
       const stranded =
@@ -362,6 +375,7 @@ export function SetGridView(props: SetGridViewProps) {
   return (
     <div>
       <div
+        ref={rackRegion}
         className="sticky top-0 z-[2] pb-[12px] pt-[10px]"
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >

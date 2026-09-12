@@ -939,3 +939,39 @@ describe("SetGridView — the rarity panel's rows", () => {
     expect(row.style.minHeight).toBe("44px");
   });
 });
+
+// `document.body` alone is not evidence a control was unmounted. A reader who clicked page
+// whitespace and then resized would have had focus yanked into a rack they never touched.
+describe("SetGridView — focus is rescued only when it was in the rack", () => {
+  const flushFrame = () =>
+    act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    });
+
+  it("leaves focus alone across a resize the reader was not inside the rack for", async () => {
+    stubDesktop(false);
+    const { rerender, container } = render(
+      <SetGridView
+        code="dsk" name="Duskmourn" iconSvgUri={null} releasedAt="2026-09-01"
+        ownedFingerprint="" artGeneration={0}
+        cells={placeCells([p("1"), p("2")], [])} prices={[]} newestAsOf={null}
+        baseSetSize={2} staleAsOf={null}
+      />,
+    );
+    // Focus is on the body for an ordinary reason: nothing in the rack was ever touched.
+    expect(document.activeElement).toBe(document.body);
+
+    stubDesktop(true);
+    rerender(
+      <SetGridView
+        code="dsk" name="Duskmourn" iconSvgUri={null} releasedAt="2026-09-01"
+        ownedFingerprint="" artGeneration={0}
+        cells={placeCells([p("1"), p("2")], [])} prices={[]} newestAsOf={null}
+        baseSetSize={2} staleAsOf={null}
+      />,
+    );
+    await flushFrame();
+    expect(document.activeElement).toBe(document.body);
+    expect(container).toBeTruthy();
+  });
+});
