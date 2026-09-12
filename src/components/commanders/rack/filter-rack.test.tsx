@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultParams, type Lane, type LaneParams } from "@/lib/commanders/lane-params";
 import { FilterRack } from "./filter-rack";
+import { filterCopy } from "@/lib/copy/lanes";
 
 function stubWidth(wide: boolean) {
   vi.stubGlobal(
@@ -39,9 +40,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("FilterRack", () => {
   it("preserves a non-default ranking when the sheet's own Clear is pressed", () => {
-    // Sort left the sheet, and the chassis's Clear names the sort as unchanged.
-    // The sheet's Clear is a second control making the same promise, and it was
-    // still calling defaultParams — which resets `order`.
+    // Forced compact and actually opened, because the first version of this
+    // test guarded on `queryByRole` and could pass without ever reaching the
+    // sheet — in wide it matched the chassis's Clear instead, and in compact it
+    // matched nothing at all.
+    stubWidth(false);
     const seen: LaneParams[] = [];
     render(
       <FilterRack
@@ -54,18 +57,11 @@ describe("FilterRack", () => {
         orderPending={false}
       />,
     );
-    const clear = screen.queryByRole("button", { name: /clear/i });
-    if (clear) {
-      fireEvent.click(clear);
-      for (const next of seen) expect(next.order).toBe("name");
-    }
+    fireEvent.click(screen.getByRole("button", { name: filterCopy.sheet.trigger }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Clear" }));
+    expect(seen.length).toBeGreaterThan(0);
+    for (const next of seen) expect(next.order).toBe("name");
   });
-
-  // The aside used to be composed inside the rack's own ResultLine. It is
-  // composed at this caller now and handed to the chassis as one string, so
-  // nothing but an integration assertion proves it still reaches the row —
-  // `result-line.test.tsx` only concatenates two strings in isolation, which
-  // would pass with this wiring dropped entirely.
   it("passes the Exactly aside through to the chassis result line", () => {
     const { container } = renderRack(
       "owned",

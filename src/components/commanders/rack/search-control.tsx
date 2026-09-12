@@ -8,6 +8,7 @@
 // split subtree would put the same input in the accessibility tree twice.
 
 import { filterCopy } from "../../../lib/copy/lanes";
+import { useEffect, useRef } from "react";
 import { SearchField } from "../../ui/text-field";
 
 const copy = filterCopy.search;
@@ -32,11 +33,19 @@ export function SearchControl({
   // whole of search's "active" treatment on the rack — it is never chipped and
   // never counted by the badge (call 4).
   const filled = value !== "";
+
+  // `autoFocus` is applied by React on MOUNT, and this component stays mounted
+  // across the breakpoint — so forwarding the prop did nothing and the handoff
+  // was a no-op. The focus is taken imperatively when the flag turns on.
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (autoFocus) box.current?.querySelector("input")?.focus();
+  }, [autoFocus]);
   return (
+    <div ref={box} className={wide ? "" : "w-full"}>
     <SearchField
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      autoFocus={autoFocus}
       // The narrow field is 44px of full width and takes the short word; the
       // rack's 300px field has room to say what is being searched.
       placeholder={wide ? copy.placeholderWide : copy.placeholder}
@@ -74,6 +83,7 @@ export function SearchControl({
         ) : null
       }
     />
+    </div>
   );
 }
 
