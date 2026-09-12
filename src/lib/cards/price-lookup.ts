@@ -105,7 +105,16 @@ export function priceFor(
     return { fact: prices.byScryfallId[printing.scryfallId] ?? null };
   }
   // A holding with no catalog id — a bare `Name,Qty` import — is still nameable
-  // when it carries a collector number, and is not when it does not.
-  if (printing.collectorNumber === "") return null;
+  // when it carries BOTH halves of a printing's identity. One half is not an
+  // identity: a collector number with no set code would fall through to a `|263`
+  // key, miss, and report that the store had answered about a printing nobody
+  // named.
+  if (printing.setCode === "" || printing.collectorNumber === "") return null;
+  // The figure follows the printing the ENTRY names, which is not always the
+  // printing whose art is drawn: where the exact row carries no image,
+  // `resolveImageUri` falls back to the set's representative. The entry is still
+  // this printing, the player still owns this printing, and its price is still
+  // the true one — the stand-in art is a documented approximation of the picture,
+  // never a change of which printing is in hand.
   return { fact: prices.byPrintingKey[priceKeyFor(printing)] ?? null };
 }

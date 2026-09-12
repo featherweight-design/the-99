@@ -585,7 +585,7 @@ export function CardModal({
   // store answered, and the answer was that it has never carried this printing.
   const price = priceFor(card.prices, resolved);
   const priceTag = price ? (
-    <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} />
+    <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone />
   ) : null;
 
   return (
@@ -708,13 +708,6 @@ export function CardModal({
                   {card.typeLine}
                 </p>
               </div>
-              {/* The tag survives the collapse and moves into the name block (card-detail
-                  R2, table rows 2.1-2.2): a 72px thumb has no room beneath it. It sits
-                  OUTSIDE the aria-hidden heading above, or the figure would be invisible to
-                  assistive tech (erratum E10). */}
-              {priceTag && (
-                <div className="mt-[6px]" data-testid="modal-price-compact">{priceTag}</div>
-              )}
             </div>
           )}
         </div>
@@ -769,6 +762,15 @@ export function CardModal({
                 Right padding on desktop clears the absolutely-positioned close
                 button, which otherwise sits on top of the mana pips. */}
             <div className="flex items-start justify-between gap-[12px] md:pr-[46px]">
+              {/* The tag survives the collapse and moves out of the art (card-detail R2,
+                  table rows 2.1-2.2): a 72px thumb has no room beneath it. It lands
+                  beside the mana cost, which is the one thing still drawn in this row on
+                  a phone — the name and type line move into the art header, and the
+                  heading there is aria-hidden, so a figure placed inside it would reach
+                  no assistive technology at all (erratum E10). */}
+              {compactArt && priceTag && (
+                <div className="md:hidden" data-testid="modal-price-compact">{priceTag}</div>
+              )}
               <div className={compactArt ? "min-w-0 hidden md:block" : "min-w-0"}>
                 <h3
                   id="card-modal-title"

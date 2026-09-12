@@ -138,7 +138,7 @@ export type BrowseCard = {
  * a tuple list rather than a record because it serialises smaller, and this
  * type exists to make the payload small.
  */
-export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "backImageUri"> & {
+export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "backImageUri" | "prices"> & {
   setCounts: [string, number][];
 };
 
@@ -146,7 +146,7 @@ export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "back
 export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
   return cards.map((card) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured to drop them from `rest`
-    const { printings, oracleText, backImageUri, ...rest } = card;
+    const { printings, oracleText, backImageUri, prices, ...rest } = card;
     const counts = new Map<string, number>();
     for (const p of printings) {
       // Uppercased here rather than trusted: `buildSetOptions` looks these codes

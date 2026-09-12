@@ -131,6 +131,15 @@ describe("the price under the art", () => {
       .toHaveTextContent(setPageCopy.cell.noStock);
   });
 
+  it("speaks the ratified sentence rather than a bare figure", () => {
+    // A tag drawn on its own in a dialog would otherwise reach a screen reader as
+    // "$2.41" — a number with no subject and no date (table row 1.12).
+    mount(card());
+
+    expect(screen.getByTestId("modal-price-desktop").querySelector("[aria-label]")?.getAttribute("aria-label"))
+      .toMatch(/\$2\.41 at ManaPool, last checked /);
+  });
+
   it("is unchanged by ownership — an unowned card carries the same figure", () => {
     mount(card({ quantity: 0, printings: [printing({ quantity: 0, finishes: {} })] }));
 

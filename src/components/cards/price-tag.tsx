@@ -15,7 +15,13 @@
 // printing the feed has never carried was never for sale here, and a sold-out one
 // was. The word is the same because the shopper's question is the same.
 
-import { formatCents, priceOf, priceState, type PriceFact } from "../../lib/decks/price";
+import {
+  formatCents,
+  priceOf,
+  priceState,
+  provenanceForm,
+  type PriceFact,
+} from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 
@@ -23,6 +29,7 @@ export function PriceTag({
   fact,
   newestAsOf,
   className,
+  standalone = false,
 }: {
   /** The feed's row for THIS printing, or null when it carried none. */
   fact: PriceFact | null;
@@ -30,6 +37,21 @@ export function PriceTag({
   newestAsOf: Date | null;
   /** Positioning only. The tag owns its own ink, edge and padding at every call site. */
   className?: string;
+  /**
+   * True where nothing around the tag speaks its figure.
+   *
+   * The set grid's cell composes the figure into the button's own accessible
+   * name, so a label here would say it twice. The card modal draws the tag on its
+   * own, where a bare `$2.41` is what a screen reader would reach — a number with
+   * no subject and no date. `priceCopy.aria` is the ratified sentence for that,
+   * and this is the only place it is spoken per card.
+   *
+   * `provenanceForm` is called here rather than on the server, against this
+   * repo's own instruction, for the one reason that instruction allows: this node
+   * never server-renders. The modal's card arrives from a click-time fetch, so
+   * there is no server render for a browser clock to disagree with.
+   */
+  standalone?: boolean;
 }) {
   const state = priceState(fact, newestAsOf);
   const cents = fact ? priceOf(fact, state) : null;
@@ -65,11 +87,21 @@ export function PriceTag({
         ? priceCopy.tag.foil
         : priceCopy.tag.etched)
     : null;
+  const spoken = qualifier
+    ? setPageCopy.cell.qualifiedPriceAria(qualifier, money)
+    : standalone && newestAsOf
+      ? (() => {
+          const form = provenanceForm(newestAsOf, new Date());
+          return form.behind
+            ? priceCopy.aria.pricedBehind(money, form.when)
+            : priceCopy.aria.priced(money, form.when);
+        })()
+      : undefined;
   return (
     <span
       className={className ? `${base} ${className}` : base}
       style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}
-      aria-label={qualifier ? setPageCopy.cell.qualifiedPriceAria(qualifier, money) : undefined}
+      aria-label={spoken}
     >
       {qualifier ? setPageCopy.cell.qualifiedPrice(qualifier, money) : money}
     </span>

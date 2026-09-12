@@ -121,12 +121,23 @@ try {
     const tiles = page.locator('[role="radio"]');
     const count = await tiles.count();
     if (count > 1) {
-      const before = await readPrice(page);
+      const caption = () =>
+        page.locator('button[aria-label*="printings owned"]').last().getAttribute("aria-label");
+      const before = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
       await tiles.nth(1).click();
       await page.waitForTimeout(1_200);
-      const after = await readPrice(page);
+      const after = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
       console.log("\n── after picking the second printing ──");
-      console.log(JSON.stringify({ before: before.desktop?.text, after: after.desktop?.text }, null, 2));
+      console.log(JSON.stringify({ before, after }, null, 2));
+      // What can be asserted without knowing the feed: the pick landed, and the tag
+      // was re-resolved rather than left behind as a node from the previous printing.
+      // Whether the FIGURE differs is not assertable here — two printings of one card
+      // may legitimately cost the same — so the two are printed for a human to read
+      // against each other, and only the pick itself fails the probe.
+      if (before.caption === after.caption) {
+        console.log("\nFAIL: the pick did not change the resolved printing, so the tag proves nothing.");
+        process.exitCode = 1;
+      }
     } else {
       console.log("\n(only one printing owned — the pick check needs a card with several)");
     }
