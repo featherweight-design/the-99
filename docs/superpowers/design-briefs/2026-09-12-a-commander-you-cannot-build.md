@@ -97,13 +97,20 @@ The row and the hero each need to say one of:
   form: building means taking the card out of a finished deck.
 - **Wanted by a brew** — an uncommitted list names it (`soft`). Weaker: nothing is physically in
   sleeves, and the app has always treated a brew as a list rather than a claim.
+- **Over-committed** — more committed decks claim the commander than the player owns copies of
+  (`free < 0`, `over`). Reachable: two decks can each sleeve the only copy, and `/collection` already
+  draws this state. Whether it deserves its own weight on these two surfaces or simply reads as
+  sleeved is question 7 below — the player's answer to both is the same act, taking the card out of a
+  deck, but the over-committed case means a deck is already going short.
 - **Free** — nothing to say, and the surface should say nothing. Most commanders are here, and a
   marker that renders on every row is a marker nobody reads.
 
-**Buildability and marker state are two different questions, and this brief means the first.** A
-player owning two copies with one sleeved can build today — `Availability.free > 0` — but
-`availabilityState` (`src/lib/decks/availability.ts:97`) still returns `soft` for that card, because
-a brew wanting the other copy is worth saying on a card row. Whether the commander surfaces inherit
+**Buildability and marker state are two different questions, and this brief means the first.** Worked
+through, because it is easy to misread: a player owns 2 copies, one is sleeved in a committed deck
+and a brew lists the other. Off a decklist `free = owned − hard`
+(`src/lib/decks/availability.ts:63`), so `free` is 1 — a brew's claim never subtracts — and
+`availabilityState` (`:114`) passes the `over` and `hard` guards and returns **`soft`**. The player
+can build; the card still reads as wanted by a brew, because that is worth saying on a card row. Whether the commander surfaces inherit
 that partition or draw only on `free === 0` is Design's call, and it is question 6 below. The figure
 that decides *can I build this* is `Availability.free`, never a deck count.
 
@@ -142,3 +149,4 @@ what it likes.
    brew claim reads `soft`? Card rows do. On a commander row the question the reader is asking is
    narrower — *can I build this one* — and the answer to that is `free > 0` whatever a brew wants, so
    the two may legitimately diverge.
+7. Does `over` get its own treatment here, or fold into the sleeved one? See §4.
