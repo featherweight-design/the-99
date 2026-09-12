@@ -127,14 +127,22 @@ export function SetGridView(props: SetGridViewProps) {
 
   // The dialog hook returns focus to the trigger it saved, and after a crossing to desktop
   // that trigger is `md:hidden` — focus lands on a control nobody can see. Rather than
-  // tracking why focus moved, this asks the only question that matters: is it on something
-  // with no box? Runs after the unmount this breakpoint change causes.
+  // tracking why focus moved, this asks the only question that matters: is what holds focus
+  // reachable? Runs after the unmount this breakpoint change causes.
+  //
+  // `document.body` counts as unreachable, which is the crossing in the OTHER direction:
+  // going to phone unmounts the rarity panel, and a focused subtree being removed drops
+  // focus to the body. Treating the body as "fine" lost the keyboard there entirely — the
+  // reader was inside a control, and the control's replacement is one tab away at most.
+  const sheetTriggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const id = requestAnimationFrame(() => {
       const active = document.activeElement as HTMLElement | null;
-      if (active && active !== document.body && active.getClientRects().length === 0) {
-        desktopRackRef.current?.focus();
-      }
+      const stranded =
+        active === null || active === document.body || active.getClientRects().length === 0;
+      if (!stranded) return;
+      // Whichever width we just arrived at, land on that width's own first control.
+      (isDesktop ? desktopRackRef.current : sheetTriggerRef.current)?.focus();
     });
     return () => cancelAnimationFrame(id);
   }, [isDesktop]);
@@ -313,6 +321,12 @@ export function SetGridView(props: SetGridViewProps) {
     });
   }
   const clearAll = () => setFilters(EMPTY_FILTERS);
+  // A filter that is SET but not APPLIED draws no chip, so the chip line alone would offer
+  // no way out of it. That happens exactly once: `m=1` still in the URL on a set the reader
+  // has completed, where `effective` drops missing-only and its control is gone too. Clear
+  // stays, alone on the line, because it is the only route left to a parameter that would
+  // start filtering again the moment the set stopped being complete.
+  const staleFilter = anyFilterOn && chips.length === 0;
 
   // Per-row counts from the ONE filtered computation, so the panel never disagrees with
   // the result line beside it. Rarity is excluded from its own counts — a panel whose rows
@@ -453,6 +467,7 @@ export function SetGridView(props: SetGridViewProps) {
             rack not moving what the reader is reading, and there is nothing there to move. */}
         <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
           <button
+            ref={sheetTriggerRef}
             type="button"
             onClick={() => setSheetOpen(true)}
             aria-haspopup="dialog"
@@ -600,7 +615,7 @@ export function SetGridView(props: SetGridViewProps) {
               noise. Not a GhostButton: it was the only one in a row of 32px hairlines, and
               the chassis's answer to "what should this button look like" is that it is not
               a button on that row at all. */}
-          {chips.length > 1 ? (
+          {chips.length > 1 || staleFilter ? (
             <button
               type="button"
               onClick={clearAll}

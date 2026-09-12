@@ -524,7 +524,14 @@ async function run() {
     };
     const rest = await rackAt("");
     const one = await rackAt("?c=W");
+    // Three ACTIVE dimensions, which a complete set cannot have: at 100% the page drops
+    // missing-only from what it applies, and its control with it, so `m=1` draws no chip
+    // there by design. Asserting three against the first set in the index would report a
+    // failure for correct behaviour on a fixture that happens to be finished.
     const three = await rackAt("?c=W&r=rare&m=1");
+    const setIsComplete = await page.evaluate(
+      () => /base run has nothing left|You have every/i.test(document.body.innerText),
+    );
     if (rest === null) {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");
     } else {
@@ -539,8 +546,10 @@ async function run() {
         `opacities ${rest.pipOpacities.join(", ") || "(none)"}`,
       );
       failures += !report(
-        "three filters on draw three chips",
-        three.chips >= 3,
+        setIsComplete
+          ? "two filters on draw two chips (complete set: missing-only is not applied)"
+          : "three filters on draw three chips",
+        three.chips >= (setIsComplete ? 2 : 3),
         `${three.chips} chip removals`,
       );
     }

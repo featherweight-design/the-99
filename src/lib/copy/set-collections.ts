@@ -13,16 +13,19 @@ const setFilterCopyRarityOptions = {
   common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
 } as const;
 
+/** Hoisted for the same reason: the panel's trigger reads these, it does not restate them. */
+const setFilterCopyRarity = {
+  label: "Rarity",
+  all: "Rarity · all",
+  value: (r: "common" | "uncommon" | "rare" | "mythic") => `Rarity · ${r}`,
+  options: setFilterCopyRarityOptions,
+} as const;
+
 export const setFilterCopy = {
   // The colour filter's own strings ship with the component it is mounted from
   // (components/collection/color-filter-row.tsx) and are deliberately not redeclared
   // here — a second copy of a label is a second thing to keep in step.
-  rarity: {
-    label: "Rarity",
-    all: "Rarity · all",
-    value: (r: "common" | "uncommon" | "rare" | "mythic") => `Rarity · ${r}`,
-    options: setFilterCopyRarityOptions,
-  },
+  rarity: setFilterCopyRarity,
   label: "Filters",
   colourLabel: "Colour",
   colourAria: (c: string) => `Filter by ${c}`,
@@ -60,8 +63,12 @@ export const setFilterCopy = {
     // Rest and active labels are `rarity.all` / `rarity.value`, which already shipped in
     // this file unused — evidence the trigger was always the intent and the four letter
     // buttons were the shortcut.
-    triggerLabel: "Rarity · all",
-    triggerOne: (name: string) => `Rarity · ${name.toLowerCase()}`,
+    // ONE source. These were spelled out here while the comment above claimed they were
+    // reused, which is how a later copy edit makes the trigger disagree with the chips
+    // beside it.
+    triggerLabel: setFilterCopyRarity.all,
+    triggerOne: (name: string) =>
+      setFilterCopyRarity.value(name.toLowerCase() as "common" | "uncommon" | "rare" | "mythic"),
     triggerAriaCollapsed: "Filter by rarity, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by rarity, ${n} selected, collapsed`,
     panelAriaLabel: "Filter by rarity",

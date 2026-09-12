@@ -830,3 +830,26 @@ describe("SetGridView — the badge counts dimensions", () => {
     expect(rack).not.toBeNull();
   });
 });
+
+// Review round 3 on the rack. A filter that is SET but not APPLIED draws no chip, so the
+// chip line alone would offer no way out of it — which happens exactly once, and is the
+// desktop half of the same defect the sheet's Clear had.
+describe("SetGridView — a stale filter a complete set does not apply", () => {
+  it("keeps Clear on the chip line with m=1 on a completed set", () => {
+    search = "m=1";
+    view([p("1")], ["1"]);
+    expect(screen.getByRole("button", { name: /Clear every filter/ })).toBeInTheDocument();
+  });
+
+  it("removes the parameter when it is used", () => {
+    search = "m=1";
+    view([p("1")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: /Clear every filter/ }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("still shows no Clear when nothing at all is on", () => {
+    view([p("1")], ["1"]);
+    expect(screen.queryByRole("button", { name: /Clear every filter/ })).toBeNull();
+  });
+});
