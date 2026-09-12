@@ -160,6 +160,38 @@ describe("useLiveQuery", () => {
     expect(shown()).toBe("c=b");
   });
 
+  // Repairing one displaced method must not re-wrap the intact one: each extra
+  // layer is another `notify` around the same write, so one displaced
+  // `pushState` would otherwise make every later `replaceState` fire the store
+  // twice, then three times.
+  it("repairs only the method that was displaced", async () => {
+    let renders = 0;
+    const { useLiveQuery } = await import("./live-query");
+    function Counting() {
+      renders += 1;
+      return <output data-testid="q">{useLiveQuery("") || "(empty)"}</output>;
+    }
+    render(<Counting />);
+
+    // Displace `pushState` alone, then let the per-read check repair it.
+    const displaced = window.history.pushState;
+    window.history.pushState = function later(this: History, state, title, url) {
+      return displaced.call(this, state, title, url ?? null);
+    };
+    act(() => {
+      window.history.pushState(null, "", "/commanders?a=free");
+    });
+
+    const afterRepair = renders;
+    act(() => {
+      window.history.replaceState(null, "", "/commanders?c=r");
+    });
+
+    // One write, one re-render — not one per repair that has happened.
+    expect(renders - afterRepair).toBe(1);
+    expect(screen.getByTestId("q").textContent).toBe("c=r");
+  });
+
   // The fallback, and the case the bug report actually named. jsdom fires
   // `popstate` on a task of its own, so this awaits it.
   it("follows a back navigation with no Navigation API at all", async () => {

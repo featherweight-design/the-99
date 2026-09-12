@@ -186,7 +186,33 @@ export function CommandersView({
   // every unrelated update, revealing a batch of rows or moving the live
   // announcement included.
   const urlParams = useMemo(() => fromUrl(new URLSearchParams(liveQuery)), [fromUrl, liveQuery]);
-  const params = edit && edit.query === liveQuery ? edit.params : urlParams;
+  const asked = edit && edit.query === liveQuery ? edit.params : urlParams;
+
+  // The free mode, and whether this payload can still serve it — DERIVED, not
+  // stored. A revalidation can take the ranking away under a reader already
+  // standing in it: an availability rollup that fails on the next read arrives as
+  // `availOk: false` with a null `freeRanking`, and without this the list would
+  // quietly fall back to the canonical one while the segment, the receipts, the
+  // detail links and the URL all went on saying `free`.
+  //
+  // Derived rather than written back, because writing it back is a second source
+  // of truth that outlives its own reason: an overlay recording `all` against the
+  // query `a=free` would go on imposing `all` if the reader returned to that same
+  // query once the ranking was available again — refusing a request the payload
+  // could by then serve. As a derivation it is simply recomputed, every render,
+  // from the two things that decide it.
+  //
+  // The URL climbs down with it: the mirror effect runs off `params`, so the
+  // address bar loses `a=free` on the same commit the control does.
+  const canRankFree = availOk && freeItems !== null;
+  // Memoised, because this object is the URL mirror's dependency: a fresh one per
+  // render would re-fire that effect on every unrelated update. The climb-down
+  // branch returns `asked` itself where nothing needs correcting, so the identity
+  // only moves when the answer does.
+  const params = useMemo<LaneParams>(
+    () => (asked.avail === "free" && !canRankFree ? { ...asked, avail: "all" } : asked),
+    [asked, canRankFree],
+  );
 
   // The query `p` serialises to against the URL as it stands right now, in
   // `useSearchParams`' spelling — no leading `?`, its key order — so every
@@ -237,29 +263,6 @@ export function CommandersView({
     if (query === new URLSearchParams(live).toString()) return;
     window.history.replaceState(null, "", `${pathname}${written}`);
   }, [params, queryFor]);
-
-  // The mode and the payload's ability to serve it, reconciled DURING RENDER
-  // rather than in an effect. A revalidation can take the free ranking away
-  // under a reader already standing in it — an availability rollup that fails on
-  // the next read arrives as `availOk: false` with a null `freeRanking` — and
-  // nothing else would climb down: the list would quietly fall back to the
-  // canonical one while the segment, the receipts, the detail links and the URL
-  // all went on saying `free`. Adjusting here rather than in an effect is what
-  // keeps the wrong list from painting once before being corrected, and the URL
-  // mirror runs off `params`, so the address bar climbs down with it.
-  const canRankFree = availOk && freeItems !== null;
-  if (avail === "free" && !canRankFree) {
-    // `setEdit` directly, never `setParams`: this runs during render, and
-    // `setParams` writes the URL. A render-phase update may be replayed or
-    // abandoned, so anything it schedules has to be pure — the address bar
-    // follows from the mirror effect once this commits.
-    //
-    // Keyed to the query that is live NOW rather than the one those params will
-    // serialise to. Keyed to the future one, the overlay would not match until
-    // the effect had written it, the fallback would read `free` off the URL again
-    // in between, and this branch would re-fire on its own output.
-    setEdit({ query: liveQuery, params: { ...params, avail: "all" } });
-  }
 
   // Which list is on screen. Falling back to `results` when the free ranking is
   // missing keeps the page rendering something true rather than nothing — belt

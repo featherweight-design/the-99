@@ -74,6 +74,11 @@ type HistoryMethod = "pushState" | "replaceState";
     Re-entrant on purpose — see `ensureObserving`. */
 function wrapHistory() {
   for (const name of ["pushState", "replaceState"] as const) {
+    // Only what has actually been displaced. Wrapping a method that is already
+    // ours would nest a second `notify` around it, and every repair after that
+    // another — so one displaced `pushState` would make every later
+    // `replaceState` fire the store twice, then three times.
+    if (ours.get(name) === window.history[name]) continue;
     // Whatever is installed right now, which is Next's own wrapper in the app and
     // a previous wrapper of ours if something has since patched over it. Either
     // way this delegates to it rather than replacing it.

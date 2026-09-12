@@ -469,6 +469,22 @@ describe("CommandersView ranking toggle", () => {
     expect(cards()[0]).toHaveTextContent("General 2");
   });
 
+  // The climb-down is derived, not recorded — so a reader who returns to the same
+  // `?a=free` once the ranking is back gets the free lane, not a remembered
+  // refusal. A stored overlay would have outlived the reason it was written.
+  it("honours the same request again once the payload can serve it", () => {
+    const all = results(3);
+    const { again } = view(all, { avail: "free", freeItems: null, availOk: false });
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+
+    // The reader asks again — `avail` is the URL the helper writes, not a prop —
+    // and this time the ranking is there.
+    again(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    expect(cards()[0]).toHaveTextContent("General 2");
+  });
+
   // A revalidation can take the ranking away under a reader already standing in
   // it: an availability rollup that fails on the next read arrives as
   // `availOk: false` with no free ranking. Without a climb-down the list falls
