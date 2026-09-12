@@ -310,3 +310,25 @@ describe("CommanderDetail card details trigger", () => {
     expect(screen.getAllByRole("button", { name: "View card details" })).toHaveLength(2);
   });
 });
+
+describe("commander detail — the desktop card face", () => {
+  // The two card faces converge on one ring alpha and one shadow, and nothing
+  // else covered it: the detail tests read content and interactions, and the
+  // browser census only measures `[data-commander-thumb]` elements — which this
+  // 220px-class face deliberately is not, because the player is meant to read
+  // the printing here rather than identify a row.
+  it("rings and shadows the face at the converged values", () => {
+    const { container } = render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />,
+    );
+    const face = Array.from(container.querySelectorAll<HTMLElement>("div")).find(
+      (el) => el.style.aspectRatio === "63/88",
+    )!;
+    expect(face.style.boxShadow).toContain("inset 0 0 0 1px rgba(0,0,0,0.4)");
+    expect(face.style.boxShadow).toContain("0 20px 50px rgba(0,0,0,0.5)");
+    // `.3` was this face's own ring and `0 24px 50px` the other face's shadow;
+    // neither survives the convergence.
+    expect(face.style.boxShadow).not.toContain("0.3)");
+    expect(face.style.boxShadow).not.toContain("24px");
+  });
+});
