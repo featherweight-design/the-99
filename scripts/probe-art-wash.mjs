@@ -826,12 +826,34 @@ try {
     // which is the only way to reach them.
     await page.goto(`${BASE}/decks/new`, { waitUntil: "networkidle" });
     await page.waitForTimeout(900);
-    const candidate = page.locator('li button[aria-pressed]').first();
-    if (!(await candidate.count())) {
+    const candidates = page.locator('li button[aria-pressed]');
+    const candidateCount = await candidates.count();
+    if (!candidateCount) {
       note(`  FAIL no candidate row on /decks/new — the picker's selected summary goes unchecked`);
     } else {
-      await candidate.click();
-      await page.waitForTimeout(500);
+      // Walk candidates until one can PAIR, because the partner slot is the
+      // fifth thumb and it only mounts for a commander with a partner ability.
+      // Clicking the first row reaches the summary and, most of the time, not
+      // the slot — so a census that stopped there reported four of five renders
+      // while claiming all five.
+      let pairing = false;
+      for (let i = 0; i < Math.min(candidateCount, 12); i++) {
+        await candidates.nth(i).click();
+        await page.waitForTimeout(400);
+        pairing = Boolean(
+          await page.evaluate(
+            `document.querySelectorAll('[aria-label^="Add a partner"], [class*="border-dashed"]').length`,
+          ),
+        );
+        if (pairing) {
+          note(`${vpName} the picker: candidate ${i + 1} can pair — the partner slot is drawn`);
+          break;
+        }
+      }
+      if (!pairing) {
+        note(`${vpName} the picker: none of the first ${Math.min(candidateCount, 12)} candidates can pair — the partner slot goes unchecked`);
+      }
+      await page.waitForTimeout(300);
       await page.screenshot({ path: `/tmp/art-wash-${vpName}-picker-selected.png` });
       const picked = await page.evaluate(`(${READ_THUMBS})()`);
       const boxes = new Set(picked.map((t) => t.box.join("×")));

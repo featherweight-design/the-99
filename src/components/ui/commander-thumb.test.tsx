@@ -39,10 +39,12 @@ describe("CommanderThumb", () => {
     expect(el.style.background).toContain("var(--elevated)");
   });
 
-  // No art draws the identity gradient, whatever the identity is — and an EMPTY
-  // array is colorless in this codebase rather than missing, so it draws the
-  // colorless gradient both card faces draw rather than a treatment of its own.
-  it("falls back to the identity gradient, colorless included", () => {
+  // B6's two halves are two different facts. `[]` is COLORLESS — a real identity
+  // — and draws the colorless gradient both card faces draw; `null` is "we do not
+  // know", which draws the stripes every artless card with nothing to say about
+  // its colours draws. A `string[]` alone cannot tell them apart, and collapsing
+  // them either invents a colour or takes one away.
+  it("separates a colorless identity from an unknown one", () => {
     const identity = thumb(<CommanderThumb imageUri={null} colorIdentity={["U", "R"]} />);
     expect(identity.style.background).toContain("linear-gradient(130deg");
     expect(identity.style.background).not.toContain("var(--elevated)");
@@ -50,6 +52,9 @@ describe("CommanderThumb", () => {
     const colorless = thumb(<CommanderThumb imageUri={null} colorIdentity={[]} />);
     expect(colorless.style.background).toContain("linear-gradient(150deg");
     expect(colorless.style.background).not.toContain("repeating-linear-gradient");
+
+    const unknown = thumb(<CommanderThumb imageUri={null} colorIdentity={null} />);
+    expect(unknown.style.background).toContain("repeating-linear-gradient");
   });
 
   // The marker a probe selects on, because shape is not enough: the decks zero

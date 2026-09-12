@@ -1,4 +1,4 @@
-import { cssUrl } from "../../lib/collection/browse";
+import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
 import { commanderGradient } from "../../lib/collection/gradients";
 
 /**
@@ -19,6 +19,16 @@ import { commanderGradient } from "../../lib/collection/gradients";
  * the player is meant to read the printing.
  */
 export type ThumbSize = "row" | "summary";
+
+/** `[]` is COLORLESS — a real identity, and what `commanderGradient` answers with
+    the colorless gradient both card faces draw. `null` is "we do not know", which
+    is the case B6 rules draws no wash at all, and the stripes are what an artless
+    card with nothing to say about its colours draws everywhere else in the app.
+    The two are different facts and the prop distinguishes them, because a
+    `string[]` alone cannot: routing `[]` to the stripes gives every colorless
+    commander a treatment its own card face does not use, and routing an unknown
+    identity to `commanderGradient` invents a colour for it. */
+export type ThumbIdentity = string[] | null;
 
 const BOX: Record<ThumbSize, { width: number; height: number }> = {
   // 63/88 to within a pixel at both sizes: 44/62 is 0.710 and 64/89 is 0.719.
@@ -44,7 +54,7 @@ export function CommanderThumb({
   className = "",
 }: {
   imageUri: string | null;
-  colorIdentity: string[];
+  colorIdentity: ThumbIdentity;
   size?: ThumbSize;
   /** Layout only — the flex behaviour of whatever row this sits in. The box, the
       radius, the ring and the ground are not a caller's to set. */
@@ -68,15 +78,14 @@ export function CommanderThumb({
         height: box.height,
         // `center top`, not `center`: the face is at the top of a card, and a
         // centred crop of a 63/88 frame at this size is mostly type box.
-        // No art draws the identity gradient, whatever that identity is. An
-        // EMPTY array is not missing data in this codebase — it is colorless, and
-        // `commanderGradient` answers it with the colorless gradient every other
-        // surface draws, including both card faces. Routing it to the stripes
-        // instead would have given a colorless commander a different treatment
-        // here than on the card it stands for.
+ // No art falls back to the identity, and an unknown identity falls back to
+        // the stripes: B6's two halves, which are two different facts rather
+        // than one with a threshold.
         background: imageUri
           ? `${cssUrl(imageUri)} center top/cover, ${THUMB_GROUND}`
-          : commanderGradient(colorIdentity),
+          : colorIdentity === null
+            ? ART_STRIPES
+            : commanderGradient(colorIdentity),
         boxShadow: THUMB_RING,
       }}
     />
