@@ -368,14 +368,19 @@ async function run() {
       // keyword's whole point here — so a set with fewer cells than tracks has a first row
       // that stops early, and measuring the last CELL would report stranded space for a
       // perfectly correct grid.
-      const tracks = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean);
+      const style = getComputedStyle(grid);
+      const tracks = style.gridTemplateColumns.split(" ").filter(Boolean);
+      // Read, not hard-coded. The gap is a design value that may legitimately change while
+      // the flush-edge contract holds, and a probe that carried its own copy would report a
+      // false failure the day it did.
+      const gap = parseFloat(style.columnGap) || 0;
       return {
         columns: tracks.length,
         filled: row.length,
         // Content box: `box.right` includes any right padding the grid carries.
         stranded: Math.round(
           box.right - (row[row.length - 1].getBoundingClientRect().right
-            + tracks.slice(row.length).reduce((sum, t) => sum + parseFloat(t) + 10, 0)),
+            + tracks.slice(row.length).reduce((sum, t) => sum + parseFloat(t) + gap, 0)),
         ),
         template: getComputedStyle(grid).gridTemplateColumns,
       };
