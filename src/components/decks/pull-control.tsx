@@ -7,15 +7,17 @@
 // never brass-solid: the full buy tag sits beside it, and the point is that the
 // two options are weighed against each other rather than one being recommended.
 //
-// The click is not guarded against an ancestor's. The way into the card is the
-// row's name, which is a button of its own on every deck surface in the app, so
-// there is no plate-wide handler for this one to stop — and a guard against a
-// listener nobody registered reads as a claim that somebody did.
+// The click is not guarded against the review row's plate-wide handler, because
+// that handler does the filtering itself: it ignores any click landing inside a
+// button or a link (`update-diff-row.tsx`). One mechanism in one place beats a
+// `stopPropagation` in every control the plate happens to contain.
 
-import { useState, useTransition } from "react";
-import { pullCardFromDeck } from "../../app/decks/actions";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { pullCardFromDeck, type PullResult } from "../../app/decks/actions";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
+import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { cardDetailCopy } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 
 const copy = deckVersioningCopy.review;
@@ -45,6 +47,50 @@ const GUARD_TAG =
   "font-mono rounded-[4px] px-[5px] py-[1px] text-[9.5px] uppercase tracking-[0.1em] flex-none " +
   "[border:1px_solid_var(--accent-shadow)]";
 
+/** The one live region the page's pulls speak through, hoisted out of React's
+ *  tree and onto the document.
+ *
+ *  A successful pull is the last thing this control does before its row stops
+ *  being a pullable row: the refresh it asks for drops the control, so a region
+ *  rendered inside it would be unmounted — possibly before a screen reader had
+ *  read the sentence it had just been handed. The builder shell answers the same
+ *  problem by keeping its region above the rows that mutate; the review page's
+ *  rows are server-rendered around this component, so the nearest host that
+ *  outlives the refresh is the document itself.
+ *
+ *  Created empty on mount and filled later, never created with its text already
+ *  in it: a region that appears in the same paint as its message is not
+ *  announced at all. */
+const ANNOUNCER_ID = "pull-announcer";
+
+function pullAnnouncer(): HTMLElement {
+  const existing = document.getElementById(ANNOUNCER_ID);
+  if (existing) return existing;
+  const region = document.createElement("div");
+  region.id = ANNOUNCER_ID;
+  region.setAttribute("role", "status");
+  region.setAttribute("aria-live", "polite");
+  region.setAttribute("aria-atomic", "true");
+  region.className = "sr-only";
+  document.body.appendChild(region);
+  return region;
+}
+
+/** The row's own way into the card — a button on every deck surface in the app,
+ *  and the one control on this row that the refresh keeps. It belongs to the
+ *  parent row rather than to this component, so it is reached through the DOM
+ *  rather than a ref: the walk stops at the first ancestor holding a trigger for
+ *  this card, which is the row. */
+function rowTrigger(from: HTMLElement | null, cardName: string): HTMLElement | null {
+  const label = cardDetailCopy.triggerAria(cardName);
+  for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
+    for (const candidate of node.querySelectorAll<HTMLElement>("button")) {
+      if (candidate.getAttribute("aria-label") === label) return candidate;
+    }
+  }
+  return null;
+}
+
 export type PullControlProps = {
   /** The deck being reviewed — the one that gains the copy. */
   deckId: string;
@@ -60,10 +106,14 @@ export type PullControlProps = {
 
 export function PullControl({ deckId, card, claim, onPulled }: PullControlProps) {
   const [pending, startTransition] = useTransition();
-  // Held in state rather than derived, so a re-render does not re-announce a
-  // pull that has already been spoken.
-  const [announcement, setAnnouncement] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // The region has to be in the document before any text reaches it, which is why
+  // it is put there on mount rather than on the click that fills it.
+  useEffect(() => {
+    pullAnnouncer();
+  }, []);
 
   // Commander first, and that order is the whole ruling: a deck with pending
   // changes can be opened and released, a commander cannot. An `Open →` here
@@ -72,16 +122,20 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
   if (claim.commander) {
     return (
       <span className="inline-flex items-center flex-none">
-        {/* The tag and the sentence, not one labelled the other: an `aria-label`
-            on a plain span has no role to attach to and is dropped. */}
+        {/* The tag IS the guard, and the sentence is its accessible name rather
+            than a detached `sr-only` sibling beside it: a sibling is reachable in
+            browse mode only, and this arm has no control of its own for a reader
+            tabbing the row to land on. `role="note"` is what the label attaches
+            to — an `aria-label` on a bare span has no role to name and is
+            dropped, which is why the two used to be separate elements. */}
         <span
+          role="note"
+          aria-label={copy.commanderGuardA11y(claim.name, card.name)}
           className={GUARD_TAG}
-          aria-hidden="true"
           style={{ color: "var(--fg-muted)" }}
         >
           {copy.commanderGuardTag}
         </span>
-        <span className="sr-only">{copy.commanderGuardA11y(claim.name, card.name)}</span>
       </span>
     );
   }
@@ -114,7 +168,7 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
   // beside it: the row's name is a hand's width to the left and a message in line
   // with the button would push it out of the plate.
   return (
-    <div className="inline-flex flex-col items-end flex-none">
+    <div className="inline-flex flex-col items-end flex-none" ref={wrapperRef}>
       <span className="inline-flex items-center gap-[6px]">
         <button
           type="button"
@@ -123,31 +177,47 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
           onClick={() => {
             setError(null);
             startTransition(async () => {
-              const result = await pullCardFromDeck(claim.id, card.oracleId, deckId);
+              let result: PullResult;
+              try {
+                result = await pullCardFromDeck(claim.id, card.oracleId, deckId);
+              } catch {
+                // A throw rather than a refusal — a network or database failure,
+                // or the server's ownership guard — and the same fallback every
+                // other deck mutation gives that class of failure. The removal's
+                // wording, because a pull that threw is a removal that did not
+                // happen: the copy is still sleeved where it was.
+                setError(DECK_REMOVE_FALLBACK_MESSAGE);
+                return;
+              }
               if (!result.ok) {
                 setError(result.message);
                 return;
               }
-              setAnnouncement(
-                deckVersioningCopy.commit.pullAnnounced(
-                  card.name,
-                  claim.name,
-                  result.buy,
-                  result.total,
-                ),
-              );
+              // Announced once, into the region that outlives this control. The
+              // arithmetic is the server's, read after the write, so it is spoken
+              // rather than only appearing when the revalidated page paints — and
+              // a failed read of it says nothing about buying at all.
+              pullAnnouncer().textContent =
+                result.buy === null
+                  ? deckVersioningCopy.commit.pullAnnouncedBuyUnknown(card.name, claim.name)
+                  : deckVersioningCopy.commit.pullAnnounced(
+                      card.name,
+                      claim.name,
+                      result.buy,
+                      result.total,
+                    );
+              // Focus moves BEFORE the refresh, while this control is still in the
+              // document: the refreshed row is no longer a pullable one, so the
+              // button the reader is standing on is about to be removed and focus
+              // would fall to the body. The row's own card trigger survives the
+              // refresh, so a reader is left where they were reading.
+              rowTrigger(wrapperRef.current, card.name)?.focus();
               onPulled();
             });
           }}
         >
           {pending ? copy.pulling : copy.pull}
         </button>
-        {/* Announced once. The arithmetic the pull changed — the buy count and the
-            total — is the server's, read after the write, so it is spoken rather
-            than only appearing when the revalidated page paints. */}
-        <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-          {announcement ?? ""}
-        </span>
       </span>
       {/* The shipped refusal, not a second one written here: a pull is refused by
           the same class of race every other deck mutation is, and the row stays

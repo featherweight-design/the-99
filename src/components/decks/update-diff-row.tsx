@@ -27,7 +27,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { Availability } from "../../lib/decks/availability";
 import type { PriceFact } from "../../lib/decks/price";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -84,7 +84,7 @@ const ROW_BOX_IN_IMPORT = "min-h-[44px] px-[12px]";
 const ROW_PLATE =
   "group bg-[color:var(--surface)] [--row-bg:var(--surface)] [border:1px_solid_var(--border)]";
 const ROW_PLATE_HOVER =
-  "md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]";
+  "md:cursor-pointer md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]";
 const ROW_PLATE_KEPT =
   "group bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)] " +
   "[border:1px_solid_var(--accent-shadow)]";
@@ -195,11 +195,18 @@ function AvailabilitySlot({
  *  and the cap come from the shipped constants rather than a width of this row's
  *  own: the shingle arithmetic behind them is what makes five pips measure 40px,
  *  and a caller that picked its own would either misalign against the rows beside
- *  it or burst a track the module still believes is 40px wide. */
-function CostTrack({ cost }: { cost: string }) {
+ *  it or burst a track the module still believes is 40px wide.
+ *
+ *  A null cost still draws the track, empty. The name is the row's only flexible
+ *  item, so a land that ended the row short pulled its availability slot out to
+ *  the right edge and off the vertical line every costed row beside it holds —
+ *  the same reason the adds column keeps its trailing slot on a costless row. */
+function CostTrack({ cost }: { cost: string | null }) {
   return (
-    <span className="flex flex-none items-center justify-end">
-      <CostPips cost={cost} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
+    <span className="flex flex-none items-center justify-end" style={{ width: COST_TRACK }}>
+      {cost ? (
+        <CostPips cost={cost} size={COST_PIP_SIZE} track={COST_TRACK} cap={COST_PIP_CAP} spoken />
+      ) : null}
     </span>
   );
 }
@@ -217,6 +224,34 @@ function OpenHint() {
       {OPEN_CARD_HINT}
     </span>
   );
+}
+
+/**
+ * The plate's own way into the card, and the review page's alone — the hover fill
+ * and the hint above make the whole row read as a target, and until this only the
+ * name was one.
+ *
+ * A POINTER affordance and nothing more: the row takes no `role` and no
+ * `tabIndex`. The name inside it is already a real button, so a second control
+ * wrapping the first would either nest two interactive elements illegally or make
+ * every row two tab stops for one card. The keyboard path is the name, unchanged,
+ * and `OpenHint` is aria-hidden for the same reason.
+ *
+ * A click that started on a control of its own is left to that control: the name's
+ * trigger would otherwise open the card a second time over its own fetch, and the
+ * pull button would open it while writing.
+ */
+function useRowOpen(
+  card: DiffRowCard,
+  siblings: string[] | undefined,
+  review: boolean,
+): ((event: React.MouseEvent<HTMLElement>) => void) | undefined {
+  const { open } = useCardDetail();
+  if (!review) return undefined;
+  return (event) => {
+    if ((event.target as HTMLElement).closest("button, a")) return;
+    open(card.oracleId, siblings);
+  };
 }
 
 /** Which deck is sleeving the copy this row wants. Drawn on a sleeved add only,
@@ -329,8 +364,10 @@ export function DiffRowOut({
    *  line under it repeating the name. */
   recount?: DiffRowRecount;
 } & DiffRowNameExtras) {
+  const openRow = useRowOpen(card, siblings, review);
   return (
     <div
+      onClick={openRow}
       className={[
         ROW_SHELL,
         review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_OUT_IMPORT,
@@ -351,10 +388,12 @@ export function DiffRowOut({
       {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
       <AvailabilitySlot card={card} selfClaimed />
       {/* The removes column draws the same anatomy as the adds, cost track and
-          all. A card with no printed cost — a land — ends the row short rather
-          than holding an empty slot: the track's width is the shipped constant's
-          and no longer a reserved column of this row's own. */}
-      {card.manaCost ? <CostTrack cost={card.manaCost} /> : null}
+          all — including on a card with no printed cost, where the track is
+          drawn empty so the land and the spell above it end on the same line.
+          The update flow, which passes no cost at all, draws no track: its six
+          row kinds share one geometry and a 40px column on two of them would
+          leave the other four short. */}
+      {review || card.manaCost ? <CostTrack cost={card.manaCost ?? null} /> : null}
       {action}
     </div>
   );
@@ -421,6 +460,7 @@ export function DiffRowIn({
    *  which no deck holds. */
   heldBy?: string | null;
 } & DiffRowNameExtras) {
+  const openRow = useRowOpen(card, siblings, review);
   // Two lines on the phone, one above it. Only a row carrying a decision earns
   // the second line: a plain add has nothing on its right but a tag.
   const stacked = review && action !== null;
@@ -497,6 +537,7 @@ export function DiffRowIn({
   );
   return (
     <div
+      onClick={openRow}
       className={[
         stacked ? ROW_SHELL_STACKED : ROW_SHELL,
         review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_IN_IMPORT,
@@ -511,8 +552,10 @@ export function DiffRowIn({
             {trailing}
           </span>
           {/* The meta line is indented to the name's own text, so the deck being
-              raided reads as a fact about the card above it. */}
-          <span className={`${STACK_LINE} pl-[16px] md:pl-0`}>{metaLine}</span>
+              raided reads as a fact about the card above it. A `div` because the
+              action on it is one: `PullControl` draws a block, and its refusal a
+              paragraph under that, neither of which is legal inside a span. */}
+          <div className={`${STACK_LINE} pl-[16px] md:pl-0`}>{metaLine}</div>
         </>
       ) : (
         <>

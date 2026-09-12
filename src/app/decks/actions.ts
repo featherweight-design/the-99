@@ -1441,8 +1441,13 @@ export type PullResult =
       /** The asking deck's buy count and priced total AFTER the pull, read from
        *  the server rather than decremented on the client: a client that
        *  subtracts one from the figure it was rendered with is guessing, and the
-       *  pull may have freed a copy the deck asked for more than once. */
-      buy: number;
+       *  pull may have freed a copy the deck asked for more than once.
+       *
+       *  Null when that read failed, and never 0: zero is a purchase statement,
+       *  the true count may be anything, and "0 to buy" over a transient read
+       *  failure tells the player their shopping is finished when it is not. A
+       *  consumer holding a null says nothing at all about buying. */
+      buy: number | null;
       total: string | null;
     }
   | { ok: false; message: string };
@@ -1459,6 +1464,31 @@ export async function pullCardFromDeck(
   // Both decks, because both are revalidated and both must be the player's.
   await requireDeck(sourceDeckId, userId);
   await requireDeck(askingDeckId, userId);
+
+  // A deck cannot pull from itself. Owning both ends is no defence here: with one
+  // id the source loses a copy to satisfy a want the same list already holds, and
+  // commits that loss — a destructive self-removal dressed as a transfer.
+  if (sourceDeckId === askingDeckId) {
+    return { ok: false, message: "A deck can't pull a card from itself." };
+  }
+
+  // Ownership proves the player may act on both decks; it does not prove this is
+  // a pull the app ever offered. Without this any two owned decks can be named
+  // and the source made to lose a card the asking deck never asked for, so the
+  // asking deck's own draft is the authority on which pulls exist.
+  //
+  // `adds` rather than `addChanges`: `adds` is the bucketed list every review row
+  // is drawn from, so it is literally the set of offers a reader could have
+  // clicked. `addChanges` carries the same cards only to supply the from/to pair
+  // a row prints, and reading it here would validate against a presentation
+  // detail instead of against the offer.
+  //
+  // A failing read refuses rather than waiving the guard: an authorization check
+  // that opens when its input is unavailable is not a check.
+  const asking = await loadDraftState(askingDeckId, userId).catch(() => null);
+  if (!asking?.adds.some((a) => a.oracleId === oracleId)) {
+    return { ok: false, message: "That deck isn't waiting on that card." };
+  }
 
   // One transaction, and the guards run inside it under the deck's row lock.
   // Each guard is a decision about what the draft holds right now: read outside
@@ -1529,6 +1559,9 @@ export async function pullCardFromDeck(
     const state = await loadDraftState(askingDeckId, userId);
     return { ok: true, buy: state.buyCount, total: state.total };
   } catch {
-    return { ok: true, buy: 0, total: null };
+    // A null count, not a zero: the pull happened and the figures did not come
+    // back, and quoting 0 would announce a finished purchase the server never
+    // read. The caller draws the pull and says nothing about buying.
+    return { ok: true, buy: null, total: null };
   }
 }

@@ -4,14 +4,28 @@
 // write is the pull, and `pull-control.test.tsx` owns what that control does —
 // asserted here is only which rows are given one.
 
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
+import type { BrowseCard } from "../../lib/collection/browse";
 import type { Availability } from "../../lib/decks/availability";
+import { cardDetailCopy } from "../cards/card-detail-provider";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
+// The page mounts its own provider, so the modal's paging is reachable only
+// through the read that provider does — there is no `fetchCard` to inject.
+const { getCardDetail } = vi.hoisted(() => ({ getCardDetail: vi.fn() }));
+vi.mock("../../app/card-detail-action", () => ({ getCardDetail }));
+
+const browseCard = (oracleId: string, name: string): BrowseCard => ({
+  oracleId, name, typeLine: "Artifact", manaCost: "{1}", oracleText: "", keywords: [],
+  rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 0,
+  printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+});
 
 const STATE = COMMITTED;
 
@@ -174,9 +188,89 @@ describe("ReviewChanges", () => {
       />,
     );
     expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
-    expect(
-      screen.getByText(deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring")),
-    ).toBeTruthy();
+    // The sentence is the tag's accessible name rather than rendered text: a
+    // detached `sr-only` sibling is reachable in browse mode only, and this arm
+    // draws no control for a reader tabbing the row to land on.
+    expect(screen.getByRole("note")).toHaveAccessibleName(
+      deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring"),
+    );
+  });
+
+  // The word behind the colour is the row's own state. "can be pulled" on a row
+  // whose control is refusing to offer one describes an act the page will not do.
+  it("describes a commander's copy with the guard rather than the pull", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ commander: true }) })], out: [] }}
+        state={STATE}
+      />,
+    );
+    const describedBy = screen
+      .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
+      .getAttribute("aria-describedby");
+    expect(document.getElementById(describedBy as string)?.textContent).toBe(
+      deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring"),
+    );
+    expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
+  });
+
+  // Every other figure on the page stands down when the claim read failed — the
+  // chips, the breakdown and the banner one click back all quote no purchase — so
+  // a row still printing its figure would be the one thing pricing a commit
+  // nobody could cost. The tag keeps the word `buy`, which is the collection's
+  // answer and not the claim model's.
+  it("quotes no price on a row when the claim read failed", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [row({
+            owned: false, bucket: null,
+            price: { cents: 2840, foilCents: null, etchedCents: null, asOf: new Date("2026-09-08") },
+          })],
+          out: [],
+        }}
+        state={{ ...STATE, claimsKnown: false, newestAsOf: new Date("2026-09-08") }}
+      />,
+    );
+    expect(screen.getByText(addPanelCopy.unowned.tag)).toBeTruthy();
+    expect(screen.queryByText("$28.40")).toBeNull();
+  });
+
+  // Grouped order, not the payload's: the columns group by type and sort inside a
+  // group, so paging the payload's own order steps the reader somewhere other
+  // than the row under the one they opened.
+  it("pages the card modal in the order the columns draw", async () => {
+    getCardDetail.mockImplementation(async (oracleId: string) =>
+      browseCard(oracleId, oracleId === "o1" ? "Sol Ring" : oracleId === "o2" ? "Llanowar Elves" : "Mox"),
+    );
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [
+            row(),
+            row({ oracleId: "o2", name: "Llanowar Elves", typeLine: "Creature", cardTypeGroup: "Creatures" }),
+            row({ oracleId: "o3", name: "Mox" }),
+          ],
+          out: [],
+        }}
+        state={STATE}
+      />,
+    );
+    // Drawn as Llanowar Elves (Creatures), then Mox and Sol Ring (Artifacts, by
+    // name) — so Sol Ring is the third of three here and the first of three in
+    // the payload.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("3 of 3")).toBeTruthy();
+    });
   });
 
   // One column is nothing to switch between, so the phone control is absent —

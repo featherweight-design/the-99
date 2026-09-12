@@ -236,6 +236,12 @@ export const deckVersioningCopy = {
     // rather than filled with a fabricated zero.
     pullAnnounced: (card: string, deck: string, buy: number, total: string | null) =>
       `${card} pulled from ${deck}. ${buy} to buy${total === null ? "" : `, ${total}`}.`,
+    // The same announcement with every word about buying taken out, for the pull
+    // whose post-write read of the asking deck came back null. The copy moved and
+    // the player asked for it, so the pull is still announced; what nobody can say
+    // is what is left to buy. A 0 there would tell them their shopping is finished
+    // over a read that failed, and "unknown" is a figure nobody offered.
+    pullAnnouncedBuyUnknown: (card: string, deck: string) => `${card} pulled from ${deck}.`,
   },
 
   /* ---- Discard · unrecoverable, so it confirms (the #476 bar) ---- */

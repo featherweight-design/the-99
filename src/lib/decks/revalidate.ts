@@ -23,11 +23,24 @@ export function deckSurfaces(deckId: string): string[] {
 }
 
 /**
- * The above plus the three pages that read availability off deck rows. Only for
- * writes that change deck *membership* (or remove the deck holding it): a
- * cached `/collection` would otherwise keep showing a card as unclaimed after
- * a deck claimed it. A rename changes no claim and does not need these.
+ * The above plus the deck's review page and the three pages that read
+ * availability off deck rows. Only for writes that change deck *membership* (or
+ * remove the deck holding it): a cached `/collection` would otherwise keep
+ * showing a card as unclaimed after a deck claimed it. A rename changes no claim
+ * and does not need these.
+ *
+ * The review page sits in this set rather than in `deckSurfaces` because what
+ * goes stale on it is claim-shaped: every row's pull offer and its price come out
+ * of the claim model, so a membership change in ANOTHER deck decides whether a
+ * row still offers a pull. Left out, a back navigation there serves a cached RSC
+ * offering a pull the server would now refuse.
  */
 export function claimSurfaces(deckId: string): string[] {
-  return [...deckSurfaces(deckId), "/collection", "/commanders", "/discover"];
+  return [
+    ...deckSurfaces(deckId),
+    `/decks/${deckId}/changes`,
+    "/collection",
+    "/commanders",
+    "/discover",
+  ];
 }

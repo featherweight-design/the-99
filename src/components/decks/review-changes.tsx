@@ -98,6 +98,20 @@ function pairGroups(rows: DraftRow[]): TypeGroup[][] {
   return lines;
 }
 
+/**
+ * A column's rows in the order it draws them — across group boundaries, and left
+ * to right through a paired line's two sub-columns.
+ *
+ * `decklist.tsx` flattens its groups the same way and for the same reason: the
+ * modal's Prev/Next walks the list the eye does, and the payload's own order is
+ * not that list once the rows are grouped by type.
+ */
+function orderedIds(rows: DraftRow[]): string[] {
+  return pairGroups(rows).flatMap((line) =>
+    line.flatMap(([, groupRows]) => groupRows.map((r) => r.oracleId)),
+  );
+}
+
 function Column({
   deckId,
   heading,
@@ -109,6 +123,7 @@ function Column({
   hiddenOnPhone,
   onPulled,
   newestAsOf,
+  claimsKnown,
 }: {
   deckId: string;
   heading: string;
@@ -126,19 +141,31 @@ function Column({
   /** The newest `as_of` in the price table, so a row can tell a live price from
    *  a sold-out printing's last one. */
   newestAsOf: Date | null;
+  /** False when the claim read FAILED. Every other figure on the page stands
+   *  down there — `unfreeAdds` returns nothing over null buckets, so the chips,
+   *  the breakdown and the banner all quote no purchase — and a row that still
+   *  printed its figure would be the one thing on the page pricing a commit
+   *  nobody could cost. */
+  claimsKnown: boolean;
 }) {
   const renderGroup = ([group, groupRows]: TypeGroup) => (
     <div key={group} className="mb-[16px] last:mb-0">
       <DecklistGroupHeader label={group} count={groupRows.length} />
       <div className="flex flex-col gap-[4px]">
         {groupRows.map((row) => {
-          const word = bucketWord(row.bucket);
-          const wordId = `${descriptionId}-${row.oracleId}`;
           // The claim the row's control is drawn against, guards and all —
           // one selector, shared with the banner's own pull hints, so the
           // two surfaces can never disagree about which deck holds a copy.
           const pullClaim =
             row.direction === "in" ? pullCandidate(row.availability ?? undefined) : null;
+          // A commander's copy is claimed and cannot be pulled, so the word
+          // behind the colour is the guard the row actually draws rather than
+          // "can be pulled" — which would describe an offer the control is
+          // refusing to make.
+          const word = pullClaim?.commander
+            ? copy.commanderGuardA11y(pullClaim.name, row.name)
+            : bucketWord(row.bucket);
+          const wordId = `${descriptionId}-${row.oracleId}`;
           const card = {
             oracleId: row.oracleId,
             name: row.name,
@@ -147,7 +174,10 @@ function Column({
             owned: row.owned,
             availability: row.availability ?? null,
             manaCost: row.manaCost ?? null,
-            price: row.price ?? null,
+            // Dropped outright when the claim read failed: the buy tag still says
+            // `buy` on an unowned row, and it says it without a figure, which is
+            // the same degrade the pending banner makes.
+            price: claimsKnown ? row.price ?? null : null,
             newestAsOf,
             // An owned card whose free copies are all sleeved somewhere else.
             // The bucket is the server's answer to exactly that question, so
@@ -288,7 +318,9 @@ export function ReviewChanges({ deckId, deckName, rows, state }: ReviewChangesPr
   const outCount = rows.out.length;
   // One list across both columns, so the card modal's Prev/Next pages the whole
   // change set in the order the page draws it rather than stopping at a column.
-  const siblings = [...rows.in, ...rows.out].map((r) => r.oracleId);
+  // Grouped order, not the payload's: the columns group by type, and Prev/Next
+  // stepping to a row three groups down is a list the reader cannot follow.
+  const siblings = [...orderedIds(rows.in), ...orderedIds(rows.out)];
 
   // Counted off the state's own buckets rather than off `rows.in`, because the
   // state is what every other surface's figure is counted off: the banner, this
@@ -416,6 +448,7 @@ export function ReviewChanges({ deckId, deckName, rows, state }: ReviewChangesPr
               descriptionId={descriptionId}
               hiddenOnPhone={segmented && shown !== "in"}
               newestAsOf={state.newestAsOf}
+              claimsKnown={state.claimsKnown}
               // Every figure on this page is the server's — the breakdown beside
               // the heading, the buy count, the row's own tag — so a pull that
               // moved a copy is read again rather than patched in place.
@@ -436,6 +469,7 @@ export function ReviewChanges({ deckId, deckName, rows, state }: ReviewChangesPr
               descriptionId={descriptionId}
               hiddenOnPhone={segmented && shown !== "out"}
               newestAsOf={state.newestAsOf}
+              claimsKnown={state.claimsKnown}
               onPulled={() => router.refresh()}
             />
           )}

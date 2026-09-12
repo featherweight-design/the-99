@@ -1038,7 +1038,42 @@ describe("pullCardFromDeck", () => {
     );
     vi.mocked(newestVersion).mockResolvedValue(aVersion());
     vi.mocked(commitVersion).mockResolvedValue({ version: { ...aVersion(), number: 2 }, cardCount: 0 });
-    vi.mocked(loadDraftState).mockResolvedValue({ buyCount: 7, total: "$241.00" } as DraftState);
+    vi.mocked(loadDraftState).mockResolvedValue(askingDraft());
+  });
+
+  /** The asking deck's position: the cards it is waiting on, and what it owes.
+   *  The action reads this twice — once to check the pull was one the review page
+   *  actually offered, and once after the write for the figures it reports. */
+  function askingDraft() {
+    return {
+      adds: [{ oracleId: CARD_A }, { oracleId: CARD_B }, { oracleId: CMD }],
+      buyCount: 7,
+      total: "$241.00",
+    } as DraftState;
+  }
+
+  // Ownership proves the player may touch both decks, not that the app ever
+  // offered this pull. Otherwise any two owned decks can be named and the source
+  // made to lose a card nothing asked for.
+  it("refuses a card the asking deck is not waiting on", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadDraftState).mockResolvedValue({ ...askingDraft(), adds: [] } as DraftState);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // One id for both ends is not a transfer: the deck loses a copy to satisfy a
+  // want it already holds, and commits the loss.
+  it("refuses a deck pulling from itself", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, SOURCE_ID);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
   });
 
   // The guard that stops a pull sweeping somebody else's half-finished
@@ -1118,13 +1153,18 @@ describe("pullCardFromDeck", () => {
   });
 
   // The card has already moved by then. Failing the pull over the sentence
-  // describing it would undo a write that succeeded.
-  it("still reports the pull when that read fails", async () => {
+  // describing it would undo a write that succeeded — but the sentence cannot
+  // claim a purchase of nothing, which is what a zero here would say.
+  it("reports the pull with an unknown buy count when that read fails", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
-    vi.mocked(loadDraftState).mockRejectedValue(new Error("read failed"));
+    // The first read is the guard's, and it has to succeed or nothing is pulled;
+    // the one that fails is the read of where the pull left the asking deck.
+    vi.mocked(loadDraftState)
+      .mockResolvedValueOnce(askingDraft())
+      .mockRejectedValue(new Error("read failed"));
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
-    expect(result).toEqual({ ok: true, buy: 0, total: null });
+    expect(result).toEqual({ ok: true, buy: null, total: null });
   });
 
   // A brew holds nothing hard, so there is no claim to release and no version

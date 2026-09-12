@@ -8,6 +8,8 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
+import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { cardDetailCopy } from "../cards/card-detail-provider";
 import { PullControl } from "./pull-control";
 
 vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
@@ -25,9 +27,27 @@ const FREE_TO_PULL: DeckClaim = {
 };
 const noop = () => {};
 
+/** The review page's row, reduced to the two things a pull depends on: the card's
+ *  own trigger, which survives the refresh, and the control, which does not. */
+function Row({ pullable = true, onPulled = noop }: { pullable?: boolean; onPulled?: () => void }) {
+  return (
+    <div>
+      <button type="button" aria-label={cardDetailCopy.triggerAria(CARD.name)}>
+        {CARD.name}
+      </button>
+      {pullable && (
+        <PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={onPulled} />
+      )}
+    </div>
+  );
+}
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  // The live region is deliberately outside React's tree, so `cleanup` does not
+  // take it: a sentence left in it would be read as the next test's.
+  document.getElementById("pull-announcer")?.remove();
 });
 
 describe("PullControl", () => {
@@ -46,6 +66,56 @@ describe("PullControl", () => {
       ),
     ).toBeTruthy();
     expect(onPulled).toHaveBeenCalledTimes(1);
+  });
+
+  // The server could not read the asking deck's buy count after the write. The
+  // pull happened, so it is announced; the shopping is the one thing nobody can
+  // speak to, and 0 there would call it finished.
+  it("announces the pull and says nothing about buying when the count came back null", async () => {
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: null, total: null });
+    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    await act(async () => {
+      screen.getByRole("button", { name: copy.pull }).click();
+    });
+    const region = screen.getByRole("status");
+    expect(region.textContent).toBe(
+      deckVersioningCopy.commit.pullAnnouncedBuyUnknown("Sol Ring", "Atraxa"),
+    );
+    expect(region.textContent).not.toContain("to buy");
+    expect(region.textContent).not.toContain("0");
+  });
+
+  // The refreshed row is no longer a pullable one, so the control the reader was
+  // standing on goes with it. Both the sentence and the reader's place have to
+  // outlive that: the region is not in this component's subtree, and focus is on
+  // the row's own trigger before the refresh is ever asked for.
+  it("keeps the announcement and leaves focus on the row when the refreshed row drops the control", async () => {
+    vi.mocked(pullCardFromDeck).mockResolvedValue({ ok: true, buy: 7, total: "$241.00" });
+    const announced = deckVersioningCopy.commit.pullAnnounced("Sol Ring", "Atraxa", 7, "$241.00");
+    const view = render(<Row />);
+    await act(async () => {
+      screen.getByRole("button", { name: copy.pull }).click();
+    });
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") });
+    expect(document.activeElement).toBe(trigger);
+    // The refresh, as the row's parent will draw it once the server answers.
+    view.rerender(<Row pullable={false} />);
+    expect(screen.queryByRole("button", { name: copy.pull })).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe(announced);
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  // A rejected action, not a refusal: a network or database failure, or the
+  // server's ownership guard throwing. Without the catch the transition ends
+  // silently and the click the reader is waiting on answers nothing.
+  it("prints the deck mutation fallback when the action rejects", async () => {
+    vi.mocked(pullCardFromDeck).mockRejectedValue(new Error("network"));
+    render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
+    await act(async () => {
+      screen.getByRole("button", { name: copy.pull }).click();
+    });
+    expect(screen.getByRole("alert").textContent).toBe(DECK_REMOVE_FALLBACK_MESSAGE);
+    expect(screen.getByRole("button", { name: copy.pull })).toBeTruthy();
   });
 
   it("replaces the action with a tag and a route when that deck has its own draft", () => {
@@ -73,9 +143,25 @@ describe("PullControl", () => {
       />,
     );
     expect(screen.getByText(copy.commanderGuardTag)).toBeTruthy();
-    expect(screen.getByText(copy.commanderGuardA11y("Atraxa", "Sol Ring"))).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  // The reason is the guard's own accessible name, not text sitting beside it: a
+  // detached `sr-only` sibling is reachable in browse mode only, and this arm has
+  // no control for a reader tabbing the row to land on.
+  it("gives the commander guard the reason as the name a screen reader reads", () => {
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claim={{ ...FREE_TO_PULL, commander: true }}
+        onPulled={noop}
+      />,
+    );
+    expect(screen.getByRole("note")).toHaveAccessibleName(
+      copy.commanderGuardA11y("Atraxa", "Sol Ring"),
+    );
   });
 
   // Both guards are permanent for as long as the claim is what it is, and a
