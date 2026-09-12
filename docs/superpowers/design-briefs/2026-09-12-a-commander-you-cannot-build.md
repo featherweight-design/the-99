@@ -100,8 +100,12 @@ The row and the hero each need to say one of:
 - **Free** — nothing to say, and the surface should say nothing. Most commanders are here, and a
   marker that renders on every row is a marker nobody reads.
 
-A player owning two copies where one is sleeved is `free` for this purpose: they can build. The
-figure that decides it is `Availability.free` from the rollup, not a deck count.
+**Buildability and marker state are two different questions, and this brief means the first.** A
+player owning two copies with one sleeved can build today — `Availability.free > 0` — but
+`availabilityState` (`src/lib/decks/availability.ts:97`) still returns `soft` for that card, because
+a brew wanting the other copy is worth saying on a card row. Whether the commander surfaces inherit
+that partition or draw only on `free === 0` is Design's call, and it is question 6 below. The figure
+that decides *can I build this* is `Availability.free`, never a deck count.
 
 ---
 
@@ -111,12 +115,13 @@ figure that decides it is `Availability.free` from the rollup, not a deck count.
 (`src/lib/commanders/rankings.ts:74`) reads it for the receipt line, scoped to the collection. The
 commander's own row is in that map already. So the server work is a projection, not a query.
 
-**The payload ceiling is the real cost.** That response is cached through `cacheForUser` under a
-2 MB per-entry limit, and the module header spells out that the three cached payloads were each cut
-down to fit. A deck name per row is tens of bytes × up to ~200 rows; a state enum is one byte. If
-Design wants the proper noun on the row, eng can carry it, but it spends headroom measured in
-hundreds of KB, and that is a reason to prefer the count-only form on the row if the drawing is
-otherwise a coin-toss.
+**The payload ceiling is worth knowing about and is NOT an argument for either treatment.** That
+response is cached through `cacheForUser` under a 2 MB per-entry limit, and the module header records
+that all three cached payloads were cut down to fit it. An earlier draft of this brief leaned on that
+to prefer the count-only form; the arithmetic does not support it. A deck name is tens of bytes over
+at most ~200 rows — single-digit KB against a 2 MB ceiling, which is noise. **Draw whichever
+treatment is right and let eng carry the bytes.** If a future drawing wants something genuinely
+large per row, measure the serialised payload first rather than reasoning from this paragraph.
 
 **The hero is unconstrained** — the detail page already scores one commander on demand and reads
 what it likes.
@@ -133,3 +138,7 @@ what it likes.
    shopping list already reckons with what is missing.)
 5. Is the `soft` case worth drawing at all on these two surfaces, or is only `hard` loud enough to
    deserve a row's space?
+6. Do these surfaces inherit `availabilityState`'s partition, where a card with a free copy AND a
+   brew claim reads `soft`? Card rows do. On a commander row the question the reader is asking is
+   narrower — *can I build this one* — and the answer to that is `free > 0` whatever a brew wants, so
+   the two may legitimately diverge.
