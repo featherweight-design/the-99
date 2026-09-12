@@ -136,7 +136,14 @@ export interface DiscardConfirmProps {
  */
 function focusDeckName(): void {
   const headings = Array.from(document.querySelectorAll<HTMLElement>("h1"));
-  const name = headings.find((h) => h.checkVisibility?.() ?? true) ?? headings[0];
+  // Both widths render a name and one of them is `display: none`, so a browser
+  // without `checkVisibility` is asked the question layout can answer instead:
+  // a hidden ancestor leaves an element with no offset parent. Defaulting to
+  // `true` there would pick whichever heading comes first in the document and
+  // drop the reader on an invisible target.
+  const name = headings.find((h) => (
+    typeof h.checkVisibility === "function" ? h.checkVisibility() : h.offsetParent !== null
+  )) ?? headings[0];
   if (!name) return;
   // The name is deliberately not a control — renaming is the pencil beside it —
   // so it is lent focusability for this one move rather than given a permanent
