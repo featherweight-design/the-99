@@ -160,10 +160,41 @@ describe("useLiveQuery", () => {
     expect(shown()).toBe("c=b");
   });
 
+  // Re-arming cannot remove an older wrapper of ours from the chain — the patch
+  // that displaced it captured it — so the call runs through two of ours. Only
+  // the outermost announces.
+  it("notifies once per write however deep the chain has grown", async () => {
+    let renders = 0;
+    const { useLiveQuery } = await import("./live-query");
+    function Counting() {
+      renders += 1;
+      return <output data-testid="q">{useLiveQuery("") || "(empty)"}</output>;
+    }
+    render(<Counting />);
+
+    // Displace both methods twice over, so each carries two of our wrappers with
+    // somebody else's in between.
+    for (let round = 0; round < 2; round += 1) {
+      const displaced = window.history.replaceState;
+      window.history.replaceState = function later(this: History, state, title, url) {
+        return displaced.call(this, state, title, url ?? null);
+      };
+      act(() => {
+        window.history.replaceState(null, "", `/commanders?c=${round}`);
+      });
+    }
+
+    const before = renders;
+    act(() => {
+      window.history.replaceState(null, "", "/commanders?c=w");
+    });
+
+    expect(renders - before).toBe(1);
+    expect(screen.getByTestId("q").textContent).toBe("c=w");
+  });
+
   // Repairing one displaced method must not re-wrap the intact one: each extra
-  // layer is another `notify` around the same write, so one displaced
-  // `pushState` would otherwise make every later `replaceState` fire the store
-  // twice, then three times.
+  // layer is another wrapper around a write nothing displaced.
   it("repairs only the method that was displaced", async () => {
     let renders = 0;
     const { useLiveQuery } = await import("./live-query");

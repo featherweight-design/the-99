@@ -46,6 +46,8 @@ import { useSyncExternalStore } from "react";
 
 const listeners = new Set<() => void>();
 let installed = false;
+/** How many of this module's history wrappers are on the stack. See `observed`. */
+let depth = 0;
 
 function notify() {
   for (const listener of listeners) listener();
@@ -87,9 +89,19 @@ function wrapHistory() {
       this: History,
       ...args: Parameters<History[HistoryMethod]>
     ) {
-      const result = current.apply(this, args);
-      notify();
-      return result;
+      // ONE notification per write, however deep the chain has grown. Re-arming
+      // cannot remove an older wrapper of ours from it: the router captured that
+      // one when it patched, so the call runs
+      // `new observed → router → old observed → original` and both of ours would
+      // otherwise fire. The inner one returns with the depth still above zero and
+      // stays quiet; only the outermost announces.
+      depth += 1;
+      try {
+        return current.apply(this, args);
+      } finally {
+        depth -= 1;
+        if (depth === 0) notify();
+      }
     } as History[HistoryMethod];
     window.history[name] = observed;
     ours.set(name, observed);
