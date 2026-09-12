@@ -109,11 +109,25 @@ there is nothing to build either way today.
 ## The figures derived from a 1100px content box
 
 The addendum derives its columns from 1100px. The route's shell is `max-w-[1180px]` less
-`px-[34px]` either side, so the content is **1112px**, and the measured tracks are
-**7 × 150.28px**, not 7 × 149. Across 1024–1440 the track lands ~150–151px rather than
-§27's 124–129. The column count is seven either way, so no ruling moves — but a probe or a
-comment quoting the canvas arithmetic rather than the route's is quoting a number the route
-never produces.
+`px-[34px]` either side, so at the max width the content is **1112px** and the measured
+tracks are **7 × 150.28px**, not 7 × 149.
+
+Below the max width the content follows the viewport, so the count is not seven throughout
+the range §27 quotes. Piecewise, with `content = min(1112, viewport − 68)`:
+
+| viewport | content | tracks | track |
+|---|---|---|---|
+| 1024 | 956 | 6 | 151.0 |
+| 1100 | 1032 | 6 | 163.7 |
+| 1149 | 1081 | 6 | 171.8 ← widest before the seventh fits |
+| 1150 | 1082 | 7 | 146.0 |
+| 1180+ | 1112 | 7 | 150.3 |
+
+So across 1024–1440 the track runs **146–172px**, not §27's 124–129 and not a flat
+150–151. No ruling moves — the count is a consequence of the declaration at every width,
+which is the point of there being one — but a probe or a comment quoting the canvas
+arithmetic is quoting a number the route never produces, and "seven columns" is a statement
+about the max width rather than about the range.
 
 ## What was NOT done, and why
 
