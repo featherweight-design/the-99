@@ -38,6 +38,10 @@ const stub = vi.hoisted(() => {
     deleteCalls: [] as { table: string; id: string | null }[],
     // Every path passed to revalidatePath, in order
     revalidated: [] as string[],
+    // Lines the deck's import never matched a card for. Only the first-version
+    // guard reads this: they are not `deck_cards` rows, so no card count sees
+    // them, and a v1 frozen over them silently drops them.
+    unresolvedRows: 0,
   };
 
   // Lift the bound value out of a drizzle `eq(column, value)` condition so a
@@ -200,6 +204,8 @@ const stub = vi.hoisted(() => {
           if (tableName === "decks") return state.decks;
           // The commit reads type lines to keep basics off the buy list.
           if (tableName === "cards") return state.cards;
+          // An aggregate, so always exactly one row.
+          if (tableName === "deck_unresolved_rows") return [{ n: state.unresolvedRows }];
           // Which deck's draft, off the bound `deck_id`, so a pull can be given
           // two lists that differ. Unset decks share `deckRows`.
           for (const id of paramValues(condition)) {
@@ -300,6 +306,7 @@ import {
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { loadDraftState } from "../../lib/decks/draft-state";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DraftState } from "../../lib/decks/draft-shape";
 
 // IDs used across tests
@@ -372,6 +379,7 @@ beforeEach(() => {
   stub.state.fillPasses.length = 0;
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
+  stub.state.unresolvedRows = 0;
 });
 
 describe("createDeck — filled baseline", () => {
@@ -996,6 +1004,59 @@ describe("commitDeckVersion", () => {
     expect(result.ok && result.cardCount).toBe(10);
   });
 
+  // The first version is the one commit with an eligibility test of its own, and
+  // `?commit=1` is a URL: a stale or hand-typed link reaches the sheet on a deck
+  // that is not a whole list, so the server owns the test.
+  it("freezes a first version on a list that is exactly its body size", async () => {
+    // `partnerOracleId` explicitly null: the expected body size is a card
+    // smaller for a partner pair, so a row that leaves the column off asks for
+    // 98 and the test would be measuring the wrong deck.
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, partnerOracleId: null });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: deckBodySize(false) });
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(true);
+    expect(commitVersion).toHaveBeenCalled();
+    // A first version buys nothing: every add is a card the player already holds
+    // in this brew, and the claim model reads the brew's own rows as the claim.
+    expect(result.ok && result.buy).toEqual([]);
+  });
+
+  it("refuses a first version on a list short of its body size", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, partnerOracleId: null });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 63 });
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.message).toContain(String(deckBodySize(false)));
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  // Unresolved lines are not `deck_cards` rows, so the count above never sees
+  // them: a deck at its body size plus two unnamed lines is a list the player
+  // has not finished, and the version would drop them without a word.
+  it("refuses a first version while any line is unresolved", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, partnerOracleId: null });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: deckBodySize(false) });
+    stub.state.unresolvedRows = 2;
+    vi.mocked(newestVersion).mockResolvedValue(null);
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(false);
+    expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  // A later commit carries no size test at all: the deck has a version to fall
+  // back to, and a draft mid-edit is what this feature exists to let a player
+  // commit. Without this the guard above could be widened to every commit and
+  // the suite would stay green.
+  it("commits a later version on a list that is not a whole deck", async () => {
+    stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 63 });
+    stub.state.unresolvedRows = 2;
+    const result = await commitDeckVersion(DECK_ID, null);
+    expect(result.ok).toBe(true);
+  });
+
   // An empty note is not a note. Storing "" would render a blank line in the
   // history where the player wrote nothing.
   it("stores a whitespace-only note as null", async () => {
@@ -1060,9 +1121,14 @@ describe("pullCardFromDeck", () => {
 
   /** The asking deck's position after the pull: what it still owes, and what
    *  that costs. Read once, after the write, for the figures the control
-   *  prints — the authorization no longer comes from here. */
+   *  prints — the authorization no longer comes from here.
+   *
+   *  `version` is set, because only a deck with one has a purchase figure to
+   *  quote. This mock is independent of the version reads the transaction makes:
+   *  those decide whether the pull is allowed, this decides what is reported
+   *  about it, and the brew's answer has its own test below. */
   function askingDraft() {
-    return { buyCount: 7, total: "$241.00", claimsKnown: true } as DraftState;
+    return { version: aVersion(), buyCount: 7, total: "$241.00", claimsKnown: true } as DraftState;
   }
 
   /** Both movable cards owned, both entirely spoken for, and the source deck is
@@ -1233,6 +1299,23 @@ describe("pullCardFromDeck", () => {
       buyCount: 0,
       total: "$0.00",
       claimsKnown: false,
+    } as DraftState);
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: true, buy: null, total: null });
+  });
+
+  // A versionless asking deck is allowed to take a pull: with no version to diff
+  // against, its live rows are all adds. But `loadDraftState` answers for a brew
+  // with the bare state, whose `buyCount` is 0 because nothing was measured —
+  // printing it would tell a player with a whole brew to buy that they are done.
+  it("reports an unknown buy count when the asking deck has no version", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadDraftState).mockResolvedValue({
+      version: null,
+      buyCount: 0,
+      total: null,
+      claimsKnown: true,
     } as DraftState);
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result).toEqual({ ok: true, buy: null, total: null });

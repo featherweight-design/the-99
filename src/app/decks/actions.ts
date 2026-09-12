@@ -1652,6 +1652,13 @@ export async function pullCardFromDeck(
     // player they have nothing left to buy on the strength of a failed read, so
     // an unknown claim model gets the same null a thrown read gets.
     if (!state.claimsKnown) return { ok: true, buy: null, total: null };
+    // A brew gets the same null, for the same reason. The guards above let a
+    // versionless asking deck take a pull — with no version to diff against its
+    // live rows are all adds — but `loadDraftState` answers for a brew with the
+    // bare state, whose `buyCount` is 0 because nothing was measured rather than
+    // because nothing is left to buy. Only a deck with a version has a purchase
+    // figure this can quote.
+    if (state.version === null) return { ok: true, buy: null, total: null };
     return { ok: true, buy: state.buyCount, total: state.total };
   } catch {
     // A null count, not a zero: the pull happened and the figures did not come
