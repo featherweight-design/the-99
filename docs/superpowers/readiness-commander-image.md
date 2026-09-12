@@ -49,7 +49,7 @@ than trusted.
 | Band 148's shipped column implies `labelAt ≈ 67px`, a 0.38 ramp and a 78 hold | recomputed | **True.** Hold at 55% of 148 is 81.4px down, so 66.6px from the foot; the clear stop sits 0.378 × that above the block |
 | "Opaque takes the control out of the contrast problem" | recomputed over all six themes | **True.** `--fg` on `--bg` is 12.06–15.65:1 and `--fg-body` 9.30–10.15:1 — no per-theme measurement needed |
 | `THEMES.size === 6` holds the suite to six themes | `wash-contrast.test.ts:193-194` | **True**, at 193-194 rather than the cited 188-189 |
-| The deck grid is three columns from `sm:` up, 189px at 640 | `decks-view.tsx:251` | **True.** `sm:grid-cols-3` with 22px padding and 14px gaps gives 189.3px |
+| The deck grid is three columns from `sm:` up, 189px at 640 | `decks-view.tsx:386` | **True.** `sm:grid-cols-3` with 22px padding and 14px gaps gives 189.3px |
 | `--fg-muted` for the unplated pencil clears its floor on art | recomputed | **Fails 4.5:1 in all six themes** at 3.42–3.75. Clears the 3:1 non-text floor. See finding 9 |
 
 ---
@@ -171,7 +171,7 @@ Nothing is redrawn. The handoff stands as delivered.
 |---|---|
 | **Sequencing · the home redesign** | §3.3's "desktop gains nothing" rests on the Your Decks rail being deleted by the next brief. Render 03 is built as specced — a 44×62 thumb, flagged expiring — which grows the phone rail's row from `min-h-[56px]` to ~86px. That is a real layout change to a component scheduled for deletion; it is five lines, and the alternative is a rail whose phone thumb is the one thumb in the app that did not converge. If the rail survives on either frame, desktop's art-and-count gap returns as its own one-line ticket. Blocks nothing |
 | **Grid · the deck tile's column floor** | Finding 11. Not a blocker: the band ships and the grid change is someone else's file |
-| **Product · three strings, and three settled here** | Exactly three, and the copy file's six `cuts` entries are not all of them: the resume row's to-buy clause, the deck tile's `all owned`, and desktop's `99 owned · 0 to buy`. Each survives elsewhere — the roll-up on Shopping, and the bar beside the count |
+| **Product · three strings** | Exactly three, and the copy file's six `cuts` entries are not all of them: the resume row's to-buy clause, the deck tile's `all owned`, and desktop's `99 owned · 0 to buy`. Each survives elsewhere — the roll-up on Shopping, and the bar beside the count |
 | **Settled here, not Product's** | The round's own three cuts: `Start this deck` (`See the pool` takes the filled treatment as the only action left), the resume row's commander name on single-commander rows, and the tile's `never played`. That last is the one cut with no replacement, and the handoff rules where it goes instead — the overflow menu, or the deck's own page. Built as ruled |
 | **Decision · B9, reduced transparency** | Finding 8. Open with Design, blocks nothing |
 
