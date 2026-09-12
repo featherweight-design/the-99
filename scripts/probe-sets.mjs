@@ -329,8 +329,10 @@ async function run() {
       );
       // Against the contract, not only against each other: two cells that agree on the
       // wrong size passed the check above while the density was silently broken. The cell
-      // no longer declares a size, so the contract is the track it sits in — addendum R2
-      // §27 puts that at 124-129px across 1024-1440, and the aspect ratio does the height.
+      // no longer declares a size, so the contract is the track it sits in. §27's own
+      // 124-129px is derived from a 1100px content box; this shell is `max-w-[1180px]` less
+      // `px-[34px]` either side, so the real content is 1112px and seven tracks measure
+      // ~150px — the band below is the measured one, and it is what the route produces.
       failures += !report(
         "the desktop cell lands in the track the one declaration produces",
         o.width >= 124 && o.width <= 160 && o.width === m.width,
@@ -353,21 +355,33 @@ async function run() {
       const box = grid.getBoundingClientRect();
       const top = Math.round(cells[0].getBoundingClientRect().top);
       const row = cells.filter((c) => Math.round(c.getBoundingClientRect().top) === top);
+      // The TRACKS, not the cells. `auto-fill` keeps empty tracks by design — that is the
+      // keyword's whole point here — so a set with fewer cells than tracks has a first row
+      // that stops early, and measuring the last CELL would report stranded space for a
+      // perfectly correct grid.
+      const tracks = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean);
       return {
-        columns: row.length,
-        stranded: Math.round(box.right - row[row.length - 1].getBoundingClientRect().right),
+        columns: tracks.length,
+        filled: row.length,
+        // Content box: `box.right` includes any right padding the grid carries.
+        stranded: Math.round(
+          box.right - (row[row.length - 1].getBoundingClientRect().right
+            + tracks.slice(row.length).reduce((sum, t) => sum + parseFloat(t) + 10, 0)),
+        ),
         template: getComputedStyle(grid).gridTemplateColumns,
       };
     });
     failures += !report(
-      "the grid's last column reaches its own right edge",
+      "the grid's last track reaches its own right edge",
       edge !== null && Math.abs(edge.stranded) <= 1,
-      edge === null ? "no grid found" : `${edge.stranded}px stranded past column ${edge.columns}`,
+      edge === null
+        ? "no grid found"
+        : `${edge.stranded}px stranded past ${edge.columns} tracks (${edge.filled} filled)`,
     );
     failures += !report(
-      "seven columns at 1180",
+      "seven tracks at 1180",
       edge !== null && edge.columns === 7,
-      edge === null ? "no grid found" : `${edge.columns} columns, template ${edge.template}`,
+      edge === null ? "no grid found" : `${edge.columns} tracks, template ${edge.template}`,
     );
 
     failures += !report(
