@@ -185,9 +185,9 @@ re-deriving the modal:
   `Desktop: Art Column` (`:831`), `Desktop: Art Image` (`:842`), and the compact variant at
   `:1207`. This is the table the price's placement and the zoom's trigger amend.
 - **`docs/superpowers/design-tables/price-on-the-buy-tag.md`** — the four price states
-  (`:35-44`) and copy rule 6.3 (`:186`). A price in the detail panel is a **fifth surface** for a
-  vocabulary ratified for two, so the drawing either reuses the tag's tail forms verbatim or says
-  where and why it departs.
+  (`:35-44`) and copy rule 6.3 (`:186`). That vocabulary was ratified for the buy tag's two
+  variants and the Shopping price strip; a figure in the detail panel is a **new surface** for it,
+  so the drawing either reuses the tag's tail forms verbatim or says where and why it departs.
 - **`docs/superpowers/design-tables/commanders.md:1915`** — the `detail-card-modal` state row,
   rewritten on 2026-09-12 for #517. It describes what the modal holds today; zoom and an animated
   flip change that description.
