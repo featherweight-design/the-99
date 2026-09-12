@@ -56,6 +56,10 @@ const {
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const TEMPLATE = process.env.PROBE_TEMPLATE_DECK ?? "a1111111-1111-1111-1111-111111111111";
 
+// The rail's way back is the deck's name, so the check needs the same string the
+// insert wrote.
+const DECK_NAME = "Probe · version history";
+
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
   { label: "desktop · 1300x900", width: 1300, height: 900 },
@@ -183,7 +187,7 @@ async function buildDeck(userId, template) {
   const { rows } = await pool.query(
     `insert into decks (user_id, name, commander_oracle_id, partner_oracle_id, filled)
        values ($1, $2, $3, $4, true) returning id`,
-    [userId, "Probe · version history", template.commander_oracle_id, template.partner_oracle_id],
+    [userId, DECK_NAME, template.commander_oracle_id, template.partner_oracle_id],
   );
   const deckId = rows[0].id;
   await pool.query(
@@ -274,6 +278,19 @@ async function logGames(userId, deckId, v2) {
   );
 }
 
+/** Every asserted check, so the run can end in a verdict rather than in prose a
+ *  reader has to grade themselves. A probe that only prints is not a gate: it
+ *  exits 0 while the route leaks another player's deck. */
+const failures = [];
+
+/** Print one check and remember whether it held. `note` carries the measured
+ *  value either way — a passing check whose figure is worth reading is most of
+ *  this probe. */
+function check(label, ok, note) {
+  console.log(`  ${ok ? "ok  " : "FAIL"} ${label}${note ? ` — ${note}` : ""}`);
+  if (!ok) failures.push(label);
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
 let deck = null;
@@ -307,11 +324,11 @@ try {
   const leaked = /v1|committed/i.test(refusedBody);
   const notFoundPage = /There's no page here\./.test(refusedBody);
   console.log(`\n########## another player's deck · /decks/<id>/versions`);
-  console.log(`  rail drawn: ${leaked ? "YES — LEAK" : "no (correct)"}`);
-  console.log(`  not-found page: ${notFoundPage ? "yes (correct)" : "NO — check the guard"}`);
-  // The status is reported and not asserted. `versions/loading.tsx` makes this
-  // route stream, so the 200 is flushed with the first chunk before the guard's
-  // `notFound()` throws — the body is the refusal, and the header cannot be.
+  check("no rail drawn for a deck the reader does not own", !leaked);
+  check("the not-found page is drawn instead", notFoundPage);
+  // Reported, not asserted. `versions/loading.tsx` makes this route stream, so
+  // the 200 is flushed with the first chunk before the guard's `notFound()`
+  // throws — the body is the refusal, and the header cannot be.
   console.log(`  status: ${refusedStatus} (200 while the route has a loading boundary)`);
 
   for (const viewport of VIEWPORTS) {
@@ -326,27 +343,39 @@ try {
     console.log(`\n########## ${viewport.label} · /decks/<id>/versions`);
     console.log(`  url: ${rail.url}`);
     console.log(`  h1: ${rail.h1} · back: ${rail.back}`);
-    console.log(`  rows: ${rail.rows.length} (expect 3)`);
     for (const row of rail.rows) console.log(`    ${row.open ? "open " : "closed"} ${row.text}`);
-    console.log(`  restore control: ${rail.restore ? "PRESENT — gap" : "absent (correct)"}`);
-    console.log(`  pending draft row: ${rail.pending ? "PRESENT — gap" : "absent (correct)"}`);
-    console.log(`  elements with motion: ${rail.moving} (READINESS 19 expects 0)`);
+    check(`${viewport.label} · one row per version`, rail.rows.length === 3, `${rail.rows.length} of 3`);
+    check(
+      `${viewport.label} · the deck's name is the way back`,
+      (rail.back ?? "").includes(DECK_NAME),
+      rail.back ?? "no link",
+    );
+    check(`${viewport.label} · no restore control`, !rail.restore);
+    check(`${viewport.label} · no row for the pending draft`, !rail.pending);
+    // READINESS 19 forbids motion outright, and a count is the only way to show it.
+    check(`${viewport.label} · nothing moves`, rail.moving === 0, `${rail.moving} elements`);
 
     // ── Surface 4 · the diff, which is read on open and not before
-    const first = rail.rows[0];
-    if (first) {
-      await railRows(vpPage).first().click();
-      await vpPage.waitForTimeout(1200);
-      const opened = await readRail(vpPage);
-      const openRow = opened.rows.find((r) => r.open);
-      const panel = openRow ? await readPanel(vpPage, openRow.panel) : null;
-      console.log(`  after click · open rows: ${opened.rows.filter((r) => r.open).length} (expect 1)`);
-      console.log(`  panel: ${panel === null ? "ABSENT — gap" : panel.headings.join(" | ")}`);
-      if (panel) {
-        console.log(`  still pending: ${panel.pending ? "YES — read never settled" : "no"}`);
-        console.log(`  first names: ${panel.names.join(", ") || "none"}`);
-        console.log(`  panel text: ${panel.text}`);
-      }
+    await railRows(vpPage).first().click();
+    await vpPage.waitForTimeout(1200);
+    const opened = await readRail(vpPage);
+    const openCount = opened.rows.filter((r) => r.open).length;
+    const openRow = opened.rows.find((r) => r.open);
+    const panel = openRow ? await readPanel(vpPage, openRow.panel) : null;
+    check(`${viewport.label} · one row open at a time`, openCount === 1, `${openCount} of 1`);
+    check(`${viewport.label} · the opened row draws a panel`, panel !== null);
+    if (panel) {
+      console.log(`  panel: ${panel.headings.join(" | ")}`);
+      console.log(`  panel text: ${panel.text}`);
+      // A panel still showing its pending mark after 1.2s means the server action
+      // never resolved — the read is the surface, so a stuck one is a failure and
+      // not a slow paint.
+      check(`${viewport.label} · the diff read settled`, !panel.pending);
+      check(
+        `${viewport.label} · the diff names cards`,
+        panel.names.length > 0,
+        panel.names.join(", ") || "none",
+      );
     }
 
     // The v1 row is the initial arm: no diff to fetch, and a browse link instead.
@@ -359,7 +388,17 @@ try {
     const v1Row = (await readRail(vpPage)).rows.find((r) => r.open);
     const v1Panel = v1Row ? await readPanel(vpPage, v1Row.panel) : null;
     console.log(`  v1 row open: ${v1Row?.text ?? "none"}`);
-    console.log(`  v1 panel: ${v1Panel?.text ?? "ABSENT — gap"}`);
+    console.log(`  v1 panel: ${v1Panel?.text ?? "ABSENT"}`);
+    check(`${viewport.label} · the first version draws its own arm`, v1Panel !== null);
+    // v1 has no predecessor, so it names no cards at all — a diff drawn here would
+    // mean the panel diffed against an empty list and called the whole deck an add.
+    if (v1Panel) {
+      check(
+        `${viewport.label} · the first version states no delta`,
+        v1Panel.names.length === 0,
+        v1Panel.names.join(", ") || "none",
+      );
+    }
 
     // ── Surface 5 · the stamp on a logged game
     // The log lives behind the deck's Games tab, so the stamp is only reachable
@@ -369,17 +408,32 @@ try {
     await vpPage.locator("#tab-games").click();
     await vpPage.waitForTimeout(700);
     const stamps = await readStamps(vpPage);
+    const stamped = stamps.filter((s) => s.stamp !== null);
     console.log(`\n########## ${viewport.label} · /decks/<id> game log`);
-    console.log(`  rows with a stamp slot: ${stamps.filter((s) => s.stamp !== null).length} (expect 2)`);
     for (const s of stamps) {
       if (s.stamp === null) {
-        console.log(`    no stamp slot — gap`);
+        console.log(`    no stamp slot`);
         continue;
       }
       console.log(`    ${s.stamp} · left ${s.left} · width ${s.width} · ${s.fontSize} · ${s.color}`);
     }
-    const lefts = new Set(stamps.filter((s) => s.stamp !== null).map((s) => s.left));
-    console.log(`  slots share one vertical: ${lefts.size === 1 ? "yes" : `NO — ${[...lefts]}`}`);
+    check(
+      `${viewport.label} · every game row carries a stamp slot`,
+      stamped.length === 2,
+      `${stamped.length} of 2`,
+    );
+    // One game was logged under v2 and one under no version, so the pair proves
+    // both readings: the version, and the em dash standing in for its absence.
+    check(
+      `${viewport.label} · the stamps read v2 and —`,
+      stamped.some((s) => s.stamp === "v2") && stamped.some((s) => s.stamp === "—"),
+      stamped.map((s) => s.stamp).join(", "),
+    );
+    const lefts = new Set(stamped.map((s) => s.left));
+    // Reported, not asserted. Below `md:` the meta cell to the stamp's left sizes to
+    // its own date text, so the two slots sit on different verticals — the game
+    // log's existing behaviour, which this surface inherits rather than introduces.
+    console.log(`  slots share one vertical: ${lefts.size === 1 ? "yes" : `no — ${[...lefts]}`}`);
 
     await vpContext.close();
   }
@@ -390,4 +444,13 @@ try {
   if (foreignDeckId) await pool.query(`delete from decks where id = $1`, [foreignDeckId]);
   await pool.end();
   await browser.close();
+}
+
+console.log(`\n########## verdict`);
+if (failures.length === 0) {
+  console.log("  every check held.");
+} else {
+  console.log(`  ${failures.length} failed:`);
+  for (const label of failures) console.log(`    ${label}`);
+  process.exitCode = 1;
 }
