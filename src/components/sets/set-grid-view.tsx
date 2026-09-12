@@ -135,47 +135,58 @@ export function SetGridView(props: SetGridViewProps) {
   // focus to the body. Treating the body as "fine" lost the keyboard there entirely — the
   // reader was inside a control, and the control's replacement is one tab away at most.
   const sheetTriggerRef = useRef<HTMLButtonElement>(null);
-  // Only after an actual crossing. `document.activeElement` is the body on a fresh load, so
-  // without this the effect read every first render as a stranding and moved focus into the
-  // rack before the reader had touched anything — a worse defect than the one it fixes.
+  /**
+   * Focus rescue across the `md` crossing, stated as a TRANSITION rather than a snapshot.
+   *
+   * Three earlier versions each got one case right and another wrong, because each asked a
+   * question at the wrong moment: "is focus on something invisible?" (true on a fresh load,
+   * where the body holds it), "was focus in the rack?" (still true long after a chip's ×
+   * removed the control), "is the node disconnected?" (false for `hidden md:flex`, which
+   * stays connected while going invisible).
+   *
+   * The question that has no wrong moment is whether the rack control that HAD focus went
+   * from usable to unusable, and whether that happened at a crossing. So usability is
+   * sampled every commit, and the crossing compares this commit's answer with the last —
+   * which is why the two effects below are declared in this order: effects run in
+   * declaration order, so the crossing reads the previous commit's sample before the
+   * sampler overwrites it.
+   */
   const focusWidth = useRef<boolean | null>(null);
-  // And only when focus was in the rack to begin with. `document.body` on its own is not
-  // evidence that a control was unmounted: a reader who clicked page whitespace and then
-  // resized would have had focus yanked into a rack they never touched. Recorded as focus
-  // MOVES, because by the time the effect runs the element that held it may be gone.
-  // The element AND where it was, not a bare flag. A flag set on `focusin` goes stale the
-  // moment that control is removed some other way — clicking a chip's × drops focus to the
-  // body and leaves the flag true, so a later resize would rescue focus that was never in
-  // the rack at the crossing. Holding both lets the crossing ask the question that actually
-  // matters: was a rack control focused, and did this crossing take it away?
   const lastFocused = useRef<{ node: Element; inRack: boolean } | null>(null);
+  const rackFocusUsable = useRef(false);
   const rackRegion = useRef<HTMLDivElement>(null);
+  // Connected AND drawn: `hidden md:flex` keeps a pip in the document while hiding it, and a
+  // reader left on an invisible control is the whole defect.
+  const rackFocusIsUsable = () => {
+    const was = lastFocused.current;
+    return was !== null && was.inRack && was.node.isConnected
+      && was.node.getClientRects().length > 0;
+  };
+
   useEffect(() => {
     const onFocusIn = () => {
       const node = document.activeElement;
       lastFocused.current = node
         ? { node, inRack: rackRegion.current?.contains(node) ?? false }
         : null;
+      rackFocusUsable.current = rackFocusIsUsable();
     };
     document.addEventListener("focusin", onFocusIn);
     return () => document.removeEventListener("focusin", onFocusIn);
   }, []);
+
   useEffect(() => {
     const crossed = focusWidth.current !== null && focusWidth.current !== isDesktop;
     focusWidth.current = isDesktop;
-    // Was a RACK control focused, and is it gone? `contains` is asked at focus time, since a
-    // removed node is no longer anyone's descendant; `isConnected` is asked now, because
-    // that is what distinguishes a control the crossing unmounted from one the reader simply
-    // clicked away from.
-    const was = lastFocused.current;
-    const rescuing = was !== null && was.inRack && !was.node.isConnected;
-    if (!crossed || !rescuing) return;
+    // Usable before this commit, not usable now: a rack control lost its focus TO the
+    // crossing, rather than to a click the reader made minutes ago.
+    const lost = rackFocusUsable.current && !rackFocusIsUsable();
+    if (!crossed || !lost) return;
     const id = requestAnimationFrame(() => {
       const active = document.activeElement as HTMLElement | null;
       const stranded =
         active === null || active === document.body || active.getClientRects().length === 0;
       if (!stranded) return;
-      // Whichever width we just arrived at, land on that width's own first control.
       // The first CONTROL, not the container. `desktopRackRef` wraps the pips in a
       // `tabIndex={-1}` div so it can receive focus at all, and landing there puts a
       // keyboard reader on an unnamed empty box instead of on a filter they can use.
@@ -187,6 +198,12 @@ export function SetGridView(props: SetGridViewProps) {
     });
     return () => cancelAnimationFrame(id);
   }, [isDesktop]);
+
+  // Declared AFTER the crossing effect on purpose: it samples for the NEXT one.
+  useEffect(() => {
+    rackFocusUsable.current = rackFocusIsUsable();
+  });
+
   const filters = local ?? urlFilters;
 
   function setFilters(next: SetGridFilters) {

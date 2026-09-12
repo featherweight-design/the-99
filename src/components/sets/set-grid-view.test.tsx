@@ -1038,3 +1038,14 @@ describe("SetGridView — the rarity trigger says what it shows", () => {
     expect(screen.getByRole("button", { name: "Rare" })).toBeInTheDocument();
   });
 });
+
+// Label-in-name at REST too: the button reads `Rarity · all`, so its accessible name has to
+// carry that. The active state already did, by carrying its value.
+describe("SetGridView — the rarity trigger at rest", () => {
+  it("announces the value it shows when nothing is selected", () => {
+    stubDesktop(true);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    const trigger = screen.getByRole("button", { name: /Filter by rarity, all/ });
+    expect(trigger.textContent).toContain("Rarity · all");
+  });
+});

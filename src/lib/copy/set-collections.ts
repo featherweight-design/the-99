@@ -74,7 +74,11 @@ export const setFilterCopy = {
     // them itself. Lowercasing here alone left the accessible name in Title Case.
     triggerOne: (name: string) =>
       setFilterCopyRarity.value(name as "common" | "uncommon" | "rare" | "mythic"),
-    triggerAriaCollapsed: "Filter by rarity, collapsed",
+    // Carries `all`, and in the same shape the selected state uses — `FilterPanel` builds
+    // that one as `Filter by rarity, uncommon, collapsed`. The button reads `Rarity · all`
+    // at rest, and a name omitting `all` left a voice-control user unable to address the
+    // value they can see (WCAG 2.5.3), while the selected state already carried its own.
+    triggerAriaCollapsed: "Filter by rarity, all, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by rarity, ${n} selected, collapsed`,
     panelAriaLabel: "Filter by rarity",
     sheetTitle: "Rarity",
