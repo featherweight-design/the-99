@@ -122,6 +122,13 @@ export type FilterChassisProps = {
   announce?: string;
   /** Identity of that announcement, so a repeated sentence still speaks. */
   announceId?: string | number;
+  /**
+   * Something that moves when the list does — see `ResultLine`'s `revision`.
+   * Without it a message held while the compact sheet is silent can be
+   * announced against a list it no longer describes, because a different filter
+   * can leave the same count.
+   */
+  revision?: string | number;
 };
 
 /**
@@ -148,7 +155,7 @@ export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
-  silentResult, resultTrailing, announce, announceId,
+  silentResult, resultTrailing, announce, announceId, revision,
 }: FilterChassisProps) {
   return (
     <div
@@ -283,7 +290,7 @@ export function FilterChassis({
 
       {/* Row 3 — the chassis's only live region. */}
       <div className="flex items-center gap-[10px]" data-chassis-row="result">
-        <ResultLine line={resultLine} announce={announce} announceId={announceId} silent={silentResult} />
+        <ResultLine line={resultLine} announce={announce} announceId={announceId} revision={revision} silent={silentResult} />
         {resultTrailing && (
           <div className="ml-auto flex items-center gap-[8px]">{resultTrailing}</div>
         )}

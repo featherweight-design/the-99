@@ -247,6 +247,20 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("");
   });
 
+  it("drops a held message when silence ends in the same render as the change", () => {
+    // The stale check ran after the queue was cleared, so this timing slipped
+    // past it and the held sentence was delivered against the newer list.
+    const { rerender, container } = render(<ResultLine line="9 of 41" revision="a" silent />);
+    rerender(
+      <ResultLine line="9 of 41" revision="a" announce="EOE added." announceId={1} silent />,
+    );
+    act(() => vi.advanceTimersByTime(50));
+    // Silence ends and the list moves in one go.
+    rerender(<ResultLine line="9 of 41" revision="b" announce="EOE added." announceId={1} />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).not.toBe("EOE added.");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");

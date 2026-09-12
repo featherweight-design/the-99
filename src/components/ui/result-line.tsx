@@ -150,6 +150,16 @@ export function ResultLine({
       }
       return;
     }
+    // Silence can end in the same render that moves the list. Clearing the
+    // queue before checking what it was composed against let `fresh` stay true
+    // and delivered the held sentence against the newer list — the stale check
+    // above, bypassed by timing. Compare first, then clear.
+    // Stamping the ref is not enough here: `fresh` was computed above, so this
+    // render would still deliver the held sentence. The message itself has to
+    // be withdrawn for this pass.
+    const heldWentStale =
+      queuedFor.current !== null && queuedFor.current !== (revision ?? line);
+    if (heldWentStale) lastAnnounce.current = identity;
     queuedFor.current = null;
     queuedId.current = undefined;
     const silentFor =
@@ -171,7 +181,7 @@ export function ResultLine({
     // ordinary line announcement would let a caller holding a stable id have
     // its first real message read as stale and never spoken.
     if (fresh) lastAnnounce.current = identity;
-    const message = fresh ? (announce as string) : line;
+    const message = fresh && !heldWentStale ? (announce as string) : line;
     // A custom message is delivered as given. It is composed by the surface for
     // a specific action, and this component adds no debounce of its own to it —
     // some callers send immediately (`FilterPanel`'s arrow-key and first-option
@@ -179,7 +189,7 @@ export function ResultLine({
     // waits 300ms. Waiting again here would put that one roughly 600ms behind
     // the keystroke and delay every other one for no reason. The line this
     // component composes itself is the only thing that waits.
-    if (fresh) {
+    if (fresh && !heldWentStale) {
       announced.current = line;
       setAnnouncement((a) => ({ text: message, seq: a.seq + 1 }));
       return;
