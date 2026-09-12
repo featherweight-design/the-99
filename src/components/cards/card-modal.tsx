@@ -369,7 +369,13 @@ export function CardModal({
     const printings = known
       ? (at.imageUri
           ? card.printings.map((p) =>
-              matchesPreference(p, at) ? { ...p, imageUri: at.imageUri ?? p.imageUri } : p)
+              // The flavour name goes with the art it described. `aggregateCollection` can
+              // fill it from the set REPRESENTATIVE when a holding has no `scryfall_id`, so
+              // once the exact art replaces that fallback the name beside it is a different
+              // printing's — and the title would sit over a face it does not name.
+              matchesPreference(p, at)
+                ? { ...p, imageUri: at.imageUri ?? p.imageUri, flavorName: null }
+                : p)
           : card.printings)
       : [...card.printings, {
       setCode: at.setCode,

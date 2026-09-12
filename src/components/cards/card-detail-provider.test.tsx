@@ -941,4 +941,43 @@ describe("CardDetailProvider open-at-printing scope", () => {
     await screen.findByRole("dialog");
     expect(art().some((b) => b.includes("m21-268"))).toBe(false);
   });
+
+  // Reopening the SAME card with no printing is an explicit ask for no printing, and has to
+  // clear one. Held by id alone it read as a same-card refresh and preserved the cell the
+  // reader opened at last time.
+  it("clears the printing when the same card is reopened without one", async () => {
+    const fetchCard = vi.fn(async () => SIGNET);
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => open("o-signet", [], {
+              setCode: "RVR", collectorNumber: "24",
+              imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+            })}
+          >
+            open at RVR
+          </button>
+          <button type="button" onClick={() => open("o-signet", [])}>open plain</button>
+        </>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await click(screen.getByRole("button", { name: "open plain" }));
+    await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
+  });
 });

@@ -275,7 +275,12 @@ export function CardDetailProvider({
       // printing the next time the reader paged onto that card, a page that supplied no
       // printing at all. One place owns this value's whole life, which is why there is no
       // second guard on the way out.
-      pendingAt.current = at ? { oracleId, printing: at } : null;
+      // `undefined` and `null` are different asks. `undefined` is not an open at all —
+      // paging, a re-read, an owed re-read — and clears whatever an earlier open left. A
+      // `null` IS an open, for a card with no printing in particular, and has to be able to
+      // clear a printing on the card already shown: without the distinction, reopening the
+      // current card plainly left it wearing the cell it was opened at last time.
+      pendingAt.current = at === undefined ? null : { oracleId, printing: at };
       openRef.current = oracleId;
       inFlight.current = oracleId;
       if (list !== undefined) setSiblings(list);
