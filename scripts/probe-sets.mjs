@@ -308,6 +308,25 @@ async function run() {
       );
     }
 
+    // Layout is layout: the track, the derived height and the flush edge are true of any
+    // cell, so they measure the first one on the page. Gating them behind "there is a
+    // missing cell to compare against" let a complete set skip every geometry check while
+    // reporting green — the same class of silence the dim checks below are gated for, but
+    // there the gate is the point, because a complete set has no missing cell to dim.
+    const any = cells[0];
+    if (any) {
+      failures += !report(
+        "the desktop cell lands in the track the one declaration produces",
+        any.width >= 124 && any.width <= 160,
+        `${any.width}x${any.height}`,
+      );
+      failures += !report(
+        "the cell's height is its width at 63/88 rather than a literal",
+        Math.abs(any.height - (any.width * 88) / 63) <= 1.5,
+        `${any.width}x${any.height}, expected height ${Math.round((any.width * 88) / 63)}`,
+      );
+    }
+
     if (owned.length === 0) {
       failures += !report(
         "there is an owned cell to compare geometry against",
@@ -333,16 +352,6 @@ async function run() {
       // 124-129px is derived from a 1100px content box; this shell is `max-w-[1180px]` less
       // `px-[34px]` either side, so the real content is 1112px and seven tracks measure
       // ~150px — the band below is the measured one, and it is what the route produces.
-      failures += !report(
-        "the desktop cell lands in the track the one declaration produces",
-        o.width >= 124 && o.width <= 160 && o.width === m.width,
-        `owned ${o.width}x${o.height}, missing ${m.width}x${m.height}`,
-      );
-      failures += !report(
-        "the cell's height is its width at 63/88 rather than a literal",
-        Math.abs(o.height - (o.width * 88) / 63) <= 1.5,
-        `${o.width}x${o.height}, expected height ${Math.round((o.width * 88) / 63)}`,
-      );
     }
 
     // The flush edge IS the ruling — a fixed-width row strands its remainder beside a grid
@@ -412,27 +421,16 @@ async function run() {
     await page.reload({ waitUntil: "networkidle" });
     await waitForCells(page);
     const phone = (await page.evaluate(READ_CELLS)).cells;
-    const phoneMissing = phone.find((c) => !c.owned);
-    if (phoneMissing) {
-      failures += !report(
-        "the dim survives at 390px",
-        phoneMissing.artOpacity === 0.28 && phoneMissing.borderStyle === "dashed",
-        `opacity ${phoneMissing.artOpacity}, border ${phoneMissing.borderStyle}`,
-      );
+    const phoneAny = phone[0];
+    if (phoneAny) {
       // Addendum R2 §27: at 390px there is nothing between three tracks at 112.67 and two
       // at 174 — an `fr` track takes the whole remainder — so the choice was a column count
       // and the answer is two.
       failures += !report(
         "the phone cell is 174px, which is two columns of the one declaration",
-        Math.abs(phoneMissing.width - 174) <= 1,
-        `${phoneMissing.width}x${phoneMissing.height}`,
+        Math.abs(phoneAny.width - 174) <= 1,
+        `${phoneAny.width}x${phoneAny.height}`,
       );
-      // The same derived-height contract as the desktop check. A regression that kept the
-      // width and lost `aspect-ratio: 63/88` would otherwise pass here, and the height is
-      // half of what "no size literal at any width" means.
-      // The same track and flush-edge assertions as desktop, re-measured here: a sampled
-      // cell's size says nothing about the track list or about what `auto-fill` did with
-      // the empty tracks, so a phone-only regression in either would otherwise pass.
       const phoneEdge = await page.evaluate(READ_EDGE);
       failures += !report(
         "two tracks at 390, measured off the track list",
@@ -446,9 +444,18 @@ async function run() {
       );
       failures += !report(
         "and its height is that width at 63/88, not a literal",
-        Math.abs(phoneMissing.height - (phoneMissing.width * 88) / 63) <= 1.5,
-        `${phoneMissing.width}x${phoneMissing.height}, `
-          + `expected height ${Math.round((phoneMissing.width * 88) / 63)}`,
+        Math.abs(phoneAny.height - (phoneAny.width * 88) / 63) <= 1.5,
+        `${phoneAny.width}x${phoneAny.height}, `
+          + `expected height ${Math.round((phoneAny.width * 88) / 63)}`,
+      );
+    }
+
+    const phoneMissing = phone.find((c) => !c.owned);
+    if (phoneMissing) {
+      failures += !report(
+        "the dim survives at 390px",
+        phoneMissing.artOpacity === 0.28 && phoneMissing.borderStyle === "dashed",
+        `opacity ${phoneMissing.artOpacity}, border ${phoneMissing.borderStyle}`,
       );
     }
 

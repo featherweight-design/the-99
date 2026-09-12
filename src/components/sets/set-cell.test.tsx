@@ -203,14 +203,44 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
 // the identical-geometry constraint the grid depends on is true by construction rather than
 // by two pairs of literals kept in step by hand.
 describe("SetCell — no size literal at any width", () => {
-  const sizeLiteral = /\b(?:md:)?[wh]-\[\d+px\]/;
+  /**
+   * Any width or height that is a MEASUREMENT, at any breakpoint: an arbitrary value
+   * (`w-[116px]`), a scale step (`h-10`), or a fraction (`w-1/2`). `w-full` and `h-full` are
+   * deliberately allowed — they are the cell taking the track's width, which is the ruling
+   * rather than a violation of it. The first version of this matcher recognised only
+   * `md:`-prefixed `px` values, so a regression under `sm:` or a plain `w-10` would have
+   * passed a test whose whole subject is "at any width".
+   */
+  const sizeLiteral = /(?:^|\s)(?:[a-z0-9.]+:)*[wh]-(?:\[[^\]]*\]|\d+(?:\.\d+)?|\d+\/\d+)(?=\s|$)/;
 
   it("carries no width or height literal on any element it renders", () => {
-    const { container } = render(<SetCell cell={cell({})} />);
+    const { container } = render(<SetCell cell={cell({ owned: true, byName: true, foilOnly: true })} />);
     const offenders = [...container.querySelectorAll<HTMLElement>("*")]
       .map((el) => el.className)
       .filter((c) => typeof c === "string" && sizeLiteral.test(c));
     expect(offenders).toEqual([]);
+  });
+
+  // Inline styles too, and scoped to the two elements the ruling is about: the by-name
+  // marker inside the plate carries a deliberate 7px box, which is a glyph and not the cell.
+  it("sizes neither the cell nor its plate from an inline style", () => {
+    const { container } = render(<SetCell cell={cell({ owned: true, byName: true })} />);
+    const button = container.querySelector("button") as HTMLElement;
+    const plate = container.querySelector(".aspect-\\[63\\/88\\]") as HTMLElement;
+    for (const el of [button, plate]) {
+      expect(el.style.width).toBe("");
+      expect(el.style.height).toBe("");
+    }
+  });
+
+  it("catches a literal if one comes back", () => {
+    // The matcher's own test, because a regex that matches nothing passes every assertion
+    // above while proving nothing.
+    expect(sizeLiteral.test("group flex w-[108px] flex-col")).toBe(true);
+    expect(sizeLiteral.test("relative block sm:h-[151px]")).toBe(true);
+    expect(sizeLiteral.test("mt-[6px] w-10 flex")).toBe(true);
+    expect(sizeLiteral.test("mt-[2px] block w-full truncate")).toBe(false);
+    expect(sizeLiteral.test("relative block aspect-[63/88] w-full")).toBe(false);
   });
 
   it("sizes the art by aspect ratio instead", () => {
