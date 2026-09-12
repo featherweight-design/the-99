@@ -210,11 +210,25 @@ export function DiscardConfirm({
           </>
         )}
       </p>
-      {/* One element ordered twice. At 390px the pair stacks with the safe answer
-          on top, because the thumb reaches the bottom row first and the bottom row
-          would otherwise be the unrecoverable one; on desktop the row reads from
-          the act to the way out, as the design draws it. */}
-      <div className="flex flex-col-reverse md:flex-row md:items-center md:flex-wrap gap-[8px] md:gap-[10px]">
+      {/* One element ordered twice: the safe answer on top at 390px, and on
+          desktop a row reading from the act to the way out, as the design draws
+          it. The way out is written first in the DOM rather than reversed into
+          place on the phone, so the stack a reader tabs through runs the same way
+          the stack they see does — and the first tab stop in a destructive
+          confirm is the escape from it at both widths. Desktop reverses the row
+          instead, and packs from the far end because `row-reverse` moves
+          main-start to the right. */}
+      <div className="flex flex-col md:flex-row-reverse md:justify-end md:items-center md:flex-wrap gap-[8px] md:gap-[10px]">
+        <button
+          ref={safeRef}
+          type="button"
+          disabled={pending}
+          aria-describedby={whyId}
+          onClick={onCancel}
+          className={`${SAFE_CTA} ${PRIMARY}`}
+        >
+          {copy.cancel}
+        </button>
         <button
           type="button"
           disabled={pending}
@@ -262,16 +276,6 @@ export function DiscardConfirm({
           className={DANGER_CTA}
         >
           {pending ? copy.pending : copy.confirm(n)}
-        </button>
-        <button
-          ref={safeRef}
-          type="button"
-          disabled={pending}
-          aria-describedby={whyId}
-          onClick={onCancel}
-          className={`${SAFE_CTA} ${PRIMARY}`}
-        >
-          {copy.cancel}
         </button>
       </div>
       {/* Under the answers, with the question still up: a refused discard changed

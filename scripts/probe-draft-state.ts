@@ -263,6 +263,76 @@ try {
   //    A version behind the newest is refused rather than written: restoring it
   //    would overwrite v2's own cards with the list before them.
   check("an older version is refused", await restoreDraftFromVersion(deck.id, v1.id), "moved");
+
+  // 9. THE REMOVAL'S LOCK. `removeCardFromDeck` picks between a decrement and a
+  //    delete by reading the row first, and the discard above replaces every
+  //    `deck_cards` row wholesale. Unlocked, a removal that waited out a discard
+  //    found its decrement matching nothing and fell through to an unconditional
+  //    delete — taking a card straight back out of the list the discard had just
+  //    restored, with nothing recording it. Both paths now take the row's own
+  //    lock, and a lock is invisible to every unit test in this repository.
+  //
+  //    Two raw clients on deliberately interleaved statements, because the damage
+  //    needs the interleaving: a removal that starts while a discard holds the
+  //    lock, and resumes after it commits. `removeCardFromDeck` takes a Clerk
+  //    session, which a script has no way to hold, so both sides are the SQL those
+  //    two paths issue — the removal's read-then-write as it now stands beside the
+  //    single unconditional statement it replaced.
+  const restorer = await pool.connect();
+  const remover = await pool.connect();
+  try {
+    const lockedRead = "select quantity from deck_cards where deck_id = $1 and oracle_id = $2 for update";
+    const oldDecrement =
+      "update deck_cards set quantity = quantity - 1 " +
+      "where deck_id = $1 and oracle_id = $2 and quantity > 1 returning oracle_id";
+
+    // The discard's half, statement for statement: both locks, then the wholesale
+    // replacement. Held open, so the removal below starts against the old rows.
+    await restorer.query("begin");
+    await restorer.query("select id from decks where id = $1 for update", [deck.id]);
+    await restorer.query("select oracle_id from deck_cards where deck_id = $1 for update", [deck.id]);
+
+    // Deliberately not awaited: this blocks on the lock above, and the discard has
+    // to commit while it waits or there is no race to observe.
+    await remover.query("begin");
+    const waiting = remover.query(lockedRead, [deck.id, card.kept]);
+
+    await restorer.query("delete from deck_cards where deck_id = $1", [deck.id]);
+    await restorer.query(
+      "insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1), ($1, $3, 12)",
+      [deck.id, card.kept, card.basic],
+    );
+    await restorer.query("commit");
+
+    // The tuple this read locked was deleted by the commit, so the read comes back
+    // empty and `removeCardFromDeck` returns without writing. That is the whole
+    // fix: the row it named is gone.
+    const { rows: afterWait } = await waiting;
+    check("a removal resuming after a discard finds its row deleted", afterWait.length, 0);
+    await remover.query("rollback");
+
+    // The statement it replaced, on the same interleaving, reported the same
+    // nothing — and fell through to an unconditional delete, which matched the
+    // freshly restored row and took a card out of a list nobody had edited.
+    await remover.query("begin");
+    const { rowCount: wouldDelete } = await remover.query(
+      "select oracle_id from deck_cards where deck_id = $1 and oracle_id = $2",
+      [deck.id, card.kept],
+    );
+    const { rows: decremented } = await remover.query(oldDecrement, [deck.id, card.kept]);
+    check("the decrement it replaced matched nothing", decremented.length, 0);
+    check("…while the delete behind it would have hit the restored row", wouldDelete, 1);
+    await remover.query("rollback");
+
+    // And the restored list is whole: this whole step wrote nothing to it.
+    const { rows: [whole] } = await fixture.execute<{ n: number }>(sql`
+      select count(*)::int as n from deck_cards where deck_id = ${deck.id}
+    `);
+    check("the restored list survives the removal", whole?.n, 2);
+  } finally {
+    restorer.release();
+    remover.release();
+  }
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);

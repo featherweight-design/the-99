@@ -107,7 +107,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a claim is point-in-time whatever boundary is drawn around it — another deck can commit between
   the read and the reader's click — and what makes a pull safe is the server action re-reading
   every claim in its own transaction and refusing with a named reason. The draft's figures may
-  therefore mix times, which is the contract, not a gap in it. Same fixture discipline as
+  therefore mix times, which is the contract, not a gap in it. Its last step is a two-connection
+  race rather than a figure: a card removal that starts while a discard holds the `deck_cards` row
+  lock resumes to find its row deleted and writes nothing, where the single unconditional statement
+  it replaced matched nothing and then deleted the freshly restored row. Same fixture discipline as
   `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a
   scratch branch, **never production**.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).

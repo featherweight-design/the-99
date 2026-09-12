@@ -630,13 +630,25 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   // Decrement multiples (basics); delete the row once quantity would hit 0.
-  const decremented = await db.update(deckCards)
-    .set({ quantity: sql`${deckCards.quantity} - 1` })
-    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId), gt(deckCards.quantity, 1)))
-    .returning({ oracleId: deckCards.oracleId });
-  if (decremented.length === 0) {
-    await db.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
-  }
+  //
+  // Both halves take the row's own lock, in one transaction, because the choice
+  // between them is read-then-write and `restoreDraftFromVersion` replaces
+  // `deck_cards` wholesale under that same lock. Run unlocked, a removal that
+  // waited out a restore would find its decrement matching nothing and fall
+  // through to an unconditional delete — taking a card straight back out of the
+  // list the restore had just put back, with nothing recording it. Locking
+  // first turns that case into the right answer instead: the row this removal
+  // named is gone, so there is nothing to remove.
+  await db.transaction(async (tx) => {
+    const [row] = await tx.select({ quantity: deckCards.quantity })
+      .from(deckCards)
+      .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)))
+      .for("update");
+    if (!row) return;
+    const where = and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
+    if (row.quantity > 1) await tx.update(deckCards).set({ quantity: row.quantity - 1 }).where(where);
+    else await tx.delete(deckCards).where(where);
+  });
   revalidateClaims(deckId, userId);
 }
 

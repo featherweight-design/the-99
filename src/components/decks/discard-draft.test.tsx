@@ -166,17 +166,31 @@ describe("the discard confirm", () => {
     expect(kill.className).not.toContain("bg-[color:var(--danger)]");
   });
 
-  // At 390px the pair stacks and the safe answer sits on top, because the thumb
-  // reaches the bottom row first. One element ordered twice, never a phone copy
-  // beside a desktop one — a doubled subtree reads as a match on both columns.
+  // At 390px the pair stacks and the safe answer sits on top; on desktop the row
+  // reads from the act to the way out. One element ordered twice, never a phone
+  // copy beside a desktop one — a doubled subtree reads as a match on both
+  // columns. The stack is the DOM order and desktop is what reverses, so the
+  // phone's reading order, tab order and visual order are one order.
   it("stacks the pair with the safe answer on top, in one element", () => {
     discard();
     act(raise);
     const row = screen.getByRole("button", { name: copy.cancel }).parentElement!;
-    expect(row.className).toContain("flex-col-reverse");
-    expect(row.className).toContain("md:flex-row");
+    expect(row.className).toContain("flex-col");
+    expect(row.className).not.toContain("flex-col-reverse");
+    expect(row.className).toContain("md:flex-row-reverse");
     expect(screen.getAllByRole("button", { name: copy.cancel })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: copy.confirm(36) })).toHaveLength(1);
+  });
+
+  // The way out is the first tab stop at both widths. Reversing the phone stack
+  // into place instead would leave the destructive answer ahead of it in the DOM,
+  // reachable only by tabbing backwards out of the confirm.
+  it("puts the way out ahead of the destructive answer in the DOM", () => {
+    discard();
+    act(raise);
+    const row = screen.getByRole("button", { name: copy.cancel }).parentElement!;
+    const order = Array.from(row.querySelectorAll("button")).map((b) => b.textContent);
+    expect(order).toEqual([copy.cancel, copy.confirm(36)]);
   });
 
   it("returns focus to the trigger on cancel", () => {
