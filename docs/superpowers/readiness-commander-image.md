@@ -1,0 +1,235 @@
+# READINESS — One commander image (handoff R6)
+
+**Verdict: 🟢 Green.** Build starts now. Design self-assessed Green after six rounds and the audit
+concurs: every one of the brief's five open calls is made, decision 6's enumeration is complete once
+one render added after the brief was written is folded in, and every amendment to the two ratified
+wash tables is stated individually with a verdict. Eleven findings, all engineering-resolvable, all
+ruled below. **No Design round-trip.**
+
+- **Handoff:** `design/design_handoff_the99_commander_image/` (R6, 2026-09-12) — committed with this
+  verdict, so the record points at files a reader can open
+- **Brief:** `docs/superpowers/design-briefs/2026-09-11-one-commander-image.md`, patched 2026-09-12
+  for the two facts PR #517 invalidated
+- **Audited:** 2026-09-12 against `origin/main` at `47616861`
+- **Plan:** `docs/superpowers/plans/2026-09-12-commander-image.md`
+- **Amends:** `design/design_handoff_the99_art_wash/` (A-series) and
+  `design/design_handoff_the99_deck_details_wash/` (B-series). Neither is edited; both stand as
+  delivered, and this file is where their corrections live.
+
+**The handoff's three prose documents are preserved byte-for-byte as Design delivered them.** Each
+opens with one banner naming this verdict and the plan as the build contract. Nothing inside them is
+rewritten — an earlier round on another handoff tried editing corrections in place and left fragments
+and contradictions across several review cycles. §6 below is the correction of record.
+
+---
+
+## What was checked, and against what
+
+Every load-bearing claim was checked against the shipped tree, and every number was recomputed rather
+than trusted.
+
+| Claim | Source | Result |
+|---|---|---|
+| Fifteen renders across twelve files, seven drawing no wash | two-pass sweep re-run | **Exact.** Eight `<ArtWash>` call sites, seven `url(...)`/`cssUrl(...)` commander renders, no sixteenth |
+| The `left-portrait` ambient layer is gone | `art-wash.tsx:266-280` | **True** (PR #517). Its own comment records why |
+| `Band = 168 \| 148 \| 72`, three union arms | `art-wash.tsx:119,224-249` | **True** |
+| `bottomScrimStops` takes one argument and `labelAt` is a percentage | `art-wash.tsx:55-60` | **True.** `[73, labelAt]` is a gradient position — the handoff's trap is real |
+| `COVER_SCRIM_STOPS.top` exists and is the top scrim | `art-wash.tsx:26-33` | **True** |
+| `OVER_ART_PLATE = 72` is not consumed at runtime | `art-wash.tsx:79`, `full-card-trigger.tsx:65` | **True.** The class hard-codes `72%`; only the test holds the two in step |
+| The six statuses, their tokens, alphas and border styles | `status-style.ts:20-43` | **Exact, all six.** `color-mix(in srgb, var(TOKEN) ALPHA, var(--bg))`, Building dashed at 14%, Draft 16%, four signals 18% |
+| Chip geometry: 22px, 6px radius, 8px padding, mono 10.5, tracking .06em | `status-pill.tsx:32` | **Exact**, at the `sm:` half of the tile class |
+| The deck overflow's desktop plate is `var(--bg)` + `--border-strong` at 26px `rounded-[7px]`, bare at 44px on phone | `deck-card-overflow.tsx:103-105` | **True.** The code states "the drawn plate is desktop-only" in as many words |
+| `clearTo` derives from `maskEnd% × width` | recomputed | **True to a pixel.** 58% of 230 = 133.4 vs 134; 58% of 203 = 117.7 vs 118. Band 72 is the stated exception at 3.4px off |
+| The new `clearTo` values | recomputed | **Exact.** 58% of 285 = 165.3, of 340 = 197.2, of 560 = 324.8 |
+| Portrait widths 230 / 285 / 340 | recomputed at 1.37 | **Exact.** 230.2, 285.0, 339.8 |
+| The whole ramp table — six rows of ramp / hold / unveiled | recomputed from the handoff's own formula | **All six exact** to the rounding shown. 288/38 → 80 / 87; 288/57 → 71 / 80; 288/83 → 57 / 71; 248/46 → 73 / 81; 208/46 → 67 / 78; 168/40 → 65 / 76 |
+| Band 148's shipped column implies `labelAt ≈ 67px`, a 0.38 ramp and a 78 hold | recomputed | **True.** Hold at 55% of 148 is 81.4px down, so 66.6px from the foot; the clear stop sits 0.378 × that above the block |
+| "Opaque takes the control out of the contrast problem" | recomputed over all six themes | **True.** `--fg` on `--bg` is 12.06–15.65:1 and `--fg-body` 9.30–10.15:1 — no per-theme measurement needed |
+| `THEMES.size === 6` holds the suite to six themes | `wash-contrast.test.ts:193-194` | **True**, at 193-194 rather than the cited 188-189 |
+| The deck grid is three columns from `sm:` up, 189px at 640 | `decks-view.tsx:251` | **True.** `sm:grid-cols-3` with 22px padding and 14px gaps gives 189.3px |
+| `--fg-muted` for the unplated pencil clears its floor on art | recomputed | **Fails 4.5:1 in all six themes** at 3.42–3.75. Clears the 3:1 non-text floor. See finding 9 |
+
+---
+
+## §2 The one call the handoff leaves to engineering, ruled here: **the portrait table is keyed by width**
+
+Design's own numbers force this and the handoff does not say it. Render 10 is a 560px portrait on a
+288px band above ~1200px of row, and a **340px portrait on the same 288px band** below it. Today
+`PORTRAIT_BANDS` is keyed by band height, so one band cannot hold two portraits and the fallback
+geometry has nowhere to live.
+
+**Re-key the table by portrait width — 230 / 285 / 340 / 560.** Every column in it is a function of
+the portrait's width and none of its height: `clearTo` is `maskEnd% × width` by the handoff's own
+derivation, `flatStop` is drawn a few pixels past the width, `maskEnd` and `sharpAlpha` are constants
+across every row that ships. The height chose the width only by convention, and on render 10 the
+handoff already inverts that convention ("560 is the chosen number and 288 follows it").
+
+Two things fall out for free:
+
+1. **The undrawn fallback is fully specified after all.** It reuses the 340 row — `clearTo` 197,
+   `flatStop` 356 — which the 248 band already ships, and its stated 364px title inset clears 356. So
+   open item 3 stops being a gap: what was missing was a drawing, not a number.
+2. **Two geometries on one surface is a pattern this file already uses.** The two wash layers mount
+   unconditionally and CSS picks one, exactly as `SpineMobile` and `SpineDesktop` are both mounted by
+   `builder-spine.tsx` and separated by a media query. The alternative — emitting the ramp as a CSS
+   variable so a stylesheet could switch it — is the same change B9 asks for and this round did not
+   spec; it is not a prerequisite for this one.
+
+Nothing is redrawn. The handoff stands as delivered.
+
+---
+
+## §3 Findings — eleven, all engineering-resolvable
+
+1. **Decision 6's enumeration is one render short, because a fourth placement landed after the
+   brief.** PR #517 mounted `FullCardTrigger` at `placement="commander-desktop"` (`left: 12,
+   bottom: 12`) inside render 05's card face. Four placements ship;
+   the table names three of them. **Resolved by the handoff's own rule** — *bottom, on whichever side
+   the block does not reach* — which this one already satisfies: the frame carries no ink of its own,
+   the name and type line sit below it. It takes THE PLATE with no move, and the enumeration closes at
+   five live tenants across renders 04, 05, 08, 09 and 10. Eleven renders end with an empty top edge,
+   as stated.
+2. **Both accessible names in the copy file are wrong, and the shipped ones are better.**
+   `full-card-trigger.tsx:74` ships `aria-label="View card details"`, not `"Card details"` — a
+   verb-led name for a control whose visible words are about to disappear. `deck-card-overflow.tsx:78`
+   ships `refreshCopy.decks.menu.trigger(deckName)`, which names the deck it acts on, and the code
+   records why: *"Deck options said the same thing for every tile on the page, so a reader tabbing the
+   grid heard one label repeated as many times as there were decks."* The copy file proposed exactly
+   that string and flagged it as unread. **Both shipped names stand.** The copy file's `nowAriaLabel`
+   values are superseded; its substantive point — that dropping the visible words makes the name
+   required rather than nice — holds and is what the build must not regress.
+3. **Render 01's `labelAt` is stated three times with three values.** STATES says **38**, README §3.2's
+   list says 46, and decision 7 says "`labelAt 63` arithmetic". **38 ships**: STATES is the file the
+   handoff itself names as the one to build from, and 38 is also the value its ramp table computes
+   against (288/38 → 80 / 87). The other two are drafts that survived a round.
+4. **The 104px floor is in two consumers, not in the primitive.** `hero-commander.tsx:54` and
+   `deck-card.tsx:149` each carry `aspect-[2.2/1] min-h-[104px]`; `art-wash.tsx` contains no 104 at
+   all. Retiring the floor means those two roots state a height in px, which is what their bands are
+   becoming anyway.
+5. **Render 06's "the inset frame retires" has no referent in the shipped tree.**
+   `discovery-row.tsx` draws no frame around its band. Its only `--surface-inset` is the data zone
+   *below* the `1px var(--border)` divider (`:495`), which art wash decision 4 put there deliberately
+   and this round does not reopen. The framed drawing R4 argues against was Design's own comparison,
+   not code. **No-op**, recorded so an implementer does not go looking for a panel to delete.
+6. **The resume row's commander name cannot be cut on a pair deck.** The cut's own reason is that
+   "the band's own art" says it — and a pair's band shows one of two commanders.
+   `resume-decks.tsx:142-160` prints `Ishai + Bruse Tarl` precisely because the row has two, under
+   #364's decision 19. **Resolved: cut it on single-commander rows, keep the shortened pair line on
+   pair rows.** The row's accessible name already carries both in full, so nothing is lost either way;
+   what would be lost is the only visible statement that the deck has a partner at all. Decision 23's
+   droppable to-buy clause is unaffected and the handoff cuts it outright, which is correct.
+7. **`sharpOpacity` for the 560 portrait is unstated.** README's portrait table gives `.92` for
+   168 / 208 / 248 and STATES' table omits the column for 288. **Ships at `.92`** — the value every
+   portrait in the app draws, and the only one any of these tables names.
+8. **The reduced-transparency override retires; the `!important` does not.** Once every band is
+   bottom-labelled, `.art-wash-scrim-cover-top` has no subject, and it goes with the `labelEdge` class
+   hook that selects it. `.art-wash-art { opacity: var(--art-wash-reduced-opacity) !important }`
+   **stays, and the `!important` stays load-bearing**: `<ArtWash>` sets opacity inline and an inline
+   declaration outranks any plain selector. `--art-wash-reduced-opacity` remains a **ceiling, never a
+   floor** — published per layer through `Math.min`, never applied flat, because applied flat it
+   raises a layer already drawn below it and answers a request for less transparency with more art.
+   The layer that rule was written against is gone; the rule is not. Design's B9 — whether the
+   preference should reach the scrim at all — is recorded as **open with Design and not silently
+   closed**; it changes no drawing and blocks nothing, and the answer that would satisfy it is a
+   CSS-variable ramp this round did not spec.
+9. **`--fg-muted` for the unplated pencil fails the 4.5:1 floor this system holds itself to, and
+   clears the 3:1 one that applies to it.** Recomputed over all six themes at the 73% hold against a
+   pure white pixel: **3.42 (eldraine) to 3.75 (ixalan)**, against `--fg`'s 6.16–8.08 and
+   `--fg-body`'s 4.81–5.18. **Ships as drawn.** The pencil is an icon-only control, so 1.4.11's 3:1
+   non-text floor is the applicable one, it clears that in every theme, and it carries
+   `COVER_INK_SHADOW` on top of the measurement. The build asserts it at **3:1 with the reason stated
+   in the test**, rather than leaving the one glyph on art with no plate unmeasured. Recorded because
+   the figure is a floor, not headroom: any future lift of `COVER_ART_OPACITY` or drop of the hold
+   breaks this glyph first.
+10. **The spine-mobile pencil already has no plate, so R6's reversal is half-shipped.** The top-off
+    addendum removed its box; the glyph takes the title's own ink and `COVER_INK_SHADOW` at a 44px
+    target, with a 44px spacer opposite it so the centred title stays centred
+    (`spine-mobile.tsx:229-268`). What option (a) still changes is the **zero-width container** — and
+    the spacer retires with it, since a glyph that steals no width needs nothing opposite it to
+    balance — plus the ink in finding 9. Desktop is the real change there: its pencil is a bordered
+    box revealed on `group-hover` (`spine-desktop.tsx:197`), and option (a) makes both frames the
+    same unplated inline glyph, always present.
+11. **The deck tile's 189px column is out of scope twice over.** The handoff's recommended fix is
+    one-up below ~700px, which is a `decks-view.tsx:251` change — `sm:grid-cols-3` → a 700px
+    breakpoint — and that file is owned by a live filter round. It is out of scope on the handoff's own
+    account and unavailable on top of it. The tile ships at `0.76 : 1` between 640 and 699px, losing
+    ~44% of the crop's width, with `center top` keeping the face. **One capture at 640 before the deck
+    PR merges**, per the handoff's own open item 1.
+
+---
+
+## §4 Dependencies
+
+| | |
+|---|---|
+| **Sequencing · the home redesign** | §3.3's "desktop gains nothing" rests on the Your Decks rail being deleted by the next brief. Render 03 is built as specced — a 44×62 thumb, flagged expiring — which grows the phone rail's row from `min-h-[56px]` to ~86px. That is a real layout change to a component scheduled for deletion; it is five lines, and the alternative is a rail whose phone thumb is the one thumb in the app that did not converge. If the rail survives on either frame, desktop's art-and-count gap returns as its own one-line ticket. Blocks nothing |
+| **Grid · the deck tile's column floor** | Finding 11. Not a blocker: the band ships and the grid change is someone else's file |
+| **Product · three strings** | `Start this deck`, the resume row's to-buy clause and desktop's `99 owned · 0 to buy`, plus `all owned` and `never played`. Each survives elsewhere except `never played`, which has no replacement — the handoff says so and rules that last-played belongs in the overflow menu or the deck's page if it matters. Built as ruled |
+| **Decision · B9, reduced transparency** | Finding 8. Open with Design, blocks nothing |
+
+**No data dependency.** Every field these fifteen renders read — `artCropUri`, `imageUri`,
+`commanderImageUri`, `colorIdentity`, `statusPill`, `partnerName` — already exists at every call site.
+Nothing here adds a column, a query or an API shape.
+
+---
+
+## §5 What the handoff got right that is worth naming
+
+**It found the trap that would have inverted its own round.** `labelAt` changing from a percentage to
+pixels while `bottomScrimStops` keeps a one-argument percentage signature does not fail loudly — it
+holds the scrim at 46% of a 248px band where every drawing puts it at 81%, which is the scrim landing
+almost exactly where the round exists to remove it. The handoff states the trap, gives the corrected
+two-argument formula, and puts both changes in one commit in its own implementation order. That is
+the single most valuable paragraph in the package.
+
+**It read the status set out of the code rather than inventing it.** R5 drew four statuses and said
+they were inferred; R6 replaced them with the shipped six, verbatim to the token, the alpha and
+Building's dashed border. Every figure checked exact.
+
+**It caught its own measurement error and re-derived six values from it.** R5 costed the mobile deck
+header's block at 57px; at 390px that 20px Cinzel title wraps to three lines and the real block is
+83px, which moves the unveiled figure from 71% to 57%. Deriving `labelAt` from an intended block
+rather than a measured one is the round's own failure reintroduced by an optimistic number, and the
+handoff says so in the imperative for whoever builds it.
+
+---
+
+## §6 Errata against the handoff, carried here rather than sent back
+
+None of these changes a drawing. **This table is the correction of record**; the handoff's documents
+are preserved exactly as delivered, each carrying a banner naming this file and the plan as the build
+contract.
+
+| Handoff says | Correct | Why it matters |
+|---|---|---|
+| Decision 6 enumerates three live `Card details` placements | **Four ship.** `commander-desktop` (`left: 12, bottom: 12`) landed in PR #517 | Finding 1. An enumeration that misses a tenant is how the scrim's removal leaves a glyph bare |
+| `nowAriaLabel: "Card details"` on the full-card trigger | Shipped: **`"View card details"`** (`full-card-trigger.tsx:74`) | Finding 2 |
+| `nowAriaLabel: "Deck options"` on the deck overflow | Shipped: **the deck-named label** `refreshCopy.decks.menu.trigger(deckName)`. "Deck options" was tried and rejected, with the reason in the code | Finding 2. The handoff flagged this one itself |
+| Render 01's `labelAt` is 46 (§3.2) / 63 (decision 7) | **38**, per STATES and its own ramp table | Finding 3 |
+| `OVER_ART_PLATE`'s `72%` is hard-coded at `full-card-trigger.tsx:61` | **`:65`**, and the mix is `color-mix(in oklab, var(--bg) 72%, transparent)` — 72% of `--bg` over transparency, not 72% mixed *into* `--bg`. The handoff's conclusion ("still passes 28% of a pure white pixel") is right about the value it describes | Anyone grepping `:61` finds the comment, not the class |
+| `wash-contrast.test.ts:189` asserts `THEMES.size === 6` under a test named at `:188` | **`:193-194`** | Line drift only |
+| `labelAt` "ships as a percentage — `globals.css` names 55% on the commander hero and 57% on the deck spine" | The values live in the components — `detail.tsx:248` and `spine-mobile.tsx:134`; `globals.css:584` only names them in a comment explaining why the override cannot reach them. And **55 is commander *detail* mobile (render 04)**, not the hero: render 01 is `labelEdge="top"` and passes no `labelAt` at all | The hero has no percentage to convert. Its 38 is a new number, not a unit change |
+| Render 06: "the inset frame retires" | There is no frame. The `--surface-inset` zone below the divider is art wash decision 4 and stays | Finding 5 |
+| The desktop deck column is "~445px" at 1440 | The shipped comment says **435px** (`deck-card.tsx:146`) | Immaterial to the band choice — 248 is 1.75:1 either way — and worth not "correcting" the code to match the handoff |
+| `PORTRAIT_BANDS` gains three rows keyed by band | Keyed by **portrait width**, four rows: 230 / 285 / 340 / 560 | §2. One 288px band needs two portraits |
+| The 560 portrait's `sharpOpacity` is unstated | **`.92`** | Finding 7 |
+| Render 05's card face and render 14's differ only in shadow offset | They also differ in **ring alpha vs the new value** (both `.3`) and in that render 05 now has a control inside it. The convergence on `0 20px 50px rgba(0,0,0,.5)` and a `.4` ring holds for both | The "geometry untouched" note is true of size only |
+| Render 15's plate | The shipped `PLATE` const carries the **dashed border in both states** (`partner-slot.tsx:57`, used at `:90` and `:152`). The handoff's "dashed empty plate keeps its border" reads as: filled takes the ring alone, empty keeps the dash | Otherwise the filled thumb ships a dashed edge and a ring |
+| The rail's phone thumb is `26×36` inside a `min-h-[56px]` row | True, and a 62px thumb makes that row ~86px | Dependency table. A consequence the spec does not price |
+
+---
+
+## §7 The one thing this round must not re-derive
+
+Two traps in this system are already documented on the art-wash row of the pipeline tracker, and both
+sit directly in this round's path:
+
+1. **`!important` in the accessibility media queries is load-bearing**, because `<ArtWash>` sets
+   opacity and gradients inline and an inline declaration outranks any plain selector. The top-scrim
+   override retires; the `.art-wash-art` opacity rule and its `!important` do not.
+2. **`--art-wash-reduced-opacity` is a ceiling and never a floor.** Applied flat it raises a layer
+   already drawn below it — the example it was written against was a `left-portrait` row's ambient
+   copy at 0.14 against a flat 0.3 — answering a request for less transparency with more art. That
+   layer is gone as of PR #517; the rule stands for every layer that remains, and the no-crop identity
+   gradient keeps publishing its own opacity because it is ground rather than photography and is the
+   only identity signal a commander with no crop has.
