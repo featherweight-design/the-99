@@ -366,7 +366,10 @@ export function CardModal({
       releasedAt: null,
       quantity: 0,
       finishes: {},
-      imageUri: at.imageUri ?? null,
+      // `resolveImageUri`'s card-level fallback, not a hard null: a set cell whose
+      // full-size art the catalog does not hold would otherwise open on the identity
+      // gradient, where the modal used to show the card's own image.
+      imageUri: at.imageUri ?? card.imageUri,
       flavorName: null,
     }];
     return { ...card, printings, preferredPrinting: at };

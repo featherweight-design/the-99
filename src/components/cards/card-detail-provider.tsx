@@ -162,18 +162,29 @@ export function CardDetailProvider({
   const [siblings, setSiblings] = useState<string[]>([]);
   // The printing the caller asked to open at, carrying the oracle id it belongs to.
   //
-  // Two things guard it, for two different reasons. The id pairing covers the read: `open`
-  // sets this in the same pass as the click, but the card behind it is whatever was already
-  // painted until the read lands, so held loose that window shows the card the reader came
-  // from wearing the printing of the one they clicked — the mismatch this state exists to
-  // fix, in miniature. And `show` drops it when a different card actually lands, which is
-  // what stops paging away and back from matching again and resurrecting a view the reader
-  // had already paged out of. Both are about a card ARRIVING; neither fires on a card being
-  // asked for, because a read that fails leaves the previous card standing and it must keep
-  // the printing it was opened at.
+  // NOTHING here moves when a card is merely asked for — only when one arrives. That is the
+  // single rule, and it is what all three of this state's defects had in common: a printing
+  // set at click time dressed the card still painted behind the read in the printing of the
+  // one just clicked; a printing cleared at click time stripped the art off a card that
+  // `load` then deliberately left standing when the read failed; and a printing kept by id
+  // alone came back to life when the reader paged away and back.
+  //
+  // So `open` records a PENDING printing and `show` commits it, at the one moment the card
+  // it describes is on screen. The id it carries is what lets `show` tell "this arrival is
+  // the one that was asked for" from "this arrival is something else, so let the old one
+  // go".
   const [openAt, setOpenAt] = useState<{
     oracleId: string;
     printing: PreferredPrinting & { imageUri?: string | null };
+  } | null>(null);
+  /**
+   * The printing an `open` asked for, before the card it describes has arrived. A ref, not
+   * state: nothing renders from it, and `show` is memoised on nothing so it must read the
+   * current value rather than one closed over at mount.
+   */
+  const pendingAt = useRef<{
+    oracleId: string;
+    printing: (PreferredPrinting & { imageUri?: string | null }) | null;
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -228,7 +239,21 @@ export function CardDetailProvider({
     // that card standing when the read fails, so a failed page left the wrong art behind.
     // Here it survives the whole transition and is invalidated by the transition
     // completing, which is also what stops paging back from resurrecting it.
-    setOpenAt((prev) => (prev && prev.oracleId !== next?.oracleId ? null : prev));
+    // The card that just arrived is the one a pending open was for: its printing commits
+    // now, which is the first moment it has a card to describe. Read and cleared here
+    // rather than inside the updater, which must stay pure.
+    const pending = pendingAt.current;
+    if (pending && pending.oracleId === next?.oracleId) {
+      pendingAt.current = null;
+      setOpenAt(
+        pending.printing ? { oracleId: pending.oracleId, printing: pending.printing } : null,
+      );
+    } else {
+      // Anything else arriving means whatever was committed belongs to a card that is no
+      // longer on screen. A re-read of the SAME card keeps it, which is what lets an art
+      // pick land without taking the reader off the printing they are looking at.
+      setOpenAt((prev) => (prev && prev.oracleId !== next?.oracleId ? null : prev));
+    }
     setCard(next);
   }, []);
 
@@ -325,7 +350,11 @@ export function CardDetailProvider({
       list?: string[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
     ) => {
-      setOpenAt(atPrinting ? { oracleId, printing: atPrinting } : null);
+      // PENDING, not committed. A second open while the first card is still painted must
+      // not take the first card's printing away from it: the read may fail, and `load`
+      // deliberately leaves that card standing. The printing commits in `show`, when the
+      // card it describes actually arrives.
+      pendingAt.current = { oracleId, printing: atPrinting ?? null };
       void load(oracleId, list ?? []);
     },
     [load],
@@ -339,6 +368,9 @@ export function CardDetailProvider({
     latest.current++;
     inFlight.current = null;
     owed.current = null;
+    // Or a read abandoned by the close could still commit its printing onto the next card
+    // the reader opens.
+    pendingAt.current = null;
     show(null);
     setPendingOracleId(null);
     setFailed(false);

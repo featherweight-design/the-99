@@ -845,4 +845,54 @@ describe("CardDetailProvider open-at-printing scope", () => {
     // clicked. The page did not happen.
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
   });
+
+  // The mirror of the failed-page case: opening a SECOND card while the first is still
+  // painted must not take the first card's printing away from it either. Committing at
+  // click time reverted the visible card to its resolver art, and a failed read left it
+  // reverted for good.
+  it("leaves the visible card's printing alone while a second card is being read", async () => {
+    let release: (() => void) | null = null;
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-signet") return SIGNET;
+      await new Promise<void>((resolve) => { release = resolve; });
+      return SOL;
+    });
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => open("o-signet", [], {
+              setCode: "RVR", collectorNumber: "24",
+              imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+            })}
+          >
+            open signet at RVR
+          </button>
+          <button type="button" onClick={() => open("o-sol", [])}>open sol plain</button>
+        </>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    // Sol Ring is being read and will never land. Arcane Signet is still on screen, and
+    // still wearing the printing it was opened at.
+    await click(screen.getByRole("button", { name: "open sol plain" }));
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await act(async () => { release?.(); });
+    await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
+  });
 });
