@@ -97,15 +97,18 @@ what fits.
 
 The row and the hero each need to say one of:
 
-- **Sleeved** — a committed deck holds the only copy (`hard`). Meren and Kotis today. Strongest
-  form: building means taking the card out of a finished deck.
+- **Sleeved** — committed decks have spoken for every copy, so `free === 0` and the state is `hard`.
+  Meren and Kotis today, where that is one copy in one deck, but the condition is no free SUPPLY
+  rather than one copy: three copies across three committed decks read the same, and a brew may want
+  one too. Strongest form: building means taking the card out of a finished deck.
 - **Wanted by a brew** — a copy is free to build with, and an uncommitted list also names one
   (`soft`). Weaker than sleeved, because a brew is a list rather than a stack of sleeves and the
   player can build today. Note this does NOT mean no copy is sleeved: with two copies, one sleeved
   and one wanted by a brew, the state is still `soft` — see the worked example below.
-- **Over-committed** — more committed decks claim the commander than the player owns copies of
-  (`free < 0`, `over`). Reachable: two decks can each sleeve the only copy, and `/collection` already
-  draws this state. Whether it deserves its own weight on these two surfaces or simply reads as
+- **Over-committed** — committed decks have claimed more COPIES than the player owns (`free < 0`,
+  `over`) — a quantity against a quantity, not a count of decks: one deck asking for four Nazgûl
+  against three owned reaches it alone, and so do two decks each sleeving the only copy.
+  `/collection` already draws this state. Whether it deserves its own weight on these two surfaces or simply reads as
   sleeved is question 7 below — the player's answer to both is the same act, taking the card out of a
   deck, but the over-committed case means a deck is already going short.
 - **Free** — nothing to say, and the surface should say nothing. Most commanders are here, and a
@@ -131,8 +134,10 @@ commander's own row is in that map already. So the server work is a projection, 
 **The payload ceiling is worth knowing about and is NOT an argument for either treatment.** That
 response is cached through `cacheForUser` under a 2 MB per-entry limit, and the module header records
 that all three cached payloads were cut down to fit it. An earlier draft of this brief leaned on that
-to prefer the count-only form; the arithmetic does not support it. A deck name is tens of bytes over
-at most ~200 rows — single-digit KB against a 2 MB ceiling, which is noise. **Draw whichever
+to prefer the count-only form; the arithmetic does not support it. A deck name is tens of bytes per row,
+over a list whose size is the player's own commander-legal collection — nothing caps it, and the
+largest in the database today is roughly 200. That is single-digit KB against a 2 MB ceiling, which
+is noise at any collection this app will see. **Draw whichever
 treatment is right and let eng carry the bytes.** If a future drawing wants something genuinely
 large per row, measure the serialised payload first rather than reasoning from this paragraph.
 
