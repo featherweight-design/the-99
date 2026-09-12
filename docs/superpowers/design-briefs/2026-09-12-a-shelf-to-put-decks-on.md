@@ -31,8 +31,10 @@ collision §5 exists for.
 
 Two properties of that last row matter to the drawing: the pair is **always both or neither** (the
 join is owner-scoped and the id is projected off the join, `read.ts:552-553`), and an unfiled deck
-carries `null` for both. So a grid grouping by folder has, for free, a labelled group per folder and
-one unlabelled group of everything unfiled.
+carries `null` for both. So a grid grouping by folder has, for free, a labelled group per **non-empty**
+folder and one unlabelled group of everything unfiled. An empty folder has no deck row and therefore
+no group to name — a surface that draws empty shelves reads `listFolders` (`folders.ts:58`) as well,
+which returns them with a count of zero.
 
 `pnpm probe:folders` proves the behaviour against a real Postgres, including the delete rule.
 
@@ -65,8 +67,12 @@ one unlabelled group of everything unfiled.
   extend that pattern or need their own. Design also says what the level looks like, whether it has
   its own URL, and whether a folder is a place you go or a grouping you see. **§5 constrains this
   answer.**
-- **§3.2 Empty states, of which there are three and they are not the same.** No folders exist at
-  all; a folder exists and holds nothing; every deck is unfiled while folders exist. The route also
+- **§3.2 Empty states, of which there are three and they are distinguished by where the reader is
+  standing.** (i) No folders exist at all, so the route has no shelves to show. (ii) The reader is
+  looking at one folder and it holds no decks. (iii) The reader is looking at the unfiled group and
+  every deck is filed, so it is the *unfiled* bucket that is empty while folders hold everything.
+  Whether (ii) and (iii) are even reachable as separate views depends on §5's answer, which is one
+  more reason that question comes first. The route also
   already has a zero state for *no decks* (`DecksZero`, `decks-view.tsx:220-221`) and a separate
   filtered-empty state (`:233-249`), so folders add to a route that already distinguishes two kinds
   of nothing.
@@ -127,10 +133,12 @@ folder is one more dimension slot in that ordered run.
 directory. So the two designs currently have no shared answer, and there are only
 two coherent ones:
 
-**(a) A folder is a sixth dimension.** It becomes a slot in the chassis, opening the same panel
+**(a) A folder is one more dimension.** It becomes a slot in the chassis, opening the same panel
 every other dimension opens, appearing in the same chip line, cleared by the same `Clear all
 filters`. Consequences: folders inherit a frame that is drawn, audited and about to be built, and
-`/decks` goes from five dimensions to six on a chassis whose density was proved at five. It also
+`/decks` goes from four filter dimensions to five (`DeckFilters`, `src/lib/decks/filter.ts:38-43`,
+is search, status, colour and the played-window; sort has its own trailing slot and is not one of
+them) on a chassis whose density was proved at five dimensions across its four routes. It also
 makes a folder *combinable* — folder plus status plus colour — and makes "which folder am I in"
 survive only as long as a filter chip does. And `Clear all filters` would drop the folder along with every other dimension, returning the
 reader to all decks — nothing is lost but the shelf they were standing in, which may be the right behaviour or may

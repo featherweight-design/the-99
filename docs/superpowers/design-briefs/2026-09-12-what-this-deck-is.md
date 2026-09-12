@@ -107,8 +107,9 @@ the two disagree.
 ## §4 Constraint — three of the four figures are already on screen somewhere
 
 This is the part a new stats block can most easily get wrong. The record and the mana figure are
-each a shipped statement of the *same* number this block would restate, both governed by ratified
-property tables, so a block that words either one differently makes the app disagree with itself.
+each a statement of the *same* number this block would restate, both governed by ratified property
+tables — the record is on screen today, the mana figure is drawn and specified but not yet built —
+so a block that words either one differently makes the app disagree with itself.
 Cost is the harder case and a different one: the surfaces printing it today do not all print one
 number, which is the finding below rather than an invariant to preserve.
 
@@ -121,9 +122,14 @@ record is a clause inside the sub-line and takes `--accent` (`games-panel.tsx:59
 the table's "record figure" colour at `game-log.md:33`). A stats block stating `3–1–1` beside a Games tab labelled with a count is fine;
 a stats block that relabels either one is an amendment to that table.
 
-**Mana curve — the deck page already states a mana *value*, as a single number that moves.**
-`versions.ts:246` `versionManaValue` feeds `draft-state.ts:343` `manaValueBefore`, and deck
-versioning Surface 2's what-changed strip draws it as the first of six cells with the copy
+**Mana curve — the deck page is *specified* to state a mana value, as a single number that moves.**
+This one is ratified but **not yet built**: the copy strings exist (`copy/deck-versioning.ts:371-372`)
+and `draft-state.ts:343` computes `manaValueBefore`, but no component renders the strip — deck
+versioning's five UI surfaces are in progress, not shipped
+(`docs/superpowers/design-pipeline-status.md:102`). It constrains this brief anyway, because the
+vocabulary is locked and the surface is coming.
+`versions.ts:246` `versionManaValue` feeds that figure, and deck
+versioning Surface 2's what-changed strip is specified to draw it as the first of six cells with the copy
 `the curve comes down` / `the curve goes up` (`deck-versioning-surface-2.md:183`, cell inventory at
 `:642`). That table also rules twice over that mana value appears **in the strip alone** and never
 on a card row (`deck-versioning-surface-1.md:780`, `deck-versioning-surface-2.md:618`).
