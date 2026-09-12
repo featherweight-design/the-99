@@ -7,9 +7,10 @@
 `/collection/sets/[code]`.
 
 **Architecture:** Four PRs, each independently testable and independently rejectable.
-Findings 1+2 and 5 touch one file each and depend on nothing. Finding 3 is one
-conformance change across the rack — Design ruled it explicitly indivisible — and finding 4
-lands in it or after it, never before.
+Findings 1+2 touch the grid container and the cell; finding 5 touches the index row and the
+copy module. Neither depends on anything. Finding 3 is one conformance change across the
+rack — Design ruled it explicitly indivisible — and finding 4 lands in it or after it, never
+before.
 
 **Tech stack:** Next.js 16 App Router, React 19, Tailwind 4, Vitest, Playwright-free
 browser probes via `scripts/probe-sets.mjs`.
@@ -20,8 +21,12 @@ browser probes via `scripts/probe-sets.mjs`.
 
 ## Global constraints
 
-- **The grid minimum is `146`.** The README's `F = 116 at md and up, 160 below it` is stale
-  R1 text; see the readiness doc's erratum.
+- **The grid minimum is `146`, and there is no second density rule.** The README's
+  `F = 116 at md and up, 160 below it` is stale R1 text, and `ADDENDUM-READINESS`'s
+  `116 → 8 columns, 160 → 6` is a sensitivity note about a lever rather than an alternative.
+  See the readiness doc's erratum.
+- **Quote 7.77:1 for the pip floor, not 9.51:1.** The assets are committed and carry their
+  real colours; the chassis package already corrects the figure.
 - **`auto-fill`, never `auto-fit`.** One keyword decides the no-reflow constraint.
 - **The cell carries no width or height literal at any width.** Track sets width,
   `aspect-ratio: 63/88` sets height.
@@ -31,7 +36,10 @@ browser probes via `scripts/probe-sets.mjs`.
 - **The query is a fourth field on `SetGridFilters` and goes through `applyFilters`.**
   Never a second pass over `shown`. The result line, the `Send N` label, the cost
   denominator and the rarity panel's per-row counts are four readings of one computation.
-- **`Clear all filters` clears the query too.**
+- **`Clear all filters` clears the query too**, which means adding `q` to the owned-key list
+  `setFilters` deletes before serialising. It currently deletes `c`, `r` and `m` only and
+  preserves every other live parameter, so an empty query would serialise to no `q` while
+  leaving the old one in the URL — the promised behaviour failing quietly.
 - **Every visible figure on the index row is in the row's `aria-label`**, which is explicit
   and replaces everything its descendants contribute.
 - Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test`, the stub-DB build,
@@ -45,8 +53,11 @@ browser probes via `scripts/probe-sets.mjs`.
 `src/components/sets/set-cell.tsx` (delete every size literal).
 **Test:** `set-cell.test.tsx`, `set-grid-view.test.tsx`, `scripts/probe-sets.mjs`.
 
-- [ ] **Step 1 — Failing test.** In `set-cell.test.tsx`, assert the cell's root class list
-  carries no `w-[…]` or `h-[…]` literal and does carry `aspect-[63/88]`. In
+- [ ] **Step 1 — Failing test.** In `set-cell.test.tsx`, walk **every rendered element**,
+  not the root: the component puts sizes on the root button, the inner plate and the name,
+  so a root-only assertion passes while the plate still carries `h-[162px]`. Assert no
+  element's class list matches `(md:)?[wh]-[\d+px]`, and that the plate carries
+  `aspect-[63/88]`. In
   `set-grid-view.test.tsx`, assert the grid's `gridTemplateColumns` is
   `repeat(auto-fill, minmax(146px, 1fr))` and that the string contains no `auto-fit`.
 - [ ] **Step 2 — Run, verify failure.** `pnpm vitest run src/components/sets`
@@ -54,14 +65,19 @@ browser probes via `scripts/probe-sets.mjs`.
   Delete `set-cell.tsx`'s width/height literals; the art keeps `aspect-[63/88]`.
 - [ ] **Step 4 — Retire `hidden md:inline` on the rarity word.** At 174px the caption holds
   three things, so `042 · uncommon` is one format at every width.
-- [ ] **Step 5 — Probe.** Extend `scripts/probe-sets.mjs`: at 1180 assert 7 tracks and a
-  flush right edge (grid content width equals the container's); at 390 assert 2 tracks at
-  174px; assert owned and missing cells report identical `getBoundingClientRect` geometry;
-  assert the filtered grid keeps the same track count.
+- [ ] **Step 5 — Probe.** **Replace**, do not supplement. `scripts/probe-sets.mjs` asserts
+  `116x162` desktop, `108px` phone and three phone columns; all three are now wrong and a
+  conforming build would fail them. In their place: at 1180 assert 7 tracks, a flush right
+  edge (the last column reaches the grid's own right edge) and a height derived from the
+  measured width at 63/88; at 390 assert 2 tracks at 174px; keep the identical-geometry
+  check, which still holds and is the reason the ruling is safe.
 - [ ] **Step 6 — Gate and commit.**
 
-**Watch for:** the one-column case below ~330px of content falls out of the declaration
-already — assert it, do not add a breakpoint for it.
+**Watch for:** the one-column case falls out of the declaration already — do not add a
+breakpoint for it. Its threshold is 302px of *content* (`2 × 146 + 10`), which is ~334px of
+viewport; `ADDENDUM-STATES`'s "~330px" is the viewport figure. At 330px of content the
+declaration still gives two tracks of 160, so a probe asserting one column there would be
+asserting the wrong boundary.
 
 ---
 
@@ -149,7 +165,11 @@ vocabulary.
   `q` and omits it when empty; `parseFilters` reads it back.
 - [ ] **Step 2 — Run, verify failure.**
 - [ ] **Step 3 — Implement in `filters.ts`.** Fold with
-  `s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()`.
+  `s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()` — **plus an explicit
+  ligature pass**. NFD decomposes a base letter from its combining marks; it does not
+  decompose a ligature, so `"Æther".normalize("NFD")` still holds `Æ` and the required
+  `aether` case fails. Map `æ→ae`, `Æ→AE`, `œ→oe`, `Œ→OE` before folding, and test the
+  `aether` case specifically rather than trusting the normaliser to cover it.
 - [ ] **Step 4 — Failing tests on the view.** The field is first in the control row and the
   only shrinking child; it is on the phone's persistent row and never in the sheet; the
   badge does not count it; `Clear all filters` clears it; the cost strip and `Send N`
@@ -180,5 +200,9 @@ name — the defect `MissingOnlyToggle` already exists to avoid on this page.
   chassis package's assets, already committed); the chip line's skin (the chassis wins if it
   specs them differently).
 - **Type consistency.** `SetGridFilters` gains exactly one field, `query: string`, and
-  `EMPTY_FILTERS` gains `query: ""`. Every caller of `applyFilters` already passes a whole
-  `SetGridFilters`, so no call site changes shape.
+  `EMPTY_FILTERS` gains `query: ""`. Callers of `applyFilters` pass a whole
+  `SetGridFilters` and need no change — but three **reset literals** do:
+  `setFilters({ colors: [], rarities: [], missingOnly: false })` at `set-grid-view.tsx:432`,
+  `:497` and `:584` stop satisfying the type the moment the field lands. Replace all three
+  with `EMPTY_FILTERS` rather than adding `query: ""` to each, so the next field costs
+  nothing.

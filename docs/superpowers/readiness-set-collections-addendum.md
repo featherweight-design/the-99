@@ -47,6 +47,21 @@ rules."* The 116/160 sentence is the rule R2 deleted. **Design to ratify; no rou
 
 **The build takes 146.**
 
+## The pip floor is 7.77:1, and the addendum's open item 2 is already closed
+
+§28 quotes **9.51:1** for the symbols themselves and files B, R and G's colours as
+*"assumed, not quoted … must be confirmed on first fetch"*. Both are pre-fetch figures. The
+fetch has happened: `public/mana/` is committed, and its files carry `B #CAC5C0`,
+`R #E49977`, `G #A3C095` — exactly the values `design_handoff_the99_filter_chassis`'s own
+three files already correct to, where the same line reads *"The Scryfall pip floor is
+**7.77:1**, not 9.51:1, because three assumed colours were replaced by their real ones."*
+
+So the addendum's open item 2 is closed, not open, and the figure the build should quote is
+7.77:1. **Neither moves the verdict**: 7.77:1 clears the 3:1 non-text floor with 4.77 points
+of headroom, and the ruling was never sensitive to which side of 9 the number landed on. But
+the contract should not overstate its own margin, and a reader comparing this package against
+the chassis package should not find two floors for one asset.
+
 ## Two smaller errata, neither touching a ruling
 
 - The content width is **1112px**, not 1100: `max-w-[1180px]` less `px-[34px]` either side.
@@ -54,6 +69,23 @@ rules."* The 116/160 sentence is the rule R2 deleted. **Design to ratify; no rou
 - The addendum says nothing in it touches the card modal. True of its own rulings, but the
   modal changed underneath it on the same day (#543), which is why finding 5 is absent from
   the plan below.
+- `ADDENDUM-READINESS.md`'s "if the page length is too much, the lever is the constant —
+  116 → 8 columns, 160 → 6" reads, out of context, as two live alternatives to the one
+  constant. It is a sensitivity note about a lever, not a second density rule. **The build
+  takes 146 and nothing else**; see the erratum above.
+- `ADDENDUM-STATES` puts the one-column threshold at "below ~330px of content". Two
+  `minmax(146px, 1fr)` tracks and a 10px gap need 302px, so the threshold in *content* is
+  ~302px — about 334px of viewport once the page's padding is taken off, which is what the
+  figure describes. A probe asserting it must measure the viewport, not the content box.
+
+## `FilterPanel`'s marker is a tick, not a diamond
+
+§28 draws the rarity panel's marker as "a rotated diamond filled `--accent` when on".
+`filter-panel.tsx` draws a square-and-tick under multi-select and a round dot under single.
+**The mount wins**: §28's own named dependency is *"mounts `filter-panel.tsx` … If this page
+lands first it must not fork either"*, and a marker shape is exactly the kind of detail a
+fork would re-derive by hand. The marker is the chassis package's to change, in one place,
+for all four routes.
 
 ## Sequencing: the chassis pip has shipped, `/collection` has not adopted it
 
