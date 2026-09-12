@@ -567,3 +567,23 @@ describe("SetGridView — a cell opens its own printing", () => {
     expect(at.setCode).toBe(at.setCode.toUpperCase());
   });
 });
+
+// The full-size art is the whole point of the payload change, and every fixture above
+// leaves it undefined — so the assertions only ever proved the `null` path. A regression
+// dropping `imageUri` from the callback would have passed while the modal fell back to the
+// resolver's choice, which is the defect this branch exists to fix.
+describe("SetGridView — the cell forwards its full-size art", () => {
+  it("hands the modal the exact URL, not just the identity", () => {
+    view([p("1", { imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /not in your collection/ }));
+    expect(openCard).toHaveBeenCalledWith(
+      "o-1",
+      ["o-1"],
+      {
+        setCode: "DSK",
+        collectorNumber: "1",
+        imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg",
+      },
+    );
+  });
+});

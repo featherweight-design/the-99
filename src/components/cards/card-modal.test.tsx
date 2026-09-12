@@ -997,4 +997,30 @@ describe("CardModal title under an opened-at printing", () => {
     // M21 prints its own name, so the heading is the oracle name again.
     expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
   });
+
+  // Locked decision 2 (`card-detail.ts`): a card the player does not own keeps its oracle
+  // name — there is no printing in hand to print one. `catalogCard` fills `printings` with
+  // the whole catalog at quantity 0, so a renamed catalog row must not become a title.
+  it("gives an unowned card no printed name, however the catalog names the printing", () => {
+    const unowned: BrowseCard = {
+      ...card,
+      quantity: 0,
+      printedName: null,
+      printings: [{
+        setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+        quantity: 0, finishes: {},
+        imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+        flavorName: "Lonely Sandbar Vista",
+      }],
+    };
+    render(
+      <CardModal
+        card={unowned}
+        openAtPrinting={{ setCode: "SLD", collectorNumber: "1500" }}
+        position={1} total={1} onClose={() => {}} onPrev={null} onNext={null}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
+    expect(screen.queryByText("Lonely Sandbar Vista")).toBeNull();
+  });
 });

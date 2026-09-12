@@ -395,8 +395,15 @@ export function CardModal({
     // The same exact-equality rule `aggregateCollection` applies, verbatim: a printing whose
     // flavour name IS the oracle name has renamed nothing, and copying it here would print
     // the name twice and add an oracle-name line under it that says the same thing.
+    // Only off a printing the reader OWNS. `catalogCard` fills `printings` with the whole
+    // catalog at quantity 0 for a card nobody owns, so a renamed catalog row would put a
+    // printed name on a card with no copy of it — which locked decision 2 forbids
+    // (`card-detail.ts`): there is no printing in hand to print one.
     const renamed =
-      row?.flavorName != null && row.flavorName !== card.name ? row.flavorName : null;
+      row !== undefined && row.quantity > 0
+      && row.flavorName != null && row.flavorName !== card.name
+        ? row.flavorName
+        : null;
     return { ...card, printings, preferredPrinting: at, printedName: renamed };
   }, [card, pick, picked, openAtPrinting]);
   const resolved = resolvedPrinting(preview);
