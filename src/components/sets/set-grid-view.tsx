@@ -265,7 +265,11 @@ export function SetGridView(props: SetGridViewProps) {
   //
   // The BADGE counts only what the sheet holds (§28): missing-only sits on the phone row
   // beside the badge, so counting it is the same fact twice in one glance.
-  const filtersOn = effective.colors.length + effective.rarities.length;
+  // DIMENSIONS, not values. `c=W,U` is one colour filter, and counting its values put a `2`
+  // on `Filters` for a single control — and could exceed the chassis's three-dimension cap
+  // on a page that only has three dimensions to begin with.
+  const filtersOn =
+    (effective.colors.length > 0 ? 1 : 0) + (effective.rarities.length > 0 ? 1 : 0);
   // The sheet's Clear reads the RAW filters, not `effective`. At 100% missing-only is
   // dropped from what is applied, but `m=1` can still be in the URL — a reader completes a
   // set with it set — and gating Clear on `effective` left that parameter with no way out
@@ -479,7 +483,11 @@ export function SetGridView(props: SetGridViewProps) {
               1.38:1; these are Scryfall's own full-colour symbols, undimmed, with a 2px
               --accent ring as the entire lit treatment. A fork here is how six themes of
               measurement get re-derived by hand. */}
-          <div ref={desktopRackRef} className="hidden md:flex">
+          {/* `tabIndex={-1}` is not decoration: the breakpoint effect above moves focus here
+              when the phone sheet unmounts under a resize, and a plain div is not a focus
+              target — focus would fall to the document instead of the visible rack. The
+              control this replaced carried it for the same reason. */}
+          <div ref={desktopRackRef} tabIndex={-1} className="hidden md:flex">
             <ColourPips
               value={filters.colors}
               form="wide"

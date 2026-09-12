@@ -501,7 +501,10 @@ async function run() {
     await waitForCells(page);
     const rackAt = async (query) => {
       await page.goto(`${BASE}/collection/sets/${code}${query}`, { waitUntil: "networkidle" });
-      await waitForCells(page);
+      // The RACK, not the cells: a filtered state can legitimately render the zero page,
+      // which has no card buttons at all, and waiting for cells there would time out and
+      // report a layout failure for a correct empty result.
+      await page.waitForSelector("[data-set-chips]", { timeout: 20_000 });
       return page.evaluate(() => {
         const chipRow = document.querySelector("[data-set-chips]");
         if (!chipRow) return null;
@@ -536,7 +539,7 @@ async function run() {
         `opacities ${rest.pipOpacities.join(", ") || "(none)"}`,
       );
       failures += !report(
-        "three dimensions on produce three chips",
+        "three filters on draw three chips",
         three.chips >= 3,
         `${three.chips} chip removals`,
       );

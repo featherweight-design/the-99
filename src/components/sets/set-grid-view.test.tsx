@@ -808,3 +808,25 @@ describe("SetGridView — the rarity panel's semantics", () => {
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 });
+
+// Review round 2 on the rack.
+describe("SetGridView — the badge counts dimensions", () => {
+  it("counts a multi-pip colour selection once", () => {
+    search = "c=W,U";
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: /1 filter on/ })).toBeInTheDocument();
+  });
+
+  it("counts colour and rarity as two", () => {
+    search = "c=W,U,B&r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
+  });
+
+  // The breakpoint effect moves focus here when the phone sheet unmounts under a resize.
+  it("keeps the desktop rack a focus target", () => {
+    const { container } = view([p("1"), p("2")], []);
+    const rack = container.querySelector('[class*="md:flex"][tabindex="-1"]');
+    expect(rack).not.toBeNull();
+  });
+});
