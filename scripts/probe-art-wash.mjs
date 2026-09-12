@@ -155,6 +155,49 @@ const READ_COVER_STOPS = `(edge) => {
     });
 }`;
 
+/** Split a computed gradient into its TOP-LEVEL stops. Shared as a string
+    because every reader in this file travels to the browser as one, and this is
+    the third time the same parse has been got wrong: a `[^()]*` pattern cannot
+    cross the nested `var(--bg)` inside each `color-mix(...)`, and splitting the
+    whole value on commas at depth 0 never splits at all, because the gradient's
+    own parentheses put its separators at depth 1. The wrapper comes off first,
+    then commas at depth 0 are the stop boundaries. */
+const PARSE_STOPS = `
+  const parseStops = (image) => {
+    const inner = image.replace(/^[^(]*\\(/, '').replace(/\\)\\s*$/, '');
+    const parts = [];
+    let depth = 0;
+    let current = '';
+    for (const ch of inner) {
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === ',' && depth === 0) {
+        parts.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    parts.push(current);
+    return parts
+      .map((part) => {
+        const position = part.match(/([\\d.]+)%\\s*$/);
+        if (!position) return null;
+        // Both serialisations. A browser computes a color-mix to
+        // oklab with a slash alpha, but falls back to
+        // rgba for stops that survive in sRGB, where the alpha
+        // is the fourth component and no slash appears. Reading only the slash
+        // form returned alpha 1 for every rgba stop, which makes a clear stop
+        // look opaque and fails a correct band for veiling its own top.
+        const slashed = part.match(/\\/\\s*([\\d.]+)\\s*\\)/);
+        const rgba = part.match(/rgba\\(\\s*[\\d.]+\\s*,\\s*[\\d.]+\\s*,\\s*[\\d.]+\\s*,\\s*([\\d.]+)\\s*\\)/);
+        const alpha = slashed ?? rgba;
+        return { alpha: alpha ? Number(alpha[1]) : 1, position: Number(position[1]) };
+      })
+      .filter(Boolean);
+  };
+`;
+
 /** Every band that has taken a stated height, with the ramp it draws. Selected by
     `data-art-wash-band` on the wash's own root rather than by a scrim class: the
     two strategies draw different scrims, so keying this to `-cover` would stop
@@ -166,6 +209,7 @@ const READ_COVER_STOPS = `(edge) => {
     both strategies: `cover` draws one, and `left-portrait` draws its horizontal
     scrim first and its ramp second. */
 const READ_STATED_BANDS = `() => {
+  ${PARSE_STOPS}
   return [...document.querySelectorAll('[data-art-wash-band]')]
     .filter((root) => root.getClientRects().length)
     .map((root) => {
