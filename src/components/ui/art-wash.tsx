@@ -333,10 +333,18 @@ export function ArtWash(props: ArtWashProps) {
   // L1: the base plate, under the art, so a slow or missing image never flashes
   // light ground.
   if (props.strategy === "left-portrait") {
-    const height = props.height ?? props.band;
+    // The two arms narrowed explicitly rather than coalesced. `props.portrait ??
+    // LEGACY_PORTRAIT[props.band]` typechecks today only because the union's
+    // optional `band` widens to `Band | undefined` and the coalesce hides it —
+    // an expression that reads as if either arm could supply either field, when
+    // in fact a stated band always has its portrait and only a legacy one indexes
+    // the legacy table. `undefined` is not an index type, and the day this file
+    // gains a stricter setting or a third arm, the coalesce is what breaks.
+    const legacy = props.band !== undefined;
+    const height = legacy ? props.band : props.height;
     const p = portrait(
-      props.portrait ?? LEGACY_PORTRAIT[props.band],
-      props.band === undefined ? props.labelAtPx : "flat",
+      legacy ? LEGACY_PORTRAIT[props.band] : props.portrait,
+      legacy ? "flat" : props.labelAtPx,
       height,
     );
     return (
@@ -350,7 +358,12 @@ export function ArtWash(props: ArtWashProps) {
         // `left-portrait` band has no `-cover` class to find it by, so keying the
         // check to one strategy's class would silently stop covering the other.
         // Absent on a legacy band, which is what makes the census meaningful.
-        data-art-wash-band={props.band === undefined ? height : undefined}
+        data-art-wash-band={legacy ? undefined : height}
+        // Stated when the band draws NO vertical ramp by intent, so a probe can
+        // tell that from a ramp that went missing: both look like one 90deg
+        // scrim, and one of them is a band whose ink is standing on a rising
+        // gradient nobody meant to draw.
+        data-art-wash-flat={!legacy && props.labelAtPx === "flat" ? "" : undefined}
         className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
         style={{ background: `var(${p.ground})`, height: `${height}px` }}
       >

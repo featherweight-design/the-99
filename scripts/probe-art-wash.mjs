@@ -581,7 +581,10 @@ try {
         .filter((href) => /^\\/decks\\/[^/]+$/.test(href) && href !== '/decks/new')`,
     );
     let walkedADeck = false;
-    for (const deckHref of deckHrefs.slice(0, 5)) {
+    // Every link, not the first five: a run whose earliest decks all have
+    // crop-less commanders would have concluded that no deck page draws the
+    // control, which is a false failure about the fixture rather than the build.
+    for (const deckHref of deckHrefs) {
       await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
       const deckPlates = await page.evaluate(`(${READ_PLATES})()`);
