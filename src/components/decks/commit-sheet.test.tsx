@@ -17,7 +17,8 @@ vi.mock("../../app/decks/actions", () => ({ commitDeckVersion: vi.fn() }));
 import { commitDeckVersion } from "../../app/decks/actions";
 
 const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 
 const copy = deckVersioningCopy.commit;
 
@@ -314,5 +315,21 @@ describe("CommitSheet", () => {
     // is the sheet that was about to freeze it.
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: copy.cta(3) })).toBeTruthy();
+  });
+
+  // A throw is not a refusal: the version may have been written and the reply
+  // lost, so the sheet cannot promise the changes are still here.
+  it("admits the outcome is unknown when the write throws, and re-reads", async () => {
+    vi.mocked(commitDeckVersion).mockRejectedValue(new Error("offline"));
+    sheet();
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(screen.getByText(copy.unresolved)).toBeTruthy();
+    expect(screen.queryByText(copy.refused)).toBeNull();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    // No receipt and no navigation for a version nobody can say exists.
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole("status").textContent).toBe("");
   });
 });

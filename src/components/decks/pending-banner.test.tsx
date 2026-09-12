@@ -8,6 +8,9 @@ import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH, DRAFT_ANNOUNCER_ID } from ".
 import { PendingBanner } from "./pending-banner";
 
 vi.mock("../../app/decks/actions", () => ({ discardDeckDraft: vi.fn() }));
+// The banner gives its body to `DiscardConfirm`, which asks the router for the
+// re-read it does when a discard's outcome cannot be known.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 afterEach(() => {
   // Lives outside React's tree, so `cleanup` does not take it: an announcement

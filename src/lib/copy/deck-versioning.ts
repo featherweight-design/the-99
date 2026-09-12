@@ -274,6 +274,11 @@ export const deckVersioningCopy = {
       `${plural(cards, "card")} · ${released} released`,
 
     refused: "We couldn't commit that version. Your changes are still here.",
+    // A transport failure, which is not a refusal: the write may have landed and
+    // the reply may have been what was lost. `refused` promises the draft is
+    // intact, and this is the one path that cannot promise it, so it says what is
+    // true and names the re-read that will settle it.
+    unresolved: "We lost the answer to that commit. Re-reading the deck to see whether it landed.",
     announced: (version: number, cards: number, buy: number) =>
       `Committed v${version}. ${plural(cards, "card")}, ${buy} to buy.`,
     // The same line with the purchase clause taken out, for the commit whose claim
@@ -340,6 +345,10 @@ export const deckVersioningCopy = {
         ? `Draft discarded. Back to v${version}.`
         : `${plural(n, "change")} discarded. Back to v${version}.`,
     refused: "We couldn't discard those changes. Nothing has changed.",
+    // The same distinction the commit sheet draws, and it matters more here: the
+    // restore may have committed before the reply was lost, so "nothing has
+    // changed" could be the opposite of the truth about a list that is gone.
+    unresolved: "We lost the answer to that discard. Re-reading the deck to see whether it landed.",
   },
 
   /* ---- §Surfaces 4 · versions (the fourth tab) and the diff ---- */

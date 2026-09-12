@@ -15,6 +15,9 @@ import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-dra
 vi.mock("../../app/decks/actions", () => ({ discardDeckDraft: vi.fn() }));
 import { discardDeckDraft } from "../../app/decks/actions";
 
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
 const copy = deckVersioningCopy.discard;
 
 /** v2 behind the draft, committed 1 Sep — the version every sentence names. */
@@ -268,18 +271,24 @@ describe("the discard confirm", () => {
     expect(screen.getByRole("button", { name: copy.confirm(36) })).toBeTruthy();
   });
 
-  // A thrown action is a different class from a refusal — a network or database
-  // failure rather than a guard — and it reads the same to the player: one
-  // sentence covers both, and neither wrote anything.
-  it("says the same thing when the action throws", async () => {
+  // A thrown action is a different class from a refusal, and it says a different
+  // thing: the restore may have committed and the reply been what was lost, so
+  // this is the one path that cannot promise the draft survived.
+  it("admits the outcome is unknown when the action throws, and re-reads", async () => {
     vi.mocked(discardDeckDraft).mockRejectedValue(new Error("offline"));
     discard();
     act(raise);
     await act(async () => {
       screen.getByRole("button", { name: copy.confirm(36) }).click();
     });
-    expect(screen.getByRole("alert").textContent).toBe(copy.refused);
+    expect(screen.getByRole("alert").textContent).toBe(copy.unresolved);
+    // Never the sentence that promises nothing changed.
+    expect(screen.queryByText(copy.refused)).toBeNull();
+    // Nothing is announced: a discard nobody can confirm has no receipt.
     expect(screen.getByRole("status").textContent).toBe("");
+    // The refresh is what settles it, and what drops the question once the
+    // re-read comes back with no changes left.
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 
   it("draws no control on a brew — there is no version to go back to", () => {

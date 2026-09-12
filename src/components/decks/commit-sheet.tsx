@@ -268,9 +268,14 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
                 try {
                   result = await commitDeckVersion(deckId, note);
                 } catch {
-                  // A refusal and a throw read the same to the player, and both
-                  // leave the draft where it was: one sentence covers them.
-                  setError(copy.refused);
+                  // NOT `refused`, which promises the changes are still here. A
+                  // throw can be the version having been written and its reply
+                  // lost, and this sheet would then offer to commit a draft that
+                  // no longer differs from anything. The message says the outcome
+                  // is unknown and the router re-reads the route the sheet's own
+                  // figures came from.
+                  setError(copy.unresolved);
+                  router.refresh();
                   return;
                 }
                 if (!result.ok) {

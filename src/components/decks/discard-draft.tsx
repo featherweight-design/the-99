@@ -18,6 +18,7 @@
 // overlay; the surface around it is already the box the question is asked inside.
 
 import { useEffect, useId, useRef, useState, useTransition, type Ref } from "react";
+import { useRouter } from "next/navigation";
 
 import { discardDeckDraft } from "../../app/decks/actions";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -154,6 +155,7 @@ export function DiscardConfirm({
 }: DiscardConfirmProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   // Per instance rather than a module constant: two drafts drawn on one page
   // would otherwise share one id and leave `aria-describedby` pointing at
   // whichever consequence the document happened to hold first.
@@ -255,10 +257,16 @@ export function DiscardConfirm({
                 // this confirmation never described.
                 result = await discardDeckDraft(deckId, version.id);
               } catch {
-                // A throw and a refusal read the same to the player and leave the
-                // draft where it was, so one sentence covers them — the same call
-                // the commit sheet makes about its own write.
-                setError(copy.refused);
+                // NOT `refused`. A refusal is the server declining before it
+                // wrote; a throw can also be the reply to a restore that already
+                // committed being lost on the way back. Saying "nothing has
+                // changed" over a deck that is already back on its version is the
+                // one wrong thing this control can say, so the message admits the
+                // outcome is unknown and the router re-reads to settle it — which
+                // also closes this question, because `useDiscardConfirm` drops it
+                // the moment the refreshed state has no changes left.
+                setError(copy.unresolved);
+                router.refresh();
                 return;
               } finally {
                 inFlightRef.current = false;
