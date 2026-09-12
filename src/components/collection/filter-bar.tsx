@@ -214,6 +214,8 @@ export function FilterBar({
           options={COLLECTION_VIEWS}
           value={view}
           onChange={onViewChange}
+          // The chassis's breakpoint, like every other control in this frame.
+          compact={!wide}
           className="md:ml-[2px]"
         />
           </>

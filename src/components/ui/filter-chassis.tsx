@@ -226,11 +226,21 @@ export function FilterChassis({
         heldFocus.current = true;
       }}
       onBlurCapture={(e) => {
-        // A move to somewhere outside this frame. An unmount reports no target,
-        // and that is exactly the case the rescue exists for.
-        if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget as Node)) {
-          heldFocus.current = false;
+        const next = e.relatedTarget as Node | null;
+        if (next) {
+          heldFocus.current = e.currentTarget.contains(next);
+          return;
         }
+        // No target covers two different events: the focused control was
+        // removed — the case the rescue exists for — and an ordinary blur to
+        // nothing, which must NOT leave the flag standing or the next
+        // breakpoint crossing pulls focus off wherever the reader has gone.
+        // Only a removal can be told from the other, and only once it has
+        // happened, so the question is asked a frame later.
+        const blurred = e.target as HTMLElement;
+        requestAnimationFrame(() => {
+          if (blurred.isConnected) heldFocus.current = false;
+        });
       }}
     >
       {/* Row 1 — never wraps (decision 18). There are two forms and nothing in

@@ -131,9 +131,12 @@ function selectionAnnouncement(
   // Always the cleared string for `Clear`, including at exactly one selection —
   // "Bloomburrow removed. No set filter, …" belongs to toggling the last option
   // off, not to pressing the button.
-  if (cleared) return copy.announceCleared(totalQuantity);
-  const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
+  // What survives `next`, which is what every branch below reports. Clearing
+  // ONE dimension does not clear the others, so announcing the whole
+  // collection here claimed a list the reader is not looking at.
   const shown = quantityOf(filterCards(cards, next));
+  if (cleared) return copy.announceCleared(shown);
+  const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
   const added = after.find((c) => !before.includes(c));
   if (added !== undefined) return copy.announceAdded(label(added), after.length, shown, totalQuantity);
   const removed = before.find((c) => !after.includes(c));

@@ -27,11 +27,21 @@ export function ViewToggle<T extends string>({
   value,
   onChange,
   className = "",
+  compact,
 }: {
   options: readonly [ViewToggleOption<T>, ViewToggleOption<T>];
   value: T;
   onChange: (next: T) => void;
   className?: string;
+  /**
+   * Force the compact (44px) segments regardless of Tailwind's `md:`. The
+   * chassis switches form at 1000px and `md:` is 768, so a chassis-mounted
+   * toggle took its 32px desktop size across 768-999 while every control
+   * beside it kept the compact form's 44px target. Left undefined, the
+   * component keeps its own `md:` behaviour for the surfaces that are not in
+   * the chassis.
+   */
+  compact?: boolean;
 }) {
   return (
     <div
@@ -52,7 +62,12 @@ export function ViewToggle<T extends string>({
             onClick={() => onChange(option.value)}
             className={[
               "flex items-center justify-center rounded-md cursor-pointer",
-              "text-[13px] md:text-[13px] w-[44px] h-[44px] md:w-[32px] md:h-[32px]",
+              "text-[13px]",
+              compact === undefined
+                ? "w-[44px] h-[44px] md:w-[32px] md:h-[32px]"
+                : compact
+                  ? "w-[44px] h-[44px]"
+                  : "w-[32px] h-[32px]",
               // Selected is bone on `--elevated` with a ring, never accent: the
               // builder's control bar spends accent on nothing, and the two
               // surfaces draw the same control.

@@ -332,4 +332,25 @@ describe("FilterChassis", () => {
     expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
   });
 
+
+  it("stands down after an ordinary blur to nothing", async () => {
+    // A blur to `body` reports no `relatedTarget`, exactly as a removal does.
+    // Treating it as a removal left the flag set, so the next form change
+    // pulled focus off whatever the reader had moved to.
+    const { container, rerender } = render(
+      <FilterChassis {...base} form="compact" controls={<button type="button">Filter</button>} chips={[]} />,
+    );
+    const trigger = screen.getByRole("button", { name: "Filter" });
+    fireEvent.focus(trigger);
+    trigger.focus();
+    fireEvent.blur(trigger);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    rerender(
+      <FilterChassis {...base} form="wide" controls={<button type="button">Filter</button>} chips={[]} />,
+    );
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
+  });
+
 });

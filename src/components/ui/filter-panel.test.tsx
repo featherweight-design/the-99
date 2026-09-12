@@ -614,12 +614,39 @@ describe("FilterPanel Clear announcement", () => {
   it("reads the cleared string for Clear with exactly one set selected", () => {
     expect(
       setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933, "clear-sets"),
-    ).toBe(collectionFilterCopy.set.announceCleared(2933));
+    ).toBe(collectionFilterCopy.set.announceCleared(0));
   });
 
   it("still reads the removed string when the last set is toggled off", () => {
     expect(setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933)).toBe(
       collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, 0, 2933),
+    );
+  });
+
+  // Clearing ONE dimension leaves the others on, so the figure the clear
+  // announces is what survives them — not the whole collection, which is a list
+  // the reader is not looking at.
+  const CARDS = [
+    { oracleId: "a", name: "A", quantity: 2, colorIdentity: ["R"], typeLine: "Instant",
+      setCodes: ["BLB"], setCounts: [["BLB", 2]], primarySetCode: "BLB", rarity: "common", cmc: 1 },
+    { oracleId: "b", name: "B", quantity: 5, colorIdentity: ["U"], typeLine: "Instant",
+      setCodes: ["BLB"], setCounts: [["BLB", 5]], primarySetCode: "BLB", rarity: "common", cmc: 1 },
+  ] as unknown as Parameters<typeof setChangeAnnouncement>[2];
+
+  it("counts what the OTHER filters leave when one dimension is cleared", () => {
+    const before = { search: "", colors: ["R"], types: [], setCodes: ["BLB"] } as BrowseFilters;
+    const after = { ...before, setCodes: [] };
+    // Red still filters, so 2 copies survive — not the 7 in the fixture.
+    expect(
+      setChangeAnnouncement(before, after, CARDS, OPTIONS, 7, "clear-sets"),
+    ).toBe(collectionFilterCopy.set.announceCleared(2));
+  });
+
+  it("counts the same way when the last value is toggled off", () => {
+    const before = { search: "", colors: ["R"], types: [], setCodes: ["BLB"] } as BrowseFilters;
+    const after = { ...before, setCodes: [] };
+    expect(setChangeAnnouncement(before, after, CARDS, OPTIONS, 7)).toBe(
+      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, 2, 7),
     );
   });
 });
@@ -764,7 +791,7 @@ describe("Type ▾ in the filter bar", () => {
       typeChangeAnnouncement(
         filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933, "clear-types",
       ),
-    ).toBe(collectionFilterCopy.type.announceCleared(2933));
+    ).toBe(collectionFilterCopy.type.announceCleared(0));
     expect(
       typeChangeAnnouncement(filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933),
     ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, 0, 2933));
@@ -882,7 +909,7 @@ describe("FilterBar sort and color controls", () => {
   it("reads the cleared string for Clear rather than the removed string", () => {
     expect(
       colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933, "clear-colors"),
-    ).toBe(collectionFilterCopy.color.announceCleared(2933));
+    ).toBe(collectionFilterCopy.color.announceCleared(0));
   });
 
   it("says nothing about colors when only the type selection moved", () => {

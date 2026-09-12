@@ -850,13 +850,22 @@ export function FilterPanel({
             openPanel(true); // ↓ opens AND marks the first option active
           }
         }}
+        // The trigger's geometry follows `isDesktop`, which honours `compact`,
+        // rather than Tailwind's `md:`. The two disagree: `md:` is 768 and the
+        // chassis switches at 1000, so a `md:`-drawn trigger took its desktop
+        // size across 768-999 while sitting in the compact frame — losing the
+        // 44px target the compact form promises, beside controls that kept it.
         className={[
-          "inline-flex items-center gap-[8px] whitespace-nowrap rounded-full md:rounded-lg",
-          "font-sans text-[12.5px] md:text-[13px] font-medium px-[13px] md:px-[14px] py-[8px] md:py-[9px]",
-          // The drawn padding gives a ~37px chip, under the 44px touch minimum.
-          // Grown on phone only: a mouse does not need the margin, and the
-          // desktop chip is drawn against a denser toolbar.
-          "min-h-[44px] md:min-h-0",
+          "inline-flex items-center gap-[8px] whitespace-nowrap",
+          isDesktop ? "rounded-lg" : "rounded-full",
+          "font-sans font-medium",
+          isDesktop
+            ? "text-[13px] px-[14px] py-[9px] min-h-0"
+            // The drawn padding gives a ~37px chip, under the 44px touch
+            // minimum. Grown on the compact form only: a mouse does not need
+            // the margin, and the desktop chip is drawn against a denser
+            // toolbar.
+            : "text-[12.5px] px-[13px] py-[8px] min-h-[44px]",
           "border border-solid",
           disabled
             ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
