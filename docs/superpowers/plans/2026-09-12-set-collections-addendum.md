@@ -12,9 +12,10 @@ copy module. Neither depends on anything. Finding 3 is one conformance change ac
 rack — Design ruled it explicitly indivisible — and finding 4 lands in it or after it, never
 before.
 
-**Tech stack:** Next.js 16 App Router, React 19, Tailwind 4, Vitest, and Playwright-backed
-browser probes via `scripts/probe-sets.mjs` — it launches Chromium and signs in through
-Clerk's test instance, so it is run by hand and is not part of `pnpm test`.
+**Tech stack:** Next.js 16 App Router, React 19, Tailwind 4, Vitest. Visual rulings are
+proved by **Playwright browser probes** — `scripts/probe-sets.mjs` imports `chromium` from
+Playwright, drives a real browser and signs in through Clerk's test instance. It is run by
+hand and is deliberately not part of `pnpm test`; only the unit runner is Playwright-free.
 
 **Spec:** `design/design_handoff_the99_set_collections/ADDENDUM-README.md`,
 `ADDENDUM-STATES.md`, `addendum copy strings.ts`.
@@ -79,7 +80,9 @@ Clerk's test instance, so it is run by hand and is not part of `pnpm test`.
   conforming build would fail them. In their place: at 1180 assert 7 tracks, a flush right
   edge (the last column reaches the grid's own right edge) and a height derived from the
   measured width at 63/88; at 390 assert 2 tracks at 174px; keep the identical-geometry
-  check, which still holds and is the reason the ruling is safe.
+  check, which still holds and is the reason the ruling is safe. **Probe at 1280, not
+  1180**: the desktop NavRail is `w-[62px] shrink-0`, so 1180 gives six tracks and seven
+  starts at 1212.
 - [ ] **Step 6 — Gate and commit.**
 
 **Watch for:** the one-column case falls out of the declaration already — do not add a
@@ -146,7 +149,10 @@ vocabulary.
   `searchable={false}`, `widthPx={280}`, **`selectionMode="single"`** — `multi` would expose
   `aria-multiselectable="true"` for a control that holds one value. The off state is the
   caller's: `onToggle` returns an empty selection when the lit value is picked again, which
-  is how *all* is reached. Mount it **on the breakpoint, never CSS-hidden** — the panel holds
+  is how *all* is reached. `single` also drops the desktop footer Design drew (`n of 4 on`
+  beside `Clear rarity`); that is the accepted cost of not forking the shared panel, and
+  the chip line carries the same removal one row down. Mount it **on the breakpoint, never
+  CSS-hidden** — the panel holds
   its own open state and picks popover or sheet off the same hook. The phone sheet gets a
   44px chip group from `rarity.options`, after the pips.
 - [ ] **Step 6 — Chips.** Clear leaves the control row for the chip line's trailing edge,
@@ -214,8 +220,10 @@ name — the defect `MissingOnlyToggle` already exists to avoid on this page.
   (amendment 1's "Clear clears the search" lands in PR 4, which is where a query exists to
   clear). §29 → PR 4. §30 → PR 2. ADDENDUM-STATES' rack states → PR 3 and PR 4; grid states
   → PR 1; index-row table → PR 2.
-- **Not covered, deliberately.** The addendum's three open items: the 1.21× upscale (a
-  review observation, no change until review finds the cell soft); B/R/G pip colours (the
+- **Not covered, deliberately.** The addendum's three open items: the upscale — whose real
+  bound is **~1.35× at a ~645px viewport, on the three-column grid**, not the addendum's
+  1.21× on the two-column one (see the readiness doc) — where the item is conditional and
+  nothing is done until review finds the cell soft; B/R/G pip colours (the
   chassis package's assets, already committed); the chip line's skin (the chassis wins if it
   specs them differently).
 - **Type consistency.** `SetGridFilters` gains exactly one field, `query: string`, and

@@ -62,10 +62,8 @@ of headroom, and the ruling was never sensitive to which side of 9 the number la
 the contract should not overstate its own margin, and a reader comparing this package against
 the chassis package should not find two floors for one asset.
 
-## Two smaller errata, neither touching a ruling
+## Three smaller errata, none touching a ruling
 
-- The content width is **1112px**, not 1100: `max-w-[1180px]` less `px-[34px]` either side.
-  The column count is seven either way, so no ruling moves.
 - The addendum says nothing in it touches the card modal. True of its own rulings, but the
   modal changed underneath it on the same day (#543), which is why finding 5 is absent from
   the plan below.
@@ -75,59 +73,58 @@ the chassis package should not find two floors for one asset.
   takes 146 and nothing else**; see the erratum above.
 - `ADDENDUM-STATES` puts the one-column threshold at "below ~330px of content". Two
   `minmax(146px, 1fr)` tracks and a 10px gap need 302px, so the threshold in *content* is
-  ~302px — about 334px of viewport once the page's padding is taken off, which is what the
-  figure describes. A probe asserting it must measure the viewport, not the content box.
+  ~302px — about 334px of viewport, since the rail is hidden below `md` and the padding is
+  16px a side there. A probe asserting it must measure the viewport, not the content box.
 
-## The upscale bound is wrong, and the named remedy would not reach it
+## The route's own geometry, and the 62px nobody counted
 
-Open item 1 states *"the worst upscale in the system is 1.21×, at 736px of content, and
-1.19× on a phone"*, and offers, if review finds the cell soft, *"a larger source **for the
-two-column grid only**"*.
+The addendum derives its columns from a 1100px content box. The route's is narrower than
+that in two ways: the desktop **NavRail is `w-[62px] shrink-0`** (`shell/nav.tsx:148`) and
+sits in the same flex row, and the content column is `max-w-[1180px]` less `px-[34px]`
+either side. So:
 
-1.21× is one sampled width, not a bound. With `minmax(146px, 1fr)` and a 10px gap, the
-worst track at each column count sits **just below** the next count's threshold, and the
-upscale climbs as the count falls:
+```
+content(viewport) = min(1180, viewport − 62) − 68      (≥768px, rail present)
+content(viewport) = viewport − 32                      (<768px, rail hidden)
+```
 
-| content width | tracks | track | upscale |
-|---|---|---|---|
-| 1237 | 7 | 168.1 | 1.15× |
-| 1081 | 6 | 171.8 | 1.18× |
-| 925 | 5 | 177.0 | **1.21×** ← the quoted figure |
-| 769 | 4 | 184.8 | 1.27× |
-| **613** | **3** | **197.7** | **1.35×** |
-| 457 | 2 | 223.5 | 1.53× |
+Measured at 1280 the probe reports **7 tracks of 150.28px**, which that formula predicts
+exactly — it is the check that the 62 is real.
 
-613px of content is a ~681px window — narrower than an iPad in portrait, reachable by
-resizing. **So the worst reachable upscale is ~1.35×, not 1.21×, and it lands on the
-three-column grid**, which the named remedy explicitly does not cover.
+| viewport | content | tracks | track | upscale |
+|---|---|---|---|---|
+| 390 | 358 | 2 | 174.0 | 1.19× |
+| 430 | 398 | 2 | 194.0 | 1.33× |
+| **645** | **613** | **3** | **197.7** | **1.35× ← worst reachable** |
+| 768 | 638 | 4 | 152.0 | 1.04× |
+| 1024 | 894 | 5 | 170.8 | 1.17× |
+| 1180 | 1050 | 6 | 166.7 | 1.14× |
+| 1211 | 1081 | 6 | 171.8 | 1.18× |
+| 1212 | 1082 | 7 | 146.0 | 1.00× |
+| 1280+ | 1112 | 7 | 150.3 | 1.03× |
 
-**This does not move the verdict**, because open item 1 is conditional: nothing is done
-unless review finds the cell soft. But the bound it is reasoned from is wrong by a third,
-and the remedy is scoped to the wrong grid. **Design to ratify**; no round-trip, because
-there is nothing to build either way today.
+**Two errata follow, and neither moves a ruling** — the count is a consequence of the one
+declaration at every width, which is the point of there being one.
 
-## The figures derived from a 1100px content box
+- `ADDENDUM-STATES` says "7 at 1180". With the rail, 1180 gives **six** tracks of 166.7;
+  seven starts at a **1212px viewport**. A probe asserting seven must run at 1280, which is
+  what `probe-sets.mjs` does.
+- §27's "124–129px across 1024–1440" is a canvas figure. The route's track runs
+  **146–172px** over that range, in two counts rather than one.
 
-The addendum derives its columns from 1100px. The route's shell is `max-w-[1180px]` less
-`px-[34px]` either side, so at the max width the content is **1112px** and the measured
-tracks are **7 × 150.28px**, not 7 × 149.
+## The upscale bound, corrected twice
 
-Below the max width the content follows the viewport, so the count is not seven throughout
-the range §27 quotes. Piecewise, with `content = min(1112, viewport − 68)`:
+Open item 1 states *"the worst upscale in the system is 1.21×, at 736px of content"* and
+offers, if review finds the cell soft, *"a larger source **for the two-column grid only**"*.
 
-| viewport | content | tracks | track |
-|---|---|---|---|
-| 1024 | 956 | 6 | 151.0 |
-| 1100 | 1032 | 6 | 163.7 |
-| 1149 | 1081 | 6 | 171.8 ← widest before the seventh fits |
-| 1150 | 1082 | 7 | 146.0 |
-| 1180+ | 1112 | 7 | 150.3 |
+1.21× is one sampled width, not a bound. The worst track at each count sits just below the
+next count's threshold, and the upscale climbs as the count falls. **The worst reachable is
+~1.35×, at a ~645px viewport — and it lands on the THREE-column grid**, which the named
+remedy explicitly does not cover.
 
-So across 1024–1440 the track runs **146–172px**, not §27's 124–129 and not a flat
-150–151. No ruling moves — the count is a consequence of the declaration at every width,
-which is the point of there being one — but a probe or a comment quoting the canvas
-arithmetic is quoting a number the route never produces, and "seven columns" is a statement
-about the max width rather than about the range.
+This does not move the verdict: open item 1 is conditional, and nothing is done unless
+review finds the cell soft. But the bound is wrong by a third and the remedy is scoped to
+the wrong grid. **Design to ratify.**
 
 ## What was NOT done, and why
 
