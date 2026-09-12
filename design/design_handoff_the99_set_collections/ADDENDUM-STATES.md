@@ -43,6 +43,9 @@ beside `Clear rarity`. Opening lands focus on the current value, not the first r
 - **Must not** carry a search field. Four values have nothing to search.
 - **Must not** allow two values. Single-select; picking the lit one clears it, which is how *all* is
   reached.
+- **Must not** overflow the column. Anchored to the trigger’s trailing edge when a leading-edge anchor
+  would run past it — a 280px panel hung from a trigger late in the row otherwise crops its own
+  footer, which is the one control in it that is not a value.
 
 ### 5 · Phone sheet open
 Pips first at 44px, then the rarity chip group at 44px (wrapping to two rows is allowed **in the
@@ -75,6 +78,28 @@ decides the no-reflow constraint.
 - **Must not** give the cell a width or height literal at any width.
 - **Must not** differ in geometry between owned and missing. Border *style* and art *opacity* only.
 - **Must not** re-measure the column count except at a section boundary.
+
+## The phone head — two states
+
+The head is inline in `set-grid-view.tsx`’s `sticky top-0 z-[2]` container — the same block as the
+control row and the result line. It is sticky **at every width today**; this ruling gives it a second
+height on the phone, not a new mechanism.
+
+**Rest (148px).** Icon + title + `HOB · 2026`; `162 / 208 base · 78%` with the extras ratio trailing;
+the 44px cost line; the control row; the result line. The delta strip renders here when it fires.
+
+**Collapsed (52px), past 120px of scroll, restoring at 40px.** Icon + title + ratio + search icon +
+`Filters` with its badge.
+
+**Cost line expanded (tap).** Grows in place to the caveat and `Send 46 to ManaPool`; the head’s
+height changes only on that explicit tap, never on scroll.
+
+- **Must not** reflow the grid at any scroll position — the bar overlays.
+- **Must not** interpolate with scroll offset, or animate the title’s size.
+- **Must not** carry the chip line; the `Filters` badge carries the state.
+- **Must not** collapse while the delta strip is firing.
+- **Must not** change the desktop head — same container, full form, `md:` sizes untouched.
+- **Must not** drop the rest height from the document; reserve it, or the page jumps on first cross.
 
 ## The index row — four cases
 

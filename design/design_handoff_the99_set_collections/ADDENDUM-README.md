@@ -1,4 +1,4 @@
-# Set collections — the addendum, R2 (five findings from the shipped surface)
+# Set collections — the addendum, R3 (six findings from the shipped surface)
 
 `design/design_handoff_the99_set_collections/` · 2026-09-12 · additive to R3
 
@@ -27,7 +27,7 @@ Read against `main` this round: `components/sets/set-grid-view.tsx`, `set-cell.t
 
 | File | What it holds |
 |---|---|
-| `The 99 - Set Collections Addendum.dc.html` | §1 the grid, before/after at 1180 and 390 with the derivation table and the bill. §2 Clear, three states desktop + phone. §3 the name search, desktop, phone and zero. §4 the index row, four cases. §5 the 174px pair in all six themes. §6 the file-by-file contract. |
+| `The 99 - Set Collections Addendum.dc.html` | §1 the grid, before/after at 1180 and 390 with the derivation table and the bill. §2 Clear, three states desktop + phone. §3 the name search, desktop, phone and zero. §4 the index row, four cases. §5 the 174px pair in all six themes. §7 the phone head at rest and scrolled, against the shipped one. §6 the file-by-file contract. |
 | `ADDENDUM-STATES.md` | The rack at six states and two widths, the grid at three, the index row at four — including what each must **not** do. Companion to the unedited `STATES-set-grid.md`. |
 | `ADDENDUM-READINESS.md` | Self-assessment, the one decision I want confirmed, the one open item. |
 | `addendum copy strings.ts` | Only the strings this round adds or changes. Everything else is referenced, not duplicated. |
@@ -243,13 +243,94 @@ width where it truncates. Not on offer: a third line, or a second completion bar
 
 ---
 
+## 31 · Finding 6: the phone head takes 48% of the screen before a card is seen
+
+Raised from the shipped surface after R2 landed. **The head is not too big; it is too resident — and
+it is resident in the literal sense.** The whole block is one `sticky top-0 z-[2]` container in
+`set-grid-view.tsx` **with no width qualifier on the sticky**, so the screenshot is not the top of the
+page: **it is every screen of the page.** All 325px follow the reader down all 399 cells. That
+reframes the finding — **this is not "add a collapse", it is "the collapse the existing sticky head
+never got"** — and it is why the head cannot simply be trimmed: every line in it is correct, and most
+are read *once*, but the sticky makes the page pay for all of them permanently. **Three registers —
+identity, money, controls — and only the controls earn the whole scroll.**
+
+**Grounding, since this finding arrived as a screenshot.** There is **no `set-head.tsx`** — the head
+is written inline in `set-grid-view.tsx`, inside the same sticky container as the control row and the
+result line, which is the file §28 already changes. In source order: `SetIcon` at
+`size={30} desktopSize={44}`; an `h1` at `text-[20px] md:text-[24px] line-clamp-2`; the ratio at
+`font-mono text-[11px] --fg-muted`; **one interpolated provenance string**,
+`setPageCopy.head.meta(code, date, baseTotal, extrasTotal)` at `text-[10px] --fg-locked`, gated on
+`sections.indexed`; then `setPageCopy.head.ratioNote`, same size and token, **ungated — the source
+comment calls it "the one line that always stands"**; then the **`DeltaStrip`**, which the screenshot
+does not show because it was not firing; then `CostStrip`; then the controls; then the result line.
+Two consequences: both reference lines are `--fg-locked` (not `--fg-faint`), and **the head already
+has a variable-height member**, so "fixed height" is a promise this head has never kept.
+
+**The honest denominator is 672px, not 844.** Safari’s bar and the app’s own nav rail are 172px you
+do not own. Against 672 the shipped head is **325px, or 48%** — one row of cells above the fold.
+**At rest it becomes 148px (22%); past the first flick, 52px (8%)** — four cells, then six.
+
+**Where the 177px went — four moves, no facts deleted.**
+
+1. **The scope note is absorbed into the figure it explains. −15px.** `head.ratioNote` — *base run
+   only · extras counted apart* — is a whole `<p>` saying what the 208 counts, and the one line that
+   renders **even when there is no ratio to annotate**. So put it *in* the 208: **`162 / 208 base ·
+   78%`**, extras ratio trailing. One word does what a caption did. **The note keeps its own line at
+   desktop** and keeps standing alone in the unindexed state, where *base* has nothing to ride on.
+2. **Provenance drops to what identifies the set. −15px.** `head.meta()` is **one interpolated string
+   of four values**, not four nodes, so this is a phone-only form beside it —
+   `head.metaShort(code, year)` → `HOB · 2026`, on the title line’s trailing edge. **The full string is
+   unchanged at desktop**; the counts it carried are now the two figures in move 1, which is the only
+   reason dropping them costs nothing.
+3. **The cost card becomes a cost line. −137px.** `CostStrip` is a wrapping flex row whose label,
+   figure, denominator, **up to four caveat lines** (`unpriced`, `noFigure`, `soldOut`, `stale`) and
+   44px button stack to ~137px on a phone — the worst case is worse than the screenshot, which fires
+   one. It becomes `$188.66  to finish · 45 of 46  ▾` in one 44px row, **expanding in place on tap**.
+   **The caveat count is why truncation is not enough:** a strip whose height depends on how many
+   pricing facts are true is an unpredictable sticky head — the ghost-Clear defect from §28.
+4. **The result line loses its redundant half. −10px.** `result.rest(shown, yours, missing)` restates
+   a subtraction the ratio above already made; its `role="status"` live region is unchanged, because
+   it is what announces a filter change.
+
+**The mechanism is not new — the container is already sticky.** What is new is that it has two
+heights. **The collapse happens once, at a threshold, never continuously** — a head that interpolates
+with scroll offset is always moving under a reader’s thumb. **Down at 120px, back at 40px**: an 80px
+hysteresis band, so a thumb resting mid-gesture cannot flutter it. The resident bar is set, ratio,
+search and `Filters` — where you are, how far along, and the two ways to change what you are looking
+at. The money and the provenance are not on it, because neither is acted on mid-scroll.
+
+Five things it must not do:
+
+- **Must not reflow the grid.** Sticky already overlays, so §27’s track count is untouched at every
+  scroll position — but the document flow above the grid does change height on collapse. Reserve the
+  rest height, or the page jumps 96px the first time it crosses the threshold.
+- **Must not carry the filter state.** The badge on `Filters` does it, from the `filtersOn` count that
+  already exists — which is why §28’s rest line matters here: at zero filters there is no badge.
+- **Must not animate the title’s size.** The `h1` is `line-clamp-2`, so a long name is already two
+  lines and interpolating it reflows mid-scroll. Cross-fade the block, 140ms, instant under
+  `prefers-reduced-motion`.
+- **Must not change the desktop head.** Same sticky container, full form kept: ~14% of a 900px
+  viewport, `md:` sizes untouched, and **all four content moves are phone-only forms beside the
+  shipped strings**, never replacements of them.
+- **Must not collapse the delta strip’s message away.** It renders inside this container and is the
+  one member of the head that is news rather than reference; if it is firing, the collapse waits.
+
+**Two things I did not do.** *Hide the head behind a scroll-up gesture* — the usual answer, and it
+costs the thing this page is for: you scroll up constantly on a 399-cell grid to re-check a number
+you passed, and a head that springs down over the cells each time is worse than one that is simply
+small. *Move the cost strip below the grid* — it is the page’s one commercial moment and the reason
+the missing cells are dimmed at all; a line that expands on tap keeps it above the fold at a sixth of
+the height.
+
 ## Sequencing
 
 **§2 is one PR, not four** — the pips, the rarity trigger, the chip line and the three-row bar are one
 conformance change on one component, and splitting them leaves the page in a state that is neither
 the old vocabulary nor the new one. **Finding 4 lands in that PR or after it, never before**: the
 search is the chassis's field slot, and adding a field to today's row puts it beside a `GhostButton`
-at 358px with no width to give it. **Findings 1+2 and 5 are independent of both**, one file each. Nothing in this round touches the sticky head's contents,
+at 358px with no width to give it. **Findings 1+2 and 5 are independent of both**, one file each. **Finding 6 is one file
+(`set-head.tsx`) and independent of everything** — but it is the finding that pays for finding 2: the
+bigger phone cells cost scroll, and the head hands 177px of it back above the fold. Nothing in this round touches the sticky head's contents,
 the cost strip, the delta strip, the modal, or any token.
 
 ## Still open

@@ -3,8 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or
 > superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** Land the addendum's four Design-owned findings on `/collection/sets` and
-`/collection/sets/[code]`.
+**Goal:** Land the addendum's Design-owned findings on `/collection/sets` and
+`/collection/sets/[code]` — four from R2, plus R3's sixth.
 
 **Architecture:** Four PRs, each independently testable and independently rejectable.
 Findings 1+2 touch the grid container and the cell; finding 5 touches the index row and the
@@ -262,3 +262,45 @@ name — the defect `MissingOnlyToggle` already exists to avoid on this page.
   round-trip fixture at `filters.test.ts:73`, which builds a bare object. Replace the three
   resets with `EMPTY_FILTERS` rather than adding `query: ""` to each, so the next field costs
   nothing, and give the fixture a query so the round trip proves the new key too.
+
+---
+
+## PR 5 — R3's finding 6: the phone head stops being resident
+
+**Sequenced AFTER #549 and #550 merge.** It is the same sticky container both of them
+rewrite, and #549's 44px chip band grew the phone head 366 → 388px — so R3's arithmetic,
+read against `main`, is 22px stale before this starts. **Re-measure first**, with
+`pnpm probe:sets` at 390, and write the real rest height into this plan before building.
+
+**Files:** Modify `src/components/sets/set-grid-view.tsx` (the head is inline there),
+`src/components/sets/cost-strip.tsx`, `src/lib/copy/set-collections.ts`.
+
+### PR 5a — the content moves (no mechanism)
+
+- [ ] **`head.ratioNote` is absorbed into the figure** it annotates: `162 / 208 base · 78%`,
+  extras trailing. The note keeps its own line at desktop, and keeps standing alone in the
+  unindexed state — where `base` has nothing to ride on, which is why it is ungated today.
+- [ ] **`head.metaShort(code, year)`** → `HOB · 2026` on the title line's trailing edge, phone
+  only. The full `head.meta` string is unchanged at desktop.
+- [ ] **The result line drops its redundant half** — `result.rest` restates a subtraction the
+  ratio above already made. Its `role="status"` live region is untouched: it is what
+  announces a filter change.
+- [ ] Probe the phone head's new rest height and record it here.
+
+### PR 5b — the cost line and the collapse
+
+- [ ] **`CostStrip` becomes one 44px row** that expands in place on tap. The caveat count is
+  the reason truncation is not enough: a strip whose height depends on how many pricing
+  facts are true is an unpredictable sticky head — the same class as §28's ghost Clear.
+- [ ] **Two heights, one threshold.** Collapse at 120px of scroll, restore at 40px: an 80px
+  hysteresis band so a thumb resting mid-gesture cannot flutter it. **Never interpolated
+  with scroll offset.**
+- [ ] **The bar overlays; it does not reflow.** Assert in the probe that the grid's computed
+  track count is identical at scroll 0 and scroll 400 — R3 names this test itself.
+- [ ] **Reserve the rest height in the document**, or the page jumps on the first crossing.
+- [ ] **No desktop change**: same container, full form, `md:` sizes untouched.
+
+**Watch for:** finding 6 rules that the collapsed bar must not carry the chip line, and
+#549 spent four rounds making that chip line touchable at 44px. The badge carries the state
+when collapsed — but confirm the chip line's own height still holds at rest, since it is
+what makes the expanded head's height a constant.

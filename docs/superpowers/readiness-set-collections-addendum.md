@@ -1,8 +1,8 @@
-# READINESS — Set collections addendum (R2)
+# READINESS — Set collections addendum (R2, amended at R3)
 
-**Verdict: 🟢 Green.** Build may start, in four PRs.
+**Verdict: 🟢 Green.** Build may start, in **five** PRs.
 
-- **Handoff:** `design/design_handoff_the99_set_collections/ADDENDUM-*` (R2, 2026-09-12)
+- **Handoff:** `design/design_handoff_the99_set_collections/ADDENDUM-*` (R3, 2026-09-12)
 - **Amends:** the R3 handoff and `docs/superpowers/readiness-set-collections.md`
 - **Audited:** 2026-09-12
 - **Design self-assessment:** 🟢 Green, one decision to confirm. Concur.
@@ -10,6 +10,50 @@
 Five findings from Hugh's first real use of the shipped surface. Four are Design-owned and
 are what this verdict covers; the fifth — the card modal opening the wrong printing — was
 an engineering defect and shipped separately as PR #543.
+
+## R3 adds a sixth finding: the phone head
+
+R3 arrived while PRs 1–4 were in review, and it is **additive** — the five R2 findings are
+unchanged and their verdicts below stand. What is new is **finding 6: the phone head takes
+48% of the screen before a card is seen.**
+
+Its framing is the strongest thing in either round, and it is correct: the head is one
+`sticky top-0 z-[2]` container **with no width qualifier** (`set-grid-view.tsx:268`), so
+those 325px are not the top of the page — they follow the reader down all 399 cells. This
+is not "add a collapse"; it is the collapse the existing sticky head never got.
+
+Every structural claim checked out against the tree:
+
+| Claim | Result |
+|---|---|
+| There is no `set-head.tsx`; the head is inline in `set-grid-view.tsx` | **True** |
+| `SetIcon` at `size={30} desktopSize={44}` | **True** — `:275-276` |
+| `head.meta` is gated on `sections.indexed`; `ratioNote` is ungated | **True** — `:303`, `:314` |
+| `CostStrip` stacks up to four caveat lines | **True** — `unpriced`, `noFigure`, `soldOut`, `stale` |
+| The head already has a variable-height member | **True** — `DeltaStrip` renders inside the container |
+
+**Verdict on finding 6: 🟢 Green**, with the sequencing note below.
+
+### It collides with PR 3, and PR 3 makes it worse first
+
+R3's own table says finding 6 is the "**same file as finding 3**". That is an
+understatement: it is the same *container*. PR 3 (#549) has been rewriting that sticky
+head's height rules for sixteen review rounds, and one of its fixes — a 44px touch band for
+the phone chip strip — **grew the phone head from 366px to 388px**. Measured, this round,
+by the probe PR 3 added.
+
+So finding 6's 148px rest target is now 22px further away than R3's arithmetic assumes, and
+its "must not carry the chip line" rule collides with a chip line PR 3 just spent four
+rounds making touchable. **Finding 6 must land after #549 and #550 merge, and its numbers
+should be re-derived against the merged head rather than against `main` as R3 read it.**
+
+### Two of its four moves are free; the fourth is where the risk is
+
+Moves 1, 2 and 4 are content — 40px of copy relocation with no mechanism. Move 3 (the cost
+card becoming a 44px line that expands on tap) and the collapse itself are the work: a
+threshold, an 80px hysteresis band, and a bar that must overlay rather than reflow. R3 says
+so itself and recommends the content moves land first. **Agreed — that is a fifth PR, and
+the collapse could reasonably be a sixth.**
 
 ## What was checked, and against what
 
@@ -46,6 +90,14 @@ desktop constant produces the phone answer for free and the two widths stop bein
 rules."* The 116/160 sentence is the rule R2 deleted. **Design to ratify; no round-trip.**
 
 **The build takes 146.**
+
+## R3 carries every R2 erratum forward, uncorrected
+
+None of the seven errata below were addressed in R3 — its readiness file still quotes
+1.38:1 for the pip and 9.51:1 for the symbol floor, still lists "one open item" above four,
+and `ADDENDUM-STATES` still says "7 at 1180" where the NavRail makes it six. They remain
+resolved here, and this document is still what the plan is written from. **Design to
+ratify in one pass rather than per round.**
 
 ## The pip floor is 7.77:1, and the addendum's open item 2 is already closed
 

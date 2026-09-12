@@ -1,4 +1,4 @@
-# Readiness — set collections addendum R2
+# Readiness — set collections addendum R3
 
 **🟢 Green, with one decision to confirm and one open item that cannot block a start.**
 
@@ -15,6 +15,7 @@ strip or the card modal.
 | 1 + 2 · the grid | **Ready** | One declaration and one constant (146) in `set-grid-view.tsx`, all size literals out of `set-cell.tsx`. `auto-fill`, never `auto-fit`. |
 | 3 · the rack | **Ready, one PR** | Mana-symbol pips, `Rarity ▾` + panel, chip line, three fixed rows. **Mounts the chassis's pip and `filter-panel.tsx` — must not fork either.** |
 | 4 · name search | **Ready, sequenced with or after 3** | `SearchField` + a fourth field on `SetGridFilters`. Must go through `applyFilters`, which now has four readers. |
+| 6 · the phone head | **Ready** | `set-grid-view.tsx` (the head is inline there — there is no `set-head.tsx`) + `cost-strip.tsx`. Phone-only forms beside the shipped strings; threshold collapse with hysteresis; no desktop change. **Same file as finding 3.** |
 | 5 · the extras figure | **Ready** | One block moves in `set-index-view.tsx`; two tokens change; the aria clause is mandatory, not optional. |
 
 ## The one decision I want confirmed
@@ -41,7 +42,11 @@ is too much, the lever is the constant** — 116 → 8 columns and the R1 page l
 
 ## What I would cut if the round has to shrink
 
-**Finding 5 first** — it is one line moving and it improves the row, but nothing downstream depends
+**Findings 3 and 6 touch the same file and the same sticky container**, so they want the same PR or
+adjacent ones — the chip line and the collapsed bar are both about that container’s height.
+**Finding 6’s content moves before its collapse** — the four moves are 177px on their own and need no
+scroll machinery, while the sticky bar is the part with a threshold, a hysteresis band and a
+cross-fade to get right. Then **finding 5** — it is one line moving and it improves the row, but nothing downstream depends
 on it. Then the chip line's **phone** half, keeping the desktop chip line: the phone row already
 carries a badge, so the chips are the most redundant 34px in the package. **I would not cut the pip
 change to save time** — it is the one item here that fixes a measured accessibility failure (1.38:1)
@@ -58,6 +63,8 @@ sticky head's height a constant, which is the finding behind the finding.
 - `applyFilters` with a query: the result line's count, the `Send N` label, the cost strip's
   denominator and the rarity panel's per-row counts are the same computation in every case, zero
   included.
+- The collapsed head overlays rather than reflows: the grid’s computed track count is identical at
+  scroll 0 and scroll 400.
 - The unlit pip has no `opacity` and no ring; the lit pip has a ring and full opacity. Asserting the
   absence is the point — the shipped dimming is what regressed.
 - The index row's `aria-label` contains the extras clause whenever the extras line renders, and never
