@@ -529,8 +529,13 @@ async function run() {
     // there by design. Asserting three against the first set in the index would report a
     // failure for correct behaviour on a fixture that happens to be finished.
     const three = await rackAt("?c=W&r=rare&m=1");
+    // Read off a STRUCTURE the page maintains, not off copy: the first attempt grepped for
+    // sentences this page has never rendered, so it always answered false and the check it
+    // guards would have failed on the fixture it exists to allow. At 100% the page removes
+    // the missing-only control, because the base run has nothing left to hide — the absence
+    // of that control IS completeness, and it is the same fact `effective` is derived from.
     const setIsComplete = await page.evaluate(
-      () => /base run has nothing left|You have every/i.test(document.body.innerText),
+      () => document.querySelectorAll('button[aria-label^="Showing "]').length === 0,
     );
     if (rest === null) {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");
