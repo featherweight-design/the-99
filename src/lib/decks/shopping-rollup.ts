@@ -61,8 +61,17 @@ export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
   return { copies, cents, pricedCopies };
 }
 
-export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup> {
-  const rows = await loadDeckBuyRows(userId);
+/**
+ * `deckIds` narrows which decks are ANSWERED FOR, not which decks the seniority
+ * model considers — a deck's bill depends on what every other deck is holding,
+ * so that half is always user-wide. `total` is then the total over the decks
+ * asked about, which is the whole collection when nothing is passed.
+ */
+export async function loadShoppingRollup(
+  userId: string,
+  deckIds?: string[],
+): Promise<ShoppingRollup> {
+  const rows = await loadDeckBuyRows(userId, deckIds);
 
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
 

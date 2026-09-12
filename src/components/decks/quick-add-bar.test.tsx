@@ -18,6 +18,7 @@ const { QuickAddBar } = await import("./quick-add-bar");
 const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   oracleId: over.name.toLowerCase(),
   typeLine: "Enchantment",
+  cmc: 2,
   owned: true,
   ownedQty: 1,
   cardTypeGroup: "Enchantments",
@@ -391,7 +392,7 @@ describe("QuickAddBar — availability marker", () => {
     hard: hardDeckNames.length,
     soft: 0,
     free: 0,
-    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true })),
+    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
   });
 
   it("claims an off-list card another finished deck already holds", async () => {

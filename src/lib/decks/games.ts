@@ -2,6 +2,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { deckGames, deckGameAxes } from "../../db/schema";
 import { GAME_AXIS_KEYS, type AxisPolarity, type GameAxisKey } from "./game-axes";
+import { playRecord } from "./stats";
 
 export type DeckGame = {
   id: string;
@@ -103,15 +104,15 @@ export async function listDeckGames(deckId: string, userId: string): Promise<Dec
  * makes about ink and headings, not a rule about what the data means.
  */
 export function summarizeGames(games: DeckGame[]): GameSummary {
-  const record = { wins: 0, losses: 0, draws: 0 };
+  // Tallied through the stats layer rather than here, so the panel's record and
+  // the deck-stats figure are one computation. `played` is dropped because
+  // `count` already carries it; two names for one number is how they drift.
+  const { wins, losses, draws } = playRecord(games);
+  const record = { wins, losses, draws };
   const tallies = new Map<GameAxisKey, AxisTally>();
   let marked = 0;
 
   for (const g of games) {
-    if (g.result === "win") record.wins += 1;
-    else if (g.result === "loss") record.losses += 1;
-    else record.draws += 1;
-
     if (g.worked.length > 0 || g.hurt.length > 0) marked += 1;
     for (const key of g.worked) tally(tallies, key).worked += 1;
     for (const key of g.hurt) tally(tallies, key).hurt += 1;

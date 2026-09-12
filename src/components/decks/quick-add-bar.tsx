@@ -376,6 +376,7 @@ function QuickAddRow({
           printedSetCode: null,
           printedCollectorNumber: null,
           manaCost: result.manaCost,
+          cmc: result.cmc,
           imageUri: result.imageUri,
         }),
     );
