@@ -110,6 +110,35 @@ describe("useLiveQuery", () => {
     expect(window.history.state).toEqual({ marker: 1 });
   });
 
+  // Two patchers cannot both be outermost, and the router installs its own at its
+  // own moment. A wrapper displaced by a later patch is re-armed on the next
+  // read, which restores the order rather than fighting for it.
+  it("re-arms when something patches over its wrapper", async () => {
+    const shown = await mountProbe();
+    const seen: string[] = [];
+    // What a router's interception looks like from here.
+    const displaced = window.history.pushState;
+    window.history.pushState = function later(this: History, state, title, url) {
+      seen.push(String(url));
+      return displaced.call(this, state, title, url ?? null);
+    };
+
+    // The read that re-arms: any render of a subscriber does it.
+    act(() => {
+      window.history.pushState(null, "", "/commanders?c=r");
+    });
+    expect(seen).toEqual(["/commanders?c=r"]);
+
+    act(() => {
+      window.history.pushState(null, "", "/commanders?c=b");
+    });
+
+    // Both writes reached the patch that displaced this one, and the store
+    // followed the second — the one made after it had re-armed.
+    expect(seen).toEqual(["/commanders?c=r", "/commanders?c=b"]);
+    expect(shown()).toBe("c=b");
+  });
+
   // The fallback, and the case the bug report actually named. jsdom fires
   // `popstate` on a task of its own, so this awaits it.
   it("follows a back navigation with no Navigation API at all", async () => {

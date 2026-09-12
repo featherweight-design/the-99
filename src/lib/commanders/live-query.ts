@@ -37,8 +37,10 @@
 // tried and is worse than the disease — an accessor that captures a later
 // assignment RECURSES, because the code installing that patch reads the current
 // method first, gets this wrapper, and delegates to it; the test for it blew the
-// stack. So: ask the platform where the platform can answer, and fall back to the
-// patch that degrades quietly where it cannot.
+// stack. So: ask the platform where the platform can answer, and where it cannot,
+// wrap — and check on each read that the wrapper is still the installed one,
+// re-wrapping whatever displaced it. That composes in the one direction that
+// terminates.
 
 import { useSyncExternalStore } from "react";
 
@@ -61,21 +63,56 @@ function navigationApi(): NavigationLike | null {
   return candidate && typeof candidate.addEventListener === "function" ? candidate : null;
 }
 
+/** The wrappers this module installed, by method, so a displaced one can be
+    told from an intact one. Empty under the Navigation API, which needs none. */
+const ours = new Map<HistoryMethod, History[HistoryMethod]>();
+
+type HistoryMethod = "pushState" | "replaceState";
+
 /** The fallback's half of the job: a same-document push or replace, which emits
-    no event of its own. Installed only where the Navigation API is absent, and
-    only once — see this file's header for why it delegates rather than composes,
-    and what it costs if something patches over it later. */
+    no event of its own. Used only where the Navigation API is absent.
+    Re-entrant on purpose — see `ensureObserving`. */
 function wrapHistory() {
   for (const name of ["pushState", "replaceState"] as const) {
-    const original = window.history[name];
-    window.history[name] = function observed(
+    // Whatever is installed right now, which is Next's own wrapper in the app and
+    // a previous wrapper of ours if something has since patched over it. Either
+    // way this delegates to it rather than replacing it.
+    const current = window.history[name];
+    const observed = function observed(
       this: History,
-      ...args: Parameters<History[typeof name]>
+      ...args: Parameters<History[HistoryMethod]>
     ) {
-      const result = original.apply(this, args);
+      const result = current.apply(this, args);
       notify();
       return result;
-    };
+    } as History[HistoryMethod];
+    window.history[name] = observed;
+    ours.set(name, observed);
+  }
+}
+
+/**
+ * Re-arms the fallback if something has patched over it.
+ *
+ * Two patchers cannot both be outermost, and the router's is installed at its own
+ * moment: if Next re-intercepts `pushState` after this module did, its assignment
+ * replaces this wrapper and notifications stop. Wrapping whatever is installed
+ * NOW restores the order — this delegates to the router's wrapper, the router's
+ * still runs, and nothing recurses, because each wrapper closes over the function
+ * it found rather than over a live lookup.
+ *
+ * Called from the store's own read, which runs on every render of every
+ * subscriber: it is one identity comparison, and it means a displaced wrapper
+ * costs at most the renders between the patch and the next one, rather than
+ * every navigation for the life of the page.
+ */
+function ensureObserving() {
+  if (ours.size === 0) return; // the Navigation API is carrying this.
+  for (const [name, wrapper] of ours) {
+    if (window.history[name] !== wrapper) {
+      wrapHistory();
+      return;
+    }
   }
 }
 
@@ -105,7 +142,10 @@ function subscribe(listener: () => void): () => void {
 export function useLiveQuery(serverQuery: string): string {
   return useSyncExternalStore(
     subscribe,
-    () => window.location.search.replace(/^\?/, ""),
+    () => {
+      ensureObserving();
+      return window.location.search.replace(/^\?/, "");
+    },
     () => serverQuery,
   );
 }
