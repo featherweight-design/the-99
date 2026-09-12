@@ -126,7 +126,12 @@ const PARSE_STOPS = `
     parts.push(current);
     return parts
       .map((part) => {
-        const position = part.match(/([\\d.]+)%\\s*$/);
+        // Both units. A vertical ramp computes to percentages; the portrait's
+        // horizontal scrim is emitted in px, so a percent-only pattern dropped
+        // every one of its stops and reported an empty list as a failing band on
+        // every viewport. The unit travels with the figure — the hold check
+        // compares against a percentage and has to know which it was handed.
+        const position = part.match(/([\\d.]+)(%|px)\\s*$/);
         if (!position) return null;
         // Both serialisations. A browser computes a color-mix to
         // oklab with a slash alpha, but falls back to
@@ -137,7 +142,11 @@ const PARSE_STOPS = `
         const slashed = part.match(/\\/\\s*([\\d.]+)\\s*\\)/);
         const rgba = part.match(/rgba\\(\\s*[\\d.]+\\s*,\\s*[\\d.]+\\s*,\\s*[\\d.]+\\s*,\\s*([\\d.]+)\\s*\\)/);
         const alpha = slashed ?? rgba;
-        return { alpha: alpha ? Number(alpha[1]) : 1, position: Number(position[1]) };
+        return {
+          alpha: alpha ? Number(alpha[1]) : 1,
+          position: Number(position[1]),
+          unit: position[2],
+        };
       })
       .filter(Boolean);
   };
@@ -577,7 +586,13 @@ try {
         } else {
           const height = Number.parseInt(band.declared, 10);
           const expected = Math.round(((height - at) / height) * 100);
-          if (Math.abs(band.stops[2].position - expected) > 1) {
+          if (band.stops[2].unit !== "%") {
+            // A px hold is not comparable to a percentage, and silently reading
+            // 46px as 46% is this round's own bug moved into the probe.
+            note(
+              `  FAIL ${band.declared} band holds at ${band.stops[2].position}${band.stops[2].unit}, expected a percentage`,
+            );
+          } else if (Math.abs(band.stops[2].position - expected) > 1) {
             note(`  FAIL ${band.declared} band holds at ${band.stops[2].position}%, expected ${expected}% for a ${at}px block`);
           }
         }
