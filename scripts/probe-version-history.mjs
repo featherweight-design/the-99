@@ -189,6 +189,12 @@ const readStamps = (page) =>
     });
   });
 
+// Every deck this run has written, recorded the moment its insert returns rather
+// than when its builder finishes: a fixture that fails half-built would otherwise
+// leave its deck behind, because the id only reaches the caller on the way out.
+// The `finally` drains this, and versions, version cards and games cascade.
+const createdDeckIds = [];
+
 /** A 99-row deck owned by the signed-in account, plus three committed versions. */
 async function buildDeck(userId, template) {
   const { rows } = await pool.query(
@@ -197,6 +203,7 @@ async function buildDeck(userId, template) {
     [userId, DECK_NAME, template.commander_oracle_id, template.partner_oracle_id],
   );
   const deckId = rows[0].id;
+  createdDeckIds.push(deckId);
   await pool.query(
     `insert into deck_cards (deck_id, oracle_id, quantity, auto)
        select $1, oracle_id, quantity, false from deck_cards where deck_id = $2`,
@@ -265,6 +272,7 @@ async function buildForeignDeck(template) {
     ],
   );
   const deckId = rows[0].id;
+  createdDeckIds.push(deckId);
   await pool.query(
     `insert into deck_versions
        (deck_id, number, note, commander_oracle_id, partner_oracle_id,
@@ -492,10 +500,12 @@ try {
     await vpContext.close();
   }
 } finally {
-  // The deck, and nothing else: versions, version cards and games all cascade,
-  // and the run writes no collection row to take back.
-  if (deck) await pool.query(`delete from decks where id = $1`, [deck.deckId]);
-  if (foreignDeckId) await pool.query(`delete from decks where id = $1`, [foreignDeckId]);
+  // The decks, and nothing else: versions, version cards and games all cascade,
+  // and the run writes no collection row to take back. Driven off the ids recorded
+  // at insert time, so a fixture that failed half-built still takes its deck with it.
+  if (createdDeckIds.length > 0) {
+    await pool.query(`delete from decks where id = any($1::uuid[])`, [createdDeckIds]);
+  }
   await pool.end();
   await browser.close();
 }

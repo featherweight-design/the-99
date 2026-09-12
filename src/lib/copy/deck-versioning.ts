@@ -390,6 +390,10 @@ export const deckVersioningCopy = {
     // which reads as a failed read rather than as an answer. No count in it — a
     // zero delta is an absence, not a figure.
     noChange: "no cards moved in or out of this version",
+    // A read that was refused or failed. Never `noChange`: saying no cards moved
+    // when the answer never arrived is a claim about the version, and the app does
+    // not know it. Closing the row and opening it again is the retry.
+    diffUnavailable: "we couldn't read what this version changed — open the row again to retry",
 
     initialHeading: "Initial",
     initialBody:

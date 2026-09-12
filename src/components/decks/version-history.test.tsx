@@ -166,14 +166,16 @@ describe("VersionHistory", () => {
   it("reads a version's diff once per visit however often it is opened", async () => {
     getVersionDiff.mockClear();
     mount(THREE);
-    const open = (i: number) =>
-      fireEvent.click(screen.getAllByRole("button", { expanded: false })[i]);
-    open(0);
+    // The three row handles are taken once, before anything is open: re-querying
+    // `expanded: false` after each click names a different row every time, which
+    // walks A → B → C and never returns to A.
+    const rows = screen.getAllByRole("button", { expanded: false });
+    fireEvent.click(rows[0]);
     await screen.findByRole("button", { expanded: true });
-    open(0);
+    fireEvent.click(rows[1]);
     await screen.findByRole("button", { expanded: true });
     // Back to the first, whose panel was unmounted in between.
-    fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+    fireEvent.click(rows[0]);
     await screen.findByRole("button", { expanded: true });
     expect(getVersionDiff.mock.calls.filter((c) => c[1] === "v_3")).toHaveLength(1);
   });

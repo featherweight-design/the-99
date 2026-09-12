@@ -220,7 +220,11 @@ export function VersionDiff({
   cache: Map<string, VersionDiffPayload>;
 }) {
   const initial = previous === null;
-  const [diff, setDiff] = useState<VersionDiffPayload | null>(
+  // `"unavailable"` is a third state, not an empty payload: two empty lists are a
+  // real answer for a version that moved no cards, and rendering a refused or
+  // failed read as that answer claims something about the version the app does not
+  // know.
+  const [diff, setDiff] = useState<VersionDiffPayload | "unavailable" | null>(
     initial ? { in: [], out: [] } : cache.get(version.id) ?? null,
   );
   // Phone only, and it decides which column is on screen rather than which one is
@@ -236,23 +240,24 @@ export function VersionDiff({
     let live = true;
     // A refusal is null, and is deliberately NOT filed: a read that was refused
     // should be retried when the reader asks again, not remembered as this
-    // version's answer. It draws as two empty lists, which is the honest rendering
-    // — there is nothing this panel can say about a diff it was not given.
+    // version's answer. Closing the row unmounts this panel, so reopening it is
+    // that retry.
     getVersionDiff(deckId, version.id)
       .then((result) => {
         if (result !== null) cache.set(version.id, result);
-        if (live) setDiff(result ?? { in: [], out: [] });
+        if (live) setDiff(result ?? "unavailable");
       })
       .catch(() => {
-        if (live) setDiff({ in: [], out: [] });
+        if (live) setDiff("unavailable");
       });
     return () => {
       live = false;
     };
   }, [cache, deckId, diff, initial, version.id]);
 
-  const inCount = diff?.in.length ?? 0;
-  const outCount = diff?.out.length ?? 0;
+  const payload = diff === null || diff === "unavailable" ? null : diff;
+  const inCount = payload?.in.length ?? 0;
+  const outCount = payload?.out.length ?? 0;
   // The pair names a direction, so it is drawn only when there are two
   // directions to choose between. One column keeps its own heading instead.
   const segmented = inCount > 0 && outCount > 0;
@@ -263,10 +268,14 @@ export function VersionDiff({
   // swapped says what moved instead of rendering `Korvold → Korvold`.
   const from = helm(previous);
   const to = helm(version);
+  // `from !== to` as well as the ids: a swap between two partners the name index
+  // cannot resolve moves the ids while leaving both sides reading as the primary
+  // alone, and `Korvold → Korvold` says nothing.
   const commanderMoved =
     previous !== null &&
     from !== null &&
     to !== null &&
+    from !== to &&
     (previous.commanderOracleId !== version.commanderOracleId ||
       previous.partnerOracleId !== version.partnerOracleId);
 
@@ -360,6 +369,12 @@ export function VersionDiff({
         <div className="flex justify-center py-[18px] text-[color:var(--fg-faint)]">
           <PendingMark />
         </div>
+      ) : diff === "unavailable" ? (
+        // Never `noChange`: the read was refused or failed, so the app knows
+        // nothing about what this version moved.
+        <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">
+          {copy.diffUnavailable}
+        </p>
       ) : (
         <>
           {segmented && (

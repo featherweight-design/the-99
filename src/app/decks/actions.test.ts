@@ -88,24 +88,35 @@ const stub = vi.hoisted(() => {
     return {
       from: (table: unknown) => {
         const tableName = nameOf(table);
-        const rowsFor = () => {
+        const rowsFor = (condition?: unknown) => {
           if (tableName === "cards") return state.cards;
           if (tableName === "decks") return state.decks;
           if (tableName === "deck_games") return state.deckGames;
-          if (tableName === "deck_versions") return state.deckVersions;
+          if (tableName === "deck_versions") {
+            // The one table whose predicate the stub models, because the guard
+            // under test is exactly "this version belongs to this deck": a stub
+            // that ignored the deck id would pass on an empty table and prove
+            // only that a missing version is refused. A fixture row with no
+            // `deckId` is left alone, so a test that does not care about the
+            // guard does not have to name one.
+            const bound = paramValues(condition);
+            return state.deckVersions.filter(
+              (row) => row.deckId === undefined || bound.includes(row.deckId as string),
+            );
+          }
           if (tableName === "deck_cards") return state.deckRows as Record<string, unknown>[];
           return state.collectionItems;
         };
         const builder: SelectFromBuilder = {
           // Thenable rather than async, because `fillDeck` chains `.limit(1)`
           // onto its emptiness check and most other callers await directly.
-          where: () => Object.assign(
-            Promise.resolve(rowsFor()),
+          where: (condition: unknown) => Object.assign(
+            Promise.resolve(rowsFor(condition)),
             {
-              limit: async (n: number) => rowsFor().slice(0, n),
+              limit: async (n: number) => rowsFor(condition).slice(0, n),
               // The stub does not sort, so an ordered read hands back the rows in
               // the order the test listed them.
-              orderBy: () => ({ limit: async (n: number) => rowsFor().slice(0, n) }),
+              orderBy: () => ({ limit: async (n: number) => rowsFor(condition).slice(0, n) }),
             },
           ),
           innerJoin: () => {
@@ -1177,6 +1188,13 @@ describe("getVersionDiff", () => {
   // are a real answer for a version that moved no cards, and the caller caches
   // what it is given.
   it("refuses a version that is not this deck's", async () => {
+    // A real version, filed under another deck — not an absent row. An empty
+    // table would pass this test against a guard that only checked existence.
+    stub.state.deckVersions.push({
+      id: VERSION_ID,
+      number: 2,
+      deckId: "99999999-9999-4999-8999-999999999999",
+    });
     expect(await getVersionDiff(DECK_ID, VERSION_ID)).toBeNull();
     expect(loadVersionDiff).not.toHaveBeenCalled();
   });
@@ -1186,7 +1204,7 @@ describe("getVersionDiff", () => {
   // Which row the read hands back is the stub's own artifact — the ordering by
   // `number` is proved against a real Postgres by `pnpm probe:versions`.
   it("reads the predecessor itself rather than taking one from the caller", async () => {
-    stub.state.deckVersions.push({ id: VERSION_ID, number: 2 });
+    stub.state.deckVersions.push({ id: VERSION_ID, number: 2, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
     expect(vi.mocked(loadVersionDiff).mock.calls[0]?.[0]).toBe(VERSION_ID);

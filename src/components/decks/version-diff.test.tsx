@@ -123,7 +123,7 @@ describe("VersionDiff", () => {
     getVersionDiff.mockRejectedValueOnce(new Error("nope"));
     const cache = new Map<string, { in: VersionDiffCard[]; out: VersionDiffCard[] }>();
     mount({ cache });
-    await screen.findByText(copy.noChange);
+    await screen.findByText(copy.diffUnavailable);
     expect(cache.has("v_2")).toBe(false);
   });
 
@@ -134,8 +134,17 @@ describe("VersionDiff", () => {
     getVersionDiff.mockResolvedValueOnce(null);
     const cache = new Map<string, { in: VersionDiffCard[]; out: VersionDiffCard[] }>();
     mount({ cache });
-    await screen.findByText(copy.noChange);
+    await screen.findByText(copy.diffUnavailable);
     expect(cache.has("v_2")).toBe(false);
+  });
+
+  // Two empty lists are a real answer for a version that moved no cards, so a read
+  // that never arrived must not borrow that sentence.
+  it("never says no cards moved when the read was refused", async () => {
+    getVersionDiff.mockResolvedValueOnce(null);
+    mount();
+    expect(await screen.findByText(copy.diffUnavailable)).toBeInTheDocument();
+    expect(screen.queryByText(copy.noChange)).toBeNull();
   });
 
   // A note-only or commander-only commit moves no cards, and no eligibility test
@@ -244,6 +253,18 @@ describe("VersionDiff", () => {
     expect(container.textContent).not.toContain("→ Korvold");
   });
 
+  // Two partners the name index cannot resolve leave both sides of the arrow
+  // reading as the primary alone, so the ids moved but the sentence would not.
+  it("says nothing about the helm when neither partner's name resolved", async () => {
+    getVersionDiff.mockResolvedValueOnce({ in: [card()], out: [] });
+    const { container } = mount({
+      version: version({ partnerOracleId: "tymna", partnerName: null }),
+      previous: version({ number: 1, partnerOracleId: "thrasios", partnerName: null }),
+    });
+    await screen.findByText("Sol Ring");
+    expect(container.textContent).not.toContain(copy.commanderChange("Korvold", "Korvold"));
+  });
+
   // A copy count moving is neither an arrival nor a departure, and a bare name
   // would claim it was one.
   it("states both counts when a card's quantity moved", async () => {
@@ -260,7 +281,7 @@ describe("VersionDiff", () => {
   it("settles into an empty panel when the read fails", async () => {
     getVersionDiff.mockRejectedValueOnce(new Error("nope"));
     const { container } = mount();
-    await screen.findByText(copy.noChange);
+    await screen.findByText(copy.diffUnavailable);
     expect(container.querySelector("[data-pending-mark]")).toBeNull();
   });
 });
