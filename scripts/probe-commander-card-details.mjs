@@ -106,7 +106,7 @@ const fail = (line) => note(`  FAIL ${line}`);
 /** One surface: the control is there once, it is what the pointer would hit, and
     pressing it opens the modal. Split out because the deck header and the
     commander page ask exactly the same three questions. */
-async function walkSurface(page, label, vpName, slug) {
+async function walkSurface(page, label, vpName, slug, { expectFlip = false } = {}) {
   await page.waitForTimeout(900);
   await page.screenshot({ path: `/tmp/commander-card-details-${vpName}-${slug}.png` });
 
@@ -129,8 +129,17 @@ async function walkSurface(page, label, vpName, slug) {
   await page.locator('button[aria-label="View card details"]:visible').first().click();
   await page.waitForTimeout(1200);
   const modal = await page.evaluate(`(${READ_MODAL})()`);
-  if (!modal.open) fail("the control did not open the card modal");
-  else note(`  modal opens on "${modal.title}", ${modal.flips} flip control(s)`);
+  if (!modal.open) {
+    fail("the control did not open the card modal");
+    return;
+  }
+  note(`  modal opens on "${modal.title}", ${modal.flips} flip control(s)`);
+  // Asserted only where a two-faced commander was deliberately chosen. The deck
+  // walk opens whatever commander the fixture's deck happens to have, so a flip
+  // there is a fact about the fixture rather than about this control.
+  if (expectFlip && modal.flips === 0) {
+    fail(`no flip control on "${modal.title}" — expected a two-faced commander`);
+  }
 }
 
 // A two-faced commander, so one walk answers both the reachability question and
@@ -164,22 +173,42 @@ try {
     }
     await card.click();
     await page.waitForURL(/\/commanders\/[^/]+$/, { timeout: 60_000 });
-    await walkSurface(page, `${vpName} commander page`, vpName, "commander");
+    // `expectFlip`: PROBE_COMMANDER is a two-faced card by choice, so the flip is
+    // part of what this surface has to deliver — it is the half of the original
+    // bug that desktop could not reach at all.
+    await walkSurface(page, `${vpName} commander page`, vpName, "commander", { expectFlip: true });
 
     // And the deck header, which draws the same control in its own placement.
+    //
+    // A deck whose commander has no `art_crop` draws NO chip, deliberately — §G:
+    // with no crop there is no printing to open. So the walk needs a deck that
+    // qualifies, and taking the first link would fail against a fixture whose
+    // first deck happens to be artless. It tries each in turn and says so if none
+    // qualifies, rather than passing quietly on a surface it never tested.
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
-    const deckHref = await page.evaluate(() =>
+    const deckHrefs = await page.evaluate(() =>
       [...document.querySelectorAll('a[href^="/decks/"]')]
         .map((a) => a.getAttribute("href"))
-        .find((h) => h && !/\/(import|new)$/.test(h)),
+        .filter((h) => h && !/\/(import|new)$/.test(h)),
     );
-    if (!deckHref) {
+    if (deckHrefs.length === 0) {
       fail(`${vpName}: no deck to open — the fixture needs at least one`);
       await context.close();
       continue;
     }
-    await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
-    await walkSurface(page, `${vpName} deck header`, vpName, "deck");
+    let walked = false;
+    for (const href of deckHrefs.slice(0, 8)) {
+      await page.goto(`${BASE}${href}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(700);
+      const chips = await page.evaluate(`(${READ_TRIGGERS})()`);
+      if (chips.length === 0) continue; // artless commander, §G — try the next
+      await walkSurface(page, `${vpName} deck header (${href})`, vpName, "deck");
+      walked = true;
+      break;
+    }
+    if (!walked) {
+      fail(`${vpName}: no deck whose commander has an art crop — the deck header went unchecked`);
+    }
 
     await context.close();
   }
