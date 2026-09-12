@@ -27,6 +27,9 @@ browser probes via `scripts/probe-sets.mjs`.
   See the readiness doc's erratum.
 - **Quote 7.77:1 for the pip floor, not 9.51:1.** The assets are committed and carry their
   real colours; the chassis package already corrects the figure.
+- **Quote the route's own geometry, never the canvas's.** The content box is 1112px and the
+  measured track is ~150px; §27's 1100px and 124–129px are canvas figures the route does not
+  produce. The column count is the same either way.
 - **`auto-fill`, never `auto-fit`.** One keyword decides the no-reflow constraint.
 - **The cell carries no width or height literal at any width.** Track sets width,
   `aspect-ratio: 63/88` sets height.

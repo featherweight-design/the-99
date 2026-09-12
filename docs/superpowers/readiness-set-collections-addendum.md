@@ -78,6 +78,52 @@ the chassis package should not find two floors for one asset.
   ~302px — about 334px of viewport once the page's padding is taken off, which is what the
   figure describes. A probe asserting it must measure the viewport, not the content box.
 
+## The upscale bound is wrong, and the named remedy would not reach it
+
+Open item 1 states *"the worst upscale in the system is 1.21×, at 736px of content, and
+1.19× on a phone"*, and offers, if review finds the cell soft, *"a larger source **for the
+two-column grid only**"*.
+
+1.21× is one sampled width, not a bound. With `minmax(146px, 1fr)` and a 10px gap, the
+worst track at each column count sits **just below** the next count's threshold, and the
+upscale climbs as the count falls:
+
+| content width | tracks | track | upscale |
+|---|---|---|---|
+| 1237 | 7 | 168.1 | 1.15× |
+| 1081 | 6 | 171.8 | 1.18× |
+| 925 | 5 | 177.0 | **1.21×** ← the quoted figure |
+| 769 | 4 | 184.8 | 1.27× |
+| **613** | **3** | **197.7** | **1.35×** |
+| 457 | 2 | 223.5 | 1.53× |
+
+613px of content is a ~681px window — narrower than an iPad in portrait, reachable by
+resizing. **So the worst reachable upscale is ~1.35×, not 1.21×, and it lands on the
+three-column grid**, which the named remedy explicitly does not cover.
+
+**This does not move the verdict**, because open item 1 is conditional: nothing is done
+unless review finds the cell soft. But the bound it is reasoned from is wrong by a third,
+and the remedy is scoped to the wrong grid. **Design to ratify**; no round-trip, because
+there is nothing to build either way today.
+
+## The figures derived from a 1100px content box
+
+The addendum derives its columns from 1100px. The route's shell is `max-w-[1180px]` less
+`px-[34px]` either side, so the content is **1112px**, and the measured tracks are
+**7 × 150.28px**, not 7 × 149. Across 1024–1440 the track lands ~150–151px rather than
+§27's 124–129. The column count is seven either way, so no ruling moves — but a probe or a
+comment quoting the canvas arithmetic rather than the route's is quoting a number the route
+never produces.
+
+## What was NOT done, and why
+
+`ADDENDUM-README.md` §27 still contains the stale `F = 116 … 160` line, and
+`ADDENDUM-READINESS.md` still offers `116 → 8 columns, 160 → 6` and claims "one open item"
+above a list of four. **Design handoffs are reference material and are not edited by
+engineering** — the R3 files were locked and unedited on the first round for the same
+reason, and the addendum itself names that precedent. Every contradiction is resolved here
+instead, and this document is what the plan's global constraints are written from.
+
 ## `FilterPanel`'s marker is a tick, not a diamond
 
 §28 draws the rarity panel's marker as "a rotated diamond filled `--accent` when on".
