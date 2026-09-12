@@ -472,14 +472,6 @@ export const deckImportCopy = {
       chipUnchangedMobile: "same",
       landing: (from: string, to: string) => `${from} → ${to} / 99`,
 
-      // Said above the preview's groups on a deck that has a version: what this
-      // paste changes becomes a DRAFT, and nothing about the deck's claims moves
-      // until the player commits. Without it the preview reads like the write is
-      // final, which on a versioned deck it is not.
-      draftPasteNotice: (version: number) =>
-        `This deck is on v${version}. Applying this list changes your pending changes, not the ` +
-        "committed deck — you will still commit it yourself.",
-
       outHeading: (n: string) => `Coming out · ${n}`,
       // One sentence, with no hand-added variant. Nothing records who placed a
       // card — `auto` is false for a hand-add and for a previous import's rows

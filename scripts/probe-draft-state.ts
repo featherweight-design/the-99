@@ -39,33 +39,50 @@ const check = (label: string, actual: unknown, expected: unknown) => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${label} — got ${actual}, expected ${expected}`);
 };
 
-const one = async (label: string, query: ReturnType<typeof sql>) => {
-  const { rows } = await fixture.execute<{ oracle_id: string }>(query);
+// Every pick is taken against the ids already claimed, and `taken` grows as they
+// are. The five selectors overlap by construction — an `Artifact` with a live
+// price and a `Sorcery` are drawn from the same table, and the price selector
+// excludes only basics and legends — so two roles could otherwise land on one
+// card. The fixture would then add and cut the same oracle id and every count
+// below would be wrong, in a way that depended on which catalog it ran against.
+const taken: string[] = [];
+const one = async (label: string, query: (excluded: string[]) => ReturnType<typeof sql>) => {
+  const { rows } = await fixture.execute<{ oracle_id: string }>(query(taken));
   if (!rows[0]) throw new Error(`${label}: no candidate in the catalog — seed it first`);
+  taken.push(rows[0].oracle_id);
   return rows[0].oracle_id;
 };
+
+// `<> all(...)` rather than `not in`: an empty JS array becomes an empty
+// Postgres array, which is true for every row, where an empty `not in ()` list
+// is a syntax error. So the first pick needs no special case.
+const notTaken = (column: string, excluded: string[]) =>
+  sql.raw(`${column} <> all(`).append(sql`${sql.param(excluded)}::uuid[])`);
 
 // Read from the catalog rather than hard-coded: a fixed uuid rots the first time
 // it moves. The priced card must carry a LIVE price — `priceState` calls a row
 // whose `as_of` is behind the newest in the table sold out, and a sold-out card
 // is priced by nothing, so a stale pick would make the total assertions vacuous.
 const pickCards = async () => ({
-  commander: await one("commander", sql`
+  commander: await one("commander", (excluded) => sql`
     select oracle_id from cards
-    where type_line ~ 'Legendary Creature' order by oracle_id limit 1
+    where type_line ~ 'Legendary Creature' and ${notTaken("oracle_id", excluded)}
+    order by oracle_id limit 1
   `),
-  priced: await one("priced add", sql`
+  priced: await one("priced add", (excluded) => sql`
     select distinct on (p.oracle_id) p.oracle_id from printing_prices pp
     join printings p on p.scryfall_id = pp.scryfall_id
     join cards c on c.oracle_id = p.oracle_id
     where pp.price_cents is not null
       and pp.as_of = (select max(as_of) from printing_prices)
       and c.type_line !~ '\\mBasic\\M' and c.type_line !~ 'Legendary'
+      and ${notTaken("p.oracle_id", excluded)}
     order by p.oracle_id limit 1
   `),
-  unpriced: await one("unpriced add", sql`
+  unpriced: await one("unpriced add", (excluded) => sql`
     select c.oracle_id from cards c
     where c.type_line !~ '\\mBasic\\M' and c.type_line !~ 'Legendary'
+      and ${notTaken("c.oracle_id", excluded)}
       and not exists (
         select 1 from printings p
         join printing_prices pp on pp.scryfall_id = p.scryfall_id
@@ -73,16 +90,22 @@ const pickCards = async () => ({
       )
     order by c.oracle_id limit 1
   `),
-  kept: await one("kept card", sql`
+  kept: await one("kept card", (excluded) => sql`
     select oracle_id from cards
-    where type_line ~ 'Instant' and type_line !~ 'Legendary' order by oracle_id limit 1
+    where type_line ~ 'Instant' and type_line !~ 'Legendary'
+      and ${notTaken("oracle_id", excluded)}
+    order by oracle_id limit 1
   `),
-  cut: await one("cut card", sql`
+  cut: await one("cut card", (excluded) => sql`
     select oracle_id from cards
-    where type_line ~ 'Sorcery' and type_line !~ 'Legendary' order by oracle_id limit 1
+    where type_line ~ 'Sorcery' and type_line !~ 'Legendary'
+      and ${notTaken("oracle_id", excluded)}
+    order by oracle_id limit 1
   `),
-  basic: await one("basic land", sql`
-    select oracle_id from cards where type_line ~ '\\mBasic\\M.*Land' order by oracle_id limit 1
+  basic: await one("basic land", (excluded) => sql`
+    select oracle_id from cards
+    where type_line ~ '\\mBasic\\M.*Land' and ${notTaken("oracle_id", excluded)}
+    order by oracle_id limit 1
   `),
 });
 
