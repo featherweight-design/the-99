@@ -6,6 +6,29 @@ source of truth the Claude Design handoff prompt points at.
 **Verified against `origin/main` at `a461112` on 2026-09-11.** Every `file:line` below was read on
 that commit, not recalled.
 
+**Patched 2026-09-12, re-verified against `origin/main` at `47616861`.** PR #517 merged after this
+brief was written and invalidated two things it stated as current fact. Both are corrected in place
+below and named here so a reader who saw the first version knows what moved:
+
+1. **The `left-portrait` ambient layer is gone.** `art-wash.tsx` no longer draws the full-bleed
+   `cover` copy of the crop at 0.28 behind the masked portrait; past the portrait's own width it was
+   a second, differently-scaled print of the same picture and read as a double image. §4 said that
+   layer was specified in both tables this round amends, which is still true of the documents and no
+   longer true of the code — both handoffs carry the errata and the ratification landed 2026-09-12.
+   The consequence for this round is that there is no ambient layer to re-spec, and **no new one is
+   to be introduced**: with art, the masked sharp portrait is the only art layer.
+2. **Row 5 can reach the card modal.** §1's row 5 described a bare card face with no way into the
+   modal. #517 mounted a `FullCardTrigger` at `placement="commander-desktop"` in that column, so
+   desktop now reaches the printings, the rulings and the flip control. That shrinks this round's
+   work — the desktop column needs no new route to the modal — and it adds a fourth placement to
+   the control the top-edge enumeration has to account for.
+
+**The two-pass sweep was re-run at `47616861` and the count is unchanged: fifteen renders across
+twelve files, seven of them drawing no wash at all.** Nothing has been added or removed; the
+`url(...)`/`cssUrl(...)` pass now also returns `sets/set-icon.tsx` (a set symbol mask) and
+`ui/colour-pips.tsx` (mana pips), neither of which draws a commander. Some line numbers drifted and
+are corrected in the table below.
+
 Hugh's words: *"right now we render the 'commander' image differently in several places and it
 doesn't look uniform."* He is right, and the count is **fifteen renders across twelve files**.
 
@@ -24,13 +47,13 @@ status or a downstream brief cites a total, it cites this one.
 | 1 | `home/hero-commander.tsx:58` | `cover` | Large cover band |
 | 2 | `home/resume-decks.tsx:99` | `left-portrait` | Portrait at the band's own height |
 | 3 | `home/deck-rail.tsx:131` | **none** | A `26×36` span (w×h, `:127`) with its own background, inside a `min-h-[56px]` touch row (`:115`). Phone only — desktop draws no art |
-| 4 | `commanders/detail.tsx:249` | `cover` | Art header band, inside `sm:hidden` (`:236`) |
-| 5 | `commanders/detail.tsx:469` | **none** | A full 63/88 card face from `c.imageUri` in a sticky desktop column, with its own drop shadow |
+| 4 | `commanders/detail.tsx:240` | `cover` | Art header band, inside `sm:hidden` (`:236`) |
+| 5 | `commanders/detail.tsx:476` | **none** | A full 63/88 card face from `c.imageUri` in a sticky desktop column, with its own drop shadow, carrying a `FullCardTrigger` at `placement="commander-desktop"` (`:483`) since PR #517 |
 | 6 | `commanders/discovery-row.tsx:349` | `left-portrait` | Row-height band |
 | 7 | `commanders/rec-card.tsx:147` | `left-portrait` | Band at a hard `height: 148` |
 | 8 | `decks/deck-card.tsx:153` | `cover` | Cover band |
 | 9 | `decks/spine-mobile.tsx:128` | `cover` | Cover band |
-| 10 | `decks/spine-desktop.tsx:116` | `left-portrait` | Portrait band |
+| 10 | `decks/spine-desktop.tsx:124` | `left-portrait` | Portrait band |
 | 11 | `decks/create-picker.tsx:524` | **none** | Candidate row thumb, `34×48` mobile / `40×56` desktop |
 | 12 | `decks/create-picker.tsx:644` | **none** | Selected-summary art, `44×62` |
 | 13 | `decks/create-pre-filled.tsx:138` | **none** | `58×81` thumb inside `md:hidden` (`:129`) |
@@ -85,7 +108,8 @@ switches between a washed band and a bare card face across a single breakpoint.
 6. **Everything still standing at the top edge plates itself.** The workshop discussed the menu
    button, but it is not the only tenant up there: commander detail draws `IdentityPips` absolutely
    at `top: 14, right: 16` (`detail.tsx:253-256`), deck cards carry an overflow control, and
-   `spine-mobile.tsx:133` mounts a `FullCardTrigger` at `top: 13, right: 16`. The
+   `spine-mobile.tsx:140` mounts a `FullCardTrigger` at `top: 13, right: 16`, and since PR #517 the
+   desktop card face carries a fourth placement of that same control at `left: 12, bottom: 12`. The
    locked decision is the principle — a local plate per control, chosen over leaving glyphs
    unprotected and over a lighter scrim, because a plate is local and a scrim taxes the whole crop.
    **Design must enumerate every element at the top edge of every surface in §1 and say what carries
@@ -136,6 +160,12 @@ not fresh drawings on a blank surface.
 Design should treat `design/design_handoff_the99_art_wash/` and
 `design/design_handoff_the99_deck_details_wash/` as the tables being amended, and state the
 amendments explicitly so the audit can check them one by one rather than re-deriving the whole wash.
+
+**One of those amendments has already landed and is not this round's to make.** Both of those tables
+specify a full-bleed ambient copy of the crop behind the `left-portrait` portrait; PR #517 deleted it
+from `art-wash.tsx` on 2026-09-11 and Hugh ratified the amendment on 2026-09-12. The documents still
+describe it, each with an errata; the code does not draw it. This round inherits that state rather
+than reopening it, and adds no ambient layer of its own.
 
 ---
 
