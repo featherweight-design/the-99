@@ -145,6 +145,21 @@ describe("BuilderShell — the gate on Commit as v1", () => {
     expect(offers()).toHaveLength(0);
   });
 
+  // Past the body size the deck is `Over`, and the action it is waiting for is a
+  // cut, not a commit. `commitDeckVersion` checks no count, so an offer here
+  // would freeze an illegal list as v1 — and a version cannot be uncut.
+  it("withholds it past a full body", async () => {
+    await mount(makeDeck(101), BREW);
+    expect(offers()).toHaveLength(0);
+  });
+
+  // The pair-aware ceiling is 98, so 99 matched cards is over for this deck even
+  // though it is exactly a single commander's body.
+  it("withholds it one card past a partnered deck's body", async () => {
+    await mount(makeDeck(99, PARTNER), BREW);
+    expect(offers()).toHaveLength(0);
+  });
+
   // Already committed: the banner owns this deck's commit, and the spine offering
   // a first one beside it would name a version that already exists.
   it("withholds it on a deck that already has a version, however full", async () => {

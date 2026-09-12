@@ -701,7 +701,13 @@ export function BuilderShell({
               // its body size, so a deck at 98 matched plus one unnamed line
               // would cut a v1 of 98 cards under an offer that called the list
               // complete.
-              offerFirstCommit={draft?.version === null && deck.built >= bodySize}
+              //
+              // An exact match, not `>=`: past the body size the deck is `Over`,
+              // whose one next action is to cut the excess. An import or a list
+              // edit can leave a brew above its commander-specific ceiling, and
+              // `commitDeckVersion` does not check the count, so a `>=` gate
+              // would offer to freeze an illegal list as v1.
+              offerFirstCommit={draft?.version === null && deck.built === bodySize}
               {...commitments}
               // No link while the Shopping list is what the player is looking
               // at: it would point at the screen they are already on. Called
