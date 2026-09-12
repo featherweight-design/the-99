@@ -170,45 +170,6 @@ export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
   silentResult, resultTrailing, announce, announceId, revision, scrollCompactControls, warnResult,
 }: FilterChassisProps) {
-  const controlsRef = React.useRef<HTMLDivElement>(null);
-  // A form change unmounts controls: the compact triggers and the wide form's
-  // panels are different elements, and a mount that keys on the form remounts
-  // its panels outright. Whatever held focus goes with them, and an unmount is
-  // not a close — `FilterPanel.close()` is the path that hands focus back to a
-  // trigger, and it never runs. Focus falls to `body`, so the next Tab starts
-  // from the top of the document rather than the filters the reader was in.
-  //
-  // Asks the only question that matters after the unmount, as the set surface
-  // does: is focus now on nothing, or on something with no box? Either way it
-  // lands on the control row, which is where the reader already was.
-  //
-  // Gated on focus having been IN here, which is the only case with anything to
-  // rescue. Two things would otherwise trip it. On mount
-  // `document.activeElement` is `body` on any route the reader has not clicked
-  // into, so an ungated version takes focus off the top of every page that
-  // loads. And `useMinWidth` returns its server snapshot `false`, so a wide
-  // first load reports `compact` and corrects to `wide` during hydration — a
-  // form change by the letter of it, with nothing unmounted that the reader was
-  // ever in.
-  //
-  // `focusout` carries a `relatedTarget` when focus moves somewhere else, and
-  // none when the element simply goes away. The unmount case is the one being
-  // caught, so a null target leaves the flag standing.
-  const heldFocus = React.useRef(false);
-  const lastForm = React.useRef(form);
-  React.useEffect(() => {
-    if (lastForm.current === form) return;
-    lastForm.current = form;
-    if (!heldFocus.current) return;
-    const id = requestAnimationFrame(() => {
-      const active = document.activeElement as HTMLElement | null;
-      if (!active || active === document.body || active.getClientRects().length === 0) {
-        controlsRef.current?.focus();
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, [form]);
-
   return (
     <div
       // The horizontal padding follows the chassis's own form, not a Tailwind
@@ -222,37 +183,12 @@ export function FilterChassis({
         form === "wide" ? "px-[22px]" : "px-[16px]",
       ].join(" ")}
       data-chassis-form={form}
-      onFocusCapture={() => {
-        heldFocus.current = true;
-      }}
-      onBlurCapture={(e) => {
-        const next = e.relatedTarget as Node | null;
-        if (next) {
-          heldFocus.current = e.currentTarget.contains(next);
-          return;
-        }
-        // No target covers two different events: the focused control was
-        // removed — the case the rescue exists for — and an ordinary blur to
-        // nothing, which must NOT leave the flag standing or the next
-        // breakpoint crossing pulls focus off wherever the reader has gone.
-        // Only a removal can be told from the other, and only once it has
-        // happened, so the question is asked a frame later.
-        const blurred = e.target as HTMLElement;
-        requestAnimationFrame(() => {
-          if (blurred.isConnected) heldFocus.current = false;
-        });
-      }}
     >
       {/* Row 1 — never wraps (decision 18). There are two forms and nothing in
           between: a sort landing on its own line reads as a bug, which is what
           R1's wrapping row was reported as. `min-w-0` on the leading group is
           what makes search the only shrinking child. */}
-      <div
-        ref={controlsRef}
-        tabIndex={-1}
-        className="flex items-center gap-[8px] outline-none"
-        data-chassis-row="controls"
-      >
+      <div className="flex items-center gap-[8px]" data-chassis-row="controls">
         {/* No `overflow-hidden` here, ever. `FilterPanel` puts its desktop
             popover in an absolutely positioned descendant of its own relative
             root — its popover is `absolute` with a computed `left` — so clipping this group hides

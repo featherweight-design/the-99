@@ -290,67 +290,10 @@ describe("FilterChassis", () => {
     expect(container.querySelectorAll("[aria-live]")).toHaveLength(1);
   });
 
-  it("catches focus when a form change unmounts whatever held it", async () => {
-    // A form change unmounts controls, and an unmount is not a close: the path
-    // that hands focus back to a trigger never runs, so focus falls to `body`
-    // and the next Tab restarts at the top of the document.
-    const { container, rerender } = render(
-      <FilterChassis {...base} form="compact" controls={<button type="button">Filter</button>} chips={[]} />,
-    );
-    fireEvent.focus(screen.getByRole("button", { name: "Filter" }));
-    screen.getByRole("button", { name: "Filter" }).focus();
-    rerender(
-      <FilterChassis {...base} form="wide" controls={<button type="button">Filter</button>} chips={[]} />,
-    );
-    // `body` is what focus falls to; the rescue runs on the next frame.
-    (document.activeElement as HTMLElement)?.blur();
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    expect(container.querySelector("[data-chassis-row='controls']")).toHaveFocus();
-  });
-
-  it("leaves focus alone on mount, on a route the reader has not clicked into", () => {
-    // Ungated, the rescue would take focus off the top of every route that
-    // loaded, because `document.activeElement` is `body` until something is
-    // clicked.
-    const { container } = render(<FilterChassis {...base} controls={null} chips={[]} />);
-    expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
-  });
 
 
-  it("leaves focus alone when hydration corrects the form, with nobody in the frame", async () => {
-    // `useMinWidth` returns its server snapshot `false`, so a wide first load
-    // renders compact and corrects during hydration. That is a form change with
-    // nothing unmounted the reader was ever in, and stealing focus for it would
-    // move every wide page's focus on load.
-    const { container, rerender } = render(
-      <FilterChassis {...base} form="compact" controls={null} chips={[]} />,
-    );
-    rerender(<FilterChassis {...base} form="wide" controls={null} chips={[]} />);
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
-  });
 
 
-  it("stands down after an ordinary blur to nothing", async () => {
-    // A blur to `body` reports no `relatedTarget`, exactly as a removal does.
-    // Treating it as a removal left the flag set, so the next form change
-    // pulled focus off whatever the reader had moved to.
-    const { container, rerender } = render(
-      <FilterChassis {...base} form="compact" controls={<button type="button">Filter</button>} chips={[]} />,
-    );
-    const trigger = screen.getByRole("button", { name: "Filter" });
-    fireEvent.focus(trigger);
-    trigger.focus();
-    fireEvent.blur(trigger);
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    rerender(
-      <FilterChassis {...base} form="wide" controls={<button type="button">Filter</button>} chips={[]} />,
-    );
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
-  });
+
 
 });
