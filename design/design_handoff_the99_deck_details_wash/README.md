@@ -343,7 +343,7 @@ inset at 254px with nothing coincident left to explain.
 
 | Surface | Band | Strategy | Art | Scrim | Labels |
 |---|---|---|---|---|---|
-| Deck details · ≥768px | `168px` | `left-portrait` | `.80` sharp / ~~`.20` ambient~~ **(the ambient half is removed — errata at the foot of this file)** | h: `.30 / .26 @134px / .78 @230px / flat @240px`; v: `.30 / .10 / .42` | past the 254px inset, on flat ground |
+| Deck details · ≥768px | `168px` | `left-portrait` | ~~`.80`~~ **`.92`** sharp (this row predates the lift; `PORTRAIT_BANDS[168]`) / ~~`.20` ambient~~ **(removed — errata at the foot of this file)** | h: `.30 / .26 @134px / .78 @230px / flat @240px`; v: `.30 / .10 / .42` | past the 254px inset, on flat ground |
 | Deck details · <768px | aspect `2.2/1` | `cover` | `.58` | `.66 / .22 @26% / .62 @50% / .90` | bottom, centred |
 | Commander hero · <768px | aspect `1.6/1` | `cover` | `.58` | `.66 / .22 @26% / .62 @50% / .90` | bottom |
 

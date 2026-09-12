@@ -22,7 +22,9 @@ first — this document records only what **changes**.
 
 The amendment below fixed legibility and overcorrected: at art `.58` under the shipped ramps, only
 33–45% of the picture survived mid-band, which reads as a dimmed screen rather than a design. The
-recovery lifts art to `.80` (`.92/.28` on rows, `.95/.22` on the 72px resume row) and pays for it
+recovery lifts art to `.80` (`.92`~~`/.28`~~ on rows, `.95`~~`/.22`~~ on the 72px resume row — the
+struck halves are the ambient layer's, removed 2026-09-11 and ratified 2026-09-12; only the sharp
+figures are current) and pays for it
 by **holding each ramp's dark value across its whole label block instead of ramping through it** —
 which also fixes a live defect: top-labelled subtitles ship at **3.16:1**, under the floor, on deck
 cards and Home ready-to-build.
@@ -206,9 +208,9 @@ Yawgmoth; Azog, Moria's Ruin. Use double quotes inside `url()` **and** append `.
 | Surface | Band | Strategy | Geometry | Art opacity |
 |---|---|---|---|---|
 | Deck card | aspect `2.2/1` | `cover` | focal `center top`, labels top | `.58` |
-| Commander row | `148px` | `left-portrait` | portrait `203px`, mask `0 58%`, scrim `118/203/264px`, ~~ambient `cover top .20`~~ **(removed 2026-09-11, ratified 2026-09-12 — see the errata below)**, labels at band baseline | `.80` sharp |
+| Commander row | `148px` | `left-portrait` | portrait `203px`, mask `0 58%`, scrim `118/203/264px`, ~~ambient `cover top .20`~~ **(removed 2026-09-11, ratified 2026-09-12 — see the errata below)**, labels at band baseline | ~~`.80`~~ **`.92`** sharp — this row predates the lift below, which took it to `.92`; `PORTRAIT_BANDS[148]` |
 | Home · ready to build | aspect `2.2/1` | `cover` | focal `center top`, labels top | `.58` |
-| Home · resume | `72px` | `left-portrait` | portrait `99px`, mask `0 62%`, scrim `0/58/99/138px`, ~~ambient `cover top .14`~~ **(removed, same errata)**, type inset `116px`, **no text-shadow** | `.85` sharp |
+| Home · resume | `72px` | `left-portrait` | portrait `99px`, mask `0 62%`, scrim `0/58/99/138px`, ~~ambient `cover top .14`~~ **(removed, same errata)**, type inset `116px`, **no text-shadow** | ~~`.85`~~ **`.95`** sharp — same lift; `PORTRAIT_BANDS[72]` |
 
 Constants across all four: L1 `#0E0C09`, focal `center top`, divider `1px #2A241D`, ground
 `#1A160F`, chip-on-art `#14110E` + `1px #3A3229`, title `#F4EFE3`, subtitle `#C6B79A`.

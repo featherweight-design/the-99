@@ -644,7 +644,7 @@ Values below are the canvas's.
 ## State Coverage — Commander row
 | State | Triggering condition | What renders | Key props required |
 |---|---|---|---|
-| Art present | `art_crop` resolves | ~~ambient `.20` +~~ sharp `.80` masked at 58% + horizontal px scrim + vertical scrim + rank / name / pips / subtitle / fit chip (the ambient layer is superseded — see the errata at the head of this file) | `imageUri`, rank, name, type line, colorIdentity, fit, stats, synergy %, ownership, receipts |
+| Art present | `art_crop` resolves | ~~ambient `.20` +~~ sharp ~~`.80`~~ **`.92`** (the lift; `PORTRAIT_BANDS[148]`) masked at 58% + horizontal px scrim + vertical scrim + rank / name / pips / subtitle / fit chip (the ambient layer is superseded — see the errata at the head of this file) | `imageUri`, rank, name, type line, colorIdentity, fit, stats, synergy %, ownership, receipts |
 | No art | `art_crop` missing | README: colour-identity gradient, same opacity/scrim, no layout shift; band never collapses. Not drawn. | `colorIdentity` |
 | Reduced transparency | README only, not drawn | L2 → `.3`; L3 stops → `.95 / .6 / .85` | — |
 
@@ -785,7 +785,7 @@ spec**; the parity variant exists so the difference is checkable. Both are trans
 ## State Coverage — Home · Resume
 | State | Triggering condition | What renders | Key props required |
 |---|---|---|---|
-| Art present | `art_crop` resolves | ~~ambient `.14` +~~ sharp `.85` masked at 62% + px horizontal scrim + type starting at `116px`, no text-shadow anywhere (the ambient layer is superseded — see the errata at the head of this file) | `imageUri`, deck name, commander name (subtitle), colorIdentity, tag, relative timestamp |
+| Art present | `art_crop` resolves | ~~ambient `.14` +~~ sharp ~~`.85`~~ **`.95`** (the lift; `PORTRAIT_BANDS[72]`) masked at 62% + px horizontal scrim + type starting at `116px`, no text-shadow anywhere (the ambient layer is superseded — see the errata at the head of this file) | `imageUri`, deck name, commander name (subtitle), colorIdentity, tag, relative timestamp |
 | No art | `art_crop` missing | README: colour-identity gradient at same opacity/scrim, no layout shift. Not drawn. | `colorIdentity` |
 | Long subtitle | subtitle exceeds available width | `nowrap` + ellipsis; README open item 1 notes the `116px` inset costs ~27px of subtitle vs the parity variant (READINESS closes it as moot — the shipped row prints the deck name) | — |
 | Divider / flat ground | n/a | no divider exists on this row; flat ground is reached horizontally at the scrim's `138px` stop | — |

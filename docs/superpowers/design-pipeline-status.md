@@ -49,7 +49,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | 🎨 | Design in flight (workshop / handoff iteration / audit) |
 | 🔨 | Implementation in flight — design is done and the build has started, but not every planned PR has merged |
 | 🚦 | Paused at any stage — awaiting Hugh's input, an external dependency, or a deliberate decision not to build yet. **Widened 2026-09-07**: this read "paused mid-workshop", which had no room for an item whose design and plan are both merged and whose build is deliberately deferred. #10 is the first of those, and stretching 🟢 to hold it would have made "ready for implementation" mean two things — one of which is "do not pick this up" |
-| ⚖️ | Built, awaiting a ratification — eng changed or extended what a handoff specifies (a value, or a treatment's scope) as the fix for a reported defect, and Design has not ruled. **Added 2026-09-12**, because the two art-wash and commander-detail amendments fit nothing above: 🟡 is an audited Orange verdict awaiting a Design ROUND, and 🟢 is design complete BEFORE a build. This is neither — the work ships, an errata records it in the handoff and its readiness file, and what is outstanding is a yes/no rather than a drawing. A row here names what was changed, what it costs to revert, and the alternatives already considered |
+| ⚖️ | Built, awaiting a ratification — eng changed or extended what a handoff specifies (a value, or a treatment's scope) as the fix for a reported defect, and Design has not ruled. **Added 2026-09-12**, because the two art-wash and commander-detail amendments fit nothing above: 🟡 is an audited Orange verdict awaiting a Design ROUND, and 🟢 is design complete BEFORE a build. This is neither — the work ships, an errata records it in the handoff — and in its `READINESS.md` where one exists, which the earliest handoffs predate — and what is outstanding is a yes/no rather than a drawing. A row here names what was changed, what it costs to revert, and the alternatives already considered |
 | 🕰️ | Backlog — labelled `type: design`, design cycle not started (no workshop, no brief). Ranked; the top of this list is what Design picks up next |
 | ✅ | Fully implemented + shipped |
 
@@ -120,8 +120,8 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 Holds work that SHIPPED while changing or extending what a handoff specifies — a value, or a
 treatment's scope — as the fix for a reported defect, built before Design ruled. Each row names what changed, what reverting costs, and the alternatives
-already weighed, so the ruling is a yes/no rather than a re-investigation. An errata in the handoff
-and its `READINESS.md` carries the same account; this table is only the index.
+already weighed, so the ruling is a yes/no rather than a re-investigation. An errata in the handoff —
+and in its `READINESS.md` where one exists — carries the same account; this table is only the index.
 
 | Amendment | Handoff | Shipped in | Ruling |
 |---|---|---|---|

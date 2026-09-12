@@ -610,13 +610,20 @@ beside the name field — never in the dock (dock stays summary + button only).
 | border | 1px solid var(--border) | 1px solid var(--border) |
 | background | var(--surface-inset) | var(--surface-inset) |
 
-### Art layers (`ArtWash` `left-portrait`, band 72 — primary only, unchanged)
+### Art layers (`ArtWash` `left-portrait`, band 72 — primary only)
+
+> **Errata (2026-09-12):** the three `ambient` rows below describe a full-bleed copy of the crop that
+> `ArtWash` no longer draws — removed in PR #517 and ratified the same day, because past the
+> portrait's own width it read as a second, differently-scaled rendering of the same picture. This
+> table shares the primitive with `design-tables/art-wash.md`, which carries the same errata. The
+> `portrait` and `scrim` rows are untouched; the portrait's opacity is **`.95`**, this table's `.85`
+> predating the lift recorded in `design_handoff_the99_art_wash/`.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| ambient position | absolute; inset 0 | absolute; inset 0 |
-| ambient background | **primary** `art_crop` `center top / cover` | same |
-| ambient opacity | 0.14 | 0.14 |
+| ~~ambient position~~ | ~~absolute; inset 0~~ | ~~absolute; inset 0~~ |
+| ~~ambient background~~ | ~~**primary** `art_crop` `center top / cover`~~ | ~~same~~ |
+| ~~ambient opacity~~ | ~~0.14~~ | ~~0.14~~ |
 | portrait position | absolute; left 0; top 0; bottom 0 | same |
 | portrait width | 99 (= band 72 × 1.37) | 99 |
 | portrait background | **primary** `art_crop` `left center / auto 100%` | same |

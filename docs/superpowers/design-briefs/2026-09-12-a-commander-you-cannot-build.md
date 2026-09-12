@@ -100,6 +100,14 @@ what fits.
 
 ## §4 Four states, not one
 
+**Five cases, because the data can be absent.** The rollup fails sometimes — `loadCommanderRankings`
+catches it, sets `availOk: false` and has no availability map at all
+(`src/lib/commanders/rankings.ts:71-82`), which is the same condition that already disables
+`Free cards only` and draws its struck segment. **Unknown must never render as free**, which is what
+a naive four-state mapping would do: no map, no claim, no marker, and a commander reads as buildable
+on no evidence. Say nothing at all in that case — no marker, and the lane's existing degraded banner
+already explains why — or draw an explicit unknown. Design's call, and it is question 8.
+
 The row and the hero each need to say one of:
 
 - **Sleeved** — the player owns at least one copy AND committed claims match the owned copies
@@ -171,3 +179,5 @@ what it likes.
    narrower — *can I build this one* — and the answer to that is `free > 0` whatever a brew wants, so
    the two may legitimately diverge.
 7. Does `over` get its own treatment here, or fold into the sleeved one? See §4.
+8. When the availability rollup fails (`availOk: false`), do these surfaces draw nothing, or an
+   explicit unknown? Whichever, it must not read as free. See §4.
