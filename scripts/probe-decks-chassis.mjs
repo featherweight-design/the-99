@@ -77,11 +77,30 @@ async function measure(page) {
     const chips = q("[data-chassis-row='chips']");
     const grid = document.querySelector("ul");
     if (!controls || !chips) return null;
-    // A row has wrapped when its children occupy more than one line box, which
-    // is the only definition that survives a font change.
-    const tops = [...controls.children].map((c) => Math.round(c.getBoundingClientRect().top));
+    // Measure the CONTROLS, not the row's three structural children. The
+    // leading group, the hairline and the sort wrapper have deliberately
+    // different heights, so their `top` values differ even on one line — the
+    // first version of this probe compared those and could both fail a correct
+    // row and pass a wrapped one. What wraps is a control inside the leading
+    // group, so that is what gets measured, with the sort trigger alongside it.
+    const leading = controls.firstElementChild;
+    const trailing = controls.lastElementChild;
+    const items = [...(leading?.children ?? []), ...(trailing?.children ?? [])];
+    // Centres, not tops: two controls of different heights on one line share a
+    // centre and not a top.
+    const centres = items.map((c) => {
+      const r = c.getBoundingClientRect();
+      return Math.round(r.top + r.height / 2);
+    });
+    // Tolerate a pixel of rounding, then count distinct lines.
+    const lineSet = centres.reduce((acc, y) => {
+      if (!acc.some((seen) => Math.abs(seen - y) <= 2)) acc.push(y);
+      return acc;
+    }, []);
+    const tops = lineSet;
     return {
-      lines: new Set(tops).size,
+      lines: tops.length,
+      controlCount: items.length,
       chipsHeight: Math.round(chips.getBoundingClientRect().height),
       gridWidth: grid ? Math.round(grid.getBoundingClientRect().width) : null,
       hasColumn: Boolean(q("[data-filter-column]")),
@@ -108,6 +127,10 @@ for (const vp of WIDTHS) {
   check(before.hasHairline, `${vp.name}: sort is not separated by a hairline`);
   check(before.lines === 1, `${vp.name}: the control row wrapped onto ${before.lines} lines`);
   check(
+    before.controlCount > 0,
+    `${vp.name}: measured no controls — the probe is anchored to the wrong element`,
+  );
+  check(
     before.form === (vp.wide ? "wide" : "compact"),
     `${vp.name}: form is ${before.form}, expected ${vp.wide ? "wide" : "compact"}`,
   );
@@ -124,7 +147,7 @@ for (const vp of WIDTHS) {
 
   await page.screenshot({ path: `/tmp/probe-decks-chassis-${vp.name}.png`, fullPage: false });
   console.log(
-    `${vp.name.padEnd(14)} form=${before.form} lines=${before.lines} chips=${before.chipsHeight}px grid=${before.gridWidth}px`,
+    `${vp.name.padEnd(14)} form=${before.form} controls=${before.controlCount} lines=${before.lines} chips=${before.chipsHeight}px grid=${before.gridWidth}px`,
   );
 }
 

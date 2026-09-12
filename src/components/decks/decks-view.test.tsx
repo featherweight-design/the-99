@@ -195,6 +195,16 @@ describe("DecksView", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("opens a visible sheet across the whole compact band, not just under 640px", () => {
+    // `DeckFilterSheet` was `sm:hidden`. With the chassis switching at 1000,
+    // that left 640-999px opening a dialog CSS had already hidden — the
+    // filters unreachable across the entire band.
+    render(view([deckOf()]));
+    openFilters();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.parentElement?.className ?? "").not.toMatch(/\bsm:hidden\b/);
+  });
+
   it("keeps New deck and Import in the header at every state", () => {
     render(view([deckOf()]));
     openFilters();

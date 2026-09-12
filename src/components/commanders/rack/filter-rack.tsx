@@ -25,10 +25,10 @@ import {
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
 import { filterCopy } from "../../../lib/copy/lanes";
-import { useIsWide } from "../../ui/use-is-wide";
+import { useMinWidth } from "../../ui/use-min-width";
 import { AvailabilityControl } from "./availability-control";
 import { chipsFor } from "./chip-line";
-import { FilterChassis, type FilterChip } from "../../ui/filter-chassis";
+import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../../ui/filter-chassis";
 import { ColourControl } from "./colour-control";
 import { FilterSheet } from "./filter-sheet";
 import { OrderControl } from "./order-control";
@@ -58,7 +58,11 @@ export function FilterRack({
       a list already in memory. */
   orderPending?: boolean;
 }) {
-  const wide = useIsWide();
+  // The chassis's breakpoint, not this file's own: `useIsWide` is 1024 and the
+  // chassis switches at 1000, which would leave these two lanes compact from
+  // 1000-1023 while `/decks` was already wide — a route-specific breakpoint,
+  // which is the thing one frame exists to stop.
+  const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
   const [sheetOpen, setSheetOpen] = useState(false);
   const orders = ORDER_OPTIONS[lane];
 
@@ -103,7 +107,13 @@ export function FilterRack({
     <FilterChassis
       form={wide ? "wide" : "compact"}
       chips={chassisChips}
-      onClearAll={() => onChange(defaultParams(lane))}
+      onClearAll={() =>
+        // `defaultParams` resets the order too, and this control's accessible
+        // name promises the sort is unchanged. Order lives in the chassis's
+        // own slot now, so clearing a filter must not move it — on discover it
+        // would also fire a fresh request for a ranking nobody asked for.
+        onChange({ ...defaultParams(lane), order: params.order })
+      }
       resultLine={`${resultSentence(shown, total, lane)}${
         excludedByExactly === null
           ? ""

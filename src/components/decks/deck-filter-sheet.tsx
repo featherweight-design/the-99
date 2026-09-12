@@ -153,7 +153,12 @@ function SheetBody({
   return (
     // z-50, not z-40: the phone tab bar is z-40 and paints later, so at z-40 it
     // sits over the sheet's own footer and Clear cannot be clicked at all.
-    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:hidden">
+    // Visible wherever the chassis is compact. This was `sm:hidden`, which is
+    // 640px: between 640 and 999 the compact triggers opened this dialog and
+    // CSS hid it, leaving the filters unreachable across that whole band.
+    // `max-[999px]:flex` rather than a `sm:` utility, because the chassis owns
+    // the breakpoint and Tailwind has no stop at 1000.
+    <div className="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex">
       <div
         aria-hidden="true"
         onClick={onDismiss}
