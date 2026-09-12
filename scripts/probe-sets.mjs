@@ -8,6 +8,9 @@
 //   2. The dashed edge resolves to the theme's --fg-locked and not --border-dashed —
 //      the token swap that took the edge from 1.46:1 to 3.16:1 against the plate.
 //   3. Owned and missing cells occupy IDENTICAL boxes, so no filter flip reflows the grid.
+//   4. The one grid declaration: the track it produces, the height derived from it at 63/88,
+//      the column count at both widths, and a last column flush to the grid's right edge.
+//      Every one of those is a number only a layout engine can report.
 //
 // Every check prints what it measured. A check that cannot say what it saw is not a check.
 //
@@ -388,7 +391,8 @@ async function run() {
       `head text begins: ${JSON.stringify(head.split("\n").slice(0, 3).join(" / "))}`,
     );
 
-    // 390px: the same rulings have to hold on a phone, where the caption drops rarity.
+    // 390px: the same rulings have to hold on a phone, and since R2 the caption is one
+    // format at every width rather than dropping its rarity word.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: "networkidle" });
     await waitForCells(page);
@@ -411,7 +415,7 @@ async function run() {
     }
 
     // Counted from the rendered rows rather than from the arithmetic, which is how the old
-    // 116px cell was caught silently producing two columns where three were designed.
+    // fixed cell was caught silently producing two columns where three were designed.
     const columns = await page.evaluate(() => {
       const cells = [...document.querySelectorAll("button[aria-label]")]
         .filter((b) => /in your collection/.test(b.getAttribute("aria-label")));

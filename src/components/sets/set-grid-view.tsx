@@ -7,11 +7,16 @@
 // /collection's search, type and availability filters are not applied here, and colour,
 // rarity and missing-only are not applied back. Different populations, different params.
 //
-// One density, 116x162, and no toggle. 88px was drawn and rejected: it truncates the card
-// name at ~13 characters, and the name is the only thing in a dimmed cell a reader can
-// match against memory. The scroll is paid for by the sticky head, the extras jump, and
-// missing-only, which removes the cells the reader is done with rather than shrinking
-// everything.
+// One density and no toggle, set by ONE declaration on the grid and by nothing on the cell:
+// `repeat(auto-fill, minmax(146px, 1fr))` (addendum R2 §27). It measures ~150x210 at 1180
+// and 174x243 at 390, and the track — not a breakpointed literal — is what a cell is wide.
+// The upper bound is structural rather than declared: a track can never reach `2F + gap`,
+// because at that width another column fits and the count goes up instead.
+//
+// A smaller cell was drawn and rejected: at 88px the card name truncates at ~13 characters,
+// and the name is the only thing in a dimmed cell a reader can match against memory. The
+// scroll is paid for by the sticky head, the extras jump, and missing-only, which removes
+// the cells the reader is done with rather than shrinking everything.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";

@@ -125,7 +125,7 @@ export function SetCell({
 
   return (
     // The cell is the only target. No control sits inside it at any width — a checkbox on
-    // 214 cells would be a second selection mechanism and a 16px control inside a 116px
+    // 214 cells would be a second selection mechanism and a 16px control inside a ~150px
     // plate. Tapping opens the card modal, where the shipped printing picker already lives.
     <button
       type="button"
@@ -145,7 +145,7 @@ export function SetCell({
         }}
       >
         {cell.imageUriSmall ? (
-          // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote and unsized; next/image would need a loader per host for no gain at 116px
+          // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote and unsized; next/image would need a loader per host for no gain at a ~150px track
           <img
             src={cell.imageUriSmall}
             alt=""
