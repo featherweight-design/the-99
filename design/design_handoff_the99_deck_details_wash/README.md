@@ -412,7 +412,7 @@ never built.
    card and title at both widths. Moot for the header itself now the thumbnail is gone, but
    `design_handoff_the99_deck_reimport/` still specs the type sizes.
 
-## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, pending ratification)
+## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, ratified 2026-09-12)
 
 **Every `left-portrait` band shipped two copies of the art**, not one: the masked portrait at `.80`
 sharp, and under it the same `art_crop` drawn `cover` across the whole band at the `.20` ambient this
@@ -431,6 +431,6 @@ Contrast is unaffected in the direction that matters: removing a lightening laye
 ground ink stands on, and `wash-contrast.test.ts` passes every floor with its composition model
 updated to match.
 
-**This has not been through Design.** It was taken as the defect exactly as reported. Ratify or
-overturn; if the ambient atmosphere is wanted back, it needs a treatment that does not restate the
-crop — the two candidates are a blur past the mask edge, or a flat tint sampled from the art.
+**Ratified by Hugh, 2026-09-12: leave it gone.** It was built as the defect exactly as reported and
+ruled on after the fact. If the atmosphere is ever wanted back, it needs a treatment that does not
+restate the crop — a blur past the mask edge, or a flat tint sampled from the art.

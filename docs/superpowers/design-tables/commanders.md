@@ -1052,7 +1052,7 @@
 
 ### "⛶ Full card" affordance chip
 
-> **Errata (2026-09-11, pending ratification):** this chip is drawn on the desktop commander
+> **Errata (2026-09-11, ratified 2026-09-12):** this chip is drawn on the desktop commander
 > detail page as well, inside the 63/88 card frame at `left: 12px; bottom: 12px`, with the frame
 > as its tap target. The table below specifies mobile only, on the reasoning that desktop already
 > shows the whole card — which was true when this control opened a full-card lightbox and is not

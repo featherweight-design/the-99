@@ -1,8 +1,7 @@
 # Readiness Review — Commander art wash · scrim recovery
 
-**Verdict:** 🟢 Green on everything except one value pair, which is 🟡 **pending
-re-ratification (2026-09-11): the `.28` / `.22` ambient half of the band lift is no longer
-drawn.** See the errata at the foot of this file; nothing else in this review is affected.
+**Verdict:** 🟢 Green. **Amended 2026-09-12 and ratified the same day:** the `.28` / `.22`
+ambient half of the band lift is no longer drawn. See the errata at the foot of this file.
 **Audited:** 2026-09-09 (R1 Orange, same day; R2 Green after Design took all three corrections)
 **Related ticket(s):** none filed — the handoff arrived as a direct design drop.
 **Deliverable:** `The 99 - Scrim Recovery.dc.html`. The R6 amendment
@@ -167,7 +166,7 @@ ground ink stands on. `wash-contrast.test.ts` passes with its composition model 
 what the component now stacks, and `scripts/probe-art-wash.mjs` fails if any band draws the crop
 twice again.
 
-**Status: pending ratification.** This was taken as the defect exactly as reported, without a
-Design round-trip, so the verdict above is Green on everything except this one value pair. If the
-ambient atmosphere is wanted back, it needs a treatment that does not restate the crop — a blur
-past the mask edge, or a flat tint sampled from the art are the two candidates. Ratify or overturn.
+**Ratified by Hugh, 2026-09-12: leave it gone.** It was built as the defect exactly as reported and
+ruled on after the fact, so the verdict above stands whole. If the ambient atmosphere is ever wanted
+back, it needs a treatment that does not restate the crop — a blur past the mask edge, or a flat tint
+sampled from the art are the two candidates that would.

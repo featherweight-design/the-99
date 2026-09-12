@@ -276,7 +276,7 @@ to draw against art. The four retired status-border colours are not coming back.
    Confirm the deck grid's narrowest column still yields a band tall enough to read.
 
 
-## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, pending ratification)
+## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, ratified 2026-09-12)
 
 **Every `left-portrait` band shipped two copies of the art**, not one: the masked portrait at its
 sharp opacity, and under it the same `art_crop` drawn `cover` across the whole band at the ambient
@@ -295,9 +295,9 @@ Contrast is unaffected in the direction that matters: removing a lightening laye
 ground ink stands on, and `wash-contrast.test.ts` still passes every floor with its composition model
 updated to match.
 
-**This has not been through Design.** It was taken as the defect exactly as reported. Ratify or
-overturn; if the ambient atmosphere is wanted back, it needs a treatment that does not restate the
-crop — the two candidates are a blur past the mask edge, or a flat tint sampled from the art.
+**Ratified by Hugh, 2026-09-12: leave it gone.** It was built as the defect exactly as reported and
+ruled on after the fact. If the atmosphere is ever wanted back, it needs a treatment that does not
+restate the crop — a blur past the mask edge, or a flat tint sampled from the art.
 
 ## Files
 

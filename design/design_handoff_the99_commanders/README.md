@@ -151,7 +151,7 @@ sticky bottom bar on phone, a sticky side button on desktop.
   guidance); the mockup uses CSS boxes.
 
 
-## Errata — the desktop card frame carries the `Card details` control too (2026-09-11, pending ratification)
+## Errata — the desktop card frame carries the `Card details` control too (2026-09-11, ratified 2026-09-12)
 
 **What changed.** On the commander detail page's desktop left column, the 63/88 card frame now
 carries the same `⛶ Card details` chip the phone's art header does, and the frame itself is the tap
@@ -175,6 +175,7 @@ each edge, using the same plated chip as every other placement. It sits over the
 rather than over its rules text. The deck header's desktop placement is the precedent (`deck-desktop`,
 bottom-left at 16/14px); this frame is narrower, hence 12px.
 
-**Status: pending ratification.** No Design round-trip preceded it. Ratify, move the placement, or
-overturn — if the answer is that desktop should reach printings and the flip some other way, the
-control comes out in one line.
+**Ratified by Hugh, 2026-09-12: bottom-left, as shipped.** No Design round-trip preceded it; the
+placement was ruled on after the fact and stands, matching the deck header's own desktop placement.
+The alternatives offered and declined were the frame's top-right, a bare clickable frame with no
+chip, and a control below the frame beside the identity pips.
