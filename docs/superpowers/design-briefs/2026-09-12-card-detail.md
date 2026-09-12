@@ -39,13 +39,16 @@ branch, so any amendment lands in both.
 `⛶ Card details` pill to the desktop commander card frame
 (`commanders/detail.tsx:483`, `commanders/full-card-trigger.tsx:22` with
 `placement: "commander-desktop"`), so desktop now reaches this modal from the commander page.
-Two consequences for this brief. First, **the flip now has a desktop route on every surface that
-draws a commander.** The control itself has always rendered at both widths (34px in the desktop art
-column, `card-modal.tsx:592-598`) and desktop deck surfaces already opened the modal — the decklist
-row and the deck spine's own `⛶` pill (`decks/spine-desktop.tsx:133`) — but the commander page's
-desktop column was a bare card face with no route in, so a two-faced commander was unflippable
-exactly where a player goes to look at one. The animated flip therefore amends a shipped control
-rather than routing a new one. Second, `detail.tsx:471-484`
+Two consequences for this brief. First, **the flip now has a desktop route from the commander
+page** — and from there only. The control itself has always rendered at both widths (34px in the
+desktop art column, `card-modal.tsx:592-598`) and desktop deck surfaces already opened the modal —
+the decklist row and the deck spine's own `⛶` pill (`decks/spine-desktop.tsx:133`) — but the
+commander page's desktop column was a bare card face with no route in, so a two-faced commander was
+unflippable exactly where a player goes to look at one. #517 fixed that one surface and no other:
+`commanders/rec-card.tsx` and `commanders/discovery-row.tsx` still draw a commander's image with no
+card-modal trigger of their own, and a reader reaches the modal from them only by opening the
+commander page first. The animated flip therefore amends a shipped control rather than routing a new
+one, and the drawing should not assume every commander render opens it. Second, `detail.tsx:471-484`
 still draws its own 63/88 card face in the sticky desktop column, so a reader on desktop has a
 card picture on the page *and* a smaller one inside the modal the picture opens. That is the
 regression zoom exists to close, and it is already on the record: when the commander page's
@@ -65,15 +68,19 @@ the detail panel that row opens says nothing about money.
 Two constraints Design should know before choosing a home for the figure, because each rules out
 a placement:
 
-1. **Price is keyed by printing, and the app's existing read is keyed by card.**
-   `printing_prices.scryfall_id` is the primary key (`db/schema.ts:143-161`), and
-   `decks/price-query.ts:67` deliberately collapses that to one chosen printing per oracle card
-   with a four-clause `order by` — live before stale, real non-foil stock before foil at any
-   price, then cheapest, then id. "The selected printing's price" is a different question than
-   that query answers, and it needs a `scryfallId` that `BrowsePrinting` does not carry today
-   (the loaders have it — `collection/card-detail.ts:34-42` selects it, and the owned path joins
-   on `collection_items.scryfall_id` at `browse.ts:612` — it is simply dropped on the way into the
-   type). This is eng work either way and no reason to constrain the drawing; it is listed so the
+1. **Price is keyed by printing; the read every buy tag uses is keyed by card.**
+   `printing_prices.scryfall_id` is the primary key (`db/schema.ts:143-161`), and the deck-side
+   reader `decks/price-query.ts:67` deliberately collapses that to one chosen printing per oracle
+   card with a four-clause `order by` — live before stale, real non-foil stock before foil at any
+   price, then cheapest, then id. `discovery/price.ts:54` aggregates per oracle card too. A
+   per-printing read already exists — `sets/read.ts:344` keeps one row per printing for the set
+   pages — so "the selected printing's price" is a shape the app has, just not on the path this
+   modal is on. What it needs is a `scryfallId` on `BrowsePrinting`, which does not carry one
+   today (`lib/collection/browse.ts:17-39`). The unowned loader already projects it
+   (`collection/card-detail.ts:178-186`, typed at `:34-42`); the **owned** path does not project
+   it at all — `browse.ts:612` uses `collection_items.scryfall_id` only in a join — so carrying
+   it through means adding it to that projection and the aggregation below it, not undropping
+   something. Eng work either way and no reason to constrain the drawing; it is listed so the
    drawing can ask for a per-printing figure knowingly.
 2. **For a card you do not own there is no printing region to sit next to.** `hasPicker` is false
    at zero or one owned printing (`card-modal.tsx:340`), so an unowned card draws a `Set` meta
@@ -201,9 +208,11 @@ briefs in flight from the same workshop. `2026-09-11-one-commander-image.md` ame
 primitive and the fifteen renders of a *commander's* image; the two renders it names inside this
 feature — `card-modal.tsx:1026` and `printing-region.tsx:459`, both printing thumbnails — are in
 its excluded list, because this modal draws a card rather than a commander, and its two main art
-regions are not among the fifteen at all. `2026-09-12-a-commander-you-cannot-build.md` moves
-availability facts *out* of this modal onto the rows that open it, and touches nothing the modal
-draws. `docs/superpowers/design-pipeline-status.md` records this group at rank 4 of its 📐 table,
+regions are not among the fifteen at all. `2026-09-12-a-commander-you-cannot-build.md` adds availability markers to the
+commander row and hero *because* this modal is the only surface that states the fact today, and it
+explicitly holds the deck's proper noun to card detail (`:78`: *"the deck name appears in card
+detail only. Do not 'restore' the deck name here…"*). It takes nothing away from this modal, and a
+handoff drawn from this brief must not remove the availability block (`card-modal.tsx:679`). `docs/superpowers/design-pipeline-status.md` records this group at rank 4 of its 📐 table,
 which is where this brief files it.
 
 **Two live rounds this brief must not collide with**, noted so the eventual build does not
