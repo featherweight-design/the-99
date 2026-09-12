@@ -167,6 +167,5 @@ describe("pullCandidate", () => {
   it("draws nothing for a card with no sleeved holder", () => {
     expect(pullCandidate(availability([claim({ mature: false })]))).toBeNull();
     expect(pullCandidate(undefined)).toBeNull();
->>>>>>> 155e8862 (feat(decks): pull a card back, and say plainly where a pull is not on offer)
   });
 });
