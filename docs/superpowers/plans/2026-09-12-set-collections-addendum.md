@@ -64,7 +64,8 @@ hand and is deliberately not part of `pnpm test`; only the unit runner is Playwr
   element's class list carries a width or height that is a MEASUREMENT at any breakpoint —
   an arbitrary value (`w-[116px]`), a scale step (`h-10`) or a fraction (`w-1/2`) — while
   allowing `w-full`, which is the cell taking the track's width and so is the ruling rather
-  than a breach of it. Test the matcher itself: a regex that matches nothing passes every
+  than a breach of it — as is `h-full`, which is how the art fills the aspect-ratio plate.
+  Test the matcher itself: a regex that matches nothing passes every
   assertion while proving nothing. Assert the plate carries `aspect-[63/88]`, and check
   inline `style.width`/`style.height` on the cell and the plate too — the by-name marker
   inside carries a deliberate 7px box and is a glyph, not the cell. In
@@ -152,7 +153,12 @@ vocabulary.
 - [ ] **Step 3 — Run, verify failure.**
 - [ ] **Step 4 — Pips.** Replace `ColorFilterRow` with `ColourPips`, `form="wide"` on the
   control row and `form="sheet"` in the phone sheet.
-- [ ] **Step 5 — Rarity.** Replace the four letter buttons with `FilterPanel`,
+- [ ] **Step 5 — Rarity, DESKTOP ONLY.** `FilterPanel` owns its own mobile sheet, whose
+  rows are a 48px marker list — not the 44px chip group §28 draws, and with no way to put
+  the pips above it. So the panel is mounted **on the breakpoint** and the page's existing
+  `FilterSheet` keeps the phone form: pips, then a chip group, then Clear and Show. That is
+  what "mounted, never forked" costs here, and it is cheaper than either alternative.
+  Replace the four letter buttons with `FilterPanel`,
   `searchable={false}`, `widthPx={280}`, **`selectionMode="single"`** — `multi` would expose
   `aria-multiselectable="true"` for a control that holds one value. The off state is the
   caller's: `onToggle` returns an empty selection when the lit value is picked again, which
@@ -161,7 +167,9 @@ vocabulary.
   the chip line carries the same removal one row down. **Two ADDENDUM-STATES §4 clauses are
   therefore knowingly unmet and are NOT to be tested for**: that footer, and "opening lands
   focus on the current value" — the panel's non-searchable path calls `openPanel(false)`
-  and leaves `activeCode` null. Both are one-line changes in the shared panel and belong to
+  and leaves `activeCode` null, and flipping that to `true` is not enough on its own, since
+  the selected-option lookup behind it is guarded by `searchable` and falls back to
+  `options[0]`; the shared component has to seed `activeCode` from the selection. Both are one-line changes in the shared panel and belong to
   the chassis package, where four routes get them. The readiness doc records all three. Mount it **on the breakpoint, never
   CSS-hidden** — the panel holds
   its own open state and picks popover or sheet off the same hook. The phone sheet gets a
@@ -232,9 +240,10 @@ name — the defect `MissingOnlyToggle` already exists to avoid on this page.
   clear). §29 → PR 4. §30 → PR 2. ADDENDUM-STATES' rack states → PR 3 and PR 4; grid states
   → PR 1; index-row table → PR 2.
 - **Not covered, deliberately.** The addendum's three open items: the upscale — which is a
-  **curve, not a number**: 1.15× at seven tracks rising to 1.53× at two and 2.06× at one,
-  where the addendum's 1.21× is the five-track case (see the readiness doc) — and the item
-  is conditional, so nothing is done until review finds the cell soft; B/R/G pip colours (the
+  **curve, not a number**: 1.03× at seven tracks (the `max-w` cap truncates that row), 1.18×
+  at six, rising to 1.53× at two and 2.06× at one, where the addendum's 1.21× is the
+  five-track case (see the readiness doc) — and the item is conditional, so nothing is done
+  until review finds the cell soft; B/R/G pip colours (the
   chassis package's assets, already committed); the chip line's skin (the chassis wins if it
   specs them differently).
 - **Type consistency.** `SetGridFilters` gains exactly one field, `query: string`, and

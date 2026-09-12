@@ -125,7 +125,7 @@ entirely on how narrow a viewport is in scope:
 
 | tracks | worst content | ≈viewport | track | upscale |
 |---|---|---|---|---|
-| 7 | 1237 | 1367 | 168.1 | 1.15× |
+| 7 | **1112 (capped)** | 1242+ | **150.3** | **1.03×** |
 | 6 | 1081 | 1211 | 171.8 | 1.18× |
 | 5 | 925 | 1055 | 177.0 | **1.21× ← the quoted figure** |
 | 4 | 769 | 899 | 184.8 | 1.27× |
@@ -133,8 +133,10 @@ entirely on how narrow a viewport is in scope:
 | 2 | 457 | 489 | 223.5 | 1.53× |
 | 1 | 301 | 333 | 301.0 | 2.06× |
 
-1.21× is the five-column maximum. Every count below it is worse, and the two-column band —
-the one the remedy names — reaches **1.53×**, not 1.21×.
+Seven tracks is the one row the `max-w-[1180px]` cap truncates: the content box stops at
+1112px, so the seventh track never grows past 150.3px and the widest desktop case is
+**six tracks at 171.8px**. Every count below that is worse, and the two-column band — the
+one the remedy names — reaches **1.53×**, not the 1.21× quoted.
 
 **This does not move the verdict.** Open item 1 is conditional: nothing is done unless
 review finds the cell soft, and `image_uri_small` is 146px wide, so any upscale at all is
