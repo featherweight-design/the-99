@@ -507,30 +507,6 @@ for (const [name, source] of Object.entries(READERS)) {
   }
 }
 
-// The scrims outlive the art under `forced-colors`, so they are what proves the
-// band kept its height when the photograph left.
-const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
-
-const ROUTES = [
-  ["home", "/"],
-  ["decks", "/decks"],
-  ["commanders", "/commanders"],
-  // `/discover`, not `/commanders?lane=discover`. The two lanes became two
-  // routes; that query parameter is not one the app reads, so the entry loaded
-  // `/commanders` a second time and every discovery row went unchecked while the
-  // report named them.
-  ["discover", "/discover"],
-];
-
-/** The four bands this round settles. A stated band outside the set is either a
-    fifth number nobody decided or an aspect ratio that survived the migration. */
-const SETTLED_BANDS = [168, 208, 248, 288];
-
-const VIEWPORTS = [
-  ["mobile", 375, 812],
-  ["desktop", 1440, 900],
-];
-
 const findings = [];
 const note = (line) => {
   findings.push(line);
