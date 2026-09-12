@@ -535,7 +535,13 @@ try {
     // 2b. The what-changed strip. Three cells stand down at 390px, and every cell
     // draws a movement rather than a figure against a bar, so what is being read
     // is the pair and the verdict under it.
-    console.log(`  strip cells: ${seen.shape.cells.length}`);
+    // Visible, not matched: `cells` holds all six paragraphs at both widths and
+    // records visibility per cell, so a raw length prints 6 on the phone and says
+    // nothing about the three-cell contract this line exists to check.
+    console.log(
+      `  strip cells: ${seen.shape.cells.filter((c) => c.visible).length} visible` +
+        ` of ${seen.shape.cells.length}`,
+    );
     for (const cell of seen.shape.cells) {
       console.log(
         `    "${cell.label}" ${cell.visible ? `${cell.width}px` : "HIDDEN"} · ` +
