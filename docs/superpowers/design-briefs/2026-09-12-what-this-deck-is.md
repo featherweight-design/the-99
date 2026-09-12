@@ -11,8 +11,9 @@ and what finishing it costs to buy. The computation for all four is merged (PR #
 folds are unit-tested (`src/lib/decks/stats.ts`) and the loaders that assemble them are covered by
 `pnpm probe:stats` against a real Postgres, which is the split `AGENTS.md` draws for every
 database-backed reader in this repository. Nothing draws them. This brief is about where they
-appear and what they say — and, more than anything, about the three of them the app **already states somewhere
-else**, in a shape a new block must not contradict.
+appear and what they say — and, more than anything, about the three of them that are **already
+spoken for**: two stated on screen today, one ratified in a property table and not yet built, all
+three in shapes a new block must not contradict.
 
 ---
 
@@ -53,6 +54,11 @@ loader reads them separately and folds them in at one copy each (`stats-query.ts
 them. Any denominator a surface prints must be `copies` as returned, never a hard 99, or the
 figures on screen will not add up to the ones computed.
 
+**And the two `copies` are not the same number.** `colours.copies` counts every card including
+lands; `curve.copies` counts only what is cast, with the lands reported beside it as `curve.lands`.
+A finished single-commander deck can be 100 colour copies and 63 curve copies with 37 lands. Each
+figure divides by its own.
+
 Two further computed properties Design should know before drawing:
 
 - **The colour figures can sum to more than the deck, and usually do.** A multi-colour card counts
@@ -75,7 +81,10 @@ Two further computed properties Design should know before drawing:
    arithmetic: if the deck page calls it *cost to complete*, Home does not call the sum of the same
    figure something else.
 3. **Nothing new is captured to produce them.** Every figure is a fold over data the app already
-   holds — `deck_games`, `deck_cards` joined to `cards`, and the ManaPool price read.
+   holds: `deck_games` for the record; `deck_cards` joined to `cards`, **plus both commander columns
+   on `decks`** (`stats-query.ts:101-159`), for the spread and the curve; and, for cost, the
+   seniority model over the player's collection and claims with the ManaPool price read on top.
+   Nothing is written and no new column exists.
 
 ---
 
@@ -121,9 +130,12 @@ number, which is the finding below rather than an invariant to preserve.
 `game-headline.ts:38-42` derives the record string and `games-panel.tsx:198-207` renders it
 (`:33-43` is the live-region announcement, not the visible line), and `docs/superpowers/design-tables/game-log.md:121` rules that the tab's own
 count is *"games logged, never the record"*. Its ink is not uniform and Design should not assume it
-is: the standalone N=1 record renders `text-fg-body` (`games-panel.tsx:205-207`), while at N≥2 the
-record is a clause inside the sub-line and takes `--accent` (`games-panel.tsx:59`, and `--accent` is
-the table's "record figure" colour at `game-log.md:33`). A stats block stating `3–1–1` beside a Games tab labelled with a count is fine;
+is, and neither is its placement. `deriveHeadline` (`game-headline.ts:35-103`) has four outcomes: at
+N=1 the record is a standalone line in `text-fg-body` (`games-panel.tsx:205-207`); at N≥2 with a
+pattern it is a clause inside the sub-line taking `--accent`, the table's "record figure" colour
+(`games-panel.tsx:59`, `game-log.md:33`); below `PATTERN_MIN` with a clear lean the record is
+**dropped entirely**; and a log with no marks at all puts it in the **heading** instead. Design
+should not assume one place or one ink for it. A stats block stating `3–1–1` beside a Games tab labelled with a count is fine;
 a stats block that relabels either one is an amendment to that table.
 
 **Mana curve — the deck page is *specified* to state a mana value, as a single number that moves.**
@@ -182,7 +194,7 @@ vocabulary rather than an existing one stretched.
 
 ---
 
-## §5 The deck page is already carrying two strips and three tabs
+## §5 The deck page already carries a strip, three tabs, and a second strip on the way
 
 Before adding a block, this is what the page holds. `builder-tabs.tsx:9` defines the three views —
 `deck | consider | games`. `builder-shell.tsx:863` mounts the `RoleCounterStrip`, whose five cells
@@ -190,10 +202,11 @@ Before adding a block, this is what the page holds. `builder-tabs.tsx:9` defines
 `mix.ts` `RECOMMENDED_MIX`) already state a per-deck measurement against a recommended target. `builder-shell.tsx:924` mounts the `GamesPanel`. Deck versioning adds
 the six-cell what-changed strip on top of that.
 
-So the four figures are not landing on an empty page; they are landing next to two existing strips
-of small figures, one of which (roles) is measured against targets and one of which (what-changed)
-is measured against the previous version. **The stats block is a third kind: measured against
-nothing.** Design should say how a reader tells the three apart at a glance, or fold them.
+So the four figures are not landing on an empty page. One strip of small figures is mounted today —
+roles, measured against targets — and a second is specified and coming: the what-changed strip,
+measured against the previous version. **The stats block would be a third kind: measured against
+nothing.** Design should say how a reader tells the three apart at a glance once all three are on
+the page, or fold them.
 
 ---
 
