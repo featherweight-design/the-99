@@ -84,8 +84,10 @@ saying "this one".
    consumers do.
 5. **THE PLATE**: `background: var(--bg)`, `1px solid var(--border-strong)`, radius 7, no
    `backdrop-filter`, icon only, a 26px box centred in a 44px target, `aria-label` required.
-   `full-card-trigger.tsx` loses its words and its `72%` class, and its `hero` placement moves to the
-   bottom corner the block does not reach. `OVER_ART_PLATE` and its assertion are deleted, which
+   `full-card-trigger.tsx` loses its words and its `72%` class. Its `hero` placement does NOT move in
+   this slice: which corner the block leaves free is only knowable once the hero's block is one row,
+   and that is the home slice's change, so the move ships there and `hero` keeps `{ top: 56, right:
+   16 }` until then. `OVER_ART_PLATE` and its assertion are deleted, which
    **migrates `full-card-trigger.test.tsx` in the same PR** — that file asserts the old top-right
    placement, the visible words and the 72% class, so those three assertions change. Nothing in it is
    deleted: opening the modal, `aria-busy`, the band tap target and all four placements are

@@ -200,11 +200,6 @@ const PORTRAIT_INK: readonly {
   // scrim that has not closed to opaque yet, which is the thinnest ground any
   // ink on that band gets.
   { surface: "resume row", portrait: 99, band: 72, x: 116, y: 0 },
-  // The deck spine's `⛶ Card details` pill: 16px in, 14px off the foot, 26px
-  // tall, and the one thing on that band whose ink sits over the crop. Its band
-  // no longer draws a vertical ramp at all — the pill's own plate is what holds
-  // it up, which is why `verticalAlphaAt` returns 0 here and these still pass.
-  // Both its spans are `--fg`.
   // The deck spine's `⛶ Card details` control: 16px in, 14px off the foot, and
   // the one thing on that band whose ink sits over the crop. THE PLATE is opaque
   // now, so `plate: 1` is not a shortcut — it is the whole argument for deleting

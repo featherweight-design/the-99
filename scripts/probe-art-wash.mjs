@@ -100,38 +100,6 @@ const READ_ART_LAYERS_PER_BAND = `() => {
   return [...bands.values()];
 }`;
 
-// The 148 band's two scrims, as the browser computes them. JSDOM applies no CSS,
-// so this is the only place the ruling is answerable: one vertical ramp at both
-// widths, and a horizontal scrim that leaves the portrait alone until the
-// fade-out starts.
-const READ_148_SCRIMS = `() => {
-  const band = document.querySelector('.discovery-band, .rec-band');
-  if (!band) return null;
-  return [...band.querySelectorAll('.art-wash-scrim')].map((s) => {
-    const style = getComputedStyle(s);
-    const image = style.backgroundImage;
-    return {
-      display: style.display,
-      image,
-      // Not \`/180deg/\`: 180deg is a gradient's default direction, so the browser
-      // drops it from the computed value and that test never matches. A vertical
-      // ramp is the gradient that names no angle at all; the horizontal scrim
-      // beside it keeps its own 90deg.
-      ramp: /^linear-gradient\\((?!\\s*[\\d.-]+deg)/.test(image),
-      horizontal: /^linear-gradient\\(\\s*90deg/.test(image),
-    };
-  });
-}`;
-
-/** The first two colour stops of the horizontal scrim, which this round drove to
-    zero alpha: the portrait carries no wash at all until the crop starts fading
-    out into the row. A non-zero alpha here is the lift silently reverting.
-
-    Matched on the `/ 0)` alpha rather than on `rgba(`: a `color-mix(in oklab, …)`
-    computes to an `oklab()` colour, and the browser only falls back to `rgba()`
-    for stops that survive in sRGB. */
-const CLEAR_STOPS = /(?:\/\s*0|,\s*0)\)[\s\S]*?(?:\/\s*0|,\s*0)\)/;
-
 /** Split a computed gradient into its TOP-LEVEL stops. Shared as a string
     because every reader in this file travels to the browser as one, and this is
     the third time the same parse has been got wrong: a `[^()]*` pattern cannot
@@ -174,6 +142,32 @@ const PARSE_STOPS = `
       .filter(Boolean);
   };
 `;
+
+// The 148 band's two scrims, as the browser computes them. JSDOM applies no CSS,
+// so this is the only place the ruling is answerable: one vertical ramp at both
+// widths, and a horizontal scrim that leaves the portrait alone until the
+// fade-out starts.
+const READ_148_SCRIMS = `() => {
+  ${PARSE_STOPS}
+  const band = document.querySelector('.discovery-band, .rec-band');
+  if (!band) return null;
+  return [...band.querySelectorAll('.art-wash-scrim')].map((s) => {
+    const style = getComputedStyle(s);
+    const image = style.backgroundImage;
+    return {
+      display: style.display,
+      image,
+      // Not \`/180deg/\`: 180deg is a gradient's default direction, so the browser
+      // drops it from the computed value and that test never matches. A vertical
+      // ramp is the gradient that names no angle at all; the horizontal scrim
+      // beside it keeps its own 90deg.
+      ramp: /^linear-gradient\\((?!\\s*[\\d.-]+deg)/.test(image),
+      horizontal: /^linear-gradient\\(\\s*90deg/.test(image),
+      stops: parseStops(image),
+    };
+  });
+}`;
+
 
 /** A cover scrim's stops, as `{ alpha, position }`, read off the computed value.
     An omitted `/ alpha` is alpha 1 — the browser drops it, exactly as it drops a
@@ -603,8 +597,20 @@ try {
       // band to protect its bottom third.
       if (ramps.length !== 1) note(`  FAIL expected exactly one vertical ramp to paint`);
       if (horizontals.length !== 1) note(`  FAIL expected exactly one horizontal scrim to paint`);
-      else if (!CLEAR_STOPS.test(horizontals[0].image)) {
-        note(`  FAIL horizontal scrim washes the portrait: ${horizontals[0].image.slice(0, 120)}`);
+      else {
+        // The first two stops BY INDEX, not a pattern anywhere in the gradient:
+        // an unanchored match is satisfied by any later pair of zero-alpha
+        // stops, so a scrim that veils the portrait from 0 and clears further
+        // along passed the very check written to catch it. This round drove
+        // those two to zero — the portrait carries no wash at all until the crop
+        // starts fading into the row — so a non-zero alpha in either is the lift
+        // silently reverting.
+        const first = horizontals[0].stops.slice(0, 2);
+        if (first.length !== 2) {
+          note(`  FAIL horizontal scrim computed ${horizontals[0].stops.length} stops, expected at least 2`);
+        } else if (first.some((stop) => stop.alpha !== 0)) {
+          note(`  FAIL horizontal scrim washes the portrait: ${JSON.stringify(first)}`);
+        }
       }
     }
 
