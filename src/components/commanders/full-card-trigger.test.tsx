@@ -142,6 +142,18 @@ describe("FullCardTrigger placement", () => {
     expect(pill.style.right).toBe("16px");
   });
 
+  // Visible is not clickable. Every band this chip sits on draws its own content
+  // in a positioned sibling AFTER it — the deck header's `relative flex h-full`
+  // row spans the whole header box, its 254px padding insetting the content and
+  // not the box — and two positioned elements at auto z-index are ordered by
+  // document position. Without a z-index the row won the hit test over the
+  // chip's corner and the pill was on screen and dead.
+  it("stacks above the content that follows it", () => {
+    mount(<FullCardTrigger oracleId="o-atraxa" placement="deck-desktop" bandTapTarget={false} />);
+    const pill = screen.getByRole("button", { name: "View card details" });
+    expect(pill.className).toContain("z-[2]");
+  });
+
   // The plate has to be written out as a literal class — Tailwind compiles no
   // interpolated one — while the contrast suite measures the exported number.
   // This is the only thing keeping the two from drifting, and the drift matters:

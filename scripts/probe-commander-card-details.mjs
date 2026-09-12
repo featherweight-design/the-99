@@ -1,4 +1,4 @@
-// Gate for the `⛶ Card details` control on the commander detail page.
+// Gate for the `⛶ Card details` control, on EVERY surface that draws it.
 //
 // The unit tests render both breakpoint trees at once — jsdom resolves no media
 // query — so they can count the triggers in the document but never say which one
@@ -6,6 +6,12 @@
 // the control existed only in the phone's art header, so at desktop widths the
 // commander's card could not be opened at all, and with it went the printings,
 // the rulings, and the flip a two-faced commander's back face lives behind.
+//
+// It walks the DECK header as well as the commander page, and it CLICKS rather
+// than counting: an earlier version of this probe checked the commander page
+// alone and passed while the deck header's chip was visible and unclickable —
+// the content row that follows it in the DOM won the hit test. A control this
+// probe never presses is a control it never tested.
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
 //   node scripts/probe-commander-card-details.mjs
@@ -63,6 +69,18 @@ const READ_TRIGGERS = `() => {
 
 // The modal, and whether the card it opened on can be turned over. The flip
 // control is the reason the trigger's reachability matters beyond the printings.
+// What the browser would actually hit at the chip's own centre. `elementFromPoint`
+// is the whole point: a chip can be painted, sized and labelled and still be
+// underneath something that takes the click.
+const READ_HIT_TEST = `() => {
+  const pill = [...document.querySelectorAll('button[aria-label="View card details"]')]
+    .find((b) => b.getClientRects().length);
+  if (!pill) return { found: false };
+  const r = pill.getBoundingClientRect();
+  const at = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+  return { found: true, hitsTheChip: pill === at || pill.contains(at) };
+}`;
+
 const READ_MODAL = `() => {
   const dialog = document.querySelector('[role="dialog"][aria-modal="true"]');
   if (!dialog) return { open: false };
@@ -85,6 +103,56 @@ const note = (line) => {
 };
 const fail = (line) => note(`  FAIL ${line}`);
 
+/** One surface: the control is there once, it is what the pointer would hit, and
+    pressing it opens the modal. Split out because the deck header and the
+    commander page ask exactly the same three questions. */
+async function walkSurface(page, label, vpName, slug, { expectFlip = false } = {}) {
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: `/tmp/commander-card-details-${vpName}-${slug}.png` });
+
+  const triggers = await page.evaluate(`(${READ_TRIGGERS})()`);
+  note(`${label}: ${triggers.length} visible card-details control(s)`);
+  if (triggers.length !== 1) {
+    fail(`expected exactly one visible control at this width, got ${triggers.length}`);
+    return;
+  }
+  // 26px is the chip's own height; anything smaller shipped clipped.
+  for (const t of triggers) {
+    if (t.h < 24 || t.w < 60) fail(`control measures ${t.w}×${t.h}, too small to hit`);
+  }
+
+  const hit = await page.evaluate(`(${READ_HIT_TEST})()`);
+  if (!hit.found) {
+    fail(`no chip found for the hit test`);
+    return;
+  }
+  if (!hit.hitsTheChip) {
+    // RETURN, rather than clicking anyway. This is the regression this probe was
+    // written for, and the overlay that causes it also intercepts the click — so
+    // clicking would throw out of the whole run, taking the remaining surfaces
+    // and the failure summary with it. The finding is already recorded; the
+    // other three walks are worth more than a stack trace.
+    fail(`the chip is painted but something else takes the click`);
+    return;
+  }
+  note(`  the pointer lands on the chip`);
+
+  await page.locator('button[aria-label="View card details"]:visible').first().click();
+  await page.waitForTimeout(1200);
+  const modal = await page.evaluate(`(${READ_MODAL})()`);
+  if (!modal.open) {
+    fail("the control did not open the card modal");
+    return;
+  }
+  note(`  modal opens on "${modal.title}", ${modal.flips} flip control(s)`);
+  // Asserted only where a two-faced commander was deliberately chosen. The deck
+  // walk opens whatever commander the fixture's deck happens to have, so a flip
+  // there is a fact about the fixture rather than about this control.
+  if (expectFlip && modal.flips === 0) {
+    fail(`no flip control on "${modal.title}" — expected a two-faced commander`);
+  }
+}
+
 // A two-faced commander, so one walk answers both the reachability question and
 // the flip one. Any owned `transform` legend does; this one is in the local
 // fixture. Override when the fixture changes.
@@ -101,9 +169,10 @@ try {
     const page = await context.newPage();
     await signIn(page);
 
-    // Through the lane's own search, so the probe never has to guess a slug —
-    // `finalizeRecommendations` suffixes duplicates, so a slug built from the
-    // name alone is right only until two commanders share one.
+    // Two surfaces draw this control, and both have to be walked. The commander
+    // page reaches it through the lane's own search, so the probe never has to
+    // guess a slug — `finalizeRecommendations` suffixes duplicates, so a slug
+    // built from the name alone is right only until two commanders share one.
     await page.goto(`${BASE}/commanders?q=${encodeURIComponent(COMMANDER)}`, {
       waitUntil: "networkidle",
     });
@@ -114,30 +183,54 @@ try {
       continue;
     }
     await card.click();
-    await page.waitForURL(/\/commanders\/[^/]+$/, { timeout: 15_000 });
-    await page.waitForTimeout(800);
-    await page.screenshot({ path: `/tmp/commander-card-details-${vpName}.png` });
+    await page.waitForURL(/\/commanders\/[^/]+$/, { timeout: 60_000 });
+    // `expectFlip`: PROBE_COMMANDER is a two-faced card by choice, so the flip is
+    // part of what this surface has to deliver — it is the half of the original
+    // bug that desktop could not reach at all.
+    await walkSurface(page, `${vpName} commander page`, vpName, "commander", { expectFlip: true });
 
-    const triggers = await page.evaluate(`(${READ_TRIGGERS})()`);
-    note(`${vpName} ${page.url().replace(BASE, "")}: ${triggers.length} visible card-details control(s)`);
-    if (triggers.length !== 1) {
-      fail(`expected exactly one visible control at this width, got ${triggers.length}`);
+    // And the deck header, which draws the same control in its own placement.
+    //
+    // A deck whose commander has no `art_crop` draws NO chip, deliberately — §G:
+    // with no crop there is no printing to open. So the walk needs a deck that
+    // qualifies, and taking the first link would fail against a fixture whose
+    // first deck happens to be artless. It tries each in turn and says so if none
+    // qualifies, rather than passing quietly on a surface it never tested.
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const deckHrefs = await page.evaluate(() =>
+      [...document.querySelectorAll('a[href^="/decks/"]')]
+        .map((a) => a.getAttribute("href"))
+        .filter((h) => h && !/\/(import|new)$/.test(h)),
+    );
+    if (deckHrefs.length === 0) {
+      fail(`${vpName}: no deck to open — the fixture needs at least one`);
+      await context.close();
+      continue;
     }
-    // 26px is the chip's own height; anything smaller is a control that shipped
-    // clipped by the frame it now sits inside.
-    for (const t of triggers) {
-      if (t.h < 24 || t.w < 60) fail(`control measures ${t.w}×${t.h}, too small to hit`);
-    }
-
-    if (triggers.length) {
-      await page.locator('button[aria-label="View card details"]:visible').first().click();
-      await page.waitForTimeout(1200);
-      const modal = await page.evaluate(`(${READ_MODAL})()`);
-      if (!modal.open) fail("the control did not open the card modal");
-      else note(`  modal opens on "${modal.title}", ${modal.flips} flip control(s)`);
-      if (modal.open && modal.flips === 0) {
-        fail(`no flip control on "${modal.title}" — expected a two-faced commander`);
+    let walked = false;
+    let skipped = 0;
+    // EVERY deck, not the first handful. A cap here would report "no qualifying
+    // deck" while a later one had a crop, which is a silent pass on a surface
+    // this probe exists to test. The loop stops at the first deck that
+    // qualifies, so the cost is one page load in the normal case.
+    for (const href of deckHrefs) {
+      await page.goto(`${BASE}${href}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(700);
+      const chips = await page.evaluate(`(${READ_TRIGGERS})()`);
+      if (chips.length === 0) {
+        skipped += 1; // artless commander, §G — no crop, no printing to open
+        continue;
       }
+      if (skipped) note(`  (skipped ${skipped} deck(s) whose commander has no art crop)`);
+      await walkSurface(page, `${vpName} deck header (${href})`, vpName, "deck");
+      walked = true;
+      break;
+    }
+    if (!walked) {
+      fail(
+        `${vpName}: none of ${deckHrefs.length} decks has a commander with an art crop — ` +
+          `the deck header went unchecked`,
+      );
     }
 
     await context.close();
