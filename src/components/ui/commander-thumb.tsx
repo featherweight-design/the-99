@@ -1,4 +1,4 @@
-import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
+import { cssUrl } from "../../lib/collection/browse";
 import { commanderGradient } from "../../lib/collection/gradients";
 
 /**
@@ -68,15 +68,15 @@ export function CommanderThumb({
         height: box.height,
         // `center top`, not `center`: the face is at the top of a card, and a
         // centred crop of a 63/88 frame at this size is mostly type box.
+        // No art draws the identity gradient, whatever that identity is. An
+        // EMPTY array is not missing data in this codebase — it is colorless, and
+        // `commanderGradient` answers it with the colorless gradient every other
+        // surface draws, including both card faces. Routing it to the stripes
+        // instead would have given a colorless commander a different treatment
+        // here than on the card it stands for.
         background: imageUri
           ? `${cssUrl(imageUri)} center top/cover, ${THUMB_GROUND}`
-          : // No art and no identity draws neither — the stripes, as every other
-            // artless card in the app does. An identity is a real signal and
-            // gets its gradient; an empty one is not, and a gradient invented
-            // from nothing would say a colour the commander does not have.
-            colorIdentity.length > 0
-            ? commanderGradient(colorIdentity)
-            : ART_STRIPES,
+          : commanderGradient(colorIdentity),
         boxShadow: THUMB_RING,
       }}
     />

@@ -39,16 +39,17 @@ describe("CommanderThumb", () => {
     expect(el.style.background).toContain("var(--elevated)");
   });
 
-  // B6, extended to thumbs: an identity is a real signal and draws its gradient,
-  // an absent one draws the stripes every other artless card in the app draws,
-  // and neither case invents a colour.
-  it("falls back to the identity, then to the stripes, and never past them", () => {
+  // No art draws the identity gradient, whatever the identity is — and an EMPTY
+  // array is colorless in this codebase rather than missing, so it draws the
+  // colorless gradient both card faces draw rather than a treatment of its own.
+  it("falls back to the identity gradient, colorless included", () => {
     const identity = thumb(<CommanderThumb imageUri={null} colorIdentity={["U", "R"]} />);
     expect(identity.style.background).toContain("linear-gradient(130deg");
     expect(identity.style.background).not.toContain("var(--elevated)");
 
-    const neither = thumb(<CommanderThumb imageUri={null} colorIdentity={[]} />);
-    expect(neither.style.background).toContain("repeating-linear-gradient");
+    const colorless = thumb(<CommanderThumb imageUri={null} colorIdentity={[]} />);
+    expect(colorless.style.background).toContain("linear-gradient(150deg");
+    expect(colorless.style.background).not.toContain("repeating-linear-gradient");
   });
 
   // The marker a probe selects on, because shape is not enough: the decks zero

@@ -836,11 +836,16 @@ try {
       const picked = await page.evaluate(`(${READ_THUMBS})()`);
       const boxes = new Set(picked.map((t) => t.box.join("×")));
       note(`${vpName} the picker, one commander picked: ${picked.length} thumb(s) at ${[...boxes].join(", ")}`);
-      // The summary is the reason for the click: a 64×89 appearing is the proof
-      // that state was reached at all, rather than the probe having pressed
-      // something inert.
-      if (!boxes.has("64×89")) {
+      // The summary is the reason for the click — a 64×89 appearing is the proof
+      // the click reached that state rather than pressing something inert — but
+      // it is DESKTOP's: the summary lives in a `hidden md:block` sidebar and the
+      // phone's dock is text-only, so requiring it at both widths would fail
+      // every mobile run for drawing exactly what it should.
+      if (vpName === "desktop" && !boxes.has("64×89")) {
         note(`  FAIL the picker's selected summary draws no 64×89 thumb`);
+      }
+      if (vpName === "mobile" && boxes.has("64×89")) {
+        note(`  FAIL a summary thumb drew on the phone, whose dock is text-only`);
       }
       // The partner slot mounts only for a commander that can pair, so its
       // absence is not a failure — but when it is there it is a thumb like any
