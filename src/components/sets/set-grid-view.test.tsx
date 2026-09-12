@@ -788,3 +788,23 @@ describe("SetGridView — the rack's edges", () => {
     expect(screen.getByRole("button", { name: "Rare" })).toBeInTheDocument();
   });
 });
+
+// The control is single-select, so it must SAY single-select. `multi` promised assistive
+// technology a second value the caller silently discards.
+describe("SetGridView — the rarity panel's semantics", () => {
+  it("never announces itself as multi-selectable", () => {
+    stubDesktop(true);
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    const list = screen.getByRole("listbox", { name: "Filter by rarity" });
+    expect(list).not.toHaveAttribute("aria-multiselectable", "true");
+  });
+
+  it("still reaches `all` by picking the lit value again", () => {
+    stubDesktop(true);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    pickRarity("Rare");
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+});

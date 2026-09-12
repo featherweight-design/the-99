@@ -488,10 +488,18 @@ export function SetGridView(props: SetGridViewProps) {
           </div>
 
           {/* Four values, single-select, with an off state — the chassis's own test makes
-              that a panel rather than a segmented run or four buttons. `selectionMode`
-              stays `multi` because the panel's `single` mode has no off state and drops
-              the footer with it; the single-select rule is the caller's, one line below,
-              and it is what lets picking the lit value reach `all`. */}
+              that a panel rather than a segmented run or four buttons.
+
+              `selectionMode="single"`, which is what the CONTROL is: `multi` would have
+              told assistive technology `aria-multiselectable="true"` and drawn a square
+              tick, promising a second value the caller then silently discards. The cost is
+              the desktop footer, which `single` drops — Design drew an `n of 4 on` beside a
+              `Clear rarity` there. The chip line carries the same removal one row down, and
+              a correct promise to a screen reader outranks a duplicated one to a mouse.
+
+              The off state is still reachable, because `onToggle` below returns an empty
+              selection when the lit value is picked again — which is how `all` is reached
+              and why this is not simply the panel's `single` contract as written. */}
           {/* MOUNTED on the breakpoint, never CSS-hidden. `FilterPanel` holds its own open
               state and picks popover or sheet off the same `useIsDesktop`: hidden with
               `display:none` it would keep that state across a resize, put its mobile dialog
@@ -502,6 +510,7 @@ export function SetGridView(props: SetGridViewProps) {
             <FilterPanel
               copy={setFilterCopy.rarityPanel}
               searchable={false}
+              selectionMode="single"
               widthPx={280}
               footerStatus
               options={RARITIES.map((r) => ({
