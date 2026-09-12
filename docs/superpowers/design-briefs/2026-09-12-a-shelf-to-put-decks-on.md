@@ -62,8 +62,9 @@ one unlabelled group of everything unfiled.
   grouping you see. **§5 constrains this answer.**
 - **§3.2 Empty states, of which there are three and they are not the same.** No folders exist at
   all; a folder exists and holds nothing; every deck is unfiled while folders exist. The route also
-  already has a zero state for *no decks* (`decks-view.tsx:240-247`) and a separate filtered-empty
-  state (`:193`), so folders add to a route that already distinguishes two kinds of nothing.
+  already has a zero state for *no decks* (`DecksZero`, `decks-view.tsx:220-221`) and a separate
+  filtered-empty state (`:233-249`), so folders add to a route that already distinguishes two kinds
+  of nothing.
 - **§3.3 Move.** Where the control lives — on a deck, on a folder, or both — and what it looks like
   for the two directions the query supports: filing a deck, and unfiling it (`folders.ts:104`
   takes `null` for exactly that). Multi-select is not in the schema's way and not in the workshop's
@@ -114,8 +115,9 @@ played-window, sort. Decision 19 (`README.md:192-193`) is the load-bearing one h
 has slots, not a dimension list, and four control types fill them."** There is a chip line with a
 `Clear all filters` at its trailing edge (`README.md:150`).
 
-**The chassis handoff does not mention folders anywhere** — verified by search across its README and
-`STATES-filter-chassis.md`. So the two designs currently have no shared answer, and there are only
+**The chassis handoff says nothing about deck folders** — verified by search across its README and
+`STATES-filter-chassis.md`; the only `folder` in either is `README.md:39` describing its own
+directory. So the two designs currently have no shared answer, and there are only
 two coherent ones:
 
 **(a) A folder is a sixth dimension.** It becomes a slot in the chassis, opening the same panel
@@ -123,8 +125,10 @@ every other dimension opens, appearing in the same chip line, cleared by the sam
 filters`. Consequences: folders inherit a frame that is drawn, audited and about to be built, and
 `/decks` goes from five dimensions to six on a chassis whose density was proved at five. It also
 makes a folder *combinable* — folder plus status plus colour — and makes "which folder am I in"
-survive only as long as a filter chip does. And it makes `Clear all filters` empty the shelf you
-were standing in, which may be right or may be the tell that this branch is wrong.
+survive only as long as a filter chip does. And `Clear all filters`
+(`README.md:150`) would drop the folder along with everything else, returning the reader to all
+decks — nothing is lost but the shelf they were standing in, which may be the right behaviour or may
+be the tell that this branch is wrong.
 
 **(b) A folder is a nav level above the filters.** The chassis stays at five dimensions and filters
 *within* whatever the level selects. Consequences: folders need their own frame, their own URL
@@ -152,7 +156,8 @@ the payload is the same list under both, and neither branch needs a new query.
 - **Nesting.** One deck, one folder (decision 1) says nothing about whether folders nest, and
   nothing in the schema supports it — `deck_folders` has no parent column (`schema.ts:227-231`).
   Folders are flat in this round.
-- **Folders anywhere but `/decks`.** Home renders decks in three places (`dashboard.tsx:109-129`),
+- **Folders anywhere but `/decks`.** Home renders decks in two lists and a
+  roll-up (`ResumeDecks`, `DeckRail` and `CommitmentsCard`, `dashboard.tsx:115`, `:119`, `:123`),
   and the home redesign is a separate, later brief. Whether Home ever groups by folder is that
   brief's question, and it inherits whatever this one settles.
 - **Rename** is open as a design question (§3.5) but its query does not exist yet; if Design draws

@@ -105,19 +105,28 @@ must say which, and if the two coexist, what each is for. Engineering note: both
 one predicate now (`isLandFace`, `cards/facet.ts:45`), so they cannot disagree about which cards are
 lands; the question is entirely one of language and placement.
 
-**Cost to complete — three surfaces already print it, from one roll-up.**
+**Cost to complete — four surfaces already print it, and they do NOT all print the same figure.**
 
 | Surface | Draws | Source |
 |---|---|---|
 | Deck tile on `/decks` | `3 to buy · $18.40` | `deck-card.tsx:80-82`, from `loadShoppingRollup` |
-| Home's deck rail | copies only, no money | `deck-rail.tsx:51-52` |
-| Home's Commitments card | `To buy` copies and money, desktop only | `commitments-card.tsx:88-91`, `:61` is `hidden sm:flex` |
-| Deck page's price strip | the deck's own Shopping total and provenance | `price-strip.tsx:15`, mounted at `group-toggle.tsx:203` |
+| Home's deck rail | copies only, no money | `deck-rail.tsx:51-52`, from the same roll-up |
+| Home's Commitments card | `To buy` copies and money, desktop only | `commitments-card.tsx:88-91`; `:61` is `hidden sm:flex` |
+| Deck page's price strip | the deck's own Shopping total and provenance | `price-strip.tsx:15`, mounted at `group-toggle.tsx:203`, summed at `decklist.tsx:181` |
 
-`DeckStats.cost` is that same roll-up, narrowed (`stats-query.ts:37`). The figure is not in dispute;
-the question is whether a stats block states it a **fifth** time, or points at where it is already
-stated. Note the existing surfaces already disagree on one thing Design may want to settle: the
-rail prints copies without money, everything else prints both.
+**Three of those four read `loadShoppingRollup`. The deck page's strip does not.** It sums the
+decklist's own Shopping rows — `summarisePrices(shoppingCards, newestAsOf)` at `decklist.tsx:181`,
+over the rows the `Shopping N` pill counts — while the roll-up returns a **deficit**: what this deck
+still has to buy after seniority hands it the copies it already holds
+(`availability-query.ts:463-465`). So a deck that owns two of its three copies of a card contributes
+one copy to the roll-up and three rows' worth of quantity to the strip. Both are correct answers to
+different questions, and the fact that the app already answers "what does this cost" two ways is a
+finding this brief hands to Design rather than a discrepancy to be quietly averaged.
+
+`DeckStats.cost` is the roll-up figure, narrowed to one deck (`stats-query.ts:37`) — the deficit,
+not the strip's total. Design says whether a stats block states it a **fifth** time and, if so,
+which of the two figures it means. The existing surfaces also disagree on a smaller thing worth
+settling: the rail prints copies without money, everything else prints both.
 
 **Colour identity spread is the one genuinely new figure.** Nothing draws a deck's colour
 distribution today — `IdentityPips` (`commanders/commander-art.tsx:19`) draws a *commander's*
@@ -157,5 +166,5 @@ only and hand the roll-up to the home handoff with this brief's vocabulary attac
 holds either way — whatever draws the roll-up uses these names and these functions.
 
 One thing that follows from the home redesign either way: **the Your Decks rail is going**
-(`deck-rail.tsx`), and it is one of the three surfaces printing cost today. Its removal is not this
+(`deck-rail.tsx`), and it is one of the four surfaces printing cost today. Its removal is not this
 brief's to make, but a Design answer to §4's cost question should not assume the rail survives.
