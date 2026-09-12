@@ -78,7 +78,7 @@ this run's work.
 | PR | Scope | Blocked by |
 |---|---|---|
 | 1a | Pip assets, `ColourPips`, `FilterChassis`, `ResultLine`'s move | nothing |
-| 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a |
+| 1b | `/decks` mounts the chassis; `DeckFilterColumn` is deleted | 1a ✅ |
 | 2 | `/commanders` and `/discover` | 1b |
 | 3 | `/collection` | 2, and set collections' Task 9 |
 
@@ -226,3 +226,24 @@ an assumption that the four routes' figures carry over.
   roving radiogroups and selection-follows-focus. They do not: `filter-panel.tsx` has its own panel
   and listbox key handling and `rack/select.tsx` has its own focus and menu logic. Budget for the
   shared behaviour as new work in whichever PR first needs it.
+
+
+---
+
+## What 1b actually did, where it departed from this plan
+
+- **The column's siblings stayed.** `DeckFilterColumn` is deleted; `ColourSwatch`, `SearchField`,
+  `PLAYED_LABEL`, `STATUS_COPY_KEY` and `toggleIn` are shared with the phone sheet and remain in
+  `deck-filter-column.tsx`, alongside a header saying why the file outlived its namesake.
+- **The chip loses its lowercase.** `/decks`' own chip row lowercased every label
+  (`refreshCopy.filters.chipRemoveAria`). The shared chip cannot: the same control carries
+  `/collection`'s set names, and "duskmourn" is wrong in a way "draft" never was.
+- **Two tests left with the column.** It printed a `1 status on` / `all statuses on` summary above
+  its Clear, and §3.3 retires that line with the column's two footer Clears. The chip row states
+  what is on instead, for every dimension rather than statuses alone.
+- **`deck-filters.test.tsx` follows the sheet.** The behaviours it covered — six statuses whatever
+  the decks hold, toggling one without disturbing the others, named colour swatches, clear-but-never-
+  the-sort — all still exist there, so the cases moved rather than being deleted with the component.
+- **Counts are filter-aware.** A status row's count is what survives the *other* active filters,
+  which is what makes a zero meaningful: it means "nothing given the colours already on", not
+  "no deck has ever had this status".

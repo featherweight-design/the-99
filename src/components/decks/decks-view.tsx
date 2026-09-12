@@ -13,24 +13,33 @@ import { useCallback, useMemo, useState } from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
+  COLOUR_ORDER,
   EMPTY_FILTERS,
+  STATUS_ORDER,
+  type PlayedWindow,
   activeFilterCount,
   filterDecks,
   filtersFromParams,
   filtersToParams,
   type DeckFilters,
 } from "../../lib/decks/filter";
+import type { StatusPill } from "../../lib/decks/status";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { sortDecks, type DeckSort } from "../../lib/decks/sort";
+import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
+import { ColourPips } from "../ui/colour-pips";
+import { FilterChassis, type FilterChip } from "../ui/filter-chassis";
+import { FilterPanel } from "../ui/filter-panel";
+import { useMinWidth } from "../ui/use-min-width";
+import { deckChassisCopy } from "../../lib/copy/filter-chassis";
 import { DeckCard } from "./deck-card";
-import { DeckFilterColumn, PLAYED_LABEL, STATUS_COPY_KEY } from "./deck-filter-column";
+import { PLAYED_LABEL, SearchField, STATUS_COPY_KEY, toggleIn } from "./deck-filter-column";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
 import { ImportDeckButton } from "./import-deck-button";
 import { NewDeckButton } from "./new-deck-button";
-import { SearchIcon } from "./search-icon";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
@@ -128,6 +137,41 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
   const chips = chipLabels(state.filters);
+  // The chassis switches form on its own breakpoint, not Tailwind's — 1000px,
+  // because `/collection`'s seven controls need 987 and the row must never wrap.
+  const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+
+  // `chipLabels` already knows how to remove one value; the chassis only needs
+  // the label and the callback, so this is a shape change rather than a second
+  // source of truth about what is on.
+  const chassisChips: FilterChip[] = chips.map((chip) => ({
+    key: chip.key,
+    label: chip.label,
+    onRemove: () => onFilters(chip.without),
+  }));
+
+  // Counts are what survives the OTHER active filters, which is what makes a
+  // zero meaningful: a status showing 0 would return nothing *given the colours
+  // already on*, rather than being a status no deck has ever had.
+  const statusOptions = STATUS_ORDER.map((status) => {
+    const count = filterDecks(sorted, { ...state.filters, statuses: [status] }, now).length;
+    return {
+      code: status,
+      label: refreshCopy.status[STATUS_COPY_KEY[status]],
+      count,
+      disabled: count === 0 && !state.filters.statuses.includes(status),
+    };
+  });
+
+  const playedOptions = (["thisMonth", "never"] as const).map((window) => {
+    const count = filterDecks(sorted, { ...state.filters, played: window }, now).length;
+    return {
+      code: window,
+      label: PLAYED_LABEL[window],
+      count,
+      disabled: count === 0 && state.filters.played !== window,
+    };
+  });
 
   return (
     <div className="flex min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans text-[color:var(--fg)]">
@@ -137,42 +181,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
         </h1>
         {/* The count and the grid are one statement: this figure is the number
             of tiles rendered, and if they disagree the count is the bug. */}
-        {!zero && (
-          <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] sm:text-[11px]">
-            {refreshCopy.decks.shown(shown.length, decks.length)}
-          </span>
-        )}
         <div className="flex-auto" />
-
-        {!zero && (
-          <>
-            <button
-              type="button"
-              onClick={() => setSheet({ open: true, focusSearch: true })}
-              aria-label={refreshCopy.filters.searchPlaceholder}
-              className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)] sm:hidden"
-            >
-              <SearchIcon size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSheet({ open: true, focusSearch: false })}
-              className={`flex h-[44px] cursor-pointer items-center gap-[7px] rounded-[10px] border border-solid bg-transparent px-[12px] text-[13px] sm:hidden ${
-                active > 0
-                  ? "border-[color:var(--accent)] text-[color:var(--fg)]"
-                  : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"
-              }`}
-            >
-              {refreshCopy.filters.sheetTitle}
-              {active > 0 && (
-                <span className="rounded-[4px] bg-[color:var(--accent)] px-[5px] py-[1px] font-mono text-[10px] text-[color:var(--bg)]">
-                  {refreshCopy.filters.triggerBadge(active)}
-                </span>
-              )}
-            </button>
-            <DeckSortMenu sort={state.sort} onChange={onSort} />
-          </>
-        )}
 
         {/* Both survive every state, zero included: the toolbar does not change
             shape between empty and populated (README decision 6). Desktop only
@@ -188,46 +197,88 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
         <ImportDeckButton />
       </div>
 
-      {/* Gated on `!zero` alongside the filter controls above: arriving at
-          `/decks?status=Draft` with no decks at all would otherwise stack a
-          chip row on top of the zero state, which offers no filters to remove. */}
-      {!zero && active > 0 && (
-        <div className="flex flex-wrap gap-[7px] px-[16px] pt-[12px] pb-0 sm:hidden">
-          {chips.map((chip) => (
-            <button
-              key={chip.key}
-              type="button"
-              aria-label={refreshCopy.filters.chipRemoveAria(chip.label)}
-              onClick={() => onFilters(chip.without)}
-              className="flex h-[28px] cursor-pointer items-center gap-[7px] rounded-full border-none bg-[color:var(--elevated)] px-[10px] font-mono text-[11px] text-[color:var(--fg-body)]"
-            >
-              {chip.label}
-              <span aria-hidden="true" className="text-[color:var(--fg-faint)]">
-                ×
-              </span>
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => onFilters(EMPTY_FILTERS)}
-            className="flex h-[28px] cursor-pointer items-center border-none bg-transparent px-[10px] font-mono text-[11px] text-[color:var(--fg-muted)]"
-          >
-            {refreshCopy.filters.clear}
-          </button>
-        </div>
-      )}
-
       {zero ? (
         <DecksZero buildable={buildable} cards={cards} />
       ) : (
-        <div className="flex min-h-0 flex-auto flex-col sm:flex-row">
-          <DeckFilterColumn
-            filters={state.filters}
-            onChange={onFilters}
-            sort={state.sort}
-            onSortChange={onSort}
-            shown={shown.length}
-            total={decks.length}
+        <div className="flex min-h-0 flex-auto flex-col">
+          <FilterChassis
+            form={wide ? "wide" : "compact"}
+            controls={
+              wide ? (
+                <>
+                  {/* Search leads, and is the only control allowed to shrink —
+                      `min-w-0` on the chassis's leading group is what lets it. */}
+                  <div className="min-w-0 flex-auto">
+                    <SearchField
+                      value={state.filters.search}
+                      onChange={(search) => onFilters({ ...state.filters, search })}
+                      size="column"
+                    />
+                  </div>
+                  <FilterPanel
+                    copy={deckChassisCopy.status}
+                    options={statusOptions}
+                    selected={state.filters.statuses}
+                    onToggle={(code) =>
+                      onFilters({
+                        ...state.filters,
+                        statuses: toggleIn(STATUS_ORDER, state.filters.statuses, code as StatusPill),
+                      })
+                    }
+                    onClear={() => onFilters({ ...state.filters, statuses: [] })}
+                    widthPx={280}
+                    footerStatus={false}
+                  />
+                  <ColourPips
+                    form="wide"
+                    value={state.filters.colours}
+                    onToggle={(code) =>
+                      onFilters({
+                        ...state.filters,
+                        colours: toggleIn(COLOUR_ORDER, state.filters.colours, code),
+                      })
+                    }
+                  />
+                  <FilterPanel
+                    copy={deckChassisCopy.played}
+                    options={playedOptions}
+                    selected={state.filters.played ? [state.filters.played] : []}
+                    onToggle={(code) =>
+                      onFilters({
+                        ...state.filters,
+                        played: state.filters.played === code ? null : (code as PlayedWindow),
+                      })
+                    }
+                    onClear={() => onFilters({ ...state.filters, played: null })}
+                    widthPx={280}
+                    footerStatus={false}
+                  />
+                </>
+              ) : (
+                // Compact puts every dimension in the sheet, which is the one
+                // control the row keeps. `DeckFilterSheet` already draws them.
+                <button
+                  type="button"
+                  onClick={() => setSheet({ open: true, focusSearch: false })}
+                  className={`flex h-[34px] cursor-pointer items-center gap-[7px] rounded-[9px] border border-solid bg-transparent px-[12px] font-sans text-[13px] ${
+                    active > 0
+                      ? "border-[color:var(--accent)] text-[color:var(--fg)]"
+                      : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"
+                  }`}
+                >
+                  {refreshCopy.filters.sheetTitle}
+                  {active > 0 && (
+                    <span className="rounded-[4px] bg-[color:var(--accent)] px-[5px] py-[1px] font-mono text-[10px] text-[color:var(--bg)]">
+                      {refreshCopy.filters.triggerBadge(active)}
+                    </span>
+                  )}
+                </button>
+              )
+            }
+            sort={<DeckSortMenu sort={state.sort} onChange={onSort} />}
+            chips={chassisChips}
+            onClearAll={() => onFilters(EMPTY_FILTERS)}
+            resultLine={deckChassisCopy.result(shown.length, decks.length)}
           />
 
           {shown.length === 0 ? (

@@ -1,9 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { EMPTY_FILTERS, STATUS_ORDER } from "../../lib/decks/filter";
-import { DeckFilterColumn } from "./deck-filter-column";
+import { EMPTY_FILTERS } from "../../lib/decks/filter";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 
+/**
+ * The desktop column is gone — `decks-view.tsx` mounts the shared
+ * `FilterChassis`, which is what returns its 262px to the deck grid. The
+ * behaviours it used to carry did not go with it: the sheet draws the same six
+ * statuses, the same swatches and the same Clear, so these cases follow them
+ * there rather than being deleted with the component.
+ *
+ * The chassis's own wide-form panels are covered in `decks-view.test.tsx`.
+ */
 function props(over = {}) {
   return {
     filters: EMPTY_FILTERS,
@@ -16,23 +24,31 @@ function props(over = {}) {
   };
 }
 
-describe("DeckFilterColumn", () => {
+describe("Deck filters — the sheet the chassis opens on the phone", () => {
+  // Two cases left with the column rather than moving to the sheet: it printed
+  // a "1 status on" / "all statuses on" summary above its Clear, and the
+  // handoff's §3.3 retires that line along with the column's two footer
+  // Clears. The chassis states what is on in its chip row instead, where every
+  // dimension reports itself rather than statuses alone.
+
   it("renders all six statuses whether or not any deck has them", () => {
-    render(<DeckFilterColumn {...props()} />);
+    render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
     for (const label of ["Draft", "Building", "Over", "Unresolved", "To buy", "Complete"]) {
       expect(screen.getByRole("checkbox", { name: label })).toBeInTheDocument();
     }
   });
 
   it("shows no per-row counts", () => {
-    render(<DeckFilterColumn {...props()} />);
+    render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
     expect(screen.getByRole("checkbox", { name: "Draft" }).textContent).toBe("Draft");
   });
 
   it("toggles a status on without disturbing the others", () => {
     const onChange = vi.fn();
     render(
-      <DeckFilterColumn
+      <DeckFilterSheet
+        open
+        onDismiss={() => {}} autoFocusSearch={false}
         {...props({ filters: { ...EMPTY_FILTERS, statuses: ["Over"] }, onChange })}
       />,
     );
@@ -45,7 +61,9 @@ describe("DeckFilterColumn", () => {
   it("toggles a status back off", () => {
     const onChange = vi.fn();
     render(
-      <DeckFilterColumn
+      <DeckFilterSheet
+        open
+        onDismiss={() => {}} autoFocusSearch={false}
         {...props({ filters: { ...EMPTY_FILTERS, statuses: ["Draft"] }, onChange })}
       />,
     );
@@ -53,27 +71,8 @@ describe("DeckFilterColumn", () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ statuses: [] }));
   });
 
-  it("summarises what is on, and keeps Clear at every state", () => {
-    const { rerender } = render(<DeckFilterColumn {...props()} />);
-    expect(screen.getByText("all statuses on")).toBeInTheDocument();
-    // Drawn present whether or not anything is on: a control that appears the
-    // moment you tick a box moves the footer under the reader's cursor.
-    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
-
-    rerender(
-      <DeckFilterColumn {...props({ filters: { ...EMPTY_FILTERS, statuses: ["Draft"] } })} />,
-    );
-    expect(screen.getByText("1 status on")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
-  });
-
-  it("reads all six ticked as all statuses on, not six", () => {
-    render(<DeckFilterColumn {...props({ filters: { ...EMPTY_FILTERS, statuses: [...STATUS_ORDER] } })} />);
-    expect(screen.getByText("all statuses on")).toBeInTheDocument();
-  });
-
   it("gives every colour swatch an accessible name", () => {
-    render(<DeckFilterColumn {...props()} />);
+    render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
     expect(screen.getByRole("checkbox", { name: "White" })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Green" })).toBeInTheDocument();
   });
@@ -82,7 +81,9 @@ describe("DeckFilterColumn", () => {
     const onChange = vi.fn();
     const onSortChange = vi.fn();
     render(
-      <DeckFilterColumn
+      <DeckFilterSheet
+        open
+        onDismiss={() => {}} autoFocusSearch={false}
         {...props({
           filters: { statuses: ["Draft"], colours: ["R"], played: "never", search: "krenko" },
           onChange,
