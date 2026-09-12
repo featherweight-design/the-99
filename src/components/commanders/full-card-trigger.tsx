@@ -17,7 +17,12 @@ import { PENDING_OPACITY } from "./pending";
     exception is earned rather than inherited: that band centres its title and
     carries the rename pencil beside it, so the block holds both bottom corners. */
 const PLACEMENT = {
-  hero: { right: 16, bottom: 15 },
+  // Still top-right, and it moves to `right: 16, bottom: 15` in the same change
+  // that moves the identity pips into the label block. That block currently spans
+  // `left: 16` to `right: 16` and ends at `bottom: 15`, so a 26px plate in the
+  // bottom-right corner today would sit on the type line it has not yet made room
+  // for — and `z-[2]` would put it over the name rather than under it.
+  hero: { top: 56, right: 16 },
   // Inside the 63/88 frame's own bottom-left. The frame has no ink of its own —
   // the name and type line sit below it — so the control only has the art to
   // clear.
@@ -117,7 +122,6 @@ export function FullCardTrigger({
           width: 44,
           height: 44,
           cursor: "pointer",
-          opacity: pending ? PENDING_OPACITY : undefined,
         }}
         aria-label="View card details"
         // Never `disabled` while the fetch runs, for the same reason
@@ -126,8 +130,23 @@ export function FullCardTrigger({
         aria-busy={pending}
         onClick={() => open(oracleId)}
       >
+        {/* The pending dim lands on the GLYPH, never on the plate. Dimming the
+            plate composites `--bg` at 55% over the crop, which puts the icon back
+            on uncontrolled art for the length of a fetch — and with no top scrim
+            there is nothing underneath to catch it. The plate being opaque is the
+            argument that lets the scrim go, so it cannot be opaque only when
+            nothing is happening. */}
         <span className={PLATE} style={{ width: 26, height: 26 }}>
-          <span style={{ color: "var(--fg)", fontSize: 14, lineHeight: 1 }}>⛶</span>
+          <span
+            style={{
+              color: "var(--fg)",
+              fontSize: 14,
+              lineHeight: 1,
+              opacity: pending ? PENDING_OPACITY : undefined,
+            }}
+          >
+            ⛶
+          </span>
         </span>
       </button>
     </>

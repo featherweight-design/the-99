@@ -112,12 +112,15 @@ describe("FullCardTrigger placement", () => {
   // at the inset the placement names. Inward rather than overhung: the bands are
   // `overflow-hidden`, and 9px of an overhanging target is clipped out of its own
   // hit area.
-  it("defaults to the hero's bottom-right corner with a band tap target", () => {
+  //
+  // `hero` is still top-right. It moves to the bottom corner in the change that
+  // moves the identity pips into the label block — that block reaches both bottom
+  // corners today, so a plate there would land on the type line.
+  it("keeps the hero's top-right corner with a band tap target", () => {
     const { container } = mount(<FullCardTrigger oracleId="o-atraxa" />);
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.top).toBe("");
+    expect(pill.style.top).toBe("47px");
     expect(pill.style.right).toBe("7px");
-    expect(pill.style.bottom).toBe("6px");
     expect(container.querySelector('[aria-hidden="true"].inset-0')).not.toBeNull();
   });
 
@@ -126,7 +129,7 @@ describe("FullCardTrigger placement", () => {
   // it rather than drawn separately.
   it("lands the drawn plate at every placement's named inset", () => {
     const drawn = {
-      hero: { right: 16, bottom: 15 },
+      hero: { top: 56, right: 16 },
       "commander-desktop": { left: 12, bottom: 12 },
       "deck-desktop": { left: 16, bottom: 14 },
       "deck-mobile": { top: 13, right: 16 },
@@ -210,6 +213,33 @@ describe("FullCardTrigger placement", () => {
     expect(plate.style.width).toBe("26px");
     expect(plate.className).toContain("bg-[color:var(--bg)]");
     expect(plate.className).toContain("border-[color:var(--border-strong)]");
+  });
+
+  // The plate is opaque in every state, including while the fetch runs. Dimming
+  // the button would composite it at 55% over the crop and put the icon back on
+  // uncontrolled art — with no top scrim left to catch it — which would undo the
+  // argument that lets the scrim go.
+  it("dims the glyph while pending and never the plate", async () => {
+    let release: (card: BrowseCard) => void = () => {};
+    render(
+      <CardDetailProvider
+        fetchCard={vi.fn(() => new Promise<BrowseCard>((resolve) => { release = resolve; }))}
+      >
+        <FullCardTrigger oracleId="o-atraxa" />
+      </CardDetailProvider>,
+    );
+    const pill = screen.getByRole("button", { name: "View card details" });
+    const plate = pill.firstElementChild as HTMLElement;
+    await act(async () => {
+      fireEvent.click(pill);
+    });
+    expect(pill.getAttribute("aria-busy")).toBe("true");
+    expect(pill.style.opacity).toBe("");
+    expect(plate.style.opacity).toBe("");
+    expect((plate.firstElementChild as HTMLElement).style.opacity).not.toBe("");
+    await act(async () => {
+      release(ATRAXA);
+    });
   });
 
   // Dropped with the plate, not forgotten: a blur under an opaque box computes a

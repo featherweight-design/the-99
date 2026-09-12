@@ -219,6 +219,18 @@ const LEGACY_PORTRAIT: Record<Band, PortraitWidth> = { 168: 230, 148: 203, 72: 9
 const portrait = (width: PortraitWidth, labelAtPx: number | "flat", band: number) => {
   const b = PORTRAITS[width];
   const clearTo = b.clearTo ?? Math.round((b.maskEnd / 100) * width);
+  // Which dimension the crop is scaled by, derived rather than declared. A
+  // portrait no wider than `band × 1.37` is filled by scaling the crop to the
+  // band's height — `auto 100%` — which is what every derived width does, and
+  // the crop then overhangs the box on the right and is masked there.
+  //
+  // The one inverted geometry cannot do that. At 560 on a 288 band, a
+  // height-scaled crop is 395px wide, so 165px of the box would be ground with
+  // no art in it while the mask and the scrim were positioned as though art
+  // reached 560. That portrait is scaled by its width instead and loses the
+  // bottom of the crop rather than the right of the box — `center top`, which is
+  // A1 and is what keeps the face in frame.
+  const widthDriven = width > Math.round(band * PORTRAIT_RATIO);
   // The leading pair is the row's ground at zero alpha rather than the
   // `transparent` keyword: `transparent` is a transparent *black*, and
   // interpolating from it lays a grey haze over the half of the crop this ramp
@@ -233,6 +245,8 @@ const portrait = (width: PortraitWidth, labelAtPx: number | "flat", band: number
     width,
     ground: b.ground,
     sharpOpacity: b.sharpOpacity,
+    size: widthDriven ? "cover" : "auto 100%",
+    position: widthDriven ? "center top" : "left center",
     // Black is the opaque end of a mask's alpha, not a palette colour.
     mask: `linear-gradient(90deg, #000 0 ${b.maskEnd}%, transparent 100%)`,
     scrim: `linear-gradient(90deg, ${stops})`,
@@ -331,6 +345,12 @@ export function ArtWash(props: ArtWashProps) {
       // longer over-scale the crop and clip it at the fixed portrait width.
       <div
         aria-hidden="true"
+        // The hook a browser probe reads, and it is on the root rather than on a
+        // scrim class because the two strategies draw different scrims: a stated
+        // `left-portrait` band has no `-cover` class to find it by, so keying the
+        // check to one strategy's class would silently stop covering the other.
+        // Absent on a legacy band, which is what makes the census meaningful.
+        data-art-wash-band={props.band === undefined ? height : undefined}
         className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
         style={{ background: `var(${p.ground})`, height: `${height}px` }}
       >
@@ -356,8 +376,8 @@ export function ArtWash(props: ArtWashProps) {
               ...reducible(p.sharpOpacity, true),
               width: `${p.width}px`,
               backgroundImage: cssUrl(artCropUri),
-              backgroundSize: "auto 100%",
-              backgroundPosition: "left center",
+              backgroundSize: p.size,
+              backgroundPosition: p.position,
               backgroundRepeat: "no-repeat",
               maskImage: p.mask,
               WebkitMaskImage: p.mask,
@@ -376,6 +396,7 @@ export function ArtWash(props: ArtWashProps) {
   return (
     <div
       aria-hidden="true"
+      data-art-wash-band={stated ? props.height : undefined}
       className={`pointer-events-none overflow-hidden ${stated ? "absolute inset-x-0 top-0" : "absolute inset-0"}`}
       // R6 ruling 1: the plate is a loading device, not a ground. With no art
       // there is nothing to load, so an artless band grounds in `var(--bg)`

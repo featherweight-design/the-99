@@ -425,3 +425,57 @@ describe("ArtWash — a stated band", () => {
     expect(layer?.style.opacity).toBe("0.8");
   });
 });
+
+describe("ArtWash — the inverted portrait", () => {
+  // 560 on a 288 band is the one geometry whose width was chosen before its
+  // height, and it is the one the crop cannot fill by scaling to the band: a
+  // height-scaled crop is 288 × 1.37 = 395px wide, so 165px of a 560px box would
+  // be ground with no art in it while the mask and scrim were positioned as
+  // though art reached 560.
+  it("scales the 560 portrait by its width and the derived ones by the band", () => {
+    const sharp = (el: React.ReactElement) => {
+      const { container } = render(el);
+      return Array.from(container.querySelectorAll<HTMLElement>("div")).find((d) =>
+        d.style.maskImage?.includes("90deg"),
+      )!;
+    };
+    const wide = sharp(
+      <ArtWash strategy="left-portrait" height={288} portrait={560} labelAtPx="flat" artCropUri="c.jpg" colorIdentity={["G"]} />,
+    );
+    expect(wide.style.backgroundSize).toBe("cover");
+    // A1 — the face is at the top of the crop, so a width-driven portrait loses
+    // the bottom rather than the middle.
+    expect(wide.style.backgroundPosition).toBe("center top");
+
+    // 340 on the same band still fits: 395px of art overhangs a 340px box, so it
+    // is filled and masked exactly as every other portrait is.
+    const narrow = sharp(
+      <ArtWash strategy="left-portrait" height={288} portrait={340} labelAtPx="flat" artCropUri="c.jpg" colorIdentity={["G"]} />,
+    );
+    expect(narrow.style.backgroundSize).toBe("auto 100%");
+    expect(narrow.style.backgroundPosition).toBe("left center");
+  });
+
+  // The hook a probe reads. On the root, not on a scrim class: the two strategies
+  // draw different scrims, so a check keyed to one class silently stops covering
+  // the other the moment a row migrates.
+  it("marks a stated band and leaves a legacy one unmarked", () => {
+    const stated = render(
+      <ArtWash strategy="cover" height={248} labelAtPx={46} artCropUri="c.jpg" colorIdentity={["G"]} />,
+    );
+    expect(stated.container.firstElementChild).toHaveAttribute("data-art-wash-band", "248");
+
+    const statedPortrait = render(
+      <ArtWash strategy="left-portrait" height={208} portrait={285} labelAtPx={46} artCropUri="c.jpg" colorIdentity={["G"]} />,
+    );
+    expect(statedPortrait.container.firstElementChild).toHaveAttribute("data-art-wash-band", "208");
+
+    for (const legacy of [
+      <ArtWash key="t" strategy="cover" labelEdge="top" artCropUri="c.jpg" colorIdentity={["G"]} />,
+      <ArtWash key="p" strategy="left-portrait" band={148} artCropUri="c.jpg" colorIdentity={["G"]} />,
+    ]) {
+      const { container } = render(legacy);
+      expect(container.firstElementChild).not.toHaveAttribute("data-art-wash-band");
+    }
+  });
+});

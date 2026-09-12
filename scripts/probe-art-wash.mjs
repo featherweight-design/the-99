@@ -155,25 +155,34 @@ const READ_COVER_STOPS = `(edge) => {
     });
 }`;
 
-/** Every band that has taken a stated height, with the ramp it draws. A stated
-    band carries `.art-wash-scrim-cover` with **no** edge class — the edge is in
-    the class only while a top-labelled band still ships — so the absence is what
-    identifies one, and the root's own `height` is what proves the band stopped
-    taking its size from the row it landed in. */
+/** Every band that has taken a stated height, with the ramp it draws. Selected by
+    `data-art-wash-band` on the wash's own root rather than by a scrim class: the
+    two strategies draw different scrims, so keying this to `-cover` would stop
+    covering `left-portrait` the moment those rows migrate — a check that goes
+    quiet is worse than one that fails. The attribute is absent on a legacy band,
+    which is what makes the census a countdown rather than a guess.
+
+    The ramp read is the LAST scrim in the root, which is the vertical one under
+    both strategies: `cover` draws one, and `left-portrait` draws its horizontal
+    scrim first and its ramp second. */
 const READ_STATED_BANDS = `() => {
-  return [...document.querySelectorAll('.art-wash-scrim-cover')]
-    .filter((s) => s.getClientRects().length)
-    .filter((s) => !s.classList.contains('art-wash-scrim-cover-top') && !s.classList.contains('art-wash-scrim-cover-bottom'))
-    .map((s) => {
-      const root = s.parentElement;
-      const image = getComputedStyle(s).backgroundImage;
+  return [...document.querySelectorAll('[data-art-wash-band]')]
+    .filter((root) => root.getClientRects().length)
+    .map((root) => {
+      const scrims = [...root.querySelectorAll('.art-wash-scrim')];
+      const s = scrims.at(-1);
+      const image = s ? getComputedStyle(s).backgroundImage : '';
       const stops = (image.match(/[a-z-]+\([^()]*\)\s+[\d.]+%/g) ?? []).map((stop) => {
         const alpha = stop.match(/\/\s*([\d.]+)\)/);
         return { alpha: alpha ? Number(alpha[1]) : 1, position: Number(stop.match(/([\d.]+)%$/)[1]) };
       });
       return {
-        declared: root?.style.height ?? '',
-        laid: Math.round(root?.getBoundingClientRect().height ?? 0),
+        declared: root.getAttribute('data-art-wash-band') + 'px',
+        laid: Math.round(root.getBoundingClientRect().height),
+        // A left-portrait band whose ink starts past the flat stop draws no ramp
+        // at all and reports one scrim rather than two: a band with nothing to
+        // check rather than a band that failed.
+        ramped: scrims.length > 1 || image.includes('180deg'),
         stops,
       };
     });
@@ -191,10 +200,23 @@ const READ_PLATES = `() => {
       const plate = b.firstElementChild;
       const p = plate ? getComputedStyle(plate) : null;
       const pb = plate ? plate.getBoundingClientRect() : null;
+      // The alpha that actually reaches the crop, not the one the plate declares.
+      // Its own colour can be opaque while an ancestor's opacity composites it —
+      // which is how a pending fetch put this icon back on unscrimmed art — so
+      // every opacity from the plate up to the band is folded in.
+      let composited = 1;
+      const declared = p ? p.backgroundColor : '';
+      const alpha = /(?:rgba|\/)/.test(declared) && /[\d.]+\s*\)$/.test(declared)
+        ? Number(declared.match(/([\d.]+)\s*\)$/)[1])
+        : 1;
+      for (let el = plate; el && el !== document.body; el = el.parentElement) {
+        composited *= Number(getComputedStyle(el).opacity || 1);
+      }
       return {
         target: [Math.round(box.width), Math.round(box.height)],
         drawn: pb ? [Math.round(pb.width), Math.round(pb.height)] : null,
-        fill: p ? p.backgroundColor : '',
+        fill: declared,
+        alpha: alpha * composited,
         border: p ? p.borderTopWidth : '',
         text: (b.textContent ?? '').replace('⛶', '').trim(),
       };
@@ -248,6 +270,72 @@ const VIEWPORTS = [
   ["mobile", 375, 812],
   ["desktop", 1440, 900],
 ];
+
+/** THE PLATE and the thumbs, on whatever surface is loaded. A routine rather than
+    four inline blocks, because the controls this measures live on the commander
+    and deck DETAIL pages and the band checks live on the lists — the first draft
+    ran these inside the list loop alone, where `plates` is always empty and every
+    assertion under it passes without executing. A check that cannot fail is worse
+    than no check. */
+/** THE PLATE and the thumbs, on whatever surface is loaded. A routine rather than
+    an inline block, because the controls this measures live on the commander and
+    deck DETAIL pages while the band checks live on the lists — and an earlier
+    draft ran these inside the list loop alone, where the control list is always
+    empty and every assertion under it passes without executing. A check that
+    cannot fail is worse than no check. */
+async function checkChrome(page, label, note) {
+  const plates = await page.evaluate(`(${READ_PLATES})()`);
+  if (plates.length) {
+    note(`${label}: ${plates.length} card-details control(s) at ${[...new Set(plates.map((p) => p.drawn?.join("×")))].join(", ")}`);
+  }
+  for (const plate of plates) {
+    if (plate.target[0] < 44 || plate.target[1] < 44) {
+      note(`  FAIL control target ${plate.target.join("×")} under the 44px floor`);
+    }
+    if (!plate.drawn || plate.drawn[0] !== 26 || plate.drawn[1] !== 26) {
+      note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26×26`);
+    }
+    // Opaque is the whole argument for deleting the top scrim: a translucent plate
+    // passes the brightest pixel of an unscrimmed crop through to the glyph. A
+    // resolved colour carrying an alpha under 1 is that mix — including the case
+    // where a parent's own opacity is what composites it.
+    if (plate.alpha < 0.999) note(`  FAIL plate is translucent: ${plate.fill} at ${plate.alpha}`);
+    if (Number.parseFloat(plate.border) < 1) note(`  FAIL plate draws no hairline: ${plate.border}`);
+    if (plate.text) note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
+  }
+
+  const hits = await page.evaluate(`(${READ_PLATE_HIT})()`);
+  for (const hit of hits) {
+    // Every corner, not just the centre: the target is 9px further out than the
+    // drawn box and every band it sits on is `overflow-hidden`, so an overhang is
+    // clipped out of its own hit area without changing one pixel of what a
+    // screenshot shows. Counting controls proves they paint; this is the only
+    // check that proves one can be pressed.
+    for (const [where, result] of Object.entries(hit)) {
+      if (result !== "self") {
+        note(`  FAIL card-details control unreachable at its ${where}: ${result}`);
+      }
+    }
+  }
+
+  // The thumbs. Two boxes and one ring, or the convergence has not reached every
+  // render.
+  const thumbs = await page.evaluate(`(${READ_THUMBS})()`);
+  if (thumbs.length) {
+    note(`${label}: ${thumbs.length} commander thumb(s) at ${[...new Set(thumbs.map((t) => t.box.join("×")))].join(", ")}`);
+  }
+  for (const t of thumbs) {
+    const box = t.box.join("×");
+    if (!THUMB_BOXES.includes(box)) note(`  FAIL thumb at ${box}, outside the two settled boxes`);
+    if (t.radius !== "6px") note(`  FAIL thumb radius ${t.radius}, expected 6px`);
+    if (!t.shadow.includes("inset")) note(`  FAIL thumb draws no inset ring: ${t.shadow}`);
+    // `center top`, not `center`: a centred crop of a 63/88 frame at 44px wide is
+    // mostly type box, and the face is at the top of the card.
+    if (t.hasArt && !t.position.startsWith("50% 0")) {
+      note(`  FAIL thumb crops from ${t.position}, expected center top`);
+    }
+  }
+}
 
 const findings = [];
 const note = (line) => {
@@ -339,6 +427,12 @@ try {
         if (Math.abs(band.laid - Number.parseInt(band.declared, 10)) > 1) {
           note(`  FAIL band declares ${band.declared} and lays out at ${band.laid}px`);
         }
+        if (!band.ramped) {
+          // A flat band: its ink starts past the portrait's flat stop and stands
+          // on the row's own ground, so there is no ramp to measure.
+          note(`  ${band.declared} band is flat — no ramp to check`);
+          continue;
+        }
         if (band.stops.length !== 4) {
           note(`  FAIL stated band computed ${band.stops.length} stops, expected 4`);
           continue;
@@ -357,40 +451,7 @@ try {
         }
       }
 
-      // THE PLATE, wherever this route draws one.
-      const plates = await page.evaluate(`(${READ_PLATES})()`);
-      if (plates.length) {
-        note(`  card-details controls: ${plates.length} at ${[...new Set(plates.map((p) => p.drawn?.join("×")))].join(", ")}`);
-      }
-      for (const plate of plates) {
-        if (plate.target[0] < 44 || plate.target[1] < 44) {
-          note(`  FAIL control target ${plate.target.join("×")} under the 44px floor`);
-        }
-        if (!plate.drawn || plate.drawn[0] !== 26 || plate.drawn[1] !== 26) {
-          note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26×26`);
-        }
-        // Opaque is the whole argument for deleting the top scrim: a translucent
-        // plate passes the brightest pixel of an unscrimmed crop through to the
-        // glyph. A resolved colour with an alpha channel under 1 is that mix.
-        const alpha = plate.fill.match(/[\d.]+\s*\)$/) && /(?:rgba|\/)/.test(plate.fill)
-          ? Number(plate.fill.match(/([\d.]+)\s*\)$/)[1])
-          : 1;
-        if (alpha < 0.999) note(`  FAIL plate is translucent: ${plate.fill}`);
-        if (Number.parseFloat(plate.border) < 1) note(`  FAIL plate draws no hairline: ${plate.border}`);
-        if (plate.text) note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
-      }
-      const hits = await page.evaluate(`(${READ_PLATE_HIT})()`);
-      for (const hit of hits) {
-        // Every corner, not just the centre: the target is 9px further out than
-        // the drawn box, and the bands are `overflow-hidden`, so an overhang is
-        // clipped out of its own hit area without changing a single pixel of what
-        // the screenshot shows.
-        for (const [where, result] of Object.entries(hit)) {
-          if (result !== "self") {
-            note(`  FAIL card-details control unreachable at its ${where}: ${result}`);
-          }
-        }
-      }
+      await checkChrome(page, `${vpName} ${routeName}`, note);
     }
 
     // Ratification 2 — the 148 band's vertical damping, at this viewport. This
@@ -442,6 +503,8 @@ try {
       if (vpName === "desktop" && bottoms.length !== 0) {
         note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
       }
+      await checkChrome(page, `${vpName} ${slug}`, note);
+
       for (const stops of bottoms) {
         const clear = stops.slice(0, 2).every((s) => s.alpha === 0);
         if (!clear) {
@@ -451,6 +514,30 @@ try {
           note(`  FAIL bottom cover scrim does not hold to the foot: ${JSON.stringify(stops.slice(-2))}`);
         }
       }
+    }
+
+    // The deck header, which is the other surface drawing this control — and the
+    // one whose `Card details` chip shipped visible and dead (#534), so its hit
+    // test is the one with a history. The link is read off the list rather than
+    // written down, so no deck id is hard-coded.
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    const deckHref = await page.evaluate(
+      `document.querySelector('a[href^="/decks/"]:not([href$="/import"])')?.getAttribute('href') ?? null`,
+    );
+    if (!deckHref) {
+      note(`  FAIL no deck link on /decks to follow — the deck header's chrome goes unchecked`);
+    } else {
+      await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-deck.png`, fullPage: false });
+      const deckPlates = await page.evaluate(`(${READ_PLATES})()`);
+      if (!deckPlates.length) {
+        note(`  FAIL no card-details control on ${deckHref} — the deck header draws one at both widths`);
+      }
+      await checkChrome(page, `${vpName} ${deckHref}`, note);
+      const deckBands = await page.evaluate(`(${READ_STATED_BANDS})()`);
+      note(`${vpName} ${deckHref}: ${deckBands.length} stated band(s)`);
     }
 
     // The two accessibility mechanisms, on the surface that carries every case.
