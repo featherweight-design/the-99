@@ -167,15 +167,23 @@ function Marker({ auto }: { auto: boolean }) {
  * today — reaches `free === 0` by having its own claim subtracted, and must not
  * be called hard. An addition is not on the deck yet, so nothing of its was
  * subtracted and a `free === 0` there is a genuine claim by another deck.
+ *
+ * `buyable` is false where the card is leaving: the review page's out column is
+ * cards going back to the pool, and its header says so, so a `buy` tag there
+ * quotes a price for a copy the reader is about to stop needing. The update
+ * flow's removals keep the tag they have always drawn — that list is a proposed
+ * import, where a row coming out may still have to be bought back.
  */
 function AvailabilitySlot({
   card,
   selfClaimed,
+  buyable = true,
 }: {
   card: DiffRowCard;
   selfClaimed: boolean;
+  buyable?: boolean;
 }) {
-  if (!card.owned || card.committed) {
+  if (buyable && (!card.owned || card.committed)) {
     return (
       <BuyTag variant="row" price={card.price ?? null} newestAsOf={card.newestAsOf ?? null} />
     );
@@ -390,7 +398,7 @@ export function DiffRowOut({
       />
       {review ? <OpenHint /> : null}
       {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
-      <AvailabilitySlot card={card} selfClaimed />
+      <AvailabilitySlot card={card} selfClaimed buyable={!review} />
       {/* The removes column draws the same anatomy as the adds, cost track and
           all — including on a card with no printed cost, where the track is
           drawn empty so the land and the spell above it end on the same line.

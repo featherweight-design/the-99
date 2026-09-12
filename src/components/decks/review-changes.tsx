@@ -15,7 +15,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { pullCandidate, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
@@ -334,6 +334,18 @@ export function ReviewChanges({
   // rather than hiding it, which is what leaves the note empty if it is opened
   // again — a half-typed reason for a version nobody committed is not a draft.
   const [commitSheetOpen, setCommitSheetOpen] = useState(commitOpen === true);
+  // Cancelling takes `?commit=1` off the URL as well as closing the sheet. The
+  // query is an instruction to open, and left behind it re-fires on a reload or
+  // a back-forward return — the reader would be handed back the sheet they just
+  // dismissed. `history.replaceState` rather than the router, per the repo's URL
+  // mirror rule: the point is to avoid a navigation, not to make one.
+  const closeCommitSheet = useCallback(() => {
+    setCommitSheetOpen(false);
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("commit")) return;
+    url.searchParams.delete("commit");
+    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
   // Phone only, and it decides which column is on screen rather than which one
   // is drawn twice: both columns are in the markup once, and the inactive one is
   // hidden below `md` and shown above it. A second mounting for the narrow
@@ -510,7 +522,7 @@ export function ReviewChanges({
               state={state}
               rows={rows}
               cardCount={cardCount}
-              onCancel={() => setCommitSheetOpen(false)}
+              onCancel={closeCommitSheet}
             />
           ) : (
             // The bar. A dock on the phone — its own plate, ruled off and

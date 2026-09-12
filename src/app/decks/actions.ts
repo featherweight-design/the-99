@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "../../db";
 import {
   cards, collectionItems, deckCards, deckGameAxes, deckGames, decks,
-  fillPassCards, fillPasses,
+  deckUnresolvedRows, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
@@ -1357,6 +1357,37 @@ export async function commitDeckVersion(
     const draft = await tx.select({
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
     }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
+
+    // A FIRST version is the one commit with an eligibility test of its own, and
+    // the server owns it. The spine offers `Commit as v1` only on a list that is
+    // exactly its body size with nothing unresolved; `?commit=1` is a URL, so a
+    // stale link or a hand-typed one reaches the sheet on a 63-card brew, and
+    // without this it would freeze that as v1. Later commits carry no such test:
+    // a deck already has a version to fall back to, and a draft mid-edit is
+    // exactly what this feature exists to let the player commit.
+    if (!previous) {
+      const body = draft.reduce((n, row) => n + row.quantity, 0);
+      const expected = deckBodySize(deck.partnerOracleId !== null);
+      // An exact match, not `>=`: past its size the deck is `Over`, and a v1 of
+      // 104 cards is an illegal list frozen into the deck's history.
+      if (body !== expected) {
+        return {
+          ok: false,
+          message: `A first version has to be a whole deck — ${expected} cards. This one has ${body}.`,
+        };
+      }
+      const [unresolved] = await tx.select({ n: sql<number>`count(*)::int` })
+        .from(deckUnresolvedRows).where(eq(deckUnresolvedRows.deckId, deckId));
+      // Unresolved lines are not `deck_cards` rows and so never reach the count
+      // above: a deck at its body size plus two unnamed lines is a list the
+      // player has not finished, and the version would silently drop them.
+      if ((unresolved?.n ?? 0) > 0) {
+        return {
+          ok: false,
+          message: "Some lines in this deck never matched a card. Resolve them before cutting v1.",
+        };
+      }
+    }
 
     const diff = draftDiff(draft, before);
     // Basics are out of the availability model entirely — see that query's

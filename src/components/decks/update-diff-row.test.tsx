@@ -8,6 +8,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it } from "vitest";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { DiffRowIn, DiffRowOut, type DiffRowCard } from "./update-diff-row";
@@ -92,6 +93,31 @@ describe("the review page's mounting", () => {
     // alternative the pull is weighed against.
     expect(row.textContent).toContain("$28.40");
     expect(row.querySelector(".bg-\\[color\\:var\\(--avail-hard-fg\\)\\]")).toBeTruthy();
+  });
+
+  // §Surfaces 2 gives the out column a dot, a name and a cost track, and its
+  // header says every row in it goes back to the pool on commit. A `buy` tag there
+  // quotes a price for a copy the reader is about to stop needing.
+  it("quotes no price on a card leaving the deck", () => {
+    const price = {
+      cents: 2840,
+      foilCents: null,
+      etchedCents: null,
+      asOf: new Date("2026-09-08"),
+    };
+    const row = draw(
+      <DiffRowOut
+        review
+        card={card({ owned: true, committed: true, price, newestAsOf: new Date("2026-09-08") })}
+      />,
+    );
+    expect(row.textContent).not.toContain("$28.40");
+    expect(row.textContent).not.toContain(addPanelCopy.unowned.tag);
+    cleanup();
+    // An unowned removal reaches the same slot by the other route, and draws just
+    // as little: the deck is giving the card up either way.
+    const unowned = draw(<DiffRowOut review card={card({ owned: false, price })} />);
+    expect(unowned.textContent).not.toContain("$28.40");
   });
 
   it("writes a moved count inside the row, and names no card in it", () => {

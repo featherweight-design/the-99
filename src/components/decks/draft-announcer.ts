@@ -13,6 +13,19 @@
 
 export const DRAFT_ANNOUNCER_ID = "draft-announcer";
 
+/**
+ * The hash a successful commit lands on the deck page with, and that page's cue
+ * to put focus on the version line it just created.
+ *
+ * A commit navigates, and a navigation leaves focus on the document body: a
+ * keyboard or screen-reader user who committed from the sheet would be dropped at
+ * the top of a page with no indication which of its lines is the answer. The live
+ * region above says the version was cut; this says where it is. The line takes
+ * focus once and the hash is cleared on the way, so a reload or a back-forward
+ * return does not re-fire a receipt for a commit minutes old.
+ */
+export const COMMIT_RECEIPT_HASH = "#committed";
+
 export function draftAnnouncer(): HTMLElement {
   const existing = document.getElementById(DRAFT_ANNOUNCER_ID);
   if (existing) return existing;

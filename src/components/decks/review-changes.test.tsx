@@ -514,4 +514,26 @@ describe("ReviewChanges", () => {
       ),
     ).toBeTruthy();
   });
+
+  // `?commit=1` is an instruction to open the sheet, so cancelling has to take it
+  // off the URL as well as close the sheet. Left behind, a reload or a
+  // back-forward return hands the reader back the sheet they just dismissed.
+  it("takes ?commit=1 off the URL when the sheet is cancelled", () => {
+    history.replaceState(null, "", "/decks/d/changes?commit=1&filter=shopping");
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row()], out: [] }}
+        state={STATE}
+        cardCount={CARD_COUNT}
+        commitOpen
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: deckVersioningCopy.commit.cancel }).click();
+    });
+    expect(screen.queryByLabelText(deckVersioningCopy.commit.noteLabel)).toBeNull();
+    expect(window.location.search).toBe("?filter=shopping");
+  });
 });

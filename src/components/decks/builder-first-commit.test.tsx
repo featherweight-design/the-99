@@ -110,8 +110,8 @@ describe("BuilderShell — the gate on Commit as v1", () => {
   });
 
   // Past the body size the deck is `Over`, and the action it is waiting for is a
-  // cut, not a commit. `commitDeckVersion` checks no count, so an offer here
-  // would freeze an illegal list as v1 — and a version cannot be uncut.
+  // cut, not a commit. An offer here would put the reader in front of a sheet the
+  // server then refuses, and a `>=` gate would freeze an illegal list as v1.
   it("withholds it past a full body", async () => {
     await mount(makeDeck(101), BREW);
     expect(offers()).toHaveLength(0);
@@ -144,6 +144,16 @@ describe("BuilderShell — the gate on Commit as v1", () => {
   // here would freeze 98 cards under an offer that called the list complete.
   it("withholds it at 98 matched cards plus an unresolved line", async () => {
     await mount(makeDeck(98, null, 1), BREW);
+    expect(offers()).toHaveLength(0);
+  });
+
+  // The other side of the same rule, and the reason the gate reads the unresolved
+  // count directly: at a FULL body plus an unnamed line, both card counts agree
+  // the deck is whole and the line is still a card the player has not finished.
+  // `commitDeckVersion` refuses this inside its transaction, so an offer here
+  // would walk the reader into a refusal.
+  it("withholds it at a full body plus an unresolved line", async () => {
+    await mount(makeDeck(99, null, 1), BREW);
     expect(offers()).toHaveLength(0);
   });
 

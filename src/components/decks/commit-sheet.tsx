@@ -25,7 +25,7 @@ import type { DraftState } from "../../lib/decks/draft-shape";
 import type { DraftRows } from "../../lib/decks/draft-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { GhostButton, PrimaryButton } from "../ui/button";
-import { draftAnnouncer } from "./draft-announcer";
+import { COMMIT_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
 
 const copy = deckVersioningCopy.commit;
@@ -285,7 +285,11 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
                   result.cardCount,
                   result.buy.reduce((n, a) => n + a.shortfall, 0),
                 );
-                router.push(`/decks/${deckId}`);
+                // With the receipt hash: the deck page's version line reads it,
+                // takes focus, and clears it. Without it the navigation would
+                // leave focus on the body of a page whose one changed line is
+                // several screens of deck above the fold.
+                router.push(`/decks/${deckId}${COMMIT_RECEIPT_HASH}`);
               });
             }}
           >

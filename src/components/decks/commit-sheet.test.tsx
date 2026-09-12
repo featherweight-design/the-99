@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { BucketedAdd } from "../../lib/decks/draft-diff";
 import type { DraftAdd, DraftState } from "../../lib/decks/draft-shape";
-import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
+import { COMMIT_RECEIPT_HASH, DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import { CommitSheet } from "./commit-sheet";
 
@@ -207,7 +207,9 @@ describe("CommitSheet", () => {
     // 101, not the 99 this sheet was handed and not a tally of the rows above:
     // the version's size is whatever the snapshot actually wrote.
     expect(screen.getByRole("status").textContent).toBe(copy.announced(3, 101, 8));
-    expect(push).toHaveBeenCalledWith("/decks/d");
+    // With the receipt hash: the deck page's version line reads it to take focus,
+    // which is the only thing telling a keyboard reader where the commit landed.
+    expect(push).toHaveBeenCalledWith(`/decks/d${COMMIT_RECEIPT_HASH}`);
   });
 
   // The write decides the purchase inside its own transaction, under the deck's

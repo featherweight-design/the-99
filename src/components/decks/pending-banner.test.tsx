@@ -4,6 +4,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { priceCopy } from "../../lib/copy/price";
 import type { DraftState } from "../../lib/decks/draft-shape";
+import { COMMIT_RECEIPT_HASH } from "./draft-announcer";
 import { PendingBanner } from "./pending-banner";
 
 const copy = deckVersioningCopy.pending;
@@ -85,6 +86,24 @@ describe("PendingBanner", () => {
     render(<PendingBanner state={empty} deckId="d" />);
     expect(screen.queryByText(copy.label)).toBeNull();
     expect(screen.getByText(copy.versionLine(2, "1 Sep 2026"))).toBeTruthy();
+  });
+
+  // A commit navigates, and a navigation leaves focus on the body. The version
+  // line is the answer the reader came back for, so the commit sheet hands the
+  // page a hash and the line takes focus off it.
+  it("takes focus on the version line when a commit lands it here", () => {
+    history.replaceState(null, "", `/decks/d${COMMIT_RECEIPT_HASH}`);
+    render(<PendingBanner state={empty} deckId="d" />);
+    expect(document.activeElement).toBe(screen.getByText(copy.versionLine(2, "1 Sep 2026")));
+    // And the hash goes, so a reload or a back-forward return does not re-fire a
+    // receipt for a commit minutes old.
+    expect(window.location.hash).toBe("");
+  });
+
+  it("leaves focus alone on a version line nobody just committed", () => {
+    history.replaceState(null, "", "/decks/d");
+    render(<PendingBanner state={empty} deckId="d" />);
+    expect(document.activeElement).toBe(document.body);
   });
 
   it("names the changes at or below INLINE_CHANGE_MAX and links to the review page", () => {
