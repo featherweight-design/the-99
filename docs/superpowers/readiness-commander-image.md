@@ -222,8 +222,10 @@ is right — measure the block, key the ramp to its wrapped worst case — and e
 correction is arithmetic against the block that ships: a padded row counted on
 one side, a name clamped to two lines rather than three, a rank column that is
 ink like any other, a desktop block taller than the phone's under one shared
-wash. `wash-contrast.test.ts` holds all seven, and the browser probe compares each
-against the block it measures on the laid-out page.
+wash. **Nothing in this PR is built** — it is the record, and each figure lands
+with the slice that draws its surface. `wash-contrast.test.ts` is to hold all
+seven, and the browser probe is to compare each against the block it measures on
+the laid-out page; both are build work, scheduled in the plan's steps 1 and 4.
 
 ## §6 Errata against the handoff, carried here rather than sent back
 
