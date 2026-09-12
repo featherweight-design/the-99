@@ -155,6 +155,76 @@ const READ_COVER_STOPS = `(edge) => {
     });
 }`;
 
+/** Every band that has taken a stated height, with the ramp it draws. A stated
+    band carries `.art-wash-scrim-cover` with **no** edge class — the edge is in
+    the class only while a top-labelled band still ships — so the absence is what
+    identifies one, and the root's own `height` is what proves the band stopped
+    taking its size from the row it landed in. */
+const READ_STATED_BANDS = `() => {
+  return [...document.querySelectorAll('.art-wash-scrim-cover')]
+    .filter((s) => s.getClientRects().length)
+    .filter((s) => !s.classList.contains('art-wash-scrim-cover-top') && !s.classList.contains('art-wash-scrim-cover-bottom'))
+    .map((s) => {
+      const root = s.parentElement;
+      const image = getComputedStyle(s).backgroundImage;
+      const stops = (image.match(/[a-z-]+\([^()]*\)\s+[\d.]+%/g) ?? []).map((stop) => {
+        const alpha = stop.match(/\/\s*([\d.]+)\)/);
+        return { alpha: alpha ? Number(alpha[1]) : 1, position: Number(stop.match(/([\d.]+)%$/)[1]) };
+      });
+      return {
+        declared: root?.style.height ?? '',
+        laid: Math.round(root?.getBoundingClientRect().height ?? 0),
+        stops,
+      };
+    });
+}`;
+
+/** THE PLATE, per control. The target and the drawn box are two elements — a
+    44px plate would be a panel and a 26px button would miss the touch floor — so
+    both are measured, and the plate's own background is read resolved: an
+    `oklab()` with an alpha is the translucent mix this round replaced. */
+const READ_PLATES = `() => {
+  return [...document.querySelectorAll('[aria-label="View card details"]')]
+    .filter((b) => b.getClientRects().length)
+    .map((b) => {
+      const box = b.getBoundingClientRect();
+      const plate = b.firstElementChild;
+      const p = plate ? getComputedStyle(plate) : null;
+      const pb = plate ? plate.getBoundingClientRect() : null;
+      return {
+        target: [Math.round(box.width), Math.round(box.height)],
+        drawn: pb ? [Math.round(pb.width), Math.round(pb.height)] : null,
+        fill: p ? p.backgroundColor : '',
+        border: p ? p.borderTopWidth : '',
+        text: (b.textContent ?? '').replace('⛶', '').trim(),
+      };
+    });
+}`;
+
+/** Does the reader's own tap reach the control, or does the band clip it? The
+    plate is inset well inside every band, but its 44px target is not — so the
+    point that matters is the target's own corner, and the answer is whatever
+    `elementFromPoint` returns there. Counting plates proves they paint; this is
+    the only check that proves one can be pressed. */
+const READ_PLATE_HIT = `() => {
+  return [...document.querySelectorAll('[aria-label="View card details"]')]
+    .filter((b) => b.getClientRects().length)
+    .map((b) => {
+      const r = b.getBoundingClientRect();
+      const probe = (x, y) => {
+        const el = document.elementFromPoint(x, y);
+        return el ? (el === b || b.contains(el) ? 'self' : 'blocked') : 'nothing';
+      };
+      return {
+        centre: probe(r.left + r.width / 2, r.top + r.height / 2),
+        // Two opposite corners, one pixel inside, which is where a clipped
+        // overhang or a sibling drawn over the corner shows up.
+        near: probe(r.left + 1, r.top + 1),
+        far: probe(r.right - 1, r.bottom - 1),
+      };
+    });
+}`;
+
 // The scrims outlive the art under `forced-colors`, so they are what proves the
 // band kept its height when the photograph left.
 const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
@@ -169,6 +239,10 @@ const ROUTES = [
   // report named them.
   ["discover", "/discover"],
 ];
+
+/** The four bands this round settles. A stated band outside the set is either a
+    fifth number nobody decided or an aspect ratio that survived the migration. */
+const SETTLED_BANDS = [168, 208, 248, 288];
 
 const VIEWPORTS = [
   ["mobile", 375, 812],
@@ -242,6 +316,79 @@ try {
           note(`  FAIL top cover scrim computed ${stops.length} stops, expected 4`);
         } else if (last.alpha > prior.alpha + 0.001) {
           note(`  FAIL top cover scrim climbs at the foot: ${prior.alpha} to ${last.alpha}`);
+        }
+      }
+      // The commander-image round's census. A top-labelled band is now a band
+      // that has not migrated yet, so the count is progress rather than a
+      // failure — until the last one goes, at which point the top scrim, its
+      // `labelEdge` prop and its stylesheet override are all deletable and this
+      // line becomes the check that they stayed deleted.
+      note(`  top-labelled bands still drawing: ${tops.length}`);
+
+      // A stated band owns its height and labels at its foot. The ramp is the
+      // round's load-bearing change and it is checked as arithmetic, not as a
+      // prop: the hold has to sit where the block's top edge is, and a px
+      // `labelAt` pushed through a percentage signature lands it at less than
+      // half the band instead.
+      const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
+      note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
+      for (const band of stated) {
+        if (!SETTLED_BANDS.some((h) => `${h}px` === band.declared)) {
+          note(`  FAIL band declares ${band.declared || "no height"}, outside the settled set`);
+        }
+        if (Math.abs(band.laid - Number.parseInt(band.declared, 10)) > 1) {
+          note(`  FAIL band declares ${band.declared} and lays out at ${band.laid}px`);
+        }
+        if (band.stops.length !== 4) {
+          note(`  FAIL stated band computed ${band.stops.length} stops, expected 4`);
+          continue;
+        }
+        if (band.stops[0].alpha !== 0 || band.stops[1].alpha !== 0) {
+          note(`  FAIL stated band veils its top: ${JSON.stringify(band.stops.slice(0, 2))}`);
+        }
+        if (band.stops[3].alpha !== band.stops[2].alpha) {
+          note(`  FAIL stated band does not hold to its foot: ${JSON.stringify(band.stops.slice(2))}`);
+        }
+        // The hold's position is the block's top edge as a fraction of the band.
+        // Below half is the signature of a px value read as a percentage — the one
+        // failure that looks like success in a screenshot of a short band.
+        if (band.stops[2].position < 50) {
+          note(`  FAIL stated band holds at ${band.stops[2].position}% — a px labelAt read as a percentage`);
+        }
+      }
+
+      // THE PLATE, wherever this route draws one.
+      const plates = await page.evaluate(`(${READ_PLATES})()`);
+      if (plates.length) {
+        note(`  card-details controls: ${plates.length} at ${[...new Set(plates.map((p) => p.drawn?.join("×")))].join(", ")}`);
+      }
+      for (const plate of plates) {
+        if (plate.target[0] < 44 || plate.target[1] < 44) {
+          note(`  FAIL control target ${plate.target.join("×")} under the 44px floor`);
+        }
+        if (!plate.drawn || plate.drawn[0] !== 26 || plate.drawn[1] !== 26) {
+          note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26×26`);
+        }
+        // Opaque is the whole argument for deleting the top scrim: a translucent
+        // plate passes the brightest pixel of an unscrimmed crop through to the
+        // glyph. A resolved colour with an alpha channel under 1 is that mix.
+        const alpha = plate.fill.match(/[\d.]+\s*\)$/) && /(?:rgba|\/)/.test(plate.fill)
+          ? Number(plate.fill.match(/([\d.]+)\s*\)$/)[1])
+          : 1;
+        if (alpha < 0.999) note(`  FAIL plate is translucent: ${plate.fill}`);
+        if (Number.parseFloat(plate.border) < 1) note(`  FAIL plate draws no hairline: ${plate.border}`);
+        if (plate.text) note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
+      }
+      const hits = await page.evaluate(`(${READ_PLATE_HIT})()`);
+      for (const hit of hits) {
+        // Every corner, not just the centre: the target is 9px further out than
+        // the drawn box, and the bands are `overflow-hidden`, so an overhang is
+        // clipped out of its own hit area without changing a single pixel of what
+        // the screenshot shows.
+        for (const [where, result] of Object.entries(hit)) {
+          if (result !== "self") {
+            note(`  FAIL card-details control unreachable at its ${where}: ${result}`);
+          }
         }
       }
     }

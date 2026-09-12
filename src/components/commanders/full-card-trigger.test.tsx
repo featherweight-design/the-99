@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
-import { OVER_ART_PLATE } from "../ui/art-wash";
 import { FullCardTrigger } from "./full-card-trigger";
 
 const ATRAXA: BrowseCard = {
@@ -40,13 +39,15 @@ async function click(el: HTMLElement) {
 }
 
 describe("FullCardTrigger", () => {
-  // The label is the amendment's only player-visible change: the modal draws
-  // the art smaller than the lightbox it replaces, so "Full card" would be
-  // promising a picture this control no longer opens.
-  it("labels the chip 'Card details', not 'Full card'", () => {
+  // Icon only, on every render and every frame. The words named the action and
+  // stood out against art; THE PLATE does the second job, so the name moves into
+  // `aria-label` and becomes the only one a screen reader has — which is why it
+  // is asserted here rather than assumed.
+  it("draws the icon alone and carries the name in aria-label", () => {
     renderTrigger();
     const chip = screen.getByRole("button", { name: "View card details" });
-    expect(chip).toHaveTextContent("Card details");
+    expect(chip).toHaveTextContent("⛶");
+    expect(chip).not.toHaveTextContent("Card details");
     expect(screen.queryByText("Full card")).toBeNull();
   });
 
@@ -104,12 +105,48 @@ function mount(el: React.ReactNode) {
 }
 
 describe("FullCardTrigger placement", () => {
-  it("defaults to the hero corner with a band tap target", () => {
+  // `top: 56` existed only to stack this control below the identity pips, and
+  // those move into the label block. One rule now places all four: bottom, on
+  // whichever side the block does not reach.
+  // The target sits 9px further out than the drawn box, so the 26px plate lands
+  // at the inset the placement names. Inward rather than overhung: the bands are
+  // `overflow-hidden`, and 9px of an overhanging target is clipped out of its own
+  // hit area.
+  it("defaults to the hero's bottom-right corner with a band tap target", () => {
     const { container } = mount(<FullCardTrigger oracleId="o-atraxa" />);
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.top).toBe("56px");
-    expect(pill.style.right).toBe("16px");
+    expect(pill.style.top).toBe("");
+    expect(pill.style.right).toBe("7px");
+    expect(pill.style.bottom).toBe("6px");
     expect(container.querySelector('[aria-hidden="true"].inset-0')).not.toBeNull();
+  });
+
+  // Not one corner per breakpoint and not one per surface: the drawn box lands at
+  // the same inset the design names on all four, and the target is derived from
+  // it rather than drawn separately.
+  it("lands the drawn plate at every placement's named inset", () => {
+    const drawn = {
+      hero: { right: 16, bottom: 15 },
+      "commander-desktop": { left: 12, bottom: 12 },
+      "deck-desktop": { left: 16, bottom: 14 },
+      "deck-mobile": { top: 13, right: 16 },
+    } as const;
+    for (const [placement, at] of Object.entries(drawn)) {
+      const { unmount } = mount(
+        <FullCardTrigger
+          oracleId="o-atraxa"
+          placement={placement as keyof typeof drawn}
+          bandTapTarget={false}
+        />,
+      );
+      const pill = screen.getByRole("button", { name: "View card details" });
+      for (const [side, px] of Object.entries(at)) {
+        // The target's own inset, plus half the 44−26 difference, is where the
+        // plate's edge falls.
+        expect(Number.parseInt(pill.style.getPropertyValue(side), 10) + 9).toBe(px);
+      }
+      unmount();
+    }
   });
 
   it("sits bottom-left on the desktop deck header and draws no band tap target", () => {
@@ -117,8 +154,8 @@ describe("FullCardTrigger placement", () => {
       <FullCardTrigger oracleId="o-atraxa" placement="deck-desktop" bandTapTarget={false} />,
     );
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.left).toBe("16px");
-    expect(pill.style.bottom).toBe("14px");
+    expect(pill.style.left).toBe("7px");
+    expect(pill.style.bottom).toBe("5px");
     expect(pill.style.top).toBe("");
     expect(container.querySelector('[aria-hidden="true"].inset-0')).toBeNull();
   });
@@ -128,18 +165,21 @@ describe("FullCardTrigger placement", () => {
       <FullCardTrigger oracleId="o-atraxa" placement="commander-desktop" />,
     );
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.left).toBe("12px");
-    expect(pill.style.bottom).toBe("12px");
+    expect(pill.style.left).toBe("3px");
+    expect(pill.style.bottom).toBe("3px");
     // Unlike the deck header, this frame carries no title and no rename pencil,
     // so the tap layer has nothing to eat and the whole card opens the modal.
     expect(container.querySelector('[aria-hidden="true"].inset-0')).not.toBeNull();
   });
 
-  it("sits top-right at 13px on the mobile deck header", () => {
+  // The one placement still at a top edge, and the exception is earned: that band
+  // centres its title with the rename pencil beside it, so the block holds both
+  // bottom corners.
+  it("sits top-right on the mobile deck header", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" placement="deck-mobile" bandTapTarget={false} />);
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.top).toBe("13px");
-    expect(pill.style.right).toBe("16px");
+    expect(pill.style.top).toBe("4px");
+    expect(pill.style.right).toBe("7px");
   });
 
   // Visible is not clickable. Every band this chip sits on draws its own content
@@ -154,14 +194,30 @@ describe("FullCardTrigger placement", () => {
     expect(pill.className).toContain("z-[2]");
   });
 
-  // The plate has to be written out as a literal class — Tailwind compiles no
-  // interpolated one — while the contrast suite measures the exported number.
-  // This is the only thing keeping the two from drifting, and the drift matters:
-  // every band this chip sits on now runs clear where it lands, so a plate below
-  // `OVER_ART_PLATE` is a label on bare art rather than a slightly lighter chip.
-  it("plates itself at the alpha the contrast suite measures", () => {
+  // THE PLATE is opaque, which is what takes this control out of the contrast
+  // problem: ink on `var(--bg)` is the page's own body contrast and needs no
+  // per-theme measurement, so no alpha can drift here any more. The 44px target
+  // and the 26px drawn box are separate elements for the same reason — a 44px
+  // plate would be a panel, and a 26px button would miss the touch floor.
+  it("plates itself opaquely, 26px drawn inside a 44px target", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" />);
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.className).toContain(`var(--bg)_${OVER_ART_PLATE}%`);
+    expect(pill.style.width).toBe("44px");
+    expect(pill.style.height).toBe("44px");
+    expect(pill.className).not.toContain("color-mix");
+
+    const plate = pill.firstElementChild as HTMLElement;
+    expect(plate.style.width).toBe("26px");
+    expect(plate.className).toContain("bg-[color:var(--bg)]");
+    expect(plate.className).toContain("border-[color:var(--border-strong)]");
+  });
+
+  // Dropped with the plate, not forgotten: a blur under an opaque box computes a
+  // backdrop nothing can see.
+  it("draws no backdrop filter", () => {
+    mount(<FullCardTrigger oracleId="o-atraxa" />);
+    const pill = screen.getByRole("button", { name: "View card details" });
+    expect(pill.style.backdropFilter).toBe("");
+    expect((pill.firstElementChild as HTMLElement).style.backdropFilter).toBe("");
   });
 });
