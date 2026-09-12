@@ -3,11 +3,18 @@
 // The twelve cells of STATES §1 reduce to four visible answers — a figure, a
 // foil-qualified figure, `no stock`, and nothing at all — crossed with where the
 // tag renders, which is the part ownership actually changes.
-import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard, BrowsePrinting } from "../../lib/collection/browse";
 import { indexPriceRows, type PrintingPriceRow } from "../../lib/cards/price-lookup";
 import { setPageCopy } from "../../lib/copy/set-collections";
+
+vi.mock("../../app/collection/actions", () => ({
+  // The real action reports whether it wrote; a bare `vi.fn()` resolves undefined,
+  // which the modal reads as a refusal and rolls the optimistic pick back.
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
 
 const { CardModal } = await import("./card-modal");
 
@@ -133,11 +140,55 @@ describe("the price under the art", () => {
 
   it("speaks the ratified sentence rather than a bare figure", () => {
     // A tag drawn on its own in a dialog would otherwise reach a screen reader as
-    // "$2.41" — a number with no subject and no date (table row 1.12).
+    // "$2.41" — a number with no subject and no date (table row 1.12). The sentence
+    // rides an sr-only sibling rather than an aria-label, because a label on a bare
+    // span lands on the generic role and is discarded (decks/buy-tag.tsx:127-133).
     mount(card());
 
-    expect(screen.getByTestId("modal-price-desktop").querySelector("[aria-label]")?.getAttribute("aria-label"))
+    const tag = screen.getByTestId("modal-price-desktop");
+    expect(tag.querySelector(".sr-only")?.textContent)
       .toMatch(/\$2\.41 at ManaPool, last checked /);
+    expect(tag.querySelector("[aria-hidden='true']")?.textContent).toBe("$2.41");
+  });
+
+  it("keeps the provenance on a foil-only figure instead of trading it for the finish", () => {
+    mount(card({ prices: indexPriceRows([priceRow({ price_cents: null, price_cents_foil: 610 })]) }));
+
+    expect(screen.getByTestId("modal-price-desktop").querySelector(".sr-only")?.textContent)
+      .toMatch(/◆ foil \$6\.10 at ManaPool, last checked /);
+  });
+
+  it("says which history `no stock` is, where the visible word cannot", () => {
+    mount(card({ prices: indexPriceRows([priceRow({ scryfall_id: "other", collector_number: "999" })]) }));
+
+    expect(screen.getByTestId("modal-price-desktop").querySelector(".sr-only")?.textContent)
+      .toBe(setPageCopy.cellPrice.neverStocked);
+  });
+
+  it("follows the pick, because four things move together or none do", async () => {
+    // The figure under the art is the one a player is choosing against when they
+    // own a cheap printing and an expensive one.
+    const two = [
+      printing({ scryfallId: "s-1", collectorNumber: "12" }),
+      printing({ scryfallId: "s-2", collectorNumber: "24", setCode: "ELD", setName: "Throne of Eldraine" }),
+    ];
+    mount(card({
+      printings: two,
+      prices: indexPriceRows([
+        priceRow(),
+        priceRow({ scryfall_id: "s-2", set_code: "ELD", collector_number: "24", price_cents: 1875 }),
+      ]),
+    }));
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$2.41");
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", { name: /printings owned/ })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /ELD/ })[0]);
+    });
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$18.75");
   });
 
   it("is unchanged by ownership — an unowned card carries the same figure", () => {

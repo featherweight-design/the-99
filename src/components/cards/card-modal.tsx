@@ -714,7 +714,7 @@ export function CardModal({
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
         <div
-          className="hidden md:flex flex-col items-center justify-center flex-none"
+          className="hidden md:flex items-center justify-center flex-none"
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
           <div
@@ -732,13 +732,21 @@ export function CardModal({
                 size={34}
               />
             )}
+            {/* 10px under the art, centred on the card (table row 1.1). Desktop sits
+                on flat `--bg` and needs no plate — the one difference between the two
+                widths. Hung off the art's own box rather than added to the column,
+                because the column centres its children: a tag joining the stack would
+                lift the art by half its height, and row 1.14 says nothing above the
+                tag moves when a pick makes it appear. */}
+            {priceTag && (
+              <div
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-[10px] whitespace-nowrap"
+                data-testid="modal-price-desktop"
+              >
+                {priceTag}
+              </div>
+            )}
           </div>
-          {/* 10px under the art, centred on the card (table row 1.1). Desktop sits on
-              flat `--bg` and needs no plate — that is the one difference between the
-              two widths. */}
-          {priceTag && (
-            <div className="mt-[10px]" data-testid="modal-price-desktop">{priceTag}</div>
-          )}
         </div>
 
         {/* Content column — mobile: flex-1 padding 20px; desktop: padding 30px 32px.

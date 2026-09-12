@@ -57,6 +57,19 @@ export function PriceTag({
   const cents = fact ? priceOf(fact, state) : null;
   const base = "inline-block rounded-[4px] px-[5px] py-[2px] font-mono text-[10px]";
 
+  // A standalone tag says its sentence through a sibling, never through an
+  // `aria-label` on the visible span: this repo has already learned that one, at
+  // `decks/buy-tag.tsx:127-133` — on a bare span the label lands on the generic
+  // role and is discarded outright, and `role="img"` only rescued it by announcing
+  // a run of text as a picture. The visual node goes `aria-hidden` and an `sr-only`
+  // sibling carries the whole claim, qualifier and provenance together.
+  const speak = (sentence: string, visual: React.ReactNode) => (
+    <>
+      <span aria-hidden="true">{visual}</span>
+      <span className="sr-only">{sentence}</span>
+    </>
+  );
+
   if (cents === null) {
     // Three histories behind one tag: never carried, carried and sold out, and
     // carried with no usable figure. `priceState` returns `absent` for the first
@@ -66,15 +79,16 @@ export function PriceTag({
       : fact
         ? setPageCopy.cellPrice.noFigure
         : setPageCopy.cellPrice.neverStocked;
-    return (
+    const visual = (
       <span
         className={className ? `${base} ${className}` : base}
         style={{ color: "var(--fg-locked)", border: "1px dashed var(--fg-locked)" }}
-        aria-label={label}
+        aria-label={standalone ? undefined : label}
       >
         {setPageCopy.cell.noStock}
       </span>
     );
+    return standalone ? speak(label, visual) : visual;
   }
 
   const money = formatCents(cents);
@@ -87,23 +101,31 @@ export function PriceTag({
         ? priceCopy.tag.foil
         : priceCopy.tag.etched)
     : null;
-  const spoken = qualifier
-    ? setPageCopy.cell.qualifiedPriceAria(qualifier, money)
-    : standalone && newestAsOf
-      ? (() => {
-          const form = provenanceForm(newestAsOf, new Date());
-          return form.behind
-            ? priceCopy.aria.pricedBehind(money, form.when)
-            : priceCopy.aria.priced(money, form.when);
-        })()
-      : undefined;
-  return (
+  const visual = (
     <span
       className={className ? `${base} ${className}` : base}
       style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}
-      aria-label={spoken}
+      aria-label={
+        !standalone && qualifier
+          ? setPageCopy.cell.qualifiedPriceAria(qualifier, money)
+          : undefined
+      }
     >
       {qualifier ? setPageCopy.cell.qualifiedPrice(qualifier, money) : money}
     </span>
   );
+  if (!standalone) return visual;
+
+  // The qualifier does not displace the provenance: a foil-only figure is still a
+  // figure from a feed with a date on it, and saying only "available in foil only"
+  // would drop the half of the sentence every other price carries. The finish rides
+  // the figure into the same sentence instead.
+  const figure = qualifier ? setPageCopy.cell.qualifiedPrice(qualifier, money) : money;
+  const form = newestAsOf ? provenanceForm(newestAsOf, new Date()) : null;
+  const sentence = form
+    ? (form.behind
+        ? priceCopy.aria.pricedBehind(figure, form.when)
+        : priceCopy.aria.priced(figure, form.when))
+    : figure;
+  return speak(sentence, visual);
 }

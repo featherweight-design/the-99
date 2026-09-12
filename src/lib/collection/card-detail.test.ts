@@ -206,6 +206,33 @@ describe("loadCardDetail availability", () => {
     expect(loadPrintingPrices).toHaveBeenCalledWith("o-1");
   });
 
+  // The unowned card is the whole point of the feature — it is the case with no
+  // printing region for a figure to sit beside — so its loader path gets its own
+  // case rather than riding the owned one's.
+  it("attaches the snapshot on the unowned path too", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    const rows = [{ oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet" }];
+    vi.doMock("../../db", () => ({
+      db: {
+        select: () => ({
+          from: () => ({
+            where: async () => rows,
+            leftJoin: () => ({ where: async () => [] }),
+          }),
+        }),
+      },
+    }));
+
+    // The db stub above is scoped to this case; the real module is restored after.
+    vi.resetModules();
+    const { loadCardDetail: fresh } = await import("./card-detail");
+    const card = await fresh("user_1", "o-1");
+    vi.doUnmock("../../db");
+
+    expect(card?.prices).toEqual(PRICES);
+  });
+
   // The figure is the one thing on this card the reader can live without. A feed
   // that cannot be reached costs them a number, never the card — and null is not
   // `no stock`: nobody asked the store anything.
