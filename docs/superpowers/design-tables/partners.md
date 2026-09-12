@@ -23,7 +23,15 @@ stated otherwise.
 `spine-desktop.tsx:79-84` · `spine-mobile.tsx:63-68`. Renders only when the deck has a partner;
 a single-commander caption is unchanged at both widths.
 
-### Wash container (#473, unchanged — context for the caption's insets)
+### Wash container (#473 — context for the caption's insets)
+
+> **Errata (2026-09-12), per column — this table's two columns use different strategies.** Mobile is
+> `cover`, whose full-bleed art is its only art layer and is untouched. Desktop is `left-portrait`,
+> so its `ambient layer` cell IS the removed copy (PR #517, ratified the same day) — struck below.
+> The desktop `sharp portrait layer` opacity is **`.92`**, not the `.8` this table predates
+> (`PORTRAIT_BANDS[168].sharpOpacity`). The band-72 section further down is the same story, struck
+> there. An earlier version of this note called the whole row untouched; it was reading one strategy
+> across both columns.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -34,8 +42,8 @@ a single-commander caption is unchanged at both widths.
 | border | 1px solid var(--border) | 1px solid var(--border) |
 | border-radius | 14 | 14 |
 | background | color-mix(in srgb, var(--bg) 86%, black) | var(--bg) |
-| ambient layer | position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity 0.58 | position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity 0.2 |
-| sharp portrait layer | — | position absolute; top 0; bottom 0; left 0; width 230; background-size auto 100%; background-position left center; background-repeat no-repeat; opacity 0.8; mask-image linear-gradient(90deg,#000 0 58%,transparent 100%) |
+| ambient layer | position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity ~~0.58~~ **0.80** — the `cover` strategy's own art layer: not removed, but lifted, `COVER_ART_OPACITY` | ~~position absolute; inset 0; `art_crop`; background-size cover; background-position center top; opacity 0.2~~ — **REMOVED 2026-09-12, see the errata above** |
+| sharp portrait layer | — | position absolute; top 0; bottom 0; left 0; width 230; background-size auto 100%; background-position left center; background-repeat no-repeat; opacity ~~0.8~~ **0.92** (the lift; `PORTRAIT_BANDS[168]`); mask-image linear-gradient(90deg,#000 0 58%,transparent 100%) |
 | horizontal scrim | — | position absolute; inset 0; linear-gradient(90deg, color-mix(in oklab, var(--bg) 30%, transparent) 0px, color-mix(in oklab, var(--bg) 26%, transparent) 134px, color-mix(in oklab, var(--bg) 78%, transparent) 230px, var(--bg) 240px) |
 | vertical scrim | position absolute; inset 0; linear-gradient(180deg, color-mix(in oklab, var(--bg) 66%, transparent) 0%, color-mix(in oklab, var(--bg) 22%, transparent) 26%, color-mix(in oklab, var(--bg) 62%, transparent) 50%, color-mix(in oklab, var(--bg) 90%, transparent) 100%) | position absolute; inset 0; linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, color-mix(in oklab, var(--bg) 10%, transparent) 46%, color-mix(in oklab, var(--bg) 42%, transparent) 100%) |
 | type block | position absolute; left 18; right 18; bottom 12; display flex; flex-direction column; align-items center; gap 6 | position relative; display flex; align-items center; min-height 168; padding 0 24px 0 254px; gap 18 |
@@ -610,17 +618,24 @@ beside the name field — never in the dock (dock stays summary + button only).
 | border | 1px solid var(--border) | 1px solid var(--border) |
 | background | var(--surface-inset) | var(--surface-inset) |
 
-### Art layers (`ArtWash` `left-portrait`, band 72 — primary only, unchanged)
+### Art layers (`ArtWash` `left-portrait`, band 72 — primary only)
+
+> **Errata (2026-09-12):** the three `ambient` rows below describe a full-bleed copy of the crop that
+> `ArtWash` no longer draws — removed in PR #517 and ratified the same day, because past the
+> portrait's own width it read as a second, differently-scaled rendering of the same picture. This
+> table shares the primitive with `design-tables/art-wash.md`, which carries the same errata. The
+> `portrait` and `scrim` rows are untouched; the portrait's opacity is **`.95`**, this table's `.85`
+> predating the lift recorded in `design_handoff_the99_art_wash/`.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| ambient position | absolute; inset 0 | absolute; inset 0 |
-| ambient background | **primary** `art_crop` `center top / cover` | same |
-| ambient opacity | 0.14 | 0.14 |
+| ~~ambient position~~ | ~~absolute; inset 0~~ | ~~absolute; inset 0~~ |
+| ~~ambient background~~ | ~~**primary** `art_crop` `center top / cover`~~ | ~~same~~ |
+| ~~ambient opacity~~ | ~~0.14~~ | ~~0.14~~ |
 | portrait position | absolute; left 0; top 0; bottom 0 | same |
 | portrait width | 99 (= band 72 × 1.37) | 99 |
 | portrait background | **primary** `art_crop` `left center / auto 100%` | same |
-| portrait opacity | 0.85 | 0.85 |
+| portrait opacity | ~~0.85~~ **0.95** (the lift; `PORTRAIT_BANDS[72].sharpOpacity`) | ~~0.85~~ **0.95** |
 | portrait mask-image | linear-gradient(90deg,#000 0 62%,transparent 100%) | same |
 | scrim position | absolute; inset 0 | absolute; inset 0 |
 | scrim background | linear-gradient(90deg, color-mix(in oklab, var(--surface-inset) 22%, transparent) 0px, color-mix(in oklab, var(--surface-inset) 18%, transparent) 58px, color-mix(in oklab, var(--surface-inset) 80%, transparent) 99px, var(--surface-inset) 138px) | same |

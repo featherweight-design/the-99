@@ -66,6 +66,13 @@ so it carries a `⛶ Full card` affordance (and the whole header is tappable) th
 **full-card lightbox** — the complete 63/88 card with oracle text, dimmed over the page, tap to
 close. Both the affordance and the opened lightbox are drawn as phone frames.
 
+> **§4's last two sentences are SUPERSEDED, twice over.** The lightbox is gone: that control opens
+> the **shared card modal**, and `design/design_handoff_the99_amendments/PARITY-lightbox-to-modal.md`
+> records what happened to every element of it. Its label is `Card details` for the same reason. And
+> the affordance is no longer phone-only — see the errata at the foot of this file, where the desktop
+> card frame carries it too, because "desktop already shows the full card" stopped being an argument
+> once the thing it opens became printings, rulings and a two-faced flip. The rest of §4 stands.
+
 ### 5. Degraded → **the ranking survives, and says so, at two scopes**
 EDHREC is a real dependency that fails. Both conditions are designed as first-class, not error
 pages:
@@ -151,7 +158,7 @@ sticky bottom bar on phone, a sticky side button on desktop.
   guidance); the mockup uses CSS boxes.
 
 
-## Errata — the desktop card frame carries the `Card details` control too (2026-09-11, pending ratification)
+## Errata — the desktop card frame carries the `Card details` control too (2026-09-11, ratified 2026-09-12)
 
 **What changed.** On the commander detail page's desktop left column, the 63/88 card frame now
 carries the same `⛶ Card details` chip the phone's art header does, and the frame itself is the tap
@@ -175,6 +182,7 @@ each edge, using the same plated chip as every other placement. It sits over the
 rather than over its rules text. The deck header's desktop placement is the precedent (`deck-desktop`,
 bottom-left at 16/14px); this frame is narrower, hence 12px.
 
-**Status: pending ratification.** No Design round-trip preceded it. Ratify, move the placement, or
-overturn — if the answer is that desktop should reach printings and the flip some other way, the
-control comes out in one line.
+**Ratified by Hugh, 2026-09-12: bottom-left, as shipped.** No Design round-trip preceded it; the
+placement was ruled on after the fact and stands, matching the deck header's own desktop placement.
+The alternatives offered and declined were the frame's top-right, a bare clickable frame with no
+chip, and a control below the frame beside the identity pips.

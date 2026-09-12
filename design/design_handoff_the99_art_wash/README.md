@@ -22,7 +22,9 @@ first — this document records only what **changes**.
 
 The amendment below fixed legibility and overcorrected: at art `.58` under the shipped ramps, only
 33–45% of the picture survived mid-band, which reads as a dimmed screen rather than a design. The
-recovery lifts art to `.80` (`.92/.28` on rows, `.95/.22` on the 72px resume row) and pays for it
+recovery lifts art to `.80` (`.92`~~`/.28`~~ on rows, `.95`~~`/.22`~~ on the 72px resume row — the
+struck halves are the ambient layer's, removed 2026-09-11 and ratified 2026-09-12; only the sharp
+figures are current) and pays for it
 by **holding each ramp's dark value across its whole label block instead of ramping through it** —
 which also fixes a live defect: top-labelled subtitles ship at **3.16:1**, under the floor, on deck
 cards and Home ready-to-build.
@@ -41,6 +43,10 @@ the 3.16:1 top-labelled subtitle, and the 148 row at phone width, whose upper tw
    (`.30 .10 .46 .42` and `.62 .16 .42 .74`); only 72 has none. The claim that
    `left-portrait` carries no vertical ramp was true of exactly one of the three.
 3. **The 72px resume row ships `.85 / .14`**, not `.80 / .20`.
+
+  > **Historical as of 2026-09-12.** That sentence describes the pre-lift implementation. The row
+  > ships `.95` sharp and no ambient layer at all — the lift took the sharp half and the errata at
+  > the foot of this file removed the other.
 
 ### The one surface the lift cannot pay for
 
@@ -164,8 +170,10 @@ which is why R1's rows read as texture. Those surfaces switch strategy:
 
 - **Sharp layer** — sized by height (`background-size: auto 100%`), anchored left, at its true
   1.37:1. Width is therefore `band × 1.37`: **203px** at a 148px band, **99px** at 72px.
-- **Ambient layer** — a full-bleed `cover` copy at low opacity carrying the colour behind it
-  (`.20` commander row, `.14` resume row). This is what preserves the "large wash" feel.
+- ~~**Ambient layer** — a full-bleed `cover` copy at low opacity carrying the colour behind it
+  (`.20` commander row, `.14` resume row). This is what preserves the "large wash" feel.~~
+  **REMOVED 2026-09-11, ratified 2026-09-12 — see the errata at the foot of this file.** Past the
+  portrait's width it restated the crop at a second scale, which is what the "large wash" feel cost.
 - **Fade** — `mask-image` on the sharp layer, not a scrim over it. See decision 8.
 
 ### 8. The fade belongs to the art, not the row
@@ -206,9 +214,9 @@ Yawgmoth; Azog, Moria's Ruin. Use double quotes inside `url()` **and** append `.
 | Surface | Band | Strategy | Geometry | Art opacity |
 |---|---|---|---|---|
 | Deck card | aspect `2.2/1` | `cover` | focal `center top`, labels top | `.58` |
-| Commander row | `148px` | `left-portrait` | portrait `203px`, mask `0 58%`, scrim `118/203/264px`, ambient `cover top .20`, labels at band baseline | `.80` sharp |
+| Commander row | `148px` | `left-portrait` | portrait `203px`, mask `0 58%`, scrim `118/203/264px`, ~~ambient `cover top .20`~~ **(removed 2026-09-11, ratified 2026-09-12 — see the errata below)**, labels at band baseline | ~~`.80`~~ **`.92`** sharp — this row predates the lift below, which took it to `.92`; `PORTRAIT_BANDS[148]` |
 | Home · ready to build | aspect `2.2/1` | `cover` | focal `center top`, labels top | `.58` |
-| Home · resume | `72px` | `left-portrait` | portrait `99px`, mask `0 62%`, scrim `0/58/99/138px`, ambient `cover top .14`, type inset `116px`, **no text-shadow** | `.85` sharp |
+| Home · resume | `72px` | `left-portrait` | portrait `99px`, mask `0 62%`, scrim `0/58/99/138px`, ~~ambient `cover top .14`~~ **(removed, same errata)**, type inset `116px`, **no text-shadow** | ~~`.85`~~ **`.95`** sharp — same lift; `PORTRAIT_BANDS[72]` |
 
 Constants across all four: L1 `#0E0C09`, focal `center top`, divider `1px #2A241D`, ground
 `#1A160F`, chip-on-art `#14110E` + `1px #3A3229`, title `#F4EFE3`, subtitle `#C6B79A`.
@@ -226,8 +234,9 @@ Constants across all four: L1 `#0E0C09`, focal `center top`, divider `1px #2A241
 - **Respect reduced-transparency.** Under `prefers-reduced-transparency` or forced high contrast,
   drop L2 to `opacity .3` and push L3's stops to `.95 / .6 / .85 / .86` across the base
   gradient's own four positions (`0 / 40 / 74 / 100%`) — the ramp keeps its fourth stop.
-  Reduced-opacity values are a **ceiling, never a floor**: `min(layer, .3)`, so a `left-portrait`
-  ambient copy already at `.14` or `.20` is left alone rather than raised. The preference applies
+  Reduced-opacity values are a **ceiling, never a floor**: `min(layer, .3)`. The example this rule
+  was written against — a `left-portrait` ambient copy at `.14` or `.20`, left alone rather than
+  raised — no longer exists (see the errata below); the rule stands for every layer that does. The preference applies
   to **art layers only** — the no-crop identity gradient publishes its own opacity and is not
   capped, and the 180deg override is scoped to the `cover` strategy so it cannot delete the
   90deg px-keyed fade that `left-portrait` exists for.
@@ -276,7 +285,7 @@ to draw against art. The four retired status-border colours are not coming back.
    Confirm the deck grid's narrowest column still yields a band tall enough to read.
 
 
-## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, pending ratification)
+## Errata — the `left-portrait` ambient layer is no longer drawn (2026-09-11, ratified 2026-09-12)
 
 **Every `left-portrait` band shipped two copies of the art**, not one: the masked portrait at its
 sharp opacity, and under it the same `art_crop` drawn `cover` across the whole band at the ambient
@@ -295,9 +304,9 @@ Contrast is unaffected in the direction that matters: removing a lightening laye
 ground ink stands on, and `wash-contrast.test.ts` still passes every floor with its composition model
 updated to match.
 
-**This has not been through Design.** It was taken as the defect exactly as reported. Ratify or
-overturn; if the ambient atmosphere is wanted back, it needs a treatment that does not restate the
-crop — the two candidates are a blur past the mask edge, or a flat tint sampled from the art.
+**Ratified by Hugh, 2026-09-12: leave it gone.** It was built as the defect exactly as reported and
+ruled on after the fact. If the atmosphere is ever wanted back, it needs a treatment that does not
+restate the crop — a blur past the mask edge, or a flat tint sampled from the art.
 
 ## Files
 

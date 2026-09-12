@@ -1050,9 +1050,9 @@
 | display | flex | — |
 | gap | 5px | — |
 
-### "⛶ Full card" affordance chip
+### "⛶ Full card" affordance chip — the handoff's heading; the shipped label is `Card details`
 
-> **Errata (2026-09-11, pending ratification):** this chip is drawn on the desktop commander
+> **Errata (2026-09-11, ratified 2026-09-12):** this chip is drawn on the desktop commander
 > detail page as well, inside the 63/88 card frame at `left: 12px; bottom: 12px`, with the frame
 > as its tap target. The table below specifies mobile only, on the reasoning that desktop already
 > shows the whole card — which was true when this control opened a full-card lightbox and is not
@@ -1597,7 +1597,16 @@
 
 ---
 
-## Component: Full-Card Lightbox (mobile only)
+## Component: Full-Card Lightbox (mobile only) — **SUPERSEDED 2026-09-12: nothing implements this**
+
+> Every section in this component — the overlay, the blurred art layer, the `"Full card"` label, the
+> close button, the 63/88 card frame and the tap-to-close hint — describes a surface that no longer
+> exists. The control that opened it now opens the **shared card modal**, which is why its label is
+> `Card details`. Element by element, what became of this surface is recorded in
+> `design/design_handoff_the99_amendments/PARITY-lightbox-to-modal.md` — each row kept, kept
+> differently, absorbed or cut, with reasons — and the modal's own properties live in the
+> card-surfaces table. The state is `detail-card-modal` in State Coverage below. Kept whole for the
+> handoff's numbering and for the record of what was drawn. **Do not implement from this block.**
 
 ### Lightbox overlay
 | Property | Mobile | Desktop |
@@ -1903,5 +1912,5 @@
 | **empty-no-candidates** | Collection has zero legendary creatures legal in Commander | XCIX seal centered; Cinzel heading; scanned card count; "Add more cards" + "View collection" actions | `commanders: []`, `cardCount: number` (scanned), no filter active |
 | **empty-filtered-to-zero** | Active color filter matches no commanders in the ranked list | Filter bar visible with active chips; dimmed WUBRG pips; "Showing 0 of 24" in amber; guild-name heading; "Clear color filter" only action | `filteredCommanders: []`, `filter: string`, `totalCount: number` (>0) |
 | **detail-normal** | User navigates to `/commanders/:slug`; commander has full synergy data | Left column sticky card + right column: Fit hero, pool, role panels, EDHREC chip cloud | `commander: Commander` with `roles`, `ed.owned[]`, `ed.missing[]`, `fit`, `segments` |
-| **detail-lightbox** | User taps art header or "⛶ Full card" affordance on mobile detail | Full-card lightbox overlay: blurred background + 63/88 card frame with oracle text | Same `commander` object; lightbox open state; tap-outside closes |
+| **detail-card-modal** (was **detail-lightbox** until 2026-09-12) | User taps the art header or the `⛶ Card details` chip, on mobile **or desktop** — the desktop card frame carries the chip too since PR #517 | The shared card modal: printings, rulings, availability, and a flip control for a two-faced commander. It replaced the handoff's 63/88 full-card lightbox, which is why the control's label is `Card details` rather than `Full card` | Fetched card detail, not the `commander` object; modal open state; tap-outside closes |
 | **detail-build-entry** | User taps "Build this deck →" from detail page | Navigates to Decks / deck-builder (ticket #8), seeded with owned pool; triggers guided step 3 if in first-run flow | `commander.slug`, `commander.poolLabel`, `commander.pool` (owned card count) |

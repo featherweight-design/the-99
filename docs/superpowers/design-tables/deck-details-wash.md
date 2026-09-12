@@ -48,7 +48,13 @@ Columns are **Mobile (<768px)** and **Desktop (≥768px)**.
 | background | `var(--bg)` |
 | overflow | `hidden` |
 
-### B2. Ambient art layer
+### B2. Ambient art layer — **SUPERSEDED 2026-09-12, no longer drawn**
+
+> Removed in PR #517 and ratified the same day: past the portrait's own width this full-bleed copy
+> was a second, differently-scaled rendering of the same crop, and it read as a double image. Errata
+> in `design/design_handoff_the99_deck_details_wash/README.md` and its `READINESS.md`, and in the
+> shared `design-tables/art-wash.md`. With no crop, this layer still draws the identity gradient —
+> decision §G. **Do not implement the rows below.**
 | Property | Value |
 |---|---|
 | position | `absolute; inset: 0` |
@@ -61,7 +67,7 @@ Columns are **Mobile (<768px)** and **Desktop (≥768px)**.
 |---|---|
 | position | `absolute; left:0; top:0; bottom:0` |
 | width | `230px` (= `round(168 × 1.37)`) |
-| opacity | `0.80` |
+| opacity | ~~`0.80`~~ **`0.92`** — this row predates the band lift; `PORTRAIT_BANDS[168].sharpOpacity` |
 | background-size | `auto 100%` |
 | background-position | `left center` |
 | mask-image | `linear-gradient(90deg, #000 0 58%, transparent 100%)` + `-webkit-` twin |
