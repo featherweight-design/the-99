@@ -348,8 +348,18 @@ export function CardModal({
     // name carries no collector number — so the printing the caller is showing is often
     // absent and the resolver would fall back to an unrelated set. Injected at quantity 0
     // so it resolves; the picker reads `card.printings`, not this, and never sees it.
+    // A row matching by set and collector number is not necessarily carrying that
+    // printing's art: `collection_items.scryfall_id` is nullable, and `aggregateCollection`
+    // falls back to the set representative when the exact join is missing — so a Moxfield
+    // or Archidekt holding can match here and still hold another printing's image. When the
+    // caller handed over the exact art, it wins over that fallback.
     const known = card.printings.some((p) => matchesPreference(p, at));
-    const printings = known ? card.printings : [...card.printings, {
+    const printings = known
+      ? (at.imageUri
+          ? card.printings.map((p) =>
+              matchesPreference(p, at) ? { ...p, imageUri: at.imageUri ?? p.imageUri } : p)
+          : card.printings)
+      : [...card.printings, {
       setCode: at.setCode,
       setName: at.setCode,
       collectorNumber: at.collectorNumber,

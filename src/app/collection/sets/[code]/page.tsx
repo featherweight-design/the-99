@@ -36,7 +36,11 @@ export default async function SetGridPage({
 }) {
   const { code } = await params;
   const userId = await requireUserId();
-  const grid = await cacheForUser(userId, ["set-grid", code.toLowerCase()], () =>
+  // `-2`: the payload gained each printing's full-size art so a cell can open the modal at
+  // its own printing. Same convention as `browse-2` — an entry written before a shape change
+  // is not stale, it is a different shape, and it would otherwise be served for up to the
+  // hour-long ceiling with the field simply absent.
+  const grid = await cacheForUser(userId, ["set-grid-2", code.toLowerCase()], () =>
     loadSetGrid(userId, code));
 
   if (!grid) {

@@ -835,4 +835,37 @@ describe("CardModal opened at a printing it does not own", () => {
     expect(screen.queryByText(/more/)).toBeNull();
     expect(screen.getAllByText(/TLA · 282/).length).toBeGreaterThan(0);
   });
+
+  // A row can match by set and collector number and still hold the WRONG art:
+  // `collection_items.scryfall_id` is nullable, so a Moxfield or Archidekt holding falls
+  // back to the set representative's image. The caller handed over the exact one.
+  it("prefers the art it was handed over a matching row's fallback", () => {
+    const fallbackArt: BrowseCard = {
+      ...card,
+      quantity: 1,
+      printings: [{
+        setCode: "TLA", setName: "TLA", collectorNumber: "282", releasedAt: "2025-11-21",
+        quantity: 1, finishes: { nonfoil: 1 },
+        imageUri: "https://cards.scryfall.io/normal/tla-representative.jpg",
+        flavorName: null,
+      }],
+    };
+    const { container } = render(
+      <CardModal
+        card={fallbackArt}
+        openAtPrinting={{
+          setCode: "TLA",
+          collectorNumber: "282",
+          imageUri: "https://cards.scryfall.io/normal/tla-282.jpg",
+        }}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+      />,
+    );
+    expect(backgrounds(container).some((b) => b.includes("tla-282"))).toBe(true);
+    expect(backgrounds(container).some((b) => b.includes("representative"))).toBe(false);
+  });
 });

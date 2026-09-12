@@ -166,10 +166,11 @@ export function CardDetailProvider({
   // sets this in the same pass as the click, but the card behind it is whatever was already
   // painted until the read lands, so held loose that window shows the card the reader came
   // from wearing the printing of the one they clicked — the mismatch this state exists to
-  // fix, in miniature. Paging is cleared outright, because it is not a window at all: the
-  // printing belongs to the cell that was clicked, and Prev/Next has left it. The pairing
-  // alone would not do it — paging away and back would match again and resurrect a view the
-  // reader had already paged out of.
+  // fix, in miniature. And `show` drops it when a different card actually lands, which is
+  // what stops paging away and back from matching again and resurrecting a view the reader
+  // had already paged out of. Both are about a card ARRIVING; neither fires on a card being
+  // asked for, because a read that fails leaves the previous card standing and it must keep
+  // the printing it was opened at.
   const [openAt, setOpenAt] = useState<{
     oracleId: string;
     printing: PreferredPrinting & { imageUri?: string | null };
@@ -221,6 +222,13 @@ export function CardDetailProvider({
   const show = useCallback((next: BrowseCard | null) => {
     openRef.current = next?.oracleId ?? null;
     shownRef.current = openRef.current;
+    // The opened-at printing dies when a DIFFERENT card actually lands, not when one is
+    // asked for. Clearing it at the paging callback instead would strip the art off the
+    // card still on screen the moment Prev was pressed — and `load` deliberately leaves
+    // that card standing when the read fails, so a failed page left the wrong art behind.
+    // Here it survives the whole transition and is invalidated by the transition
+    // completing, which is also what stops paging back from resurrecting it.
+    setOpenAt((prev) => (prev && prev.oracleId !== next?.oracleId ? null : prev));
     setCard(next);
   }, []);
 
@@ -390,11 +398,11 @@ export function CardDetailProvider({
           total={paging ? siblings.length : 1}
           onClose={close}
           onPrev={paging && index > 0
-            ? () => { setOpenAt(null); void load(siblings[index - 1]); }
+            ? () => void load(siblings[index - 1])
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? () => { setOpenAt(null); void load(siblings[index + 1]); }
+              ? () => void load(siblings[index + 1])
               : null
           }
         />

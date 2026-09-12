@@ -803,4 +803,46 @@ describe("CardDetailProvider open-at-printing scope", () => {
 
     await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
   });
+
+  // `load` leaves the card on screen standing when a read fails. Clearing the printing at
+  // the paging callback would therefore strip the art off a card the reader is still
+  // looking at, and leave it wrong for good.
+  it("keeps the printing when paging away fails and the card stays put", async () => {
+    const fetchCard = vi.fn(async (oracleId: string) => {
+      if (oracleId === "o-signet") return SIGNET;
+      throw new Error("read failed");
+    });
+    function Pair() {
+      const { open } = useCardDetail();
+      return (
+        <button
+          type="button"
+          onClick={() => open("o-signet", ["o-signet", "o-sol"], {
+            setCode: "RVR", collectorNumber: "24",
+            imageUri: "https://cards.scryfall.io/normal/rvr-24.jpg",
+          })}
+        >
+          open signet at RVR
+        </button>
+      );
+    }
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <Pair />
+      </CardDetailProvider>,
+    );
+    const art = () =>
+      [...container.querySelectorAll<HTMLElement>("[style*='background-image']")]
+        .map((el) => el.style.backgroundImage);
+
+    await click(screen.getByRole("button", { name: "open signet at RVR" }));
+    await screen.findByRole("dialog");
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+
+    await click(screen.getAllByRole("button", { name: "Next card" })[0]);
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol"));
+    // Arcane Signet is still the card on screen, and still wearing the printing that was
+    // clicked. The page did not happen.
+    expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
+  });
 });
