@@ -7,6 +7,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import type { BucketedAdd } from "../../lib/decks/draft-diff";
 import type { DraftAdd, DraftState } from "../../lib/decks/draft-shape";
 import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { COMMITTED } from "./__fixtures__/draft-state";
@@ -35,6 +36,16 @@ const add = (i: number): DraftAdd => ({
   bucket: i < 3 ? "unowned" : "claimed",
   heldBy: i < 3 ? [] : [{ id: "holder", name: "Kykar" }],
 });
+
+/** The same eight as the write returns them — every one unfree, which is what
+ *  `commitDeckVersion` filters its list down to before handing it back. */
+const WROTE_EIGHT: BucketedAdd[] = BUY_NAMES.map((_, i) => ({
+  oracleId: `o${i}`,
+  needed: 1,
+  shortfall: 1,
+  bucket: i < 3 ? "unowned" : "claimed",
+  heldBy: i < 3 ? [] : [{ id: "holder", name: "Kykar" }],
+}));
 
 const CUT_NAMES = ["Cultivate", "Kodama's Reach"];
 
@@ -187,7 +198,7 @@ describe("CommitSheet", () => {
 
   it("announces the version's real size, from the server's own count", async () => {
     vi.mocked(commitDeckVersion).mockResolvedValue({
-      ok: true, number: 3, cardCount: 101, buy: [], pull: [],
+      ok: true, number: 3, cardCount: 101, buy: WROTE_EIGHT, pull: [],
     });
     sheet();
     await act(async () => {
@@ -197,6 +208,45 @@ describe("CommitSheet", () => {
     // the version's size is whatever the snapshot actually wrote.
     expect(screen.getByRole("status").textContent).toBe(copy.announced(3, 101, 8));
     expect(push).toHaveBeenCalledWith("/decks/d");
+  });
+
+  // The write decides the purchase inside its own transaction, under the deck's
+  // row lock, and that decision is the one the version was written against. A
+  // copy freed between this page's read and the click leaves the rendered figure
+  // describing a commit nobody made.
+  it("announces the purchase the write decided, not the one the page rendered", async () => {
+    vi.mocked(commitDeckVersion).mockResolvedValue({
+      ok: true,
+      number: 3,
+      cardCount: 101,
+      // Two of the eight turned out to be free, and one of the six left wants a
+      // second copy — so the figure is copies short and never rows.
+      buy: [
+        ...WROTE_EIGHT.slice(0, 5),
+        { ...WROTE_EIGHT[5], needed: 2, shortfall: 2 },
+      ],
+      pull: [],
+    });
+    sheet();
+    await act(async () => {
+      screen.getByRole("button", { name: copy.cta(3) }).click();
+    });
+    expect(screen.getByRole("status").textContent).toBe(copy.announced(3, 101, 7));
+    // Emphatically not `state.buyCount`, which is what the page above was drawn
+    // with, nor a count of the rows the write returned.
+    expect(screen.getByRole("status").textContent).not.toContain("8");
+    expect(screen.getByRole("status").textContent).not.toContain("6");
+  });
+
+  // A commit-only page draws no `PullControl` — a first commit, a removals-only
+  // draft, a draft whose every add is free — so nothing else has put the region
+  // in the document. Created and filled in one operation it is not announced at
+  // all, and the navigation that follows takes the sheet with it.
+  it("puts its live region in the document empty, before any commit", () => {
+    sheet({ state: { ...STATE_36, adds: [], buyCount: 0, unfreeCount: 0, total: null } });
+    const region = screen.getByRole("status");
+    expect(region.getAttribute("aria-live")).toBe("polite");
+    expect(region.textContent).toBe("");
   });
 
   it("keeps the changes and says so when the write is refused", async () => {

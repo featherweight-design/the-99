@@ -162,15 +162,25 @@ function Column({
           // The claim the row's control is drawn against, guards and all —
           // one selector, shared with the banner's own pull hints, so the
           // two surfaces can never disagree about which deck holds a copy.
+          // `claimed` only, because that is the bucket the pull answers:
+          // `bucketAdds` calls an add free as soon as the collection has a
+          // spare copy for it, claims or none, and an offer to raid somebody
+          // else's deck for a copy already sitting in the box is an act
+          // `pullableCount` has never counted.
           const pullClaim =
-            row.direction === "in" ? pullCandidate(row.availability ?? undefined) : null;
-          // A commander's copy is claimed and cannot be pulled, so the word
-          // behind the colour is the guard the row actually draws rather than
-          // "can be pulled" — which would describe an offer the control is
-          // refusing to make.
+            row.direction === "in" && row.bucket === "claimed"
+              ? pullCandidate(row.availability ?? undefined)
+              : null;
+          // Wherever the control is refusing to offer a pull, the word behind
+          // the colour is the guard it drew instead: a commander's copy is
+          // claimed and no route releases it, and a holder with a draft of its
+          // own is a deck to open rather than a copy to take. "can be pulled"
+          // on either would name an act this page will not perform.
           const word = pullClaim?.commander
             ? copy.commanderGuardA11y(pullClaim.name, row.name)
-            : bucketWord(row.bucket);
+            : pullClaim?.pending
+              ? copy.pullGuardA11y(pullClaim.name, row.name)
+              : bucketWord(row.bucket);
           const wordId = `${descriptionId}-${row.oracleId}`;
           const card = {
             oracleId: row.oracleId,

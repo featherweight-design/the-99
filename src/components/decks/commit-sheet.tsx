@@ -16,7 +16,7 @@
 // can have moved.
 
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { commitDeckVersion, type CommitResult } from "../../app/decks/actions";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DraftState } from "../../lib/decks/draft-shape";
@@ -74,6 +74,13 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // The region has to be in the document before any text reaches it, and this
+  // sheet cannot rely on a row having put it there: a first commit, a draft that
+  // only cuts, and any page whose adds are all free draw no pull control at all.
+  useEffect(() => {
+    draftAnnouncer();
+  }, []);
 
   const version = (state.version?.number ?? 0) + 1;
   const released = state.removes.length;
@@ -265,13 +272,18 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
                   setError(copy.refused);
                   return;
                 }
-                // The version's real size, read by the write after it wrote.
+                // The version's real size, read by the write after it wrote, and
+                // the purchase it decided under the deck's own row lock rather
+                // than the one this page was rendered with — an availability
+                // change between the two would have the receipt quote a figure
+                // for a version nobody wrote. Copies and not rows, matching
+                // `buyCount`: a card wanted three times and held once is two.
                 // Spoken into the region that outlives this component, because the
                 // next thing that happens is leaving the page it is on.
                 draftAnnouncer().textContent = copy.announced(
                   result.number,
                   result.cardCount,
-                  state.buyCount,
+                  result.buy.reduce((n, a) => n + a.shortfall, 0),
                 );
                 router.push(`/decks/${deckId}`);
               });

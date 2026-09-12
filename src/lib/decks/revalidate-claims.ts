@@ -38,5 +38,13 @@ export function revalidateClaims(deckId: string, userId: string): void {
   // route needs the `"page"` type as its second argument. Keeping the list
   // literal is what lets it stay assertable without a `next/cache` mock.
   revalidatePath("/commanders/[slug]", "page");
+  // Every OTHER deck's review page, for the reason `claimSurfaces` states and
+  // then only half-acts on: a membership change here decides whether a row on
+  // another deck's review page still offers a pull. The literal path in that
+  // list covers this deck alone, so without the pattern form a reader sitting on
+  // another deck's review page is offered a pull the server would now refuse.
+  // Pattern form and the `"page"` argument for the same reason the commander
+  // page takes them — a dynamic route, and no one path to name.
+  revalidatePath("/decks/[id]/changes", "page");
   revalidateUserLists(userId);
 }

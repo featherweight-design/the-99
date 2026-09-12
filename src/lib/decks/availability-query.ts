@@ -2,6 +2,8 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { Availability, DeckClaim } from "./availability";
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 type Row = {
   oracle_id: string;
   owned: number;
@@ -191,10 +193,16 @@ const claimModel = (userId: string) => sql`
  * A deck that has not sleeved a card is junior on THAT card to every deck that
  * has, whatever the decks' ages — which is what makes a draft add cost a
  * purchase rather than quietly emptying somebody else's box.
+ *
+ * Pass `tx` to read inside a caller's transaction. A claim read taken outside
+ * one is point-in-time and nothing more, which is fine for rendering; a write
+ * that authorizes itself against a claim needs the claim read under the same
+ * locks as the write, or two concurrent pulls both see the copy as spoken for.
  */
 export async function loadAvailability(
   userId: string,
   opts?: { oracleIds?: string[]; excludeDeckId?: string },
+  tx?: Tx,
 ): Promise<Map<string, Availability>> {
   // Both narrowings are null-guarded in SQL rather than by string-building the
   // query, so there is one query plan and one place to read.
@@ -205,7 +213,7 @@ export async function loadAvailability(
   // placeholder so the driver serialises it as a Postgres array literal.
   const only = sql.param(opts?.oracleIds ?? null);
   const skip = sql.param(opts?.excludeDeckId ?? null);
-  const rows = await db.execute<Row>(sql`
+  const rows = await (tx ?? db).execute<Row>(sql`
     with ${claimModel(userId)},
     -- Self-exclusion (Addendum 2 §6): the current deck never claims against
     -- itself. Applied once here, and hard, soft and claims inherit it.

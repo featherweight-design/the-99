@@ -38,7 +38,16 @@ export default async function ChangesPage({
   // Otherwise a committed or discarded draft leaves this page with nothing to
   // review, and a bare empty state would read as a bug. The deck page is where
   // the version line now is, so that is where the reader goes.
-  if (changeCount(state) === 0 && !wantsCommit) redirect(`/decks/${id}`);
+  //
+  // `changeCount` counts NAMED rows, which is not the same question as "is there
+  // anything to commit". A basics-only edit names no card, and a brew has no
+  // version to diff against at all — both have a version to cut, and both would
+  // be bounced straight back to the deck page by a count alone. `?commit=1` is
+  // not the guard for that: the banner's CTA carries it, but a reader who
+  // followed the review link, or reloaded, arrives without it.
+  const hasSomethingToCommit =
+    changeCount(state) > 0 || state.basicsChanged || state.version === null;
+  if (!hasSomethingToCommit && !wantsCommit) redirect(`/decks/${id}`);
 
   return (
     <ReviewChanges

@@ -179,6 +179,63 @@ describe("ReviewChanges", () => {
     expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
   });
 
+  // `bucketAdds` calls an add free the moment the collection has a spare copy
+  // for it, whatever else is holding one — so a free row arrives with live
+  // claims on it, and an offer to raid another deck for a copy already in the
+  // box is one `pullableCount` has never counted. The holder goes with it: the
+  // row draws no availability marker at `free` either, and naming a deck the
+  // reader is being offered nothing from is a fact about somebody else's box.
+  it("offers no pull on a free add another deck also holds", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{
+          in: [
+            row({
+              bucket: "free",
+              // A spare copy in the collection AND a copy sleeved elsewhere,
+              // which is the pair the bucket is indifferent to.
+              availability: { ...claimed(), free: 1 } as unknown as Availability,
+            }),
+          ],
+          out: [],
+        }}
+        state={{ ...STATE, pullableCount: 0 }}
+        cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(screen.queryByText(deckVersioningCopy.review.heldBy("Kykar"))).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
+        .getAttribute("aria-describedby"),
+    ).toBeNull();
+  });
+
+  // The pending guard is an `Open →` rather than a pull, because committing that
+  // deck's half-finished draft from here would sweep in changes its owner never
+  // asked for — so the sentence behind the row's colour is that guard and not
+  // "can be pulled", exactly as it is on a commander's copy.
+  it("describes a pending holder's copy with the guard rather than the pull", () => {
+    render(
+      <ReviewChanges
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ pending: true }) })], out: [] }}
+        state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: deckVersioningCopy.review.pull })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(
+      deckVersioningCopy.review.pullGuardA11y("Kykar", "Sol Ring"),
+    );
+    expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
+  });
+
   // The guards are the server's, so the row says which obstacle it hit rather
   // than drawing a control that can only fail. `pull-control.test.tsx` covers
   // both arms; this is the wiring — the row reads the claim's flags at all.
