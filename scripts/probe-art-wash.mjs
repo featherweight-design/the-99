@@ -208,8 +208,17 @@ const READ_STATED_BANDS = `() => {
   return [...document.querySelectorAll('[data-art-wash-band]')]
     .filter((root) => root.getClientRects().length)
     .map((root) => {
-      const scrims = [...root.querySelectorAll('.art-wash-scrim')];
+      const scrims = [...root.querySelectorAll('.art-wash-scrim')]
+        .filter((s) => getComputedStyle(s).display !== 'none');
       const s = scrims.at(-1);
+      // Counted, not just read: reading `.at(-1)` alone passes a band that has
+      // grown a SECOND vertical ramp under a valid last one, and two ramps over
+      // one band is twice the darkening the round settled.
+      // Same definition the row reader uses: the vertical ramp is the gradient
+      // that names no angle at all, because the browser drops the default 180deg.
+      const verticals = scrims.filter((s) =>
+        /^linear-gradient\((?!\s*[\d.-]+deg)/.test(getComputedStyle(s).backgroundImage),
+      ).length;
       const image = s ? getComputedStyle(s).backgroundImage : '';
       const stops = parseStops(image);
       return {
@@ -224,6 +233,7 @@ const READ_STATED_BANDS = `() => {
         // the first and skipped every hold check on exactly the regression these
         // checks exist to catch.
         ramped: !root.hasAttribute('data-art-wash-flat'),
+        verticals,
         stops,
       };
     });
@@ -531,6 +541,11 @@ try {
         }
         if (Math.abs(band.laid - Number.parseInt(band.declared, 10)) > 1) {
           note(`  FAIL band declares ${band.declared} and lays out at ${band.laid}px`);
+        }
+        if (band.ramped && band.verticals !== 1) {
+          note(
+            `  FAIL ${band.declared} band paints ${band.verticals} vertical ramps, expected exactly 1`,
+          );
         }
         if (!band.ramped) {
           // A flat band: its ink starts past the portrait's flat stop and stands
