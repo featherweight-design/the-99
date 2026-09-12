@@ -21,12 +21,15 @@ three weeks ago, and I would rather have that confirmed than discover it in a bu
 - **The pip, and the measurement §5 says nobody has made.** Floor **7.77:1** (not 9.51 — three hexes were assumed and all three are wrong).
 > ⚠️ **Superseded — the floor is 7.77:1, not 9.51:1.** Three of the five pip hexes were assumed and
 > all three are wrong: `B` is `#CAC5C0`, `R` is `#E49977`, `G` is `#A3C095`. The real values are
-> darker, so the floor moves down — still clearing the 3:1 non-text floor by 4.77. And the shipped
+> not uniformly darker: R drops 20.2% in relative luminance and G 15.8%, while B is 2.3% lighter.
+> R is the darkest and R is what sets the floor, so the floor moves down — still clearing the 3:1
+> non-text floor by 4.77. And the shipped
 > defect's 1.38:1 is against `--bg`, on two controls rather than three. See
 > `docs/superpowers/readiness-filter-chassis.md` §6.
  Six themes, two decimals. The floor is
   **7.77:1** — the handoff computed 9.51 from three assumed hexes, all of which were wrong; the
-  fetched `B` `#CAC5C0`, `R` `#E49977` and `G` `#A3C095` are darker. The treatment's own state
+  fetched `B` `#CAC5C0`, `R` `#E49977` and `G` `#A3C095` differ — R by −20.2% relative luminance and
+  G by −15.8%, while B is 2.3% lighter; R sets the floor. The treatment's own state
   carrier (`--accent` ring) floors at **4.42:1**. Both clear their floors everywhere.
 - **The dimming defect it uncovers.** The shipped unlit pip measures **1.37:1** against **`--bg`**
   on the rack and **1.49:1** against `--surface-sunken` on collection — **two** live controls under
@@ -83,7 +86,8 @@ independently of this round, and `chassisCopy.colour.pipAria` replaces it.
   reads as a bug — so it is now a rule: two forms, no wrapping at any width, search the only
   shrinking child, switch at **1000px** set by `/collection`'s seven controls, whose minimums total 987 rather than the 887 first stated. That open item is closed
   by removal rather than by measurement.
-- **Every shipped filter is inventoried** (§1b): twelve live controls across four routes, each
+- **Every shipped filter is inventoried** (§1b): twelve live controls across four routes — **eleven
+  this round, since `Printed in` is cut** — each
   mapped to one of four control types, with what changes for it. The chassis has slots, and a route
   fills them.
 - **`Score against` corrected** from a trigger to its shipped inline segmented shape — and the
@@ -107,7 +111,8 @@ convenience and not a shipping fallback.
 ### Three pip hexes were assumed — the audit fetched them, and all three were wrong
 **Resolved, no longer a confirm-on-fetch item.** `W` `#F8F6D8` and `U` `#C1D7E9` are correct as
 quoted. The three assumed values are not: `B` is **`#CAC5C0`**, `R` is **`#E49977`** and `G` is
-**`#A3C095`**. All three are darker than assumed, so the floor moves from 9.51:1 down to
+**`#A3C095`**. They are not uniformly darker: R falls 20.2% in relative luminance and G 15.8%, while
+B is 2.3% lighter. R is both the darkest and the pip that sets the floor, so it moves from 9.51:1 to
 **7.77:1** — still clearing 3:1, with **4.77** points of headroom rather than 6.5. Build against the
 fetched values.
 provenance note rather than a risk.

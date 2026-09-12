@@ -194,7 +194,8 @@ described as acceptable.
 slot, a pip slot, an ordered run of dimension slots, a trailing slot for sort. The type is chosen
 by **the shape of the values, not the route**, which is what makes status on `/decks` and type on
 `/collection` the same object and lets a fifth route mount the chassis with no design round. All
-twelve live controls are inventoried in §1b with what changes for each. Nothing is dropped.
+twelve live controls are inventoried in §1b with what changes for each — **eleven ship this round;
+the twelfth is `Printed in`, which is cut and lands in a later slice**. Nothing is dropped.
 
 - **Field** — search, all four routes.
 - **Pip row** — colour identity, all four routes. The only bespoke control.

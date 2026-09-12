@@ -96,8 +96,10 @@ than a second dialog.
 1. **Three pip hexes were assumed and all three are wrong.** The handoff assumes `B` `#CBC2BF`,
    `R` `#F9AA8F`, `G` `#9BD3AE`, flagging them for confirmation on first fetch. Fetched:
    **`B` = `#CAC5C0`, `R` = `#E49977`, `G` = `#A3C095`.** `W` `#F8F6D8` and `U` `#C1D7E9` are
-   confirmed correct. The real values are darker than assumed, so the floor moves **down**, from
-   9.51:1 to **7.77:1** (still R, still kaldheim). It clears the 3:1 non-text floor with 4.77 points
+   confirmed correct. They are **not uniformly darker**, which the first draft of this finding claimed:
+   R falls 20.2% in relative luminance and G 15.8%, while B is 2.3% *lighter*. R is both the darkest
+   and the pip that already set the floor, so the floor moves **down**, from 9.51:1 to **7.77:1**
+   (still R, still kaldheim). It clears the 3:1 non-text floor with 4.77 points
    of headroom, so Design's conclusion holds unchanged and no drawing is affected. Build against the
    fetched values, not the table's.
 2. **The defect is two controls wide, and the handoff measured the worse of them.**
