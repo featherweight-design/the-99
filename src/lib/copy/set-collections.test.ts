@@ -108,7 +108,9 @@ describe("setFilterCopy", () => {
     expect(setFilterCopy.rarity.all).toBe("Rarity · all");
     expect(setFilterCopy.rarity.value("uncommon")).toBe("Rarity · uncommon");
     expect(setFilterCopy.rarityPanel.triggerLabel).toBe(setFilterCopy.rarity.all);
-    expect(setFilterCopy.rarityPanel.triggerOne("Uncommon"))
+    // The mount passes lowercase option labels, because `FilterPanel` composes the
+    // trigger's accessible name from them and Title Case there breaks label-in-name.
+    expect(setFilterCopy.rarityPanel.triggerOne("uncommon"))
       .toBe(setFilterCopy.rarity.value("uncommon"));
   });
 

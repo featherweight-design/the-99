@@ -81,7 +81,7 @@ function stubDesktop(wide: boolean) {
  */
 function pickRarity(label: string) {
   fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
-  fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${label},`) }));
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${label.toLowerCase()},`, "i") }));
 }
 
 const replaceState = vi.spyOn(window.history, "replaceState");
@@ -730,8 +730,8 @@ describe("SetGridView — the rack, chassis-conformant", () => {
       p("1", { rarity: "rare" }), p("2", { rarity: "common" }), p("3", { rarity: "common" }),
     ], []);
     fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
-    expect(screen.getByRole("option", { name: /^Rare, 1 cell/ })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /^Common, 2 cells/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /^rare, 1 cell/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /^common, 2 cells/ })).toBeInTheDocument();
   });
 
   // ——— The pips ———
@@ -1012,5 +1012,29 @@ describe("SetGridView — chip targets follow the chassis", () => {
       expect(button.className).toMatch(/after:h-\[44px\]/);
       expect(button.className).not.toMatch(/after:h-\[34px\]/);
     }
+  });
+});
+
+// `FilterPanel` composes the trigger's accessible name from the option's label, while
+// `triggerOne` only styles the visible text — so lowercasing the copy alone announced
+// `Uncommon` under a button reading `Rarity · uncommon`. Label-in-name, WCAG 2.5.3.
+describe("SetGridView — the rarity trigger says what it shows", () => {
+  it("announces the value in the case the button prints it", () => {
+    stubDesktop(true);
+    search = "r=uncommon";
+    view([p("1", { rarity: "uncommon" }), p("2", { rarity: "rare" })], []);
+    const trigger = screen.getByRole("button", { name: /Filter by rarity/ });
+    expect(trigger.textContent).toContain("Rarity · uncommon");
+    expect(trigger.getAttribute("aria-label")).toContain("uncommon");
+    expect(trigger.getAttribute("aria-label")).not.toContain("Uncommon");
+  });
+
+  // The sheet's chips stay Title Case: §28 amendment 3 — a chip is a control, and the
+  // trigger's value is a caption in the register of `042 · uncommon`.
+  it("keeps the phone sheet's chips in Title Case", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getByRole("button", { name: "Rare" })).toBeInTheDocument();
   });
 });

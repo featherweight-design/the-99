@@ -589,7 +589,14 @@ export function SetGridView(props: SetGridViewProps) {
               footerStatus
               options={RARITIES.map((r) => ({
                 code: r,
-                label: setFilterCopy.rarity.options[r],
+                // LOWERCASE, because `FilterPanel` composes the trigger's accessible name
+                // from this label while `triggerOne` only styles the visible text — so
+                // lowercasing in the copy alone announced `Uncommon` under a button reading
+                // `Rarity · uncommon`, which is the label-in-name breach (WCAG 2.5.3) this
+                // page just fixed on Clear. The sheet's chip group keeps Title Case from
+                // `rarity.options`, per §28's amendment 3: a chip is a control, and the
+                // trigger's value is a caption in the register of `042 · uncommon`.
+                label: setFilterCopy.rarity.options[r].toLowerCase(),
                 count: rarityCounts.get(r) ?? 0,
                 disabled: (rarityCounts.get(r) ?? 0) === 0 && !filters.rarities.includes(r),
               }))}

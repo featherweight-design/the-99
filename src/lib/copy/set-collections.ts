@@ -70,8 +70,10 @@ export const setFilterCopy = {
     // reused, which is how a later copy edit makes the trigger disagree with the chips
     // beside it.
     triggerLabel: setFilterCopyRarity.all,
+    // The option labels arrive lowercase already — see the mount — so this does not case
+    // them itself. Lowercasing here alone left the accessible name in Title Case.
     triggerOne: (name: string) =>
-      setFilterCopyRarity.value(name.toLowerCase() as "common" | "uncommon" | "rare" | "mythic"),
+      setFilterCopyRarity.value(name as "common" | "uncommon" | "rare" | "mythic"),
     triggerAriaCollapsed: "Filter by rarity, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by rarity, ${n} selected, collapsed`,
     panelAriaLabel: "Filter by rarity",
