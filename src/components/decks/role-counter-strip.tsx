@@ -1,5 +1,6 @@
 // Role Counter Strip — §Role Counter Strip — 5 cells.
 // Server component — recomputes role counts from detail.cards.
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import {
   computeRoleCounts,
@@ -90,6 +91,20 @@ export function RoleCounterStrip({
         >
           {RECOMMENDED_MIX_SOURCE_LINE}
         </span>
+
+        {/* §Strip header — the draft sub-run (#389, surface 1). `wasCounts` is
+            the draft's own presence: absent on a brew and on a committed deck
+            with nothing pending, which is exactly when the figures below have
+            only one list to have come from. It rides the source line's size and
+            breakpoint so the two read as one sentence. */}
+        {wasCounts && (
+          <span
+            className="hidden md:inline font-mono text-[10.5px] tracking-[0.06em]"
+            style={{ color: "var(--accent)" }}
+          >
+            {deckVersioningCopy.pending.mixStripDraftNote}
+          </span>
+        )}
       </div>
 
       {/* Role cells row */}

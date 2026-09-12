@@ -83,6 +83,11 @@ export const deckVersioningCopy = {
     // The list toolbar's right slot, replacing "n cards are yours now" while a draft exists.
     toolbarNote: (n: number, version: number) =>
       `${n} of these ${n === 1 ? "is" : "are"} not in v${version} yet`,
+    // The mix strip's header, beside the EDHREC source line: which list the five
+    // figures below were counted from. Drawn only while a draft exists — on a
+    // clean deck there is one list, and naming it would raise a question the
+    // reader does not have.
+    mixStripDraftNote: "· reading the draft",
     // The mix cell's bottom-left slot takes the previous figure instead of the
     // recommendation while a draft exists — but ONLY when the figure actually moved.
     mixCellWas: (n: number) => `was ${n}`,

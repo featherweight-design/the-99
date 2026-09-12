@@ -24,6 +24,8 @@ interface DecklistGroupProps {
   siblings?: string[];
   /** Optional note shown right-aligned on desktop (e.g. "37 recommended"). */
   note?: string;
+  /** Passed straight to the header — the draft note is brass, others quiet. */
+  noteColor?: string;
   /** The newest `as_of` in `printing_prices`; each row's liveness comparison. */
   newestAsOf?: Date | null;
 }
@@ -36,6 +38,7 @@ export function DecklistGroup({
   spentOracleId,
   siblings,
   note,
+  noteColor,
   newestAsOf = null,
 }: DecklistGroupProps) {
   // The count does not wait for the undo: a spent slot is a receipt, not a
@@ -55,7 +58,13 @@ export function DecklistGroup({
 
   return (
     <div className="mb-[16px] md:mb-[20px]">
-      <DecklistGroupHeader label={label} count={count} note={note} autoCount={autoCount} />
+      <DecklistGroupHeader
+        label={label}
+        count={count}
+        note={note}
+        noteColor={noteColor}
+        autoCount={autoCount}
+      />
 
       {view === "card" ? (
         /* `auto-fill minmax(132px, …)` rather than a fixed 5-up: the add panel

@@ -660,3 +660,38 @@ Cross-surface conditions:
   carries rows for them.
 
 VERDICT: 32 visual gaps, 11 state gaps
+
+---
+
+## Pass 3 — Confirmation (after the Surface 1 build)
+
+Checked only the items above, against the tree this PR ships. No open-ended re-discovery.
+
+**Closed in this PR — visual gaps 1–16, 18, 19, 20, 22, 23, 25, 26, 31; state gaps A4, A5, A8, A11.**
+
+Load-bearing notes:
+
+- Gap 7's cream fill is `bg-[color:var(--fg)]`, not the canvas's literal `#E8E4D6`. This codebase
+  redefines every colour per theme, and `--fg` is the token the shipped `button.tsx` PRIMARY already
+  uses for a bone fill. Scored on token identity, per the Hex-vs-token note above.
+- Gap 18 moved the offer out of the banner entirely: `first-commit-offer.tsx`, mounted beside
+  `Export` in **both** spine widths, gated by `offerFirstCommit` threaded from `builder-shell.tsx`.
+  The gate reads `counts.total >= bodySize` rather than `===`, so an over-size brew is still offered
+  its v1 — an over-cap list is committable, and withholding the offer would strand it.
+- Gap 31 retired the banner's `total`/`bodySize` props with the figure they fed. The body count is
+  the hero's, and the first-commit gate that also read them now lives in the shell.
+
+**Still open, by design, and each owned by a later PR in this feature:**
+
+| Item | Owner |
+|------|-------|
+| Visual 17, state D31–D35 (`DiscardConfirm` and its five states) | PR 5 |
+| State D30 (`onDiscard` has no call site) | PR 5 |
+| State D32, and the `/decks/[id]/changes` route every commit CTA here links to | PR 4 |
+| Visual 30 (`Versions · {n}` tab) | PR 6 |
+| `deckImportCopy.update.draftPasteNotice` — still no call site | PR 4 |
+
+**Not this feature's to fix:** visual gaps 21, 24, 27, 28, 29, 32 — pre-existing shipped chrome the
+table itself marks "unchanged by the feature".
+
+VERDICT: 0 in-scope gaps remain

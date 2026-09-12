@@ -13,6 +13,8 @@ interface DecklistGroupHeaderProps {
   countColor?: string;
   /** Right-aligned on desktop only (e.g. "37 recommended"). */
   note?: string;
+  /** The draft note is brass; every other note is the quiet default. */
+  noteColor?: string;
   /** Promotes the label to an h3 so a group can be a labelled landmark. */
   headingId?: string;
   /**
@@ -35,6 +37,7 @@ export function DecklistGroupHeader({
   count,
   countColor = "var(--fg-faint)",
   note,
+  noteColor = "var(--fg-locked)",
   headingId,
   gapClause,
   autoCount = 0,
@@ -93,7 +96,7 @@ export function DecklistGroupHeader({
       {note && (
         <span
           className="hidden md:block font-mono text-[10.5px]"
-          style={{ color: "var(--fg-locked)", marginLeft: "auto" }}
+          style={{ color: noteColor, marginLeft: "auto" }}
         >
           {note}
         </span>

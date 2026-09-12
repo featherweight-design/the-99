@@ -19,6 +19,7 @@ import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
+import type { PendingAddMove } from "./pending-add";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
@@ -93,19 +94,21 @@ type DecklistProps = {
   /** Built on the server; see BuilderShell. */
   provenance?: ProvenanceForm | null;
   /**
-   * The oracle ids this deck's draft added on top of its newest version (#389).
-   * Empty on a brew and on a committed deck with nothing pending, which is why
-   * every note below is gated on the set's size rather than on a second flag.
-   * The rows read the same set through `PendingAddProvider`.
+   * The cards this deck's draft added on top of its newest version (#389), each
+   * against its quantity move. Empty on a brew and on a committed deck with
+   * nothing pending, which is why every note below is gated on the map's size
+   * rather than on a second flag. Nothing here reads a move — the notes count
+   * rows — but the rows read the same map through `PendingAddProvider`, which is
+   * where the pair is printed.
    */
-  pendingAdds?: Set<string>;
+  pendingAdds?: ReadonlyMap<string, PendingAddMove>;
   /** The newest version's number, for the toolbar note. Null on a brew. */
   pendingVersion?: number | null;
 };
 
-/** Module-scoped, so the default does not hand a fresh Set to the provider on
+/** Module-scoped, so the default does not hand a fresh map to the provider on
  *  every render and remount the rows under it. */
-const EMPTY_PENDING_ADDS: Set<string> = new Set();
+const EMPTY_PENDING_ADDS: ReadonlyMap<string, PendingAddMove> = new Map();
 
 export function Decklist({
   deckId,
@@ -607,7 +610,7 @@ export function Decklist({
             sentence. Only under All — Shopping shows a subset, and a caption
             counting rows the reader cannot see is a caption about nothing. */}
         {pendingAdds.size > 0 && filter === "all" && (
-          <p className="m-0 mb-[8px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+          <p className="m-0 mb-[8px] font-mono text-[10px] text-[color:var(--fg-faint)]">
             {deckVersioningCopy.pending.addListCaption(pendingAdds.size)}
           </p>
         )}
@@ -630,6 +633,11 @@ export function Decklist({
                   ? deckVersioningCopy.pending.groupAddNote(addedInGroup)
                   : undefined
               }
+              // Brass, the same brass as the rules below it: this note is the
+              // heading's half of one mark. The quiet default belongs to the
+              // unresolved group's note, which describes rows rather than
+              // pointing at them.
+              noteColor="var(--accent)"
             />
           );
         })}

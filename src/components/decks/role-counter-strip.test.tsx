@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { RoleCounterCell } from "./role-counter-cell";
 
@@ -272,6 +273,36 @@ describe("role counter strip — unresolved rows", () => {
     );
     expect(container.textContent).not.toMatch(/unresolved/i);
     expect(container.textContent).not.toContain("*");
+  });
+});
+
+describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
+  const ZERO = { ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0 } as Record<MixRole, number>;
+
+  // `wasCounts` IS the draft's presence, so the note has no second flag to get
+  // out of step with: a deck with something pending says which list it counted.
+  it("names the list the figures came from while a draft exists", () => {
+    render(<RoleCounterStrip cards={[]} wasCounts={ZERO} />);
+    expect(screen.getByText(deckVersioningCopy.pending.mixStripDraftNote)).toBeInTheDocument();
+  });
+
+  // On a clean deck there is only one list to have counted, and naming it would
+  // raise a question the reader does not have.
+  it("says nothing on a deck with nothing pending", () => {
+    render(<RoleCounterStrip cards={[]} />);
+    expect(
+      screen.queryByText(deckVersioningCopy.pending.mixStripDraftNote),
+    ).toBeNull();
+  });
+
+  // Brass, and beside the EDHREC line rather than under it — the two sub-runs
+  // read as one sentence about where the numbers come from.
+  it("draws the note in accent, at the source line's size and breakpoint", () => {
+    render(<RoleCounterStrip cards={[]} wasCounts={ZERO} />);
+    const note = screen.getByText(deckVersioningCopy.pending.mixStripDraftNote);
+    expect(note.getAttribute("style")).toContain("var(--accent)");
+    expect(note.className).toContain("text-[10.5px]");
+    expect(note.className).toContain("md:inline");
   });
 });
 

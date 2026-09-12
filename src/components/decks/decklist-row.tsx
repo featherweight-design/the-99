@@ -5,6 +5,7 @@
 
 import { useId } from "react";
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
@@ -112,10 +113,21 @@ export function DecklistRow({
   // there is room to spare the two are identical — grow still takes the slack.
   const nameBlockClass = "flex-auto min-w-0 flex items-center gap-[6px]";
 
+  // The draft added this card (#389, surface 1), and the move that added it.
+  // Read this high because the count glyph below depends on it: a row whose
+  // count merely moved prints `1 → 2` in the name's place, and `×2` beside that
+  // is the second figure saying the same thing.
+  const pendingAdd = usePendingAdd();
+  const pendingMove = pendingAdd?.moves.get(card.oracleId);
+  const isPendingAdd = pendingMove !== undefined;
+  // A move out of a count the version already held, as against a card it did
+  // not hold at all. Only the former has a pair to print.
+  const recounted = pendingMove && pendingMove.from > 0 && pendingMove.to > 0 ? pendingMove : null;
+
   // Multi-copy count (addendum C5): one row per card, the count inline after
   // the name. aria-hidden because the ✕ beside it already speaks the same
   // figure in prose — a reader that voiced both would say the number twice.
-  const quantityGlyph = card.quantity > 1 && (
+  const quantityGlyph = card.quantity > 1 && !recounted && (
     <span
       aria-hidden
       className="flex-none font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]"
@@ -164,6 +176,18 @@ export function DecklistRow({
   // modal — one tap away on this very name — is the recovery path for the clip.
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
+  // What the row prints. A recounted row carries its pair inline with the name,
+  // because the brass rule says only "the draft touched this" and a reader
+  // looking at `Sol Ring` cannot tell 1 → 2 from a card that was not there.
+  // The accessible name stays `fullName`: the pair is about the deck's count,
+  // not about which card this is.
+  const rowLabel = recounted
+    ? deckImportCopy.update.diff.recountedItem(
+        displayName,
+        String(recounted.from),
+        String(recounted.to),
+      )
+    : displayName;
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -193,15 +217,23 @@ export function DecklistRow({
   // the decklist by Tab never leaves focus mode — so the pass that placed the
   // card would go unspoken to exactly the reader the mark is drawn for.
   const markDescriptionId = useId();
-  // The draft added this card, and the version below it did not hold it (#389,
-  // surface 1). Its own id rather than a share of the pass mark's: a row can be
-  // both a pending add and the marked pass's card, and `aria-describedby` takes
-  // both ids in reading order where one string could only replace the other.
-  const pendingAdd = usePendingAdd();
-  const isPendingAdd = pendingAdd?.oracleIds.has(card.oracleId) ?? false;
+  // The draft's own id rather than a share of the pass mark's (#389, surface 1):
+  // a row can be both a pending add and the marked pass's card, and
+  // `aria-describedby` takes both ids in reading order where one string could
+  // only replace the other.
   const pendingDescriptionId = useId();
+  // §Errata: the dot is decorative and the word it used to carry belongs to the
+  // row. Said through the name's description rather than as the dot's own label
+  // so the two facts about the card — which card, and whether it is owned —
+  // arrive as one announcement instead of a stray word before the name.
+  const availabilityWord = card.owned ? "Owned" : "Not owned";
+  const availabilityDescriptionId = useId();
   const describedBy =
-    [marked ? markDescriptionId : null, isPendingAdd ? pendingDescriptionId : null]
+    [
+      availabilityDescriptionId,
+      marked ? markDescriptionId : null,
+      isPendingAdd ? pendingDescriptionId : null,
+    ]
       .filter(Boolean)
       .join(" ") || undefined;
   // The mark is an inset edge for the same reason the over tint is an inset
@@ -260,12 +292,17 @@ export function DecklistRow({
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
         style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
       >
-        {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
-        <OwnershipDot
-          owned={card.owned}
-          className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
-          label={card.owned ? "Owned" : "Not owned"}
-        />
+        {/* Ownership dot: solid green (owned) vs dashed hollow (unowned).
+            No label — unlabelled it marks itself aria-hidden, which is the
+            §Errata ruling: the word is the row's, said below. */}
+        <OwnershipDot owned={card.owned} className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]" />
+
+        {/* The word the dot used to carry. Ahead of the pass mark and the draft
+            mark in `describedBy`, so a reader hears the card, then whether they
+            own it, then what the deck has done with it. */}
+        <span id={availabilityDescriptionId} className="sr-only">
+          {availabilityWord}
+        </span>
 
         {/* Card name — the click target for the detail modal (#127).
             Any row with a meta line — a Shopping row, or since #350 any row
@@ -295,7 +332,7 @@ export function DecklistRow({
                 describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
               >
-                {displayName}
+                {rowLabel}
               </CardDetailTrigger>
               <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
@@ -343,7 +380,7 @@ export function DecklistRow({
               describedBy={describedBy}
               style={{ color: "var(--fg)" }}
             >
-              {displayName}
+              {rowLabel}
             </CardDetailTrigger>
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}

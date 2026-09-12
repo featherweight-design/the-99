@@ -8,6 +8,9 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { PendingAddProvider } from "./pending-add";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -680,5 +683,85 @@ describe("DecklistRow printed name", () => {
       <DecklistRow deckId="d1" card={{ ...card, name: "Fire // Ice" } as DeckDetailCard} />,
     );
     expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
+  });
+});
+
+// §Errata: the dot is decorative and the row itself carries the availability
+// word, because "the bucket heading is the accessible statement" described
+// buckets that were withdrawn.
+describe("DecklistRow ownership (§Errata)", () => {
+  const dot = (container: HTMLElement) => container.querySelector("[aria-hidden]");
+
+  it("leaves the dot decorative and says the word through the name", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistRow deckId="d1" card={card} />
+      </CardDetailProvider>,
+    );
+    // No labelled dot anywhere: the shape is decoration now.
+    expect(screen.queryByLabelText("Owned")).toBeNull();
+    expect(dot(container)).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(/Owned/);
+  });
+
+  it("says the other word on a card the player does not own", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false } as DeckDetailCard} />);
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(/Not owned/);
+  });
+});
+
+// #389, surface 1: the brass rule says the draft touched this row, and only the
+// printed pair says what it did to a count the version already held.
+describe("DecklistRow pending add (#389)", () => {
+  const withMoves = (moves: Array<[string, { from: number; to: number }]>, ui: React.ReactNode) =>
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <PendingAddProvider value={{ moves: new Map(moves), label: "added" }}>{ui}</PendingAddProvider>
+      </CardDetailProvider>,
+    );
+
+  it("prints the pair on a row whose count moved", () => {
+    withMoves(
+      [["sol-ring", { from: 1, to: 2 }]],
+      <DecklistRow deckId="d1" card={{ ...card, quantity: 2 } as DeckDetailCard} />,
+    );
+    expect(
+      screen.getByText(deckImportCopy.update.diff.recountedItem("Sol Ring", "1", "2")),
+    ).toBeInTheDocument();
+    // The ×2 glyph stands down: `1 → 2` already ends in the count it would say.
+    expect(screen.queryByText(addPanelCopy.row.quantity(2))).toBeNull();
+  });
+
+  it("leaves a card the version never held on its bare name", () => {
+    withMoves(
+      [["sol-ring", { from: 0, to: 1 }]],
+      <DecklistRow deckId="d1" card={card} />,
+    );
+    expect(screen.getByText("Sol Ring")).toBeInTheDocument();
+    expect(screen.queryByText(/→/)).toBeNull();
+  });
+
+  it("keeps the accessible name on the card, not on the pair", () => {
+    withMoves(
+      [["sol-ring", { from: 1, to: 3 }]],
+      <DecklistRow deckId="d1" card={{ ...card, quantity: 3 } as DeckDetailCard} />,
+    );
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toBeInTheDocument();
+  });
+
+  it("says nothing about a draft on a row the draft did not touch", () => {
+    withMoves([["other-card", { from: 1, to: 2 }]], <DecklistRow deckId="d1" card={card} />);
+    expect(screen.getByText("Sol Ring")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).not.toHaveAccessibleDescription(
+      new RegExp(deckVersioningCopy.pending.addMarkA11y),
+    );
   });
 });

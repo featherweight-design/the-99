@@ -139,7 +139,7 @@ export function GroupToggle({
             cluster is absent entirely on a deck the fill never ran on, and the
             draft note has to survive that. */}
         {draftNote && (
-          <span className="font-mono text-[11px] text-fg-locked hidden md:inline">
+          <span className="font-mono text-[11.5px] text-fg-locked hidden md:inline">
             {draftNote}
           </span>
         )}

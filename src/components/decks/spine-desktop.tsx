@@ -17,6 +17,7 @@ import { deckBodySize } from "../../lib/decks/deck-size";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import type { StatusPill } from "../../lib/decks/status";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
+import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 
@@ -47,6 +48,10 @@ export interface SpineBandProps {
   counts: { built: number; ownedCount: number; toBuyCount: number };
   status: StatusPill;
   onExport: () => void;
+  /** True on a deck with no version whose list has reached a full body — the
+   *  one condition under which `Commit as v1` is offered. Computed by the shell,
+   *  which owns `deckBodySize`, so neither spine reads the body count itself. */
+  offerFirstCommit?: boolean;
 }
 
 /** §B16 — the field's box, identical in all four editing states. Declared
@@ -68,7 +73,13 @@ export const TRUNCATES: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps) {
+export function SpineDesktop({
+  deck,
+  counts,
+  status,
+  onExport,
+  offerFirstCommit,
+}: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
   const { built, ownedCount, toBuyCount } = counts;
@@ -424,6 +435,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
                   Export
                 </PrimaryButton>
               )}
+              {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
             </div>
           )}
         </div>

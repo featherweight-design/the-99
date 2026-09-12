@@ -228,14 +228,18 @@ export function BuilderShell({
   // toward that rather than a written-down 99.
   const bodySize = deckBodySize(deck.partner !== null);
 
-  // The draft's added cards, as the rows ask about them: one boolean per row.
+  // The draft's added cards, as the rows ask about them: the move per row.
   // Null outside a draft, which is what makes every mark and every note absent
   // on a deck with nothing pending rather than gated on a second flag.
+  // Built from `addChanges` rather than `adds` because that is the list carrying
+  // the before/after pair, and it is the same cards in the same order.
   const pendingAdd = useMemo(
     () =>
       draft && draft.adds.length > 0
         ? {
-            oracleIds: new Set(draft.adds.map((a) => a.oracleId)),
+            moves: new Map(
+              draft.addChanges.map((c) => [c.oracleId, { from: c.from, to: c.to }]),
+            ),
             label: deckVersioningCopy.pending.addMarkA11y,
           }
         : null,
@@ -676,6 +680,10 @@ export function BuilderShell({
               // optimistic counts and would otherwise disagree with the page
               // around it mid-edit.
               status={serverStatus}
+              // State 2: a list that has never been committed and has reached a
+              // full body. `counts` is the optimistic list, so the offer appears
+              // on the add that completes the deck rather than on the next load.
+              offerFirstCommit={draft?.version === null && counts.total >= bodySize}
               {...commitments}
               // No link while the Shopping list is what the player is looking
               // at: it would point at the screen they are already on. Called
@@ -802,12 +810,7 @@ export function BuilderShell({
                 that this list is not the deck's committed one yet, which every
                 count below it is then read against. */}
             {draft && (
-              <PendingBanner
-                state={draft}
-                deckId={deck.id}
-                total={counts.total}
-                bodySize={bodySize}
-              />
+              <PendingBanner state={draft} deckId={deck.id} />
             )}
 
             {/* Above the coverage strip and the tabs, because what it says is
@@ -1067,7 +1070,7 @@ export function BuilderShell({
                 shoppingFigures={shoppingFigures}
                 newestAsOf={newestAsOf}
                 provenance={provenance}
-                pendingAdds={pendingAdd?.oracleIds}
+                pendingAdds={pendingAdd?.moves}
                 pendingVersion={draft?.version?.number ?? null}
               />
               </PendingAddProvider>
