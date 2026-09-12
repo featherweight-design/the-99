@@ -16,7 +16,7 @@
 // only the message waits, so a reader typing four letters hears one count
 // rather than four. `filter-panel.tsx` debounces its own count the same way.
 
-import { useEffect, useRef, useState } from "react";
+import { ResultLine as SharedResultLine } from "../../ui/result-line";
 import type { Lane } from "../../../lib/commanders/lane-params";
 import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
 
@@ -27,7 +27,12 @@ export function resultSentence(shown: number, total: number, lane: Lane): string
   return shown === total ? copy.rest(total) : copy.filtered(shown, total);
 }
 
-const ANNOUNCE_DELAY_MS = 300;
+// The announce behaviour now lives in `ui/result-line.tsx`, which the filter
+// chassis mounts. This file keeps the lane-shaped wrapper — `resultSentence`
+// and the `Exactly` aside both read lane copy — and delegates the rest, so
+// there is one debounce and one live region in the codebase rather than two
+// that can drift. The rack is retired into the chassis in a later PR; until
+// then both callers share this implementation.
 
 export function ResultLine({
   shown,
@@ -45,35 +50,5 @@ export function ResultLine({
     excludedByExactly === null
       ? ""
       : ` — ${filterCopy.match.excludedAside(excludedByExactly)}`;
-  const line = `${resultSentence(shown, total, lane)}${aside}`;
-
-  const [announcement, setAnnouncement] = useState("");
-  // What was last announced. Null until the line first changes, which is what
-  // keeps the rack from reading its own count out on arrival.
-  const announced = useRef<string | null>(null);
-  useEffect(() => {
-    if (announced.current === null || announced.current === line) {
-      announced.current = line;
-      return;
-    }
-    announced.current = line;
-    const t = setTimeout(() => setAnnouncement(line), ANNOUNCE_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [line]);
-
-  return (
-    <>
-      <p
-        aria-hidden
-        className="m-0 font-mono text-[11px] leading-[1.5] tabular-nums text-[color:var(--fg-muted)]"
-      >
-        {line}
-      </p>
-      {/* Atomic, or a reader hears only the number that changed and loses the
-          sentence that gave it a denominator. */}
-      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {announcement}
-      </span>
-    </>
-  );
+  return <SharedResultLine line={`${resultSentence(shown, total, lane)}${aside}`} />;
 }
