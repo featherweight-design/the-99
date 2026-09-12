@@ -162,7 +162,9 @@ vocabulary.
   `FilterSheet` keeps the phone form: pips, then a chip group, then Clear and Show. That is
   what "mounted, never forked" costs here, and it is cheaper than either alternative.
   Replace the four letter buttons with `FilterPanel`,
-  `searchable={false}`, `widthPx={280}`, **`selectionMode="single"`** — `multi` would expose
+  `searchable={false}`, `widthPx={280}`, **`desktopRowMinPx={44}`** — the panel defaults to
+  40 and the chassis contract is 44, which `/decks` passes for the same reason —
+  **`selectionMode="single"`** — `multi` would expose
   `aria-multiselectable="true"` for a control that holds one value. The off state is the
   caller's: `onToggle` returns an empty selection when the lit value is picked again, which
   is how *all* is reached. `single` also drops the desktop footer Design drew (`n of 4 on`
