@@ -325,13 +325,47 @@ async function run() {
         `owned ${o.width}x${o.height} vs missing ${m.width}x${m.height}`,
       );
       // Against the contract, not only against each other: two cells that agree on the
-      // wrong size passed the check above while the density was silently broken.
+      // wrong size passed the check above while the density was silently broken. The cell
+      // no longer declares a size, so the contract is the track it sits in — addendum R2
+      // §27 puts that at 124-129px across 1024-1440, and the aspect ratio does the height.
       failures += !report(
-        "the desktop cell is 116x162",
-        o.width === 116 && o.height === 162 && m.width === 116 && m.height === 162,
+        "the desktop cell lands in the track the one declaration produces",
+        o.width >= 124 && o.width <= 160 && o.width === m.width,
         `owned ${o.width}x${o.height}, missing ${m.width}x${m.height}`,
       );
+      failures += !report(
+        "the cell's height is its width at 63/88 rather than a literal",
+        Math.abs(o.height - (o.width * 88) / 63) <= 1.5,
+        `${o.width}x${o.height}, expected height ${Math.round((o.width * 88) / 63)}`,
+      );
     }
+
+    // The flush edge IS the ruling — a fixed-width row strands its remainder beside a grid
+    // whose left edge is aligned to the head, the section heading and the result line.
+    const edge = await page.evaluate(() => {
+      const grid = document.querySelector("[data-set-grid]");
+      if (!grid) return null;
+      const cells = [...grid.children].filter((c) => c.getClientRects().length > 0);
+      if (cells.length === 0) return null;
+      const box = grid.getBoundingClientRect();
+      const top = Math.round(cells[0].getBoundingClientRect().top);
+      const row = cells.filter((c) => Math.round(c.getBoundingClientRect().top) === top);
+      return {
+        columns: row.length,
+        stranded: Math.round(box.right - row[row.length - 1].getBoundingClientRect().right),
+        template: getComputedStyle(grid).gridTemplateColumns,
+      };
+    });
+    failures += !report(
+      "the grid's last column reaches its own right edge",
+      edge !== null && Math.abs(edge.stranded) <= 1,
+      edge === null ? "no grid found" : `${edge.stranded}px stranded past column ${edge.columns}`,
+    );
+    failures += !report(
+      "seven columns at 1180",
+      edge !== null && edge.columns === 7,
+      edge === null ? "no grid found" : `${edge.columns} columns, template ${edge.template}`,
+    );
 
     failures += !report(
       "no control sits inside any cell",
@@ -366,16 +400,18 @@ async function run() {
         phoneMissing.artOpacity === 0.28 && phoneMissing.borderStyle === "dashed",
         `opacity ${phoneMissing.artOpacity}, border ${phoneMissing.borderStyle}`,
       );
+      // Addendum R2 §27: at 390px there is nothing between three tracks at 112.67 and two
+      // at 174 — an `fr` track takes the whole remainder — so the choice was a column count
+      // and the answer is two.
       failures += !report(
-        "the phone cell is 108px, which is what fits three columns",
-        phoneMissing.width === 108,
+        "the phone cell is 174px, which is two columns of the one declaration",
+        Math.abs(phoneMissing.width - 174) <= 1,
         `${phoneMissing.width}x${phoneMissing.height}`,
       );
     }
 
-    // Counted from the rendered rows rather than from the arithmetic: three 116px cells
-    // plus two 10px gaps need 368px against a 358px content width, so the desktop size
-    // silently produced two columns here.
+    // Counted from the rendered rows rather than from the arithmetic, which is how the old
+    // 116px cell was caught silently producing two columns where three were designed.
     const columns = await page.evaluate(() => {
       const cells = [...document.querySelectorAll("button[aria-label]")]
         .filter((b) => /in your collection/.test(b.getAttribute("aria-label")));
@@ -384,9 +420,23 @@ async function run() {
       return cells.filter((c) => Math.round(c.getBoundingClientRect().top) === firstTop).length;
     });
     failures += !report(
-      "three columns at 390px",
-      columns === 3,
+      "two columns at 390px",
+      columns === 2,
       `${columns} cells on the first row`,
+    );
+
+    // The caption stops varying by width: a 174px cell holds three things.
+    const phoneRarity = await page.evaluate(() => {
+      const grid = document.querySelector("[data-set-grid]");
+      if (!grid) return null;
+      return [...grid.querySelectorAll("span")]
+        .filter((el) => /^· /.test(el.textContent || ""))
+        .filter((el) => el.getClientRects().length > 0).length;
+    });
+    failures += !report(
+      "rarity is captioned at 390px too",
+      (phoneRarity ?? 0) > 0,
+      `${phoneRarity} visible rarity captions`,
     );
 
     const phoneControls = await page.evaluate(() => {

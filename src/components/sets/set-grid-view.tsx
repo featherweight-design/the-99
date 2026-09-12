@@ -702,7 +702,17 @@ function Section({
           <span className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{ratio}</span>
         ) : null}
       </h2>
-      <div className="mt-[10px] flex flex-wrap gap-x-[10px] gap-y-[18px]">
+      {/* One declaration and one constant (addendum R2 §27). `auto-fill`, NEVER `auto-fit`:
+          auto-fit collapses empty tracks, so a filter leaving three cells would stretch
+          those three across the whole width — the exact reflow the brief forbids, one
+          keyword away. The 146px minimum is `image_uri_small`'s own width, and it produces
+          the phone answer for free: at 390px there is nothing between two tracks at 174 and
+          three at 112.67, so any minimum in that band gives two. */}
+      <div
+        data-set-grid
+        className="mt-[10px] grid gap-x-[10px] gap-y-[18px]"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(146px, 1fr))" }}
+      >
         {cells.map((c) => (
           <SetCell
             key={c.scryfallId}

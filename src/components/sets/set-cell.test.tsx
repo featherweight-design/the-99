@@ -82,9 +82,11 @@ describe("SetCell — caption and price", () => {
     expect(screen.getByText("· uncommon")).toBeInTheDocument();
   });
 
-  it("drops rarity below md, where the caption has room for two things", () => {
+  // Addendum R2 §27: at a 174px phone cell the caption holds three things, so the format
+  // stops varying by width. The hiding was a consequence of the old 108px cell.
+  it("keeps rarity at every width", () => {
     render(<SetCell cell={cell({})} />);
-    expect(screen.getByText("· uncommon").className).toContain("hidden md:inline");
+    expect(screen.getByText("· uncommon").className).not.toContain("hidden");
   });
 
   it("renders `no stock` holding the tag's height when the feed has never carried it", () => {
@@ -194,5 +196,33 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
     render(<SetCell cell={cell({ owned: true, byName: true })} />);
     expect(screen.getByRole("button", { name: /matched to this set by name/ }))
       .toBeInTheDocument();
+  });
+});
+
+// Addendum R2 §27. The track sets the width and `aspect-ratio: 63/88` sets the height, so
+// the identical-geometry constraint the grid depends on is true by construction rather than
+// by two pairs of literals kept in step by hand.
+describe("SetCell — no size literal at any width", () => {
+  const sizeLiteral = /\b(?:md:)?[wh]-\[\d+px\]/;
+
+  it("carries no width or height literal on any element it renders", () => {
+    const { container } = render(<SetCell cell={cell({})} />);
+    const offenders = [...container.querySelectorAll<HTMLElement>("*")]
+      .map((el) => el.className)
+      .filter((c) => typeof c === "string" && sizeLiteral.test(c));
+    expect(offenders).toEqual([]);
+  });
+
+  it("sizes the art by aspect ratio instead", () => {
+    const { container } = render(<SetCell cell={cell({})} />);
+    expect(container.querySelector(".aspect-\\[63\\/88\\]")).not.toBeNull();
+  });
+
+  it("gives owned and missing cells the same classes bar the art's own", () => {
+    const { container: owned } = render(<SetCell cell={cell({ owned: true })} />);
+    const { container: missing } = render(<SetCell cell={cell({ owned: false })} />);
+    const shape = (root: HTMLElement) =>
+      (root.querySelector("button") as HTMLElement).className;
+    expect(shape(owned)).toBe(shape(missing));
   });
 });
