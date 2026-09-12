@@ -333,7 +333,7 @@ export function PrintingRegion({
             aria-label={copy.searchAriaLabel}
             className="text-[16px] md:text-[13.5px] py-[9px]"
           />
-          {/* chip-row.tsx's geometry, not its component: single-select, no dismiss ✕. */}
+          {/* The chip geometry, not a chip component: single-select, no dismiss ✕. */}
           <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
             <FinishChip label={copy.filterAll(counts.all)} active={finish === "all"} onClick={() => setFinish("all")} />
             <FinishChip label={copy.filterFoil(counts.foil)} active={finish === "foil"} onClick={() => setFinish("foil")} />

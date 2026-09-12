@@ -45,14 +45,21 @@ export const collectionChassisCopy = {
    * and it matters more now: row 3 also carries the `By set` link and the view
    * toggle, so the long sentence and those controls compete for 390px.
    */
-  resultCompact: (shown: number) => `${shown.toLocaleString("en-US")} results`,
+  resultCompact: (shown: number) =>
+    shown === 1 ? "1 result" : `${shown.toLocaleString("en-US")} results`,
+  // `shown` and `unique` are both counts of distinct cards; `total` counts
+  // copies. The filtered sentence compares the first two, because "4 of 2,933"
+  // read as 4 cards out of 2,933 cards when 2,933 was a number of copies —
+  // a figure the reader cannot get to 4 from.
   result: (shown: number, unique: number, total: number, filtered: boolean) =>
     filtered
-      ? `Showing ${shown.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`
+      ? `Showing ${shown.toLocaleString("en-US")} of ${unique.toLocaleString("en-US")}`
       : `Showing ${unique.toLocaleString("en-US")} unique · ${total.toLocaleString("en-US")} total`,
   /** The chassis's Clear — every dimension at once, named as such. */
   announceClearedAll: (total: number) =>
-    `Filters cleared. ${total.toLocaleString("en-US")} cards shown.`,
+    // Through the shared helper, or a one-card collection announces
+    // "1 cards shown."
+    `Filters cleared. ${cards(total)} shown.`,
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
     search: (q: string) => `"${q}"`,
@@ -108,13 +115,13 @@ export const collectionFilterCopy = {
     // Live region (shared with the filter bar — one region for the whole bar)
     announceMatches: (n: number, query: string) =>
       n === 0 ? `No sets match ${query}` : `${n} ${n === 1 ? "set matches" : "sets match"} ${query}`,
-    announceAdded: (setName: string, sets: number, shown: string, total: string) =>
-      `${setName} added. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (setName: string, sets: number, shown: string, total: string) =>
+    announceAdded: (setName: string, sets: number, shown: string, total: number) =>
+      `${setName} added. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${cards(total)} shown.`,
+    announceRemoved: (setName: string, sets: number, shown: string, total: number) =>
       sets === 0
-        ? `${setName} removed. No set filter, ${total} cards shown.`
-        : `${setName} removed. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Set filter cleared. ${total} cards shown.`,
+        ? `${setName} removed. No set filter, ${cards(total)} shown.`
+        : `${setName} removed. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${cards(total)} shown.`,
+    announceCleared: (total: number) => `Set filter cleared. ${cards(total)} shown.`,
   },
 
   // Type ▾ (#100) — the same panel with `searchable={false}`. The search and
@@ -155,13 +162,13 @@ export const collectionFilterCopy = {
 
     announceMatches: (n: number, query: string) =>
       n === 0 ? `No types match ${query}` : `${n} ${n === 1 ? "type matches" : "types match"} ${query}`,
-    announceAdded: (typeName: string, types: number, shown: string, total: string) =>
-      `${typeName} added. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (typeName: string, types: number, shown: string, total: string) =>
+    announceAdded: (typeName: string, types: number, shown: string, total: number) =>
+      `${typeName} added. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${cards(total)} shown.`,
+    announceRemoved: (typeName: string, types: number, shown: string, total: number) =>
       types === 0
-        ? `${typeName} removed. No type filter, ${total} cards shown.`
-        : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Type filter cleared. ${total} cards shown.`,
+        ? `${typeName} removed. No type filter, ${cards(total)} shown.`
+        : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${cards(total)} shown.`,
+    announceCleared: (total: number) => `Type filter cleared. ${cards(total)} shown.`,
   },
 
   // Availability ▾ (#43) — the Type ▾ shape (no search, no footer total).
@@ -206,13 +213,13 @@ export const collectionFilterCopy = {
       n === 0
         ? `No options match ${query}`
         : `${n} ${n === 1 ? "option matches" : "options match"} ${query}`,
-    announceAdded: (name: string, n: number, shown: string, total: string) =>
-      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (name: string, n: number, shown: string, total: string) =>
+    announceAdded: (name: string, n: number, shown: string, total: number) =>
+      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${cards(total)} shown.`,
+    announceRemoved: (name: string, n: number, shown: string, total: number) =>
       n === 0
-        ? `${name} removed. No availability filter, ${total} cards shown.`
-        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Availability filter cleared. ${total} cards shown.`,
+        ? `${name} removed. No availability filter, ${cards(total)} shown.`
+        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${cards(total)} shown.`,
+    announceCleared: (total: number) => `Availability filter cleared. ${cards(total)} shown.`,
   },
 
   // Color ▾ (#116) — mobile only. Desktop keeps the inline pip row, so nothing
@@ -250,13 +257,13 @@ export const collectionFilterCopy = {
       n === 0 ? `No colors match ${query}` : `${n} ${n === 1 ? "color matches" : "colors match"} ${query}`,
     // Colors AND with each other, so the announcement says "and" rather than a
     // bare count — two colors selected means cards in BOTH, not either.
-    announceAdded: (colorName: string, colors: number, shown: string, total: string) =>
-      `${colorName} added. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (colorName: string, colors: number, shown: string, total: string) =>
+    announceAdded: (colorName: string, colors: number, shown: string, total: number) =>
+      `${colorName} added. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${cards(total)} shown.`,
+    announceRemoved: (colorName: string, colors: number, shown: string, total: number) =>
       colors === 0
-        ? `${colorName} removed. No color filter, ${total} cards shown.`
-        : `${colorName} removed. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Color filter cleared. ${total} cards shown.`,
+        ? `${colorName} removed. No color filter, ${cards(total)} shown.`
+        : `${colorName} removed. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${cards(total)} shown.`,
+    announceCleared: (total: number) => `Color filter cleared. ${cards(total)} shown.`,
   },
 
   // Sort ▾ (#119) — the same panel in single-select mode. Sorting never narrows
@@ -352,9 +359,9 @@ export type FilterPanelCopy = {
   emptyBody: (query: string) => { before: string; query: string; after: string };
 
   announceMatches: (n: number, query: string) => string;
-  announceAdded: (name: string, n: number, shown: string, total: string) => string;
-  announceRemoved: (name: string, n: number, shown: string, total: string) => string;
-  announceCleared: (total: string) => string;
+  announceAdded: (name: string, n: number, shown: string, total: number) => string;
+  announceRemoved: (name: string, n: number, shown: string, total: number) => string;
+  announceCleared: (total: number) => string;
 };
 
 // Voice: Kitchen Table. A printing is a card you own, out of a set, with a

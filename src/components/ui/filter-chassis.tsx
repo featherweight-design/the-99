@@ -182,13 +182,24 @@ export function FilterChassis({
   // does: is focus now on nothing, or on something with no box? Either way it
   // lands on the control row, which is where the reader already was.
   //
-  // Only on a CHANGE. On mount `document.activeElement` is `body` on any page
-  // the reader has not clicked into yet, so an ungated version would take focus
-  // off the top of every route the moment it loaded.
+  // Gated on focus having been IN here, which is the only case with anything to
+  // rescue. Two things would otherwise trip it. On mount
+  // `document.activeElement` is `body` on any route the reader has not clicked
+  // into, so an ungated version takes focus off the top of every page that
+  // loads. And `useMinWidth` returns its server snapshot `false`, so a wide
+  // first load reports `compact` and corrects to `wide` during hydration — a
+  // form change by the letter of it, with nothing unmounted that the reader was
+  // ever in.
+  //
+  // `focusout` carries a `relatedTarget` when focus moves somewhere else, and
+  // none when the element simply goes away. The unmount case is the one being
+  // caught, so a null target leaves the flag standing.
+  const heldFocus = React.useRef(false);
   const lastForm = React.useRef(form);
   React.useEffect(() => {
     if (lastForm.current === form) return;
     lastForm.current = form;
+    if (!heldFocus.current) return;
     const id = requestAnimationFrame(() => {
       const active = document.activeElement as HTMLElement | null;
       if (!active || active === document.body || active.getClientRects().length === 0) {
@@ -211,6 +222,16 @@ export function FilterChassis({
         form === "wide" ? "px-[22px]" : "px-[16px]",
       ].join(" ")}
       data-chassis-form={form}
+      onFocusCapture={() => {
+        heldFocus.current = true;
+      }}
+      onBlurCapture={(e) => {
+        // A move to somewhere outside this frame. An unmount reports no target,
+        // and that is exactly the case the rescue exists for.
+        if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget as Node)) {
+          heldFocus.current = false;
+        }
+      }}
     >
       {/* Row 1 — never wraps (decision 18). There are two forms and nothing in
           between: a sort landing on its own line reads as a bug, which is what
@@ -260,7 +281,7 @@ export function FilterChassis({
         ) : (
           chips.map((chip) => (
             // The chip is a span and the ✕ inside it is the button, which is
-            // how `collection/chip-row.tsx:186-203` does it and why. Making
+            // how `/collection`'s retired chip row did it, and why. Making
             // the whole chip the target and centring a 44px overlay on it
             // looks equivalent and is not: chips sit 6px apart, so adjacent
             // overlays overlap and a tap near the boundary removes the

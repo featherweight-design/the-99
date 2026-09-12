@@ -613,12 +613,12 @@ describe("FilterPanel Clear announcement", () => {
   it("reads the cleared string for Clear with exactly one set selected", () => {
     expect(
       setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933, "clear-sets"),
-    ).toBe(collectionFilterCopy.set.announceCleared("2,933"));
+    ).toBe(collectionFilterCopy.set.announceCleared(2933));
   });
 
   it("still reads the removed string when the last set is toggled off", () => {
     expect(setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, "0", "2,933"),
+      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, "0", 2933),
     );
   });
 });
@@ -762,10 +762,10 @@ describe("Type ▾ in the filter bar", () => {
       typeChangeAnnouncement(
         filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933, "clear-types",
       ),
-    ).toBe(collectionFilterCopy.type.announceCleared("2,933"));
+    ).toBe(collectionFilterCopy.type.announceCleared(2933));
     expect(
       typeChangeAnnouncement(filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933),
-    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, "0", "2,933"));
+    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, "0", 2933));
   });
 
   it("says nothing about types when only the set selection moved", () => {
@@ -866,20 +866,20 @@ describe("FilterBar sort and color controls", () => {
 
   it("reads the added string when a color is toggled on", () => {
     expect(colorChangeAnnouncement(base, withColors(["R"]), [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.color.announceAdded("Red", 1, "0", "2,933"),
+      collectionFilterCopy.color.announceAdded("Red", 1, "0", 2933),
     );
   });
 
   it("reads the removed string when a color is toggled off", () => {
     expect(colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.color.announceRemoved("Red", 0, "0", "2,933"),
+      collectionFilterCopy.color.announceRemoved("Red", 0, "0", 2933),
     );
   });
 
   it("reads the cleared string for Clear rather than the removed string", () => {
     expect(
       colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933, "clear-colors"),
-    ).toBe(collectionFilterCopy.color.announceCleared("2,933"));
+    ).toBe(collectionFilterCopy.color.announceCleared(2933));
   });
 
   it("says nothing about colors when only the type selection moved", () => {

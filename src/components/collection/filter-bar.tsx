@@ -166,7 +166,7 @@ export function FilterBar({
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
-          key={wide ? "wide" : "compact"}
+          key={`sort-${wide ? "wide" : "compact"}`}
           desktopRowMinPx={44}
           compact={!wide}
           copy={collectionFilterCopy.sort}
@@ -246,8 +246,9 @@ export function FilterBar({
           // reset, so a sheet opened below the breakpoint would still be open
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
-          // same fix.
-          key={wide ? "wide" : "compact"}
+          // same fix. Named, because these panels are siblings in one fragment
+          // and a bare form string would give all four the same key.
+          key={`type-${wide ? "wide" : "compact"}`}
           desktopRowMinPx={44}
           compact={!wide}
           copy={collectionFilterCopy.type}
@@ -276,7 +277,7 @@ export function FilterBar({
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
-          key={wide ? "wide" : "compact"}
+          key={`set-${wide ? "wide" : "compact"}`}
           desktopRowMinPx={44}
           compact={!wide}
           copy={collectionFilterCopy.set}
@@ -309,7 +310,7 @@ export function FilterBar({
           // as a desktop popover after a resize — a modal appearing without a
           // trigger click. The deck sheet and the rack's popovers carry the
           // same fix.
-          key={wide ? "wide" : "compact"}
+          key={`avail-${wide ? "wide" : "compact"}`}
           desktopRowMinPx={44}
           compact={!wide}
           copy={collectionFilterCopy.availability}

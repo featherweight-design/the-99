@@ -134,9 +134,11 @@ describe("collectionChassisCopy.result", () => {
     );
   });
 
-  it("states the survivors against the total once filtered", async () => {
+  it("states the survivors against the distinct total once filtered", async () => {
     const { collectionChassisCopy } = await import("../copy/collection");
-    expect(collectionChassisCopy.result(412, 1240, 2933, true)).toBe("Showing 412 of 2,933");
+    // Distinct against distinct. 2,933 is a count of COPIES, and "412 of 2,933"
+    // invited the reader to do arithmetic between two different units.
+    expect(collectionChassisCopy.result(412, 1240, 2933, true)).toBe("Showing 412 of 1,240");
   });
 
   it("keeps the phone's shorter line", async () => {

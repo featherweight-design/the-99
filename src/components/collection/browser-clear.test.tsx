@@ -49,12 +49,35 @@ describe("CollectionBrowser — clearing filters", () => {
   it("keeps a non-default sort when every filter is cleared", () => {
     window.history.replaceState(null, "", "/collection?sort=quantity&q=bolt");
     render(view([card(), card({ oracleId: "o2", name: "Counterspell", colorIdentity: ["U"] })]));
-    const clear = screen.queryByRole("button", {
-      name: /Clear all filters/i,
-    });
-    if (clear) fireEvent.click(clear);
+    fireEvent.click(screen.getByRole("button", { name: /Clear all filters/i }));
     // The sort survives; only the filters go.
     expect(window.location.search).not.toContain("q=bolt");
     expect(window.location.search).toContain("sort=quantity");
   });
+
+  it("announces a collapsed chip's removal as the whole control, not one value", () => {
+    // The chip stands for the control, and `next` empties it. Announcing
+    // "White removed" while two colours came off tells the reader the wrong
+    // thing about what they just did.
+    window.history.replaceState(null, "", "/collection?c=W,U");
+    render(view([card(), card({ oracleId: "o2", name: "Counterspell", colorIdentity: ["U"] })]));
+    fireEvent.click(screen.getByRole("button", { name: /Remove filter: White, Blue/i }));
+    // The chip's accessible name lists both, which is why it is matched on:
+    // the visible label collapses them to "2 colours".
+    expect(document.body.textContent).toContain("Color filter cleared");
+    expect(document.body.textContent).not.toContain("White removed");
+  });
+
+  it("toggles a colour on and off through the pips", () => {
+    // `ColourPips`' own tests prove it emits a hue code; nothing proved this
+    // route wires that code into `filters.colors`. The bar's deleted test was
+    // the only cover, so an inert colour filter would have passed everything.
+    render(view([card(), card({ oracleId: "o2", name: "Counterspell", colorIdentity: ["U"] })]));
+    const red = screen.getAllByRole("switch", { name: /Red/i })[0];
+    fireEvent.click(red);
+    expect(window.location.search).toContain("c=R");
+    fireEvent.click(screen.getAllByRole("switch", { name: /Red/i })[0]);
+    expect(window.location.search).not.toContain("c=R");
+  });
+
 });

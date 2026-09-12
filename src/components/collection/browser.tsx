@@ -37,6 +37,8 @@ import {
 } from "../../lib/collection/availability-filter";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
+import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
+import { useMinWidth } from "../ui/use-min-width";
 import { collectionChips } from "../../lib/collection/chips";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -98,6 +100,19 @@ function quantityOf(list: BrowseListCard[]): number {
 }
 
 /**
+ * The clear intent each chip's removal carries, keyed by the chip it belongs to.
+ * Lives here rather than in `chips.ts` because the intents are the mount's
+ * vocabulary and that module is pure — it has no business naming this layer's
+ * announcement paths.
+ */
+const CHIP_CLEAR_INTENT: Record<string, FilterChangeIntent | undefined> = {
+  colors: "clear-colors",
+  types: "clear-types",
+  sets: "clear-sets",
+  avail: "clear-availability",
+};
+
+/**
  * The live-region string for a change to one multi-select, or null when that
  * selection did not move. Set and Type share it: the two copy blocks have the
  * same shape, and only the field read and the clear intent differ.
@@ -113,18 +128,17 @@ function selectionAnnouncement(
   totalQuantity: number,
 ): string | null {
   if (before.length === after.length && before.every((c, i) => c === after[i])) return null;
-  const total = totalQuantity.toLocaleString();
   // Always the cleared string for `Clear`, including at exactly one selection —
   // "Bloomburrow removed. No set filter, …" belongs to toggling the last option
   // off, not to pressing the button.
-  if (cleared) return copy.announceCleared(total);
+  if (cleared) return copy.announceCleared(totalQuantity);
   const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
   const shown = quantityOf(filterCards(cards, next)).toLocaleString();
   const added = after.find((c) => !before.includes(c));
-  if (added !== undefined) return copy.announceAdded(label(added), after.length, shown, total);
+  if (added !== undefined) return copy.announceAdded(label(added), after.length, shown, totalQuantity);
   const removed = before.find((c) => !after.includes(c));
   if (removed !== undefined) {
-    return copy.announceRemoved(label(removed), after.length, shown, total);
+    return copy.announceRemoved(label(removed), after.length, shown, totalQuantity);
   }
   return null;
 }
@@ -222,6 +236,10 @@ export function CollectionBrowser({
 }) {
   const search = useSearchParams();
   const isDesktop = useIsDesktop();
+  // The result line lives in the chassis, so which of the two it draws follows
+  // the CHASSIS's breakpoint rather than this file's 768. `isDesktop` still
+  // picks the default view, which is its own question.
+  const chassisWide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
   const [filters, setFilters] = useState<BrowseFilters>(() => ({
     search: search.get("q") ?? "",
@@ -413,7 +431,13 @@ export function CollectionBrowser({
           ))}
         </span>
       ) : undefined,
-    onRemove: () => updateFilters(chip.next),
+    // A chip stands for a whole CONTROL, so removing one is the same event as
+    // that control's Clear — `chip.next` empties the dimension outright. Without
+    // the intent the change falls through to the per-value branch, and removing
+    // a `2 colours` chip unsets both while the live region says only
+    // "White removed". The search chip has no clear intent because no
+    // announcement claims a search change.
+    onRemove: () => updateFilters(chip.next, CHIP_CLEAR_INTENT[chip.key]),
   }));
 
   // `ChipRow`'s clear also reset the sort. The chassis's Clear names itself
@@ -494,7 +518,7 @@ export function CollectionBrowser({
         revision={JSON.stringify(filters)}
         warnResult={sorted.length === 0}
         resultLine={
-          isDesktop
+          chassisWide
             ? collectionChassisCopy.result(
                 sorted.length,
                 cards.length,

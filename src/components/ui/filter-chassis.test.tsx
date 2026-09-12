@@ -116,7 +116,7 @@ describe("FilterChassis", () => {
   it("gives a chip's remove a real 44px target without growing the chip", () => {
     // The chip line's height is the invariant the whole frame rests on, so the
     // target is an overlay rather than padding — the same treatment
-    // `collection/chip-row.tsx` uses.
+    // `/collection`'s retired chip row used.
     render(<FilterChassis {...base} controls={null} chips={[chip("a", "3 colours")]} />);
     const remove = screen.getByRole("button", { name: "Remove filter: 3 colours" });
     expect(remove.className).toContain("after:h-[44px]");
@@ -297,6 +297,7 @@ describe("FilterChassis", () => {
     const { container, rerender } = render(
       <FilterChassis {...base} form="compact" controls={<button type="button">Filter</button>} chips={[]} />,
     );
+    fireEvent.focus(screen.getByRole("button", { name: "Filter" }));
     screen.getByRole("button", { name: "Filter" }).focus();
     rerender(
       <FilterChassis {...base} form="wide" controls={<button type="button">Filter</button>} chips={[]} />,
@@ -313,6 +314,21 @@ describe("FilterChassis", () => {
     // loaded, because `document.activeElement` is `body` until something is
     // clicked.
     const { container } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
+  });
+
+
+  it("leaves focus alone when hydration corrects the form, with nobody in the frame", async () => {
+    // `useMinWidth` returns its server snapshot `false`, so a wide first load
+    // renders compact and corrects during hydration. That is a form change with
+    // nothing unmounted the reader was ever in, and stealing focus for it would
+    // move every wide page's focus on load.
+    const { container, rerender } = render(
+      <FilterChassis {...base} form="compact" controls={null} chips={[]} />,
+    );
+    rerender(<FilterChassis {...base} form="wide" controls={null} chips={[]} />);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
     expect(container.querySelector("[data-chassis-row='controls']")).not.toHaveFocus();
   });
 
