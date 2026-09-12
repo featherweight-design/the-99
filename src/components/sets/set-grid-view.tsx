@@ -135,7 +135,16 @@ export function SetGridView(props: SetGridViewProps) {
   // focus to the body. Treating the body as "fine" lost the keyboard there entirely — the
   // reader was inside a control, and the control's replacement is one tab away at most.
   const sheetTriggerRef = useRef<HTMLButtonElement>(null);
+  // Only after an actual crossing. `document.activeElement` is the body on a fresh load, so
+  // without this the effect read every first render as a stranding and moved focus into the
+  // rack before the reader had touched anything — a worse defect than the one it fixes.
+  const focusWidth = useRef<boolean | null>(null);
   useEffect(() => {
+    const crossed = focusWidth.current !== null && focusWidth.current !== isDesktop;
+    focusWidth.current = isDesktop;
+    if (!crossed) return;
+
+
     const id = requestAnimationFrame(() => {
       const active = document.activeElement as HTMLElement | null;
       const stranded =

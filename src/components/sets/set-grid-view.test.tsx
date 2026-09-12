@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
 
@@ -868,5 +868,35 @@ describe("SetGridView — Clear is not inside the scrolling strip", () => {
     expect(scroller.querySelectorAll("span > button").length).toBe(3);
     expect(scroller.contains(clear)).toBe(false);
     expect(row.contains(clear)).toBe(true);
+  });
+});
+
+// The breakpoint effect treats `document.body` as stranded, which is correct after a
+// crossing unmounts the focused control — and wrong on a fresh load, where the body holds
+// focus because the reader has not touched anything yet.
+describe("SetGridView — focus is not stolen on mount", () => {
+  // The effect runs inside a `requestAnimationFrame`, so a test that does not flush one
+  // asserts about a callback that never fired — it would pass with the guard removed.
+  const flushFrame = () =>
+    act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    });
+
+  it("leaves focus where it was when nothing crossed a breakpoint", async () => {
+    stubDesktop(true);
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    outside.focus();
+    view([p("1"), p("2")], []);
+    await flushFrame();
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
+  });
+
+  it("leaves focus on the body rather than pulling it into the rack", async () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    await flushFrame();
+    expect(document.activeElement).toBe(document.body);
   });
 });
