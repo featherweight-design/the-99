@@ -100,6 +100,11 @@ describe("FilterPanel form override", () => {
   });
 });
 
+// Two cases retired with the control they covered: the mobile `Color ▾` panel
+// is gone, because `ColourPips` draws one colour control at both widths rather
+// than a desktop pip row and a phone panel with different ARIA roles for the
+// same filter. `src/components/ui/colour-pips.test.tsx` covers what replaced
+// them, including the toggle and the lit state.
 describe("FilterPanel", () => {
   it("announces why a disabled trigger will not open", () => {
     renderPanel({ disabled: true, disabledAriaLabel: "Availability unavailable right now" });
@@ -578,12 +583,14 @@ describe("FilterPanel Clear announcement", () => {
         filters={filtersWith(setCodes)}
         sort="name"
         sortDirection="asc"
-        colorOptions={[]}
         view="grid"
         setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
         typeOptions={[]}
         availabilityOptions={[]}
-        availabilityOk
+        chips={[]}
+      onClearAll={() => {}}
+      resultLine="Showing 0 unique · 0 total"
+    availabilityOk
         hasCollection
         announcement=""
         onAnnounce={() => {}}
@@ -694,12 +701,14 @@ describe("Type ▾ in the filter bar", () => {
         filters={filtersWith(types)}
         sort="name"
         sortDirection="asc"
-        colorOptions={[]}
         view="grid"
         setOptions={[]}
         typeOptions={TYPE_OPTIONS}
         availabilityOptions={[]}
-        availabilityOk
+        chips={[]}
+      onClearAll={() => {}}
+      resultLine="Showing 0 unique · 0 total"
+    availabilityOk
         hasCollection
         announcement=""
         onAnnounce={() => {}}
@@ -771,13 +780,6 @@ describe("Type ▾ in the filter bar", () => {
 // what broke before was the wiring, not the panel.
 describe("FilterBar sort and color controls", () => {
   const NO_FILTERS: BrowseFilters = { search: "", colors: [], types: [], setCodes: [] };
-  const COLOR_OPTIONS = [
-    { code: "W", label: "White", hint: "W", count: 4, disabled: false },
-    { code: "U", label: "Blue", hint: "U", count: 2, disabled: false },
-    { code: "B", label: "Black", hint: "B", count: 0, disabled: true },
-    { code: "R", label: "Red", hint: "R", count: 3, disabled: false },
-    { code: "G", label: "Green", hint: "G", count: 1, disabled: false },
-  ];
 
   function renderBar(over: Partial<React.ComponentProps<typeof FilterBar>> = {}) {
     const onFiltersChange = vi.fn();
@@ -787,12 +789,14 @@ describe("FilterBar sort and color controls", () => {
         filters={NO_FILTERS}
         sort="name"
         sortDirection="asc"
-        colorOptions={COLOR_OPTIONS}
         view="grid"
         setOptions={[]}
         typeOptions={[]}
         availabilityOptions={[]}
-        availabilityOk
+        chips={[]}
+      onClearAll={() => {}}
+      resultLine="Showing 0 unique · 0 total"
+    availabilityOk
         hasCollection
         announcement=""
         onAnnounce={() => {}}
@@ -850,45 +854,9 @@ describe("FilterBar sort and color controls", () => {
     expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Clear" })).toBeNull();
   });
 
-  it("mobile color is an overlaid panel, not an in-flow <details>", () => {
-    setViewport(false);
-    const { container } = render(
-      <FilterBar
-        filters={NO_FILTERS}
-        sort="name"
-        sortDirection="asc"
-        colorOptions={COLOR_OPTIONS}
-        view="rows"
-        setOptions={[]}
-        typeOptions={[]}
-        availabilityOptions={[]}
-        availabilityOk
-        hasCollection
-        announcement=""
-        onAnnounce={() => {}}
-        onFiltersChange={() => {}}
-        onSortChange={() => {}}
-        onViewChange={() => {}}
-      />,
-    );
-    expect(container.querySelector("details")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Filter by color/ }));
-    expect(screen.getByRole("dialog", { name: "Filter by color" })).toBeTruthy();
-  });
-
-  it("color rows toggle the filter and a zero-count color is disabled, not hidden", () => {
-    setViewport(false);
-    const { onFiltersChange } = renderBar({ view: "rows" });
-    fireEvent.click(screen.getByRole("button", { name: /Filter by color/ }));
-    expect(screen.getByRole("option", { name: /Black/ }).getAttribute("aria-disabled")).toBe("true");
-    fireEvent.click(screen.getByRole("option", { name: /Red/ }));
-    expect(onFiltersChange).toHaveBeenCalledWith({ ...NO_FILTERS, colors: ["R"] });
-  });
-});
-
-// The desktop WUBRG pip row and the mobile Color ▾ panel are the same selection,
-// and neither announced until #116.
-describe("colorChangeAnnouncement", () => {
+  // Local to these announcement cases: the module-level OPTIONS is the panel's
+  // own fixture and carries no colour labels, so the announcement would read
+  // the hue code where it should read the name.
   const OPTIONS = [
     { code: "W", label: "White" },
     { code: "R", label: "Red" },

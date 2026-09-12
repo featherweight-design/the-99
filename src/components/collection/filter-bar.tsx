@@ -11,7 +11,6 @@ import {
   nextSortState,
   sortOrderLabel,
 } from "../../lib/collection/sort-options";
-import type { ColorOption } from "../../lib/collection/color-filter";
 import type { SetOption } from "../../lib/collection/set-filter";
 import type { TypeOption } from "../../lib/collection/type-filter";
 import {
@@ -22,7 +21,8 @@ import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityGlyph } from "../ui/availability-marker";
-import { ColorFilterRow } from "./color-filter-row";
+import { ColourPips } from "../ui/colour-pips";
+import { FilterChassis, type FilterChip } from "../ui/filter-chassis";
 import { SearchField } from "../ui/text-field";
 import { FilterPanel } from "../ui/filter-panel";
 // Placeholder copy differs by breakpoint (§Copy (placeholders)) and the
@@ -60,13 +60,15 @@ export function FilterBar({
   filters,
   sort,
   sortDirection,
-  colorOptions,
   view,
   setOptions,
   typeOptions,
   availabilityOptions,
   availabilityOk,
   hasCollection,
+  chips,
+  onClearAll,
+  resultLine,
   announcement,
   onAnnounce,
   onFiltersChange,
@@ -76,8 +78,6 @@ export function FilterBar({
   filters: BrowseFilters;
   sort: SortKey;
   sortDirection: SortDirection;
-  /** WUBRG, with counts under the other active filters — the mobile Color panel. */
-  colorOptions: ColorOption[];
   view: ViewMode;
   /** Owned sets, newest first, with counts under the other active filters. */
   setOptions: SetOption[];
@@ -94,6 +94,11 @@ export function FilterBar({
    * to do and has nothing to say about whether the sets page is worth visiting.
    */
   hasCollection: boolean;
+  /** Chips the chassis draws, already shaped by `collectionChips`. */
+  chips: FilterChip[];
+  onClearAll: () => void;
+  /** Row 3's sentence, composed by the browser from its three counts. */
+  resultLine: string;
   /** The bar's single live region content — the panel writes here too. */
   announcement: string;
   onAnnounce: (message: string) => void;
@@ -117,12 +122,62 @@ export function FilterBar({
 
   return (
     // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop, border-bottom 1px --border, z-index 2
-    <div
-      className="md:sticky md:top-0 md:z-[2] px-[16px] md:px-[34px] pt-[14px] pb-[14px] md:pt-[18px] md:pb-[14px]"
-      style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
-    >
-      {/* §Filter Row: display flex, align center, gap 8px mobile / 12px desktop, horizontal-scroll on mobile */}
-      <div className="flex items-center gap-[8px] md:gap-[12px] overflow-x-auto md:overflow-visible">
+    <div className="md:sticky md:top-0 md:z-[2]" style={{ background: "var(--bg)" }}>
+      <FilterChassis
+        form={isDesktop ? "wide" : "compact"}
+        chips={chips}
+        onClearAll={onClearAll}
+        resultLine={resultLine}
+        announce={announcement}
+        sort={<FilterPanel
+          desktopRowMinPx={44}
+          copy={collectionFilterCopy.sort}
+          options={buildSortOptions(sort, sortDirection)}
+          selected={[sort]}
+          selectionMode="single"
+          showCounts={false}
+          searchable={false}
+          widthPx={260}
+          footerStatus={false}
+          onToggle={(code) => {
+            const next = nextSortState({ sort, direction: sortDirection }, code as SortKey);
+            onSortChange(next.sort, next.direction);
+            // Announced as authored, not lowercased: the labels carry "A–Z" and
+            // "WUBRG", and "a–z" / "wubrg" change how a screen reader says them.
+            onAnnounce(`Sorted by ${sortOrderLabel(next.sort, next.direction)}.`);
+          }}
+          onClear={() => {}}
+          onAnnounce={onAnnounce}
+        />}
+        resultTrailing={
+          <>
+        {hasCollection ? (
+          <Link
+            href="/collection/sets"
+            aria-label={setPageCopy.entryPoint.aria}
+            className="inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px]
+                       min-h-[44px] md:min-h-[auto] md:h-[46px] text-[13px]
+                       border border-[color:var(--accent)] text-[color:var(--fg-body)]
+                       hover:bg-[color:var(--elevated)]"
+          >
+            <span
+              aria-hidden
+              className="inline-block rotate-45 bg-[color:var(--accent)]"
+              style={{ width: 7, height: 7 }}
+            />
+            {setPageCopy.entryPoint.label}
+          </Link>
+        ) : null}
+        <ViewToggle
+          options={COLLECTION_VIEWS}
+          value={view}
+          onChange={onViewChange}
+          className="md:ml-[2px]"
+        />
+          </>
+        }
+        controls={
+          <>
         {/* Search input — §Search Input: bg --surface-sunken, border 1px --border-strong, radius 8px, padding 9px 12px mobile / 10px 14px desktop */}
         <SearchField
           containerClassName="gap-[8px] md:gap-[10px] md:flex-1 px-[12px] md:px-[14px] py-[9px] md:py-[10px]"
@@ -133,31 +188,23 @@ export function FilterBar({
           aria-label="Search your cards"
         />
 
-        {/* WUBRG pip selector (desktop) — §Color Filter. The row itself lives in
-            color-filter-row.tsx so the set grid mounts this component rather than
-            drawing a second row of pips. */}
-        <ColorFilterRow selected={filters.colors} onToggle={toggleColor} />
+        {/* One colour control at both widths. It was a desktop pip row plus a
+            separate mobile `Color ▾` panel — two drawings and two ARIA roles for
+            one filter. The `COLOR` caption went with the row that carried it
+            (decision 17): it existed to explain five abstract squares, and the
+            symbols explain themselves. */}
+        <ColourPips
+          form={isDesktop ? "wide" : "sheet"}
+          value={filters.colors}
+          onToggle={(code) => toggleColor(code)}
+        />
 
-        {/* Mobile Color ▾ (#116) — the same overlaid panel as Type/Set. The
-            <details> this replaces expanded in flow, pushing the filter row and
-            the whole grid below it down the page on every open. */}
-        <div className="md:hidden">
-          <FilterPanel
-            copy={collectionFilterCopy.color}
-            options={colorOptions}
-            selected={filters.colors}
-            searchable={false}
-            widthPx={260}
-            onToggle={toggleColor}
-            onClear={() => onFiltersChange({ ...filters, colors: [] }, "clear-colors")}
-            onAnnounce={onAnnounce}
-          />
-        </div>
 
         {/* Type ▾ — the same panel as Set ▾ with the search field off (#100).
             The vocabulary is fixed and short, so there is nothing to search and
             no footer total worth showing. */}
         <FilterPanel
+          desktopRowMinPx={44}
           copy={collectionFilterCopy.type}
           options={typeOptions}
           selected={filters.types}
@@ -179,6 +226,7 @@ export function FilterBar({
         {/* Set ▾ — the designed searchable multi-select panel (#86). Rows carry
             the set abbreviation, which is also what the search matches (#118). */}
         <FilterPanel
+          desktopRowMinPx={44}
           copy={collectionFilterCopy.set}
           options={setOptions}
           selected={filters.setCodes}
@@ -198,30 +246,13 @@ export function FilterBar({
         {/* Sort ▾ — the same panel as Type/Set in single-select mode (#119).
             Picking the chosen order again reverses it; `Clear` never renders,
             since a list is always sorted by something. */}
-        <FilterPanel
-          copy={collectionFilterCopy.sort}
-          options={buildSortOptions(sort, sortDirection)}
-          selected={[sort]}
-          selectionMode="single"
-          showCounts={false}
-          searchable={false}
-          widthPx={260}
-          footerStatus={false}
-          onToggle={(code) => {
-            const next = nextSortState({ sort, direction: sortDirection }, code as SortKey);
-            onSortChange(next.sort, next.direction);
-            // Announced as authored, not lowercased: the labels carry "A–Z" and
-            // "WUBRG", and "a–z" / "wubrg" change how a screen reader says them.
-            onAnnounce(`Sorted by ${sortOrderLabel(next.sort, next.direction)}.`);
-          }}
-          onClear={() => {}}
-          onAnnounce={onAnnounce}
-        />
+
 
         {/* Availability ▾ (#43) — the Type ▾ shape: fixed four-item vocabulary,
             no search, no footer total. Rows carry the marker's glyph so the
             menu and the list agree about what each state looks like. */}
         <FilterPanel
+          desktopRowMinPx={44}
           copy={collectionFilterCopy.availability}
           options={availabilityOptions.map((o) => ({
             ...o,
@@ -267,41 +298,9 @@ export function FilterBar({
             OWN to a set, the other leaves for a page of the ones you DO NOT. Three
             carriers keep them apart — position, shape (a diamond link, with no
             dropdown affordance) and the words. */}
-        {/* Absent, not disabled, before there is a collection: with nothing uploaded the
-            index would have nothing to list, and the locked upload surface already owns
-            that moment. Keyed on the collection, never on the filtered set list. */}
-        {hasCollection ? (
-          <Link
-            href="/collection/sets"
-            aria-label={setPageCopy.entryPoint.aria}
-            className="inline-flex shrink-0 items-center gap-[6px] rounded-lg px-[10px]
-                       min-h-[44px] md:min-h-[auto] md:h-[46px] text-[13px]
-                       border border-[color:var(--accent)] text-[color:var(--fg-body)]
-                       hover:bg-[color:var(--elevated)]"
-          >
-            <span
-              aria-hidden
-              className="inline-block rotate-45 bg-[color:var(--accent)]"
-              style={{ width: 7, height: 7 }}
-            />
-            {setPageCopy.entryPoint.label}
-          </Link>
-        ) : null}
-
-        <ViewToggle
-          options={COLLECTION_VIEWS}
-          value={view}
-          onChange={onViewChange}
-          className="md:ml-[2px]"
-        />
-      </div>
-
-      {/* The bar's single live region. One region for the whole bar, so two
-          filters changed in quick succession read in order rather than on top
-          of each other — the panel writes here instead of owning its own. */}
-      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {announcement}
-      </span>
+          </>
+        }
+      />
     </div>
   );
 }

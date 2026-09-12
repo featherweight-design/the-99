@@ -26,8 +26,24 @@ const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")}
  * than the route's first version of it.
  */
 export const collectionChassisCopy = {
-  result: (shown: number, total: number) =>
-    shown === total ? cards(total) : `${shown.toLocaleString("en-US")} of ${cards(total)} match`,
+  /**
+   * The route's own two sentences, moved from `ChipRow` unchanged.
+   *
+   * Three figures, because `/collection` counts three things and they are not
+   * interchangeable: `shown` is the distinct cards surviving the filters,
+   * `unique` the distinct cards in the whole collection, and `total` the sum of
+   * quantities across it. "1,240" meaning names and "2,933" meaning copies are
+   * different facts, which is why the rest state states both.
+   *
+   * Carried verbatim rather than reworded. The filtered line compares a
+   * distinct count to a quantity total, which is apples to oranges — noted in
+   * the plan for a copy pass rather than fixed here, because a migration that
+   * quietly changes what a number means is worse than one that moves it.
+   */
+  result: (shown: number, unique: number, total: number, filtered: boolean) =>
+    filtered
+      ? `Showing ${shown.toLocaleString("en-US")} of ${total.toLocaleString("en-US")}`
+      : `Showing ${unique.toLocaleString("en-US")} unique · ${total.toLocaleString("en-US")} total`,
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
     search: (q: string) => `"${q}"`,

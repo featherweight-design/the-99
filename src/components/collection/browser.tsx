@@ -37,7 +37,9 @@ import {
 } from "../../lib/collection/availability-filter";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
-import { ChipRow } from "./chip-row";
+import { collectionChips } from "../../lib/collection/chips";
+import { collectionChassisCopy } from "../../lib/copy/collection";
+import type { FilterChip } from "../ui/filter-chassis";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
 import { NoResults } from "./no-results";
@@ -323,11 +325,6 @@ export function CollectionBrowser({
     [cards, filterColors, filterTypes, filterSetCodes],
   );
 
-  // Chips read set NAMES, not codes — the locked "names over codes" decision.
-  const setLabels = useMemo(
-    () => Object.fromEntries(setOptions.map((o) => [o.code, o.label])),
-    [setOptions],
-  );
 
   const [announcement, setAnnouncement] = useState("");
 
@@ -360,6 +357,35 @@ export function CollectionBrowser({
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
   const sorted = useMemo(() => sortCards(filtered, sort, sortDirection), [filtered, sort, sortDirection]);
+
+  const anyFilterActive =
+    filters.search.trim() !== "" ||
+    filters.colors.length > 0 ||
+    filters.types.length > 0 ||
+    filters.setCodes.length > 0 ||
+    (filters.availability ?? []).length > 0;
+
+  // `collectionChips` needs a label per code; the bar already built these.
+  const chassisChips: FilterChip[] = collectionChips(filters, {
+    types: typeOptions,
+    sets: setOptions,
+    availability: availabilityOptions,
+  }).map((chip) => ({
+    key: chip.key,
+    label: chip.label,
+    dots: chip.dots,
+    onRemove: () => updateFilters(chip.next),
+  }));
+
+  // `ChipRow`'s clear also reset the sort. The chassis's Clear names itself
+  // "Clear all filters" and promises the sort is unchanged, so it no longer
+  // does — a visible behaviour change on this route, and the chassis's promise
+  // is the one that has to hold.
+  const clearAllFilters = () =>
+    updateFilters(
+      { search: "", colors: [], types: [], setCodes: [], availability: [] },
+      "clear-sets",
+    );
   const windowed = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 
   // The ordered ids Prev/Next pages through — the sorted list, not the window,
@@ -419,6 +445,14 @@ export function CollectionBrowser({
   return (
     <>
       <FilterBar
+        chips={chassisChips}
+        onClearAll={clearAllFilters}
+        resultLine={collectionChassisCopy.result(
+          sorted.length,
+          cards.length,
+          totalQuantity,
+          anyFilterActive,
+        )}
         filters={filters}
         sort={sort}
         view={effectiveView}
@@ -431,41 +465,10 @@ export function CollectionBrowser({
         onAnnounce={setAnnouncement}
         onFiltersChange={updateFilters}
         sortDirection={sortDirection}
-        colorOptions={colorOptions}
         onSortChange={updateSort}
         onViewChange={setView}
       />
-      <div className="px-[16px] md:px-[34px]">
-        <ChipRow
-          filters={filters}
-          sort={sort}
-          resultCount={sorted.length}
-          uniqueCount={cards.length}
-          totalQuantity={totalQuantity}
-          onClearAll={() => {
-            updateFilters(
-              { search: "", colors: [], types: [], setCodes: [], availability: [] },
-              "clear-sets",
-            );
-            updateSort("name", DEFAULT_SORT_DIRECTION.name);
-          }}
-          onRemoveColor={(c) => updateFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
-          onRemoveType={(t) =>
-            updateFilters({ ...filters, types: filters.types.filter((x) => x !== t) })
-          }
-          setLabels={setLabels}
-          onRemoveSet={(code) =>
-            updateFilters({ ...filters, setCodes: filters.setCodes.filter((c) => c !== code) })
-          }
-          onClearSearch={() => updateFilters({ ...filters, search: "" })}
-          onRemoveAvailability={(state) =>
-            updateFilters({
-              ...filters,
-              availability: (filters.availability ?? []).filter((s) => s !== state),
-            })
-          }
-        />
-      </div>
+      
 
       {sorted.length === 0 ? (
         <NoResults

@@ -17,12 +17,14 @@ function bar(
       filters={{ search: "", colors: [], types: [], setCodes: [], availability: [], ...filters } as never}
       sort="name"
       sortDirection="asc"
-      colorOptions={[]}
       view="rows"
       setOptions={setOptions}
       typeOptions={[]}
       availabilityOptions={[]}
-      availabilityOk
+      chips={[]}
+      onClearAll={() => {}}
+      resultLine="Showing 0 unique · 0 total"
+    availabilityOk
       hasCollection={hasCollection}
       announcement=""
       onAnnounce={() => {}}
