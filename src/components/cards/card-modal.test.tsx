@@ -701,9 +701,19 @@ describe("CardModal opened at a particular printing", () => {
   it("does not claim the viewed printing as the reader's pick", () => {
     // Looking at a cell writes nothing and asserts nothing about preference: the picker
     // must still mark whatever the reader actually chose, which here is nothing.
+    //
+    // OWNED rows, deliberately: with quantity 0 the picker is not rendered at all and the
+    // assertion below would pass over a `Your pick` that could never have appeared.
+    const owned = {
+      ...twoPrintings,
+      quantity: 3,
+      printings: twoPrintings.printings.map((p, i) => ({
+        ...p, quantity: i + 1, finishes: { nonfoil: i + 1 },
+      })),
+    };
     render(
       <CardModal
-        card={twoPrintings}
+        card={owned}
         openAtPrinting={{ setCode: "HOB", collectorNumber: "239" }}
         position={1}
         total={1}
@@ -947,5 +957,44 @@ describe("CardModal title under an opened-at printing", () => {
     );
     expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
     expect(screen.queryByText(printedNameCopy.oracleLabel)).toBeNull();
+  });
+
+  // The reader picks a different owned printing: the art and caption move, so the name has
+  // to move with them. It was falling back to `card.printedName`, which the server resolved
+  // for the preference the pick just replaced.
+  it("moves the name with an optimistic pick", async () => {
+    const two: BrowseCard = {
+      ...card,
+      quantity: 3,
+      printedName: "Lonely Sandbar Vista",
+      preferredPrinting: { setCode: "SLD", collectorNumber: "1500" },
+      printings: [
+        {
+          setCode: "SLD", setName: "SLD", collectorNumber: "1500", releasedAt: "2024-01-12",
+          quantity: 1, finishes: { nonfoil: 1 },
+          imageUri: "https://cards.scryfall.io/normal/sld-1500.jpg",
+          flavorName: "Lonely Sandbar Vista",
+        },
+        {
+          setCode: "M21", setName: "Core Set 2021", collectorNumber: "268",
+          releasedAt: "2020-07-03", quantity: 2, finishes: { nonfoil: 2 },
+          imageUri: "https://cards.scryfall.io/normal/m21-268.jpg", flavorName: null,
+        },
+      ],
+    };
+    render(
+      <CardModal card={two} position={1} total={1}
+        onClose={() => {}} onPrev={null} onNext={null} />,
+    );
+    expect(screen.getByRole("heading", { name: "Lonely Sandbar Vista" })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", { name: /printings owned/ })[0]);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("radio", { name: /Core Set 2021/ })[0]);
+    });
+    // M21 prints its own name, so the heading is the oracle name again.
+    expect(screen.getByRole("heading", { name: card.name })).toBeInTheDocument();
   });
 });

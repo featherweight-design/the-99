@@ -343,7 +343,19 @@ export function CardModal({
   // reads from this one object, so an optimistic pick moves all three together or none.
   const preview = useMemo<BrowseCard>(() => {
     const at = picked ? null : openAtPrinting;
-    if (!at) return { ...card, preferredPrinting: pick };
+    if (!at) {
+      const next = { ...card, preferredPrinting: pick };
+      // Only once the reader has actually picked. `card.printedName` is the server's
+      // answer and is right until then — recomputing it unconditionally would resolve a
+      // different printing than `aggregateCollection` did and rename cards nobody touched.
+      // After a pick it is stale by construction: it was resolved for the preference the
+      // pick just replaced, so the art and caption moved while both headings did not.
+      if (!picked) return next;
+      const shown = resolvedPrinting(next);
+      const renamed =
+        shown?.flavorName != null && shown.flavorName !== card.name ? shown.flavorName : null;
+      return { ...next, printedName: renamed };
+    }
     // For an OWNED card `card.printings` is what the reader owns, and a holding matched by
     // name carries no collector number — so the printing the caller is showing is often
     // absent and the resolver would fall back to an unrelated set. Injected at quantity 0
