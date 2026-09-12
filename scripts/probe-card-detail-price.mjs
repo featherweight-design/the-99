@@ -8,7 +8,7 @@
 // aria-hidden heading there.
 //
 // Run by hand with the dev server up:
-//   PROBE_CARD="<card name>" [PROBE_EXPECT_PRICE="$18.75"] node scripts/probe-card-detail-price.mjs
+//   PROBE_CARD="<card name>" node scripts/probe-card-detail-price.mjs
 // Point PROBE_CARD at a card the signed-in account owns in MORE THAN TWELVE
 // printings — `OVERFLOW_THRESHOLD` is 12 and the header collapses only past it, so
 // a card owned in two opens the picker and never reaches the compact state. A basic
@@ -26,9 +26,6 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const CARD = process.env.PROBE_CARD;
-// What the SECOND printing's tag should read, when the operator knows it. Unset by
-// default, because the feed is the source of that truth and the browser is not.
-const EXPECT = process.env.PROBE_EXPECT_PRICE;
 if (!CARD) throw new Error("Set PROBE_CARD to a card the account owns.");
 
 // Lifted from `scripts/probe-card-detail-availability.mjs`, which documents at
@@ -155,79 +152,21 @@ try {
   // satisfies nothing. Table row 1.1: 10px under the art at desktop, 9px at phone.
   assertGap("desktop", desktop.desktop, 10);
 
-  // A pick must move the figure with the art. Same card, different printing.
-  const trigger = page.locator('button[aria-label*="printings owned"]').last();
-  if (await trigger.count()) {
-    await trigger.click();
-    // Both breakpoint trees mount a region and both are in the DOM at once,
-    // separated by CSS — so an unscoped `[role="radio"]` finds the phone tree's
-    // hidden tiles first and Playwright refuses to click one.
-    const tiles = page.locator('[role="radio"]:visible');
-    const count = await tiles.count();
-    if (count > 1) {
-      const caption = () =>
-        page.locator('button[aria-label*="printings owned"]').last().getAttribute("aria-label");
-      const before = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
-      // A pick is a WRITE: `setCardArtPreference` persists (user, oracle) in
-      // `card_art_preferences`, so a probe that picks and walks away has changed
-      // which printing this account sees everywhere. The tile that was checked on
-      // arrival is remembered and restored below.
-      const wasChecked = await tiles.evaluateAll((nodes) =>
-        nodes.findIndex((n) => n.getAttribute("aria-checked") === "true"),
-      );
-      try {
-        // The first tile that is not already the selected one. Hard-coding index 1
-        // clicks the current pick whenever that is the second tile, and then the
-        // caption check below fails on a probe that did nothing wrong.
-        const target = wasChecked === 1 ? 0 : 1;
-        await tiles.nth(target).click();
-        await page.waitForTimeout(1_200);
-        const after = { price: (await readPrice(page)).desktop?.text ?? null, caption: await caption() };
-        console.log("\n── after picking the second printing ──");
-        console.log(JSON.stringify({ before, after }, null, 2));
-      // What the probe can assert on its own: the pick landed. Whether the FIGURE is
-        // right cannot be derived from the page — two printings of one card may
-        // legitimately cost the same, so an unchanged number is not evidence either
-        // way. Set PROBE_EXPECT_PRICE to what the second printing should read
-        // (`$18.75`, `no stock`, or an empty string for silence) and the probe checks
-        // it; leave it unset and the pair is printed for a human, with that stated
-        // rather than implied.
-        if (EXPECT !== undefined) {
-          const got = after.price ?? "";
-          // An empty EXPECT means silence, and `"anything".includes("")` is true —
-          // so the empty case is its own assertion rather than a substring match
-          // that can never fail.
-          const ok = EXPECT === "" ? after.price === null : got.includes(EXPECT);
-          if (!ok) {
-            console.log(`\nFAIL: expected the second printing to read ${JSON.stringify(EXPECT)}, got ${JSON.stringify(got)}.`);
-            process.exitCode = 1;
-          }
-        } else {
-          console.log(
-            "\n(PROBE_EXPECT_PRICE is unset, so the two figures above are a human read." +
-              " Only the pick itself was asserted.)",
-          );
-        }
-        if (before.caption === after.caption) {
-          console.log("\nFAIL: the pick did not change the resolved printing, so the tag proves nothing.");
-          process.exitCode = 1;
-        }
-      } finally {
-        // Put the account back where it was found, including when the read or the
-        // assertion above threw. A probe that leaves a preference behind is a probe
-        // nobody can run twice and trust the second result.
-        if (wasChecked >= 0) {
-          await tiles.nth(wasChecked).click();
-        } else {
-          const forget = page.getByRole("button", { name: /forget|clear/i }).first();
-          if (await forget.count()) await forget.click();
-        }
-        await page.waitForTimeout(1_000);
-      }
-    } else {
-      console.log("\n(only one printing owned — the pick check needs a card with several)");
-    }
-  }
+  // WHAT THIS PROBE DELIBERATELY DOES NOT DO: pick a different printing.
+  //
+  // It used to. Selecting a tile is a WRITE — `setCardArtPreference` persists
+  // (user, oracle) — so the probe had to choose an unselected tile, remember the
+  // old one, restore it in a `finally`, and find the right reset control when
+  // there had been no pick at all. Six review rounds went into that machinery, on
+  // a hand-run script, to prove something a unit test already proves: the modal's
+  // tag follows the resolved printing (`card-modal-price.test.tsx`, mutation-checked
+  // by reverting `priceFor` and watching eight cases fail).
+  //
+  // What a browser proves and a test cannot is what is on this page: that the tag
+  // paints, where it sits relative to the art, and that the compact placement is
+  // not sealed inside the aria-hidden heading. That is all this probe claims now,
+  // and it makes no writes at all.
+
   await context.close();
 
   // ── phone, including the compact header ──────────────────────────────────
