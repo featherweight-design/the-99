@@ -136,6 +136,7 @@ const CLEAR_STOPS = /\/\s*0\)\s*\S+,\s*\S+\(\s*[^)]*\/\s*0\)/;
     An omitted `/ alpha` is alpha 1 — the browser drops it, exactly as it drops a
     gradient's default 180deg. */
 const READ_COVER_STOPS = `(edge) => {
+  ${PARSE_STOPS}
   // Laid-out bands only. The commander detail hero's band is wrapped in
   // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
   // selector while drawing nothing — counting it would report a phone-only
@@ -144,14 +145,7 @@ const READ_COVER_STOPS = `(edge) => {
     .filter((s) => s.getClientRects().length)
     .map((s) => {
       const image = getComputedStyle(s).backgroundImage;
-      const stops = image.match(/[a-z-]+\\([^()]*\\)\\s+[\\d.]+%/g) ?? [];
-      return stops.map((stop) => {
-        const alpha = stop.match(/\\/\\s*([\\d.]+)\\)/);
-        return {
-          alpha: alpha ? Number(alpha[1]) : 1,
-          position: Number(stop.match(/([\\d.]+)%$/)[1]),
-        };
-      });
+      return parseStops(image);
     });
 }`;
 
@@ -216,10 +210,7 @@ const READ_STATED_BANDS = `() => {
       const scrims = [...root.querySelectorAll('.art-wash-scrim')];
       const s = scrims.at(-1);
       const image = s ? getComputedStyle(s).backgroundImage : '';
-      const stops = (image.match(/[a-z-]+\\([^()]*\\)\\s+[\\d.]+%/g) ?? []).map((stop) => {
-        const alpha = stop.match(/\\/\\s*([\\d.]+)\\)/);
-        return { alpha: alpha ? Number(alpha[1]) : 1, position: Number(stop.match(/([\\d.]+)%$/)[1]) };
-      });
+      const stops = parseStops(image);
       return {
         declared: root.getAttribute('data-art-wash-band') + 'px',
         labelAtPx: root.hasAttribute('data-art-wash-label-at')
