@@ -46,7 +46,11 @@ export function ResultLine({
   // What was last announced. Null until the line first changes, which is what
   // keeps the chassis from reading its own count out on arrival.
   const announced = useRef<string | null>(null);
-  // When the current silence began, or null if not silent.
+  // When the LATEST pending change arrived while silent, not when the silence
+  // began. Those differ: a sheet open for a minute, then a filter toggled and
+  // the sheet dismissed a moment later, has a long silence and a change the
+  // sheet's own debounce never fired for. Keying the handover on the silence
+  // would suppress a count nobody had said.
   const silentSince = useRef<number | null>(null);
   // The `announce` last seen, so a message is spoken once and never re-used.
   const lastAnnounce = useRef<string | undefined>(undefined);
@@ -76,7 +80,9 @@ export function ResultLine({
     // one thing this component can measure: shorter than the debounce and the
     // sheet cannot have spoken, so this does.
     if (silent) {
-      if (silentSince.current === null) silentSince.current = performance.now();
+      // Re-stamped on every change, so the handover measures the age of the
+      // pending value rather than the age of the silence.
+      silentSince.current = performance.now();
       // `lastAnnounce` is deliberately NOT stamped here. Marking a message as
       // seen while returning without scheduling it is how the sibling ref lost
       // an announcement one round ago: silence ends, `fresh` reads false, and

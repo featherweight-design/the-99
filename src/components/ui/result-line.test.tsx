@@ -135,6 +135,19 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("3 of 41 decks");
   });
 
+  it("measures the pending change, not how long the sheet was open", () => {
+    // A sheet open a long while, then a filter toggled and the sheet dismissed
+    // a moment later: the sheet's debounce never fired for that change, so the
+    // chassis has to say it. Keying on the silence would have suppressed it.
+    const { rerender, container } = render(<ResultLine line="41 decks" silent />);
+    act(() => vi.advanceTimersByTime(5000));
+    rerender(<ResultLine line="7 of 41 decks" silent />);
+    act(() => vi.advanceTimersByTime(50));
+    rerender(<ResultLine line="7 of 41 decks" />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("7 of 41 decks");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");
