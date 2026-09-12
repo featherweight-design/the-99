@@ -149,7 +149,11 @@ const readPanel = (page, panelId) =>
     if (!panel) return null;
     return {
       headings: [...panel.querySelectorAll("h2,h3")].map((h) => h.innerText.replace(/\n/g, " ")),
-      pending: panel.querySelector("[data-pending-mark]") !== null,
+      // The hook the panel actually renders while its read is in flight. The
+      // surface takes no SVG and no motion, so the wait is a reserved box with
+      // nothing in it — there is no mark to look for, and looking for one
+      // reported every pending panel as settled.
+      pending: panel.querySelector("[data-diff-pending]") !== null,
       // Diff rows carry their own hook: they are not list items, and counting
       // `li` here found nothing and reported it as "none" — a gap-shaped reading
       // of a working panel.
