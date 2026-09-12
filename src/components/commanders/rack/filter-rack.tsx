@@ -147,10 +147,13 @@ export function FilterRack({
         wide ? (
           order
         ) : (
-          <>
+          // The slot wrapper spaces the leading group, the hairline and this
+          // slot — not the controls inside it, so the pair needs its own gap or
+          // the trigger sits flush against the order glyph.
+          <div className="flex items-center gap-[8px]">
             {order}
             <FiltersTrigger badge={active} onClick={() => setSheetOpen(true)} expanded={sheetOpen} />
-          </>
+          </div>
         )
       }
       controls={

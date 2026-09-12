@@ -306,7 +306,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
               wide ? (
                 <DeckSortMenu sort={state.sort} onChange={onSort} />
               ) : (
-                <>
+                <div className="flex items-center gap-[8px]">
                   <DeckSortMenu sort={state.sort} onChange={onSort} />
                 <button
                   type="button"
@@ -326,7 +326,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
                     </span>
                   )}
                 </button>
-                </>
+                </div>
               )
             }
             chips={chassisChips}
