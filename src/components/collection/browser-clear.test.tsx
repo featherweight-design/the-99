@@ -80,4 +80,22 @@ describe("CollectionBrowser — clearing filters", () => {
     expect(window.location.search).not.toContain("c=R");
   });
 
+
+  it("refuses a hue the other filters leave no cards in", () => {
+    // `ColourPips`' own test proves it honours `unavailable`; this proves the
+    // route computes and passes it. Without the wiring the pip stays live and
+    // selecting it empties the list — the behaviour the retired mobile panel
+    // prevented.
+    window.history.replaceState(null, "", "/collection?t=Instant");
+    render(
+      view([
+        card({ oracleId: "r", name: "Bolt", colorIdentity: ["R"], typeLine: "Instant" }),
+        card({ oracleId: "b", name: "Ogre", colorIdentity: ["B"], typeLine: "Creature" }),
+      ]),
+    );
+    // Black exists in the collection but not among the Instants.
+    expect(screen.getAllByRole("switch", { name: /Black/i })[0]).toBeDisabled();
+    expect(screen.getAllByRole("switch", { name: /Red/i })[0]).not.toBeDisabled();
+  });
+
 });
