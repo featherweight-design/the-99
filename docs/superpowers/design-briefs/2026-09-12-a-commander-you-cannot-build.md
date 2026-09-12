@@ -30,7 +30,7 @@ deck (`getRankedList` via `loadBuiltCommanderIds`, both columns since #516). Nei
 A commander sitting in someone else's 99 is still a commander you have never built around.
 
 **Their only copy is sleeved.** The deck holding them has a committed version, so the claim is
-`hard` — `availabilityState` in `src/lib/decks/availability.ts:97`. Building around either means
+`hard` — `availabilityState` in `src/lib/decks/availability.ts:114`. Building around either means
 physically pulling the card out of a finished deck. That is a different kind of "unavailable" from a
 brew that merely lists it (`soft`), and the app already draws that distinction everywhere else.
 
@@ -79,9 +79,13 @@ not. The vocabulary already exists at both weights:
 
 | String | Reads | Source |
 |---|---|---|
-| `marker.hardIn(deck)` | `none free — in HD Tune - Sultai Arisen` | `availability.ts:60` |
-| `marker.tileInUse(deck)` | `in use — HD Tune - Sultai Arisen` | `availability.ts:97` |
+| `marker.hardIn(deck)` | `none free — in HD Tune - Sultai Arisen` | `src/lib/copy/availability.ts:60` |
+| `marker.tileInUse(deck)` | `in use — HD Tune - Sultai Arisen` | `src/lib/copy/availability.ts:97` |
 | `marker.hard` / `marker.soft` | count-only forms, no proper noun | the `/collection` ruling above |
+
+(Two modules share the name — `src/lib/copy/availability.ts` holds the strings,
+`src/lib/decks/availability.ts` the states. Every citation in this brief is full-path for that
+reason.)
 
 **The hero has room and the row may not.** A split answer is legitimate: name the deck on the
 commander page, mark the row without naming. Design should say which, rather than eng picking by
@@ -89,14 +93,16 @@ what fits.
 
 ---
 
-## §4 Three states, not one
+## §4 Four states, not one
 
 The row and the hero each need to say one of:
 
 - **Sleeved** — a committed deck holds the only copy (`hard`). Meren and Kotis today. Strongest
   form: building means taking the card out of a finished deck.
-- **Wanted by a brew** — an uncommitted list names it (`soft`). Weaker: nothing is physically in
-  sleeves, and the app has always treated a brew as a list rather than a claim.
+- **Wanted by a brew** — a copy is free to build with, and an uncommitted list also names one
+  (`soft`). Weaker than sleeved, because a brew is a list rather than a stack of sleeves and the
+  player can build today. Note this does NOT mean no copy is sleeved: with two copies, one sleeved
+  and one wanted by a brew, the state is still `soft` — see the worked example below.
 - **Over-committed** — more committed decks claim the commander than the player owns copies of
   (`free < 0`, `over`). Reachable: two decks can each sleeve the only copy, and `/collection` already
   draws this state. Whether it deserves its own weight on these two surfaces or simply reads as
