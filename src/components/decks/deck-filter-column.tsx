@@ -7,11 +7,8 @@
 // There is no Apply. Ticking a filter re-filters immediately and Clear is the
 // only commitment control (README §5, READINESS "Live filtering — Closed").
 
-import { WUBRG_COLOR } from "../../lib/collection/browse";
-import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
-  type ColourCode,
   type DeckFilters,
   type PlayedWindow,
 } from "../../lib/decks/filter";
@@ -57,34 +54,6 @@ export const PLAYED_LABEL: Record<PlayedWindow, string> = {
   thisMonth: refreshCopy.filters.lastPlayedThisMonth,
   never: refreshCopy.filters.lastPlayedNever,
 };
-
-export function ColourSwatch({
-  code,
-  on,
-  size,
-  onToggle,
-}: {
-  code: ColourCode;
-  on: boolean;
-  size: "column" | "sheet";
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={on}
-      // `colorNames` is the exported reader over the copy module's private
-      // MONO_NAMES and already returns White / Blue / Black / Red / Green.
-      aria-label={colorNames([code])[0]}
-      onClick={onToggle}
-      style={{ "--swatch": WUBRG_COLOR[code] } as React.CSSProperties}
-      className={`cursor-pointer border border-solid bg-[color:var(--swatch)] ${
-        size === "column" ? "h-[28px] w-[28px] rounded-[7px]" : "h-[44px] w-[44px] rounded-[11px]"
-      } ${on ? "border-[color:var(--fg)]" : "border-[color:var(--border-strong)]"}`}
-    />
-  );
-}
 
 export function SearchField({
   value,

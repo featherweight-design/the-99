@@ -269,9 +269,11 @@ hue code nor a `, on` suffix earns its place in the name.
 
 ## What 1b actually did, where it departed from this plan
 
-- **The column's siblings stayed.** `DeckFilterColumn` is deleted; `ColourSwatch`, `SearchField`,
-  `PLAYED_LABEL`, `STATUS_COPY_KEY` and `toggleIn` are shared with the phone sheet and remain in
-  `deck-filter-column.tsx`, alongside a header saying why the file outlived its namesake.
+- **Some of the column's siblings stayed; `ColourSwatch` did not.** `DeckFilterColumn` is deleted,
+  and so is `ColourSwatch` — the sheet draws `ColourPips` too, so a second colour control with a
+  second ARIA role had no consumer left. `SearchField`, `PLAYED_LABEL`, `STATUS_COPY_KEY` and
+  `toggleIn` are genuinely shared with the sheet and remain in `deck-filter-column.tsx`, alongside a
+  header saying why the file outlived its namesake.
 - **The chip loses its lowercase.** `/decks`' own chip row lowercased every label
   (`refreshCopy.filters.chipRemoveAria`). The shared chip cannot: the same control carries
   `/collection`'s set names, and "duskmourn" is wrong in a way "draft" never was.

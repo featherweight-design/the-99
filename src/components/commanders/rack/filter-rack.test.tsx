@@ -20,6 +20,7 @@ function renderRack(
   shown = 148,
   total = 148,
   orderPending = false,
+  excludedByExactly: number | null = null,
 ) {
   return render(
     <FilterRack
@@ -28,7 +29,7 @@ function renderRack(
       onChange={() => {}}
       shown={shown}
       total={total}
-      excludedByExactly={null}
+      excludedByExactly={excludedByExactly}
       orderPending={orderPending}
     />,
   );
@@ -37,6 +38,31 @@ function renderRack(
 afterEach(() => vi.unstubAllGlobals());
 
 describe("FilterRack", () => {
+  // The aside used to be composed inside the rack's own ResultLine. It is
+  // composed at this caller now and handed to the chassis as one string, so
+  // nothing but an integration assertion proves it still reaches the row —
+  // `result-line.test.tsx` only concatenates two strings in isolation, which
+  // would pass with this wiring dropped entirely.
+  it("passes the Exactly aside through to the chassis result line", () => {
+    const { container } = renderRack(
+      "owned",
+      { ...defaultParams("owned"), colors: ["u", "b"], match: "exactly" },
+      2,
+      148,
+      false,
+      6,
+    );
+    const result = container.querySelector("[data-chassis-row='result']");
+    expect(result?.textContent).toContain("2 of 148 commanders match");
+    expect(result?.textContent).toContain("Exactly excludes 6 that Any would show");
+  });
+
+  it("draws no aside when nothing is excluded", () => {
+    const { container } = renderRack("owned");
+    expect(container.querySelector("[data-chassis-row='result']")?.textContent)
+      .not.toContain("Exactly excludes");
+  });
+
   // The two rankings are order values now, not a control of their own, so
   // discover's rack carries no second single-select beside order.
   it("opens the discover rack on the fit ranking, as an order", () => {

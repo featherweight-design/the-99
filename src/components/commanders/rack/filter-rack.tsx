@@ -86,8 +86,15 @@ export function FilterRack({
       wide={wide}
     />
   );
+  // Keyed on the form so both popover controls get fresh state across the
+  // breakpoint. `RackSelect` holds its own `open`, and the wide menu and the
+  // compact radio group are two branches of it: without this, a desktop menu
+  // left open vanishes on the way to compact and reappears unprompted on the
+  // way back — the same stale-open bug the sheet had, in a control that has no
+  // unmount to hide it.
   const order = (
     <OrderControl
+      key={wide ? "wide" : "compact"}
       value={params.order}
       options={orders}
       onChange={(next) => onChange({ ...params, order: next })}
@@ -165,6 +172,7 @@ export function FilterRack({
               nothing here — not a greyed stand-in. */}
           {lane === "owned" && (
             <AvailabilityControl
+              key={wide ? "wide" : "compact"}
               value={params.avail}
               onChange={(avail) => onChange({ ...params, avail })}
               wide
