@@ -336,6 +336,12 @@ const THUMB_BOXES = ["44×62", "64×89"];
 /** One ring alpha, replacing `.35` on two thumbs and `.3` on the card faces. All
     three are inset shadows, so the alpha is the only thing that distinguishes the
     converged ring from the drift it replaced. */
+/** The one surface that legitimately draws card-shaped boxes which are not
+    commander thumbs: the decks zero state's illustration. Named rather than
+    shape-excluded, so a real unmigrated render on any other surface still
+    fails. */
+const DECORATIVE_FANS = ["decks"];
+
 const THUMB_RING_RE = /inset[^,]*rgba\(0,\s*0,\s*0,\s*0\.4\)|rgba\(0,\s*0,\s*0,\s*0\.4\)[^,]*inset/;
 
 const VIEWPORTS = [
@@ -366,6 +372,34 @@ const READ_THUMBS = `() => {
         position: s.backgroundPosition,
         hasArt: s.backgroundImage.includes('url('),
       };
+    });
+}`;
+
+/** Anything shaped like a card face that carries NO marker. The marked census
+    above cannot see a render that was never migrated — an unmarked 34×48 is
+    simply absent from it, and the two-box assertions then pass over a surface
+    that still draws its own geometry. This is the other half of that check, and
+    it has to tolerate one real decorative case: the decks zero state draws a
+    card fan at nearly this aspect, which is an illustration rather than a
+    commander. */
+const READ_UNMARKED_FACES = `() => {
+  return [...document.querySelectorAll('div, span')]
+    .filter((el) => {
+      if (el.hasAttribute('data-commander-thumb')) return false;
+      if (el.closest('[data-commander-thumb]')) return false;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      const ratio = r.width / r.height;
+      // A card-face box: bigger than an icon, smaller than a page, at 63/88.
+      if (r.width < 28 || r.width > 120 || ratio < 0.6 || ratio > 0.85) return false;
+      // Art or a gradient behind it, so a bare spacer with those proportions is
+      // not reported as a render.
+      const bg = getComputedStyle(el).backgroundImage;
+      return bg.includes('url(') || bg.includes('gradient');
+    })
+    .map((el) => {
+      const r = el.getBoundingClientRect();
+      return Math.round(r.width) + '×' + Math.round(r.height);
     });
 }`;
 
@@ -416,6 +450,16 @@ async function checkChrome(page, label, note) {
   if (thumbs.length) {
     note(`${label}: ${thumbs.length} commander thumb(s) at ${[...new Set(thumbs.map((t) => t.box.join("×")))].join(", ")}`);
   }
+  // The unmarked half. A render that never migrated carries no marker, so the
+  // census above is blind to it and its assertions pass over a surface still
+  // drawing 34×48. Reported everywhere and failed everywhere except the decks
+  // list, whose zero state draws a decorative card fan at nearly this aspect.
+  const unmarked = await page.evaluate(`(${READ_UNMARKED_FACES})()`);
+  if (unmarked.length) {
+    const line = `${label}: ${unmarked.length} unmarked card-face box(es) at ${[...new Set(unmarked)].join(", ")}`;
+    note(DECORATIVE_FANS.some((r) => label.includes(r)) ? `${line} — decorative, not asserted` : `  FAIL ${line}`);
+  }
+
   for (const t of thumbs) {
     const box = t.box.join("×");
     if (!THUMB_BOXES.includes(box)) note(`  FAIL thumb at ${box}, outside the two settled boxes`);
