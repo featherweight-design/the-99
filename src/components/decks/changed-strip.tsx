@@ -235,8 +235,12 @@ export function ChangedStrip({
                   <span className="shrink-0 truncate w-[74px] md:w-[110px] text-[12px] md:text-[12.5px] text-[color:var(--fg-body)]">
                     {move.group}
                   </span>
+                  {/* The after figure carries the row's ink and the before figure
+                      is the faint one, exactly as in the cells above: the pair is
+                      one measurement, and which end of it is the deck's shape now
+                      should not need the arrow to be read. */}
                   <span className="flex-1 md:flex-none md:w-[96px] font-mono text-[11px] md:text-[11.5px] text-[color:var(--fg-faint)]">
-                    {copy.shapeRow(move.before, move.after)}
+                    {move.before} → <span className="text-[color:var(--fg)]">{move.after}</span>
                   </span>
                   {/* Desktop only, and the one thing here that is not a figure:
                       what the row gained or lost against what it kept. */}

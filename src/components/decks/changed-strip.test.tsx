@@ -69,7 +69,10 @@ describe("ChangedStrip", () => {
 
   it("names only the types whose count moved", () => {
     render(<ChangedStrip before={BEFORE} after={AFTER} manaValue={3.1} manaValueBefore={3.4} />);
-    expect(screen.getByText(deckVersioningCopy.changed.shapeRow(30, 28))).toBeTruthy();
+    // The pair is two spans, so the assertion is on the row that holds them: the
+    // after figure carries the deck's own ink and the before figure does not.
+    const pair = screen.getByText("28");
+    expect(pair.parentElement?.textContent).toBe("30 → 28");
     expect(screen.getByText("Creatures")).toBeTruthy();
     // Artifacts, Instants, Sorceries, Enchantments and Lands all held: a row of
     // equal figures is a line explaining nothing happened.

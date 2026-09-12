@@ -382,10 +382,7 @@ export const deckVersioningCopy = {
     under: (rec: number) => `still under rec ${rec}`,
     body: "Body",
     bodyOver: (n: number) => `${n} over, not blocked`,
-    // The six cells, in order. `body` above is the hero's over-cap line, NOT a strip cell.
-    cells: ["manaValue", "ramp", "draw", "removal", "wipes", "land"] as const,
     shapeHeading: "How the deck's shape moves",
-    shapeRow: (before: number, after: number) => `${before} → ${after}`,
     delta: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0"),
   },
 

@@ -298,14 +298,19 @@ const CONSEQUENCE =
   "leading-[1.55] text-[color:var(--fg-body)]";
 const STAMP = "font-semibold text-[color:var(--fg)]";
 
-// Danger ink on the app's ghost border — the confirm the game log ships,
-// unchanged.
+// The geometry both answers share — the game log's confirm row, unchanged.
 const ANSWER =
   "flex md:inline-flex items-center justify-center min-h-[44px] md:min-h-0 px-[18px] py-[10px] " +
   "rounded-[8px] font-sans font-semibold text-[13.5px] cursor-pointer " +
   "disabled:cursor-not-allowed disabled:opacity-50";
+// A danger-tinted border rather than the neutral one: the design draws a dim red
+// here, and a mix of the token is what carries that across all six themes, where
+// the drawn value would be the dark theme's own painted on five others.
+// `color-mix` of `--danger` is the app's shipped way of dimming it — see
+// `confirm-modal`.
 const DANGER_CTA =
-  `${ANSWER} text-[color:var(--danger)] bg-transparent [border:1px_solid_var(--border-strong)]`;
+  `${ANSWER} text-[color:var(--danger)] bg-transparent ` +
+  "[border:1px_solid_color-mix(in_oklab,var(--danger)_34%,transparent)]";
 // The brass fill goes on the way out, taking `PRIMARY`'s bone-on-ink and its
 // hover rather than restating either. A touch taller than its neighbour on the
 // phone, where it is the row the thumb lands on.
