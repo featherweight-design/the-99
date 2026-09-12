@@ -51,6 +51,19 @@ describe("CommanderThumb", () => {
     expect(neither.style.background).toContain("repeating-linear-gradient");
   });
 
+  // The marker a probe selects on, because shape is not enough: the decks zero
+  // state draws a decorative card fan at nearly this aspect, and a probe matching
+  // on aspect alone failed those against a treatment they have nothing to do with.
+  it("marks itself, and names which of the two boxes it is", () => {
+    expect(thumb(<CommanderThumb imageUri="/a.jpg" colorIdentity={["G"]} />)).toHaveAttribute(
+      "data-commander-thumb",
+      "row",
+    );
+    expect(
+      thumb(<CommanderThumb imageUri="/a.jpg" colorIdentity={["G"]} size="summary" />),
+    ).toHaveAttribute("data-commander-thumb", "summary");
+  });
+
   // Decorative at every call site: the row names its commander in text beside
   // the thumb, and a second name would read it twice.
   it("stays out of the accessibility tree", () => {

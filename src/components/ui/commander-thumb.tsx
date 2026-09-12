@@ -57,6 +57,11 @@ export function CommanderThumb({
       // beside the thumb, and a second name in the accessibility tree would read
       // it twice.
       aria-hidden
+      // The marker a browser probe selects on. Shape is not enough to identify
+      // one of these: `DecksZero`'s decorative card fan is a 63/88-ish div too,
+      // and a probe matching on aspect alone reported those as commander thumbs
+      // and failed them against a treatment they have nothing to do with.
+      data-commander-thumb={size}
       className={`block shrink-0 rounded-[6px] ${className}`}
       style={{
         width: box.width,

@@ -349,18 +349,17 @@ const VIEWPORTS = [
     measurement. The ring comes off the computed shadow rather than a class,
     because three of the five set it inline. */
 const READ_THUMBS = `() => {
-  return [...document.querySelectorAll('span[aria-hidden="true"], div')]
-    .filter((el) => {
-      const r = el.getBoundingClientRect();
-      // A card-face thumb, not a pip or a spacer: the 63/88 frame is the shape
-      // this looks for, at anything bigger than an icon and smaller than a page.
-      const ratio = r.height ? r.width / r.height : 0;
-      return r.width >= 24 && r.width <= 120 && ratio > 0.6 && ratio < 0.85;
-    })
+  // Selected by the primitive's own marker, never by shape. Matching on a 63/88
+  // aspect also catches the decks zero state's decorative card fan, which then
+  // fails assertions about a treatment it has nothing to do with — a false
+  // failure teaches a reader to ignore the probe.
+  return [...document.querySelectorAll('[data-commander-thumb]')]
+    .filter((el) => el.getClientRects().length)
     .map((el) => {
       const s = getComputedStyle(el);
       const r = el.getBoundingClientRect();
       return {
+        size: el.getAttribute('data-commander-thumb'),
         box: [Math.round(r.width), Math.round(r.height)],
         radius: s.borderTopLeftRadius,
         shadow: s.boxShadow,
@@ -738,9 +737,14 @@ try {
     const commanderOracleId = await page.evaluate(
       `document.querySelector('a[href*="/decks/new?commander="]')?.getAttribute('href') ?? null`,
     );
+    // The pre-filled door's thumb is the PHONE's: desktop draws a 220px card face
+    // instead, which is a different render of the same commander and not a thumb
+    // at all. Requiring the thumb at both widths failed a correct build.
     const CREATE_SURFACES = [
       ["the picker's candidate rows", "/decks/new", ["44×62"]],
-      ...(commanderOracleId ? [["the pre-filled door", commanderOracleId, ["64×89"]]] : []),
+      ...(commanderOracleId
+        ? [["the pre-filled door", commanderOracleId, vpName === "mobile" ? ["64×89"] : []]]
+        : []),
     ];
     for (const [what, path, required] of CREATE_SURFACES) {
       await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
@@ -749,6 +753,9 @@ try {
       const drawn = await page.evaluate(`(${READ_THUMBS})()`);
       const boxes = new Set(drawn.map((t) => t.box.join("×")));
       note(`${vpName} ${what}: ${drawn.length} thumb(s) at ${[...boxes].join(", ") || "none"}`);
+      if (!required.length) {
+        note(`  (no thumb required at this width — the desktop door draws a card face)`);
+      }
       for (const box of required) {
         if (!boxes.has(box)) note(`  FAIL ${what} draws no ${box} thumb`);
       }
