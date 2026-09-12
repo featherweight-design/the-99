@@ -739,9 +739,14 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   await requireDeck(deckId, userId);
   const trimmed = validateDeckName(name);
   await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
-  // No claim changes, so the availability surfaces are untouched — but the home
-  // dashboard names the three most recent decks and would keep the old one.
-  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  // A rename moves no card, so no claim changes — and it still reaches every
+  // surface a claim does, because those surfaces print the deck's NAME. A card's
+  // availability marker says `none free — in <deck>` on /collection, /commanders
+  // and /discover; the commander detail page names the deck under Why this
+  // commander and again on each committed card. Left to `deckSurfaces` alone,
+  // all of them went on showing the old name until something else invalidated
+  // them.
+  revalidateClaims(deckId, userId);
 }
 
 /** One removed row, carried so Undo can restore a stacked basic at the exact
@@ -820,7 +825,7 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   // Locking the deck row keeps the read and the write atomic, the same way
   // addCardToDeck does — the returned count is what the Undo toast reports, and
   // a hand-add racing it would otherwise make that number a guess.
-  return await db.transaction(async (tx) => {
+  const restored = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     // Only the ids being restored. The read exists to say which of them the
     // insert's conflict clause will skip, and with the cap gone the rest of the
@@ -831,15 +836,20 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     // A card the player re-added by hand before clicking Undo is skipped by the
     // conflict clause, so it is not part of what this restore put back.
     const here = new Set(present.map((r) => r.oracleId));
-    const restored = [...byId]
+    const count = [...byId]
       .filter(([oracleId]) => !here.has(oracleId))
       .reduce((n, [, quantity]) => n + quantity, 0);
     await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing();
-    revalidateClaims(deckId, userId);
-    return restored;
+    return count;
   });
+  // AFTER the commit, never inside it. An invalidation from inside the callback
+  // drops the caches while the write is still uncommitted, and a render arriving
+  // in that window refills them from the rows as they were — leaving exactly the
+  // staleness the invalidation was for, until some later write.
+  revalidateClaims(deckId, userId);
+  return restored;
 }
 
 /** Places exactly the cards the player ticked, as one act.
@@ -913,7 +923,6 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       deckId, kind: "top_off", openSlots: bodySize - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
-    revalidateClaims(deckId, userId);
     return { passId, landed, total: built + landed.length, userId };
   });
 
@@ -921,26 +930,52 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
 }
 
 export async function commitTopOff(deckId: string, oracleIds: string[]): Promise<TopOffResult> {
+  let committed: Awaited<ReturnType<typeof runTopOff>>;
   try {
-    const r = await runTopOff(deckId, oracleIds);
+    committed = await runTopOff(deckId, oracleIds);
+  } catch (err) {
+    console.error("commitTopOff failed", err);
+    return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+  }
+
+  // The deck rows and the fill pass are committed from here on, so the caches
+  // are wrong until this runs and nothing below may be allowed to skip it.
+  // Inside the transaction it would drop them while the write was still
+  // uncommitted, and a render arriving in that window would refill them from the
+  // rows as they were; inside a `catch` that reports failure, a throw would leave
+  // a landed commit behind stale lists.
+  revalidateClaims(deckId, committed.userId);
+
+  try {
     // The shopping figure the commit row promised: cards this act placed that
     // the player does not own, not the deck's whole unowned count. Read outside
     // the transaction — collection_items is untouched by the deck write.
-    const owned = r.landed.length === 0
+    const owned = committed.landed.length === 0
       ? new Set<string>()
       : new Set(
           (await db.select({ oracleId: collectionItems.oracleId })
             .from(collectionItems)
             .where(and(
-              eq(collectionItems.userId, r.userId),
-              inArray(collectionItems.oracleId, r.landed),
+              eq(collectionItems.userId, committed.userId),
+              inArray(collectionItems.oracleId, committed.landed),
             )))
             .map((c) => c.oracleId),
         );
-    const boughtDelta = r.landed.filter((oracleId) => !owned.has(oracleId)).length;
-    return { ok: true, passId: r.passId, added: r.landed.length, total: r.total, boughtDelta };
+    const boughtDelta = committed.landed.filter((oracleId) => !owned.has(oracleId)).length;
+    return {
+      ok: true,
+      passId: committed.passId,
+      added: committed.landed.length,
+      total: committed.total,
+      boughtDelta,
+    };
   } catch (err) {
-    console.error("commitTopOff failed", err);
+    // The write landed and the caches know it; only the receipt's shopping
+    // figure is unknown. Reported as a refusal rather than as a success with an
+    // invented `boughtDelta`, because `0` is the one value this surface reads as
+    // "nothing to buy" and it would be a claim nothing measured. The list the
+    // reader returns to shows the cards, which is the correction.
+    console.error("commitTopOff receipt failed after the commit landed", err);
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
   }
 }
@@ -1112,12 +1147,15 @@ export async function undoFillPass(
       .from(deckCards)
       .where(eq(deckCards.deckId, deckId));
 
-    // The shopping list is derived from deck membership, so this is also what
-    // gives the player their money back — nothing separate restores it.
-    revalidateClaims(deckId, userId);
     return { removed: removedCards, built: built?.copies ?? 0 };
   });
 
+  // The shopping list is derived from deck membership, so this is also what
+  // gives the player their money back — nothing separate restores it. After the
+  // commit: from inside the callback it drops the caches while the write is still
+  // uncommitted, and a render arriving in that window refills them from the rows
+  // as they were.
+  revalidateClaims(deckId, userId);
   return result;
 }
 

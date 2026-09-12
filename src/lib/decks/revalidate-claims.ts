@@ -17,5 +17,26 @@ import { claimSurfaces } from "./revalidate";
  */
 export function revalidateClaims(deckId: string, userId: string): void {
   for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  // The commander detail page, every instance of it, and by route pattern
+  // because there is no one path to name.
+  //
+  // Every claim write, not only a create or a delete, because the page reads
+  // deck rows three ways. Its rank is counted over a window that excludes built
+  // commanders and whether it renders at all turns on that same exclusion — both
+  // of which move on a create or a delete. But `committedSupport` reads
+  // `deck_cards` for the sentence under **Why this commander** ("…and 11 of those
+  // are already in your X list"), and Role Coverage marks each owned card that is
+  // already in a deck. Those move on an ordinary add or remove, which is exactly
+  // the set of writes that reach this helper.
+  //
+  // The pattern form is the route's, not one reader's, but the route is dynamic —
+  // server-rendered on demand, per reader — so there is no shared full-route
+  // cache to churn. What this drops is the client router cache for the route,
+  // which is what makes a back navigation to a commander show the write.
+  //
+  // Not in `claimSurfaces`: everything there is a literal path, and a dynamic
+  // route needs the `"page"` type as its second argument. Keeping the list
+  // literal is what lets it stay assertable without a `next/cache` mock.
+  revalidatePath("/commanders/[slug]", "page");
   revalidateUserLists(userId);
 }

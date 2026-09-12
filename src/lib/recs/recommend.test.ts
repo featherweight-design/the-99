@@ -110,6 +110,26 @@ describe("finalizeRecommendations", () => {
       expect(results[2].slug).toBe("krenko-mob-boss-2");
     });
 
+    // The scored set now holds built commanders too — it is what `persistScores`
+    // writes from — so they take their place in this ordering like anything else.
+    // That is what makes a slug independent of deck state: building a deck around
+    // one of two same-named commanders no longer renumbers the other, and
+    // deleting that deck does not renumber it back. The slug moves only when the
+    // SCORE moves, which is the one thing it was always allowed to follow.
+    it("gives a name-collision group the same slugs whatever is built", () => {
+      const scores = [
+        stubScore("Krenko, Mob Boss", 10),
+        stubScore("Krenko, Mob Boss", 5),
+      ];
+      const whole = finalizeRecommendations(scores, 10, 2).results.map((r) => r.slug);
+      expect(whole).toEqual(["krenko-mob-boss", "krenko-mob-boss-2"]);
+
+      // The read excludes the built one AFTER this runs, so the survivor keeps
+      // the slug it was given here rather than being promoted to the base.
+      const survivor = whole[1];
+      expect(survivor).toBe("krenko-mob-boss-2");
+    });
+
     it("handles split-card names using front face only", () => {
       const scores = [stubScore("Wear // Tear")];
       const { results } = finalizeRecommendations(scores, 5, 1);

@@ -57,4 +57,22 @@ describe("discoverCandidates", () => {
     expect(q.sql).not.toContain("in ()");
     expect(q.params).toContainEqual([]);
   });
+
+  // The ownership exclusion cannot stand in for this one: an import validates
+  // that a declared partner is a legal commander, never that the player owns it,
+  // so a partner can helm a deck and still be unowned.
+  it("excludes a deck's partner as well as its commander", () => {
+    const q = emitted(["owned_a"]);
+    expect(q.sql).toContain("partner_oracle_id");
+    expect(q.sql).toContain("commander_oracle_id");
+  });
+
+  // `NOT IN (subquery)` returns no rows at all once the subquery yields a single
+  // NULL, and a deck without a partner yields exactly that. `not exists` is what
+  // keeps one partnerless deck from emptying the lane.
+  it("uses not exists, never a NOT IN over the nullable partner column", () => {
+    const q = emitted(["owned_a"]);
+    expect(q.sql).toContain("not exists");
+    expect(q.sql).not.toMatch(/not in \(\s*select/i);
+  });
 });

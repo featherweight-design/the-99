@@ -2,7 +2,7 @@ import { requireUserId } from "../../lib/auth";
 import { getCollectionStats } from "../../lib/home/summary";
 import { CardFan } from "../../components/marks";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
-import { loadDiscovery } from "../../lib/discovery/list";
+import { discoveryKey, loadDiscovery } from "../../lib/discovery/list";
 import { encodeDiscovery } from "../../lib/discovery/encode";
 import { cacheForUser } from "../../lib/cache/user-lists";
 import { discoverSort, parseLaneParams } from "../../lib/commanders/lane-params";
@@ -71,7 +71,7 @@ export default async function DiscoverPage({
   // view wants. Encoding here rather than inside `loadDiscovery` keeps the list
   // a list for every other reader of it — slug resolution and the tests read
   // `DiscoveryItem`s, not tuples.
-  const encoded = await cacheForUser(userId, ["discovery", sort], async () =>
+  const encoded = await cacheForUser(userId, discoveryKey(sort), async () =>
     encodeDiscovery(await loadDiscovery(userId, { sort })),
   );
 
