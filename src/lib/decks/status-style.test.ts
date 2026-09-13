@@ -63,15 +63,20 @@ describe("status style", () => {
   // The two statuses whose token is a text colour are drawn against the flat
   // rule: a lighter fill, and a quieter label than the colour itself.
   it("gives Draft and Building a lighter fill and their own label token", () => {
+    // `textShadow: none` on every pill: the property is inherited, and the blocks
+    // that carry a pill over art put a cover shadow on their ink, so the plated
+    // exception picked up ink it exists to avoid.
     expect(statusPillStyle("Draft")).toEqual({
       color: "var(--fg-muted)",
       background: "color-mix(in srgb, var(--fg-faint) 16%, var(--bg))",
       border: "1px solid var(--border-strong)",
+      textShadow: "none",
     });
     expect(statusPillStyle("Building")).toEqual({
       color: "var(--fg-body)",
       background: "color-mix(in srgb, var(--fg-body) 14%, var(--bg))",
       border: "1px dashed var(--border-strong)",
+      textShadow: "none",
     });
   });
 

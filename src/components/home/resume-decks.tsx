@@ -177,7 +177,22 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
             // the string outright would take the commander out of this row's
             // accessible name altogether — the one thing a picture cannot say to
             // a screen reader. Same device the pair row below already uses.
-            <span className="sr-only">{deck.commanderName}</span>
+            //
+            // Only where there IS art. The cut is earned by the picture saying
+            // the same thing, and a deck whose commander has no crop draws the
+            // identity gradient instead — which says nothing — so hiding the
+            // name there would leave a sighted reader with no way to tell which
+            // deck this is.
+            deck.commanderArtCropUri === null ? (
+              <span
+                className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]"
+                style={{ textShadow: COVER_INK_SHADOW }}
+              >
+                {deck.commanderName}
+              </span>
+            ) : (
+              <span className="sr-only">{deck.commanderName}</span>
+            )
           ) : (
             <>
               <span

@@ -66,6 +66,11 @@ export function statusPillStyle(status: StatusPill): CSSProperties {
     color: `var(${exception ? exception.label : token})`,
     background: plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
     border: `1px ${exception?.borderStyle ?? "solid"} var(--border-strong)`,
+    // `text-shadow` is an inherited property, and every band that carries a pill
+    // over art puts a cover shadow on the block around it — so the pill picked up
+    // ink it is the stated exception to. It plates itself, so it needs none, and
+    // refusing it here covers every surface rather than each one remembering.
+    textShadow: "none",
   };
 }
 

@@ -136,7 +136,14 @@ describe("ResumeDecks", () => {
   it("drops the commander's name on a single-commander row", () => {
     const { container } = render(
       <ResumeDecks
-        decks={[deck({ name: "Four colours, one plan", commanderName: "Atraxa, Praetors' Voice" })]}
+        decks={[
+          deck({
+            name: "Four colours, one plan",
+            commanderName: "Atraxa, Praetors' Voice",
+            // With art, because the art is what earns the cut.
+            commanderArtCropUri: "https://example.test/atraxa.jpg",
+          }),
+        ]}
         shopping={rollup()}
       />,
     );
@@ -151,6 +158,30 @@ describe("ResumeDecks", () => {
     );
     expect(visible.some((el) => el.textContent === "Atraxa, Praetors' Voice")).toBe(false);
     expect(block.querySelector(".sr-only")?.textContent).toBe("Atraxa, Praetors' Voice");
+  });
+
+  // And the cut is earned by the picture, so it does not apply without one: a
+  // commander with no crop draws the identity gradient, which says nothing, and
+  // hiding the name there would leave a sighted reader no way to tell which deck
+  // this is.
+  it("keeps the commander's name visible when there is no art to say it", () => {
+    const { container } = render(
+      <ResumeDecks
+        decks={[
+          deck({
+            name: "Four colours, one plan",
+            commanderName: "Atraxa, Praetors' Voice",
+            commanderArtCropUri: null,
+          }),
+        ]}
+        shopping={rollup()}
+      />,
+    );
+    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
+    const visible = Array.from(block.querySelectorAll<HTMLElement>("span")).filter(
+      (el) => !el.className.includes("sr-only"),
+    );
+    expect(visible.some((el) => el.textContent === "Atraxa, Praetors' Voice")).toBe(true);
   });
 
   // Kept on a pair row, and for the same reason it is cut on a single one: a

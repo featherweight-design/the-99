@@ -572,21 +572,18 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    layer is gone (it read as a second image past the portrait's own width), and
    the sharp portrait it left behind publishes 0.3 like every other art layer.
 
-   Only the `cover` scrim is re-weighted. A `left-portrait` scrim runs at 90deg
-   on stops keyed to the portrait's pixel width, so replacing it with the
-   handoff's vertical ramp would delete the fade the strategy exists for; its art
-   layers dimming is what carries the preference there.
+   NO scrim is re-weighted any more, under either strategy. The one override
+   there used to be applied to a cover band's top edge, and it could only be
+   written because that band's ramp was a fixed percentage; every band states its
+   own block in pixels now, so a stylesheet cannot know where the thin part of
+   the wash is — and a heavier gradient sitting on a different trough moves that
+   thin part out from under the block rather than darkening it.
 
-   Its stop *positions* track the base ramp's, so the two describe the same band:
-   a heavier gradient sitting on a different trough would move the thin part of
-   the wash out from under the preference rather than darkening it. That is why
-   only the *top* edge is overridden. A bottom-labelled band's stops are computed
-   from a `labelAt` no stylesheet can see — 55% on the commander hero, 57% on the
-   deck spine, and higher again when the title fits on one line — so a written
-   ramp would move that band's thin part out from under its own block for at
-   least one of them. Its art layer dimming is what carries the preference there,
-   exactly as it does for `left-portrait`, and its heavy part already runs at 73%
-   across every row of ink it has. */
+   So the preference rides on the art layers' opacity alone, which is the whole
+   mechanism on both strategies. A band's scrim gradient is expected to be
+   byte-identical with the preference on and off, and `probe-art-wash.mjs`
+   compares every scrim's computed gradient across the two states on every route
+   that mounts one — a changed gradient means an override has come back. */
 @media (prefers-reduced-transparency: reduce) {
   .art-wash-art {
     opacity: var(--art-wash-reduced-opacity) !important;
