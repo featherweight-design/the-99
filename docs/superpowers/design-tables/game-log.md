@@ -1850,3 +1850,26 @@ No new token · no new hex · no new motion class · no new empty-state construc
 · no tray · no confirm dialog · no tooltip · no disclosure on the axis list · no virtualisation · no
 pagination on history · no percentage formatter · no rendered `net` · no `--danger` on a result · no
 card named, shown, suggested, linked or implied anywhere on this surface.
+
+---
+
+## Amendments after the handoff
+
+### A1 · A game can carry a note (2026-09-13)
+
+`deck_games.note` and the History row's note line, both drawn from **#10's**
+deck-tuning handoff rather than invented here — see
+`docs/superpowers/design-tables/deck-tuning.md` §Note line and §Note quote rule,
+and `design/design_handoff_the99_deck_tuning/README.md` §The history row
+rendering one. Nothing about the properties is new; what is new is that this
+half of #10 shipped ahead of the rest of it.
+
+**What #9's row gives up:** nothing. The `<li>` becomes a column so the note can
+be a second line, and every slot that was its child moves into an inner row with
+the same classes. A game with no note renders the same single line at the same
+`min-height`, which is the handoff's own requirement.
+
+**What is NOT here, and is still #10's:** the note *field* on the log form, the
+140-character counter, and the note being quoted to the model. The column's
+check constraint is the only thing enforcing the cap, because the note is
+entered by hand against the database.

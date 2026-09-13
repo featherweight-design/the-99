@@ -421,8 +421,21 @@ export const deckGames = pgTable("deck_games", {
   versionId: uuid("version_id").references(() => deckVersions.id, { onDelete: "set null" }),
   playedAt: timestamp("played_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // What happened, in the player's own words — the column #10's deck-tuning
+  // handoff specifies, landing ahead of the rest of that feature.
+  //
+  // SINGULAR. `decks.notes` (plural) already exists and is a different thing;
+  // the plan calls that collision out by name. 140 characters is the handoff's
+  // cap and the reason the history line needs no truncation: it wraps to three
+  // lines at 390px and two at 900px, and that is the whole design.
+  //
+  // Nothing in the app writes it. The log form has no field and the actions do
+  // not accept one — it is entered by hand against the database and read back
+  // here. The check is therefore the only thing enforcing the cap.
+  note: text("note"),
 }, (t) => [
   check("deck_games_result_check", sql`${t.result} in ('win', 'loss', 'draw')`),
+  check("deck_games_note_length_check", sql`${t.note} is null or char_length(${t.note}) <= 140`),
   check("deck_games_pod_size_check", sql`${t.podSize} between 2 and 8`),
   index("deck_games_deck_played_idx").on(t.deckId, t.playedAt),
 ]);

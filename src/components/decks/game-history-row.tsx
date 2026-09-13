@@ -68,8 +68,15 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
     });
   }
 
+  // A note is a second LINE of the row, so the `<li>` is a column and the
+  // slots that were its children move into an inner row. A row with no note is
+  // then exactly the row that shipped: the column has one child, and every
+  // metric on it — the min-height, the padding, the border — is unmoved.
+  const note = game.note?.trim() ? game.note : null;
+
   return (
-    <li className="flex flex-wrap md:flex-nowrap items-center gap-[14px] min-h-[64px] md:min-h-[52px] rounded-[9px] pl-[14px] pr-[12px] py-[8px] bg-surface border border-border">
+    <li className="flex flex-col min-h-[64px] md:min-h-[52px] rounded-[9px] pl-[14px] pr-[12px] py-[8px] bg-surface border border-border">
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-[14px] flex-1">
       {/* Result square — never --danger. A loss is a result, not an error. */}
       <span
         className={
@@ -121,6 +128,15 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
             </span>
           ))
         )}
+        {/* The note, for the ear, in the place the table puts it: inside the
+            row's description, immediately after the marks. The line the eye
+            reads is a second line BELOW the row's controls, so leaving it to
+            carry the description would announce the delete button between the
+            marks and the note. The visible line is `aria-hidden` and this is
+            the only copy anything speaks. */}
+        {note !== null && (
+          <span className="sr-only">{`${gameLogCopy.history.noteSpoken}\u201C${note}\u201D`}</span>
+        )}
       </span>
 
       {confirming ? (
@@ -158,6 +174,31 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
         <span className="w-full">
           <MutationError message={error} />
         </span>
+      )}
+      </div>
+
+      {/* The note line — deck-tuning.md §Note line. Rendered only when there is
+          one, with nothing reserved when there is not. Indented to the mark
+          column on desktop and flush on the phone, where the row stacks anyway.
+          The rule is its own 2px element rather than a border, because the
+          handoff gives it a radius and a background of its own. Quoted in
+          typographic quotes: it is somebody's sentence, not a field's value. */}
+      {note !== null && (
+        <div
+          aria-hidden
+          className="flex gap-[10px] md:gap-[11px] mt-[8px] md:mt-[7px] md:mb-[1px] md:pl-[40px]"
+        >
+          <span className="flex-none w-[2px] rounded-full bg-border-strong" />
+          {/* No truncation and no line clamp: the 140-character cap is what
+              makes that safe, and it is enforced by the column's own check.
+              `min-w-0` is what makes `break-words` bite — a flex item's
+              automatic min-content width otherwise holds an unbroken 140
+              characters at full width and pushes the row off a 390px screen,
+              which is exactly the case the cap was supposed to make safe. */}
+          <span className="min-w-0 italic text-[12.5px] leading-[1.5] text-fg-muted break-words">
+            {`\u201C${note}\u201D`}
+          </span>
+        </div>
       )}
     </li>
   );

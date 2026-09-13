@@ -223,6 +223,19 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 
 ## Component: Game History Row — Note Line (Surface 2, CHANGE)
 
+> **Shipped 2026-09-13**, ahead of the rest of this table, with `deck_games.note`
+> and its 140-character check (migration `0029_slow_whiplash`). The note is
+> entered by hand against the database — the form's Note Field above is still
+> unbuilt, so nothing in the app writes one yet.
+>
+> **Errata · the breakpoint.** This table declares `sm:` / 640px at the top;
+> `game-log.md` declares `md:` / 768px, and #9's History row — every slot of
+> which this line sits under — is built to it. The line therefore follows `md:`.
+> Switching only the note at 640px would indent it 40px to a "mark column" that
+> the row above it does not adopt until 768px, which is the one arrangement
+> neither table draws. **For Design to ratify or overturn**, ideally by settling
+> one breakpoint for both surfaces rather than for this line alone.
+
 ### Row container (unchanged from #9)
 
 | Property | Mobile | Desktop |

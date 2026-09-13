@@ -18,6 +18,7 @@ const GAME: DeckGame = {
   podSize: 4,
   playedAt: new Date("2026-09-01T12:00:00"),
   versionNumber: 3,
+  note: null,
   worked: ["engine"],
   hurt: ["speed", "mana"],
 };
@@ -123,5 +124,79 @@ describe("GameHistoryRow", () => {
     fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmYes }));
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText(gameLogCopy.history.deleteRefused)).toBeInTheDocument();
+  });
+});
+
+// ── The note ──────────────────────────────────────────────────────────────────
+//
+// `deck_games.note` is written by hand — no form in the app produces one — so
+// the row's whole job is to draw whatever is in the column, to the properties
+// deck-tuning.md §Note line specifies, and to reserve nothing when it is null.
+describe("a game's note", () => {
+  const NOTE = "Kept a two-lander and got there on turn four.";
+  const line = (container: HTMLElement) => container.querySelector(".italic");
+
+  it("draws the note, inside typographic quotes", () => {
+    const { container } = mount({ ...GAME, note: NOTE });
+    // The quotes are the handoff's: this is somebody's sentence, not a value.
+    expect(line(container)).toHaveTextContent(`\u201C${NOTE}\u201D`);
+  });
+
+  // The eye reads a quoted sentence under a row of chips as a note. The ear
+  // reaches it with no idea what it is, which is why deck-tuning.md
+  // §Accessibility puts `note:` in the row's description after the marks.
+  it("says what the line is, to a reader who cannot see it", () => {
+    const { container } = mount({ ...GAME, note: NOTE });
+    const spoken = container.querySelector(".sr-only")!;
+    expect(spoken).toHaveTextContent(`${gameLogCopy.history.noteSpoken}\u201C${NOTE}\u201D`);
+    // Spoken, never drawn: the visible line carries the sentence alone.
+    expect(line(container)!.textContent).toBe(`\u201C${NOTE}\u201D`);
+  });
+
+  // The visible line is a SECOND line, below the row's own controls, so if it
+  // carried the description the ear would meet the delete button between the
+  // marks and the note. One copy is spoken, and it sits where the table puts
+  // it: in the marks cell, right after the chips.
+  it("speaks the note after the marks, not after the delete control", () => {
+    const { container } = mount({ ...GAME, note: NOTE });
+    const spoken = container.querySelector(".sr-only")!;
+    const del = container.querySelector("button[aria-label]")!;
+    expect(spoken.compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // And the line the eye reads is not announced a second time.
+    expect(line(container)!.closest("[aria-hidden]")).not.toBeNull();
+  });
+
+  // Null is the ordinary case — most games have nothing worth writing down. An
+  // empty or blank string is a column somebody cleared by hand, and drawing it
+  // would open a second line for a note nobody wrote. The handoff is explicit:
+  // a row without one is exactly the shipped row, nothing reserved.
+  it.each([null, "", "   "])("draws no note line for %o", (note) => {
+    const { container } = mount({ ...GAME, note });
+    expect(line(container)).toBeNull();
+  });
+
+  it("indents to the mark column and carries the quote rule", () => {
+    const { container } = mount({ ...GAME, note: NOTE });
+    const row = line(container)!.parentElement!;
+    expect(row.className).toContain("md:pl-[40px]");
+    const rule = row.querySelector("span:not(.italic)")!;
+    expect(rule.className).toContain("w-[2px]");
+    expect(rule.className).toContain("bg-border-strong");
+  });
+
+  // No truncation and no clamp. The 140-character cap is what makes that safe,
+  // and the column's own check is what enforces the cap.
+  it("wraps a note at the cap rather than truncating it", () => {
+    const at140 = "x".repeat(140);
+    const { container } = mount({ ...GAME, note: at140 });
+    const text = line(container)!;
+    expect(text).toHaveTextContent(`\u201C${at140}\u201D`);
+    expect(text.className).not.toContain("truncate");
+    expect(text.className).not.toContain("line-clamp");
+    // jsdom lays nothing out, so this is the class contract rather than a
+    // measurement — `break-words` cannot shrink a flex item whose automatic
+    // min-content width is 140 unbroken characters. The measurement is
+    // `scripts/probe-game-note.mjs`, which now requires a cap-length note.
+    expect(text.className).toContain("min-w-0");
   });
 });

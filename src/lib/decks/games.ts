@@ -18,6 +18,13 @@ export type DeckGame = {
    * renders it as a dash rather than dropping the slot.
    */
   versionNumber: number | null;
+  /**
+   * What happened, in the player's own words, or null when there was nothing
+   * worth writing down — which is most games. Nothing in the app writes it:
+   * the log form has no field, and the note is entered against the database by
+   * hand. The row draws whatever is there, to #10's handoff.
+   */
+  note: string | null;
   worked: GameAxisKey[];
   hurt: GameAxisKey[];
 };
@@ -66,6 +73,7 @@ export async function listDeckGames(deckId: string, userId: string): Promise<Dec
       result: deckGames.result,
       podSize: deckGames.podSize,
       playedAt: deckGames.playedAt,
+      note: deckGames.note,
       versionNumber: deckVersions.number,
     })
     .from(deckGames)
@@ -110,6 +118,7 @@ export async function listDeckGames(deckId: string, userId: string): Promise<Dec
     result: row.result as DeckGame["result"],
     podSize: row.podSize,
     playedAt: row.playedAt,
+    note: row.note,
     versionNumber: row.versionNumber,
     worked: byGame.get(row.id)!.worked,
     hurt: byGame.get(row.id)!.hurt,

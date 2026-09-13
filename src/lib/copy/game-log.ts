@@ -253,6 +253,13 @@ export const gameLogCopy = {
     // reads as a rendering fault.
     noMarks: '\u2014',
 
+    // Spoken only, and never drawn. The note's own line is a bare sentence in
+    // quotes, which the eye reads as a note and the ear does not: #10's
+    // deck-tuning table puts `note:` inside the row's accessible description,
+    // after the marks. Lowercase because it is read mid-description rather
+    // than as a heading.
+    noteSpoken: 'note:',
+
     delete: 'Delete this game',
     // One inline confirm, in the row. §4 has no edit action, so
     // delete-and-relog is the correction path and a stray tap loses the only
