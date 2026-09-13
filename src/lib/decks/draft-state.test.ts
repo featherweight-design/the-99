@@ -7,7 +7,7 @@ import {
 } from "./draft-state";
 
 const state = (over: Partial<DraftState> = {}): DraftState => ({
-  version: null, adds: [], addChanges: [], removes: [], basicsChanged: false,
+  version: null, adds: [], addChanges: [], removes: [], basicsChanged: false, basicsMoved: false,
   names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
   claimsKnown: true,
   buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,

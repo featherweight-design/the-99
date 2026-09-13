@@ -180,6 +180,18 @@ try {
       { timeout: 10_000 },
     );
     const after = await readColumn(page);
+    // The optimistic paint satisfies the wait above whether or not the server
+    // took the write, so without this the probe could report a restore that
+    // never happened. The draft's own rows are the proof — polled, because the
+    // paint is by definition ahead of the write it is predicting.
+    let persisted = 0;
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const [row] = await sql`
+        select count(*)::int as n from deck_cards where deck_id = ${deckId}`;
+      persisted = row.n;
+      if (persisted === 6) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
 
     // #185, untouched: remove a card on the deck page and the dashed receipt
     // with its own `Undo` is still what is left behind.
@@ -200,7 +212,7 @@ try {
         .catch(() => "NO UNDO");
     }
 
-    report[vp.label] = { before, after, receipt };
+    report[vp.label] = { before, after, persisted, receipt };
     await context.close();
   }
 } finally {
@@ -226,6 +238,9 @@ for (const [label, r] of Object.entries(report)) {
   check("heading before", r.before.heading, "Going out · 3");
   check("heading after the press", r.after.heading, "Going out · 2");
   check("rows after the press", r.after.controls, 2);
+  // Five cards in the seeded draft, and the restore makes six. Read from the
+  // database, because the optimistic paint says nothing about the server.
+  check("the draft actually grew", r.persisted, 6);
   check("page scrolls sideways", r.before.overflowsX, false);
   for (const [i, row] of r.before.rows.entries()) {
     // 44px square at 390px, 34px tall above it. The width floor is the phone's

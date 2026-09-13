@@ -41,6 +41,15 @@ export type DraftState = {
    *  must still be committable. Without this flag `changeCount` is 0, the banner
    *  takes its clean branch, and a real edit has no route to a commit. */
   basicsChanged: boolean;
+  /** Whether ANY basic land moved, alone or alongside other cards.
+   *
+   *  `basicsChanged` above answers a narrower question — it is set only when
+   *  NOTHING else moved — so on a mixed draft it reads false and cannot be used
+   *  to ask "does this draft survive without its non-basic changes?". The review
+   *  page asks exactly that when its last drawn row is put back: a draft that
+   *  also moved a basic is still a draft, and one that did not has dissolved
+   *  and the route redirects. */
+  basicsMoved: boolean;
   /** Oracle name per changed card, both lists — what the banner's inline
    *  density says at six changes or fewer. */
   names: Map<string, string>;

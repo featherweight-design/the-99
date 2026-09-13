@@ -132,6 +132,11 @@ export interface DiscardConfirmProps {
   onDiscarded?: () => void;
   /** Spacing the host needs around the box, never its own surface. */
   className?: string;
+  /** Shut while another write to the same draft is in flight. The question can
+   *  be open before that write starts — the trigger's own guard cannot reach it,
+   *  because the trigger is unmounted while the question is up — and a discard
+   *  that wins the race throws away a card the reader has just put back. */
+  disabled?: boolean;
 }
 
 /**
@@ -171,6 +176,7 @@ export function DiscardConfirm({
   onCancel,
   onDiscarded,
   className = "",
+  disabled = false,
 }: DiscardConfirmProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -259,7 +265,9 @@ export function DiscardConfirm({
         </button>
         <button
           type="button"
-          disabled={pending}
+          // The destructive half only. The way out stays live: a reader who
+          // cannot discard right now should still be able to stop asking.
+          disabled={pending || disabled}
           aria-describedby={whyId}
           onClick={() => {
             if (inFlightRef.current) return;

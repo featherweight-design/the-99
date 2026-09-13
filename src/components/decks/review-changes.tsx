@@ -77,6 +77,9 @@ type ReviewChangesProps = {
 /** Stable, so `useOptimistic`'s base identity never changes between renders. */
 const EMPTY_RESTORED: string[] = [];
 
+/** The `Coming in` column's error map, which is always empty. */
+const EMPTY_ERRORS: Record<string, string> = {};
+
 /** The id a group heading takes focus by, scoped to its column: both columns can
  *  hold an `Artifacts` group, and two elements with one id is a focus target
  *  that lands on whichever came first. */
@@ -153,7 +156,7 @@ function Column({
   phoneHeading,
   onPulled,
   onRestore,
-  restoreError,
+  restoreErrors,
   columnKey,
   newestAsOf,
   claimsKnown,
@@ -177,9 +180,9 @@ function Column({
   /** Null in the `Coming in` column, which has nothing to put back. The list
    *  owns the write because the row is what leaves. */
   onRestore: ((card: { oracleId: string; name: string }) => void) | null;
-  /** The oracle id whose restore came back refused or threw, and what to say.
-   *  One at a time: a second attempt clears the first. */
-  restoreError: { oracleId: string; message: string } | null;
+  /** What to say on each row whose restore came back refused or threw, keyed by
+   *  oracle id. Empty in the `Coming in` column, which has no restore. */
+  restoreErrors: Record<string, string>;
   /** Which column this is, so its group headings get ids of their own. Both
    *  columns can hold an `Artifacts` group, and two elements with one id is a
    *  focus target that lands on whichever came first. */
@@ -325,8 +328,8 @@ function Column({
                               card={{ oracleId: row.oracleId, name: row.name }}
                               onRestore={onRestore}
                             />
-                            {restoreError?.oracleId === row.oracleId && (
-                              <MutationError message={restoreError.message} />
+                            {restoreErrors[row.oracleId] && (
+                              <MutationError message={restoreErrors[row.oracleId]} />
                             )}
                           </div>
                         )
@@ -460,9 +463,10 @@ export function ReviewChanges({
     EMPTY_RESTORED,
     (current, oracleId) => [...current, oracleId],
   );
-  const [restoreError, setRestoreError] = useState<{ oracleId: string; message: string } | null>(
-    null,
-  );
+  // Keyed per row, not one slot: the controls stay live while another restore
+  // is going, so two failures in flight would otherwise leave the first row
+  // back on screen with the second row's message — or with none at all.
+  const [restoreErrors, setRestoreErrors] = useState<Record<string, string>>({});
   // Kept, not dropped. Commit and discard serialize with this add on the deck
   // lock, so a commit that wins the race snapshots the cut the optimistic row
   // has already hidden — and the restore then lands as a fresh draft on the
@@ -555,7 +559,12 @@ export function ReviewChanges({
   // is the helper a claim write owes every other deck's availability.
   const restore = useCallback(
     (card: { oracleId: string; name: string }) => {
-      setRestoreError(null);
+      setRestoreErrors((current) => {
+        if (!(card.oracleId in current)) return current;
+        const next = { ...current };
+        delete next[card.oracleId];
+        return next;
+      });
       const groupOfRow = rows.out.find((row) => row.oracleId === card.oracleId)?.cardTypeGroup;
       // Read BEFORE the write, from the figures this render already has: after
       // it, the row is gone from both the optimistic list and the server's.
@@ -571,7 +580,7 @@ export function ReviewChanges({
           // was decided and trying again is the whole remedy. React drops the
           // optimistic id when this transition settles, so the row returns and
           // this message lands on it.
-          setRestoreError({ oracleId: card.oracleId, message: restoreCopy.failed });
+          setRestoreErrors((current) => ({ ...current, [card.oracleId]: restoreCopy.failed }));
           return;
         }
         if (!result.ok) {
@@ -579,14 +588,18 @@ export function ReviewChanges({
           // off-identity card, say, if the catalogue moved under a committed
           // list. Passed through rather than re-worded: it is a sentence about
           // the card, not about this surface.
-          setRestoreError({ oracleId: card.oracleId, message: result.message });
+          setRestoreErrors((current) => ({ ...current, [card.oracleId]: result.message }));
           return;
         }
         // Announced into the region that outlives this row, because the row is
         // removed by its own success. Which sentence depends on what is left.
         // The last change of any kind: the draft is gone and the route goes with
         // it.
-        const dissolving = outAfter === 0 && inCount === 0 && !state.basicsChanged;
+        // `basicsMoved`, not `basicsChanged`: the narrower flag is set only on a
+        // draft where nothing else moved, so on a mixed draft it reads false and
+        // this would announce a dissolution that did not happen — and skip the
+        // focus handoff on a page that is still there.
+        const dissolving = outAfter === 0 && inCount === 0 && !state.basicsMoved;
         draftAnnouncer().textContent =
           dissolving
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
@@ -603,9 +616,17 @@ export function ReviewChanges({
         // announcement above is the receipt for that case, and a landing hash
         // like the commit and discard receipts is a separate piece of work.
         if (!dissolving) {
+          // The row's own group first. It may have gone with the row — a group
+          // of one empties when its row leaves — in which case any other
+          // heading still in the column is the nearest true answer, and only
+          // then the page heading.
           const heading =
-            outAfter > 0 && groupOfRow
-              ? document.getElementById(groupHeadingId(descriptionId, "out", groupOfRow))
+            outAfter > 0
+              ? (groupOfRow &&
+                  document.getElementById(groupHeadingId(descriptionId, "out", groupOfRow))) ||
+                document.querySelector<HTMLElement>(
+                  `[id^="${CSS.escape(descriptionId)}-out-"]`,
+                )
               : null;
           // The page heading is the fallback when the column itself is going.
           // It carries no tabindex of its own — a heading nothing focuses does
@@ -623,7 +644,7 @@ export function ReviewChanges({
     },
     [
       addRestoredId, deckId, descriptionId, inCount, liveCardCount, outCount,
-      rows.out, router, state.basicsChanged, state.version,
+      rows.out, router, state.basicsMoved, state.version,
     ],
   );
 
@@ -778,7 +799,7 @@ export function ReviewChanges({
               // Nothing to put back in this column: the reverse of an add is a
               // removal, and the deck page does that.
               onRestore={null}
-              restoreError={null}
+              restoreErrors={EMPTY_ERRORS}
               columnKey="in"
               // Every figure on this page is the server's — the breakdown beside
               // the heading, the buy count, the row's own tag — so a pull that
@@ -794,7 +815,7 @@ export function ReviewChanges({
               note={copy.outNote(released)}
               rows={outRows}
               onRestore={restore}
-              restoreError={restoreError}
+              restoreErrors={restoreErrors}
               columnKey="out"
               siblings={siblings}
               descriptionId={descriptionId}
@@ -835,6 +856,10 @@ export function ReviewChanges({
                   deckId={deckId}
                   state={state}
                   versionCards={versionCards}
+                  // The question can already be open when a restore starts, and
+                  // the trigger's own guard cannot reach it: the trigger is
+                  // unmounted while the question is up.
+                  disabled={restoring}
                   onCancel={discard.cancel}
                   // This page is a page about a draft, so once the draft is gone
                   // there is nothing here to read: the route's own guard would

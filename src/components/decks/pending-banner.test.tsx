@@ -37,6 +37,7 @@ const empty: DraftState = {
   addChanges: [],
   removes: [],
   basicsChanged: false,
+  basicsMoved: false,
   names: new Map(),
   costs: new Map(),
   prices: new Map(),
