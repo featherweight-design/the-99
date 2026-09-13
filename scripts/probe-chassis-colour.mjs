@@ -24,6 +24,12 @@ const { E2E_AUDIT_USER_PASSWORD: PASSWORD } = FIXTURE
   ? { E2E_AUDIT_USER_PASSWORD: null }
   : requireEnv(["E2E_AUDIT_USER_PASSWORD"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+/**
+ * The wrapper's `px-[10px]` plus its own 1px border, measured from the border
+ * box. `commanders-discover.md` § Colour match records it; this is the figure,
+ * not merely a symmetry.
+ */
+const EXPECTED_GAP = 11;
 
 // Lifted from its siblings, which document at length why the hosted portal
 // cannot be driven unattended and `window.Clerk` can.
@@ -114,12 +120,18 @@ try {
       process.exitCode = 1;
       continue;
     }
-    // One pixel of tolerance for sub-pixel layout; 6 is the padding that was
-    // there, so anything approaching it is the bug back.
-    if (Math.abs(box.left - box.right) > 1) {
+    // Equal is not enough. The wrapper's `px-[10px]` plus its 1px border is 11
+    // either side, and a symmetric change to 8 or 20 would satisfy a
+    // sides-agree check while leaving the specified geometry behind — the same
+    // trap `probe:games-empty` records for its centring assertion. So both: the
+    // sides agree, AND each is the figure `commanders-discover.md` specifies.
+    // One pixel of tolerance for sub-pixel layout; the padding that was there
+    // was 6, so anything approaching it is the bug back.
+    if (Math.abs(box.left - box.right) > 1 || Math.abs(box.left - EXPECTED_GAP) > 1) {
       console.log(
         `\nFAIL: ${route} colour control is ${box.left}px in on the left and ${box.right}px on`
-          + " the right. The box pads both sides equally; nothing inside it adds more.",
+          + ` the right; both should be ${EXPECTED_GAP}px. The box pads both sides equally,`
+          + " and nothing inside it adds more.",
       );
       process.exitCode = 1;
     }

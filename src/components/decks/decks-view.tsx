@@ -195,6 +195,15 @@ export function DecksView({
     // already does with the default — so the stored preference stays off the URL
     // while a filter click rewrites everything else.
     const params = filtersToParams(next.filters, next.sort ?? DEFAULT_DECK_SORT);
+    // AN EXPLICIT ORDER STAYS ON THE URL EVEN WHEN IT IS THE DEFAULT.
+    // `serializeDeckSort` drops `lastPlayed` because "the default serialises as
+    // an absence, so the clean URL is the clean state" — which was true while
+    // absence and default meant the same thing. They no longer do: an absence
+    // now means "follow what this browser stored". So a reader who arrives at
+    // `?sort=lastPlayed`, or presses `Last played`, and then clicks a filter
+    // would have had that order rewritten away and a stored `name` take over on
+    // the next visit. Present means this order; absent means no opinion here.
+    if (next.sort !== null) params.set("sort", next.sort);
     // The shelf writes itself, beside the filters and never inside them.
     const folderValue = shelfToParam(next.shelf);
     if (folderValue !== null) params.set(FOLDER_PARAM, folderValue);

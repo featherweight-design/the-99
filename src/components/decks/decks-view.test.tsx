@@ -443,6 +443,55 @@ describe("DecksView remembers the order", () => {
     expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
   });
 
+  // The label is not the feature. A regression that kept `Sort · Name` in sync
+  // and handed the default to `sortDecks` would pass every case above.
+  // Read off the list items, not `getAllByRole("heading")`: the tile's `h3` sits
+  // inside an `aria-hidden` block — the overlay link carries the accessible name
+  // — so the heading role is not exposed at all.
+  const namesInOrder = () =>
+    screen.getAllByRole("listitem").map((li) => li.querySelector("h3")?.textContent);
+
+  // Three orders, three different sequences. Two of them agreeing by accident is
+  // how an ordering assertion passes while measuring nothing:
+  //   name        → Atraxa, Míriel, Zur
+  //   newest      → Zur, Míriel, Atraxa
+  //   last played → Zur, Atraxa, Míriel
+  const threeDecks = () => [
+    deckOf({ id: "d1", name: "Míriel", createdAt: new Date("2026-03-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-04T00:00:00Z") }),
+    deckOf({ id: "d2", name: "Atraxa", createdAt: new Date("2026-01-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-05T00:00:00Z") }),
+    deckOf({ id: "d3", name: "Zur", createdAt: new Date("2026-06-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-06T00:00:00Z") }),
+  ];
+
+  it("puts the decks in the URL's order, not just the label", () => {
+    window.history.replaceState(null, "", "/decks?sort=newest");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
+  });
+
+  it("puts the decks in the stored order when the URL has no opinion", () => {
+    localStorage.setItem("the99:decks:sort", "name");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Atraxa", "Míriel", "Zur"]);
+  });
+
+  it("keeps an explicit `lastPlayed` on the URL through a filter click", () => {
+    // `serializeDeckSort` drops the default because absence and default used to
+    // mean the same thing. They no longer do — absence means "follow storage" —
+    // so a rewritten URL would hand this list to a stored `name` on the next
+    // visit, and the shared link would stop describing what its sender meant.
+    localStorage.setItem("the99:decks:sort", "name");
+    window.history.replaceState(null, "", "/decks?sort=lastPlayed");
+    renderWide(view(threeDecks()));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "r" } });
+    expect(window.location.search).toContain("sort=lastPlayed");
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+  });
+
   it("holds the stored order through a filter click, which writes no sort", () => {
     // `apply` rewrites every parameter the view owns. Serialising the effective
     // order there would pin the stored preference onto the URL; serialising the
