@@ -145,28 +145,26 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   It writes one deck with no games under the account it signs in as and deletes it in a
   `finally`; point it at `local-dev` or a scratch Neon branch, **never production**.
-- `pnpm check:shared docs/superpowers/inventories/<feature>.json` answers the half of a
-  feature's acceptance that a picture cannot: whether routes that are supposed to carry the
-  same control are doing it by rendering the same component. It reads the same inventories
-  `scripts/contact-sheet.mjs` walks — an inventory with a `shares` block naming a `binding`
-  and a `module`, and a `view` on every row — and passes only when each route's own view
-  imports that binding as a value AND references it.
+- `scripts/contact-sheet.mjs` photographs every surface in a feature's inventory at both widths
+  and lays them out as one image, so a route that never got the feature, or a phone that is wrong
+  while the desktop is right, is visible in a glance. Inventories live in
+  `docs/superpowers/inventories/*.json`.
 
-  Each clause is a hole someone fell down. The filter chassis shipped across five PRs and 79
-  Copilot review rounds with `/commanders`, `/discover` and `/collection` each mounting a
-  per-route wrapper around `FilterChassis`; every check of the form "does this route use the
-  chassis" passed, and the routes did not look alike. `browser.tsx` imports
-  `CHASSIS_WIDE_MIN_PX` and a type from that module and renders its own `FilterBar`, so
-  matching the module rather than the binding calls it shared. A default or namespace import
-  binds something else to a local name that merely reads like the export. And nothing in this
-  repo flags an unused local, so an import alone could be added to buy a green.
+  `pnpm check:shared <inventory>` answers the half a picture cannot: whether routes that are
+  supposed to carry the same control do it by rendering the same component. It reads the same
+  inventories, and does nothing for one with no `shares` block. When a `shares` block is present
+  it passes only when each row's own `view` imports the named `binding` as a value AND references
+  it — the module is not enough (a view can take a constant or a type out of it and render its
+  own copy), the exported name is not the local alias, a default or namespace import binds
+  something else, and nothing here flags an unused local.
 
-  `view` names the route's OWN view file, never a wrapper it mounts — naming the wrapper
-  makes the check pass and say nothing. A shared wrapper is a legitimate answer; a wrapper
-  each is the failure. If routes converge on one wrapper, point `shares.module` at it.
+  **Point `shares.module` at a leaf, not at a composed primitive.** `FilterChassis` takes its
+  controls as props and is meant to be assembled by a route-level wrapper, so requiring each
+  route to import it directly failed three routes for composing it correctly. The invariant fits
+  a component a route renders as-is.
 
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
-- PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
+- PR reviews follow the `pr-review` skill (`~/.claude/skills/pr-review/SKILL.md`), which is the single source of truth across every repo — invoke it rather than working from memory or from any copy. UI features additionally run `feature-acceptance` per PR and again at feature close. This repo merges via **squash**.
 
 ## A correlated subquery in a single-table select must alias and qualify
 
