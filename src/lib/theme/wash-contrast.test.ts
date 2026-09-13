@@ -51,9 +51,9 @@ const alphaAt = (stops: ScrimStops, position: number): number => {
     block ends rather than where it starts. */
 const STATED_BANDS: readonly {
   surface: string;
-  /** `null` where the band draws no vertical ramp, because its ink sits beside
-      the portrait rather than over it — so there is no hold for a block to be
-      keyed to. */
+  /** The block the ramp is keyed to, in pixels from the band's foot — or `null`
+      for a band that draws no vertical ramp at all, because its ink sits beside
+      the portrait rather than over it. */
   labelAtPx: number | null;
   band: number;
   /** The strategy, because the ground and the hold both follow from it: a
@@ -162,9 +162,9 @@ const PORTRAIT_INK: readonly {
   /** The band the surface draws that portrait on, which the vertical ramp is a
       percentage of. */
   band: number;
-  /** The block this row's ramp is keyed to, or null where its ink starts past the
-      ink sits beside the portrait rather than over it, so the band draws no
-      vertical ramp. */
+  /** The block this row's ramp is keyed to, in pixels from the band's foot — or
+      `null` for a band that draws no vertical ramp at all, because its ink sits
+      beside the portrait rather than over it. */
   labelAtPx: number | null;
   x: number;
   /** Percent down the band, for the vertical ramp. */

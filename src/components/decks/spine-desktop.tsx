@@ -285,13 +285,16 @@ export function SpineDesktop({
                     position, so that row — which carries the partner printing
                     control — won the hit test across the bottom of this target.
                     The same defect #534 fixed one control over. */}
-                {/* `self-end`, because the row is `items-center` and the
-                    `items-end` on the heading only aligns the heading's own
-                    child: without this the glyph centres across a two-line name
-                    instead of sitting on its last line. */}
+                {/* `self-center`, because the row's own `items-center` is what
+                    the glyph should follow and the `items-end` on the heading
+                    aligns only the heading's own child. Centred across the title
+                    row: against a two-line name a bottom-aligned glyph reads as a
+                    footnote to the second line rather than as the title's
+                    control. */}
                 <span
-                  // Centred, not bottom-aligned: against a two-line name a
-                  // bottom-aligned glyph reads as a footnote to the second line.
+                  // Centred across the title row, not bottom-aligned: against a
+                  // two-line name a bottom-aligned glyph reads as a footnote to
+                  // the second line.
                   // `marginLeft` rather than the row's gap, because the gap also
                   // sets the distance between the name and everything else.
                   className="relative z-[1] inline-flex flex-none self-center"

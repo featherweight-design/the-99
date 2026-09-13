@@ -54,11 +54,16 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
           colorIdentity={item.colorIdentity}
         />
 
-        {/* §ReadyCard — the block, at the foot and in ONE row: name, pips, type
-            line, fit chip. Three of these were pinned separately — the name at
-            the top, the pips bottom-left, the chip bottom-right — and condensing
-            them is decision 7's answer for this surface: nothing is cut, the
-            band just stops carrying three separate anchors. */}
+        {/* §ReadyCard — the block, at the foot and in TWO rows: name and pips,
+            then the type line with the fit chip at its right. Three of these
+            were pinned separately — the name at the top, the pips bottom-left,
+            the chip bottom-right — and condensing them is decision 7's answer for
+            this surface: nothing is cut, the band just stops carrying three
+            separate anchors.
+
+            Two rows rather than the one it first condensed to, because one row
+            truncated the name to `Preston Garvey, Minutema…` at 390px and a
+            half-truncated name reads as a different commander. */}
         <div
           data-wash-label
           // No right reservation here, and the distinction is worth writing down:

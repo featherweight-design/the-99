@@ -331,10 +331,12 @@ export function SpineMobile({
                     position, so the row underneath won the hit test across the
                     bottom third of this target. The same defect #534 fixed one
                     control over. */}
-                {/* `self-end`, because the row is `items-center` and the
-                    `items-end` on the heading only aligns the heading's own
-                    child: without this the glyph centres across a two-line name
-                    instead of sitting on its last line. */}
+                {/* `self-center`, because the row's own `items-center` is what
+                    the glyph should follow and the `items-end` on the heading
+                    aligns only the heading's own child. Centred across the title
+                    row: against a two-line name a bottom-aligned glyph reads as a
+                    footnote to the second line rather than as the title's
+                    control. */}
                 <span
                   // Centred and set off from the name, as on desktop: against a
                   // two-line title a bottom-aligned glyph reads as a footnote to
