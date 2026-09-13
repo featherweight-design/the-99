@@ -101,7 +101,7 @@ export function ReviewScreen({
               {/* §Matched Count: Label */}
               <div className="text-[11.5px] md:text-[13px] mt-[2px] md:mt-[4px] text-[color:var(--fg-faint)] md:text-[color:var(--fg-muted)]">
                 <span className="md:hidden">cards matched &amp; ready</span>
-                <span className="hidden md:inline">cards matched to the Oracle database — ready to import</span>
+                <span className="hidden md:inline">cards matched to the Oracle database: ready to import</span>
               </div>
             </div>
           </div>
@@ -173,8 +173,8 @@ export function ReviewScreen({
                 className="font-mono uppercase text-[10px] tracking-[0.14em] mb-[8px] md:mb-[10px]"
                 style={{ color: "var(--warning)" }}
               >
-                <span className="md:hidden">Unmatched — {preview.unmatchedRows.length} skipped</span>
-                <span className="hidden md:inline">Unmatched names — {preview.unmatchedRows.length}</span>
+                <span className="md:hidden">Unmatched: {preview.unmatchedRows.length} skipped</span>
+                <span className="hidden md:inline">Unmatched names: {preview.unmatchedRows.length}</span>
               </h2>
               <ul className="flex flex-col gap-[6px]">
                 {unmatchedShown.map((r, i) => (
@@ -217,7 +217,7 @@ export function ReviewScreen({
                 className="font-mono uppercase text-[10px] tracking-[0.14em] mb-[8px] md:mb-[10px]"
                 style={{ color: "var(--danger)" }}
               >
-                Parse errors — {preview.parseErrors.length}
+                Parse errors: {preview.parseErrors.length}
               </h2>
               <ul className="flex flex-col gap-[6px]">
                 {errorsShown.map((e, i) => (

@@ -148,7 +148,7 @@ export function FilterRack({
       resultLine={`${resultSentence(shown, total, lane)}${
         excludedByExactly === null
           ? ""
-          : ` — ${filterCopy.match.excludedAside(excludedByExactly)}`
+          : `, ${filterCopy.match.excludedAside(excludedByExactly)}`
       }`}
       // Compact's persistent row is `search · sort · Filters` (STATES §156), so
       // the trigger joins the trailing cluster rather than sitting in the

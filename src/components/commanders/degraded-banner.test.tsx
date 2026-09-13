@@ -23,7 +23,7 @@ describe("DegradedBanner", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "EDHREC is unreachable. Fit scores reflect pool and role coverage only — synergy receipts are hidden until the connection is restored.",
+        "EDHREC is unreachable. Fit scores reflect pool and role coverage only: synergy receipts are hidden until the connection is restored.",
       ),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);

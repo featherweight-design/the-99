@@ -463,7 +463,7 @@ export function CommanderDetail({
               className="font-mono"
               style={{ fontSize: 10, color: "var(--fg-locked)" }}
             >
-              Synergy receipts hidden — EDHREC data unavailable
+              Synergy receipts hidden: EDHREC data unavailable
             </span>
           </div>
         ) : null}
@@ -701,7 +701,7 @@ export function CommanderDetail({
                 className="font-mono"
                 style={{ fontSize: 11, color: "var(--fg-faint)" }}
               >
-                Synergy receipts hidden — EDHREC data unavailable
+                Synergy receipts hidden: EDHREC data unavailable
               </span>
             </div>
           ) : null}

@@ -288,7 +288,7 @@ export function UploadEntry({
                 </button>
               </span>
               <span className="hidden md:inline">
-                We only need a Name and Quantity column — most exports already include them.
+                We only need a Name and Quantity column: most exports already include them.
               </span>
             </p>
           </div>

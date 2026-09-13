@@ -80,7 +80,7 @@ export default async function CollectionPage() {
         </EmptyStateTitle>
         <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
           A pile of possibilities waiting for a commander. Upload a CSV and the
-          table fills — commanders and decks follow.
+          table fills. Commanders and decks follow.
         </EmptyStateBody>
         <div className="mt-[26px]">
           <PrimaryButton
