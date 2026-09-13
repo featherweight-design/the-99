@@ -113,9 +113,6 @@ export const gameLogCopy = {
     // The objection is friction, not value, so the cost is stated in seconds.
     cost: 'Logging takes about fifteen seconds: did you win, how big was the pod, and the two or three things that decided it.',
     cta: 'Log your first game',
-    // The scope line, drawn in the player's favour. #9 names the weakness and
-    // stops; #10 is not promised, hinted at, or dated.
-    scope: 'This tab tells you what is letting the deck down. What to do about it stays your call.',
   },
 
   // ── The record line and headline (§8.5) ───────────────────────────────

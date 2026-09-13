@@ -168,6 +168,5 @@ describe("GamesPanel — empty", () => {
   it("pitches the pattern rather than the first game", () => {
     mount([]);
     expect(screen.getByText(gameLogCopy.empty.cost)).toBeInTheDocument();
-    expect(screen.getByText(gameLogCopy.empty.scope)).toBeInTheDocument();
   });
 });
