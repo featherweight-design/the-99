@@ -226,7 +226,10 @@ export function DecksView({
     setState({
       ...filtersFromParams(live),
       sort: deckSortFromParams(live.get("sort")),
-      shelf: shelfFromParams(live, folders),
+      // The SERVER's folders: this reconciliation can run before the merged
+      // list below exists, and a folder made a moment ago is on the URL only if
+      // this view put it there.
+      shelf: shelfFromParams(live, serverFolders),
     });
   }
 
