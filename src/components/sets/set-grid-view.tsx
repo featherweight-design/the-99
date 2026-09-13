@@ -630,7 +630,7 @@ export function SetGridView(props: SetGridViewProps) {
                   Rendered for every INDEXED state, not only the incomplete one. Scoped to
                   the incomplete branch it left a complete set's phone with no code and no
                   year at all, because the long provenance paragraph is hidden there too. */}
-              {sections.indexed && releasedAt ? (
+              {sections.indexed ? (
                 <span data-set-provenance-short className="md:hidden">
                   {" · "}
                   {setPageCopy.head.metaShort(code, releasedAt)}

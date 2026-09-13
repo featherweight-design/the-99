@@ -264,8 +264,12 @@ export const setPageCopy = {
     // R3 finding 6, move 2. `meta` is one interpolated string of four values; this is the
     // phone form beside it, never a replacement. The two counts it drops are the two
     // figures move 1 puts on the line above, which is the only reason dropping them is free.
-    metaShort: (code: string, released: string) =>
-      `${code.toUpperCase()} · ${released.slice(0, 4)}`,
+    // The year is optional, because an indexed set with no recorded release date is a
+    // supported catalog state and the code alone still identifies the set. The desktop
+    // string says "an unrecorded date" rather than dropping itself, and the set index
+    // falls back the same way.
+    metaShort: (code: string, released: string | null) =>
+      released ? `${code.toUpperCase()} · ${released.slice(0, 4)}` : code.toUpperCase(),
     ratioAria: (have: number, total: number) =>
       `You have ${have} of ${total} ${total === 1 ? "card" : "cards"} in the base run`,
   },

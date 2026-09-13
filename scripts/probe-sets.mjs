@@ -700,7 +700,14 @@ async function run() {
       };
       const h1 = el.querySelector("h1");
       const shortCode = document.querySelector("[data-set-provenance-short]");
-      const shown = (node) => node !== null && getComputedStyle(node).display !== "none";
+      // PRESENCE and DISPLAY reported separately, because collapsing them is how a guard
+      // reads clean on a node that is not there: `display` of a missing element is not
+      // "none", it is nothing, and a negated check turns that into a pass. Each marker
+      // therefore answers two questions, and the assertions below ask both.
+      const marker = (sel) => {
+        const node = document.querySelector(sel);
+        return { present: node !== null, display: node && getComputedStyle(node).display };
+      };
       return {
         total: Math.round(el.getBoundingClientRect().height),
         title: h1 ? Math.round(h1.getBoundingClientRect().height) : null,
@@ -708,13 +715,16 @@ async function run() {
         // version of this guard read `h1.parentElement.textContent`, which is the whole
         // identity block — ratio, provenance and note included — so it never ended in the
         // year and reported clean no matter where the code was put.
-        shortCodePresent: shortCode !== null,
-        codeInsideTitle: shortCode !== null && h1 !== null && h1.contains(shortCode),
+        shortCode: {
+          present: shortCode !== null,
+          display: shortCode && getComputedStyle(shortCode).display,
+          insideTitle: shortCode !== null && h1 !== null && h1.contains(shortCode),
+        },
         // The two lines moves 1 and 2 remove. Structural, and true on any fixture — which
         // an absolute height bound is not: a set with a short title or no cost strip is
         // already under 388px with none of this PR applied.
-        longProvenanceShown: shown(document.querySelector("[data-set-provenance-long]")),
-        noteShown: shown(document.querySelector("[data-set-ratio-note]")),
+        longProvenance: marker("[data-set-provenance-long]"),
+        note: marker("[data-set-ratio-note]"),
         chips: px("[data-set-chips]"),
         result: px("[data-set-result]"),
       };
@@ -746,25 +756,33 @@ async function run() {
       // marker as loudly as on a misplaced one, because a guard that cannot find the thing
       // it guards is not passing.
       failures += !report(
-        "the phone's provenance is on the page and off the title line",
-        phoneHead.shortCodePresent && !phoneHead.codeInsideTitle,
-        !phoneHead.shortCodePresent
+        "the phone's provenance is on the page, shown, and off the title line",
+        phoneHead.shortCode.present
+          && phoneHead.shortCode.display !== "none"
+          && !phoneHead.shortCode.insideTitle,
+        !phoneHead.shortCode.present
           ? "no [data-set-provenance-short] — the guard measured nothing"
-          : phoneHead.codeInsideTitle
-            ? `the set code is inside the h1, title ${phoneHead.title}px`
-            : `title ${phoneHead.title}px, code on the ratio line`,
+          : phoneHead.shortCode.display === "none"
+            ? "the short provenance is present but display:none at 390"
+            : phoneHead.shortCode.insideTitle
+              ? `the set code is inside the h1, title ${phoneHead.title}px`
+              : `title ${phoneHead.title}px, code on the ratio line, display ${phoneHead.shortCode.display}`,
       );
       // Moves 1 and 2, asserted where they actually happen rather than through a height.
-      failures += !report(
-        "the long provenance is not on the phone",
-        !phoneHead.longProvenanceShown,
-        phoneHead.longProvenanceShown ? "still displayed at 390" : "display:none at 390",
-      );
-      failures += !report(
-        "the scope note is not on the phone for an indexed set",
-        !phoneHead.noteShown,
-        phoneHead.noteShown ? "still displayed at 390" : "display:none at 390",
-      );
+      // Both halves stated: a node that has been DELETED is not the same result as one
+      // correctly hidden, and only one of the two is what this PR did.
+      for (const [label, m] of [
+        ["the long provenance", phoneHead.longProvenance],
+        ["the scope note", phoneHead.note],
+      ]) {
+        failures += !report(
+          `${label} is present and not shown on the phone`,
+          m.present && m.display === "none",
+          !m.present
+            ? "the marker is missing entirely — the node was removed, not hidden"
+            : `display ${m.display} at 390`,
+        );
+      }
     }
 
     // The search field (§29). It is the only child of the control row that shrinks, and the

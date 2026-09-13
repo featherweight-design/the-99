@@ -39,7 +39,14 @@ const p = (n: string, over: Partial<SetPrinting> = {}): SetPrinting => ({
   isVariant: false, ...over,
 });
 
-function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Duskmourn") {
+function view(
+  printings: SetPrinting[],
+  ownedNumbers: string[] = [],
+  name = "Duskmourn",
+  // A supported catalog state, and the only prop a case here needs to vary beyond the two
+  // above — passed rather than duplicating the whole render for one null.
+  releasedAt: string | null = "2026-09-01",
+) {
   const holdings = ownedNumbers.map((n) => ({
     oracleId: `o-${n}`, collectorNumber: n, finish: "nonfoil" as const,
   }));
@@ -51,7 +58,7 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
       code="dsk"
       name={name}
       iconSvgUri={null}
-      releasedAt="2026-09-01"
+      releasedAt={releasedAt}
       ownedFingerprint=""
       artGeneration={0}
       cells={placeCells(printings, holdings)}
@@ -1823,10 +1830,9 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
   });
 
   // Move 2. The full interpolated string is the desktop form and is unchanged; the phone
-  // gets what identifies the set, on the title line's trailing edge.
-  // On the RATIO line, not the title line — see the readiness correction. The title is
-  // `line-clamp-2` and the code beside it wrapped a real set name, costing more than the
-  // move saved.
+  // gets what identifies the set, on the RATIO line's trailing edge. The handoff names the
+  // title line; that placement wrapped a real set name and is corrected in the readiness
+  // doc, so the title line appears here only as the thing being ruled out.
   it("rides a short provenance on the ratio line and hides the long one", () => {
     stubDesktop(false);
     const { container } = view(indexed(), []);
@@ -1918,5 +1924,31 @@ describe("SetGridView — the desktop head is untouched by finding 6", () => {
     expect(status).toBeDefined();
     const shown = textOf(status as HTMLElement, "span", desktopOnlyHidden);
     expect(shown).toMatch(/3 cells · 1 yours, 2 missing/);
+  });
+});
+
+// An indexed set with no recorded release date is a supported catalog state: the desktop
+// string says "an unrecorded date" rather than dropping itself, and the set index falls
+// back to the code alone. Gated on the date, the phone lost the code with it.
+describe("SetGridView — the phone provenance without a release date", () => {
+  it("shows the code alone rather than nothing", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: true })], [], "Duskmourn", null,
+    );
+    const short = container.querySelector("[data-set-provenance-short]");
+    expect(short).toBeTruthy();
+    expect(short?.textContent).toMatch(/DSK/);
+    expect(short?.textContent).not.toMatch(/null|undefined|NaN/);
+  });
+
+  // The desktop form does not drop itself either; it names the gap.
+  it("keeps the desktop string naming the unrecorded date", () => {
+    stubDesktop(true);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: true })], [], "Duskmourn", null,
+    );
+    expect(container.querySelector("[data-set-provenance-long]")?.textContent)
+      .toMatch(/an unrecorded date/);
   });
 });
