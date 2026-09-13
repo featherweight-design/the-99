@@ -5,10 +5,21 @@
 read it, not this document's prose, for what a surface ships. §6 is an errata
 table: it quotes the superseded values (38/46/63, 40, 57, 46, 83) alongside their
 corrections, so a figure appearing there is not a shipped one unless §5c repeats
-it. Two things stayed open and neither blocked: `/decks` colour filtering still
-reads `commanderColorIdentity` alone, so a pair filters on its primary while
-every surface words the union, and the 640–699px two-up crop loss remains — both
-need files a live filter round owns.
+it. **Amended 2026-09-13 by PR #556, and one of the amendments overturns the
+handoff: §A4 is reverted.** The resume row keeps the treatment it has always
+shipped — a 72px band with a 99px portrait column — not the 168px `cover` band
+this round flipped it to. §A4, the aspect rule that produced it, and every
+figure derived from it (`labelAtPx 53`, the cover shadow on that row's strings)
+describe a row that no longer ships. The reason is not arithmetic: the flip was
+Design's ruling and this verdict carried it, and Hugh's call is that it changed
+a surface nobody asked to change. See §6a for the full list of what that
+reverted, including the restored portrait's own figures.
+
+Two things stayed open and neither blocked: `/decks` colour filtering reads
+`commanderColorIdentity` alone, so a pair filters on its primary while every
+surface words the union — now **issue #581**, and the round itself created that
+discrepancy by adding the union to the tile — and the 640–699px two-up crop loss
+remains, which is `decks-view.tsx`, a file PR #573 is currently editing.
 
 This document was the design record and the plan the build followed: the slices
 were PRs 2 through 6 of the plan, and the deck slice shipped as two because the
@@ -237,6 +248,33 @@ wash. **Nothing in this PR is built** — it is the record, and each figure land
 with the slice that draws its surface. `wash-contrast.test.ts` is to hold all
 seven, and the browser probe is to compare each against the block it measures on
 the laid-out page; both are build work, scheduled in the plan's steps 1 and 4.
+
+## §6a Overturned after shipping — §A4, the resume row
+
+Recorded here because a reader of §A4, of the aspect rule, or of the tracker
+would otherwise re-apply a flip that has been reverted once.
+
+| The handoff says | What ships |
+| --- | --- |
+| §A4: "the resume row's whole exception is deleted" — band 72's figures, its `--surface-inset` ground, the 116px type inset and the no-shadow exemption all go | The exception stands. 72px band, 99px portrait column, `--surface-inset` ground, 116px type inset, no text shadow on that row |
+| The aspect rule's one flip: "the resume row leaves `left-portrait`" at 2.3–3.1:1 | It stays `left-portrait`. The rule is unchanged for every other render; this row is its one exception |
+| Render 02 at a 168 `cover` band, `labelAtPx` 53 (verdict §5c) | 72 band, `labelAtPx="flat"` — no vertical ramp at all, because the row's ink sits beside the portrait rather than over it |
+| Every string on that row takes `COVER_INK_SHADOW` | No string on that row takes a shadow. Its type starts at the 116px inset, clear of the art |
+
+Restoring it meant restoring what SHIPPED rather than what the rule derives, and
+two figures differ from their formulas: the portrait draws at **0.95** (the lift
+that layer took when #517 deleted the ambient copy beneath it) and its clear stop
+is an explicit **58** where `maskEnd% × 99` gives 61. `PORTRAITS[99]` carries a
+`clearTo` override for exactly that, and `wash-contrast.test.ts` reads the
+override rather than re-deriving it — composing the rule's 61 there measured a
+gradient three pixels from the one the row draws.
+
+One layout change did come with the revert: the rows are two-up only from
+1000px of viewport. Each needs 255px before the commander's name gets a pixel
+(116 inset + a ~62px pill + 14 gap + a ~45px count + 18 padding), and the
+dashboard's left column is the viewport less 388px — so at 640px each row was
+120px and its count was clipped away. Below 1000px they stack, and the inset
+tightens to 108 with 10px of right padding.
 
 ## §6 Errata against the handoff, carried here rather than sent back
 
