@@ -265,4 +265,101 @@ describe("DecksView", () => {
     expect(screen.queryByText("0 of 0")).toBeNull();
     expect(screen.getByText("9 commanders buildable from 1,284 cards")).toBeInTheDocument();
   });
+
+  // ── The shelf (PR 1 of the folders round) ───────────────────────────────
+  //
+  // Nothing draws a shelf yet, so these drive it the way PR 1 actually exposes
+  // it: through the URL. What is proved is that the shelf narrows the grid
+  // before the filters run, that both denominators follow it, that clearing the
+  // filters does not clear it, and that a shelf which stops existing falls back
+  // instead of showing an empty grid.
+
+  const FOLDER_A = "11111111-1111-4111-8111-111111111111";
+  const FOLDER_B = "22222222-2222-4222-8222-222222222222";
+  const shelvedDecks = () => [
+    deckOf({ id: "a1", name: "Filed one", folderId: FOLDER_A, folderName: "Cube night" }),
+    deckOf({ id: "a2", name: "Filed two", folderId: FOLDER_A, folderName: "Cube night" }),
+    deckOf({ id: "b1", name: "Other shelf", folderId: FOLDER_B, folderName: "Commander night" }),
+    deckOf({ id: "u1", name: "Unfiled one" }),
+  ];
+  const twoFolders: DeckFolderWithCount[] = [
+    { id: FOLDER_A, name: "Cube night", createdAt: new Date("2026-09-01"), deckCount: 2 },
+    { id: FOLDER_B, name: "Commander night", createdAt: new Date("2026-09-02"), deckCount: 1 },
+  ];
+
+  it("narrows the grid to the shelf named on the URL", () => {
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    renderWide(view(shelvedDecks(), twoFolders));
+    expect(screen.getByText("Filed one")).toBeInTheDocument();
+    expect(screen.getByText("Filed two")).toBeInTheDocument();
+    expect(screen.queryByText("Other shelf")).toBeNull();
+    expect(screen.queryByText("Unfiled one")).toBeNull();
+  });
+
+  it("divides the result line by the shelf, not by the library", () => {
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    renderWide(view(shelvedDecks(), twoFolders));
+    // Four decks exist; two are on this shelf.
+    expect(document.querySelector("[data-chassis-row='result']")?.textContent).toContain("2 decks");
+  });
+
+  it("holds only the unfiled decks on `none`", () => {
+    window.history.replaceState(null, "", "/decks?folder=none");
+    renderWide(view(shelvedDecks(), twoFolders));
+    expect(screen.getByText("Unfiled one")).toBeInTheDocument();
+    expect(screen.queryByText("Filed one")).toBeNull();
+  });
+
+  it("draws an empty shelf as an empty grid, with the chassis still mounted", () => {
+    const empty: DeckFolderWithCount[] = [
+      { id: FOLDER_A, name: "Cube night", createdAt: new Date("2026-09-01"), deckCount: 0 },
+    ];
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = renderWide(view([deckOf({ id: "u1", name: "Unfiled one" })], empty));
+    expect(screen.queryByText("Unfiled one")).toBeNull();
+    // The chassis is never replaced by an emptiness — STATES' first invariant.
+    expect(container.querySelector("[data-chassis-row='controls']")).toBeTruthy();
+  });
+
+  it("keeps the shelf when the filters are cleared", () => {
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}&q=filed`);
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /Clear all filters/ }));
+    expect(window.location.search).toBe(`?folder=${FOLDER_A}`);
+    expect(screen.getByText("Filed one")).toBeInTheDocument();
+    expect(screen.queryByText("Unfiled one")).toBeNull();
+  });
+
+  it("falls back to All decks when a URL names a folder the player does not have", () => {
+    // Read at mount: the shelf is resolved against the folders that exist.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    renderWide(view(shelvedDecks(), []));
+    expect(screen.getByText("Unfiled one")).toBeInTheDocument();
+    expect(screen.getByText("Filed one")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
+  it("falls back when the selected folder disappears UNDER the mounted view", () => {
+    // What a delete actually leaves behind. The action revalidates `/decks`, and
+    // the router can hand this client component new props without remounting it
+    // — so the mount-time resolution above never runs again, and the shelf would
+    // otherwise go on naming a folder that is gone.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { rerender } = renderWide(view(shelvedDecks(), twoFolders));
+    expect(screen.queryByText("Unfiled one")).toBeNull();
+
+    rerender(view(shelvedDecks(), [twoFolders[1]]));
+    expect(screen.getByText("Unfiled one")).toBeInTheDocument();
+    expect(screen.getByText("Other shelf")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+    expect(document.querySelector("[data-chassis-row='result']")?.textContent).toContain("4 decks");
+  });
+
+  it("ignores a hand-edited folder id", () => {
+    window.history.replaceState(null, "", "/decks?folder=nope");
+    renderWide(view(shelvedDecks(), twoFolders));
+    expect(screen.getByText("Unfiled one")).toBeInTheDocument();
+    expect(document.querySelector("[data-chassis-row='result']")?.textContent).toContain("4 decks");
+  });
+
 });

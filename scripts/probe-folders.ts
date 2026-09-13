@@ -25,6 +25,7 @@ import {
 } from "../src/lib/decks/folders";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { validateFolderName } from "../src/lib/decks/folder-name";
+import { isUniqueViolation, sqlstate } from "../src/lib/db-error";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -92,13 +93,16 @@ async function main() {
 
   // A duplicate name within one player is refused by the unique index, not by a
   // check the create path could forget.
-  let duplicateRefused = false;
+  let duplicateCode: string | null = null;
   try {
     await createFolder(USER, "Commander night");
-  } catch {
-    duplicateRefused = true;
+  } catch (error) {
+    // Through `sqlstate`, because drizzle wraps the driver error and the code
+    // sits on the cause — which is the whole reason that helper exists.
+    if (!isUniqueViolation(error)) throw error;
+    duplicateCode = sqlstate(error);
   }
-  check("a duplicate folder name is refused", duplicateRefused, true);
+  check("a duplicate folder name is refused by the unique index", duplicateCode, "23505");
 
   // The same name under a different player is fine — the constraint is scoped.
   const twin = await createFolder(OTHER, "Commander night");
@@ -154,13 +158,16 @@ async function main() {
   const sameName = await renameFolder(shelf.id, USER, "Commander evening");
   check("renaming to its own name is a no-op, not a collision", sameName?.name, "Commander evening");
 
-  let renameDuplicateRefused = false;
+  // The SQLSTATE, not merely "something threw": a bare catch would let a
+  // transient failure pass for the index's refusal and hide the real fault.
+  let renameDuplicateCode: string | null = null;
   try {
     await renameFolder(shelf.id, USER, "Empty shelf");
-  } catch {
-    renameDuplicateRefused = true;
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
+    renameDuplicateCode = sqlstate(error);
   }
-  check("a rename onto an existing name is refused", renameDuplicateRefused, true);
+  check("a rename onto an existing name is refused by the unique index", renameDuplicateCode, "23505");
 
   check(
     "another player's folder cannot be renamed",

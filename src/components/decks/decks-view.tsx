@@ -9,7 +9,7 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
@@ -40,7 +40,9 @@ import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import {
+  ALL_DECKS,
   FOLDER_PARAM,
+  UNFILED,
   narrowToShelf,
   shelfCounts,
   shelfFromParams,
@@ -198,6 +200,22 @@ export function DecksView({
   // because `/collection`'s seven controls need 987 and the row must never wrap.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
+  // THE SELECTED SHELF CAN STOP EXISTING UNDER THE READER. A folder action
+  // revalidates `/decks`, and the App Router can hand this client component new
+  // server props without remounting it — so a deleted folder would leave
+  // `state.shelf` naming an id that is no longer in `folders`, and the grid and
+  // both denominators would read as an empty shelf rather than falling back.
+  //
+  // Adjusted during render rather than in an effect, the way the breakpoint
+  // reconciliation below is: React re-runs this pass before touching the DOM, so
+  // nothing paints against the missing shelf. The URL is rewritten too — left
+  // alone it would restore the dead shelf on the next mount.
+  const shelfMissing =
+    state.shelf !== null
+    && state.shelf !== UNFILED
+    && !folders.some((f) => f.id === state.shelf);
+  if (shelfMissing) setState({ ...state, shelf: ALL_DECKS });
+
   // Crossing to wide unmounts the sheet but would leave `open` true, so
   // crossing back would remount it already open — a modal the reader never
   // asked for, with the search field stealing focus on the way in.
@@ -215,6 +233,24 @@ export function DecksView({
     // sheet.
     else if (!wide && sheet.handOffFocus) setSheet({ ...sheet, handOffFocus: false });
   }
+
+  // The URL half of that reconciliation, and the one part that belongs in an
+  // effect: `replaceState` is a DOM write, not state, so it cannot happen during
+  // render. Left undone, the dead `?folder=` would restore the vanished shelf on
+  // the next mount.
+  //
+  // Keyed on the FOLDER LIST and measured against the live URL, not against
+  // `shelfMissing`: the render-time reset above clears that flag before any
+  // effect runs, so an effect watching it would never fire.
+  useEffect(() => {
+    const live = new URLSearchParams(window.location.search);
+    const named = live.get(FOLDER_PARAM);
+    if (!named || named === UNFILED) return;
+    if (folders.some((f) => f.id === named)) return;
+    live.delete(FOLDER_PARAM);
+    const query = live.toString();
+    window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
+  }, [folders]);
 
   // `chipLabels` already knows how to remove one value; the chassis only needs
   // the label and the callback, so this is a shape change rather than a second

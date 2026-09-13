@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
+import { isUniqueViolation } from "../../lib/db-error";
 import {
   createFolder,
   deleteFolder,
@@ -10,6 +11,7 @@ import {
   renameFolder,
   type DeckFolder,
 } from "../../lib/decks/folders";
+import { validateFolderName } from "../../lib/decks/folder-name";
 
 // The four acts on a shelf. Separate from `actions.ts` because nothing here
 // touches a decklist, a version or a claim — the one write that reaches a deck
@@ -44,13 +46,19 @@ export type CreateFolderResult =
   | { ok: true; folder: Pick<DeckFolder, "id" | "name"> }
   | { ok: false; reason: "duplicate" | "invalid" | "refused" };
 
-/** Postgres 23505. Read off the SQLSTATE rather than the message, which is
- *  localised and version-dependent. */
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" && error !== null && "code" in error
-    && (error as { code?: unknown }).code === "23505"
-  );
+/**
+ * The name rule, asked before the write rather than caught after it.
+ * `validateFolderName` throws — it is shared with the deck-name path, whose
+ * callers want the exception — so this is the boolean form of the same rule and
+ * not a second copy of it.
+ */
+function isValidName(name: string): boolean {
+  try {
+    validateFolderName(name);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -60,6 +68,11 @@ function isUniqueViolation(error: unknown): boolean {
  */
 export async function createFolderAction(name: unknown): Promise<CreateFolderResult> {
   if (typeof name !== "string") return { ok: false, reason: "invalid" };
+  // VALIDATED BEFORE THE WRITE, not by catching what the write throws. The
+  // validator is pure, so the only refusal it can produce is a name rule — and
+  // catching it downstream would put every database failure in the same branch,
+  // reporting an outage as bad input.
+  if (!isValidName(name)) return { ok: false, reason: "invalid" };
   const userId = await requireUserId();
 
   try {
@@ -67,11 +80,11 @@ export async function createFolderAction(name: unknown): Promise<CreateFolderRes
     folderSurfaces();
     return { ok: true, folder: { id: folder.id, name: folder.name } };
   } catch (error) {
+    // ONLY the unique index. Everything else is a real failure and keeps
+    // travelling to the action's error boundary: a caller told "invalid" by a
+    // timeout would be shown a name refusal for a name that was fine.
     if (isUniqueViolation(error)) return { ok: false, reason: "duplicate" };
-    // `validateFolderName` throws on an empty or control-character name. The
-    // field disables its own submit on empty, so this is the hand-crafted call
-    // rather than the reachable one — refused, not crashed.
-    return { ok: false, reason: "invalid" };
+    throw error;
   }
 }
 
@@ -84,6 +97,7 @@ export async function renameFolderAction(
   name: unknown,
 ): Promise<RenameFolderResult> {
   if (!isUuid(folderId) || typeof name !== "string") return { ok: false, reason: "invalid" };
+  if (!isValidName(name)) return { ok: false, reason: "invalid" };
   const userId = await requireUserId();
 
   try {
@@ -95,7 +109,7 @@ export async function renameFolderAction(
     return { ok: true, folder: { id: folder.id, name: folder.name } };
   } catch (error) {
     if (isUniqueViolation(error)) return { ok: false, reason: "duplicate" };
-    return { ok: false, reason: "invalid" };
+    throw error;
   }
 }
 
