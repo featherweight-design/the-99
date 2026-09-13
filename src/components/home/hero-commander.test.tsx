@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { HeroCommander } from "./hero-commander";
@@ -23,12 +23,36 @@ function item(over = {}) {
 }
 
 describe("HeroCommander", () => {
-  it("inherits the deck card's band exactly", () => {
+  // The page header band, 288, stated. It used to inherit the deck tile's
+  // aspect and floor, which was the right instinct — one answer to one question
+  // — and the wrong shape: a hero and a grid cell are different jobs, so they
+  // take different bands and neither takes a ratio.
+  it("states the header band rather than inheriting a ratio and a floor", () => {
     const { container } = render(<HeroCommander item={item()} inUse={0} />);
-    const band = container.querySelector(".hero-band");
-    expect(band?.className).toContain("aspect-[2.2/1]");
-    expect(band?.className).toContain("min-h-[104px]");
-    expect(band?.className).not.toContain("h-[186px]");
+    const band = container.querySelector<HTMLElement>(".hero-band");
+    expect(band?.style.height).toBe("288px");
+    expect(band?.className).not.toMatch(/aspect-\[/);
+    expect(band?.className).not.toMatch(/min-h-\[/);
+    expect(band?.firstElementChild).toHaveAttribute("data-art-wash-band", "288");
+  });
+
+  // Decision 7 for this surface: nothing is cut from the band, but the name, the
+  // pips and the fit chip stop being three separate anchors — one at the top and
+  // two pinned to opposite bottom corners — and become one row at the foot. That
+  // is what makes a 38px block arithmetic rather than an estimate.
+  it("condenses the band's three anchors into one block at the foot", () => {
+    const { container } = render(<HeroCommander item={item()} inUse={0} />);
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    expect(block.className).toContain("bottom-0");
+    expect(block.textContent).toContain("Atraxa, Praetors' Voice");
+    expect(block.querySelector(".hero-fit-chip")).not.toBeNull();
+    expect(block.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    // Nothing pinned to the top edge any more. The wash's own root is `top-0`
+    // and is not ink — it is the band.
+    const pinnedToTop = Array.from(
+      container.querySelectorAll<HTMLElement>(".hero-band .top-0"),
+    ).filter((el) => !el.hasAttribute("data-art-wash-band"));
+    expect(pinnedToTop).toHaveLength(0);
   });
 
   // Decision 3: a chip over art takes an opaque plate and a hairline, never an
@@ -48,11 +72,38 @@ describe("HeroCommander", () => {
     expect(footer.querySelector(".hero-band")).toBeNull();
   });
 
+  // The route, not just the words. The old CTA pointed at
+  // `/decks/new?commander=<oracleId>`, which reads identically to anyone
+  // checking the label — and this round's whole ruling is that nobody builds a
+  // deck without seeing the pool first.
+  it("points its one action at the commander's own page", () => {
+    render(<HeroCommander item={item()} inUse={0} />);
+    expect(screen.getByRole("link", { name: "See the pool" }).getAttribute("href")).toBe(
+      "/commanders/atraxa-praetors-voice",
+    );
+  });
+
   it("draws the frame-free crop, never the printed card", () => {
     const { container } = render(
       <HeroCommander item={item({ imageUri: "https://example.test/printed.jpg" })} inUse={0} />,
     );
     expect(container.innerHTML).toContain("atraxa-crop.jpg");
     expect(container.innerHTML).not.toContain("printed.jpg");
+  });
+
+  // STATES draws this block as one row of name · pips · type · fit chip, and
+  // decision 7 condenses this surface without cutting anything from it — so
+  // hiding the type line on a phone would have been a cut dressed as a condense.
+  it("draws the type line at both widths, as the child that gives", () => {
+    const { container } = render(<HeroCommander item={item()} inUse={0} />);
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    const typeLine = Array.from(block.querySelectorAll("p")).find((p) =>
+      p.textContent?.includes("Legendary"),
+    )!;
+    expect(typeLine).toBeDefined();
+    expect(typeLine.className).not.toContain("hidden");
+    // The name keeps its characters; a half-truncated name reads as a different
+    // commander, while a half-truncated type line still reads as a type line.
+    expect(typeLine.style.flexShrink).toBe("1000");
   });
 });

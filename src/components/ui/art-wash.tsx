@@ -5,26 +5,7 @@ import { commanderGradient } from "../../lib/collection/gradients";
 const tint = (token: string, pct: number) =>
   `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
 
-/** LEGACY — the top ramp, as `[alphaPercent, positionPercent]` pairs. One
-    commander-image decision retires it: every band labels at its bottom edge, so
-    nothing prints at a band's top and the ramp veils the one part of the crop
-    `center top` puts the face in. It survives only until the last
-    `labelEdge: "top"` call site migrates (`hero-commander.tsx`, `deck-card.tsx`),
-    and goes with the `labelEdge` prop and its stylesheet override.
-    @deprecated retires with the last `labelEdge` consumer. */
-export type LabelEdge = "top" | "bottom";
-
 export type ScrimStops = readonly (readonly [number, number])[];
-
-/** @deprecated retires with the last `labelEdge: "top"` consumer. */
-export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
-  top: [
-    [78, 0],
-    [78, 31],
-    [14, 62],
-    [14, 100],
-  ],
-};
 
 /** The bands a commander's image is drawn at. Four plain numbers chosen per
     class, rather than an aspect ratio that made a band's height a function of
@@ -33,12 +14,6 @@ export const COVER_SCRIM_STOPS: { top: ScrimStops } = {
     secondary cell on a page about something else is 168. What governs which is
     what the box is for, never the viewport. */
 export type BandHeight = 168 | 208 | 248 | 288;
-
-/** @deprecated the aspect-ratio bands, keyed by their own height. `148` retires
-    with the two commander rows, `168` with the deck spines — `spine-desktop.tsx`
-    is a live consumer of it — and `72` with the resume row, so the type itself
-    goes only once all three have migrated. */
-export type Band = 168 | 148 | 72;
 
 /** The ramp under a label block, in `[alphaPercent, positionPercent]` pairs:
     clear above the block, climbing into it, then holding one value to the band's
@@ -65,7 +40,7 @@ export type Band = 168 | 148 | 72;
     `cover` band's 0.8 art, which is what it was measured against. A
     `left-portrait`'s sharp layer draws at 0.92, so the same 73 leaves that ink at
     **4.33:1** — measured, across all six themes — and the hand-written column
-    this function replaces held at 78 for exactly that reason. One ramp function
+    this function replaced held at 78 for exactly that reason. One ramp function
     with one shape, and the one number that has to answer to the art beneath it
     stays answerable. Exported because `wash-contrast.test.ts` derives its contrast floors
     from these alphas; the two files drifting apart is the failure that test
@@ -81,18 +56,6 @@ export const bottomScrimStops = (
   [0, Math.round(((band - 1.48 * labelAtPx) / band) * 100)],
   [hold, Math.round(((band - labelAtPx) / band) * 100)],
   [hold, 100],
-];
-
-/** LEGACY — the same ramp taking the block's top edge as a percentage of band
-    height. Kept only so the two surfaces still sizing themselves from an
-    `aspect-ratio` keep their shipped stops until they take a stated height; a
-    band with no height in px cannot express its block in px.
-    @deprecated retires with `detail.tsx` and `spine-mobile.tsx`. */
-export const legacyBottomScrimStops = (labelAt: number): ScrimStops => [
-  [0, 0],
-  [0, Math.round(labelAt * 0.48)],
-  [73, labelAt],
-  [73, 100],
 ];
 
 const coverScrim = (stops: ScrimStops) =>
@@ -152,15 +115,6 @@ const reducible = (opacity: number, art: boolean): CSSProperties =>
     The four a stated band may draw. */
 export type PortraitWidth = 560 | 340 | 285 | 230;
 
-/** The two aspect-ratio bands' own derived widths, `round(148 × 1.37)` and
-    `round(72 × 1.37)`. Separate from `PortraitWidth` rather than folded in with
-    it, because 203 carries a hand-written vertical ramp: a stated band allowed to
-    ask for 203 with `labelAtPx: "flat"` would draw that 180deg ramp while
-    publishing `data-art-wash-flat` and being read as ramp-free.
-    @deprecated 203 retires with the two commander rows and 99 with the resume
-    row. */
-type LegacyPortraitWidth = 203 | 99;
-
 /** Keyed to the portrait's **width**, not to the band's height. Every column here
     is a function of the width — `clearTo` is `maskEnd%` of it by derivation, the
     flat stop is drawn a few pixels past it, and the mask and sharp alpha are
@@ -179,78 +133,34 @@ type LegacyPortraitWidth = 203 | 99;
     art opacity here moves the floor that test asserts rather than quietly passing
     an old one. */
 export const PORTRAITS: Record<
-  PortraitWidth | LegacyPortraitWidth,
+  PortraitWidth,
   {
     maskEnd: number;
     ground: string;
     sharpOpacity: number;
     sharpAlpha: number;
-    /** How far the portrait runs unwashed. Past it the scrim climbs to its flat
-        stop, closing the crop out into the row before any type starts. Derived
-        from `maskEnd` and the width — the crop runs clear to where its own mask
-        starts fading and not a pixel further — so only a row whose shipped value
-        disagrees with its own rule states one. */
-    clearTo?: number;
-    /** Does not derive: each was drawn against its own surface, chosen so the
-        title column clears the mask's tail by ~15px. */
+    /** Where the horizontal scrim has closed to opaque ground, so any type at or
+        past it stands on `--bg` rather than on the crop. It does NOT derive from
+        the width: each value was drawn against its own surface, chosen so the
+        title column clears the mask's tail by about 15px — 584 for the 560
+        portrait, 356 for 340, 300 for 285 and 240 for 230, each a little past
+        the portrait's own edge. */
     flatStop: number;
-    /** LEGACY — the hand-written vertical ramp. `bottomScrimStops` does the same
-        shape from a `labelAtPx`, which is what lets one function serve both
-        strategies; only the two aspect-ratio rows still need the column.
-        @deprecated retires with width 203. */
-    vertical?: ScrimStops;
   }
 > = {
   560: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 584 },
   340: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 356 },
   285: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 300 },
   230: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 240 },
-  // LEGACY, retires with the two commander rows. Its ramp is one ramp for both
-  // widths: the rows are `items-end` at either breakpoint, so the phone's block
-  // (top at 65%) sits inside the desktop's (top at 55%) and a hold from 55%
-  // covers both.
-  203: {
-    maskEnd: 58,
-    ground: "--bg",
-    sharpOpacity: 0.92,
-    sharpAlpha: 78,
-    flatStop: 264,
-    vertical: [
-      [0, 0],
-      [0, 38],
-      [78, 55],
-      [78, 100],
-    ],
-  },
-  // LEGACY, retires with the resume row. Its 58 against a derived 61.4 is the one
-  // shipped `clearTo` that disagrees with its own rule — 3px off, on the band
-  // this round deletes.
-  99: {
-    maskEnd: 62,
-    ground: "--surface-inset",
-    sharpOpacity: 0.95,
-    sharpAlpha: 80,
-    clearTo: 58,
-    flatStop: 138,
-  },
-};
-
-/** The width each aspect-ratio band derived for itself, so a legacy caller keeps
-    the geometry it ships with.
-    @deprecated retires with the `band` prop. */
-const LEGACY_PORTRAIT: Record<Band, PortraitWidth | LegacyPortraitWidth> = {
-  168: 230,
-  148: 203,
-  72: 99,
 };
 
 const portrait = (
-  width: PortraitWidth | LegacyPortraitWidth,
+  width: PortraitWidth,
   labelAtPx: number | "flat",
   band: number,
 ) => {
   const b = PORTRAITS[width];
-  const clearTo = b.clearTo ?? Math.round((b.maskEnd / 100) * width);
+  const clearTo = Math.round((b.maskEnd / 100) * width);
   // Which dimension the crop is scaled by, derived rather than declared. A
   // portrait no wider than `band × 1.37` is filled by scaling the crop to the
   // band's height — `auto 100%` — which is what every derived width does, and
@@ -271,8 +181,8 @@ const portrait = (
   // Layer D: a band that prints type over the portrait needs damping down the
   // band as well as across. A band whose ink starts past the flat stop is `flat`
   // — a vertical ramp there would darken the row for nothing.
-  const vertical =
-    labelAtPx === "flat" ? b.vertical : bottomScrimStops(labelAtPx, band, PORTRAIT_HOLD);
+  const vertical: ScrimStops | null =
+    labelAtPx === "flat" ? null : bottomScrimStops(labelAtPx, band, PORTRAIT_HOLD);
   return {
     width,
     ground: b.ground,
@@ -309,9 +219,6 @@ export type ArtWashProps = ArtProps &
             ends rather than where it starts, putting its first line on unscrimmed
             art. */
         labelAtPx: number;
-        labelEdge?: never;
-        labelAt?: never;
-        band?: never;
         portrait?: never;
       }
     | {
@@ -323,41 +230,6 @@ export type ArtWashProps = ArtProps &
         /** `flat` where the band's ink starts past the portrait's flat stop and
             stands on the row's own ground. */
         labelAtPx: number | "flat";
-        labelEdge?: never;
-        labelAt?: never;
-        band?: never;
-      }
-    /** @deprecated retires with `hero-commander.tsx` and `deck-card.tsx`. */
-    | {
-        strategy: "cover";
-        labelEdge: "top";
-        height?: never;
-        labelAtPx?: never;
-        labelAt?: never;
-        band?: never;
-        portrait?: never;
-      }
-    /** @deprecated retires with `detail.tsx` and `spine-mobile.tsx`. */
-    | {
-        strategy: "cover";
-        labelEdge: "bottom";
-        /** The block's top edge as a percentage of band height. */
-        labelAt: number;
-        height?: never;
-        labelAtPx?: never;
-        band?: never;
-        portrait?: never;
-      }
-    /** @deprecated retires once the two commander rows, both deck spines and the
-        resume row have migrated — `spine-desktop.tsx` still passes `band={168}`. */
-    | {
-        strategy: "left-portrait";
-        band: Band;
-        height?: never;
-        portrait?: never;
-        labelAtPx?: never;
-        labelEdge?: never;
-        labelAt?: never;
       }
   );
 
@@ -366,20 +238,8 @@ export function ArtWash(props: ArtWashProps) {
   // L1: the base plate, under the art, so a slow or missing image never flashes
   // light ground.
   if (props.strategy === "left-portrait") {
-    // The two arms narrowed explicitly rather than coalesced. `props.portrait ??
-    // LEGACY_PORTRAIT[props.band]` typechecks today only because the union's
-    // optional `band` widens to `Band | undefined` and the coalesce hides it —
-    // an expression that reads as if either arm could supply either field, when
-    // in fact a stated band always has its portrait and only a legacy one indexes
-    // the legacy table. `undefined` is not an index type, and the day this file
-    // gains a stricter setting or a third arm, the coalesce is what breaks.
-    const legacy = props.band !== undefined;
-    const height = legacy ? props.band : props.height;
-    const p = portrait(
-      legacy ? LEGACY_PORTRAIT[props.band] : props.portrait,
-      legacy ? "flat" : props.labelAtPx,
-      height,
-    );
+    const { height } = props;
+    const p = portrait(props.portrait, props.labelAtPx, height);
     return (
       // The root declares the band rather than stretching to the row: the sharp
       // layer's `auto 100%` resolves against this box, so a taller row can no
@@ -390,19 +250,18 @@ export function ArtWash(props: ArtWashProps) {
         // scrim class because the two strategies draw different scrims: a stated
         // `left-portrait` band has no `-cover` class to find it by, so keying the
         // check to one strategy's class would silently stop covering the other.
-        // Absent on a legacy band, which is what makes the census meaningful.
-        data-art-wash-band={legacy ? undefined : height}
+        data-art-wash-band={height}
         // The block this band's ramp was keyed to, in px. Published because a
         // probe cannot otherwise tell a correct hold from a plausible one: a 57
         // read as a percentage on a 288 band lands at 57%, which is a perfectly
         // ordinary-looking number, and only the expected `(band − at) / band`
         // exposes it. With this, that comparison is exact rather than a threshold.
-        data-art-wash-label-at={legacy || props.labelAtPx === "flat" ? undefined : props.labelAtPx}
+        data-art-wash-label-at={props.labelAtPx === "flat" ? undefined : props.labelAtPx}
         // Stated when the band draws NO vertical ramp by intent, so a probe can
         // tell that from a ramp that went missing: both look like one 90deg
         // scrim, and one of them is a band whose ink is standing on a rising
         // gradient nobody meant to draw.
-        data-art-wash-flat={!legacy && props.labelAtPx === "flat" ? "" : undefined}
+        data-art-wash-flat={props.labelAtPx === "flat" ? "" : undefined}
         className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
         style={{ background: `var(${p.ground})`, height: `${height}px` }}
       >
@@ -444,22 +303,21 @@ export function ArtWash(props: ArtWashProps) {
     );
   }
 
-  const stated = props.labelEdge === undefined;
   return (
     <div
       aria-hidden="true"
-      data-art-wash-band={stated ? props.height : undefined}
-      data-art-wash-label-at={stated ? props.labelAtPx : undefined}
-      className={`pointer-events-none overflow-hidden ${stated ? "absolute inset-x-0 top-0" : "absolute inset-0"}`}
+      data-art-wash-band={props.height}
+      data-art-wash-label-at={props.labelAtPx}
+      className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
       // R6 ruling 1: the plate is a loading device, not a ground. With no art
       // there is nothing to load, so an artless band grounds in `var(--bg)`
       // rather than in a darker patch that would seam against the surface below.
       style={{
         background: artCropUri ? COVER_PLATE : "var(--bg)",
-        // A stated band owns its own height, exactly as `left-portrait` does, so
-        // the crop's `cover` resolves against the band rather than against
-        // whatever the row grew to.
-        ...(stated ? { height: `${props.height}px` } : null),
+        // The band owns its own height, exactly as `left-portrait` does, so the
+        // crop's `cover` resolves against the band rather than against whatever
+        // the row grew to.
+        height: `${props.height}px`,
       }}
     >
       <div
@@ -474,24 +332,16 @@ export function ArtWash(props: ArtWashProps) {
         }}
       />
       <div
-        // The edge is in the class as well as in the stops while a top-labelled
-        // band still ships: the reduced-transparency override replaces that
-        // gradient wholesale, and one replacement cannot describe both bands. A
-        // bottom-labelled band's stops come from a `labelAtPx` no stylesheet can
-        // see, so it carries no edge class and the preference rides on
-        // `.art-wash-art`'s opacity alone.
-        className={`art-wash-scrim art-wash-scrim-cover${
-          stated ? "" : ` art-wash-scrim-cover-${props.labelEdge}`
-        } absolute inset-0`}
-        style={{
-          background: coverScrim(
-            stated
-              ? bottomScrimStops(props.labelAtPx, props.height)
-              : props.labelEdge === "top"
-                ? COVER_SCRIM_STOPS.top
-                : legacyBottomScrimStops(props.labelAt),
-          ),
-        }}
+        // No edge in the class any more, because there is no longer an edge to
+        // choose. The `-top` variant existed so the reduced-transparency override
+        // could replace one ramp wholesale; every band labels at its foot now, so
+        // that override has no subject and is deleted with it. The preference
+        // rides on `.art-wash-art`'s opacity alone — which is permanent rather
+        // than provisional, since a bottom ramp's stops come from a `labelAtPx`
+        // no stylesheet can see. Reaching the scrim too would mean emitting the
+        // ramp as a CSS variable, which is open with Design as B9.
+        className="art-wash-scrim art-wash-scrim-cover absolute inset-0"
+        style={{ background: coverScrim(bottomScrimStops(props.labelAtPx, props.height)) }}
       />
     </div>
   );

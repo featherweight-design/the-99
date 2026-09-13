@@ -43,4 +43,13 @@ describe("StatusPillBadge", () => {
     const { container } = render(<StatusPillBadge status="Building" />);
     expect(container.querySelector("span")!.getAttribute("style")).toContain("dashed");
   });
+
+  // `text-shadow` is inherited, and this pill is drawn inside blocks that put a
+  // cover shadow on their ink — so without refusing it the plated exception
+  // picked up the shadow it exists to avoid. Refused centrally, so no surface
+  // has to remember.
+  it("carries no text shadow, whatever block it sits in", () => {
+    render(<StatusPillBadge status="Building" />);
+    expect(screen.getByText("Building").style.textShadow).toBe("none");
+  });
 });

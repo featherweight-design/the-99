@@ -112,7 +112,11 @@ const READ_WASHES = `() => {
 // 0.28 and 0.22 were the `left-portrait` ambient layer's, and that layer is gone
 // — a band-wide second scaling of the crop behind the portrait, which read as a
 // double image. Either value computing again is that layer returning.
-const LIFTED_OPACITIES = [1, 0.8, 0.92, 0.95];
+//
+// 0.95 goes with the resume row's 72px band: it was the one portrait drawn at
+// that opacity, that row is a `cover` band now, and leaving the value in the set
+// would have let the retired arm return without the census noticing.
+const LIFTED_OPACITIES = [1, 0.8, 0.92];
 
 /** Every band on the page, with how many art layers inside it resolved a crop
     URL. A `left-portrait` band draws exactly one: the masked portrait. Two is
@@ -236,8 +240,10 @@ const READ_COVER_STOPS = `() => {
     `data-art-wash-band` on the wash's own root rather than by a scrim class: the
     two strategies draw different scrims, so keying this to `-cover` would stop
     covering `left-portrait` the moment those rows migrate — a check that goes
-    quiet is worse than one that fails. The attribute is absent on a legacy band,
-    which is what makes the census a countdown rather than a guess.
+    quiet is worse than one that fails. Every surface is migrated now, so the
+    attribute's ABSENCE is a failure rather than a countdown: a wash without it
+    is a reverted render or a dropped marker, neither of which the type system
+    can see from inside the app.
 
     The ramp read is the LAST scrim in the root, which is the vertical one under
     both strategies: `cover` draws one, and `left-portrait` draws its horizontal
@@ -527,6 +533,24 @@ async function checkBands(page, label, note) {
   // half the band instead.
   const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
   note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
+  // Zero stated bands is a FAIL only where a wash is actually drawn. With
+  // nothing in `stated` the unstated count is 0 too and every loop below is
+  // skipped, so a page whose markers vanished while its art stayed would exit
+  // green having checked no band at all — but a page legitimately drawing no
+  // wash is not that page. The commander detail hero is `sm:hidden`, so the
+  // desktop layout of that route has no band by design, and an unconditional
+  // failure here would have failed a correct run at every desktop viewport.
+  const washLayers = await page.evaluate(
+    `[...document.querySelectorAll('.art-wash-art, .art-wash-scrim')]
+      .filter((el) => el.getClientRects().length).length`,
+  );
+  if (!stated.length) {
+    note(
+      washLayers
+        ? `  FAIL ${label}: ${washLayers} wash layer(s) drawn and no stated band — every band check below is vacuous`
+        : `  ${label}: no wash on this page at this width`,
+    );
+  }
   // An empty census is not a pass, and zero is exactly what a reverted migration
   // or a vanished render produces. The check is the count of wash layers NOT
   // inside a stated band: no per-route table, and it cannot go quiet.
@@ -534,12 +558,12 @@ async function checkBands(page, label, note) {
   // a vertical ramp, so counting layers reported one unmigrated band as two.
   // Each scrim's own root is the band, so the distinct roots are the count.
   //
-  // A COUNTDOWN, not a failure. Surfaces migrate one slice at a time, so an
-  // unstated band is the expected state of everything not yet done — failing it
-  // would fail the probe on the round's own intermediate steps. What makes the
-  // end state safe is structural rather than a check: the last slice deletes the
-  // legacy props, after which the type system forbids an unstated band and there
-  // is nothing left for a check to catch.
+  // A FAILURE now, not the countdown it was while surfaces migrated one slice at
+  // a time. The legacy props are deleted, so the type system forbids an unstated
+  // band from inside the app — but a wash can still reach the page without one:
+  // a reverted surface, a new render that never went through the system, or a
+  // band whose marker was dropped while its wash stayed. The type check cannot
+  // see any of those; this can.
   const unstated = await page.evaluate(
     `new Set(
       [...document.querySelectorAll('.art-wash-scrim')]
@@ -549,7 +573,11 @@ async function checkBands(page, label, note) {
     ).size`,
   );
   if (unstated) {
-    note(`  ${label}: ${unstated} band(s) not yet stated — surfaces still to migrate`);
+    // A FAIL, not a countdown. Every surface is migrated as of this slice, so an
+    // unstated band is a reverted one or a new render that never went through the
+    // system — and a line that only reports would have let either stand while the
+    // probe stayed green.
+    note(`  FAIL ${label}: ${unstated} band(s) draw a wash without stating a band`);
   }
   for (const band of stated) {
     if (!SETTLED_BANDS.some((h) => `${h}px` === band.declared)) {
@@ -750,6 +778,10 @@ for (const [name, source] of Object.entries(READERS)) {
   }
 }
 
+/** Every scrim's computed gradient, so the reduced-transparency comparison is
+    about the gradient rather than about the opacity beside it. */
+const READ_SCRIM_GRADIENTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => getComputedStyle(s).backgroundImage)`;
+
 const findings = [];
 const note = (line) => {
   findings.push(line);
@@ -826,7 +858,9 @@ try {
       const edged = await page.evaluate(
         `document.querySelectorAll('.art-wash-scrim-cover-top, .art-wash-scrim-cover-bottom').length`,
       );
-      if (edged) note(`  ${edged} band(s) still name a label edge — surfaces still to migrate`);
+      // Also a FAIL now: the `labelEdge` prop retires in this slice, so the class
+      // cannot be emitted at all and a band carrying it is the legacy arm back.
+      if (edged) note(`  FAIL ${edged} band(s) still name a label edge`);
 
       await checkBands(page, `${vpName} ${routeName}`, note);
 
@@ -915,21 +949,37 @@ try {
     // Each entry names what it MUST draw. A census that only rejects a box
     // outside the allow-list passes silently when a thumb is missing altogether,
     // which is the same vacuity as running the check on a route that draws none.
-    // Read off Home, which is where the pre-filled door is entered from: the
-    // ready-to-build hero links to `/decks/new?commander=<oracleId>`, and the
-    // commanders list links by slug, which that route does not take.
-    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await page.waitForTimeout(800);
-    const commanderOracleId = await page.evaluate(
-      `document.querySelector('a[href*="/decks/new?commander="]')?.getAttribute('href') ?? null`,
+    // The pre-filled door is entered from a COMMANDER PAGE now. Home's hero used
+    // to link straight to `/decks/new?commander=<oracleId>` and that CTA is cut —
+    // nobody builds a deck without seeing the pool first — so the route in is
+    // `Build this deck`, which points at `/decks?commander=<oracleId>` and is
+    // redirected by that page to the pre-filled URL. Following the link the app
+    // actually offers is also the more honest probe.
+    // Back to the list first. The block above followed a commander link to its
+    // detail page, and a detail page carries no `/commanders/<slug>` self-link —
+    // so this query returned null there, skipped the whole census, and then
+    // failed the run for finding no `Build this deck` link. The page it needs is
+    // the one the link lives on.
+    await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(600);
+    const commanderDetailHref = await page.evaluate(
+      `document.querySelector('a[href^="/commanders/"]')?.getAttribute('href') ?? null`,
     );
+    let commanderBuildHref = null;
+    if (commanderDetailHref) {
+      await page.goto(`${BASE}${commanderDetailHref}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(600);
+      commanderBuildHref = await page.evaluate(
+        `document.querySelector('a[href^="/decks?commander="]')?.getAttribute('href') ?? null`,
+      );
+    }
     // The pre-filled door's thumb is the PHONE's: desktop draws a 220px card face
     // instead, which is a different render of the same commander and not a thumb
     // at all. Requiring the thumb at both widths failed a correct build.
     const CREATE_SURFACES = [
       ["the picker's candidate rows", "/decks/new", ["44×62"]],
-      ...(commanderOracleId
-        ? [["the pre-filled door", commanderOracleId, layout === "phone" ? ["64×89"] : []]]
+      ...(commanderBuildHref
+        ? [["the pre-filled door", commanderBuildHref, layout === "phone" ? ["64×89"] : []]]
         : []),
     ];
     for (const [what, path, required] of CREATE_SURFACES) {
@@ -1046,8 +1096,8 @@ try {
       }
       await checkChrome(page, `${vpName} the picker, picked`, note);
     }
-    if (!commanderOracleId) {
-      note(`  FAIL no /decks/new?commander= link found — the pre-filled door goes unchecked`);
+    if (!commanderBuildHref) {
+      note(`  FAIL no Build this deck link (/decks?commander=) found — the pre-filled door goes unchecked`);
     }
 
     // The deck header, which is the other surface drawing this control — and the
@@ -1102,6 +1152,11 @@ try {
         .filter((href) => /^\\/decks\\/[^/]+$/.test(href) && href !== '/decks/new')`,
     );
     let walkedADeck = false;
+    // Kept for the reduced-transparency comparison below, which needs a real
+    // deck page: the deck header mounts a cover wash on the phone and the
+    // portrait wash on desktop, and a scrim regression there would otherwise sit
+    // outside every route that check visits.
+    let walkedDeckHref = null;
     // Every link, not the first five: a run whose earliest decks all have
     // crop-less commanders would have concluded that no deck page draws the
     // control, which is a false failure about the fixture rather than the build.
@@ -1151,71 +1206,112 @@ try {
         }
       }
       walkedADeck = true;
+      walkedDeckHref = deckHref;
       break;
     }
     if (!walkedADeck) {
       note(`  FAIL no deck page drew a card-details control — the deck header's chrome goes unchecked`);
     }
 
-    // The two accessibility mechanisms, on the surface that carries every case.
-    await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
-    await page.waitForTimeout(800);
-    const base = await page.evaluate(`(${READ_WASHES})()`);
-    const baseScrims = await page.evaluate(READ_SCRIM_HEIGHTS);
-    if (!base.length || !baseScrims.length) {
-      note(`  FAIL no wash layers on /commanders — the accessibility checks measure nothing`);
-    }
+    // The two accessibility mechanisms, on BOTH kinds of band. `/commanders`
+    // draws the `left-portrait` rows and Home draws a `cover` hero — and the
+    // override this round deletes was a cover-only rule, so sampling portraits
+    // alone would have let exactly the regression B9 asks about through.
+    // Every route that can mount a scrim, not one of each strategy. The rule
+    // this round deletes was cover-only, and cover bands are mounted on six
+    // routes — Home's hero and resume rows, both deck-tile arms on `/decks`, the
+    // owned lane on `/discover`, the detail hero on a commander page, and the
+    // deck header, whose phone band is `cover` and whose desktop row is the
+    // portrait. Sampling two of them would have let a selector regression on any
+    // of the others through, which is the whole question B9 asks.
+    for (const [whatKind, path] of [
+      ["portrait rows", "/commanders"],
+      ["home's cover bands", "/"],
+      ["deck tiles", "/decks"],
+      ["the owned lane", "/discover"],
+      // Phone only: the detail hero's band is `sm:hidden` and the desktop
+      // layout draws a card face instead, so including it at desktop width
+      // reported a route with no wash as a surface that lost one.
+      ...(commanderDetailHref && layout === "phone"
+        ? [["the detail hero", commanderDetailHref]]
+        : []),
+      ...(walkedDeckHref ? [["the deck header", walkedDeckHref]] : []),
+    ]) {
+      await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(800);
+      const base = await page.evaluate(`(${READ_WASHES})()`);
+      const baseScrims = await page.evaluate(READ_SCRIM_HEIGHTS);
+      const baseScrimImages = await page.evaluate(READ_SCRIM_GRADIENTS);
+      if (!base.length || !baseScrims.length) {
+        note(`  FAIL no wash layers on ${path} — the accessibility checks measure nothing`);
+        continue;
+      }
 
-    // Playwright's `emulateMedia` has no `prefers-reduced-transparency` option and
-    // ignores one silently, so the check has to go through CDP or it passes vacuously.
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send("Emulation.setEmulatedMedia", {
-      features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
-    });
-    if (!(await page.evaluate(`matchMedia('(prefers-reduced-transparency: reduce)').matches`))) {
-      throw new Error("reduced-transparency emulation did not take — the check would be vacuous");
-    }
-    await page.waitForTimeout(300);
-    const reduced = await page.evaluate(`(${READ_WASHES})()`);
-    await page.screenshot({ path: `/tmp/art-wash-${vpName}-reduced-transparency.png` });
-    // Every comparison below pairs by index, so a change in how many layers are
-    // laid out has to fail here — otherwise the pairing silently slips and the
-    // per-layer checks compare unrelated elements.
-    if (reduced.length !== base.length) {
-      note(`  FAIL layer count changed under the preference: ${base.length} → ${reduced.length}`);
-    } else {
-      const raised = reduced.filter((w, i) => w.opacity > base[i].opacity + 0.001);
+      // Playwright's `emulateMedia` has no `prefers-reduced-transparency` option
+      // and ignores one silently, so the check has to go through CDP or it passes
+      // vacuously.
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send("Emulation.setEmulatedMedia", {
+        features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
+      });
+      if (!(await page.evaluate(`matchMedia('(prefers-reduced-transparency: reduce)').matches`))) {
+        throw new Error("reduced-transparency emulation did not take — the check would be vacuous");
+      }
+      await page.waitForTimeout(300);
+      const reduced = await page.evaluate(`(${READ_WASHES})()`);
+      // The whole label, slugged. Taking the first word wrote `the owned lane`
+      // and `the detail hero` to the same file, so the later route overwrote the
+      // earlier one and the run kept fewer screenshots than surfaces it checked.
+      const slugKind = whatKind.replace(/[^a-z0-9]+/gi, "-");
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-reduced-${slugKind}.png` });
+
+      // B9 as a fact rather than a claim: no band's scrim is reachable from a
+      // stylesheet any more, so the preference rides on the art layer's opacity
+      // alone. A scrim whose computed gradient CHANGED is an override returning.
+      const underPreference = await page.evaluate(READ_SCRIM_GRADIENTS);
+      // Length first. `.some` over the new list cannot see a scrim that stopped
+      // being laid out, and a disappearing scrim is a bigger change than a
+      // re-weighted one.
+      if (underPreference.length !== baseScrimImages.length) {
+        note(`  FAIL ${whatKind} scrim count changed under reduced transparency: ${baseScrimImages.length} → ${underPreference.length}`);
+      } else if (underPreference.some((image, i) => image !== baseScrimImages[i])) {
+        note(`  FAIL a ${whatKind} scrim was re-weighted under reduced transparency — B9 is unspecced`);
+      }
+
+      // Every comparison pairs by index, so a change in how many layers are laid
+      // out has to fail here — otherwise the pairing slips and the per-layer
+      // checks compare unrelated elements.
+      if (reduced.length !== base.length) {
+        note(`  FAIL layer count changed under the preference: ${base.length} → ${reduced.length}`);
+      } else {
+        const raised = reduced.filter((w, i) => w.opacity > base[i].opacity + 0.001);
+        note(
+          `${vpName} ${whatKind} reduced-transparency: ${reduced.filter((w, i) => w.opacity < base[i].opacity).length} dimmed, ${raised.length} raised`,
+        );
+        if (raised.length) note(`  FAIL a layer got MORE opaque under the preference`);
+        if (reduced.some((w, i) => w.bandHeight !== base[i].bandHeight)) {
+          note(`  FAIL band height changed under reduced transparency`);
+        }
+      }
+
+      await cdp.send("Emulation.setEmulatedMedia", { features: [] });
+      await page.emulateMedia({ forcedColors: "active" });
+      await page.waitForTimeout(300);
+      const forced = await page.evaluate(`(${READ_WASHES})()`);
+      const forcedScrims = await page.evaluate(READ_SCRIM_HEIGHTS);
       note(
-        `${vpName} reduced-transparency: ${reduced.filter((w, i) => w.opacity < base[i].opacity).length} layers dimmed, ${raised.length} raised`,
+        `${vpName} ${whatKind} forced-colors: ${forced.length} art layers still laid out (expect 0), ` +
+          `${forcedScrims.length} scrims at ${[...new Set(forcedScrims)].join(", ")}px`,
       );
-      if (raised.length) note(`  FAIL a layer got MORE opaque under the preference`);
-      const shiftedR = reduced.filter((w, i) => w.bandHeight !== base[i].bandHeight);
-      if (shiftedR.length) note(`  FAIL band height changed under reduced transparency`);
-      else note(`  band heights unchanged`);
+      if (forced.length) note(`  FAIL art layer survived forced-colors`);
+      if (forcedScrims.length !== baseScrims.length) {
+        note(`  FAIL scrim count changed: ${baseScrims.length} → ${forcedScrims.length}`);
+      } else if (forcedScrims.some((h, i) => h !== baseScrims[i])) {
+        note(`  FAIL band height changed under forced colours`);
+      }
+      await page.emulateMedia({ forcedColors: "none" });
     }
 
-    await cdp.send("Emulation.setEmulatedMedia", { features: [] });
-    await page.emulateMedia({ forcedColors: "active" });
-    await page.waitForTimeout(300);
-    const forced = await page.evaluate(`(${READ_WASHES})()`);
-    await page.screenshot({ path: `/tmp/art-wash-${vpName}-forced-colors.png` });
-    // The art leaves, so the scrims are what still measures the band. Compare them
-    // to the same list before the rule fired rather than eyeballing the numbers.
-    const forcedScrims = await page.evaluate(READ_SCRIM_HEIGHTS);
-    note(
-      `${vpName} forced-colors: ${forced.length} art layers still laid out (expect 0), ` +
-        `${forcedScrims.length} scrims at ${[...new Set(forcedScrims)].join(", ")}px`,
-    );
-    if (forced.length) note(`  FAIL art layer survived forced-colors`);
-    if (forcedScrims.length !== baseScrims.length) {
-      note(`  FAIL scrim count changed: ${baseScrims.length} → ${forcedScrims.length}`);
-    } else if (forcedScrims.some((h, i) => h !== baseScrims[i])) {
-      note(`  FAIL band height changed under forced colours`);
-    } else {
-      note(`  band heights unchanged`);
-    }
-
-    await page.emulateMedia({ forcedColors: "none" });
     await context.close();
   }
 } finally {

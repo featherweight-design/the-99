@@ -55,10 +55,20 @@ describe("ReadyToBuild", () => {
     expect(screen.getByText("/80 fit")).toBeInTheDocument();
   });
 
-  it("gives each hero both routes", () => {
+  // `Start this deck` is cut: nobody builds a deck automatically without seeing
+  // the pool first, so the second action was the one offered in the wrong order.
+  // `See the pool` takes the filled treatment as the only action left.
+  it("gives each hero the one route that survives", () => {
     render(<ReadyToBuild ready={READY} inUse={IN_USE} />);
-    expect(screen.getAllByRole("link", { name: "Start this deck" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "See the pool" })).toHaveLength(2);
+    expect(screen.queryAllByRole("link", { name: "Start this deck" })).toHaveLength(0);
+    const pool = screen.getAllByRole("link", { name: "See the pool" });
+    expect(pool).toHaveLength(2);
+    // The route, not just the words. The old CTA pointed at
+    // `/decks/new?commander=<oracleId>`, so a regression to it — or to a
+    // malformed slug — reads identically to a reader of the label alone.
+    for (const link of pool) {
+      expect(link.getAttribute("href")).toMatch(/^\/commanders\/[a-z0-9-]+$/);
+    }
   });
 
   it("drops the more-above line when nothing is above", () => {
