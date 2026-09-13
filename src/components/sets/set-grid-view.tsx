@@ -18,7 +18,7 @@
 // scroll is paid for by the sticky head, the extras jump, and missing-only, which removes
 // the cells the reader is done with rather than shrinking everything.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail } from "../cards/card-detail-provider";
@@ -45,6 +45,7 @@ import { SetIcon } from "./set-icon";
 import { SearchField } from "../ui/text-field";
 import { CostStrip } from "./cost-strip";
 import { DeltaStrip } from "./delta-strip";
+import { useHeadCollapse } from "./use-head-collapse";
 
 export type SetGridViewProps = {
   code: string;
@@ -119,180 +120,28 @@ export function SetGridView(props: SetGridViewProps) {
   // trapped focus in a dialog nobody could see. Unmounted rather than hidden.
   const isDesktop = useIsDesktop();
   /**
+   * The delta strip is the one member of the head that is news rather than reference. §31:
+   * "if it is firing, the collapse waits" — it carries the only offer to refresh a page the
+   * reader has just been told is stale.
+   */
+  const [deltaFiring, setDeltaFiring] = useState(false);
+  const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
+  /**
+   * The head's two heights, and everything that decides between them.
+   *
+   * Extracted because that is where R3 finding 6's twelve rounds of defects lived — the
+   * hysteresis band, the reserve, the observer's delivery timing, the delta gate, the sheet
+   * freeze, the breakpoint round trip. Not one of them was in the markup, which is why the
+   * markup for the members it hides stays here, with the members.
+   */
+  const { shy, headRef, spacerRef, openHead } =
+    useHeadCollapse({ isDesktop, deltaFiring, sheetOpen });
+  /**
    * The search input, so every control that clears the query can put focus back in it.
    * Clearing hides the field's own × (`visibility`, and out of the tab order with it) and
    * unmounts the empty state's buttons — so without this, using any of them strands the
    * keyboard on a control that is no longer there.
    */
-  /**
-   * R3 finding 6, the collapse. The head has always been `sticky top-0` at every width, so
-   * the whole block follows the reader down all 399 cells — the finding is not "add a
-   * collapse", it is "the collapse this sticky head never got".
-   *
-   * TWO HEIGHTS, ONE THRESHOLD, NEVER INTERPOLATED. Down past 120px of scroll, back at 40:
-   * an 80px hysteresis band, so a thumb resting mid-gesture cannot flutter it. A head that
-   * tracked the scroll offset would be permanently in motion under the thing being read.
-   */
-  const [collapsed, setCollapsed] = useState(false);
-  /**
-   * §31: "if it is firing, the collapse waits". The delta strip is the one member of the
-   * head that is news rather than reference, and it carries the only offer to refresh a
-   * page the reader has just been told is stale.
-   *
-   * Round 7 replaced this gate with "the strip is simply not a member the collapse hides",
-   * which shows the message but is NOT what the ruling says — and it let a variable-height
-   * strip grow the supposedly fixed 52px bar. The gate is back, with the three defects that
-   * made it expensive fixed rather than escaped:
-   *
-   *   - it does not apply while the sheet is open, so a strip that starts firing behind an
-   *     open dialog no longer reopens the head and unmounts the trigger `useDialogA11y`
-   *     saved;
-   *   - the ref `sizeSpacer` reads is written in a LAYOUT EFFECT, not during render, which
-   *     is what `react-hooks/refs` forbids;
-   *   - and the reserve stops recording while it fires, so a delta-inclusive height is
-   *     never the one the spacer is sized from.
-   */
-  /**
-   * A breakpoint crossing reopens the head.
-   *
-   * A reader who collapses on the phone, widens to desktop and comes back is still
-   * `collapsed`, so the head is shy on the first mobile render — and the recorder, which
-   * refuses to measure a collapsed head, leaves the DESKTOP height reserved underneath it.
-   * Clearing the recorded height instead was tried and is worse: the reserve goes to 0
-   * where the desktop figure was accidentally close, so the grid moves further than before.
-   *
-   * Reopening is the answer that produces a correct number: the head measures itself at the
-   * width it is now, and the next scroll event collapses it again. Adjusted DURING RENDER,
-   * which is this file's existing pattern for deriving state from a changed input — the
-   * URL override two blocks up does the same thing for the same reason.
-   */
-  const [seenDesktop, setSeenDesktop] = useState(isDesktop);
-  if (seenDesktop !== isDesktop) {
-    setSeenDesktop(isDesktop);
-    if (collapsed) setCollapsed(false);
-  }
-  const [deltaFiring, setDeltaFiring] = useState(false);
-  const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
-  //
-  // `sheetOpen` is deliberately NOT a term here. It was, and that made this flip in the
-  // very render the sheet opened — so the freeze below captured the value AFTER the change
-  // it exists to prevent. The sheet's job is to hold whatever was true; this expression's
-  // job is to say what would be true without it.
-  const mayCollapse = !isDesktop && !deltaFiring;
-  useEffect(() => {
-    if (!mayCollapse) return;
-    // An open sheet FREEZES the head, in whichever state it is already in. It does not
-    // force it open: opened from the collapsed bar, forcing it open would unmount the
-    // trigger `useDialogA11y` returns focus to — the very defect being avoided, arriving
-    // from the other side. So the listener simply stands down and `collapsed` holds.
-    //
-    // This one term replaces a four-part focus mechanism — a pin, a bar exception, a rescue
-    // ref and a layout effect — that drew findings in five consecutive rounds and grew a
-    // new hole in each. This route deleted a focus rescue once before, for the same reason.
-    //
-    // What that mechanism protected beyond the sheet: focus in the open subtree falls to
-    // the body when it is hidden. For the search field and the chips that is what every
-    // collapsing header on the web does, and the reader got there by scrolling, which needs
-    // no focus at all.
-    if (sheetOpen) return;
-    const onScroll = () => {
-      const y = window.scrollY;
-      // The band read as a function of the CURRENT state, which is what makes it
-      // hysteresis rather than two thresholds: collapsed stays collapsed until 40, open
-      // stays open until 120, and between the two nothing happens.
-      setCollapsed((was) => (was ? y > 40 : y > 120));
-    };
-    // The first read is here, in a passive effect, and a reload at scrollY > 120 therefore
-    // paints the open head for one frame before collapsing. Moving it to a layout effect is
-    // what the shape asks for and `react-hooks/set-state-in-effect` forbids it outright —
-    // a synchronous `setState` in an effect is a hard lint error in this repository. See
-    // the PR body.
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [mayCollapse, sheetOpen]);
-
-  /**
-   * The rest height, held so the DOCUMENT does not change height when the head collapses.
-   * Sticky overlays, so the grid's own layout is untouched at every scroll position — but
-   * the sticky element still occupies its box in flow, and shrinking that box pulls the
-   * grid up under the reader's thumb on the first crossing.
-   *
-   * Measured while open and applied to a wrapper that is not itself sticky, so the reserve
-   * is a plain block of the right height and the head floats inside it.
-   */
-  const headRef = useRef<HTMLDivElement>(null);
-  const spacerRef = useRef<HTMLDivElement>(null);
-  /**
-   * The spacer's height, written to the DOM rather than held in state.
-   *
-   * State would arrive a commit late: on the render where the collapse lands, the head has
-   * already shrunk and a state-held measurement is still the open one, so the spacer paints
-   * at 0 and the document jumps exactly once — the jump the reserve exists to prevent, on
-   * the first crossing, which is the only crossing anyone notices.
-   *
-   * Reads refs only, so the `ResizeObserver` registered once can keep calling it.
-   */
-  const restHeightRef = useRef<number | null>(null);
-  const sizeSpacer = useRef(() => {
-    const el = headRef.current;
-    const spacer = spacerRef.current;
-    if (el === null || spacer === null) return;
-    // Read off the DOM at call time rather than off a `collapsed` closed over anywhere:
-    // `ResizeObserver` delivers at the end of a frame, so the shrink the collapse causes
-    // can arrive BEFORE any cleanup, and the rest height would then record the collapsed
-    // one — the number it must never hold. The probe caught that: 288px reserved at rest
-    // and 140px once collapsed, which was the head's height before the one-row bar landed;
-    // it is 75px now, and the reserve holds 288 through both.
-    //
-    // Refreshed HERE, before sizing, whenever the head is open. While collapsed the open
-    // subtree is `display:none` and cannot resize, so a filter changed through the bar's
-    // sheet leaves the recorded height stale — and the first render that restores would
-    // then size the spacer from a head that no longer exists. `ResizeObserver` corrects it
-    // a frame later, which is a frame too late.
-    // The STEADY-STATE open height: the head as measured, less whatever the delta strip is
-    // occupying. Skipping the measurement entirely while the strip fires was the first
-    // answer and it has a hole — the sheet can still edit the filters behind a firing
-    // strip, so the head's real open height changes and is never recorded, and the collapse
-    // that follows the message clearing uses a stale one. Subtracting is what satisfies
-    // both: a delta-inclusive height is never stored, and a filter-driven change always is.
-    if (!el.hasAttribute("data-set-head-collapsed")) {
-      const delta = el.querySelector("[data-set-delta]");
-      restHeightRef.current = el.getBoundingClientRect().height
-        - (delta === null ? 0 : delta.getBoundingClientRect().height);
-    }
-    const rest = restHeightRef.current;
-    spacer.style.height = rest === null
-      ? "0px"
-      : `${Math.max(0, rest - el.getBoundingClientRect().height)}px`;
-  }).current;
-  useEffect(() => {
-    const el = headRef.current;
-    if (el === null) return;
-    const measure = () => {
-      // `sizeSpacer` records the height as well as writing the spacer, and it is the one
-      // place that decides WHEN a height may be recorded. This callback used to keep its
-      // own copy of that decision and the two drifted the moment a second condition was
-      // added: the delta strip pins the head open, so a height measured while it was
-      // showing was recorded here and never corrected.
-      sizeSpacer();
-    };
-    measure();
-    // Guarded, as `top-off-list.tsx` guards its own measured bar: an unconditional
-    // constructor throws on mount in any engine without the API, taking every set page with
-    // it. The `measure()` above has already run, so the reserve is correct for the head as
-    // it stands — it simply stops tracking later changes.
-    if (typeof ResizeObserver === "undefined") return;
-    // The head's open height is not a constant: a two-line title, the delta strip, and the
-    // cost strip's expanded form all move it, and a reserve measured once would be wrong
-    // for the rest of the visit.
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [sizeSpacer]);
-  // After the DOM has changed and before the browser paints, which is the whole point: the
-  // spacer has to be the right height on the frame the head first shrinks.
-
   const searchRef = useRef<HTMLInputElement>(null);
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
@@ -747,33 +596,6 @@ export function SetGridView(props: SetGridViewProps) {
   // reader who scrolls, then triggers a delta strip, restores the full head and keeps the
   // scroll state underneath it — rather than the strip clearing the state and the head
   // collapsing again the moment it is dismissed.
-  const wantShy = collapsed && mayCollapse;
-  /**
-   * An open sheet FREEZES the head, and the freeze has to hold against the delta strip as
-   * well as against scroll.
-   *
-   * The scroll listener standing down covered one half. The other half is `mayCollapse`
-   * itself moving: a delta that starts while the bar is drawn opens the head, and opening
-   * `Filters` from that head then made `mayCollapse` true again and flipped the bar back —
-   * unmounting the trigger `useDialogA11y` had saved, in the same render that showed the
-   * dialog.
-   *
-   * So the answer the sheet gets is the one that was true when it opened. Adjusted during
-   * render, this file's pattern for deriving state from a changed input.
-   */
-  const [shyAtSheetOpen, setShyAtSheetOpen] = useState<boolean | null>(null);
-  if (sheetOpen && shyAtSheetOpen === null) setShyAtSheetOpen(wantShy);
-  if (!sheetOpen && shyAtSheetOpen !== null) setShyAtSheetOpen(null);
-  const shy = sheetOpen && shyAtSheetOpen !== null ? shyAtSheetOpen : wantShy;
-
-  useLayoutEffect(() => {
-    sizeSpacer();
-    // Keyed, not every render. Without a list this ran after every keystroke in the search
-    // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
-    // for a head whose size had not moved. The `ResizeObserver` is what covers ordinary
-    // size changes; this covers the transitions it cannot see.
-  }, [shy, deltaFiring, isDesktop, sizeSpacer]);
-
   return (
     <div>
       <div
@@ -837,7 +659,7 @@ export function SetGridView(props: SetGridViewProps) {
                 // while the bar is drawn, and `scrollTo` does not commit the collapse
                 // state — so focusing here focused a hidden input, which does nothing, and
                 // the keyboard reader stayed on a button that was about to unmount.
-                setCollapsed(false);
+                openHead();
                 window.scrollTo({ top: 0 });
                 // And on the next frame, once the open head has painted. The control they
                 // asked for is the field this button stands for; landing them anywhere
