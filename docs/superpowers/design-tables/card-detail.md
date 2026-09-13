@@ -102,7 +102,7 @@ was verified in the tree and is what the build implements.
 | 5.2 | Zoom close | **No exit.** The layer unmounts | Gone, 0ms — unchanged, because it always was | ruled 2026-09-13, E13 |
 | 5.3 | Flip | 320ms `cubic-bezier(.2,.7,.2,1)`, **on every surface the card is drawn** — the modal's art as well as the zoom (E17) | Face replaces face, 0ms; the face is then announced on the press rather than on a landing there is none of | MOTION, E17 |
 | 5.4 | Scrim | Fades with the layer, same timings; the blur is not animated | MOTION |
-| 5.5 | Not animated | The price tag's appearance and the art column's height change with it — 27px desktop, 35px phone, per row 1.14. **The un-zoomed flip is animated now** — same 320ms turn as the zoom's (E17), so row 5.3 covers every surface | MOTION, E17 |
+| 5.5 | Not animated | The price tag's appearance and the art column's height change with it — **the figure lives in row 1.14 and only there**, because it is derived from the stack's rows and a second copy of it has now drifted twice. **The un-zoomed flip is animated now** — same 320ms turn as the zoom's (E17), so row 5.3 covers every surface | MOTION, E17 |
 | 5.6 | How it is written | Two media blocks, one per animation. **Never a global `transition: none`** — the modal has shipped transitions of its own | MOTION, `globals.css:459-462` |
 
 ## 6. Coexistence
