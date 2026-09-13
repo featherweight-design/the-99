@@ -1865,10 +1865,11 @@ export async function pullCardFromDeck(
       await tx.delete(deckCards)
         .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
     }
-    // The source deck's list really did change, so the column stays truthful —
-    // even though the commit on the next line moves `committed_at` to the same
-    // instant and `touchedBy` resolves that tie to `committed`. The verb the row
-    // prints is a presentation rule; this column is a fact.
+    // The source deck's list really did change, so the column stays truthful.
+    // The commit on the next line moves `committed_at` to the same instant —
+    // both statements take the transaction's `now()` — and `touchedBy` resolves
+    // that tie to `edited`, deliberately: see the migration note there. A card
+    // left this deck, so `edited` is true of it either way.
     await touchDeck(tx, sourceDeckId);
     await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
     return { ok: true };

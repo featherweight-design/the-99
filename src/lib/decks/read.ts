@@ -488,8 +488,8 @@ function toDate(value: Date | string | null, column: string): Date | null {
 /**
  * A deck's newest commit, as a correlated subquery.
  *
- * Module-level and exported so `read.test.ts` can render it: the trap it is
- * written around is invisible in a component test and silent at runtime.
+ * Module-level and exported so `last-committed.test.ts` can render it: the trap
+ * it is written around is invisible in a component test and silent at runtime.
  *
  * Aliased, with both sides written out, for the reason AGENTS.md gives — in the
  * PROJECTION of a select whose `from` names one table, Drizzle emits column
@@ -596,7 +596,14 @@ export async function listDecksWithStats(
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
       lastPlayedAt: lastPlayedSql,
-      lastEditedAt: decks.lastEditedAt,
+      // Raw, and normalised through `toDate` below, rather than taken as a
+      // mapped column. `last_edited_at` is `timestamp` WITHOUT time zone holding
+      // a UTC instant, and the driver parses a mapped one in the RUNTIME's zone
+      // — so on a server west of UTC this column would arrive hours adrift of
+      // `lastPlayedAt` and `lastCommittedAt`, which arrive as strings and are
+      // read as UTC. `touchedBy` compares all three, and a mixed pair of
+      // parsings picks the wrong verb and the wrong order by exactly the offset.
+      lastEditedAt: sql<Date | string>`${decks.lastEditedAt}`,
       lastCommittedAt: lastCommittedSql,
     })
     .from(decks)
@@ -716,9 +723,9 @@ export async function listDecksWithStats(
       // would then date to a different day in Denver than in CI, and `2 days
       // ago` is exactly the kind of figure that shifts.
       lastPlayedAt: toDate(row.lastPlayedAt, "deck_games.played_at"),
-      // A mapped column, so the driver already hands back a Date — unlike the
-      // two raw-SQL timestamps either side of it.
-      lastEditedAt: row.lastEditedAt,
+      // Never null: the column is NOT NULL, so `toDate` cannot return null here
+      // — the assertion is the type's, and an unreadable value throws instead.
+      lastEditedAt: toDate(row.lastEditedAt, "decks.last_edited_at")!,
       lastCommittedAt: toDate(row.lastCommittedAt, "deck_versions.committed_at"),
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,

@@ -27,6 +27,14 @@ const stub = vi.hoisted(() => {
     // the guarded decrement matched nothing, which is how a caller learns the
     // row was down to its last copy and must be deleted instead.
     updateReturning: [] as Record<string, unknown>[],
+    // Every `update(...)`, by table. `decks` among them is the touch stamp —
+    // Home's resume order — which is a different question from what happened to
+    // the cards, so the two are read apart rather than counted together.
+    updateCalls: [] as { table: string; values: unknown }[],
+    // Whether an `onConflictDoNothing()` insert into `deck_cards` actually
+    // writes. False is the repeat-add case: the statement runs and the clause
+    // swallows it, which is what the add path's stamp branches on.
+    insertConflictWrites: true,
     fillPasses: [] as { ordinal: number }[],
     // Whether getEdhrecData should reject
     edhrecError: null as Error | null,
@@ -206,7 +214,7 @@ const stub = vi.hoisted(() => {
         // has no conflict state, so "wrote" means "was asked to write".
         const conflictResult = () => {
           const rows = tableName === "deck_cards"
-            ? (Array.isArray(values) ? values : [values])
+            ? (state.insertConflictWrites ? (Array.isArray(values) ? values : [values]) : [])
             : returning;
           return Object.assign(Promise.resolve(rows), { returning: async () => rows });
         };
@@ -245,12 +253,15 @@ const stub = vi.hoisted(() => {
   const tx = {
     insert: (table: unknown) => makeInsertBuilder(table),
     delete: (table: unknown) => makeDeleteBuilder(table),
-    update: () => ({
-      set: () => ({
-        where: () => Object.assign(
-          Promise.resolve(undefined),
-          { returning: async () => state.updateReturning },
-        ),
+    update: (table: unknown) => ({
+      set: (values: unknown) => ({
+        where: () => {
+          state.updateCalls.push({ table: nameOf(table), values });
+          return Object.assign(
+            Promise.resolve(undefined),
+            { returning: async () => state.updateReturning },
+          );
+        },
       }),
     }),
     execute: async () => {},
@@ -446,7 +457,14 @@ beforeEach(() => {
   stub.state.redirectTarget = null;
   stub.state.unresolvedRows = 0;
   stub.state.deckVersions.length = 0;
+  stub.state.updateCalls.length = 0;
+  stub.state.insertConflictWrites = true;
 });
+
+/** Whether the act stamped `decks.last_edited_at` — what Home's resume block
+    orders on. Read apart from the card writes, because a test that counted the
+    two together would pass a card update for a stamp. */
+const stamped = () => stub.state.updateCalls.some((u) => u.table === "decks");
 
 describe("createDeck — filled baseline", () => {
   it("writes the filled baseline and marks every row auto", async () => {
@@ -647,6 +665,44 @@ describe("createDeck — filled baseline", () => {
     ).rejects.toThrow("partner not found");
 
     expect(stub.state.insertCalls.filter((c) => c.table === "decks").length).toBe(0);
+  });
+});
+
+// The stamp on the hand-add path, which is the one a player reaches most often
+// and the one whose conditional the probe cannot see: `probe:touched` talks to
+// the database directly, and every server action here needs a Clerk session.
+describe("addCardToDeck — the touch stamp follows the insert", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const CARD = "11111111-1111-1111-1111-111111111111";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+  function ownDeck() {
+    stub.state.decks.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+    // The card being added FIRST: the stub answers every `cards` read with this
+    // whole list, and the add path takes `[card]` off the front while the
+    // commander lookup searches it by id.
+    stub.state.cards.push(
+      { oracleId: CARD, commanderLegal: true, colorIdentity: [], typeLine: "Artifact" },
+      { oracleId: CMDR, commanderLegal: true, colorIdentity: ["G"], typeLine: "Legendary Creature" },
+    );
+  }
+
+  it("stamps the deck when the insert places a card", async () => {
+    ownDeck();
+    const { addCardToDeck } = await import("./actions");
+    expect(await addCardToDeck(DECK, CARD)).toEqual({ ok: true });
+    expect(stamped()).toBe(true);
+  });
+
+  // The conflict clause decides here. A singleton the deck already holds writes
+  // nothing, and a deck nothing was added to was not edited — so a stamp would
+  // move this deck up Home's list for an act that changed none of it.
+  it("does not stamp when the conflict clause writes nothing", async () => {
+    ownDeck();
+    stub.state.insertConflictWrites = false;
+    const { addCardToDeck } = await import("./actions");
+    expect(await addCardToDeck(DECK, CARD)).toEqual({ ok: true });
+    expect(stamped()).toBe(false);
   });
 });
 
