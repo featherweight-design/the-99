@@ -167,6 +167,14 @@ export function FilterPanel({
 }) {
   const ownBreakpoint = useIsDesktop();
   const isDesktop = compact === undefined ? ownBreakpoint : !compact;
+  // Every breakpoint-dependent class in this component goes through `bp`, not
+  // Tailwind's `md:`. The two disagree: `md:` is 768 and the chassis switches
+  // form at 1000, so a panel told `compact` still drew its sheet body — option
+  // rows, the search field, the footer — at desktop typography and padding
+  // across 768-999, losing the compact touch geometry inside a compact frame.
+  // A caller that passes no `compact` keeps this component's own media query,
+  // so the surfaces outside the chassis are unaffected.
+  const bp = (wide: string, narrow: string) => (isDesktop ? wide : narrow);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
@@ -487,7 +495,7 @@ export function FilterPanel({
           // items-center per §Option row, at the cost of a wrapped two-line name
           // centring its checkbox instead of aligning it to the first line —
           // deliberate, against misaligning every single-line row by ~4px.
-          "flex items-center gap-[12px] md:gap-[11px] px-[16px] md:px-[14px] py-[12px] md:py-[9px]",
+          bp("flex items-center gap-[11px] px-[14px] py-[9px]", "flex items-center gap-[12px] px-[16px] py-[12px]"),
           // Phone stays 48 — already past the 44px floor. Desktop's minimum is
           // the caller's, applied inline because Tailwind cannot compile an
           // interpolated class and this value is a prop.
@@ -506,11 +514,11 @@ export function FilterPanel({
         <span
           aria-hidden
           className={[
-            "flex h-[18px] w-[18px] md:h-[16px] md:w-[16px] flex-none items-center justify-center",
+            `flex ${bp("h-[16px] w-[16px]", "h-[18px] w-[18px]")} flex-none items-center justify-center`,
             // Round for single-select: the shape is the affordance, and a square
             // tick on a one-of-many list promises you can have two.
             selectionMode === "single" ? "rounded-full" : "rounded-[4px]",
-            "border border-solid leading-none text-[12px] md:text-[11px]",
+            `border border-solid leading-none ${bp("text-[11px]", "text-[12px]")}`,
             isSelected
               ? "bg-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--bg)]"
               : option.disabled
@@ -525,8 +533,8 @@ export function FilterPanel({
             accessible name above always carries the full name either way. */}
         <span
           className={[
-            "min-w-0 flex-1 font-sans text-[14.5px] md:text-[13.5px] leading-[1.35]",
-            "md:whitespace-nowrap md:overflow-hidden md:text-ellipsis",
+            `min-w-0 flex-1 font-sans ${bp("text-[13.5px]", "text-[14.5px]")} leading-[1.35]`,
+            bp("whitespace-nowrap overflow-hidden text-ellipsis", ""),
             option.disabled ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg)]",
           ].join(" ")}
         >
@@ -536,7 +544,7 @@ export function FilterPanel({
           <span
             aria-hidden
             className={[
-              "shrink-0 font-mono text-[11.5px] md:text-[11px] tracking-[0.04em]",
+              `shrink-0 font-mono ${bp("text-[11px]", "text-[11.5px]")} tracking-[0.04em]`,
               option.disabled ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]",
             ].join(" ")}
           >
@@ -546,7 +554,7 @@ export function FilterPanel({
         {showCounts ? (
           <span
             className={[
-              "shrink-0 text-right font-mono text-[12px] md:text-[11.5px] tabular-nums",
+              `shrink-0 text-right font-mono ${bp("text-[11.5px]", "text-[12px]")} tabular-nums`,
               isSelected && !option.disabled
                 ? "text-[color:var(--fg-body)]"
                 : "text-[color:var(--fg-faint)]",
@@ -583,7 +591,7 @@ export function FilterPanel({
           aria-activedescendant={
             !searchable && activeCode ? optionDomId(activeCode) : undefined
           }
-          className="m-0 list-none overflow-y-auto p-0 max-h-[60vh] md:max-h-[384px]"
+          className={`m-0 list-none overflow-y-auto p-0 ${bp("max-h-[384px]", "max-h-[60vh]")}`}
         >
           {groupList.map((group, gi) => (
             // role=group (not presentation) so the label `<p>` is not a bare
@@ -598,9 +606,9 @@ export function FilterPanel({
                 <p
                   className={[
                     "m-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--fg-faint)]",
-                    "px-[16px] md:px-[14px] pb-[4px] md:pb-[6px]",
+                    bp("px-[14px] pb-[6px]", "px-[16px] pb-[4px]"),
                     gi === 0
-                      ? "pt-[4px] md:pt-[2px]"
+                      ? bp("pt-[2px]", "pt-[4px]")
                       : "pt-[8px] border-t border-solid border-[color:var(--border)]",
                   ].join(" ")}
                 >
@@ -628,19 +636,19 @@ export function FilterPanel({
   function renderEmptyState() {
     const emptyBody = copy.emptyBody(query.trim());
     return (
-      <div className="px-[22px] pt-[26px] pb-[22px] text-center md:px-[20px] md:pt-[20px]">
+      <div className={`${bp("px-[20px] pt-[20px]", "px-[22px] pt-[26px]")} pb-[22px] text-center`}>
         <div
           aria-hidden
-          className="mb-[14px] flex justify-center gap-[7px] md:mb-[12px] md:gap-[6px]"
+          className={`${bp("mb-[12px] gap-[6px]", "mb-[14px] gap-[7px]")} flex justify-center`}
         >
-          <Diamond className="h-[7px] w-[7px] md:h-[6px] md:w-[6px]" />
-          <Diamond className="h-[9px] w-[9px] md:h-[8px] md:w-[8px]" />
-          <Diamond className="h-[7px] w-[7px] md:h-[6px] md:w-[6px]" />
+          <Diamond className={bp("h-[6px] w-[6px]", "h-[7px] w-[7px]")} />
+          <Diamond className={bp("h-[8px] w-[8px]", "h-[9px] w-[9px]")} />
+          <Diamond className={bp("h-[6px] w-[6px]", "h-[7px] w-[7px]")} />
         </div>
-        <p className="m-0 mb-[7px] font-display text-[17px] font-semibold text-[color:var(--fg)] md:mb-[6px] md:text-[15.5px]">
+        <p className={`m-0 ${bp("mb-[6px] text-[15.5px]", "mb-[7px] text-[17px]")} font-display font-semibold text-[color:var(--fg)]`}>
           {copy.emptyTitle}
         </p>
-        <p className="m-0 font-sans text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] md:text-[12.5px]">
+        <p className={`m-0 font-sans ${bp("text-[12.5px]", "text-[13.5px]")} leading-[1.6] text-[color:var(--fg-muted)]`}>
           {emptyBody.before}
           <span className="font-semibold text-[color:var(--fg-body)]">{emptyBody.query}</span>
           {emptyBody.after}
@@ -651,7 +659,7 @@ export function FilterPanel({
             setQuery("");
             inputRef.current?.focus();
           }}
-          className="mt-[16px] inline-block rounded-lg px-[18px] py-[10px] font-sans text-[13.5px] font-medium text-[color:var(--fg)] bg-transparent border border-solid border-[color:var(--border-strong)] md:mt-[14px] md:px-[16px] md:py-[8px] md:text-[12.5px]"
+          className={`${bp("mt-[14px] px-[16px] py-[8px] text-[12.5px]", "mt-[16px] px-[18px] py-[10px] text-[13.5px]")} inline-block rounded-lg font-sans font-medium text-[color:var(--fg)] bg-transparent border border-solid border-[color:var(--border-strong)]`}
         >
           {copy.clearSearch}
         </button>
@@ -672,7 +680,7 @@ export function FilterPanel({
         onClick={onClear}
         disabled={selected.length === 0}
         className={[
-          "font-sans text-[13.5px] md:text-[12.5px] font-medium",
+          `font-sans ${bp("text-[12.5px]", "text-[13.5px]")} font-medium`,
           selected.length > 0
             ? "text-[color:var(--accent)] cursor-pointer"
             : "text-[color:var(--border-dashed)] cursor-default",
@@ -696,7 +704,7 @@ export function FilterPanel({
     return (
       <div
         className={[
-          "flex items-center gap-[12px] border-t border-solid border-[color:var(--border)] px-[16px] py-[12px] pb-[20px] md:px-[14px] md:py-[9px] md:pb-[9px]",
+          `flex items-center gap-[12px] border-t border-solid border-[color:var(--border)] ${bp("px-[14px] py-[9px] pb-[9px]", "px-[16px] py-[12px] pb-[20px]")}`,
           // With nothing in the left slot there is one child, and
           // justify-between would park it on the left.
           left ? "justify-between" : "justify-end",
@@ -751,7 +759,7 @@ export function FilterPanel({
             // DOM focus never leaves this input while the panel is open — the
             // unprefixed border alone would always lose.
             containerClassName={
-              "mx-[16px] mb-[8px] md:m-[10px] px-[12px] py-[12px] md:py-[9px] gap-[9px] " +
+              bp("m-[10px] px-[12px] py-[9px] gap-[9px] ", "mx-[16px] mb-[8px] px-[12px] py-[12px] gap-[9px] ") +
               "focus-within:border-[color:var(--border-strong)] " +
               "focus-within:shadow-none focus-within:outline focus-within:outline-2 " +
               "focus-within:outline-offset-2 focus-within:outline-[color:var(--accent)] " +
@@ -760,14 +768,14 @@ export function FilterPanel({
                 : "")
             }
             // §Leading icon: 14px mobile / 13px desktop, not the primitive's 15.
-            iconClassName="text-[14px] md:text-[13px]"
+            iconClassName={bp("text-[13px]", "text-[14px]")}
             // 14px mobile / 13px desktop as specced. 14px sits under Safari's
             // 16px focus-zoom floor; a global maximum-scale=1 is an App Shell
             // decision, not one to make inside a single control (gap 3).
             // The placeholder is --fg-locked here, not --fg-faint: the table
             // draws it a step quieter, and twMerge drops the primitive's own
             // placeholder colour unless this restates it.
-            className="text-[14px] md:text-[13px] placeholder:text-[color:var(--fg-locked)]"
+            className={`${bp("text-[13px]", "text-[14px]")} placeholder:text-[color:var(--fg-locked)]`}
             trailing={
               query !== "" ? (
                 <button
@@ -778,7 +786,7 @@ export function FilterPanel({
                     setActiveCode(null);
                     inputRef.current?.focus();
                   }}
-                  className="flex h-[20px] w-[20px] md:h-[18px] md:w-[18px] shrink-0 items-center justify-center rounded-full text-[11px] md:text-[10px] bg-[color:var(--elevated)] text-[color:var(--fg-muted)]"
+                  className={`flex ${bp("h-[18px] w-[18px] text-[10px]", "h-[20px] w-[20px] text-[11px]")} shrink-0 items-center justify-center rounded-full bg-[color:var(--elevated)] text-[color:var(--fg-muted)]`}
                 >
                   ✕
                 </button>
@@ -877,7 +885,7 @@ export function FilterPanel({
         ].join(" ")}
       >
         {oneName !== null ? (
-          <span className="max-w-[170px] md:max-w-[230px] overflow-hidden text-ellipsis whitespace-nowrap">
+          <span className={`${bp("max-w-[230px]", "max-w-[170px]")} overflow-hidden text-ellipsis whitespace-nowrap`}>
             {copy.triggerOne(oneName)}
           </span>
         ) : (

@@ -1,10 +1,16 @@
 // Collection copy — set filter panel block, ported verbatim from
 // design/design_handoff_the99_collection_filter/collection-filter · copy strings.ts
 // Shape follows src/lib/copy/shell.ts: flat const object, functions for
-// interpolated strings, no JSX. Callers hand over pre-formatted,
-// thousands-separated strings, with one exception: an option's aria label
-// takes the raw count, because it pluralises on it and a formatted number
-// cannot be read back out under every locale.
+// interpolated strings, no JSX. Callers hand over RAW COUNTS and this module
+// formats them, through the one `count()` helper below.
+//
+// It took pre-formatted strings once, on the reasoning that the caller owned
+// presentation. That put two separator conventions in a single sentence on a
+// non-`en-US` browser — `1.234 of 2,933` — because only the figures going
+// through `cards()` were pinned, and it made `1 cards shown` reachable for any
+// figure whose caller had already turned it into a string. A number that a
+// sentence pluralises on cannot be read back out of its own formatting, which
+// was always true of the option aria labels; it is true of all of them.
 
 import { availabilityCopy } from "./availability";
 
