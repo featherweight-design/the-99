@@ -34,7 +34,7 @@ was verified in the tree and is what the build implements.
 | 1.4 | Foil-only | `◆ foil $6.10` — the diamond **prefixes**, the finish word comes from which column supplied the figure (`foil` / `etched`) | canvas §2, `set-collections.ts:208` |
 | 1.5 | No stock | the word `no stock`, `--fg-locked` on `1px dashed --fg-locked` | canvas §2 |
 | 1.6 | Silence | **Nothing renders.** No dash, no `$0.00`, no greyed box, no reserved slot, no skeleton | canvas §2, STATES §1 |
-| 1.6b | Silence is not rare, and that is accepted | A holding that names no printing is silent, and a set that prints several versions of a card therefore shows fewer figures than a small set does — the commander page's `PIP` card was walked and reads blank for exactly this reason. Seen, and ruled 2026-09-13: a figure under a card must belong to that card, two versions can differ by a lot, and a floor-price or a picked-version figure is a number the reader's copy may not have | ruled 2026-09-13 |
+| 1.6b | Silence is not rare, and that is accepted | A holding that names no **single** printing is silent — E15 still prices one whose set holds only one version — so a set that prints several versions of a card shows fewer figures than a small set does — the commander page's `PIP` card was walked and reads blank for exactly this reason. Seen, and ruled 2026-09-13: a figure under a card must belong to that card, two versions can differ by a lot, and a floor-price or a picked-version figure is a number the reader's copy may not have | ruled 2026-09-13 |
 | 1.7 | Which state is which | `no stock` = the store answered and the answer was no (sold out **and** never stocked alike). Silence = nothing reached us — the price read failed or was not loaded | READINESS R2 item 2 |
 | 1.8 | Phone plate | The over-art plate behind the tag, because it sits over the wash. **The only difference between the two widths** | README §1 |
 | 1.9 | Re-reads on a pick | Yes. A pick now moves **four** things — art, `Set` field, tile ring, tag | README §1, Amendment 1 |
@@ -119,7 +119,7 @@ was verified in the tree and is what the build implements.
 
 All six — `amonkhet`, `kamigawa`, `ixalan`, `phyrexia`, `eldraine`, `kaldheim` — for the priced tag,
 the `no stock` tag, the scrim and the flip control. Tag ink is `--accent` on `--bg` (≥4.6:1 in all
-six).
+six) — that is the PRICED figure's ink, and the word below has its own.
 
 **`no stock` was measured in build, and it failed.** `--fg-locked` on `--bg` runs 3.23:1 (phyrexia)
 to 3.49:1 — a pass for the dashed edge, which is a non-text mark answering to 3:1, and a fail for
