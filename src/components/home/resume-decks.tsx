@@ -229,23 +229,11 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
               character — right for one name, wrong now that the denominator
               carries the pair's other signal. It is pinned; the names above are
               the only thing that gives. */}
-          {/* The figure and its clause are two children of one group rather than
-              one string, so that the clause, and never the figure, is what a
-              narrow row eats into: `86 / 9…` reads as a different number in a
-              way `3 car…` does not. That is also the latent bug this fixes — the
-              two shared a span that truncated to `86 / 98 · 3 t…`.
-
-              The name beside them takes its width from a zero basis and the
-              figure cannot shrink at all, so on a single row the clause is the
-              only child with anything left to give.
-
-              The group deliberately does NOT carry `min-w-0`: its automatic
-              minimum is its min-content width, which is the figure's — the
-              clause waives its own with `min-w-0`. So the group shrinks exactly
-              as far as the clause has left to give and then stops, which is what
-              pins the figure. With `min-w-0` here the group keeps going and the
-              unshrinkable figure inside is clipped by the row instead, printing
-              the `86 / 9` this whole arrangement exists to prevent. */}
+          {/* The figure alone. The clause that used to sit beside it is cut, so
+              there is nothing here left to shrink — which is also why the group
+              needs no `min-w-0` gymnastics any more: one unshrinkable figure
+              cannot be eaten into, and `86 / 9…` was only ever reachable when a
+              second child shared its span. */}
           <span className="flex gap-[4px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
             <span className="flex-none whitespace-nowrap">{count}</span>
           </span>

@@ -240,8 +240,10 @@ const READ_COVER_STOPS = `() => {
     `data-art-wash-band` on the wash's own root rather than by a scrim class: the
     two strategies draw different scrims, so keying this to `-cover` would stop
     covering `left-portrait` the moment those rows migrate — a check that goes
-    quiet is worse than one that fails. The attribute is absent on a legacy band,
-    which is what makes the census a countdown rather than a guess.
+    quiet is worse than one that fails. Every surface is migrated now, so the
+    attribute's ABSENCE is a failure rather than a countdown: a wash without it
+    is a reverted render or a dropped marker, neither of which the type system
+    can see from inside the app.
 
     The ramp read is the LAST scrim in the root, which is the vertical one under
     both strategies: `cover` draws one, and `left-portrait` draws its horizontal
@@ -949,14 +951,14 @@ try {
     // the one the link lives on.
     await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
-    const commanderSlug = await page.evaluate(
+    const commanderDetailHref = await page.evaluate(
       `document.querySelector('a[href^="/commanders/"]')?.getAttribute('href') ?? null`,
     );
-    let commanderOracleId = null;
-    if (commanderSlug) {
-      await page.goto(`${BASE}${commanderSlug}`, { waitUntil: "networkidle" });
+    let commanderBuildHref = null;
+    if (commanderDetailHref) {
+      await page.goto(`${BASE}${commanderDetailHref}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(600);
-      commanderOracleId = await page.evaluate(
+      commanderBuildHref = await page.evaluate(
         `document.querySelector('a[href^="/decks?commander="]')?.getAttribute('href') ?? null`,
       );
     }
@@ -965,8 +967,8 @@ try {
     // at all. Requiring the thumb at both widths failed a correct build.
     const CREATE_SURFACES = [
       ["the picker's candidate rows", "/decks/new", ["44×62"]],
-      ...(commanderOracleId
-        ? [["the pre-filled door", commanderOracleId, layout === "phone" ? ["64×89"] : []]]
+      ...(commanderBuildHref
+        ? [["the pre-filled door", commanderBuildHref, layout === "phone" ? ["64×89"] : []]]
         : []),
     ];
     for (const [what, path, required] of CREATE_SURFACES) {
@@ -1083,7 +1085,7 @@ try {
       }
       await checkChrome(page, `${vpName} the picker, picked`, note);
     }
-    if (!commanderOracleId) {
+    if (!commanderBuildHref) {
       note(`  FAIL no Build this deck link (/decks?commander=) found — the pre-filled door goes unchecked`);
     }
 
@@ -1216,7 +1218,7 @@ try {
       ["home's cover bands", "/"],
       ["deck tiles", "/decks"],
       ["the owned lane", "/discover"],
-      ...(commanderSlug ? [["the detail hero", commanderSlug]] : []),
+      ...(commanderDetailHref ? [["the detail hero", commanderDetailHref]] : []),
       ...(walkedDeckHref ? [["the deck header", walkedDeckHref]] : []),
     ]) {
       await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
