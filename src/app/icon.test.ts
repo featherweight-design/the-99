@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { CROWNED99_SPECS } from "../components/marks";
 import { crownBox } from "../components/ui/crown";
 import { parseThemeBlocks } from "../lib/theme/parse-css";
 import { DEFAULT_THEME } from "../lib/theme/themes";
@@ -16,10 +17,16 @@ import { DEFAULT_THEME } from "../lib/theme/themes";
  * The check is deliberately about proportion rather than absolute pixels: the
  * icon scales the rail-62 lockup onto a 64-unit plate, and that scale is
  * recovered from the drawing rather than restated here. What must not change
- * silently is the shape — three diamonds in the 6 / 8.5 / 3 arrangement, and a
- * numeral of two glyphs under them.
+ * silently is the shape — three diamonds in the arrangement `rail-62` declares,
+ * and a numeral of two glyphs under them. The arrangement is read out of that
+ * spec rather than copied, so moving the rail mark's diamonds fails here.
  */
-const GEOMETRY = { small: 6, large: 8.5, gap: 3 } as const;
+const RAIL = CROWNED99_SPECS["rail-62"];
+const GEOMETRY = {
+  small: RAIL.smallDiamond,
+  large: RAIL.largeDiamond,
+  gap: RAIL.gap,
+} as const;
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const HERE = dirname(fileURLToPath(import.meta.url));
