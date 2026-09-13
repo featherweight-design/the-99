@@ -1771,3 +1771,117 @@ describe("SetGridView — a query narrows the rarity panel's counts too", () => 
     expect(screen.getByRole("option", { name: /^rare, no cells/ })).toBeInTheDocument();
   });
 });
+
+// JSDOM applies no CSS, so BOTH responsive forms are in the tree and the class list is the
+// only discriminator. `hidden` as a bare token means desktop-only (`hidden md:block`);
+// `md:hidden` means phone-only. Matching on the substring "hidden" catches both and reads
+// as neither — the first version of these tests did exactly that and asserted on "".
+const tokens = (el: Element) => (el.getAttribute("class") ?? "").split(/\s+/);
+const phoneOnlyHidden = (el: Element) => tokens(el).includes("hidden");
+const desktopOnlyHidden = (el: Element) => tokens(el).includes("md:hidden");
+const textOf = (root: ParentNode, sel: string, drop: (el: Element) => boolean) =>
+  [...root.querySelectorAll(sel)].filter((el) => !drop(el))
+    .map((el) => el.textContent).join(" | ");
+
+// R3 finding 6, moves 1, 2 and 4 — the content the phone head stops carrying, before any
+// collapse mechanism exists. Every one of them is a PHONE FORM BESIDE the shipped string,
+// never a replacement: desktop is asserted unchanged in the same block.
+describe("SetGridView — the phone head carries less than the desktop one", () => {
+  const indexed = () => [
+    p("1", { name: "Plains", booster: true }),
+    p("2", { name: "Island", booster: true }),
+    p("3", { name: "Token", booster: false }),
+  ];
+
+  // Move 1. The scope note is a whole line saying what the denominator counts, so the word
+  // goes into the figure and the line goes away.
+  it("puts the scope word in the figure and drops the note", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    expect(container.textContent).toMatch(/1 \/ 2 base/);
+    const note = [...container.querySelectorAll("p")]
+      .find((el) => /base run only/.test(el.textContent ?? ""));
+    expect(note?.className).toMatch(/hidden/);
+  });
+
+  it("and the extras ratio trails it, because the note promised they were counted apart", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    expect(container.textContent).toMatch(/0 \/ 1 extras/);
+  });
+
+  // The one state where the note still stands alone: no ratio for `base` to ride on.
+  it("keeps the note standing when the set is not indexed", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { name: "Plains", booster: false })], [],
+    );
+    const note = [...container.querySelectorAll("p")]
+      .find((el) => /base run only/.test(el.textContent ?? ""));
+    expect(note).toBeDefined();
+    expect(note?.className).not.toMatch(/hidden/);
+  });
+
+  // Move 2. The full interpolated string is the desktop form and is unchanged; the phone
+  // gets what identifies the set, on the title line's trailing edge.
+  it("rides a short provenance on the title line and hides the long one", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), []);
+    expect(container.textContent).toMatch(/DSK · 2026/);
+    const long = [...container.querySelectorAll("p")]
+      .find((el) => /released 2026-09-01/.test(el.textContent ?? ""));
+    expect(long?.className).toMatch(/hidden/);
+  });
+
+  // Move 4. The second half restates the head's own subtraction.
+  it("drops the result line's redundant half", () => {
+    stubDesktop(false);
+    const status = () => screen.getAllByRole("status")
+      .find((el) => /cell/.test(el.textContent ?? ""));
+    view(indexed(), ["1"]);
+    const region = status();
+    expect(region).toBeDefined();
+    const shown = textOf(region as HTMLElement, "span", phoneOnlyHidden);
+    expect(shown).toMatch(/3 cells/);
+    expect(shown).not.toMatch(/yours/);
+  });
+
+  // The live region is the thing that announces a filter change, and it has to be ONE
+  // region holding both forms rather than two regions of which one is hidden.
+  it("keeps both forms inside a single live region", () => {
+    stubDesktop(false);
+    view(indexed(), ["1"]);
+    const regions = screen.getAllByRole("status")
+      .filter((el) => /cell/.test(el.textContent ?? ""));
+    expect(regions).toHaveLength(1);
+  });
+});
+
+// Asserted in its own block so a phone-only change that quietly rewrote the desktop head
+// fails here rather than passing as "the form the test happened to read".
+describe("SetGridView — the desktop head is untouched by finding 6", () => {
+  const indexed = () => [
+    p("1", { name: "Plains", booster: true }),
+    p("2", { name: "Island", booster: true }),
+    p("3", { name: "Token", booster: false }),
+  ];
+
+  it("keeps the bare ratio, the full provenance and the standalone note", () => {
+    stubDesktop(true);
+    const { container } = view(indexed(), ["1"]);
+    const visible = textOf(container, "p, span", desktopOnlyHidden);
+    expect(visible).toMatch(/1 \/ 2 · 50%/);
+    expect(visible).toMatch(/DSK · released 2026-09-01 · 2 in the base run · 1 extra/);
+    expect(visible).toMatch(/base run only · extras counted apart/);
+  });
+
+  it("keeps the result line's full form", () => {
+    stubDesktop(true);
+    view(indexed(), ["1"]);
+    const status = screen.getAllByRole("status")
+      .find((el) => /cell/.test(el.textContent ?? ""));
+    expect(status).toBeDefined();
+    const shown = textOf(status as HTMLElement, "span", desktopOnlyHidden);
+    expect(shown).toMatch(/3 cells · 1 yours, 2 missing/);
+  });
+});

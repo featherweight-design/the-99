@@ -684,6 +684,66 @@ async function run() {
       }
     }
 
+    // R3 finding 6, PR 5a. The four content moves are asked to buy a specific number of
+    // pixels, so the head's rest height is REPORTED rather than merely bounded — a check
+    // that only says "under 388" cannot tell a 4px saving from a 40px one, and the plan's
+    // own arithmetic was 22px stale for exactly that reason.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const phoneHead = await page.evaluate(() => {
+      const el = document.querySelector("[data-set-head]");
+      if (!el) return null;
+      const px = (sel) => {
+        const node = document.querySelector(sel);
+        return node ? Math.round(node.getBoundingClientRect().height) : null;
+      };
+      const h1 = el.querySelector("h1");
+      // Where the phone's provenance sits. The handoff puts it on the title line; measured
+      // there it pushed a real set name from one clamped line to two and cost more than the
+      // whole move saved, so it rides the ratio line instead. Structural, because a height
+      // check cannot tell the two placements apart on a SHORT name.
+      const codeOnTitleLine = h1?.parentElement
+        ? /·\s*\d{4}\s*$/.test(h1.parentElement.textContent ?? "")
+        : false;
+      return {
+        total: Math.round(el.getBoundingClientRect().height),
+        title: h1 ? Math.round(h1.getBoundingClientRect().height) : null,
+        codeOnTitleLine,
+        chips: px("[data-set-chips]"),
+        result: px("[data-set-result]"),
+      };
+    });
+    if (phoneHead === null) {
+      failures += !report("the phone head can be measured", false, "no [data-set-head]");
+    } else {
+      // 388 was the shipped height on `main` the morning this was built, measured on an
+      // indexed, incomplete set. The bound is the shipped figure, not the target: PR 5b's
+      // collapse is what reaches R3's 148, and asserting 148 here would fail a correct 5a.
+      failures += !report(
+        "the phone head at rest is smaller than the head these moves came from",
+        phoneHead.total < 388,
+        `${phoneHead.total}px against 388px shipped — chips ${phoneHead.chips}px, result ${phoneHead.result}px`,
+      );
+      // The chip line is what makes the expanded head's height a constant, and #549 spent
+      // four rounds getting it to 44. A content move above it must not have cost that.
+      failures += !report(
+        "the chip line still holds its 44px band",
+        phoneHead.chips === 44,
+        `${phoneHead.chips}px`,
+      );
+      // The trap this PR fell into once: the provenance was placed on the title line, the
+      // title wrapped, and the head got 15px BIGGER while every unit test passed. Nothing
+      // in JSDOM can see a wrap, so the guard has to live here.
+      failures += !report(
+        "the phone's provenance does not ride the title into a second line",
+        !phoneHead.codeOnTitleLine,
+        phoneHead.codeOnTitleLine
+          ? `the set code is on the title line, title ${phoneHead.title}px`
+          : `title ${phoneHead.title}px, code on the ratio line`,
+      );
+    }
+
     // The search field (§29). It is the only child of the control row that shrinks, and the
     // row must not wrap at either width — a control landing on its own line inside a sticky
     // head is the defect the three-row rule exists to prevent, arriving by another route.

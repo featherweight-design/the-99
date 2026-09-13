@@ -566,6 +566,7 @@ export function SetGridView(props: SetGridViewProps) {
   return (
     <div>
       <div
+        data-set-head
         className="sticky top-0 z-[2] pb-[12px] pt-[10px]"
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
@@ -595,7 +596,38 @@ export function SetGridView(props: SetGridViewProps) {
                 setPageCopy.complete.line(sections.baseTotal)
               ) : (
                 <span aria-label={setPageCopy.head.ratioAria(sections.baseOwned, sections.baseTotal)}>
-                  {sections.baseOwned} / {sections.baseTotal} · {sections.percent}%
+                  {/* R3 finding 6, move 1. Two forms of one figure, not two figures: the
+                      phone carries the scope word the note below used to carry, and the
+                      extras ratio trails it. The accessible name is the same string at
+                      both widths — it already said "in the base run". */}
+                  <span className="md:hidden">
+                    {setPageCopy.head.ratioScoped(
+                      sections.baseOwned, sections.baseTotal, sections.percent,
+                    )}
+                    {sections.extrasTotal > 0 ? (
+                      <span style={{ color: "var(--fg-locked)" }}>
+                        {" · "}
+                        {setPageCopy.head.extrasTrail(sections.extrasOwned, sections.extrasTotal)}
+                      </span>
+                    ) : null}
+                    {/* R3 finding 6, move 2, on the RATIO line rather than the title line.
+                        The handoff names the title's trailing edge and prices the move at
+                        −15px, but the title is `line-clamp-2` and a real set name is what
+                        gives width: on `Avatar: The Last Airbender` at 390 the code pushed
+                        the `h1` from one line to two, 30px to 60px, and the move that was
+                        meant to save 15 cost 15. Measured, not argued — see the readiness
+                        erratum. This line is mono 11px and already the shortest in the
+                        block, so the code lands on it without moving anything. */}
+                    {releasedAt ? (
+                      <span style={{ color: "var(--fg-locked)" }}>
+                        {" · "}
+                        {setPageCopy.head.metaShort(code, releasedAt)}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="hidden md:inline">
+                    {sections.baseOwned} / {sections.baseTotal} · {sections.percent}%
+                  </span>
                 </span>
               )}
             </p>
@@ -603,7 +635,12 @@ export function SetGridView(props: SetGridViewProps) {
                 has no base or extras figure, and the ratio note below is the one line that
                 always stands. */}
             {sections.indexed ? (
-              <p className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>
+              // R3 finding 6, move 2: the full string is the DESKTOP form and is unchanged.
+              // The phone gets what identifies the set, on the line above.
+              <p
+                className="hidden font-mono text-[10px] md:block"
+                style={{ color: "var(--fg-locked)" }}
+              >
                 {setPageCopy.head.meta(
                   code,
                   releasedAt ? releasedAt.slice(0, 10) : "an unrecorded date",
@@ -612,7 +649,13 @@ export function SetGridView(props: SetGridViewProps) {
                 )}
               </p>
             ) : null}
-            <p className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>
+            {/* Move 1 again, from the other side. The note keeps its own line at desktop,
+                and keeps standing alone when the set is unindexed — there `base` has no
+                figure to ride on, and the phone form above renders nothing at all. */}
+            <p
+              className={`font-mono text-[10px] ${sections.indexed ? "hidden md:block" : ""}`}
+              style={{ color: "var(--fg-locked)" }}
+            >
               {setPageCopy.head.ratioNote}
             </p>
           </div>
@@ -1081,12 +1124,26 @@ export function SetGridView(props: SetGridViewProps) {
                   shown.length,
                   sections.base.length + sections.extras.length,
                 )
-              : setPageCopy.result.rest(
-                  shown.length,
-                  shown.filter((c) => c.owned).length,
-                  // The whole displayed population, not the cost strip's scoped one: this
-                  // line describes the page, and the strip says what it is costing.
-                  shown.filter((c) => !c.owned).length,
+              : (
+                  <>
+                    {/* Two forms of one line. The phone keeps the count and drops the
+                        subtraction the head's ratio already made; desktop is unchanged.
+                        Both live inside the same `role="status"`, so a filter change
+                        announces once whichever is mounted. */}
+                    <span className="md:hidden">
+                      {setPageCopy.result.restShort(shown.length)}
+                    </span>
+                    <span className="hidden md:inline">
+                      {setPageCopy.result.rest(
+                        shown.length,
+                        shown.filter((c) => c.owned).length,
+                        // The whole displayed population, not the cost strip's scoped one:
+                        // this line describes the page, and the strip says what it is
+                        // costing.
+                        shown.filter((c) => !c.owned).length,
+                      )}
+                    </span>
+                  </>
                 )}
           {shownExtras.length > 0 ? (
             <>

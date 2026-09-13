@@ -287,7 +287,12 @@ read against `main`, is 22px stale before this starts. **Re-measure first**, wit
 - [ ] **The result line drops its redundant half** — `result.rest` restates a subtraction the
   ratio above already made. Its `role="status"` live region is untouched: it is what
   announces a filter change.
-- [ ] Probe the phone head's new rest height and record it here.
+- [x] Probe the phone head's new rest height and record it here. **Measured on `local-dev` at
+  390, on an indexed incomplete set: 388px shipped → 360px after 5a.** Two corrections came
+  out of the measurement and are written up in the readiness doc — the provenance rides the
+  RATIO line, not the title line, because on the title line it wrapped the `h1` and cost more
+  than the move saved; and move 4's −10px is not available, because the result line's 32px
+  phone reserve is what keeps the rack's height independent of the filter state.
 
 ### PR 5b — the cost line and the collapse
 
