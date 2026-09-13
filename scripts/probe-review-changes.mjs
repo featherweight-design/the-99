@@ -69,9 +69,11 @@ const TEMPLATE = process.env.PROBE_TEMPLATE_DECK ?? "a1111111-1111-1111-1111-111
 /** Column headings a run found on more than one line. A hard failure. */
 const crushedHeadings = [];
 
-/** Mix cells a run found off screen. A hard failure at either width: the strip's
- *  six figures are the deck against its recommendations, and a phone that draws
- *  three of them measures the deck against a shorter list than desktop does. */
+/** Ways a run found the mix strip short of its contract: a cell never drawn, a
+ *  cell drawn off screen, or a phone laying the six out as anything other than
+ *  three columns over two rows. A hard failure at either width, because the
+ *  strip's six figures are the deck against its recommendations, and a phone
+ *  drawing three of them measures the deck against a shorter list than desktop. */
 const hiddenCells = [];
 
 const VIEWPORTS = [
@@ -215,24 +217,44 @@ const readReview = (page) =>
       // neither the cells nor the rows carry an id, and both are the same
       // geometry as the deck page's mix strip, which this page does not draw.
       shape: (() => {
+        // `ROLE_ORDER` in src/lib/decks/mix.ts, behind the mana-value cell the
+        // strip prepends. The list is the contract, so a label the page stopped
+        // drawing has to come back as a gap rather than shortening the run.
         const labels = ["Mana value", "Ramp", "Draw", "Removal", "Wipes", "Land"];
-        const cells = [...document.querySelectorAll("p")]
-          .filter((p) => labels.includes(text(p)))
-          .map((p) => {
-            const cell = p.parentElement;
-            const lines = [...cell.querySelectorAll(":scope > p")];
-            const figures = lines[1];
-            const after = figures?.querySelector("span:last-child");
-            return {
-              label: text(p),
-              figures: figures ? text(figures) : null,
-              afterColor: after ? getComputedStyle(after).color : null,
-              note: lines[2] ? text(lines[2]) : null,
-              noteVisible: visible(lines[2]),
-              visible: visible(cell),
-              width: Math.round(cell.getBoundingClientRect().width),
-            };
-          });
+        // A positive box is not being on screen. A cell pushed past the right edge
+        // of a 390px viewport, or clipped out of an `overflow` parent, measures
+        // exactly as wide as one the reader can see — so the figure that decides
+        // it is the intersection of the cell's rect with the viewport's.
+        const onScreen = (el) => {
+          if (!visible(el)) return false;
+          const r = el.getBoundingClientRect();
+          const w = Math.min(r.right, innerWidth) - Math.max(r.left, 0);
+          const h = Math.min(r.bottom, innerHeight) - Math.max(r.top, 0);
+          return w > 0 && h > 0;
+        };
+        const found = [...document.querySelectorAll("p")].filter((p) =>
+          labels.includes(text(p)),
+        );
+        const cells = found.map((p) => {
+          const cell = p.parentElement;
+          const lines = [...cell.querySelectorAll(":scope > p")];
+          const figures = lines[1];
+          const after = figures?.querySelector("span:last-child");
+          const r = cell.getBoundingClientRect();
+          return {
+            label: text(p),
+            figures: figures ? text(figures) : null,
+            afterColor: after ? getComputedStyle(after).color : null,
+            note: lines[2] ? text(lines[2]) : null,
+            noteVisible: visible(lines[2]),
+            visible: onScreen(cell),
+            width: Math.round(r.width),
+            left: Math.round(r.left),
+            top: Math.round(r.top),
+          };
+        });
+        const drawn = cells.map((c) => c.label);
+        const missing = labels.filter((l) => !drawn.includes(l));
         const section = [...document.querySelectorAll("section")].find(
           (s) => text(s.querySelector("h2")) === "How the deck's shape moves",
         );
@@ -254,7 +276,7 @@ const readReview = (page) =>
               };
             })
           : null;
-        return { cells, moves };
+        return { cells, missing, expected: labels.length, moves };
       })(),
       discardTriggers: buttons
         .filter((b) => b.innerText.trim() === "Discard")
@@ -616,15 +638,35 @@ try {
     // about the contract this line exists to check.
     console.log(
       `  strip cells: ${seen.shape.cells.filter((c) => c.visible).length} visible` +
-        ` of ${seen.shape.cells.length}`,
+        ` of ${seen.shape.cells.length} drawn, ${seen.shape.expected} expected`,
     );
+    // A cell the reader is owed and the page never drew leaves no paragraph to
+    // measure, so the run would otherwise report "5 visible of 5" and pass.
+    for (const absent of seen.shape.missing) {
+      hiddenCells.push(`${label} · "${absent}" not drawn at all`);
+    }
     for (const cell of seen.shape.cells) {
       console.log(
-        `    "${cell.label}" ${cell.visible ? `${cell.width}px` : "HIDDEN"} · ` +
+        `    "${cell.label}" ${cell.visible ? `${cell.width}px` : "OFF SCREEN"} · ` +
+          `at ${cell.left},${cell.top} · ` +
           `${cell.figures} · after ${cell.afterColor} · ` +
           `note ${cell.note ?? "none"}${cell.note && !cell.noteVisible ? " (hidden)" : ""}`,
       );
-      if (!cell.visible) hiddenCells.push(`${label} · "${cell.label}"`);
+      if (!cell.visible) hiddenCells.push(`${label} · "${cell.label}" off screen`);
+    }
+    // Six visible boxes is not the phone's contract. Six ~55px cells in one row,
+    // or six full-width rows, leave every box on screen and satisfy both the unit
+    // test and the visibility check while breaking the laid-out ruling — so the
+    // positions themselves are counted: three columns, two rows.
+    if (width < 768 && seen.shape.missing.length === 0) {
+      const columns = new Set(seen.shape.cells.map((c) => c.left)).size;
+      const rows = new Set(seen.shape.cells.map((c) => c.top)).size;
+      console.log(`  phone grid: ${columns} column(s) x ${rows} row(s)`);
+      if (columns !== 3 || rows !== 2) {
+        hiddenCells.push(
+          `${label} · strip laid out ${columns}x${rows}, expected 3 columns x 2 rows`,
+        );
+      }
     }
     console.log(
       `  type moves: ${
@@ -861,7 +903,7 @@ if (crushedHeadings.length > 0) {
 }
 
 if (hiddenCells.length > 0) {
-  console.log(`\n########## FAIL · a mix cell was off screen`);
+  console.log(`\n########## FAIL · the mix strip is not the six cells it owes`);
   for (const line of hiddenCells) console.log(`  ${line}`);
   process.exitCode = 1;
 }

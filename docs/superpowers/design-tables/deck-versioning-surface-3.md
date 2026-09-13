@@ -407,7 +407,7 @@ The strip needs `cmc` in the detail select and the version's cards joined throug
 | gap | `7px` | `10px` |
 | margin-bottom | `11px` | `10px` |
 | flex-wrap | three columns, two rows (`grid-cols-3`) | — (single row) |
-| cells drawn | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` (Discrepancy 14, resolved) |
+| cells drawn | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` (Discrepancy 14, resolved) |
 
 ### Strip cell
 

@@ -133,7 +133,7 @@ value appears **only** here — no row carries one.
 | display | `grid` | `flex` |
 | gap | `7px` | `10px` |
 | margin-bottom | `11px` | `10px` |
-| cells drawn | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` |
+| cells drawn | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` |
 | wrap | three columns, two rows (`grid-cols-3`) | — (single row, `flex:1` each) |
 
 **Ruling 2026-09-13 (Hugh):** "We need to render all of these cards on mobile, we can't just

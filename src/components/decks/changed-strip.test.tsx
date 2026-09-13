@@ -51,8 +51,15 @@ describe("ChangedStrip", () => {
     // the browser probe's question. What is answerable here is the markup that
     // used to hide three of them: a cell classed `hidden md:block` is drawn on
     // desktop only, whatever the reader's width.
-    for (const role of ["ramp", "draw", "removal", "wipes", "land"] as const) {
-      const cell = screen.getByText(RECOMMENDED_MIX[role].label).parentElement;
+    const labels = [
+      deckVersioningCopy.changed.manaValue,
+      ...(["ramp", "draw", "removal", "wipes", "land"] as const).map(
+        (role) => RECOMMENDED_MIX[role].label,
+      ),
+    ];
+    expect(labels).toHaveLength(6);
+    for (const label of labels) {
+      const cell = screen.getByText(label).parentElement;
       expect(cell?.className.split(/\s+/)).not.toContain("hidden");
     }
   });
