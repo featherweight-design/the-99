@@ -19,16 +19,19 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
-  "E2E_AUDIT_USER_EMAIL",
-  "E2E_AUDIT_USER_PASSWORD",
-  "CLERK_SECRET_KEY",
-]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+// Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
+// code path below and has no password to give, which is how the local dev instance
+// is actually set up.
+const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const inventoryPath = process.argv[2];
 if (!inventoryPath) throw new Error("Pass the inventory JSON path.");
 const inventory = JSON.parse(await readFile(inventoryPath, "utf8"));
-const outDir = path.resolve(inventory.out ?? "contact-sheet");
+// Relative to the repository by default, so the command in a checked-in inventory
+// runs the same way on anyone's machine. An absolute `out` still wins, for a run
+// that wants to write somewhere specific.
+const outDir = path.resolve(process.cwd(), inventory.out ?? `contact-sheets/${path.basename(inventoryPath, ".json")}`);
 await mkdir(outDir, { recursive: true });
 
 const WIDTHS = inventory.widths ?? [

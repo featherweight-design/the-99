@@ -151,6 +151,18 @@ describe("priceFor", () => {
       .toEqual({ fact: expect.objectContaining({ cents: 241 }) });
   });
 
+  it("stays silent where one key in the set names two printings", () => {
+    // One KEY is not always one printing: two variants can share a collector number,
+    // and the set then holds two of the card behind a single key.
+    const prices = indexPriceRows([
+      row({ scryfall_id: "s-a" }),
+      row({ scryfall_id: "s-b", price_cents: 9999 }),
+    ]);
+
+    expect(prices.catalogKeys).toEqual(["C21|263"]);
+    expect(priceFor(prices, { setCode: "C21", collectorNumber: "" })).toBeNull();
+  });
+
   it("stays silent where the set holds two printings of the card", () => {
     // A set with a variant: the holding names the set and nothing else, and either
     // could be the copy in hand. Row 1.10 forbids picking one.

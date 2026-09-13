@@ -1,6 +1,5 @@
 {
   "feature": "Card detail \u2014 price, zoom, flip",
-  "out": "/private/tmp/claude-501/-Users-huey-Projects-the-99/05a735ce-94f9-4c79-b08c-78e90ab23a14/scratchpad/contact-sheet-card-detail",
   "rows": [
     {
       "id": "collection-rows",
@@ -95,7 +94,7 @@
         },
         {
           "clickRole": "link",
-          "name": "[A-Za-z]",
+          "name": "view commander details|^View ",
           "settle": 14000
         },
         {

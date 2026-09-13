@@ -10,9 +10,12 @@
 // is nullable — a bare `Name,Qty` import carries neither an id nor a collector
 // number — so a `BrowsePrinting` may reach the modal with no `scryfallId`. Where
 // it has one, that is the exact question; where it has only a set and a collector
-// number, that pair names the same printing. Where it has neither, the caller
-// renders nothing: silence is the honest state, because no printing was named to
-// ask about. Falling back to the representative printing the way `resolveImageUri`
+// number, that pair names the same printing. Where it has neither, the catalog is
+// asked whether the holding still names exactly one printing — a set with one
+// printing of the card does, and so does a card with one printing in existence —
+// and only where it does not is the answer silence. That last widening is not a
+// nicety: every Moxfield, Archidekt and pasted import carries neither an id nor a
+// number, and without it the figure never appears on such a collection at all. Falling back to the representative printing the way `resolveImageUri`
 // does would put a different collector number's figure under this printing's art.
 //
 // LIVENESS IS NOT FILTERED HERE, for the reason `price-query.ts:34-41` records:
@@ -186,8 +189,13 @@ export function priceFor(
       ? prices.catalogKeys
       : prices.catalogKeys.filter((k) => k.startsWith(`${printing.setCode.toUpperCase()}|`));
     // The set narrows it to one, or — for a holding with no set either — the card has
-    // only one printing in existence and that is the one it must be.
-    if (inSet.length === 1) return { fact: prices.byPrintingKey[inSet[0]] ?? null };
+    // only one printing in existence and that is the one it must be. One KEY is not
+    // always one printing, though: two variants can share a collector number, and
+    // `ambiguousKeys` is where that is already worked out. A key on that list names
+    // two printings, so it narrows nothing.
+    if (inSet.length === 1 && !prices.ambiguousKeys.includes(inSet[0])) {
+      return { fact: prices.byPrintingKey[inSet[0]] ?? null };
+    }
     return null;
   }
   if (printing.setCode === "") return null;
