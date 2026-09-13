@@ -436,6 +436,14 @@ export function SetGridView(props: SetGridViewProps) {
   // understand and back out of. `aria-disabled` is what makes that safe: every radio stays
   // focusable, so this only decides where Tab lands, never whether focus can survive.
   const firstEnabledRarity = Math.max(0, rarityOptions.findIndex((o) => !o.disabled));
+  // The saved stop, unless a later colour or missing-only change has since zeroed that
+  // rarity — a disabled radio holding the group's only tab stop is a tab stop that cannot
+  // be used, which is the same defect as having none.
+  const offStateStop =
+    offStopRarity !== null && !rarityOptions[offStopRarity]?.disabled
+      ? offStopRarity
+      : firstEnabledRarity;
+
 
   return (
     <div>
@@ -781,9 +789,7 @@ export function SetGridView(props: SetGridViewProps) {
                     // The off state's tab stop is whichever radio the reader last used to
                     // reach it — moving it to the first radio while focus sits on another
                     // makes the next Tab skip the group entirely.
-                    tabIndex={on
-                      || (filters.rarities.length === 0
-                        && i === (offStopRarity ?? firstEnabledRarity))
+                    tabIndex={on || (filters.rarities.length === 0 && i === offStateStop)
                       ? 0
                       : -1}
                     onClick={() => {

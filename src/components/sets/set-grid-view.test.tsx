@@ -1268,3 +1268,29 @@ describe("SetGridView — the rarity group is reachable when nothing matches", (
     expect(radios[0]).toHaveAttribute("tabindex", "0");
   });
 });
+
+// Round 36: the off-state tab stop is remembered on the radio that reached it, and a later
+// colour change can zero that rarity. A disabled radio holding the group's only tab stop is
+// a tab stop that cannot be used — the same defect as having none.
+describe("SetGridView — the off-state stop survives a filter change", () => {
+  it("falls back when the remembered radio has since been disabled", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([
+      p("1", { rarity: "rare", colorIdentity: ["U"] }),
+      p("2", { rarity: "common", colorIdentity: ["W"] }),
+    ], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    // Clear via Rare, so the off-state stop is remembered there.
+    fireEvent.click(screen.getByRole("radio", { name: "Rare" }));
+    // Now filter to White, which has no rares — Rare becomes unavailable.
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    const rare = screen.getByRole("radio", { name: "Rare" });
+    expect(rare).toHaveAttribute("aria-disabled", "true");
+    expect(rare).toHaveAttribute("tabindex", "-1");
+    const stops = screen.getAllByRole("radio")
+      .filter((r) => r.getAttribute("tabindex") === "0");
+    expect(stops).toHaveLength(1);
+    expect(stops[0]).not.toHaveAttribute("aria-disabled", "true");
+  });
+});

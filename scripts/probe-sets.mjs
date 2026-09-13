@@ -193,7 +193,12 @@ async function run() {
         const m = label.match(/you have (\d+) of (\d+) in the base run/);
         return m !== null && Number(m[1]) < Number(m[2]);
       });
-      const link = incomplete ?? rows[0];
+      // The fallback must still be INDEXED: an unindexed row's label carries no ratio at
+      // all, and that page draws no cells — `waitForCells` would time out on a fixture the
+      // probe chose for itself while a usable set sat further down the list.
+      const indexed = rows.find((a) =>
+        /you have (none of \d+|\d+ of \d+) in the base run/.test(a.getAttribute("aria-label") ?? ""));
+      const link = incomplete ?? indexed ?? rows[0];
       return link ? link.getAttribute("href").split("/").pop() : null;
     });
     if (!code) throw new Error("No set to probe: the index listed none and PROBE_SET was unset.");
@@ -529,11 +534,16 @@ async function run() {
         // three rows are what §28 promises are fixed, and they are what this measures.
         const controls = chipRow.previousElementSibling;
         const result = document.querySelector("[data-set-result]");
-        const rackHeight = [controls, chipRow, result]
-          .filter(Boolean)
-          .reduce((sum, el) => sum + el.getBoundingClientRect().height, 0);
+        // All THREE, or nothing. Summing whatever happened to be present let the check
+        // report equal heights while measuring two rows — the invariant is "three rows,
+        // always all three", so a missing row is the failure, not a smaller sum.
+        const rows = [controls, chipRow, result];
+        const rackHeight = rows.every(Boolean)
+          ? rows.reduce((sum, el) => sum + el.getBoundingClientRect().height, 0)
+          : null;
         return {
-          rack: Math.round(rackHeight),
+          rowsFound: rows.filter(Boolean).length,
+          rack: rackHeight === null ? null : Math.round(rackHeight),
           chips: chipRow.querySelectorAll("span > button").length,
           // AVAILABLE pips only. `ColourPips` dims an `aria-disabled` hue to .42 by its own
           // contract, so including them made this check report the dimming defect it was
@@ -590,6 +600,13 @@ async function run() {
     );
     if (rest === null) {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");
+    } else if (rest.rack === null) {
+      failures += !report(
+        "all three rack rows are present to measure",
+        false,
+        `found ${rest.rowsFound} of 3 — the invariant is "always all three", so a missing `
+          + "row is the finding rather than a smaller sum",
+      );
     } else {
       failures += !report(
         "the rack's three rows do not move with the filter state",
