@@ -110,6 +110,17 @@ export function useDialogA11y(
       // No-op while no dialog is mounted (consumer rendered closed/null).
       const root = dialogRef.current;
       if (!root) return;
+
+      // Another dialog's key is not this one's business. The listener is on
+      // `window`, so EVERY mounted hook sees every key — and two dialogs can be
+      // up together, which the scroll-lock counting above exists for. This
+      // guard covers Escape as much as Tab: without it, Escape pressed inside
+      // the foreground dialog also closed the one behind it, and Tab had the
+      // background dialog yank focus into itself.
+      const active = document.activeElement as HTMLElement | null;
+      const activeDialog = active?.closest('[role="dialog"]') ?? null;
+      if (activeDialog !== null && activeDialog !== root) return;
+
       if (e.key === "Escape") {
         // Swallowed either way: a dialog that refuses Escape should still stop
         // the key reaching whatever is behind it.
@@ -122,7 +133,6 @@ export function useDialogA11y(
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
       // A dialog that took initial focus on ITS OWN root holds focus on an
       // element the trap cannot see: the root carries `tabIndex={-1}` so it is
       // deliberately excluded from `visibleFocusables`, and it is therefore
@@ -130,15 +140,6 @@ export function useDialogA11y(
       // very first Shift+Tab after opening walked out of an `aria-modal`
       // surface into the page behind it. Anything not in the list — the root,
       // or a child that opted out — enters at the appropriate end instead.
-      // Another dialog's Tab is not this one's business. The listener is on
-      // `window`, so every mounted hook sees every Tab — and two dialogs can be
-      // up together, which the scroll-lock counting above exists for. Focus
-      // inside a sibling modal is "not in this trap" by the test below, so
-      // without this the background dialog would yank focus into itself the
-      // moment the foreground one was Tabbed.
-      const activeDialog = active?.closest('[role="dialog"]') ?? null;
-      if (activeDialog !== null && activeDialog !== root) return;
-
       const inTrap = active !== null && focusables.includes(active);
       if (!inTrap) {
         e.preventDefault();

@@ -216,4 +216,29 @@ describe("useDialogA11y and inert subtrees", () => {
     expect(background.contains(document.activeElement)).toBe(false);
   });
 
+
+  it("does not close a background dialog on the foreground's Escape", () => {
+    // The guard has to cover Escape as much as Tab: every mounted hook sees the
+    // key, so an Escape meant for the dialog in front closed the one behind it.
+    const onClose = vi.fn();
+    const background = document.createElement("div");
+    background.setAttribute("role", "dialog");
+    document.body.appendChild(background);
+    appended.push(background);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(background);
+      useDialogA11y(ref, onClose);
+    });
+
+    const foreground = document.createElement("div");
+    foreground.setAttribute("role", "dialog");
+    foreground.innerHTML = `<button id="fg">fg</button>`;
+    document.body.appendChild(foreground);
+    appended.push(foreground);
+    foreground.querySelector<HTMLElement>("#fg")!.focus();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
 });

@@ -156,6 +156,28 @@ describe("CollectionFilterSheet", () => {
     expect(container.querySelector("[role='status']")?.textContent).toBe("");
   });
 
+  it("says WHY a value is out, in its own dimension's words", () => {
+    // The wide panel explains a zero-count option; a chip carrying only its
+    // label and count leaves a screen-reader user an unexplained dead control.
+    render(sheet());
+    expect(
+      screen.getByRole("switch", { name: /Land, no cards match your other filters/i }),
+    ).toBeTruthy();
+  });
+
+  it("dims a degraded group once, not twice", () => {
+    // CSS opacity compounds through a parent: 0.42 × 0.42 is 0.18, far fainter
+    // than the selected chips beside them.
+    render(sheet({ availabilityOk: false }));
+    const chip = screen.getByRole("switch", { name: /Free/ });
+    expect(chip.className).not.toContain("opacity-[0.42]");
+  });
+
+  it("keeps the status region atomic, so a count is read in its sentence", () => {
+    const { container } = render(sheet());
+    expect(container.querySelector("[role='status']")).toHaveAttribute("aria-atomic", "true");
+  });
+
   it("tells an empty set vocabulary apart from a failed search", () => {
     // A collection whose rows all went unmatched has no sets to filter by, and
     // the sheet opens with a blank query — so the search string rendered as

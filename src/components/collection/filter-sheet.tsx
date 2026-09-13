@@ -195,6 +195,7 @@ function SheetBody({
                 count={option.count}
                 on={filters.types.includes(option.code)}
                 disabled={option.disabled}
+                unavailableAria={collectionFilterCopy.type.optionAriaUnavailable(option.label)}
                 onClick={() => onChange({ ...filters, types: toggle(filters.types, option.code) })}
               />
             ))}
@@ -230,6 +231,20 @@ function SheetBody({
                 // The wide panel disables a zero-count state; the sheet cannot
                 // be the one surface where a dead value is tappable.
                 disabled={option.count === 0 || !availabilityOk}
+                // The GROUP already carries the degraded dimming, and CSS
+                // opacity compounds through a parent: 0.42 × 0.42 is 0.18, far
+                // fainter than the selected chips beside them. Dimmed at one
+                // level only.
+                dimmed={availabilityOk}
+                // The value's own name leads either way. The degraded sentence
+                // says why filtering is out but never which value it is
+                // attached to, so on its own it would replace the name rather
+                // than explain it.
+                unavailableAria={
+                  availabilityOk
+                    ? collectionFilterCopy.availability.optionAriaUnavailable(option.label)
+                    : `${option.label}, ${availabilityCopy.degraded.collectionFilterDisabledAria}`
+                }
                 // `free` is the markerless state in the rows, so it is
                 // markerless here too.
                 glyph={
@@ -286,6 +301,7 @@ function SheetBody({
                   count={option.count}
                   on={filters.setCodes.includes(option.code)}
                   disabled={option.disabled}
+                  unavailableAria={collectionFilterCopy.set.optionAriaUnavailable(option.label)}
                   onClick={() =>
                     onChange({ ...filters, setCodes: toggle(filters.setCodes, option.code) })
                   }
@@ -303,7 +319,10 @@ function SheetBody({
           {copy.done}
         </button>
 
-        <span role="status" aria-live="polite" className="sr-only">
+        {/* `aria-atomic`, like the deck sheet, the rack's sheet and `ResultLine`.
+            Without it assistive tech may read only the changed substring — the
+            new number alone, with no sentence around it. */}
+        <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {announcement}
         </span>
       </div>
@@ -325,6 +344,8 @@ function Chip({
   count,
   on,
   disabled,
+  dimmed = true,
+  unavailableAria,
   glyph,
   onClick,
 }: {
@@ -332,9 +353,14 @@ function Chip({
   count: number;
   on: boolean;
   disabled?: boolean;
+  /** False when an ancestor already dims — opacity compounds through a parent. */
+  dimmed?: boolean;
+  /** Why this value is out, in its dimension's own words. */
+  unavailableAria?: string;
   glyph?: React.ReactNode;
   onClick: () => void;
 }) {
+  const out = Boolean(disabled) && !on;
   return (
     <button
       type="button"
@@ -345,13 +371,18 @@ function Chip({
       // honour it, so the sheet cannot be the one surface where a dead value is
       // tappable. A LIT one stays live, or the filter that emptied the list is
       // the one nobody can turn off.
-      aria-disabled={disabled && !on ? true : undefined}
+      aria-disabled={out ? true : undefined}
+      // The wide panel explains a zero-count option in its dimension's own
+      // words; a chip carrying only its label and count leaves a screen-reader
+      // user with an unexplained dead control.
+      aria-label={out ? unavailableAria : undefined}
       onClick={() => {
-        if (!(disabled && !on)) onClick();
+        if (!out) onClick();
       }}
       className={[
         CHIP,
-        disabled && !on ? "cursor-default opacity-[0.42]" : "",
+        out ? "cursor-default" : "",
+        out && dimmed ? "opacity-[0.42]" : "",
         on
           ? "border-[color:var(--accent)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
           : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]",
