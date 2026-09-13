@@ -629,10 +629,15 @@ describe("SetGridView — the cell forwards its full-size art", () => {
 // ADDENDUM-STATES §1-5, and what each must NOT do, which is half of what the file says.
 describe("SetGridView — the rack, chassis-conformant", () => {
   const chips = () => document.querySelector("[data-set-chips]") as HTMLElement;
+  // The visible text: a collapsed colour chip splits its count (aria-hidden) from its
+  // spoken names (sr-only), so read the aria-hidden half where one exists.
   const chipLabels = () =>
     [...chips().querySelectorAll("span")]
       .filter((el) => el.querySelector("button"))
-      .map((el) => el.textContent?.replace("×", "").trim());
+      .map((el) => {
+        const shown = el.querySelector('[aria-hidden="true"]');
+        return (shown ? shown.textContent : el.textContent?.replace("×", ""))?.trim();
+      });
 
   // ——— 1 · Rest ———
   it("prints the rest line rather than collapsing row 2", () => {
@@ -987,5 +992,44 @@ describe("SetGridView — the phone chip scroller has room for its targets", () 
     const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
     const scroller = container.querySelector("[data-set-chips] .overflow-x-auto") as HTMLElement;
     expect(scroller.className).toMatch(/h-\[44px\] md:h-auto/);
+  });
+});
+
+// The count is for the eye, the names are for the ear — the split `filter-chassis.tsx`
+// makes with its `spoken` field. §28 rules the VISIBLE label (`3 colours`, never one chip
+// per hue) and says nothing about the accessible name; without the split a screen reader
+// hears "3 colours" and, on a phone, has no pips mounted to find out which three.
+describe("SetGridView — the collapsed colour chip names its hues", () => {
+  it("shows the count and speaks the names", () => {
+    search = "c=W,U,B";
+    const { container } = view([p("1"), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    expect(row.querySelector('[aria-hidden="true"]')?.textContent).toBe("3 colours");
+    expect(row.querySelector(".sr-only")?.textContent).toBe("White, Blue, Black");
+  });
+
+  it("names them on the dismiss control too, not the count", () => {
+    search = "c=W,U,B";
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: "Remove filter: White, Blue, Black" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove filter: 3 colours" })).toBeNull();
+  });
+
+  it("leaves a single-colour chip alone — its label is already the name", () => {
+    search = "c=W";
+    const { container } = view([p("1"), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    expect(row.querySelector(".sr-only")).toBeNull();
+    expect(screen.getByRole("button", { name: "Remove filter: White" })).toBeInTheDocument();
+  });
+
+  // §28's open item 3 defers the chip line's pixels to the chassis package.
+  it("takes the chassis's chip tokens", () => {
+    search = "c=W";
+    const { container } = view([p("1"), p("2")], []);
+    const chip = container.querySelector("[data-set-chips] span[style]") as HTMLElement;
+    expect(chip.style.background).toBe("var(--bg)");
+    expect(chip.style.border).toBe("1px solid var(--border-strong)");
   });
 });

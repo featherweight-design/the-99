@@ -291,7 +291,7 @@ export function SetGridView(props: SetGridViewProps) {
   // The chip line, in DIMENSION order and never click order — a line that re-orders itself
   // as you use it is a line you have to re-read. Colour collapses past one pip rather than
   // printing one chip per hue.
-  const chips: { key: string; label: string; onRemove: () => void }[] = [];
+  const chips: { key: string; label: string; spoken?: string; onRemove: () => void }[] = [];
   if (effective.colors.length === 1) {
     const only = effective.colors[0];
     chips.push({
@@ -302,9 +302,17 @@ export function SetGridView(props: SetGridViewProps) {
       onRemove: () => setFilters({ ...filters, colors: [] }),
     });
   } else if (effective.colors.length > 1) {
+    // The count is for the eye, the NAMES are for the ear — the split
+    // `filter-chassis.tsx` already makes with its `spoken` field. §28 rules the visible
+    // label (`3 colours`, never one chip per hue) and says nothing about the accessible
+    // name; without this a screen reader reading the row hears "3 colours" and, on a
+    // phone, has no pips mounted to find out which three.
+    const names = effective.colors
+      .map((c) => chassisCopy.colour.names[c.toLowerCase() as "w" | "u" | "b" | "r" | "g"]);
     chips.push({
       key: "c",
       label: setFilterCopy.chip.colour(effective.colors.length),
+      spoken: names.join(", "),
       onRemove: () => setFilters({ ...filters, colors: [] }),
     });
   }
@@ -622,17 +630,27 @@ export function SetGridView(props: SetGridViewProps) {
                 key={chip.key}
                 className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap
                            rounded-[7px] px-[8px] py-[3px] font-mono text-[11px] leading-[14px]"
+                // The chassis's own tokens (`filter-chassis.tsx`), not this page's guess:
+                // §28's open item 3 defers the chip line's pixels to that package, and a
+                // visibly different chip on one route is what the deferral exists to stop.
                 style={{
                   color: "var(--fg-body)",
-                  background: "var(--surface-sunken)",
-                  border: "1px solid var(--border)",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border-strong)",
                 }}
               >
-                {chip.label}
+                {chip.spoken ? (
+                  <>
+                    <span aria-hidden="true">{chip.label}</span>
+                    <span className="sr-only">{chip.spoken}</span>
+                  </>
+                ) : (
+                  chip.label
+                )}
                 <button
                   type="button"
                   onClick={chip.onRemove}
-                  aria-label={chassisCopy.chips.removeAria(chip.label)}
+                  aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
                   className="relative cursor-pointer border-0 bg-transparent p-0
                              text-[color:var(--fg-muted)]
                              after:absolute after:left-1/2 after:top-1/2 after:h-[44px]
