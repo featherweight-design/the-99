@@ -2193,6 +2193,40 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(shown).toHaveLength(1);
   });
 
+  // A delta that starts while the bar is drawn opens the head; opening Filters from that
+  // head then flipped the bar back and unmounted the trigger `useDialogA11y` had saved, in
+  // the same render that showed the dialog.
+  it("holds the head open when the sheet opens during a delta", () => {
+    stubDesktop(false);
+    const r = view([p("1"), p("2")], []);
+    scrollTo(400);
+    expect(isShy(r.container)).toBe(true);
+    deltaProps.firing = true;
+    try {
+      r.rerender(r.again());
+      expect(isShy(r.container)).toBe(false);
+      fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      // The head it was opened from is still the head that is drawn.
+      expect(isShy(r.container)).toBe(false);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  // `effective` forces missing-only off at 100%, but `m=1` can still be in the URL — the
+  // stale-filter case Clear exists for — and the bar showed no badge for it at all.
+  it("badges a stale m=1 on a complete set", () => {
+    stubDesktop(false);
+    search = "m=1";
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: true })], ["1", "2"],
+    );
+    scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("[aria-label*='filter']")?.textContent).toBe("1");
+  });
+
   // A complete base run can still have extras and enough cells to scroll, and the icon is
   // `aria-hidden` — a bar carrying the bare name told a screen-reader user nothing.
   it("keeps the ratio and the completion state when the set is complete", () => {

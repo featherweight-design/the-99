@@ -173,7 +173,12 @@ export function SetGridView(props: SetGridViewProps) {
   }
   const [deltaFiring, setDeltaFiring] = useState(false);
   const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
-  const mayCollapse = !isDesktop && !(deltaFiring && !sheetOpen);
+  //
+  // `sheetOpen` is deliberately NOT a term here. It was, and that made this flip in the
+  // very render the sheet opened — so the freeze below captured the value AFTER the change
+  // it exists to prevent. The sheet's job is to hold whatever was true; this expression's
+  // job is to say what would be true without it.
+  const mayCollapse = !isDesktop && !deltaFiring;
   useEffect(() => {
     if (!mayCollapse) return;
     // An open sheet FREEZES the head, in whichever state it is already in. It does not
@@ -578,7 +583,11 @@ export function SetGridView(props: SetGridViewProps) {
   // open row draws that toggle beside the badge, and counting it there would state one
   // fact twice — but the collapsed bar hides the toggle and the sheet does not carry it,
   // so there the same exclusion hides a live filter completely.
-  const collapsedFiltersOn = filtersOn + (effective.missingOnly ? 1 : 0);
+  //
+  // The RAW filter, not `effective`. At 100% `effective` forces missing-only off while
+  // `m=1` can still be in the URL — the stale-filter case Clear exists for — and reading
+  // `effective` there left the bar with no badge at all for a parameter that is set.
+  const collapsedFiltersOn = filtersOn + (filters.missingOnly ? 1 : 0);
   // The sheet's Clear reads the RAW filters, not `effective`. At 100% missing-only is
   // dropped from what is applied, but `m=1` can still be in the URL — a reader completes a
   // set with it set — and gating Clear on `effective` left that parameter with no way out
@@ -738,7 +747,24 @@ export function SetGridView(props: SetGridViewProps) {
   // reader who scrolls, then triggers a delta strip, restores the full head and keeps the
   // scroll state underneath it — rather than the strip clearing the state and the head
   // collapsing again the moment it is dismissed.
-  const shy = collapsed && mayCollapse;
+  const wantShy = collapsed && mayCollapse;
+  /**
+   * An open sheet FREEZES the head, and the freeze has to hold against the delta strip as
+   * well as against scroll.
+   *
+   * The scroll listener standing down covered one half. The other half is `mayCollapse`
+   * itself moving: a delta that starts while the bar is drawn opens the head, and opening
+   * `Filters` from that head then made `mayCollapse` true again and flipped the bar back —
+   * unmounting the trigger `useDialogA11y` had saved, in the same render that showed the
+   * dialog.
+   *
+   * So the answer the sheet gets is the one that was true when it opened. Adjusted during
+   * render, this file's pattern for deriving state from a changed input.
+   */
+  const [shyAtSheetOpen, setShyAtSheetOpen] = useState<boolean | null>(null);
+  if (sheetOpen && shyAtSheetOpen === null) setShyAtSheetOpen(wantShy);
+  if (!sheetOpen && shyAtSheetOpen !== null) setShyAtSheetOpen(null);
+  const shy = sheetOpen && shyAtSheetOpen !== null ? shyAtSheetOpen : wantShy;
 
   useLayoutEffect(() => {
     sizeSpacer();
@@ -966,7 +992,11 @@ export function SetGridView(props: SetGridViewProps) {
             the reader — allowed here and nowhere else on this surface, because a delta is
             news and the §28 three-row rule is about the filter state. The pin this replaced
             grew the head by its whole open form instead. */}
-        <div data-set-delta>
+        {/* `flow-root`, so the strip's own `mt-[10px]` is INSIDE this box. Without a
+            formatting context that margin collapses through the wrapper, and the height
+            subtracted from the reserve is 10px short of what the strip actually occupies —
+            leaving the reserve 10px too tall once a delta fires and clears. */}
+        <div data-set-delta className="flow-root">
         <DeltaStrip
           // The set code is in the key: two sets with the same indexed state and the same
           // ownership fingerprint — two you hold nothing from — would otherwise reuse the
