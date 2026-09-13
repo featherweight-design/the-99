@@ -2008,13 +2008,43 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(isShy(container)).toBe(false);
   });
 
-  it("drops the chip line, the result line and the cost strip", () => {
+  it("drops the chip line and the cost strip", () => {
     stubDesktop(false);
     const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
     scrollTo(200);
     expect(container.querySelector("[data-set-chips]")?.className).toMatch(/hidden/);
-    expect(container.querySelector("[data-set-result]")?.className).toMatch(/hidden/);
     expect(container.querySelector("[data-set-cost]")).toBeNull();
+  });
+
+  // `Filters` IS reachable from the collapsed bar, so the result count still changes
+  // there. Unmounting the only `role="status"` left a screen-reader user filtering into
+  // silence — and a SECOND region beside it would announce twice, so it is one node whose
+  // class changes rather than two that swap.
+  it("keeps the result region announcing, unseen, while collapsed", () => {
+    stubDesktop(false);
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const before = container.querySelector("[data-set-result]");
+    scrollTo(200);
+    const after = container.querySelector("[data-set-result]");
+    expect(after).toBe(before);
+    expect(after?.className).toBe("sr-only");
+    expect(screen.getAllByRole("status").filter((el) => /cell/.test(el.textContent ?? "")))
+      .toHaveLength(1);
+  });
+
+  // The open row draws the Missing toggle beside the badge, so counting it there says one
+  // thing twice. The collapsed bar hides it and the sheet does not carry it, so there the
+  // same exclusion hides a live filter completely.
+  it("counts missing-only on the collapsed badge, unlike the open row", () => {
+    stubDesktop(false);
+    search = "m=1";
+    const { container } = view([p("1"), p("2")], ["1"]);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("[aria-label*='filter']")?.textContent).toBe("1");
+    scrollTo(0);
+    // And the open row still does not count it.
+    expect(screen.getByRole("button", { name: /^Filters/ }).textContent).not.toMatch(/1/);
   });
 
   // What the collapsed bar keeps: where you are, how far along, and the two ways to change
@@ -2090,6 +2120,41 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     const { container } = view([p("1"), p("2")], []);
     scrollTo(400);
     expect(isShy(container)).toBe(true);
+  });
+
+  // The field is inside the `hidden` open-head subtree while the bar is drawn, so the
+  // button has to OPEN the head before focusing — `scrollTo` does not commit the state,
+  // and focusing a hidden input does nothing at all.
+  it("opens the head and lands focus in the field", async () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    fireEvent.click(screen.getByRole("button", { name: /Show the search/ }));
+    // The STATE, first. JSDOM applies no CSS and will happily focus an input inside a
+    // `hidden` subtree, so asserting focus alone passes whether or not the head opened —
+    // which is the whole defect. Opening is the part a browser would enforce.
+    expect(isShy(container)).toBe(false);
+    await act(async () => {
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+    expect(document.activeElement)
+      .toBe(screen.getByRole("searchbox", { name: /Search cards/ }));
+  });
+
+  // The reserve is a SIBLING, not a wrapper. A sticky element sticks only within its
+  // containing block, so a wrapper the height of the open head pushed the head out of the
+  // viewport past that height — the feature stopped existing where it was meant to start.
+  it("keeps the head out of any box that would bound its stickiness", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    const spacer = container.querySelector("[data-set-head-reserve]");
+    expect(spacer).toBeTruthy();
+    // A sibling of the head, never its parent.
+    expect(spacer?.parentElement).toBe(head(container).parentElement);
+    expect(head(container).parentElement?.contains(
+      container.querySelector("[data-set-grid]"),
+    )).toBe(true);
   });
 
   it("never collapses at desktop, however far the reader scrolls", () => {

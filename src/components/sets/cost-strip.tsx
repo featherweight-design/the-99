@@ -10,7 +10,7 @@
 // ONE COUNT. The result line, this button's label and this sentence's denominator are
 // three readings of the same filtered-cell computation, passed in rather than recomputed.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatCents } from "../../lib/decks/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import type { CostToComplete } from "../../lib/sets/cost";
@@ -47,6 +47,21 @@ export function CostStrip({
   // containing it has a height nobody can predict, which is the ghost-Clear defect §28
   // already ruled out on the row below.
   const [expanded, setExpanded] = useState(false);
+  /**
+   * Which toggle to focus after the swap. Each of the two unmounts the other, so without
+   * this a keyboard reader who opens the strip — or closes it again — is left on the body
+   * rather than on the control that now represents the same disclosure.
+   *
+   * A ref rather than an effect on `expanded`: the very first render must not steal focus
+   * from wherever the reader actually is.
+   */
+  const focusToggle = useRef(false);
+  const takeFocus = (node: HTMLButtonElement | null) => {
+    if (node !== null && focusToggle.current) {
+      focusToggle.current = false;
+      node.focus();
+    }
+  };
 
   // Three cases, and only the middle one is "no price". Nothing missing is a real zero.
   // Missing cards that cannot be costed is unavailable pricing, and $0.00 there would read
@@ -77,10 +92,19 @@ export function CostStrip({
       {!expanded ? (
         <button
           type="button"
+          ref={takeFocus}
           data-set-cost-toggle
-          onClick={() => setExpanded(true)}
+          onClick={() => {
+            focusToggle.current = true;
+            setExpanded(true);
+          }}
           aria-expanded={false}
-          aria-label={setPageCopy.cost.expandAria(caveats)}
+          aria-label={setPageCopy.cost.expandAria(
+            `${total} ${(scope === "extras"
+              ? setPageCopy.cost.collapsedTailExtras
+              : setPageCopy.cost.collapsedTail)(cost.pricedCount, cost.missingCount)}`,
+            caveats,
+          )}
           className="flex h-[44px] w-full items-center gap-[8px] px-[12px] text-left md:hidden"
         >
           <span className="flex min-w-0 flex-1 items-baseline gap-[6px] font-mono text-[12px]">
@@ -176,8 +200,12 @@ export function CostStrip({
       {expanded ? (
         <button
           type="button"
+          ref={takeFocus}
           data-set-cost-toggle
-          onClick={() => setExpanded(false)}
+          onClick={() => {
+            focusToggle.current = true;
+            setExpanded(false);
+          }}
           aria-expanded
           aria-label={setPageCopy.cost.collapseAria}
           className="flex h-[44px] w-full items-center justify-center font-mono text-[11px]

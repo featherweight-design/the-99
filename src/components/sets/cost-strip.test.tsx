@@ -158,6 +158,17 @@ describe("CostStrip — the phone's collapsed row", () => {
     expect(opener()).toHaveAttribute("aria-label", expect.stringContaining("3 notes"));
   });
 
+  // An explicit `aria-label` REPLACES the button's descendant text, so a name stating only
+  // the action removed the very audit information this row exists to keep: the figure and
+  // what it covers were on the screen and absent from the name.
+  it("puts the figure and its coverage in the accessible name", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    const label = opener()?.getAttribute("aria-label") ?? "";
+    expect(label).toMatch(/\$1,284\.40/);
+    expect(label).toMatch(/193 of 214/);
+    expect(label).toMatch(/Show the full cost/);
+  });
+
   it("says one note, not one notes", () => {
     render(<CostStrip cost={cost({ absentCount: 2 })} href="https://manapool.com/x" />);
     expect(opener()).toHaveAttribute("aria-label", expect.stringContaining("1 note"));
@@ -202,5 +213,34 @@ describe("CostStrip — the phone's collapsed row", () => {
     for (const b of toggles()) expect(b.className).toMatch(/md:hidden/);
     const full = container.querySelector("[data-set-cost] > div") as HTMLElement;
     expect(full.className).toMatch(/md:flex/);
+  });
+});
+
+// Each toggle unmounts the other, so a reader who is not using a mouse has to be handed
+// to the control that now represents the same disclosure — in BOTH directions. Focus was
+// falling to the body on the way back.
+describe("CostStrip — focus survives the swap", () => {
+  const toggles = () => screen.getAllByRole("button")
+    .filter((b) => b.hasAttribute("data-set-cost-toggle"));
+  const opener = () => toggles().find((b) => b.getAttribute("aria-expanded") === "false");
+  const closer = () => toggles().find((b) => b.getAttribute("aria-expanded") === "true");
+
+  it("lands on the collapse control after expanding", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    fireEvent.click(opener() as HTMLElement);
+    expect(document.activeElement).toBe(closer());
+  });
+
+  it("and back on the expand control after collapsing", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    fireEvent.click(opener() as HTMLElement);
+    fireEvent.click(closer() as HTMLElement);
+    expect(document.activeElement).toBe(opener());
+  });
+
+  // The first render must not steal focus from wherever the reader actually is.
+  it("takes no focus on mount", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    expect(document.activeElement).toBe(document.body);
   });
 });

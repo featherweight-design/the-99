@@ -291,12 +291,12 @@ export const setPageCopy = {
       `to finish the extras · ${priced} of ${missing}`,
     // The count is in the name because the caveats are the reason this expands at all: a
     // reader who cannot see the row needs to know whether opening it says anything.
-    expandAria: (caveats: number) =>
-      caveats === 0
-        ? "Show the full cost, with the send button"
-        : caveats === 1
-          ? "Show the full cost, with the send button and 1 note"
-          : `Show the full cost, with the send button and ${caveats} notes`,
+    // The figure and its coverage are IN the name, not only on the screen. An explicit
+    // `aria-label` replaces the button's descendant text, so a name that stated only the
+    // action removed the very audit information this row exists to keep.
+    expandAria: (figure: string, caveats: number) =>
+      `${figure}. Show the full cost, with the send button`
+      + (caveats === 0 ? "" : caveats === 1 ? " and 1 note" : ` and ${caveats} notes`),
     collapseAria: "Hide the full cost",
     // R3: at 100% the same strip re-scopes to the extras rather than being
     // replaced by a button. Same component, same sentence shape, same selector.

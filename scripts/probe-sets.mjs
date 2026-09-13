@@ -809,9 +809,19 @@ async function run() {
         })(),
         // The reserve. `offsetParent` is the wrapper the sticky head floats inside, and its
         // height is what the DOCUMENT is holding — the number that must not change.
-        reserved: el.parentElement
-          ? Math.round(el.parentElement.getBoundingClientRect().height)
-          : null,
+        // WHERE IT IS, not only how tall. The first version of this block measured height
+        // and the collapsed attribute and reported clean while the head was scrolled out of
+        // the viewport entirely — the reserve had been a WRAPPER, which is a containing
+        // block, and a sticky element cannot outlive one.
+        top: Math.round(el.getBoundingClientRect().top),
+        // What the document is holding: the head's own box plus the spacer beside it.
+        reserved: (() => {
+          const spacer = document.querySelector("[data-set-head-reserve]");
+          return Math.round(
+            el.getBoundingClientRect().height
+            + (spacer === null ? 0 : spacer.getBoundingClientRect().height),
+          );
+        })(),
       };
     });
     const scrollTo = async (y) => {
@@ -846,6 +856,15 @@ async function run() {
       // padding and its border that is 75px, and the number is asserted rather than merely
       // reported: "shorter" was true at 140px too, which is the same block with members
       // hidden rather than the one-row bar the ruling draws.
+      // The point of the whole feature. Asserted at BOTH positions, because a head that
+      // sticks at rest and leaves at 400 is the exact bug this PR shipped and the exact one
+      // its first probe could not see.
+      failures += !report(
+        "the head is still at the top of the viewport after scrolling",
+        Math.abs(shyState.top) <= 1,
+        `top ${shyState.top}px at 400 — ${restState.top}px unscrolled, which is the app`
+        + " chrome above it and not this head's doing",
+      );
       failures += !report(
         "the collapsed bar is the one-row form, not the full block with members hidden",
         shyState.bar === 52 && shyState.height <= 80,
@@ -866,6 +885,17 @@ async function run() {
           && Math.abs(restState.reserved - shyState.reserved) <= 1,
         `reserved ${restState.reserved}px at rest, ${shyState.reserved}px collapsed`,
       );
+      // Deep, because the bug this replaces only appeared once the scroll passed the
+      // height of the box the head had been wrapped in. A single mid-page sample would
+      // have missed it at 400 too if the reserve had been a little taller.
+      await scrollTo(2000);
+      const deep = await headNow();
+      failures += !report(
+        "and stays there far down the grid",
+        deep !== null && Math.abs(deep.top) <= 1 && deep.shy,
+        deep === null ? "the head could not be measured" : `top ${deep.top}px, shy=${deep.shy}`,
+      );
+
       await scrollTo(20);
       const restored = await headNow();
       failures += !report(
