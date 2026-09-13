@@ -26,6 +26,7 @@ import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -106,8 +107,15 @@ async function run(page, steps) {
     }
     // A field a surface only reaches its interesting state through typing — the
     // set panel narrows its list as you type, and an empty field shows every set.
+    //
+    // Scoped through `onPage`, the contract `lib/surface.mjs` states: the shell
+    // renders around `<main>` and carries the same selectors page controls do,
+    // so an unscoped field lookup is a substitution waiting for a shell input.
+    // `click` and `clickRole` above predate that helper and are still unscoped;
+    // sweeping them is a change to every inventory's steps at once and belongs
+    // in its own pass, not in the one that adds a third verb.
     if (step.fill !== undefined) {
-      await page.locator(step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
+      await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
     }
     if (step.wait) await page.waitForSelector(step.wait, { timeout: 15_000 });
     if (step.settle) await page.waitForTimeout(step.settle);
