@@ -101,6 +101,9 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
           : deckVersioningCopy.stamp.value(game.versionNumber)}
       </span>
 
+      {/* The marks cell already wraps, so the note takes a full-width line
+          inside it rather than a second row: nothing about the row's own
+          structure changes, and the `<li>` grows to fit at both widths. */}
       <span className="flex-1 min-w-0 flex flex-wrap gap-[6px]">
         {marks.length === 0 ? (
           <span className="font-mono text-[10.5px] text-fg-locked">{gameLogCopy.history.noMarks}</span>
@@ -120,6 +123,16 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
               {axisCopy[key].label}
             </span>
           ))
+        )}
+        {/* The player's own words, drawn verbatim and unlabelled — a note is
+            plainly a note next to a row of vocabulary chips. `break-words`
+            because nothing constrains what gets typed into the column, and a
+            long unbroken string would otherwise push the row's controls off
+            the phone. */}
+        {game.notes !== null && game.notes.trim() !== "" && (
+          <span className="w-full text-[11.5px] leading-[1.45] text-fg-body break-words">
+            {game.notes}
+          </span>
         )}
       </span>
 

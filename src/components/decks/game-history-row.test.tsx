@@ -18,6 +18,7 @@ const GAME: DeckGame = {
   podSize: 4,
   playedAt: new Date("2026-09-01T12:00:00"),
   versionNumber: 3,
+  notes: null,
   worked: ["engine"],
   hurt: ["speed", "mana"],
 };
@@ -123,5 +124,34 @@ describe("GameHistoryRow", () => {
     fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmYes }));
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText(gameLogCopy.history.deleteRefused)).toBeInTheDocument();
+  });
+});
+
+// ── The note ──────────────────────────────────────────────────────────────────
+//
+// Written by hand against `deck_games.notes` — no form in the app produces one —
+// so the row's whole job is to draw whatever is in the column, and to draw
+// nothing at all when there isn't one.
+describe("a game's note", () => {
+  it("draws the note when the column holds one", () => {
+    mount({ ...GAME, notes: "Kept a two-lander and got there on turn four." });
+    expect(
+      screen.getByText("Kept a two-lander and got there on turn four."),
+    ).toBeInTheDocument();
+  });
+
+  // Null is the ordinary case — most games have nothing worth writing down. An
+  // empty or blank string is a column somebody cleared by hand, and drawing it
+  // would open a blank line under the chips for a note nobody wrote.
+  it.each([null, "", "   "])("draws no note line for %o", (notes) => {
+    const { container } = mount({ ...GAME, notes });
+    expect(container.querySelector(".break-words")).toBeNull();
+  });
+
+  // Nothing constrains what gets typed into the column, and an unbroken string
+  // would push the row's own controls off a phone.
+  it("lets a long note break rather than widening the row", () => {
+    mount({ ...GAME, notes: "x".repeat(400) });
+    expect(screen.getByText("x".repeat(400))).toHaveClass("break-words");
   });
 });

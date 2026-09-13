@@ -1,0 +1,1 @@
+ALTER TABLE "deck_games" ADD COLUMN "notes" text;

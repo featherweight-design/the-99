@@ -421,6 +421,12 @@ export const deckGames = pgTable("deck_games", {
   versionId: uuid("version_id").references(() => deckVersions.id, { onDelete: "set null" }),
   playedAt: timestamp("played_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // What happened, in the player's own words. Nullable and unconstrained:
+  // most games have nothing worth writing down, and the ones that do are not
+  // a vocabulary — that is what `deck_game_axes` is for. Nothing in the app
+  // writes this yet; the log form has no field and the actions do not accept
+  // one. It is written by hand against the database, and read back here.
+  notes: text("notes"),
 }, (t) => [
   check("deck_games_result_check", sql`${t.result} in ('win', 'loss', 'draw')`),
   check("deck_games_pod_size_check", sql`${t.podSize} between 2 and 8`),

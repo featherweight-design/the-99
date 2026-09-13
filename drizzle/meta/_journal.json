@@ -204,6 +204,13 @@
       "when": 1789199159788,
       "tag": "0028_gray_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1789277106167,
+      "tag": "0029_new_yellow_claw",
+      "breakpoints": true
     }
   ]
 }
