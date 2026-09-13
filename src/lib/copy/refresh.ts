@@ -116,19 +116,32 @@ export const refreshCopy = {
     // ONE accessible representation: the link it sits on has no descendants, and
     // the presentation it covers is `aria-hidden`, so nothing is announced
     // twice and no part of the visible identity goes unannounced.
+    //
+    // `played` is last, where the tile draws it, and it is optional because
+    // most tiles have no date to state: a Draft never draws one and a deck with
+    // no logged game draws nothing there. Omitting it from this label is what
+    // hiding the footer would otherwise cost — the date would be on screen and
+    // in no accessible representation at all.
     cardAria: (
       name: string,
       identity: string,
       status: string,
       count: string,
       detail: string,
-    ) => `${name}, ${identity}, ${status}, ${count}, ${detail}`,
+      played?: string,
+    ) =>
+      `${name}, ${identity}, ${status}, ${count}, ${detail}${played ? `, ${played}` : ""}`,
     // Building has no fourth thing — its count IS the explanation, and it is
     // already the third. The same is true of a Draft older than the day it was
     // created, which `detailDraft` cannot describe. Neither may fall back to
     // cardAria with the count repeated: a reader would hear the figure twice.
-    cardAriaNoDetail: (name: string, identity: string, status: string, count: string) =>
-      `${name}, ${identity}, ${status}, ${count}`,
+    cardAriaNoDetail: (
+      name: string,
+      identity: string,
+      status: string,
+      count: string,
+      played?: string,
+    ) => `${name}, ${identity}, ${status}, ${count}${played ? `, ${played}` : ""}`,
   },
 
   // ── Zero states ───────────────────────────────────────────────────────

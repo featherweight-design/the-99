@@ -277,7 +277,7 @@ describe("DeckCard", () => {
     );
     expect(
       screen.getByRole("link", {
-        name: "Atraxa, Praetors' Voice, Atraxa, Praetors' Voice, Non-red, To buy, 99 / 99, 3 to buy · $18.40",
+        name: "Atraxa, Praetors' Voice, Atraxa, Praetors' Voice, Non-red, To buy, 99 / 99, 3 to buy · $18.40, 2 days ago",
       }),
     ).toBeInTheDocument();
   });
@@ -304,7 +304,11 @@ describe("DeckCard", () => {
     // Both, visibly too, with the `+` the spines use: the accessible name
     // naming the pair while the line named one commander gave a sighted reader
     // a different deck identity than a screen reader got.
-    expect(screen.getByText(/Ishai.*\+.*Bruse Tarl/)).toBeInTheDocument();
+    // Three spans, because one truncating string loses the `+` and the partner
+    // in a narrow cell — so the text is matched across them.
+    const subtitle = screen.getByText("Ishai, Ojutai Dragonspeaker").parentElement!;
+    expect(subtitle.textContent).toContain("+");
+    expect(subtitle.textContent).toContain("Bruse Tarl, Boorish Herder");
   });
 
   // The pair's colour is the UNION of the two identities. A tile printing the

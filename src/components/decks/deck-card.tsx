@@ -161,8 +161,21 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
   const identity = `${deck.partnerName === null ? deck.commanderName : `${deck.commanderName} and ${deck.partnerName}`}, ${colour}`;
   const ariaLabel =
     detail === null
-      ? refreshCopy.decks.cardAriaNoDetail(deck.name, identity, deck.statusPill, count)
-      : refreshCopy.decks.cardAria(deck.name, identity, deck.statusPill, count, detail.text);
+      ? refreshCopy.decks.cardAriaNoDetail(
+          deck.name,
+          identity,
+          deck.statusPill,
+          count,
+          hasLastPlayed ? lastPlayed : undefined,
+        )
+      : refreshCopy.decks.cardAria(
+          deck.name,
+          identity,
+          deck.statusPill,
+          count,
+          detail.text,
+          hasLastPlayed ? lastPlayed : undefined,
+        );
 
   return (
     <article
@@ -279,9 +292,23 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
                 name already named the pair, so printing one of them left a
                 sighted reader with a different deck identity than a screen
                 reader got — on a pair deck, the wrong one. */}
-            <span className="min-w-0 truncate">
-              {deck.partnerName ? `${deck.commanderName} + ${deck.partnerName}` : deck.commanderName}
-            </span>
+            {deck.partnerName ? (
+              // Two spans with the joiner between them, never one string: a
+              // single `truncate` ellipsises the END of the primary name, so a
+              // narrow cell printed `Ishai, Ojutai…` and lost both the `+` and
+              // the partner — the two things that say *pair*. The partner takes
+              // the larger shrink factor, so it is the half that gives, which is
+              // the same ordered shrink the resume row and the spines use.
+              <span className="flex min-w-0 gap-[4px]">
+                <span className="min-w-0 truncate">{deck.commanderName}</span>
+                <span className="flex-none">+</span>
+                <span className="min-w-0 truncate" style={{ flexShrink: 1000 }}>
+                  {deck.partnerName}
+                </span>
+              </span>
+            ) : (
+              <span className="min-w-0 truncate">{deck.commanderName}</span>
+            )}
             <span className="flex-none whitespace-nowrap">· {colour}</span>
           </span>
         </div>
