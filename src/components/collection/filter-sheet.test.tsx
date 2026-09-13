@@ -126,6 +126,36 @@ describe("CollectionFilterSheet", () => {
     expect(container.querySelector("[role='status']")?.textContent).toContain("No sets match zzz");
   });
 
+  it("counts MATCHES, not the list it prepends selections to", () => {
+    // `sets` keeps a selected option visible through a query, so its length is
+    // not the match count — with LEA selected and `bloom` typed the list holds
+    // two and exactly one matches.
+    const { container } = render(sheet({ filters: { ...FILTERS, setCodes: ["LEA"] } }));
+    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "bloom" } });
+    act(() => vi.advanceTimersByTime(301));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("1 set matches bloom");
+  });
+
+  it("says nothing when the set field is cleared", () => {
+    // Clearing a field is not a result, and a blank query would announce the
+    // whole vocabulary as a match count nobody asked for.
+    const { container } = render(sheet());
+    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "bloom" } });
+    act(() => vi.advanceTimersByTime(301));
+    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "" } });
+    act(() => vi.advanceTimersByTime(301));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("1 set matches bloom");
+  });
+
+  it("stays quiet on an empty vocabulary rather than contradicting the list", () => {
+    // The list already reads "No sets to filter by"; "No sets match zzz" would
+    // say something different about the same state.
+    const { container } = render(sheet({ setOptions: [] }));
+    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "zzz" } });
+    act(() => vi.advanceTimersByTime(301));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+  });
+
   it("tells an empty set vocabulary apart from a failed search", () => {
     // A collection whose rows all went unmatched has no sets to filter by, and
     // the sheet opens with a blank query — so the search string rendered as

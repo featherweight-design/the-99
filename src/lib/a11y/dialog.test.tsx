@@ -193,4 +193,27 @@ describe("useDialogA11y and inert subtrees", () => {
     expect(document.activeElement).toBe(el.querySelector("#first"));
   });
 
+
+  it("leaves another dialog's Tab alone when two are mounted", () => {
+    // The listener is on `window`, so every mounted hook sees every Tab, and
+    // the hook explicitly supports two dialogs at once. Focus inside a sibling
+    // modal reads as "not in this trap", so the background dialog would pull
+    // focus into itself the moment the foreground one was Tabbed.
+    const background = renderRootFocused();
+    const foreground = document.createElement("div");
+    foreground.setAttribute("role", "dialog");
+    foreground.setAttribute("aria-modal", "true");
+    foreground.innerHTML = `<button id="fg">fg</button>`;
+    document.body.appendChild(foreground);
+    appended.push(foreground);
+    const fg = foreground.querySelector<HTMLElement>("#fg")!;
+    fg.getClientRects = () => [{ width: 10, height: 10 }] as unknown as DOMRectList;
+    fg.focus();
+
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+
+    expect(document.activeElement).toBe(fg);
+    expect(background.contains(document.activeElement)).toBe(false);
+  });
+
 });

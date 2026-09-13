@@ -100,36 +100,43 @@ function SheetBody({
   // pressed `Filters` is not what they asked for.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog });
 
+  // The query's matches, on their own. `sets` below prepends the selected
+  // options so they stay reachable, which makes its length useless as a match
+  // count — with LEA selected and `bloom` typed it would say two sets match
+  // when one does.
+  const matching = useMemo(() => rankSetOptions(setOptions, setQuery), [setOptions, setQuery]);
+
   const sets = useMemo(() => {
     // `rankSetOptions`, not a `label.includes` of my own: the wide panel ranks
     // with it and matches the set CODE as well as the name, so a hand-rolled
     // match here would find nothing for `BLB` while the desktop control found
     // Bloomburrow — the two forms of one filter disagreeing, which is the
     // thing this sheet exists to stop.
-    const matching = rankSetOptions(setOptions, setQuery);
     // Selected sets stay visible whatever the query says, or unticking one
     // means clearing the field first to find it again.
     const selected = setOptions.filter((o) => filters.setCodes.includes(o.code));
     const seen = new Set(selected.map((o) => o.code));
     return [...selected, ...matching.filter((o) => !seen.has(o.code))];
-  }, [setOptions, setQuery, filters.setCodes]);
+  }, [matching, setOptions, filters.setCodes]);
 
   // The set search announces its own match count, on the same region and the
   // same debounce. `FilterPanel`'s search does this and the sheet's did not, so
   // a reader typing `zzz` watched the list empty and heard nothing — the result
   // effect above is keyed on `shown`, which a local query never moves.
-  const setQueried = useRef(false);
+  //
+  // Nothing is said for a blank query — clearing the field is not a result —
+  // and nothing for an empty VOCABULARY, where the list already reads
+  // `No sets to filter by` and "No sets match" would contradict it. Both are
+  // `FilterPanel`'s own rules.
   useEffect(() => {
-    if (!setQueried.current) {
-      setQueried.current = true;
-      return;
-    }
+    const query = setQuery.trim();
+    if (query === "" || setOptions.length === 0) return;
     const timer = setTimeout(
-      () => setAnnouncement(collectionFilterCopy.set.announceMatches(sets.length, setQuery.trim())),
+      () => setAnnouncement(collectionFilterCopy.set.announceMatches(matching.length, query)),
       300,
     );
     return () => clearTimeout(timer);
-  }, [setQuery, sets.length]);
+  }, [setQuery, matching.length, setOptions.length]);
 
   const toggle = <T extends string>(list: readonly T[], code: T): T[] =>
     list.includes(code) ? list.filter((c) => c !== code) : [...list, code];
