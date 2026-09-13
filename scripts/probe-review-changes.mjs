@@ -147,10 +147,20 @@ const readReview = (page) =>
         .filter((el) => el.className.includes?.("hidden md:flex"))
         .map((el) => el.innerText.replace(/\n/g, " "))
         .slice(0, 1),
-      headings: [...(columns?.querySelectorAll("h2") ?? [])].map((h) => ({
-        text: h.innerText,
-        visible: visible(h.closest("section") ?? h),
-      })),
+      headings: [...(columns?.querySelectorAll("h2") ?? [])].map((h) => {
+        // A flex item shrinks by default, so the note beside the heading used to
+        // squeeze `GOING OUT · 15` onto three lines. Lines rather than a pixel
+        // height: the figure that matters is how many rows of text the heading
+        // occupies, and that survives a font-size change.
+        const lineHeight = parseFloat(getComputedStyle(h).lineHeight);
+        return {
+          text: h.innerText,
+          visible: visible(h.closest("section") ?? h),
+          lines: Number.isFinite(lineHeight)
+            ? Math.round(h.getBoundingClientRect().height / lineHeight)
+            : null,
+        };
+      }),
       segments: buttons
         .filter((b) => b.hasAttribute("aria-pressed"))
         .map((b) => ({
@@ -534,8 +544,20 @@ try {
       } (expect ~100%)`,
     );
     for (const h of seen.headings) {
-      console.log(`  column heading: "${h.text}" ${h.visible ? "visible" : "HIDDEN"}`);
+      console.log(
+        `  column heading: "${h.text}" ${h.visible ? "visible" : "HIDDEN"} · ${h.lines} line(s)`,
+      );
     }
+    // Hugh, of `GOING OUT · 15` on this surface: "crushed into three stacked
+    // lines by the oversized adjacent note." The note lost a sentence and the
+    // heading gained `flex-none`, either of which alone would leave the other
+    // free to regress.
+    const crushed = seen.headings.filter((h) => h.visible && h.lines !== 1);
+    console.log(
+      `  headings on more than one line: ${
+        crushed.map((h) => `"${h.text}" on ${h.lines}`).join(", ") || "none"
+      } (expect none)`,
+    );
     console.log(
       `  segments: ${
         seen.segments.length === 0
