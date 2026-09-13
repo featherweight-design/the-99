@@ -11,7 +11,8 @@ one state, which is why R3 is this small.
 
 ## Route inventory
 
-Ticked against the running app at close-out, not against the diff.
+**Unticked on purpose.** These are ticked against the running app at close-out, not against the
+diff, so they stay empty until Task 5 has run and the PR records the result.
 
 | Route | 390px | 1300px | Shares with |
 |---|---|---|---|
@@ -56,9 +57,11 @@ outNote: (n: number) =>
   "Put one back and it never left.",
 ```
 
-Add `restore.failed` as well — the transport fallback for a thrown write. It cannot borrow
+Add `restore.failed` as well — the fallback when the write throws or is refused. It cannot borrow
 `DECK_REMOVE_FALLBACK_MESSAGE`, which says the card is still in the deck: here the card is *out*,
-and the restore is what did not happen.
+and the restore is what did not happen. `addCardToDeck` can also return a refusal of its own
+(`deckAddRejectionMessage`), which is passed through unchanged — it is a sentence about the card,
+not about this surface.
 
 **Tests:** the singular and plural forms of `outNote`; that no `restore` string carries a
 percentage, the word "net", or an em dash (this module's existing guards); that `cta` is not the
@@ -68,68 +71,37 @@ and a later "tidy-up" that unified them would be reverting a ratified decision; 
 
 ---
 
-## Task 2 · The server action
+## Task 2 · The mutation — there isn't one
 
-**Files:** `src/app/decks/actions.ts`, `src/app/decks/actions.test.ts`
+**Files:** none.
 
-```ts
-export async function restoreRemovedCard(
-  deckId: string,
-  oracleId: string,
-): Promise<DeckMutationResult>
-```
+**`addCardToDeck` is the call, unwrapped, exactly as R3 said.** The spec's erratum E1 was wrong and
+is retracted there; this section records why, because the reasoning is the part worth keeping.
 
-**The quantity is NOT a parameter.** It is read server-side from the newest committed version, and
-that is what makes the action safe as well as correct.
+E1 argued a wrapper was needed to restore a quantity move whole (decision 4, matrix state 64).
+**A quantity move cannot appear under `Going out`.** `readDraft` filters basic lands out of both
+`adds` and `removes` before either list is built (`draft-state.ts:218`) — they sit outside the
+availability model, so neither list has a figure to print. And a *non*-basic can never hold more
+than one copy: `addCardToDeck` increments only for `isBasicLand` (`actions.ts:614`), and the
+importer forces `quantity: 1` for everything else (`import.ts:343`). Every row in that column is a
+whole removal, `to === 0`, one copy.
 
-**Why it is not `addCardToDeck`** (spec E1): that call adds one copy, and decision 4 restores a
-quantity move whole. This writes the row's quantity directly rather than looping.
+So the restore adds one copy of a non-basic, which is precisely what `addCardToDeck` does. With it
+go the quantity parameter and its bound, the version-membership guard, the stale-write guard and
+the version-read-in-transaction race — all of which existed to make a bespoke write safe. The
+shipped call is already safe for the reason those guards were reaching for: it runs
+`validateCardForDeck`, it is idempotent for a non-basic (`onConflictDoNothing`), it takes the deck
+row lock for the cap check, and it ends in `revalidateClaims(deckId, userId)`, which is the helper
+the handoff asks for.
 
-**Why the version is the authority.** `oracleId` is client-controlled, and this action deliberately
-does not re-run `validateCardForDeck` — the card was in the committed list, so it already passed,
-and re-running it would let a catalogue change turn a reversal into a refusal. Those two together
-would be a hole: a crafted call could put *any* catalogue card into the deck at any quantity,
-bypassing the colour-identity and commander-legality gates the add path enforces. **The card is
-therefore looked up in the newest version's own rows, and the write copies that row's quantity.**
-An oracle id absent from the version is refused, which closes the forged call and the stale-page
-call in one rule — a review page open across a commit names a row that is no longer there.
+**A crafted call adds no capability.** It can add any valid card to a deck the caller owns, which
+is what the Add panel offers on the next route.
 
-Guards, in the action's existing inline style — it is a public endpoint and the signature is a
-claim:
+**Matrix state 64 is unreachable**, and so is the `Swamp 9 → 7` figure in the handoff's frame 1.
+Recorded for Design to ratify; nothing about the drawn control changes, because every row that can
+exist behaves identically.
 
-- `requireUserId()` then `requireDeck(deckId, userId)`, as every deck action does.
-- `newestVersion(deckId)`; no version means a brew, which has nothing to restore *to*. Refuse.
-- The oracle id must be a row in `versionCards(version.id, tx)`. Refuse otherwise.
-- That row's `quantity` must be an integer from 1 to **99** — the same bound `restoreAutoCards`
-  already applies (`actions.ts:818`). A version row outside it is corrupt, not a near miss; refuse
-  rather than clamp.
-- **No claim check and no availability read.** Decision 1: this write cannot be refused on a claim,
-  and adding one would make a restore stricter than an add.
-
-**The lock is on the `deck_cards` row, not the deck row.** A `decks`-row lock does not serialize
-this against the writers that matter: `removeCardFromDeck` takes `for update` on the card row
-(`actions.ts:645`), and `commitVersion` takes it on every draft row with a comment saying the deck
-row's lock does not cover them (`versions.ts:160-167`). Without the same lock, a quantity move
-restored to 9 can be concurrently decremented to 6 and the two writes interleave. Take
-`for update` on `(deckId, oracleId)` inside the transaction, then upsert — the insert has to be
-race-safe for the row that does not exist yet, which is `onConflictDoUpdate` on the same key.
-
-`removeCardFromDeck`'s own comment already describes this race from the other side, naming a
-restore by name. It is the protocol to copy, not to invent.
-
-Then `revalidateClaims(deckId, userId)` — not `deckSurfaces()`, per the handoff: a restore is a
-claim write and the wrong helper leaves every other deck's availability stale.
-
-**A thrown write needs its own fallback.** `DECK_REMOVE_FALLBACK_MESSAGE` says the card is still in
-the deck, which on this surface is the opposite of the truth — the card is out and the restore is
-what failed. Task 1 adds `restore.failed`.
-
-**Tests:** restores a full cut to the version's quantity; restores a quantity move to that figure
-in one write; refuses an oracle id absent from the newest version (the forged call) and an id
-whose row the newest version no longer holds (the stale page); refuses a deck the caller does not
-own; refuses a brew; takes the row lock; revalidates through `revalidateClaims`. Mutation-check
-the quantity assertion and the version-membership guard — the first is why E1 exists, the second
-is the security boundary.
+**Tests:** none new here. Task 3 and Task 4 cover the call through the control.
 
 ---
 
@@ -154,7 +126,7 @@ on what is left after the restore — the last `out` row, or the last change of 
 
 ## Task 4 · The optimistic list
 
-**Files:** `src/components/decks/review-changes.tsx`,
+**Files:** `src/components/decks/review-changes.tsx`, `src/components/decks/commit-sheet.tsx`,
 `src/components/decks/review-changes.test.tsx`
 
 Per spec E2, this is the first optimistic write on this surface. `useOptimistic` over the `out`
@@ -175,17 +147,28 @@ change of *any* kind dissolves the draft entirely and the route redirects (matri
 is its own landing. Between them sits the case that needs an answer here: the last `out` row while
 `in` rows remain. Focus goes to the page's own heading, which outlives the column.
 
-**Every figure the restore moves has to move together.** `cardCount`, `released` and the
-`CommitSheet`'s props are server values today, so an optimistic `out` list alone would leave the
-row and the heading updated while the footer — or an open commit sheet — still reads the old
-totals. Project `released` and the draft card count from the same optimistic list and pass those
-to both renderers. **The buy figures are not projected and must not be**: decision 6 says no money
-moves on any restore, and a figure that moved would be a bug rather than a lag.
+**Every figure the restore moves has to move together**, and there are more of them than the
+column. All of these are server values today:
+
+- `cardCount` and `released` in the footer (`released = releasedCopies(state)` at `:432`).
+- **`CommitSheet` computes its own `released` from `state.removes`** (`commit-sheet.tsx:91`), so a
+  sheet open when the last removal is restored keeps the old total and its release block. It needs
+  the projection passed in rather than deriving its own.
+- **The phone's segmented pair.** `segmented = inCount > 0 && outCount > 0` (`:457`) and the
+  `shown` segment both read server counts. Restore the last `out` row while the reader is on the
+  Out segment and the pair stays mounted with a stale `Going out · 1` selected, hiding the
+  `Coming in` list behind it. Derive `segmented`, the tab labels and the column's own mount from
+  the optimistic list, and move `shown` to `"in"` when `out` empties.
+
+Project `released` and the draft card count once, from the optimistic list, and pass them to every
+renderer. **The buy figures are not projected and must not be**: decision 6 says no money moves on
+any restore, so a figure that moved would be a bug rather than a lag.
 
 **Tests:** the row leaves on tap; the heading count, the card count and the released figure all
-move with it; the buy figures do not; a failed write returns the row and shows
-`restore.failed`; focus lands on the group heading, and on the page heading when the last `out` row
-goes; `Coming in` never gains a row.
+move with it; the buy figures do not; an open commit sheet's released figure moves with them; the
+phone's segmented pair collapses and `shown` falls back to `in` when the last `out` row goes; a
+failed write returns the row and shows `restore.failed`; focus lands on the group heading, and on
+the page heading when the last `out` row goes; `Coming in` never gains a row.
 
 ---
 

@@ -71,13 +71,19 @@ handoff's decisions log; these are the ones that constrain code.
 The handoff is Green and these are implementation facts it states slightly wrong. Neither changes
 a drawn state.
 
-**E1 · The restore needs a quantity, so it is not `addCardToDeck` unwrapped.** R3 says the restore
-is "`addCardToDeck` unwrapped, the same call #185's undo makes". That call adds exactly one copy —
-`quantity + 1` for a basic, `onConflictDoNothing` otherwise (`actions.ts:614`) — so it cannot
-satisfy decision 4. Calling it twice is two non-atomic writes each firing `revalidateClaims`. A
-thin wrapper is needed, taking the row's own `from` figure. It bites only where `to > 0`, which in
-practice means basics: `isBasicLand` (`grouping.ts:114`) is the only thing that lets
-`deck_cards.quantity` climb.
+**E1 · RETRACTED. The restore is `addCardToDeck` unwrapped, as R3 said.**
+
+E1 originally claimed a wrapper was needed, because decision 4 restores a quantity move whole and
+that call adds one copy. The premise was wrong: **a quantity move cannot appear under `Going out`.**
+`readDraft` filters basic lands out of both `adds` and `removes` before either list is built
+(`draft-state.ts:218`), and a non-basic can never hold more than one copy — `addCardToDeck`
+increments only for `isBasicLand` (`actions.ts:614`) and the importer forces `quantity: 1` for
+everything else (`import.ts:343`). Every row in that column is a whole removal of a single copy.
+
+**Decision 4 and matrix state 64 are therefore unreachable**, along with the `Swamp 9 → 7` figure
+in the handoff's frame 1. Nothing about the drawn control changes — every row that can exist
+behaves identically — so this is recorded for Design to ratify rather than sent back. Kept here
+rather than deleted because the reasoning is what stops the wrapper being reinvented.
 
 **E2 · "No client state" undersells it.** The optimism of decision 7 needs `useOptimistic` over the
 out rows plus an error keyed by oracle id. `review-changes.tsx` has no optimistic write today —
