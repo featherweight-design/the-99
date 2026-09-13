@@ -39,7 +39,6 @@ export const setFilterCopy = {
   rarity: setFilterCopyRarity,
   label: "Filters",
   colourLabel: "Colour",
-  colourAria: (c: string) => `Filter by ${c}`,
   missingOnly: setFilterCopyMissingOnly,
   sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
   // DIMENSIONS only — never missing-only, which sits on the row beside the badge where the
