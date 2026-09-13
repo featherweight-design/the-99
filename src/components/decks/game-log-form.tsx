@@ -105,7 +105,12 @@ export function GameLogForm({
   // touched" is a second fact the value alone cannot answer — an emptied field
   // that still has focus keeps its `0 / 140`.
   const [note, setNote] = useState("");
-  const [noteFocused, setNoteFocused] = useState(false);
+  // Touched, not focused. The counter appears on focus or content and must
+  // then STAY — S1 states 6 and 7 freeze it through a save and preserve it
+  // through a refusal, and clicking Save blurs the field first. Keyed on focus
+  // alone, an empty note's counter vanished on the way into the mutation it was
+  // supposed to be frozen during. Cleared only by `collapse()`.
+  const [noteTouched, setNoteTouched] = useState(false);
   // What the counter counts, and what the action checks: code points, the way
   // the column does. The input's own `maxLength` counts UTF-16 units and cannot
   // be told otherwise, so the browser stops a note of astral characters
@@ -166,7 +171,7 @@ export function GameLogForm({
     // S1 state 8: reopening is a blank field and no counter. The form never
     // pre-fills from history — a note is about one game.
     setNote("");
-    setNoteFocused(false);
+    setNoteTouched(false);
   }
 
   // State 6. Ticking an axis in one column removes it from the other, so the
@@ -432,7 +437,7 @@ export function GameLogForm({
           {/* S1 states 1–5. Absent until focus or content; `--warning` from
               `warnAt`, and at the cap it says so rather than erroring — a limit
               the field will not let you pass needs no error. */}
-          {(noteFocused || note.length > 0) && (
+          {noteTouched && (
             <span
               id={counterId}
               className={`ml-auto font-mono text-[9.5px] md:text-[10px] md:tabular-nums ${
@@ -455,13 +460,13 @@ export function GameLogForm({
           value={note}
           maxLength={deckTuningCopy.note.maxLength}
           disabled={isPending}
-          onChange={(e) => setNote(e.target.value)}
-          onFocus={() => setNoteFocused(true)}
-          onBlur={() => setNoteFocused(false)}
-          aria-describedby={
-            noteFocused || note.length > 0 ? `${describedById} ${counterId}` : describedById
-          }
-          className="block md:flex md:items-center w-full min-h-[48px] md:min-h-[46px] px-[13px] md:px-[14px] py-[11px] md:py-[12px] rounded-[8px] bg-surface-sunken border border-border-strong focus:border-[color:var(--accent)] focus:outline-none text-[13.5px] leading-[1.45] md:leading-normal text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          onChange={(e) => {
+            setNote(e.target.value);
+            setNoteTouched(true);
+          }}
+          onFocus={() => setNoteTouched(true)}
+          aria-describedby={noteTouched ? `${describedById} ${counterId}` : describedById}
+          className="block md:flex md:items-center w-full min-h-[48px] md:min-h-[46px] px-[13px] md:px-[14px] py-[11px] md:py-[12px] rounded-[8px] bg-surface-sunken border border-border-strong focus:border-[color:var(--accent)] text-[13.5px] leading-[1.45] md:leading-normal text-fg disabled:cursor-not-allowed disabled:opacity-50"
         />
         <span id={describedById} className="sr-only">
           {deckTuningCopy.note.ariaDescription}

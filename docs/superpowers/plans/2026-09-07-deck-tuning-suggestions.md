@@ -432,7 +432,9 @@ export const deckTuningCopy = {
   },
   card: { /* cut, add, added, owned, notOwned, price, cite*, consequence*, apply*, dismiss*, undo, restore, *Refused */ },
   intent: { /* askLabel, ask, placeholder, save, skip, edit, editAria, seeded, seededAria, maxLength: 120 */ },
-  note: { /* label, hint, counter, maxLength: 140, warnAt: 130, optionalNote, ariaDescription */ },
+  // Shipped. Also carries `hintShort` (the phone's gloss) and the `readBack`
+  // pair (the desktop line under the field), neither of which this sketch had.
+  note: { /* label, hint, hintShort, counter, maxLength: 140, warnAt: 130, optionalNote, ariaDescription, readBack, readBackEmphasis */ },
   suggestionRules: { /* the nine static rules — see Task 7 */ },
   announce: { /* started, ready, readyOne, unchanged, stopped, failed, applied, undone, dismissed, intentSaved */ },
 } as const;
@@ -590,14 +592,17 @@ git commit -m "feat(tuning): carry a per-game note and the deck intent through t
 // which clicks the collapsed CTA. Reuse both. Do not add a second `vi.mock`
 // and do not call `render` directly — GameLogForm has no injectable action and
 // no `onDone` prop, so a bespoke render will not typecheck.
-it("counts down only as the note approaches its cap", () => {
+// CORRECTED, as shipped: the counter appears on focus or content (states 1-2)
+// and 130 is where it turns --warning, not where it arrives.
+it("shows the counter once the field is touched, and warns at the cap", () => {
   mount();
   open();
   const note = screen.getByLabelText(deckTuningCopy.note.label);
-  fireEvent.change(note, { target: { value: "a".repeat(129) } });
-  expect(screen.queryByText(/129/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/\/ 140/)).not.toBeInTheDocument();
+  fireEvent.focus(note);
+  expect(screen.getByText(deckTuningCopy.note.counter("0", "140"))).toBeInTheDocument();
   fireEvent.change(note, { target: { value: "a".repeat(130) } });
-  expect(screen.getByText(deckTuningCopy.note.counter(130, 140))).toBeInTheDocument();
+  expect(screen.getByText(deckTuningCopy.note.counter("130", "140"))).toHaveClass("text-warning");
 });
 
 it("keeps what was typed when the save is refused", async () => {

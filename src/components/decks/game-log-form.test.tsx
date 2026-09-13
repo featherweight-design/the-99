@@ -274,6 +274,28 @@ describe("GameLogForm", () => {
       expect(counter(0)).toBeInTheDocument();
     });
 
+    // S1 state 6 freezes the counter through the save and state 7 preserves it
+    // through a refusal — and pressing Save blurs the field on the way. Keyed
+    // on focus alone, an empty note's counter vanished at exactly the moment
+    // both states say it stays.
+    it("keeps the counter when the field is blurred still empty", () => {
+      mount();
+      open();
+      fireEvent.focus(field());
+      fireEvent.blur(field());
+      expect(counter(0)).toBeInTheDocument();
+    });
+
+    // The global `:focus-visible` ring is the accessibility contract for every
+    // control in the app. The accent border is this field's own design state
+    // and the two are not alternatives — suppressing the outline to get the
+    // border leaves a keyboard user with nothing.
+    it("keeps the global focus ring", () => {
+      mount();
+      open();
+      expect(field().className).not.toContain("outline-none");
+    });
+
     // S1 states 3 → 4. The warning has to arrive before the stop, or the first
     // the player knows of the cap is the keyboard going dead.
     it("warns as the cap comes up, and not before", () => {
