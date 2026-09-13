@@ -200,6 +200,13 @@ try {
     if (vpName === "mobile") {
       const foot = await page.evaluate(() => {
         const column = document.querySelector('div[class*="sm:hidden"][class*="overflow-y-auto"]');
+        // Both scrollers driven to the end before anything is read. The document is the one
+        // that moves here — the column is marked `overflow-y-auto` but its parent sets no
+        // height, so it grows instead of scrolling — and a reading taken at the top of a
+        // column that WAS scrolling would put the Build bar above the last section and turn
+        // a dead spacer into a negative gap that passes.
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        if (column !== null) column.scrollTop = column.scrollHeight;
         const bar = [...document.querySelectorAll("div")].find((d) =>
           d.className.includes("sm:hidden")
           && d.className.includes("flex-none")

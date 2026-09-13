@@ -108,7 +108,21 @@ async function run(page, steps) {
       await page.evaluate((y) => window.scrollTo(0, y), step.scroll);
     }
     if (step.scroll === "bottom") {
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      // The document AND any element that is actually scrolling. On this app's phone
+      // layouts the document is the scroller — measured, no route reports a scrolling
+      // descendant — but `/commanders/[slug]` marks its column `overflow-y-auto`, so a
+      // future height constraint would move the scroll into it and a window-only verb would
+      // photograph the top while claiming the foot.
+      await page.evaluate(() => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        for (const node of document.querySelectorAll("body *")) {
+          const style = getComputedStyle(node);
+          const scrolls = style.overflowY === "auto" || style.overflowY === "scroll";
+          if (scrolls && node.scrollHeight - node.clientHeight > 1) {
+            node.scrollTop = node.scrollHeight;
+          }
+        }
+      });
     }
     if (step.click) await page.locator(step.click).first().click({ timeout: 15_000 });
     // A control one width has and the other does not. `/commanders` draws its

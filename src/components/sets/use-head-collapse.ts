@@ -194,51 +194,63 @@ export function useHeadCollapse({
     return () => observer.disconnect();
   }, [sizeSpacer]);
 
-  // Placed after the recorder above, not before it: the thresholds below are read off the
-  // measurements it writes, and a ref an effect reads may not be written by anything declared
-  // later (`react-hooks/immutability`).
+  /**
+   * The collapse decision, as a function of the current scroll offset.
+   *
+   * A callback rather than a body inside the listener, because the listener is not the only
+   * thing that has to be able to ask. A transition settling is the other: the bar's height
+   * cannot be measured while one is running, so a reader who scrolls up DURING the first
+   * collapse gets the fallback threshold, and without a re-ask afterwards a thumb that comes
+   * to rest at, say, y=100 leaves the head collapsed over an empty strip until the next
+   * scroll event — which may never come.
+   */
+  const evaluateCollapse = useCallback(() => {
+    const y = window.scrollY;
+    // Where the reserve starts showing. The spacer holds the open head's height in the
+    // document while the collapsed bar draws in its place, so above this offset the band
+    // between the bar's bottom edge and the grid is empty — the head has to be open again
+    // by then, or the reader scrolls up into nothing and watches it pop open underneath
+    // them. The grid's own top, less the bar that covers it: measured rather than guessed,
+    // because the open head is one line taller with a wrapped title and a constant that
+    // fits one set fits the next by luck.
+    //
+    // Both figures are read HERE rather than taken from what a commit last recorded. The
+    // spacer's bottom edge is where the grid starts whichever form the head is in, and the
+    // bar's height is refreshed off the bar itself every time one is drawn — a cached
+    // figure is only as fresh as the render that wrote it, and a threshold that waits a
+    // commit for its input answers the first scroll after a collapse with the old one.
+    //
+    // Both fall back to the fixed 40/120 pair they replace: before any collapse there is
+    // no bar to measure, and an engine that lays nothing out reports 0 for every box.
+    const head = headRef.current;
+    const spacer = spacerRef.current;
+    if (head !== null && !animatingRef.current
+      && head.hasAttribute("data-set-head-collapsed")) {
+      barHeightRef.current = head.getBoundingClientRect().height;
+    }
+    const gridTop = spacer === null
+      ? null
+      : spacer.getBoundingClientRect().bottom + window.scrollY;
+    const bar = barHeightRef.current;
+    const reopenAt = gridTop === null || bar === null || gridTop <= 0 || bar <= 0
+      ? 40
+      : Math.max(0, gridTop - bar);
+    // Read as a function of the CURRENT state, which is what makes this hysteresis rather
+    // than two thresholds: collapsed stays collapsed until the reserve would show, open
+    // stays open until a band past it, and between the two nothing happens. Never
+    // interpolated with the scroll offset — a head that tracked it would be permanently in
+    // motion under the thing being read.
+    setCollapsed((was) => (was ? y > reopenAt : y > reopenAt + HYSTERESIS_PX));
+  }, []);
+
+  // Placed after the recorder above, not before it: the decision is read off the
+  // measurements `sizeSpacer` writes, and a ref an effect reads may not be written by
+  // anything declared later (`react-hooks/immutability`).
   useEffect(() => {
     if (!mayCollapse) return;
     // An open sheet freezes the head: the listener stands down and `collapsed` holds.
     if (sheetOpen) return;
-    const onScroll = () => {
-      const y = window.scrollY;
-      // Where the reserve starts showing. The spacer holds the open head's height in the
-      // document while the collapsed bar draws in its place, so above this offset the band
-      // between the bar's bottom edge and the grid is empty — the head has to be open again
-      // by then, or the reader scrolls up into nothing and watches it pop open underneath
-      // them. The grid's own top, less the bar that covers it: measured rather than guessed,
-      // because the open head is one line taller with a wrapped title and a constant that
-      // fits one set fits the next by luck.
-      //
-      // Both figures are read HERE rather than taken from what a commit last recorded. The
-      // spacer's bottom edge is where the grid starts whichever form the head is in, and the
-      // bar's height is refreshed off the bar itself every time one is drawn — a cached
-      // figure is only as fresh as the render that wrote it, and a threshold that waits a
-      // commit for its input answers the first scroll after a collapse with the old one.
-      //
-      // Both fall back to the fixed 40/120 pair they replace: before any collapse there is
-      // no bar to measure, and an engine that lays nothing out reports 0 for every box.
-      const head = headRef.current;
-      const spacer = spacerRef.current;
-      if (head !== null && !animatingRef.current
-        && head.hasAttribute("data-set-head-collapsed")) {
-        barHeightRef.current = head.getBoundingClientRect().height;
-      }
-      const gridTop = spacer === null
-        ? null
-        : spacer.getBoundingClientRect().bottom + window.scrollY;
-      const bar = barHeightRef.current;
-      const reopenAt = gridTop === null || bar === null || gridTop <= 0 || bar <= 0
-        ? 40
-        : Math.max(0, gridTop - bar);
-      // Read as a function of the CURRENT state, which is what makes this hysteresis rather
-      // than two thresholds: collapsed stays collapsed until the reserve would show, open
-      // stays open until a band past it, and between the two nothing happens. Never
-      // interpolated with the scroll offset — a head that tracked it would be permanently in
-      // motion under the thing being read.
-      setCollapsed((was) => (was ? y > reopenAt : y > reopenAt + HYSTERESIS_PX));
-    };
+    const onScroll = () => evaluateCollapse();
     // The first read is here, in a passive effect, so a reload at scrollY > 120 paints the
     // open head for one frame before collapsing. Moving it to a layout effect is what the
     // shape asks for and `react-hooks/set-state-in-effect` forbids outright; deriving it
@@ -246,7 +258,7 @@ export function useHeadCollapse({
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [mayCollapse, sheetOpen]);
+  }, [mayCollapse, sheetOpen, evaluateCollapse]);
 
   const wantShy = collapsed && mayCollapse;
 
@@ -319,14 +331,26 @@ export function useHeadCollapse({
     sizeSpacer();
 
     let frame = 0;
+    let timer = 0;
+    // Idempotent, and it takes the safety timer down with it. Both paths below call it, and
+    // a reader who reverses direction mid-transition starts a new one while the old timer is
+    // still armed — that timer would then land inside the NEW transition and clear its
+    // inline height, which is the snap this whole block exists to remove.
     const settle = () => {
+      if (!animatingRef.current) return;
       animatingRef.current = false;
+      clearTimeout(timer);
       el.style.transition = "";
       el.style.height = "";
       el.style.overflow = "";
       // Now, and only now, the head is its own height again — so this is the first read
       // that may be recorded.
       sizeSpacer();
+      // And now that the bar's height is finally measurable, ask the threshold question
+      // again. A reader who scrolled up while this was running was answered on the fallback
+      // and may have come to rest inside the band; nothing else would revisit that until
+      // they scrolled again.
+      evaluateCollapse();
     };
     const onEnd = (event: TransitionEvent) => {
       if (event.target !== el || event.propertyName !== "height") return;
@@ -336,7 +360,7 @@ export function useHeadCollapse({
     // `transitionend` does not fire for a transition that never starts — a tab hidden
     // mid-change is the ordinary way to get one — and a head left at a fixed height would
     // stay that height for the rest of the visit.
-    const timer = setTimeout(settle, COLLAPSE_MS + 120);
+    timer = setTimeout(settle, COLLAPSE_MS + 120) as unknown as number;
     // The spacer is written from the head's CURRENT height, and the `ResizeObserver` above
     // is what usually delivers that. It reports the box, which a transitioned height does
     // move, but it is not promised on every frame — so the reserve is also driven here for
@@ -368,7 +392,7 @@ export function useHeadCollapse({
     // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
     // for a head whose size had not moved. The `ResizeObserver` covers ordinary size
     // changes; this covers the transitions it cannot see.
-  }, [shy, deltaFiring, isDesktop, sizeSpacer]);
+  }, [shy, deltaFiring, isDesktop, sizeSpacer, evaluateCollapse]);
 
   return { shy, headRef, spacerRef, openHead: () => setCollapsed(false) };
 }

@@ -94,7 +94,10 @@ const SURFACES = [
   {
     label: "/collection · card modal",
     path: "/collection",
-    trigger: (page) => page.locator('button[aria-label*="copy"]').first(),
+    // The row's own accessible name, either number: `*="copy"` missed every card with two
+    // or more, because "copies" does not contain "copy", and the run only passed on a
+    // fixture whose first row happened to be a singleton.
+    trigger: (page) => page.getByRole("button", { name: /, \d+ (copy|copies)\b/ }).first(),
   },
   {
     label: "/commanders · Filters sheet",
@@ -133,6 +136,16 @@ async function run() {
         ?? document.querySelector('a[href^="/collection/sets/"]');
       return row === null ? null : row.getAttribute("href").split("/").pop();
     });
+    // A fixture with no set link is a fixture this probe cannot cover, and the contract is
+    // that an overlay it cannot reach FAILS. Dropping the row instead let the run exit 0
+    // while the set page's sheet — one of the surfaces this PR touches — went untested.
+    if (code === null) {
+      failures += !report(
+        "/collection/sets · a set to open",
+        false,
+        "no set link on the index — the set page's filter sheet went unchecked",
+      );
+    }
     const surfaces = code === null ? SURFACES : [...SURFACES, {
       label: `/collection/sets/${code} · Filters sheet`,
       path: `/collection/sets/${code}`,
