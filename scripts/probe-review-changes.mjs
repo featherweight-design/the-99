@@ -16,9 +16,12 @@
 //      bucketed `claimed` and a holder is releasable — a second deck, sleeved, not
 //      pending, holding the one copy the player owns. That is a claim query, not a
 //      prop, and it is the whole reason this surface exists.
-//   5. THE WHAT-CHANGED STRIP STANDS THREE CELLS DOWN. Six cells at 1300px and
-//      three at 390px, and the verdict line under each is desktop-only — which
-//      cell is drawn at which width is a fact about a rendered box.
+//   5. THE WHAT-CHANGED STRIP DRAWS ALL SIX CELLS AT BOTH WIDTHS. Three of them
+//      used to stand down at 390px, so the phone measured the deck against a
+//      shorter list of recommendations than desktop did; the strip is now a
+//      three-across grid under 768px. The verdict line under each cell stays
+//      desktop-only. Which box is on screen at which width is only answerable
+//      here, and a cell off screen fails the run.
 //   6. DISCARD IS TWO CLICKS IN THE PLACE THE QUESTION WAS ASKED. The confirm
 //      replaces the body of whichever surface raised it, so the trigger is out of
 //      the document while it is up, focus is carried by hand to the way out and
@@ -63,8 +66,13 @@ const {
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const TEMPLATE = process.env.PROBE_TEMPLATE_DECK ?? "a1111111-1111-1111-1111-111111111111";
 
-/** Column headings a run found on more than one line. The one hard failure here. */
+/** Column headings a run found on more than one line. A hard failure. */
 const crushedHeadings = [];
+
+/** Mix cells a run found off screen. A hard failure at either width: the strip's
+ *  six figures are the deck against its recommendations, and a phone that draws
+ *  three of them measures the deck against a shorter list than desktop does. */
+const hiddenCells = [];
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
@@ -600,12 +608,12 @@ try {
     console.log(`  footer: ${seen.footer ?? "absent"}`);
     console.log(`  commit CTA: ${seen.commitCta ?? "absent"}`);
 
-    // 2b. The what-changed strip. Three cells stand down at 390px, and every cell
-    // draws a movement rather than a figure against a bar, so what is being read
-    // is the pair and the verdict under it.
-    // Visible, not matched: `cells` holds all six paragraphs at both widths and
-    // records visibility per cell, so a raw length prints 6 on the phone and says
-    // nothing about the three-cell contract this line exists to check.
+    // 2b. The what-changed strip. All six cells are drawn at both widths, and
+    // every cell draws a movement rather than a figure against a bar, so what is
+    // being read is the pair and the verdict under it.
+    // Visible, not matched: `cells` holds all six paragraphs whatever their boxes
+    // do, so a raw length prints 6 on a phone drawing three and says nothing
+    // about the contract this line exists to check.
     console.log(
       `  strip cells: ${seen.shape.cells.filter((c) => c.visible).length} visible` +
         ` of ${seen.shape.cells.length}`,
@@ -616,6 +624,7 @@ try {
           `${cell.figures} · after ${cell.afterColor} · ` +
           `note ${cell.note ?? "none"}${cell.note && !cell.noteVisible ? " (hidden)" : ""}`,
       );
+      if (!cell.visible) hiddenCells.push(`${label} · "${cell.label}"`);
     }
     console.log(
       `  type moves: ${
@@ -848,5 +857,11 @@ try {
 if (crushedHeadings.length > 0) {
   console.log(`\n########## FAIL · a column heading wrapped`);
   for (const line of crushedHeadings) console.log(`  ${line}`);
+  process.exitCode = 1;
+}
+
+if (hiddenCells.length > 0) {
+  console.log(`\n########## FAIL · a mix cell was off screen`);
+  for (const line of hiddenCells) console.log(`  ${line}`);
   process.exitCode = 1;
 }

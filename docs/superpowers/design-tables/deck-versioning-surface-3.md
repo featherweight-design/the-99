@@ -403,11 +403,11 @@ The strip needs `cmc` in the detail select and the version's cards joined throug
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | `flex` | `flex` |
+| display | `grid` | `flex` |
 | gap | `7px` | `10px` |
 | margin-bottom | `11px` | `10px` |
-| flex-wrap | — (single row) | — (single row) |
-| cells drawn | **3** — `Mana value`, `Removal`, `Ramp` | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` (Discrepancy 14) |
+| flex-wrap | three columns, two rows (`grid-cols-3`) | — (single row) |
+| cells drawn | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` (Discrepancy 14, resolved) |
 
 ### Strip cell
 
@@ -851,6 +851,10 @@ two the strip owns.
 14. **The phone strip drops three of the six cells and substitutes one.** Desktop draws Mana
     value, Removal, Draw, Ramp, Wipes, Land; phone draws Mana value, Removal, **Ramp**. No
     rule says which three survive at 390px, or that Ramp outranks Draw.
+    **Resolved 2026-09-13 (Hugh):** "We need to render all of these cards on mobile, we can't
+    just selectively remove three." The phone draws all six, three across in two rows, so the
+    reader is held to the same list of recommendations at either width. There is no ranking to
+    settle because nothing is dropped. The per-cell verdict line stays desktop-only.
 15. **`holds at rec ~37` matches no copy string.** `changed.clears(rec)` and
     `changed.under(rec)` are the only two verdict strings, and neither produces a `~`.
 16. **The unmoved cells' colours contradict each other.** `Wipes 1 → 1` draws `#E0913C`
