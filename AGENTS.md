@@ -129,6 +129,22 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   cascade. Point it at `local-dev`, **never production**. What it measured on the phone: the two
   stamps do not share a vertical, because the meta cell to their left sizes to its date text below
   `md:` — the game log's existing behaviour, not this surface's.
+- `pnpm probe:games-empty` walks the Games tab's empty state in a real browser at 1440x900
+  and 390x844, because its three rulings are facts about laid-out geometry rather than
+  markup: that the desktop group is centred, that the card-fan mark sits level with the top
+  of the content column in BOTH the collapsed and expanded states, and that the scope note
+  is absent. The expanded state is the one that matters — collapsed, the old
+  `align-items: center` was 36px out; with the form open it was 442px out.
+
+  Two of its checks exist because of what the other one cannot see. **Equal gaps either side
+  do not prove centring**: with the content column unconstrained the group spans the section
+  edge to edge, so both gaps read as the section's own padding and look perfectly symmetric
+  while centring nothing. That check passes on the broken build, which is why the probe also
+  asserts the column's 720px cap and that the free space either side clears 100px. Run with
+  the fix reverted, 10 of its 18 checks fail and the symmetry one is among the 8 that do not.
+
+  It writes one deck with no games under the account it signs in as and deletes it in a
+  `finally`; point it at `local-dev` or a scratch Neon branch, **never production**.
 - `pnpm check:shared docs/superpowers/inventories/<feature>.json` answers the half of a
   feature's acceptance that a picture cannot: whether routes that are supposed to carry the
   same control are doing it by rendering the same component. It reads the same inventories
