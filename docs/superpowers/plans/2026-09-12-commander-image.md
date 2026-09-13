@@ -162,7 +162,7 @@ overflow control, then both spines together.
 `all owned` and `never played` cut, `labelAt 46`) **with** `deck-card-overflow.tsx` gaining the 26px
 plate inside its phone 44px target — same PR, non-negotiable, because the top scrim is the only thing
 carrying that glyph today. Then `spine-mobile.tsx` and `spine-desktop.tsx` in one PR, since they are
-separated by CSS and not by a branch: both to **288**, mobile at `labelAtPx` **90** — measured against the two-line ceiling its own clamp
+separated by CSS and not by a branch: both to **288**, mobile at `labelAtPx` **115** (as planned: 90 against a two-line ceiling; PR #577 unclamped that title so the rename glyph could follow its words, and the figure is keyed to a three-line block) — measured against the ceiling its own clamp
 imposes, where the handoff's 83 was measured against a third line — and keeping its top-right
 `Card details` control measured off the
 three-line wrap, desktop to the 560 portrait at a 592 inset above ~1200px of row and the 340 portrait
