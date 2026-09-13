@@ -80,8 +80,20 @@ const PLATE =
 const LABELLED = new Set(["deck-desktop"]);
 
 const TARGET_OFFSET = (44 - 26) / 2;
-const targetInset = (at: Record<string, number>) =>
-  Object.fromEntries(Object.entries(at).map(([side, v]) => [side, v - TARGET_OFFSET]));
+/** The 44px target is pulled inward by half the difference so the 26px plate
+    lands exactly where `PLACEMENT` says.
+
+    On a LABELLED control only the vertical axis moves. That button is
+    shrink-to-fit, so it carries no spare width for the plate to be centred
+    within — subtracting 9 from its `left` or `right` moves the plate itself, and
+    a control declared at a 16px inset drew at 7. */
+const targetInset = (at: Record<string, number>, labelled: boolean) =>
+  Object.fromEntries(
+    Object.entries(at).map(([side, v]) => [
+      side,
+      labelled && (side === "left" || side === "right") ? v : v - TARGET_OFFSET,
+    ]),
+  );
 
 export function FullCardTrigger({
   oracleId,
@@ -138,7 +150,7 @@ export function FullCardTrigger({
         // itself. `bg-transparent` on the target: a 44px plate would be a panel.
         className="absolute z-[2] flex items-center justify-center bg-transparent p-0"
         style={{
-          ...targetInset(PLACEMENT[placement]),
+          ...targetInset(PLACEMENT[placement], labelled),
           // A labelled control sizes to its words; the icon-only one is the 44px
           // square the touch floor asks for. Height is 44 either way, so the
           // floor holds on the axis a thumb is least forgiving about.

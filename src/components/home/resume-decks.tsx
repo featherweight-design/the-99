@@ -101,9 +101,12 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
         // it has always drawn.
         height={72}
         portrait={99}
-        // No ramp. This row's type starts at the 116px inset, past the
-        // portrait's flat stop, so it stands on the row's own ground and there
-        // is nothing for a vertical scrim to protect.
+        // No vertical ramp. This row's type starts at the 116px inset, clear of
+        // the 99px portrait — a vertical scrim would darken the band top to
+        // bottom to protect ink that is already beside the art rather than under
+        // it. The horizontal scrim is still climbing at 116, which is the
+        // thinnest ground anything here stands on, and that is the point
+        // `wash-contrast.test.ts` samples.
         labelAtPx="flat"
         artCropUri={deck.commanderArtCropUri}
         colorIdentity={deck.commanderColorIdentity}

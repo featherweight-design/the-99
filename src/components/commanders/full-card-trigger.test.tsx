@@ -146,8 +146,13 @@ describe("FullCardTrigger placement", () => {
       const pill = screen.getByRole("button", { name: "View card details" });
       for (const [side, px] of Object.entries(at)) {
         // The target's own inset, plus half the 44−26 difference, is where the
-        // plate's edge falls.
-        expect(Number.parseInt(pill.style.getPropertyValue(side), 10) + 9).toBe(px);
+        // plate's edge falls — on the axes the target actually has spare room on.
+        // A LABELLED control is shrink-to-fit, so it has no spare width: its
+        // horizontal inset is the placement's own figure, or the plate would draw
+        // 9px further out than the design states.
+        const shrinkToFit = placement === "deck-desktop" && (side === "left" || side === "right");
+        const drawn = Number.parseInt(pill.style.getPropertyValue(side), 10) + (shrinkToFit ? 0 : 9);
+        expect(drawn).toBe(px);
       }
       unmount();
     }
@@ -158,7 +163,11 @@ describe("FullCardTrigger placement", () => {
       <FullCardTrigger oracleId="o-atraxa" placement="deck-desktop" bandTapTarget={false} />,
     );
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.left).toBe("7px");
+    // `left` is the raw 16: this is the one labelled placement, its button is
+    // shrink-to-fit, and pulling a shrink-to-fit target inward moves the plate
+    // rather than centring it. The vertical axis still insets, because 44 of
+    // height around a 26px plate is where the touch floor lives.
+    expect(pill.style.left).toBe("16px");
     expect(pill.style.bottom).toBe("5px");
     expect(pill.style.top).toBe("");
     expect(container.querySelector('[aria-hidden="true"].inset-0')).toBeNull();

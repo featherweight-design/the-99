@@ -397,8 +397,14 @@ export function SpineDesktop({
               cut — the bar's fill and the figure carry it between them. */}
           <div className="flex items-center" style={{ gap: 10, marginTop: 7 }}>
             <div
+              // A shrinking item with a 170px ceiling, not a fixed 170: at the
+              // first desktop breakpoint the 364px portrait inset, the right
+              // padding and the `flex-none` action slot can leave this column
+              // narrower than the track, and a fixed width would push the count
+              // under the actions rather than giving way.
+              className="min-w-0 flex-1"
               style={{
-                width: 170,
+                maxWidth: 170,
                 height: 6,
                 borderRadius: 999,
                 background: "var(--elevated)",

@@ -234,8 +234,17 @@ export type ArtWashProps = ArtProps &
         /** Chosen, not derived: one band draws two portraits on the one surface
             whose shape was picked before its height. */
         portrait: PortraitWidth;
-        /** `flat` where the band's ink starts past the portrait's flat stop and
-            stands on the row's own ground. */
+        /** `flat` means NO VERTICAL RAMP — the band draws its horizontal scrim
+            and nothing else.
+
+            Two kinds of row ask for it. The deck header's ink starts past the
+            portrait's flat stop, on fully opaque ground. The resume row's starts
+            at its 116px inset, clear of the 99px portrait but short of that
+            row's 138px flat stop, so its ink stands on a horizontal scrim still
+            climbing — thinner ground, and asserted at exactly that inset in
+            `wash-contrast.test.ts`. What both have in common is that a vertical
+            ramp would darken the band without protecting anything, which is the
+            contract this value states. */
         labelAtPx: number | "flat";
       }
   );
