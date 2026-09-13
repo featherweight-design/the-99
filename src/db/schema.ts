@@ -350,6 +350,11 @@ export const deckVersions = pgTable("deck_versions", {
 }, (t) => [
   unique("deck_versions_deck_number_key").on(t.deckId, t.number),
   index("deck_versions_deck_number_idx").on(t.deckId, t.number),
+  // `max(committed_at)` per deck, which Home's resume block asks for once per
+  // deck on every load. The index above is ordered by `number` and cannot answer
+  // it, so without this the read walks every version of every deck as histories
+  // grow. `deck_games_deck_played_idx` is the same shape for the same reason.
+  index("deck_versions_deck_committed_idx").on(t.deckId, t.committedAt),
 ]);
 
 export const deckVersionCards = pgTable("deck_version_cards", {

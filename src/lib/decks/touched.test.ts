@@ -42,12 +42,24 @@ describe("touchedBy", () => {
     expect(t.verb).toBe("committed");
   });
 
-  // `pullCardFromDeck` edits and commits in one transaction, so both columns
-  // carry that transaction's clock. The commit is the act that contains the edit.
-  it("resolves an edit and a commit at the same instant to the commit", () => {
+  // THE MIGRATION CASE. `0024` stamped a synthetic v1 on every already-full deck
+  // with `committed_at = decks.created_at`, and `0030` seeds `last_edited_at`
+  // from the same column — so every deck that predates versioning ties here,
+  // having never been committed by anybody. It must not read `committed`.
+  it("resolves an edit and a commit at the same instant to the edit", () => {
     const same = at("2026-09-12T12:00:00Z");
     expect(touchedBy(deck({ id: "a", lastEditedAt: same, lastCommittedAt: same })).verb)
-      .toBe("committed");
+      .toBe("edited");
+  });
+
+  it("still names a commit that is strictly newer than the edit", () => {
+    expect(
+      touchedBy(deck({
+        id: "a",
+        lastEditedAt: at("2026-09-12T12:00:00Z"),
+        lastCommittedAt: at("2026-09-12T12:00:01Z"),
+      })).verb,
+    ).toBe("committed");
   });
 
   it("resolves an edit and a game at the same instant to the game", () => {

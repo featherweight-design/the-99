@@ -28,19 +28,33 @@ export type Touch = { at: Date; verb: TouchVerb };
  * deck's creation — so every deck has an answer and the block never has to draw
  * a row with no stamp.
  *
- * Ties resolve **committed > played > edited**. An equal instant is not a
- * coincidence: `pullCardFromDeck` edits and commits in one transaction, so both
- * columns carry that transaction's `now()`, and the commit is the act that
- * contains the edit. A game logged in the same instant as an edit is the rarer
- * pair and reads better as the game — the edit is what the player did to the
- * list, the game is what they did with the deck.
+ * A tie between a commit and an edit resolves to **edited**, and the reason is a
+ * migration rather than a preference. `0024_flaky_sharon_ventura` stamped a
+ * synthetic v1 on every already-full deck with `committed_at = decks.created_at`,
+ * and `0030` seeds `last_edited_at` from that same `created_at` — so every deck
+ * that existed and was full before versioning shipped carries the two columns at
+ * exactly the same instant, having never been committed by anybody. Letting the
+ * commit win that tie would print `committed 3mo ago` on a deck whose owner has
+ * never pressed the control. A commit therefore has to be STRICTLY newer than
+ * the edit to name the row.
+ *
+ * `pullCardFromDeck` is the case that argued the other way: it edits and commits
+ * in one transaction, so both columns carry that transaction's clock, and it now
+ * reads `edited`. That is true as well — a card left the deck — and a verb that
+ * is true in the rare case is worth more than one that is false on every deck
+ * that predates versioning.
+ *
+ * A game ties to the game. Nothing writes a game and an edit in one transaction,
+ * so an equal instant there is a coincidence rather than a migration, and the
+ * game is the more specific claim.
  */
 export function touchedBy(deck: TouchableDeck): Touch {
   let best: Touch = { at: deck.lastEditedAt, verb: "edited" };
   if (deck.lastPlayedAt !== null && deck.lastPlayedAt.getTime() >= best.at.getTime()) {
     best = { at: deck.lastPlayedAt, verb: "played" };
   }
-  if (deck.lastCommittedAt !== null && deck.lastCommittedAt.getTime() >= best.at.getTime()) {
+  // `>`, not `>=` — see the migration note above.
+  if (deck.lastCommittedAt !== null && deck.lastCommittedAt.getTime() > best.at.getTime()) {
     best = { at: deck.lastCommittedAt, verb: "committed" };
   }
   return best;

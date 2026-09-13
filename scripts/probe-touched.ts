@@ -20,10 +20,13 @@
 // reach of a database-only script; `probe:folders` has the same ceiling. The
 // writers exercised here are the ones that take no auth: `commitVersion`,
 // `restoreDraftFromVersion` and `touchDeck` itself. The action call sites are
-// covered by the unit tests, which assert the stamp against the emitted
-// statements (`last-slots-actions.test.ts`, `import-actions.test.ts`,
-// `update-actions.test.ts`); what those cannot see, and this can, is what the
-// database does with the write.
+// covered by unit tests only where those tests observe the stamp today — the
+// top-off and its undo (`last-slots-actions.test.ts`), the unresolved-line
+// resolve (`import-actions.test.ts`) and the list update
+// (`update-actions.test.ts`). The hand add and remove, the fill, the sweep, the
+// restore, the pull and the rename are asserted by neither: their stamps are
+// read from the code, and a misplaced conditional there would pass everything
+// in this repository. That gap is named rather than papered over.
 //
 // It writes a fixture under a per-run user_id and deletes it in a finally;
 // versions and version cards cascade.
@@ -34,6 +37,8 @@
 // First, and on its own line: src/db reads DATABASE_URL at module scope, so the
 // .env has to be loaded before the import below reaches it.
 import { requireEnv } from "./lib/env.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
@@ -149,11 +154,24 @@ async function main() {
     (await editedAt(backfilled)) === "2025-01-02 03:04:05",
     false,
   );
-  await fixture.execute(sql`
-    update decks set last_edited_at = created_at where id = ${backfilled}::uuid
-  `);
+  // Read out of the migration itself rather than retyped, so the statement this
+  // probe proves is the statement that ships. Replaying a hand-written copy
+  // would pass even if `0030` had omitted the UPDATE entirely, which is the one
+  // failure the check is for.
+  const migration = readFileSync(
+    join(__dirname, "..", "drizzle", "0030_unknown_hawkeye.sql"),
+    "utf8",
+  );
+  const backfillStatement = migration
+    .split("--> statement-breakpoint")
+    .map((part) => part.trim())
+    .find((part) => /^update "decks" set "last_edited_at"/im.test(part.replace(/^--.*$/gm, "").trim()));
+  check("the migration carries a backfill statement", backfillStatement !== undefined, true);
+  await fixture.execute(sql.raw(
+    `${(backfillStatement ?? "").replace(/^--.*$/gm, "").trim().replace(/;$/, "")} where id = '${backfilled}'`,
+  ));
   check(
-    "the backfill statement seeds it from created_at",
+    "the migration's own backfill seeds it from created_at",
     await editedAt(backfilled),
     "2025-01-02 03:04:05",
   );
