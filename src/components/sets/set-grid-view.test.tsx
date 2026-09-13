@@ -1033,3 +1033,24 @@ describe("SetGridView — the collapsed colour chip names its hues", () => {
     expect(chip.style.border).toBe("1px solid var(--border-strong)");
   });
 });
+
+// The chip row's tokens are the chassis's, and this pins the whole set rather than the one
+// a review happened to name — the background, the border and the × each drifted separately
+// and each cost a round.
+describe("SetGridView — the chip row's tokens are the chassis's", () => {
+  it("matches filter-chassis.tsx on every one", () => {
+    search = "c=W,U&r=rare";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    const chip = row.querySelector("span[style]") as HTMLElement;
+    expect(chip.style.background).toBe("var(--bg)");
+    expect(chip.style.border).toBe("1px solid var(--border-strong)");
+    expect(chip.style.color).toBe("var(--fg-body)");
+    // The × is --fg-faint; the Clear beside it is --fg-muted. Different controls, and the
+    // chassis does not give them the same weight.
+    const dismiss = chip.querySelector("button") as HTMLElement;
+    expect(dismiss.className).toMatch(/text-\[color:var\(--fg-faint\)\]/);
+    const clear = screen.getByRole("button", { name: /^Clear all filters/ });
+    expect(clear.className).toMatch(/text-\[color:var\(--fg-muted\)\]/);
+  });
+});

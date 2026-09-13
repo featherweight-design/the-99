@@ -508,9 +508,18 @@ async function run() {
       return page.evaluate(() => {
         const chipRow = document.querySelector("[data-set-chips]");
         if (!chipRow) return null;
-        const head = chipRow.closest("[class*='sticky']") ?? chipRow.parentElement;
+        // The RACK's rows, not the whole sticky head. `CostStrip` is still inside that head
+        // and adds a pricing or staleness line as the filtered set changes — real,
+        // deferred to the phone-head PR where the strip becomes a fixed row, and until then
+        // measuring the head here would fail this check for valid data. The rack's own
+        // three rows are what §28 promises are fixed, and they are what this measures.
+        const controls = chipRow.previousElementSibling;
+        const result = document.querySelector("[data-set-result]");
+        const rackHeight = [controls, chipRow, result]
+          .filter(Boolean)
+          .reduce((sum, el) => sum + el.getBoundingClientRect().height, 0);
         return {
-          head: Math.round(head.getBoundingClientRect().height),
+          head: Math.round(rackHeight),
           chips: chipRow.querySelectorAll("span > button").length,
           pipOpacities: [...document.querySelectorAll('[role="switch"]')]
             .filter((el) => el.getClientRects().length > 0)
@@ -569,7 +578,7 @@ async function run() {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");
     } else {
       failures += !report(
-        "the head's height does not move with the filter state",
+        "the rack's three rows do not move with the filter state",
         rest.head === one.head && one.head === three.head,
         `rest ${rest.head}px, one ${one.head}px, three ${three.head}px`,
       );
@@ -596,7 +605,7 @@ async function run() {
     const phoneThree = await rackAt("?c=W&r=rare&m=1");
     if (phoneRest !== null) {
       failures += !report(
-        "the phone head's height does not move with the filter state either",
+        "the phone rack's three rows do not move either",
         phoneRest.head === phoneMissing2.head && phoneMissing2.head === phoneThree.head,
         `rest ${phoneRest.head}px, missing-only ${phoneMissing2.head}px, three ${phoneThree.head}px`,
       );

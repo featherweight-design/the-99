@@ -651,8 +651,11 @@ export function SetGridView(props: SetGridViewProps) {
                   type="button"
                   onClick={chip.onRemove}
                   aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
+                  // `--fg-faint`, which is the chassis's × token. The Clear beside it is
+                  // `--fg-muted` and matches already; the two are not the same control and
+                  // the chassis does not give them the same weight.
                   className="relative cursor-pointer border-0 bg-transparent p-0
-                             text-[color:var(--fg-muted)]
+                             text-[color:var(--fg-faint)]
                              after:absolute after:left-1/2 after:top-1/2 after:h-[44px]
                              after:w-[44px] after:-translate-x-1/2 after:-translate-y-1/2
                              after:content-['']"
