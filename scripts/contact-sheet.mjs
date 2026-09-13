@@ -102,6 +102,14 @@ async function run(page, steps) {
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
     }
     if (step.click) await page.locator(step.click).first().click({ timeout: 15_000 });
+    // A control one width has and the other does not. `/commanders` draws its
+    // colour control inline above 1000px and inside a sheet below it, so one
+    // steps list serves both widths only if the step that opens the sheet may
+    // find nothing. A missing control is skipped, never a failed cell.
+    if (step.clickIfPresent) {
+      const target = page.locator(step.clickIfPresent).first();
+      if (await target.count()) await target.click({ timeout: 15_000 });
+    }
     if (step.clickRole) {
       await page.getByRole(step.clickRole, { name: new RegExp(step.name) }).first().click({ timeout: 15_000 });
     }

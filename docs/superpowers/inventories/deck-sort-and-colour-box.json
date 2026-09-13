@@ -1,27 +1,52 @@
 {
   "feature": "The deck order's memory, and the colour control's box",
-  "note": "Two small rulings on three routes. The `/decks` rows open the sort menu, because that is where the capitalised labels are drawn and a closed trigger only shows the one in force. The colour rows are a plain `goto`: the box that was lopsided is the rack's WIDE form, so the desktop cell is the evidence and the phone cell is the same control in its sheet form, which draws no box at all. No `shares` block — the colour control is already one component (`ui/colour-pips.tsx` inside `rack/colour-control.tsx`), which is why one 6px padding fixed both lanes at once. Steps are Playwright verbs.",
+  "note": "Two small rulings on three routes. The `/decks` rows open the sort menu, because that is where the capitalised labels are drawn and a closed trigger only shows the one in force. The colour rows press `Filters` where there is one: below 1000px the rack has NO wide form and `FilterSheet` returns null until it is opened, so a bare `goto` photographed a phone cell with no control in it. At 1300 the trigger is absent and the step is skipped, which is why it is `clickIfPresent` — the box that was lopsided is the wide form, and the sheet form draws no box at all. No `shares` block: the colour control is already one component (`ui/colour-pips.tsx` inside `rack/colour-control.tsx`), which is why one 6px padding fixed both lanes at once. Steps are Playwright verbs.",
   "rows": [
     {
       "id": "decks-sort-menu",
       "label": "/decks — the order menu",
       "steps": [
-        { "goto": "/decks", "wait": "main, [role=main], h1", "settle": 4000 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]", "settle": 800 }
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 4000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]",
+          "settle": 800
+        }
       ]
     },
     {
       "id": "commanders-colour",
       "label": "/commanders — the colour control's box",
       "steps": [
-        { "goto": "/commanders", "wait": "main, [role=main], h1", "settle": 14000 }
+        {
+          "goto": "/commanders",
+          "wait": "main, [role=main], h1",
+          "settle": 14000
+        },
+        {
+          "clickIfPresent": "main button[aria-haspopup='dialog']:visible",
+          "settle": 1200
+        }
       ]
     },
     {
       "id": "discover-colour",
       "label": "/discover — the same control, the other lane",
       "steps": [
-        { "goto": "/discover", "wait": "main, [role=main], h1", "settle": 14000 }
+        {
+          "goto": "/discover",
+          "wait": "main, [role=main], h1",
+          "settle": 14000
+        },
+        {
+          "clickIfPresent": "main button[aria-haspopup='dialog']:visible",
+          "settle": 1200
+        }
       ]
     }
   ]
