@@ -34,8 +34,12 @@ interface DeckCardOverflowProps {
   onCreateFolder: () => void;
   /** The route's own live region, which outlives this panel's mode switch. */
   say: (announcement: string) => void;
-  /** Refreshes the route after a move: the grid and every count are the view's. */
-  onMoved: () => void;
+  /**
+   * Refreshes the route after a move — the grid and every count are the view's —
+   * and says whether the move was refused, because a refusal can mean the deck
+   * is gone and this card with it.
+   */
+  onMoved: (result: { refused: boolean }) => void;
   /**
    * Whether this card stays on screen after a move — true on All decks, false on
    * a named shelf, where the deck leaves the grid and the view takes focus.
@@ -260,7 +264,7 @@ export function DeckCardOverflow({
                 setMovedTo(null);
                 wantsMoveRowFocus.current = true;
                 setMode("menu");
-                onMoved();
+                onMoved({ refused: false });
               }}
               onMoved={(next) => {
                 setMovedTo({ ...next, from: folderId });
@@ -273,7 +277,7 @@ export function DeckCardOverflow({
                 // The list, its counts and both denominators live in the view;
                 // without this a deck moved off the shelf being viewed stays in
                 // the grid and every figure above it is stale.
-                onMoved();
+                onMoved({ refused: false });
                 // Back to the menu, not closed: the row now reads the new shelf,
                 // and that is the receipt.
                 setMode("menu");

@@ -824,12 +824,19 @@ export function DecksView({
                 // this the new shelf is selected, the card leaves the grid with
                 // its move panel, and the deck the reader was filing is left
                 // exactly where it was.
-                if (creatingFor) await moveDeckAction(creatingFor, result.folder.id);
+                //
+                // THE MOVE'S OWN ANSWER IS READ. The folder is made either way —
+                // it is persisted before this runs — but the deck is only on it
+                // if the move said so, and announcing a count that assumes it
+                // did is a claim about someone else's shelf.
+                const filed = creatingFor
+                  ? await moveDeckAction(creatingFor, result.folder.id).catch(() => false)
+                  : false;
                 onShelf(result.folder.id);
                 // Named from the action's own answer: `segments` in this
                 // callback closed over the render before the folder existed. A
                 // new shelf holds nothing.
-                say(folderCopy.shelves.aria(result.folder.name, 0));
+                say(folderCopy.shelves.aria(result.folder.name, filed ? 1 : 0));
                 refresh();
                 return null;
               }}
@@ -890,11 +897,13 @@ export function DecksView({
                     }}
                     say={say}
                     keepsFocus={state.shelf === ALL_DECKS}
-                    onMoved={() => {
+                    onMoved={({ refused }) => {
                       refresh();
-                      // On a named shelf the moved card leaves the grid, taking
-                      // the menu's receipt — and the focus on it — with it.
-                      if (state.shelf !== ALL_DECKS) focusShelfControl();
+                      // Focus goes to the shelf whenever this card may not
+                      // survive: on a named shelf a successful move takes it off
+                      // the grid, and a REFUSAL can mean the deck itself is gone
+                      // (M6) — which removes the card on All decks too.
+                      if (refused || state.shelf !== ALL_DECKS) focusShelfControl();
                     }}
                   />
                 </li>
