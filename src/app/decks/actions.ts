@@ -44,7 +44,7 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1255,7 +1255,11 @@ export async function logGame(
   // refusal would arrive as a generic failure with no explanation.
   if (input.note !== undefined && typeof input.note !== "string") return refuse;
   const note = input.note?.trim() ?? "";
-  if (note.length > NOTE_MAX_LENGTH) return refuse;
+  // Code points, not `.length`. JavaScript counts UTF-16 code units, so an
+  // emoji is two and the column's `char_length` is one — counting the JS way
+  // would refuse 71 emoji as 142 characters while the database was happy to
+  // store them. One definition of "character", and it is the column's.
+  if (countCharacters(note) > NOTE_MAX_LENGTH) return refuse;
 
   // The version live when the game was PLAYED, not when it was logged: a game
   // can be backdated, and stamping it with today's list would credit a night's

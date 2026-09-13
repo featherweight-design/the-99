@@ -9,7 +9,7 @@ import { useEffect, useId, useRef, useState, useTransition, type KeyboardEvent }
 import { logGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
-import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { MutationError } from "./mutation-error";
 import { PRIMARY } from "../ui/button";
 
@@ -106,6 +106,12 @@ export function GameLogForm({
   // that still has focus keeps its `0 / 140`.
   const [note, setNote] = useState("");
   const [noteFocused, setNoteFocused] = useState(false);
+  // What the counter counts, and what the action checks: code points, the way
+  // the column does. The input's own `maxLength` counts UTF-16 units and cannot
+  // be told otherwise, so the browser stops a note of astral characters
+  // slightly early — a client stricter than the server, which is the safe way
+  // for the two to disagree.
+  const noteLength = countCharacters(note);
   // Two forms can be on one page — the panel's and the empty state's — so the
   // label's `for` and the field's `aria-describedby` cannot be literals.
   const noteId = useId();
@@ -430,11 +436,11 @@ export function GameLogForm({
             <span
               id={counterId}
               className={`ml-auto font-mono text-[9.5px] md:text-[10px] md:tabular-nums ${
-                note.length >= deckTuningCopy.note.warnAt ? "text-warning" : "text-fg-locked"
+                noteLength >= deckTuningCopy.note.warnAt ? "text-warning" : "text-fg-locked"
               }`}
             >
               {deckTuningCopy.note.counter(
-                String(note.length),
+                String(noteLength),
                 String(deckTuningCopy.note.maxLength),
               )}
             </span>

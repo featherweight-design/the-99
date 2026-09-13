@@ -233,10 +233,12 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 
 ## Component: Game History Row — Note Line (Surface 2, CHANGE)
 
-> **Shipped 2026-09-13**, ahead of the rest of this table, with `deck_games.note`
-> and its 140-character check (migration `0029_slow_whiplash`). The note is
-> entered by hand against the database — the form's Note Field above is still
-> unbuilt, so nothing in the app writes one yet.
+> **Shipped 2026-09-13**, ahead of the rest of this table, with
+> `deck_games.note` and its 140-character check (migration
+> `0029_slow_whiplash`). The form's Note Field above shipped the same day, so
+> the app writes notes at log time; a game already in the history has no edit
+> path — #9 ships none by design — and takes a note by hand against the
+> database.
 >
 > **The breakpoint** is `md:` / 768px, settled 2026-09-13 for this whole table —
 > see the amendment at the top.

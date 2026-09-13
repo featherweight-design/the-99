@@ -37,7 +37,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 **Data and schema.**
 
-- **The whole game-note path shipped 2026-09-13**, ahead of the rest of this plan: the column and its check (migration `0029_slow_whiplash`), the read, the History row line, and the form's field and counter. Tasks 1, 3 and 4 are struck accordingly. What remains of the note here is only the note reaching the model (Task 7's evidence pack). Do not add the column, the field or the line again.
+- **The whole game-note path shipped 2026-09-13**, ahead of the rest of this plan: the column and its check (migration `0029_slow_whiplash`), the read, the History row line, and the form's field and counter. Task 4 is done; Task 1 keeps everything but the column, and Task 3 keeps only its step 6, which is intent work rather than note work. What remains of the note is the note reaching the model (Task 7's evidence pack). Do not add the column, the field or the line again. **A game already logged still has no edit path** — #9 ships none by design — so a note on an old game is written by hand against the database.
 - The new game column is **`note`, singular** — `deck_games.note`. `decks.notes` (plural) already exists at `src/db/schema.ts:170` and is a different thing.
 - **Note ≤ 140 characters. Intent ≤ 120 characters.** The app-seeded intent string must itself fit inside 120.
 - **Five failure classes, not four:** `upstream_busy`, `timeout`, `malformed`, `ungrounded`, `interrupted`. `interrupted` is written by the reaper, never by the run itself.
@@ -459,20 +459,21 @@ git commit -m "feat(tuning): copy module for the tuning panel, cards, note, and 
 
 ### Task 3: The game note — read and write path
 
-> **Shipped 2026-09-13.** `DeckGame.note` is read by `listDeckGames`, and
-> `logGame` accepts a `note`: trimmed, blank stored as null, and refused rather
-> than truncated past the cap. Nothing is left in this task.
+> **The note half shipped 2026-09-13.** `DeckGame.note` is read by
+> `listDeckGames`, and `logGame` accepts a `note`: trimmed, blank stored as
+> null, and refused rather than truncated past the cap — counted as the column
+> counts, in code points. Steps 1–5 are done. **Step 6 is not**: it projects
+> `decks.intent` onto `DeckDetail` and belongs to the intent work, not the note.
 
-**Files:**
-- ~~Modify: `src/lib/decks/games.ts`~~ — shipped.
-- Modify: `src/app/decks/actions.ts:849-922` (`logGame`)
-- Test: `src/lib/decks/games.test.ts`
+**Files:** ~~`src/lib/decks/games.ts`, `src/app/decks/actions.ts` (`logGame`),
+`src/lib/decks/games.test.ts`, `src/app/decks/actions.test.ts`~~ — shipped. Step
+6 still modifies `src/lib/decks/read.ts`.
 
-**Interfaces:**
-- Consumes: `deckGames.note` (shipped); `deckTuningCopy.note.maxLength` from Task 2.
-- Produces: ~~`DeckGame.note: string | null`, populated by `listDeckGames`~~ (shipped); `logGame` accepting a `note` form field. The evidence pack (Task 5) reads `DeckGame.note`.
+**Interfaces:** ~~`DeckGame.note`, populated by `listDeckGames`; `logGame`
+accepting a `note`~~ — shipped. Task 7's evidence pack still has to read it, and
+step 6 still owes `DeckDetail.intent`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] ~~**Step 1: Write the failing tests**~~ — shipped
 
 ```typescript
 // src/lib/decks/games.test.ts — add to the existing file
@@ -495,7 +496,7 @@ describe("game notes", () => {
 
 The point of the second assertion: a note is not a mark. `marked` is the numerator in "Marked in 3 of 5 games" and adding notes to it would make that line lie.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] ~~**Step 2: Run it to verify it fails**~~ — shipped
 
 ```bash
 pnpm test src/lib/decks/games.test.ts
@@ -503,7 +504,7 @@ pnpm test src/lib/decks/games.test.ts
 
 Expected: FAIL — `note` is not a property of `DeckGame`.
 
-- [ ] **Step 3: Add `note` to the type and the read**
+- [x] ~~**Step 3: Add `note` to the type and the read**~~ — shipped
 
 In `src/lib/decks/games.ts`, add to `DeckGame`:
 
@@ -514,7 +515,7 @@ In `src/lib/decks/games.ts`, add to `DeckGame`:
 
 In `listDeckGames`, add `note: deckGames.note` to the first select's projection, and `note: row.note` to the returned map at the end. The second query (the marks join) is untouched.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] ~~**Step 4: Run the test to verify it passes**~~ — shipped
 
 ```bash
 pnpm test src/lib/decks/games.test.ts
@@ -522,7 +523,7 @@ pnpm test src/lib/decks/games.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 5: Accept the note in `logGame`**
+- [x] ~~**Step 5: Accept the note in `logGame`**~~ — shipped
 
 `logGame` is **not** a form action. Its signature is `logGame(deckId: string, input: LogGameInput)` (`src/app/decks/actions.ts:849-851`), `LogGameInput` is declared at `:822`, and `game-log-form.tsx:199` calls it directly with an object. Do not reach for `FormData` here.
 
@@ -566,18 +567,15 @@ git commit -m "feat(tuning): carry a per-game note and the deck intent through t
 > form's note field to S1 states 1–8, measured by `scripts/probe-game-note.mjs`.
 > One errata on the explanatory line; see the design table.
 
-**Files:**
-- Modify: `src/components/decks/game-log-form.tsx`
-- ~~Modify: `src/components/decks/game-history-row.tsx`~~ — shipped.
-- Test: `src/components/decks/game-log-form.test.tsx`
+**Files:** ~~all shipped~~ — `src/components/decks/game-log-form.tsx`,
+`src/components/decks/game-history-row.tsx`, and both their tests.
 
-**Interfaces:**
-- Consumes: `deckTuningCopy.note` from Task 2; `DeckGame.note` (shipped); the `logGame` note field from Task 3.
-- Produces: no new exports. The form posts `note`.
+**Interfaces:** ~~all shipped~~. The form posts `note`; the row renders it.
 
-**Design table rows to satisfy:** S1 states 1–8 (note field). ~~S2 (history row)~~ — shipped. Tap-target floor for the note field: **48px mobile, 46px desktop**.
+**Design table rows satisfied:** ~~S1 states 1–8 and S2~~, both measured by
+`scripts/probe-game-note.mjs`, including the 48px / 46px tap-target floor.
 
-- [ ] **Step 1: Write the failing component tests**
+- [x] ~~**Step 1: Write the failing component tests**~~ — shipped
 
 ```typescript
 // src/components/decks/game-log-form.test.tsx — add inside the existing
@@ -624,7 +622,7 @@ it("renders the note when there is one and nothing when there is not", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] ~~**Step 2: Run them to verify they fail**~~ — shipped
 
 ```bash
 pnpm test src/components/decks/game-log-form.test.tsx src/components/decks/game-history-row.test.tsx
@@ -632,15 +630,15 @@ pnpm test src/components/decks/game-log-form.test.tsx src/components/decks/game-
 
 Expected: FAIL — no element with the note label.
 
-- [ ] **Step 3: Add the field to the form**
+- [x] ~~**Step 3: Add the field to the form**~~ — shipped
 
 A `<textarea name="note">` with `maxLength={deckTuningCopy.note.maxLength}`, labelled by `deckTuningCopy.note.label`, described by `deckTuningCopy.note.ariaDescription`, hinted with `deckTuningCopy.note.hint`. The counter renders only once the length reaches `deckTuningCopy.note.warnAt` — below that it is absent from the DOM, not merely hidden, because a screen reader reading a live counter on every keystroke is the noise the design is avoiding. Amend the existing optional-note line to `deckTuningCopy.note.optionalNote`; do not change `gameLogCopy.form.optionalNote` itself, which other tests assert on.
 
-- [ ] **Step 4: Add the note to the history row**
+- [x] ~~**Step 4: Add the note to the history row**~~ — shipped
 
 Render `game.note` when non-null, as the row's own line beneath the marks. Never truncate with an ellipsis in the DOM — the cap is 140 characters and the row can hold it.
 
-- [ ] **Step 5: Run the tests to verify they pass, then commit**
+- [x] ~~**Step 5: Run the tests to verify they pass, then commit**~~ — shipped
 
 ```bash
 pnpm test src/components/decks

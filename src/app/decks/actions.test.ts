@@ -852,6 +852,16 @@ describe("logGame", () => {
     expect(stub.state.insertCalls.filter((c) => c.table === "deck_games")).toHaveLength(0);
   });
 
+  // The column counts code points; JavaScript counts UTF-16 code units. 71
+  // emoji is 142 of one and 71 of the other, and refusing it here would refuse
+  // a note the database was happy to store.
+  it("counts characters the way the column does", async () => {
+    const result = await logGame("deck_1", {
+      result: "win", podSize: 4, worked: [], hurt: [], note: "😀".repeat(71),
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
   it("refuses a note that is not a string", async () => {
     const result = await logGame("deck_1", {
       result: "win", podSize: 4, worked: [], hurt: [],

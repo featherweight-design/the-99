@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deckTuningCopy } from "./deck-tuning";
+import { countCharacters, deckTuningCopy } from "./deck-tuning";
 import { gameLogCopy } from "./game-log";
 
 /**
@@ -62,5 +62,29 @@ describe("deckTuningCopy", () => {
     expect(deckTuningCopy.note.optionalNote).not.toBe(gameLogCopy.form.optionalNote);
     expect(deckTuningCopy.note.optionalNote).toContain("note");
     expect(gameLogCopy.form.optionalNote).not.toContain("note");
+  });
+
+  // The column counts code points and JavaScript counts UTF-16 code units, so
+  // the two disagree the moment anybody types an emoji. Three layers read this
+  // function — the counter, the action, and by implication the column — and a
+  // second definition creeping into any of them is the bug it exists to stop.
+  describe("countCharacters", () => {
+    it("counts plain text the obvious way", () => {
+      expect(countCharacters("Flooded out.")).toBe(12);
+      expect(countCharacters("")).toBe(0);
+    });
+
+    it("counts an astral character once, as the column does", () => {
+      expect("😀".length).toBe(2);
+      expect(countCharacters("😀")).toBe(1);
+    });
+
+    // The case that would have been refused: 71 emoji is 142 code units and 71
+    // characters, and only one of those numbers is over the cap.
+    it("lets a note the column would accept through the cap", () => {
+      const note = "😀".repeat(71);
+      expect(note.length).toBeGreaterThan(deckTuningCopy.note.maxLength);
+      expect(countCharacters(note)).toBeLessThanOrEqual(deckTuningCopy.note.maxLength);
+    });
   });
 });

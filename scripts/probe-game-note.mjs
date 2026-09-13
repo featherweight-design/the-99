@@ -112,7 +112,10 @@ for (const vp of VIEWPORTS) {
       setter.call(input, "x".repeat(130));
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    await page.waitForSelector("input[maxlength='140'] ~ *, [id$='-count']", { timeout: 5_000 });
+    // The counter itself, not "something after the input" — the description
+    // span is always there, so the looser selector matched before React had
+    // committed anything and the read below raced it.
+    await page.waitForSelector("[id$='-count']", { timeout: 5_000 });
     form = await page.evaluate((COUNTER_AT_REST) => {
       const input = document.querySelector("input[maxlength='140']");
       const section = input.closest("div");
