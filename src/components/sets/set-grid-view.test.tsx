@@ -2161,6 +2161,21 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(container.querySelector("[data-set-head-bar]")).toBeTruthy();
   });
 
+  // The open block is `display:none` while the bar is drawn, which takes its `h1` out of
+  // the accessibility tree — heading navigation had no page heading for the whole collapsed
+  // state.
+  it("keeps a page heading while collapsed", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("h1")?.textContent).toMatch(/Duskmourn/);
+    // Exactly one is exposed at a time: the other is inside the hidden subtree.
+    const shown = [...container.querySelectorAll("h1")]
+      .filter((h) => h.closest("div.hidden") === null);
+    expect(shown).toHaveLength(1);
+  });
+
   // A complete base run can still have extras and enough cells to scroll, and the icon is
   // `aria-hidden` — a bar carrying the bare name told a screen-reader user nothing.
   it("keeps the ratio and the completion state when the set is complete", () => {

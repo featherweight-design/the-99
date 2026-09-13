@@ -203,6 +203,12 @@ export function SetGridView(props: SetGridViewProps) {
     const el = headRef.current;
     const spacer = spacerRef.current;
     if (el === null || spacer === null) return;
+    // Read off the DOM at call time rather than off a `collapsed` closed over anywhere:
+    // `ResizeObserver` delivers at the end of a frame, so the shrink the collapse causes
+    // can arrive BEFORE any cleanup, and the rest height would then record the collapsed
+    // one — the number it must never hold. The probe caught that: 288px at rest, 140px
+    // collapsed.
+    //
     // Refreshed HERE, before sizing, whenever the head is open. While collapsed the open
     // subtree is `display:none` and cannot resize, so a filter changed through the bar's
     // sheet leaves the recorded height stale — and the first render that restores would
@@ -225,15 +231,11 @@ export function SetGridView(props: SetGridViewProps) {
     const el = headRef.current;
     if (el === null) return;
     const measure = () => {
-      // Read off the DOM at callback time rather than off a `collapsed` this effect closed
-      // over. `ResizeObserver` delivers at the end of a frame, so the shrink the collapse
-      // causes can arrive BEFORE any cleanup — and the rest height would then record the
-      // collapsed one, which is the number it must never hold. The probe caught this:
-      // 288px reserved at rest, 140px collapsed.
-      if (!el.hasAttribute("data-set-head-collapsed")) {
-        const h = el.getBoundingClientRect().height;
-        restHeightRef.current = h;
-      }
+      // `sizeSpacer` records the height as well as writing the spacer, and it is the one
+      // place that decides WHEN a height may be recorded. This callback used to keep its
+      // own copy of that decision and the two drifted the moment a second condition was
+      // added: the delta strip pins the head open, so a height measured while it was
+      // showing was recorded here and never corrected.
       sizeSpacer();
     };
     measure();
@@ -733,12 +735,16 @@ export function SetGridView(props: SetGridViewProps) {
             {/* The completion state is in the NAME, not only in the icon: `SetIcon` is
                 `aria-hidden`, so a bar carrying the bare name told a screen-reader user
                 nothing the open heading tells them. */}
-            <span
+            {/* An `h1`, not a span. The open block is `display:none` while the bar is
+                drawn, which takes its heading out of the accessibility tree — so heading
+                navigation had no page heading at all for the whole collapsed state. Only
+                ever one of the two is exposed, for the same reason. */}
+            <h1
               className="min-w-0 flex-1 truncate font-display text-[14px]"
               style={{ color: complete ? "var(--success)" : "var(--fg)" }}
             >
               {complete ? setPageCopy.complete.heading(name) : name}
-            </span>
+            </h1>
             {/* Every indexed set, the complete one included. A complete base run can still
                 have extras and enough cells to scroll, and §31's bar carries the ratio —
                 dropping it there loses the reader's progress figure exactly where the head
