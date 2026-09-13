@@ -52,7 +52,8 @@ const alphaAt = (stops: ScrimStops, position: number): number => {
 const STATED_BANDS: readonly {
   surface: string;
   /** `null` where the band draws no ramp: its ink starts past the portrait's
-      flat stop and stands on the row's own ground. */
+      ink sits beside the portrait rather than over it, so no vertical ramp is
+      drawn for a block to be keyed to. */
   labelAtPx: number | null;
   band: number;
   /** The strategy, because the ground and the hold both follow from it: a
@@ -159,7 +160,8 @@ const PORTRAIT_INK: readonly {
       percentage of. */
   band: number;
   /** The block this row's ramp is keyed to, or null where its ink starts past the
-      portrait's flat stop and stands on the row's own ground. */
+      ink sits beside the portrait rather than over it, so the band draws no
+      vertical ramp. */
   labelAtPx: number | null;
   x: number;
   /** Percent down the band, for the vertical ramp. */
@@ -224,9 +226,10 @@ describe("art wash contrast floor", () => {
     // band where the drawing puts it at 81% — the scrim landing where the round
     // removes it, which is worse than not moving it at all.
     for (const { surface, labelAtPx, band, strategy, portrait: width } of STATED_BANDS) {
-      // A flat band draws no ramp, so there is no hold to measure ink against —
-      // its ink stands on the row's own ground, which `PORTRAIT_INK` samples
-      // directly at the inset it starts from.
+      // A flat band draws no ramp, so there is no hold to measure ink against.
+      // Its ink sits beside the portrait, and `PORTRAIT_INK` samples the ground
+      // it actually stands on at the inset it starts from — which for the resume
+      // row is 22px short of that row's flat stop, on a scrim still climbing.
       if (labelAtPx === null) continue;
       const stops = bottomScrimStops(labelAtPx, band, strategy === "cover" ? undefined : PORTRAIT_HOLD);
       for (const [edge, y] of [

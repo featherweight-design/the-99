@@ -230,7 +230,16 @@ export function ResumeDecks({
         {refreshCopy.home.resumeHeading}
       </h2>
 
-      <div className="flex gap-[12px]">
+      {/* Two-up only where two will FIT. The dashboard's left column is the
+          viewport less 52px of page padding, a 20px gap and the 316px rail, so
+          at 640px it is 252px — and two rows with a 12px gap are 120px each,
+          against a 116px portrait inset and 18px of right padding. The text had
+          negative room and was clipped away entirely.
+          
+          Stacked until the column can hold a usable row and side by side after,
+          which is 880px of viewport. The row itself is unchanged: same 72px
+          band, same 99px portrait, same inset — only how many sit on a line. */}
+      <div className="flex flex-col gap-[12px] min-[880px]:flex-row">
         {decks.map((deck) => (
           <ResumeRow key={deck.id} deck={deck} copies={toBuyCopies(shopping, deck.id)} />
         ))}

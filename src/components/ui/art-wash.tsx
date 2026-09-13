@@ -203,8 +203,8 @@ const portrait = (
   // is meant to leave alone.
   const stops = `${tint(b.ground, 0)} 0px, ${tint(b.ground, 0)} ${clearTo}px, ${tint(b.ground, b.sharpAlpha)} ${width}px, var(${b.ground}) ${b.flatStop}px`;
   // Layer D: a band that prints type over the portrait needs damping down the
-  // band as well as across. A band whose ink starts past the flat stop is `flat`
-  // — a vertical ramp there would darken the row for nothing.
+  // band as well as across. A band whose ink sits BESIDE the portrait is `flat`
+  // — a vertical ramp there would darken the row to protect nothing.
   const vertical: ScrimStops | null =
     labelAtPx === "flat" ? null : bottomScrimStops(labelAtPx, band, PORTRAIT_HOLD);
   return {
@@ -254,14 +254,17 @@ export type ArtWashProps = ArtProps &
         /** `flat` means NO VERTICAL RAMP — the band draws its horizontal scrim
             and nothing else.
 
-            Two kinds of row ask for it. The deck header's ink starts past the
-            portrait's flat stop, on fully opaque ground. The resume row's starts
-            at its 116px inset, clear of the 99px portrait but short of that
-            row's 138px flat stop, so its ink stands on a horizontal scrim still
-            climbing — thinner ground, and asserted at exactly that inset in
-            `wash-contrast.test.ts`. What both have in common is that a vertical
-            ramp would darken the band without protecting anything, which is the
-            contract this value states. */
+            Two kinds of row ask for it, and neither is about the flat stop. The
+            deck header's ink starts past its portrait's flat stop, on fully
+            opaque ground. The resume row's starts at its 116px inset — clear of
+            the 99px portrait, but 22px SHORT of that row's 138px flat stop, so
+            its ink stands on a horizontal scrim still climbing, which is the
+            thinnest ground anything on that row gets and is asserted at exactly
+            that inset in `wash-contrast.test.ts`.
+
+            What both share is that their ink is BESIDE the art rather than over
+            it, so a vertical ramp would darken the band top to bottom to protect
+            nothing. That is the contract this value states. */
         labelAtPx: number | "flat";
       }
   );

@@ -394,9 +394,9 @@ describe("ArtWash — a stated band", () => {
     expect(narrow.container.innerHTML).toContain("var(--bg) 356px");
   });
 
-  // One ramp function for both strategies. `flat` is the band whose ink starts
-  // past the portrait's flat stop and stands on the row's own ground — a vertical
-  // ramp there would darken the row for nothing.
+  // One ramp function for both strategies. `flat` is the band whose ink sits
+  // beside the portrait rather than over it — a vertical ramp there would darken
+  // the row to protect nothing.
   it("ramps a left-portrait band from the same function, and draws none when flat", () => {
     const ramped = render(
       <ArtWash strategy="left-portrait" height={208} portrait={285} labelAtPx={46} artCropUri="c.jpg" colorIdentity={["G"]} />,
@@ -465,5 +465,43 @@ describe("ArtWash — the inverted portrait", () => {
     );
     expect(statedPortrait.container.firstElementChild).toHaveAttribute("data-art-wash-band", "208");
 
+  });
+
+  // The resume row's 99px column, restored with the row. Every figure here is
+  // what SHIPPED rather than what the rule derives: 0.95 is the lift the layer
+  // took when the ambient copy under it was deleted, and the clear stop is an
+  // explicit 58 where `maskEnd%` of 99 would give 61. Nothing else covers this
+  // entry — the contrast suite reads its expectations out of the same table, so
+  // a wrong value there agrees with itself.
+  it("draws the restored resume portrait at its own shipped geometry", () => {
+    const { container } = render(
+      <ArtWash
+        strategy="left-portrait"
+        height={72}
+        portrait={99}
+        labelAtPx="flat"
+        artCropUri="c.jpg"
+        colorIdentity={["G"]}
+      />,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.height).toBe("72px");
+    // The row's own ground, not `--bg`: the band sits in a `--surface-inset` row
+    // and the art has to fade into that rather than into a darker patch.
+    expect(root.style.background).toContain("--surface-inset");
+
+    const sharp = container.querySelector<HTMLElement>(".art-wash-art")!;
+    expect(sharp.style.width).toBe("99px");
+    expect(sharp.style.opacity).toBe("0.95");
+    expect(sharp.style.maskImage).toContain("62%");
+
+    const scrim = container.querySelector<HTMLElement>(".art-wash-scrim")!;
+    // The clear run ends at 58, the sharp alpha lands at the portrait's own
+    // width, and the ground closes at 138.
+    expect(scrim.style.background).toContain("58px");
+    expect(scrim.style.background).toContain("99px");
+    expect(scrim.style.background).toContain("138px");
+    // Flat: one scrim, no vertical ramp.
+    expect(container.querySelectorAll(".art-wash-scrim")).toHaveLength(1);
   });
 });
