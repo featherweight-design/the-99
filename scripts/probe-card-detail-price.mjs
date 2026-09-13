@@ -192,8 +192,20 @@ async function openCard(page, name) {
   // a card name carrying a quote, a bracket or a backslash would make that selector
   // invalid or change what it means, and the probe would fail before opening anything.
   const pattern = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
-  await page.getByRole("button", { name: pattern }).first().click();
-  await page.waitForSelector('[role="dialog"]', { timeout: 15_000 });
+  // Pressed up to three times. The row paints before React has hydrated it, so a
+  // first click on a cold dev server lands on markup with no handler attached and
+  // nothing happens — there is no state to wait for, only the absence of a
+  // dialog, so the retry IS the wait.
+  const row = page.getByRole("button", { name: pattern }).first();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await row.click();
+    const opened = await page
+      .waitForSelector('[role="dialog"]', { timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (opened) break;
+    if (attempt === 2) throw new Error(`the modal never opened for ${name}`);
+  }
   // The card is fetched on click and the price rides that fetch, so the modal opens
   // before it has either. Waited for, not slept through: a fixed delay turns a slow
   // Neon response into a false failure, and the art box is the right thing to wait
@@ -414,6 +426,61 @@ try {
     process.exitCode = 1;
   }
   await context.close();
+
+  // ── a SHORT desktop window, where the stack has to fit ───────────────────
+  //
+  // The dialog is `min(620px, 85vh)` and `overflow-hidden`, and the column
+  // centres the art — so the room under the art is half the slack, and at 600px
+  // it was 42px against a two-faced stack wanting 87. The turn control and the
+  // tag were cut off and unreachable, which is invisible at 900px. E19.
+  const shortCtx = await browser.newContext({ viewport: { width: 1300, height: 600 } });
+  const shortPage = await shortCtx.newPage();
+  await signIn(shortPage);
+  await openCard(shortPage, CARD);
+  const short = await shortPage.evaluate(() => {
+    const vis = (sel) =>
+      [...document.querySelectorAll(sel)].find((n) => n.getBoundingClientRect().width > 0) ?? null;
+    const dialog = document.querySelector('[role="dialog"]');
+    const stack = vis('[data-testid="modal-under-card"]');
+    const art = vis('[data-testid="modal-art-desktop"]');
+    if (!dialog || !stack || !art) return null;
+    const d = dialog.getBoundingClientRect();
+    const s = stack.getBoundingClientRect();
+    const a = art.getBoundingClientRect();
+    // The stack that is on screen is not the worst case: a price can appear on a
+    // pick at any time and row 1.14 forbids anything above it moving, so the art
+    // reserves the tag's row whether or not this card has a figure. The invariant
+    // is therefore about the ROOM under the art, not about today's stack.
+    const twoFaced = Boolean(stack.querySelector('button[aria-label^="Turn over to"]'));
+    const reserved = 10 + 15 + (twoFaced ? 38 : 0) + 24;
+    return {
+      dialogHeight: Math.round(d.height),
+      artWidth: Math.round(a.width),
+      reserved,
+      roomUnderArt: Math.round(d.bottom - a.bottom),
+      overflowPx: Math.round(s.bottom - d.bottom),
+      // Clipped is not the same as absent: the node is laid out either way, so
+      // the question is whether a press would land on it.
+      lastRowReachable: (() => {
+        const rows = [...stack.children];
+        const last = rows[rows.length - 1];
+        if (!last) return false;
+        const r = last.getBoundingClientRect();
+        const at = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+        return at !== null && (last.contains(at) || at.contains(last));
+      })(),
+    };
+  });
+  console.log("\n── desktop 1300x600 · the stack still fits ──");
+  console.log(JSON.stringify(short, null, 2));
+  if (!short || short.overflowPx > 0 || short.roomUnderArt < short.reserved || !short.lastRowReachable) {
+    console.log(
+      "\nFAIL: the under-card stack is clipped by the dialog on a short window (E19)."
+        + " The art has to give back the height the stack needs.",
+    );
+    process.exitCode = 1;
+  }
+  await shortCtx.close();
 
   // ── phone, including the compact header ──────────────────────────────────
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });

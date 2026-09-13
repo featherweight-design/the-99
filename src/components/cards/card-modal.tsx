@@ -717,6 +717,13 @@ export function CardModal({
 
   function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
+    // NOT while the zoom is up. A reader who turns the art and opens the zoom
+    // inside the 320ms turn leaves this transition still running underneath a
+    // layer that deliberately opens on the FRONT — and `openZoom` clears the
+    // region for exactly that reason. Announcing here would write the art's back
+    // face into it while the front is on screen. The art keeps its face; only
+    // the sentence about it is dropped, and the zoom announces its own turns.
+    if (zoomed) return;
     setAnnouncement(twoFacedCopy.flippedAria(flipped ? faces.back : faces.front));
   }
 
@@ -825,6 +832,23 @@ export function CardModal({
    * already named "Look at {card} up close", and a second voice saying "Click to
    * zoom" beside it would be the same instruction twice.
    */
+  /**
+   * How much room the stack under the art needs, in px, at DESKTOP — the width
+   * whose column has a fixed height to fit inside. 10px clears the art, the hint
+   * is a 15px line, and each further row is a 6px gap plus its own height: 32 for
+   * the turn control, 18 for the tag.
+   *
+   * A number rather than a measurement: it feeds a CSS `calc` that sizes the art,
+   * and measuring the stack to size the box the stack is positioned against is a
+   * loop. These are the same figures the markup below sets.
+   *
+   * THE TAG'S ROW IS RESERVED WHETHER OR NOT THERE IS A TAG. Row 1.14: a pick that
+   * turns an absent figure into a priced one must move nothing above it — and if
+   * the reservation followed `priceTag`, the art would change width under the
+   * reader at the moment the tag appeared, which is the same defect one level up.
+   */
+  const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 24;
+
   const underCard = (phone: boolean) => (
     <>
       <p
@@ -1014,8 +1038,29 @@ export function CardModal({
         >
           <div
             data-testid="modal-art-desktop"
-            className="relative w-full rounded-[12px]"
+            className="relative rounded-[12px]"
             style={{
+              // THE ART GIVES BACK WHAT THE STACK NEEDS, rather than the stack
+              // hanging off a fixed-size box and being clipped by the dialog's
+              // `overflow-hidden`.
+              //
+              // The column CENTRES the art, so the room under it is half the
+              // column's slack plus the column's own 28px of bottom padding:
+              //
+              //   room = (H - artH) / 2 + 28,  H = min(620px, 85vh) - 56px
+              //
+              // Setting `room >= stack` and solving for the height gives
+              // `artH <= min(620px, 85vh) - 2 * stack`, which is why the figure
+              // below is doubled — halving the slack is the whole point, and a
+              // formula that subtracted the stack once looked right and still
+              // clipped.
+              //
+              // ONE dimension is set and the ratio derives the other, the zoom's
+              // own rule: a definite width AND a height cap is how an
+              // `aspect-ratio` box gets squashed. 63/88 is 0.7159, so the art is
+              // 264px wherever there is room and narrower only where there is not
+              // — at 900px tall it is 264 in every state.
+              width: `min(264px, calc((min(620px, 85vh) - ${2 * underCardHeight}px) * 0.7159))`,
               aspectRatio: "63/88",
               perspective: "1400px",
               ...(twoFaced ? null : artStyle),
