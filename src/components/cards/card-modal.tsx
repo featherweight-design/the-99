@@ -294,6 +294,25 @@ export function CardModal({
   // is actually on screen.
   const zoomTriggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const zoomCloseRef = useRef<HTMLButtonElement>(null);
+  // The two shipped ✕ buttons, one per breakpoint tree.
+  const closeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  /**
+   * Where the dialog puts focus when it opens: the ✕ that has layout.
+   *
+   * Named explicitly rather than left to DOM order, because the art is now a button
+   * and sits before the content column — so without this the first thing a keyboard
+   * reader lands on would have become "Look at … up close", which is neither where
+   * focus used to go nor the same at both widths.
+   */
+  const initialFocusRef = useMemo(
+    () => ({
+      get current() {
+        const mounted = closeRefs.current.filter((el): el is HTMLButtonElement => el !== null);
+        return mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0] ?? null;
+      },
+    }),
+    [],
+  );
   const [announcement, setAnnouncement] = useState("");
   // No reset on card change: the provider keys this component on oracleId, so
   // Prev/Next remounts and a new card starts on its front face by construction.
@@ -479,19 +498,38 @@ export function CardModal({
    * the press rather than subscribed to: this is one transition, and a reader who
    * changes the setting mid-fade has bigger news than the fade.
    */
+  const exitTimer = useRef<number | null>(null);
+  const clearExit = useCallback(() => {
+    if (exitTimer.current !== null) {
+      window.clearTimeout(exitTimer.current);
+      exitTimer.current = null;
+    }
+  }, []);
   const closeZoom = useCallback(() => {
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    // One timer, replaced rather than stacked: a second close during the exit used to
+    // schedule a second callback, and if the reader reopened the zoom before it fired
+    // it would unmount the layer they had just opened.
+    clearExit();
     if (reduced) {
+      setClosingZoom(false);
       setZoomed(false);
       return;
     }
     setClosingZoom(true);
-    window.setTimeout(() => {
+    exitTimer.current = window.setTimeout(() => {
+      exitTimer.current = null;
       setZoomed(false);
       setClosingZoom(false);
     }, 160);
-  }, []);
+  }, [clearExit]);
+  const openZoom = useCallback(() => {
+    clearExit();
+    setClosingZoom(false);
+    setZoomed(true);
+  }, [clearExit]);
+  useEffect(() => clearExit, [clearExit]);
 
   // Escape collapses the region first and returns focus to the Set field; a second Escape
   // closes the dialog exactly as it does today.
@@ -520,7 +558,7 @@ export function CardModal({
   }, [closeZoom, expanded, onClose, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
-  useDialogA11y(dialogRef, onEscape);
+  useDialogA11y(dialogRef, onEscape, { initialFocusRef });
 
   // Focus follows the layer. In: to the close — row 3.12's "otherwise" branch, and
   // for now the only one, because the layer holds no flip control until the animated
@@ -748,6 +786,7 @@ export function CardModal({
           />
           <button
             type="button"
+            ref={(el) => { closeRefs.current[0] = el; }}
             onClick={onClose}
             aria-label="Close card details"
             // §Mobile: Art Close Button
@@ -778,7 +817,7 @@ export function CardModal({
             <button
               type="button"
               ref={(el) => { zoomTriggerRefs.current[0] = el; }}
-              onClick={() => setZoomed(true)}
+              onClick={openZoom}
               aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
               aria-expanded={zoomed}
               aria-controls={zoomed ? ZOOM_REGION : undefined}
@@ -865,7 +904,7 @@ export function CardModal({
             <button
               type="button"
               ref={(el) => { zoomTriggerRefs.current[1] = el; }}
-              onClick={() => setZoomed(true)}
+              onClick={openZoom}
               aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
               aria-expanded={zoomed}
               aria-controls={zoomed ? ZOOM_REGION : undefined}
@@ -913,6 +952,7 @@ export function CardModal({
           {/* Desktop close button — §Desktop: Close Button */}
           <button
             type="button"
+            ref={(el) => { closeRefs.current[1] = el; }}
             onClick={onClose}
             aria-label="Close card details"
             className="hidden md:flex absolute items-center justify-center rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
@@ -1173,22 +1213,6 @@ export function CardModal({
 }
 
 /**
- * The modal's turn-over control (#363). It sits ON the art, bottom-right, rather
- * than in the modal's chrome, so it cannot read as a sibling of Prev/Next: those
- * page between cards, this turns one card over.
- *
- * Its accessible name is the face it turns TO, never "flip" — the act is the
- * part the reader can already see, and the other face's name is the fact they
- * are reaching for.
- *
- * The drawn glyph is a turn arrow, not the `//` the row and the tile carry. One
- * notation across all three was the tidier idea and the wrong one: `//` is a
- * mark that says *this card has two faces*, and reading it as a control asks the
- * reader to infer an action from a statement. A button on the art has to say
- * what pressing it does, and every app that turns a card over draws an arrow
- * going round.
- */
-/**
  * The mark on the art. Bottom-LEFT on every card, because the flip control owns
  * bottom-right — a one-faced card keeps an empty right corner rather than a
  * shifted left one (table row 3.8).
@@ -1220,6 +1244,22 @@ function ZoomMark({ size }: { size: number }) {
   );
 }
 
+/**
+ * The modal's turn-over control (#363). It sits ON the art, bottom-right, rather
+ * than in the modal's chrome, so it cannot read as a sibling of Prev/Next: those
+ * page between cards, this turns one card over.
+ *
+ * Its accessible name is the face it turns TO, never "flip" — the act is the
+ * part the reader can already see, and the other face's name is the fact they
+ * are reaching for.
+ *
+ * The drawn glyph is a turn arrow, not the `//` the row and the tile carry. One
+ * notation across all three was the tidier idea and the wrong one: `//` is a
+ * mark that says *this card has two faces*, and reading it as a control asks the
+ * reader to infer an action from a statement. A button on the art has to say
+ * what pressing it does, and every app that turns a card over draws an arrow
+ * going round.
+ */
 function FlipControl({
   otherFaceName, onFlip, size,
 }: {

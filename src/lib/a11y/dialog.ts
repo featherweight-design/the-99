@@ -15,12 +15,20 @@ const FOCUSABLE =
 // selector's `button:not([disabled])` clause matches buttons with
 // `tabindex="-1"`, which are usually intentionally excluded (e.g. the Issue
 // Inspector's clear ✕ when its input is empty and it's aria-hidden).
+// And filter out anything under an `inert` ancestor. A dialog that covers part of
+// itself — the card modal's zoom is the first — leaves the covered controls mounted
+// for layout and marks them inert, which stops the browser focusing them but not
+// `querySelectorAll` finding them. Left in the list they break the trap in both
+// directions: Tab from the last control tries to focus an inert first element and
+// lands nowhere, and Shift+Tab from the first is never wrapped, so focus escapes the
+// dialog entirely.
 function visibleFocusables(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
     (el) =>
       el.getClientRects().length > 0 &&
       el.tabIndex >= 0 &&
-      el.getAttribute("aria-hidden") !== "true",
+      el.getAttribute("aria-hidden") !== "true" &&
+      el.closest("[inert]") === null,
   );
 }
 

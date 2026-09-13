@@ -108,3 +108,51 @@ describe("useDialogA11y scroll lock", () => {
     expect(document.body.style.overflow).toBe("scroll");
   });
 });
+
+// A dialog that covers part of itself — the card modal's zoom is the first — leaves
+// the covered controls mounted for layout and marks them `inert`. The browser will
+// not focus them; `querySelectorAll` still finds them, so the trap has to.
+describe("useDialogA11y and inert subtrees", () => {
+  function renderTrap(markInert: boolean) {
+    const el = document.createElement("div");
+    el.innerHTML = `
+      <div ${markInert ? "inert" : ""}><button id="covered">covered</button></div>
+      <div><button id="live">live</button></div>
+    `;
+    document.body.appendChild(el);
+    appended.push(el);
+    // jsdom gives every element a zero rect, which the trap reads as "not visible";
+    // the real filter under test is the inert one, so rects are stubbed present.
+    for (const node of el.querySelectorAll("button")) {
+      node.getClientRects = () => [{ width: 10, height: 10 }] as unknown as DOMRectList;
+    }
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, vi.fn());
+    });
+    return el;
+  }
+
+  function tabFrom(el: HTMLElement, id: string, shift = false) {
+    (el.querySelector(`#${id}`) as HTMLElement).focus();
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: shift, bubbles: true }));
+  }
+
+  it("wraps Tab past an inert control rather than onto it", () => {
+    const el = renderTrap(true);
+
+    tabFrom(el, "live");
+
+    // Only the live control is in the cycle, so Tab from it wraps back to itself
+    // rather than landing on a control the browser refuses to focus.
+    expect(document.activeElement?.id).toBe("live");
+  });
+
+  it("still cycles through a control that is not inert", () => {
+    const el = renderTrap(false);
+
+    tabFrom(el, "live");
+
+    expect(document.activeElement?.id).toBe("covered");
+  });
+});
