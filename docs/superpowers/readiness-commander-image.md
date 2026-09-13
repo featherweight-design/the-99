@@ -1,19 +1,21 @@
 # READINESS — One commander image (handoff R6)
 
 **Verdict: 🟢 Green. Shipped 2026-09-12** across PRs #537, #538, #539, #540,
-#542, #544 and #548 — the figures below are the ones that shipped, §5c is the
-table of record for every `labelAt`, and §6's errata is the correction of record.
-Two things stayed open and neither blocked: `/decks` colour filtering still reads
-`commanderColorIdentity` alone, so a pair filters on its primary while every
-surface words the union, and the 640–699px two-up crop loss remains — both need
-files a live filter round owns.
+#542, #544 and #548. **§5c is the table of record for every `labelAt` figure** —
+read it, not this document's prose, for what a surface ships. §6 is an errata
+table: it quotes the superseded values (38/46/63, 40, 57, 46, 83) alongside their
+corrections, so a figure appearing there is not a shipped one unless §5c repeats
+it. Two things stayed open and neither blocked: `/decks` colour filtering still
+reads `commanderColorIdentity` alone, so a pair filters on its primary while
+every surface words the union, and the 640–699px two-up crop loss remains — both
+need files a live filter round owns.
 
-Build starts now — this PR is the design record and the
-plan; the build slices follow it, PRs 2 through 6 of the plan, and the deck slice
-ships as two because the tile and the spines share no file. §6's amendments are every place the handoff's
+This document was the design record and the plan the build followed: the slices
+were PRs 2 through 6 of the plan, and the deck slice shipped as two because the
+tile and the spines share no file. §6's amendments are every place the handoff's
 own arithmetic had to be corrected inside a rule it got right, and §5c is the one
-table that governs the figures. Build starts now. Design self-assessed Green after six rounds and the audit
-concurs: every one of the brief's five open calls is made, decision 6's enumeration is complete once
+table that governs the figures. Design self-assessed Green after six rounds and the audit
+concurred: every one of the brief's five open calls is made, decision 6's enumeration is complete once
 one render added after the brief was written is folded in, and every amendment to the two ratified
 wash tables is stated individually with a verdict. Eleven findings, all engineering-resolvable, all ruled below; §6 carries more
 rows than that, because one finding can correct several statements. **No Design round-trip.**
