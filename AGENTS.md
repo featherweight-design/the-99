@@ -173,7 +173,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   modifier's group had a `pr-[6px]` of its own on top: 11px in on the left against 17px on the
   right, on both lanes. jsdom lays nothing out and the two paddings live on different elements, so
   a class-list assertion cannot see it. It walks OUT from the `radiogroup` to whatever draws the
-  border rather than matching a composed class list, and it makes no writes.
+  border rather than matching a composed class list, and it makes no writes. The group is
+  found by `main` plus its own `aria-label` — `lib/surface.mjs`'s scope alone is not enough
+  here, because a lane's rack mounts more than one `radiogroup` and "the first visible one"
+  would be a coin toss between this control and the order control beside it.
 
 - `scripts/contact-sheet.mjs` photographs every surface in a feature's inventory at both widths
   and lays them out as one image, so a route that never got the feature, or a phone that is wrong

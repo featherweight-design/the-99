@@ -17,6 +17,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const FIXTURE = EMAIL.includes("+clerk_test");
@@ -71,10 +72,20 @@ async function signIn(page) {
  * rather than by a class selector: the wrapper's class list is composed at
  * render time and a selector spelling it out would stop matching the moment a
  * utility moved. The border is what a reader sees as the box.
+ *
+ * Scoped to `<main>` AND to the group's own accessible name. Either alone is a
+ * wrong measurement waiting: the shell renders around `<main>` and carries the
+ * same ARIA selectors a page's controls do (`lib/surface.mjs` records the two
+ * false findings that cost), and a lane's rack mounts more than one
+ * `radiogroup` — the order control is one — so "the first visible one" is a
+ * coin toss between the control under test and a neighbour with different
+ * padding.
  */
+const MATCH_GROUP = `${PAGE} [role="radiogroup"][aria-label="Colour match"]`;
+
 async function readBox(page) {
-  return page.evaluate(() => {
-    const group = [...document.querySelectorAll('[role="radiogroup"]')]
+  return page.evaluate((selector) => {
+    const group = [...document.querySelectorAll(selector)]
       .find((n) => n.getBoundingClientRect().width > 0);
     if (!group) return null;
     let box = group.parentElement;
@@ -89,7 +100,7 @@ async function readBox(page) {
       right: Math.round(b.right - segments[segments.length - 1].getBoundingClientRect().right),
       segments: segments.map((s) => s.textContent?.trim()),
     };
-  });
+  }, MATCH_GROUP);
 }
 
 const browser = await chromium.launch();
@@ -107,9 +118,9 @@ try {
     // the rack paints measures nothing.
     await page
       .waitForFunction(
-        () => [...document.querySelectorAll('[role="radiogroup"]')]
+        (selector) => [...document.querySelectorAll(selector)]
           .some((n) => n.getBoundingClientRect().width > 0),
-        null,
+        MATCH_GROUP,
         { timeout: 30_000 },
       );
     const box = await readBox(page);
