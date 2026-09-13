@@ -175,10 +175,21 @@ const stub = vi.hoisted(() => {
           state.fillPasses.push({ id, ...row });
           inserted.push({ id });
         }
+        // `onConflictDoNothing()` is awaited by some callers and read back with
+        // `.returning()` by the top-off, whose stamp depends on whether the
+        // insert actually wrote — so the fake is both, as Drizzle's builder is.
+        // This stub has no conflict state, so a `deck_cards` insert reports the
+        // rows it was handed: "wrote" means "was asked to write".
+        const conflictResult = () => {
+          const rows = tableName === "deck_cards"
+            ? (Array.isArray(values) ? values : [values])
+            : inserted;
+          return Object.assign(Promise.resolve(rows), { returning: async () => rows });
+        };
         return {
           returning: async () => inserted,
           onConflictDoUpdate: async () => {},
-          onConflictDoNothing: async () => {},
+          onConflictDoNothing: conflictResult,
         };
       },
     };

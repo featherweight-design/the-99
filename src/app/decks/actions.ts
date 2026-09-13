@@ -652,6 +652,13 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   // first turns that case into the right answer instead: the row this removal
   // named is gone, so there is nothing to remove.
   await db.transaction(async (tx) => {
+    // The DECK row first, then the card row. Every other deck write takes them
+    // in that order — `addCardToDeck`, the fill, the top-off,
+    // `restoreDraftFromVersion` — and this path now ends in a stamp on `decks`,
+    // so taking the child first would leave a removal holding the card while it
+    // waits for the deck, against a restore holding the deck while it waits for
+    // the card. One order everywhere is what makes that pair impossible.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     const [row] = await tx.select({ quantity: deckCards.quantity })
       .from(deckCards)
       .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)))
@@ -809,6 +816,11 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   // a concurrent keep, exactly as above. It buys one thing — the sweep and the
   // stamp that describes it commit together.
   const removed = await db.transaction(async (tx) => {
+    // The deck row first, for the ordering reason above. It does NOT change what
+    // the delete does: the statement still takes no lock of its own on the rows
+    // it sweeps, and still relies on Postgres re-evaluating its WHERE after a
+    // concurrent keep, so a card kept mid-sweep is still passed by.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     const rows = await tx.delete(deckCards)
       .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
       .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
@@ -968,18 +980,24 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       if (rejection) throw new Error(rejection);
     }
 
-    await tx.insert(deckCards)
+    const insertedRows = await tx.insert(deckCards)
       .values(ids.map((oracleId) => ({ deckId, oracleId, quantity: 1, auto: true })))
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ oracleId: deckCards.oracleId });
     // Only the rows that landed. A pass claiming a card it did not place would
     // offer to undo one the player put there themselves.
     const passId = await recordFillPass(tx, {
       deckId, kind: "top_off", openSlots: bodySize - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
-    // Same test the pass itself uses: a top-off every one of whose cards was
-    // already there placed nothing.
-    if (landed.length > 0) await touchDeck(tx, deckId);
+    // The INSERT's own result, not `landed`. `landed` is computed from the read
+    // above, and `removeCardFromDeck` reaches `deck_cards` under the deck lock
+    // this transaction holds only now that the line above takes it — a removal
+    // that committed between this transaction's read and its insert leaves a
+    // card genuinely placed while `landed` says it was already there. The fill
+    // pass still records `landed`, which is a pre-existing question about what
+    // the undo may take back and not this column's to answer.
+    if (insertedRows.length > 0) await touchDeck(tx, deckId);
     return { passId, landed, total: built + landed.length, userId };
   });
 

@@ -360,10 +360,14 @@ export async function deleteUnresolvedRow(deckId: string, rowId: string): Promis
   const userId = await requireUserId();
 
   await db.transaction(async (tx) => {
+    // `for update`, as the resolve path takes it. The two now write the same two
+    // tables — the unresolved row and the deck's stamp — and a pair that took
+    // them in opposite orders could deadlock with each other.
     const [deck] = await tx
       .select({ id: decks.id })
       .from(decks)
-      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+      .for("update");
     if (!deck) throw new Error("deck not found");
 
     const deleted = await tx

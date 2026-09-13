@@ -15,6 +15,16 @@
 // would be unreachable, and a discard back to a version MUST move it. Both are
 // facts about what a transaction wrote, so only a database can answer them.
 //
+// WHAT IT CANNOT REACH. The server actions — add, remove, fill, sweep, top-off —
+// call `requireUserId()`, so they need a signed-in Clerk session and are out of
+// reach of a database-only script; `probe:folders` has the same ceiling. The
+// writers exercised here are the ones that take no auth: `commitVersion`,
+// `restoreDraftFromVersion` and `touchDeck` itself. The action call sites are
+// covered by the unit tests, which assert the stamp against the emitted
+// statements (`last-slots-actions.test.ts`, `import-actions.test.ts`,
+// `update-actions.test.ts`); what those cannot see, and this can, is what the
+// database does with the write.
+//
 // It writes a fixture under a per-run user_id and deletes it in a finally;
 // versions and version cards cascade.
 //
@@ -120,11 +130,33 @@ async function main() {
   const played = await makeDeck(`${USER} played`, commander, "2026-03-01T10:00:00");
 
   // ── The stated stamp survives the write and the read ──────────────────────
-  // The migration seeds `last_edited_at` from `created_at`, so a deck nobody has
-  // edited must read as edited when it was MADE. A default of `now()` left in
-  // place would make every deck read as edited at deploy time, which is the one
-  // thing that migration's hand-written UPDATE exists to prevent.
   check("a stated last_edited_at is not clobbered", await editedAt(edited), "2026-09-12 10:00:00");
+
+  // ── The migration's backfill, run against a row in the pre-backfill state ──
+  // A deck inserted WITHOUT the column takes the schema default, which is the
+  // deploy instant — exactly what every existing row held between the ALTER and
+  // the UPDATE. The migration's own statement is then replayed over it. Without
+  // that UPDATE the whole list would sort by the deploy, in an order nobody
+  // could explain, until each deck was next edited.
+  const { rows: preBackfill } = await fixture.execute<{ id: string }>(sql`
+    insert into decks (user_id, name, commander_oracle_id, created_at)
+    values (${USER}, ${`${USER} backfill`}, ${commander}::uuid, '2025-01-02T03:04:05'::timestamp)
+    returning id
+  `);
+  const backfilled = preBackfill[0].id;
+  check(
+    "before the backfill the column holds the default, not the deck's creation",
+    (await editedAt(backfilled)) === "2025-01-02 03:04:05",
+    false,
+  );
+  await fixture.execute(sql`
+    update decks set last_edited_at = created_at where id = ${backfilled}::uuid
+  `);
+  check(
+    "the backfill statement seeds it from created_at",
+    await editedAt(backfilled),
+    "2025-01-02 03:04:05",
+  );
 
   // ── A commit does not count as an edit ───────────────────────────────────
   await addCard(committed, card);
@@ -134,7 +166,9 @@ async function main() {
 
   // ── The figure: what the reader actually gets back ───────────────────────
   const list = await listDecksWithStats(USER, "name");
-  check("the list carries every fixture deck", list.length, 3);
+  // Four now: the three verb decks plus the backfill row above, which is a deck
+  // like any other once its column is seeded.
+  check("the list carries every fixture deck", list.length, 4);
 
   // THE CHECK THIS PROBE EXISTS FOR. An unqualified correlation returns null
   // here and nothing else changes — the block still renders, the stamp just
@@ -172,7 +206,10 @@ async function main() {
   check("a played deck reads as played", touchedBy(find(fresh, played)).verb, "played");
 
   // The order the block draws, assembled from three different columns.
-  const order = [...fresh].sort(byTouched).map((d) => d.id);
+  const order = [...fresh]
+    .filter((d) => d.id !== backfilled)
+    .sort(byTouched)
+    .map((d) => d.id);
   check("the most recently touched deck leads", order[0], played);
   check("the commit outranks the older edit", order[1], committed);
   check("the stale deck is last", order[2], edited);
