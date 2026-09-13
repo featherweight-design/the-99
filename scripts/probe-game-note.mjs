@@ -76,11 +76,13 @@ for (const vp of VIEWPORTS) {
     // let this report cap behaviour it never measured. And the no-note row is
     // half the contract: without one, "nothing reserved" goes unchecked.
     const noted = rows.filter((r) => r.querySelector(".italic"));
+    // Exactly 140 and no whitespace in it. A 140-character SENTENCE wraps at
+    // any width and would let this report the cap case without exercising it —
+    // the whole failure being measured is a single unbroken word that a flex
+    // item refuses to shrink below.
     const withNote = noted.find((r) => {
-      const text = r.querySelector(".italic").textContent;
-      // The visible line is the sentence in typographic quotes, and the ear's
-      // `note:` prefix is inside the same element — count neither.
-      return text.replace(/^note:/, "").replace(/[\u201C\u201D]/g, "").length >= 140;
+      const inner = r.querySelector(".italic").textContent.replace(/^\u201C|\u201D$/g, "");
+      return inner.length === 140 && !/\s/.test(inner);
     });
     const without = rows.find((r) => !r.querySelector(".italic"));
     const read = (el, props) =>
@@ -89,21 +91,25 @@ for (const vp of VIEWPORTS) {
       return {
         rows: rows.length,
         failed:
-          `This deck needs BOTH a game whose note is 140 characters and a game with none. ` +
+          `This deck needs BOTH a game whose note is 140 characters with no spaces ` +
+          `(\`update deck_games set note = repeat('x', 140) where id = '…'\`) and a game with none. ` +
           `Found ${noted.length} noted (${withNote ? "one at the cap" : "none at the cap"}) ` +
           `and ${without ? "an unnoted row" : "no unnoted row"}.`,
       };
     }
     const text = withNote.querySelector(".italic");
-    const rule = text.parentElement.querySelector("span[aria-hidden]");
+    const rule = [...text.parentElement.children].find((c) => c !== text);
     return {
       rows: rows.length,
       rowsWithNote: rows.filter((r) => r.querySelector(".italic")).length,
       note: {
-        // The spoken `note:` prefix shares this element, so the quotes are
-        // checked against what is left after it.
-        quoted: /^(?:note:)?\u201C[\s\S]*\u201D$/.test(text.textContent),
-        spoken: text.querySelector(".sr-only")?.textContent ?? null,
+        quoted: /^\u201C[\s\S]*\u201D$/.test(text.textContent),
+        // Spoken once, and from the marks cell rather than from the visible
+        // line — the line the eye reads sits below the row's controls, so the
+        // ear would otherwise meet the delete button between the marks and the
+        // note. The visible line is `aria-hidden`; this is the only copy.
+        spoken: withNote.querySelector(".sr-only")?.textContent ?? null,
+        visibleLineHidden: text.closest("[aria-hidden]") !== null,
         lines: Math.round(text.getBoundingClientRect().height / parseFloat(getComputedStyle(text).lineHeight)),
         ...read(text, ["fontSize", "fontStyle", "lineHeight", "color"]),
         indent: getComputedStyle(text.parentElement).paddingLeft,

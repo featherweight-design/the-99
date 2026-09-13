@@ -147,12 +147,23 @@ describe("a game's note", () => {
   // §Accessibility puts `note:` in the row's description after the marks.
   it("says what the line is, to a reader who cannot see it", () => {
     const { container } = mount({ ...GAME, note: NOTE });
-    const spoken = container.querySelector(".sr-only");
-    expect(spoken).toHaveTextContent(gameLogCopy.history.noteSpoken);
-    // Spoken, never drawn: the visible line is the sentence alone.
-    expect(line(container)!.textContent).toBe(
-      `${gameLogCopy.history.noteSpoken}\u201C${NOTE}\u201D`,
-    );
+    const spoken = container.querySelector(".sr-only")!;
+    expect(spoken).toHaveTextContent(`${gameLogCopy.history.noteSpoken}\u201C${NOTE}\u201D`);
+    // Spoken, never drawn: the visible line carries the sentence alone.
+    expect(line(container)!.textContent).toBe(`\u201C${NOTE}\u201D`);
+  });
+
+  // The visible line is a SECOND line, below the row's own controls, so if it
+  // carried the description the ear would meet the delete button between the
+  // marks and the note. One copy is spoken, and it sits where the table puts
+  // it: in the marks cell, right after the chips.
+  it("speaks the note after the marks, not after the delete control", () => {
+    const { container } = mount({ ...GAME, note: NOTE });
+    const spoken = container.querySelector(".sr-only")!;
+    const del = container.querySelector("button[aria-label]")!;
+    expect(spoken.compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // And the line the eye reads is not announced a second time.
+    expect(line(container)!.closest("[aria-hidden]")).not.toBeNull();
   });
 
   // Null is the ordinary case — most games have nothing worth writing down. An
@@ -168,7 +179,7 @@ describe("a game's note", () => {
     const { container } = mount({ ...GAME, note: NOTE });
     const row = line(container)!.parentElement!;
     expect(row.className).toContain("md:pl-[40px]");
-    const rule = row.querySelector("span[aria-hidden]")!;
+    const rule = row.querySelector("span:not(.italic)")!;
     expect(rule.className).toContain("w-[2px]");
     expect(rule.className).toContain("bg-border-strong");
   });

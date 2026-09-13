@@ -135,14 +135,19 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 ### Task 1: Schema and migration
 
+> **Partly shipped 2026-09-13.** `deckGames.note` and its length check are in
+> `src/db/schema.ts` already, applied by `drizzle/0029_slow_whiplash.sql`. Skip
+> that column here; everything else in this task stands. The migration this task
+> generates will be numbered after 0029, not 0019.
+
 **Files:**
 - Modify: `src/db/schema.ts`
-- Create: `drizzle/0019_*.sql` (generated — do not handwrite)
+- Create: the next generated `drizzle/00NN_*.sql` (generated — do not handwrite)
 - Test: `src/db/schema.test.ts`
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `deckGames.note`, `decks.intent`, `decks.intentSeeded`, and the tables `deckSuggestionRuns` / `deckSuggestionItems` with the column names every later task imports.
+- Produces: ~~`deckGames.note`~~ (shipped), `decks.intent`, `decks.intentSeeded`, and the tables `deckSuggestionRuns` / `deckSuggestionItems` with the column names every later task imports.
 
 - [ ] **Step 1: Add `uniqueIndex` to the pg-core import**
 
@@ -302,7 +307,7 @@ pnpm test src/db/schema.test.ts
 pnpm db:generate
 ```
 
-Expected: three passing tests, and one new file `drizzle/0019_*.sql`. Open it and confirm the partial index line carries `where "status" = 'pending'`. If Drizzle emitted an unconditional unique index, the `.where()` in Step 3 is wrong — fix it and regenerate rather than editing the SQL by hand.
+Expected: three passing tests, and one new generated `drizzle/00NN_*.sql` (numbered after `0029_slow_whiplash`, not `0019` — the plan was written when 0018 was the head). Open it and confirm the partial index line carries `where "status" = 'pending'`. If Drizzle emitted an unconditional unique index, the `.where()` in Step 3 is wrong — fix it and regenerate rather than editing the SQL by hand.
 
 - [ ] **Step 7: Commit**
 
@@ -450,14 +455,19 @@ git commit -m "feat(tuning): copy module for the tuning panel, cards, note, and 
 
 ### Task 3: The game note — read and write path
 
+> **Read path shipped 2026-09-13.** `DeckGame.note` exists and `listDeckGames`
+> already projects it. What is left here is the WRITE path: `logGame` accepting
+> a `note` form field, and the cap enforced where the form posts rather than
+> only by the column's check.
+
 **Files:**
-- Modify: `src/lib/decks/games.ts:6-13` (the `DeckGame` type), `:52-94` (`listDeckGames`)
+- ~~Modify: `src/lib/decks/games.ts`~~ — shipped.
 - Modify: `src/app/decks/actions.ts:849-922` (`logGame`)
 - Test: `src/lib/decks/games.test.ts`
 
 **Interfaces:**
-- Consumes: `deckGames.note` from Task 1; `deckTuningCopy.note.maxLength` from Task 2.
-- Produces: `DeckGame.note: string | null`, populated by `listDeckGames`; `logGame` accepting a `note` form field. The evidence pack (Task 5) and the history row (Task 4) both read `DeckGame.note`.
+- Consumes: `deckGames.note` (shipped); `deckTuningCopy.note.maxLength` from Task 2.
+- Produces: ~~`DeckGame.note: string | null`, populated by `listDeckGames`~~ (shipped); `logGame` accepting a `note` form field. The evidence pack (Task 5) reads `DeckGame.note`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -549,16 +559,19 @@ git commit -m "feat(tuning): carry a per-game note and the deck intent through t
 
 ### Task 4: The note field and the history row
 
+> **The history row shipped 2026-09-13** to S2's rows, measured by
+> `scripts/probe-game-note.mjs`. Only the FORM's note field is left.
+
 **Files:**
 - Modify: `src/components/decks/game-log-form.tsx`
-- Modify: `src/components/decks/game-history-row.tsx`
-- Test: `src/components/decks/game-log-form.test.tsx`, `src/components/decks/game-history-row.test.tsx`
+- ~~Modify: `src/components/decks/game-history-row.tsx`~~ — shipped.
+- Test: `src/components/decks/game-log-form.test.tsx`
 
 **Interfaces:**
-- Consumes: `deckTuningCopy.note` from Task 2; `DeckGame.note` from Task 3; the `logGame` note field from Task 3.
-- Produces: no new exports. The form posts `note`; the row renders it.
+- Consumes: `deckTuningCopy.note` from Task 2; `DeckGame.note` (shipped); the `logGame` note field from Task 3.
+- Produces: no new exports. The form posts `note`.
 
-**Design table rows to satisfy:** S1 states 1–8 (note field) and S2 (history row, note absent / note present). Tap-target floor for the note field: **48px mobile, 46px desktop**.
+**Design table rows to satisfy:** S1 states 1–8 (note field). ~~S2 (history row)~~ — shipped. Tap-target floor for the note field: **48px mobile, 46px desktop**.
 
 - [ ] **Step 1: Write the failing component tests**
 
