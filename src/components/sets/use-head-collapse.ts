@@ -232,15 +232,28 @@ export function useHeadCollapse({
       ? null
       : spacer.getBoundingClientRect().bottom + window.scrollY;
     const bar = barHeightRef.current;
-    const reopenAt = gridTop === null || bar === null || gridTop <= 0 || bar <= 0
-      ? 40
-      : Math.max(0, gridTop - bar);
+    // The head's own height is the signal that anything here was laid out at all. A
+    // `gridTop` on its own cannot say: an engine that lays nothing out reports every rect at
+    // 0, and `0 + scrollY` then reads as a plausible grid top that is really just the
+    // reader's offset.
+    const laidOut = head !== null && head.getBoundingClientRect().height > 0;
+    const measured = laidOut && gridTop !== null && gridTop > 0;
+    const reopenAt = !measured || bar === null || bar <= 0 ? 40 : Math.max(0, gridTop - bar);
+    // The FIRST collapse of a visit has no bar to measure — one has never been drawn — and
+    // running it on the old fixed 120 made it the only collapse of the visit at that offset,
+    // with every later one at ~405. The grid's own top answers it without a bar: collapse
+    // when the open head has scrolled entirely past, which is within a few pixels of where
+    // the measured rule puts it once a bar exists. Only an engine that lays nothing out
+    // still falls back to 120.
+    const collapseAt = bar === null || bar <= 0
+      ? (measured ? gridTop : 120)
+      : reopenAt + HYSTERESIS_PX;
     // Read as a function of the CURRENT state, which is what makes this hysteresis rather
     // than two thresholds: collapsed stays collapsed until the reserve would show, open
     // stays open until a band past it, and between the two nothing happens. Never
     // interpolated with the scroll offset — a head that tracked it would be permanently in
     // motion under the thing being read.
-    setCollapsed((was) => (was ? y > reopenAt : y > reopenAt + HYSTERESIS_PX));
+    setCollapsed((was) => (was ? y > reopenAt : y > collapseAt));
   }, []);
 
   // Placed after the recorder above, not before it: the decision is read off the
@@ -299,6 +312,15 @@ export function useHeadCollapse({
     el.style.height = "";
     el.style.overflow = "";
     const to = el.getBoundingClientRect().height;
+    // Recorded HERE when the head is arriving at its open form, because this is the first
+    // moment that form has a height. While the head is collapsed the open subtree is
+    // `display: none` and cannot be measured, so a filter changed through the sheet leaves
+    // the recorded rest height describing a head that no longer exists — and the restore
+    // would then reserve against it for the whole transition and shift the grid on settling.
+    if (!el.hasAttribute("data-set-head-collapsed") && !animatingRef.current) {
+      const delta = el.querySelector("[data-set-delta]");
+      restHeightRef.current = to - (delta === null ? 0 : delta.getBoundingClientRect().height);
+    }
     if (from === null || Math.abs(to - from) < 1) {
       sizeSpacer();
       return;

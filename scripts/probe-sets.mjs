@@ -1122,6 +1122,44 @@ async function run() {
             + ` (${restoring[0]}→${restoring[restoring.length - 1]}px)`,
       );
 
+      // The crossing must not move the reader. Scroll anchoring ignores sticky boxes, so
+      // without the head's container opting out it sees the reserve grow by the head's own
+      // shrink, compensates for a change that never happened, and an 80px step lands 293px
+      // down — most of a phone screen, at the exact moment the reader is reading. Stepped
+      // like a wheel rather than jumped, because that is the gesture it ruined.
+      await scrollTo(0);
+      const steps = await page.evaluate(() => new Promise((resolve) => {
+        const head = document.querySelector("[data-set-head]");
+        if (head === null) return resolve(null);
+        const seen = [];
+        let last = 0;
+        let n = 0;
+        const step = () => {
+          window.scrollBy(0, 80);
+          setTimeout(() => {
+            const y = Math.round(window.scrollY);
+            seen.push({ moved: y - last, shy: head.hasAttribute("data-set-head-collapsed") });
+            last = y;
+            if (++n >= 10) return resolve(seen);
+            step();
+          }, 180);
+        };
+        step();
+      }));
+      const collapsingStep = steps === null
+        ? null
+        : steps.find((row, i) => i > 0 && row.shy && !steps[i - 1].shy);
+      failures += !report(
+        "an 80px step across the collapse moves the reader 80px",
+        steps !== null && collapsingStep !== undefined && collapsingStep !== null
+          && Math.abs(collapsingStep.moved - 80) <= 8,
+        steps === null
+          ? "the head was not on the page — the check measured nothing"
+          : collapsingStep === undefined || collapsingStep === null
+            ? "no step crossed the threshold — the check measured nothing"
+            : `${collapsingStep.moved}px on the step that collapsed it`,
+      );
+
       await scrollTo(20);
       const restored = await headNow();
       failures += !report(

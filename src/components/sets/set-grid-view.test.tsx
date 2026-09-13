@@ -2037,9 +2037,13 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     };
     try {
       const { container } = view([p("1"), p("2")], []);
-      // The first collapse of a visit still runs on the fixed pair: the bar has never been
-      // drawn, so its height has never been measured.
-      scrollTo(121);
+      // The first collapse of a visit has no bar to measure — one has never been drawn — so
+      // it runs on the grid's own top instead of the old fixed 120: the head collapses once
+      // it has scrolled entirely past, which is within a few pixels of where the measured
+      // rule puts every later one.
+      scrollTo(199);
+      expect(isShy(container)).toBe(false);
+      scrollTo(201);
       expect(isShy(container)).toBe(true);
       // From here both heights are known. It restores the moment the reserve would come
       // into view — 200 less the bar's 52 — rather than holding until the old 40.

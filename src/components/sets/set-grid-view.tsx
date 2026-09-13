@@ -597,7 +597,17 @@ export function SetGridView(props: SetGridViewProps) {
   // scroll state underneath it — rather than the strip clearing the state and the head
   // collapsing again the moment it is dismissed.
   return (
-    <div>
+    // `overflow-anchor: none`, for this route's subtree and no wider.
+    //
+    // Scroll anchoring keeps the reader's place when content above them changes height — and
+    // it ignores sticky boxes, so at the collapse it saw the reserve GROW by 213px and never
+    // saw the head shrink by the same amount. It compensated for a change that had not
+    // happened: an 80px wheel step measured 293px at the crossing, a leap of most of a phone
+    // screen, and it is on `main` as much as here. Excluded on the container that holds the
+    // head, the reserve and the grid, because every anchor candidate on this page is inside
+    // it and the page has nothing that loads in above the reader — the grid is server
+    // -rendered whole, and `Show more` appends below.
+    <div style={{ overflowAnchor: "none" }}>
       <div
         ref={headRef}
         data-set-head-shy={shy ? "" : undefined}
