@@ -126,6 +126,26 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   cascade. Point it at `local-dev`, **never production**. What it measured on the phone: the two
   stamps do not share a vertical, because the meta cell to their left sizes to its date text below
   `md:` — the game log's existing behaviour, not this surface's.
+- `pnpm check:shared docs/superpowers/inventories/<feature>.json` answers the half of a
+  feature's acceptance that a picture cannot: whether routes that are supposed to carry the
+  same control are doing it by rendering the same component. It reads the same inventories
+  `scripts/contact-sheet.mjs` walks — an inventory with a `shares` block naming a `binding`
+  and a `module`, and a `view` on every row — and passes only when each route's own view
+  imports that binding as a value AND references it.
+
+  Each clause is a hole someone fell down. The filter chassis shipped across five PRs and 79
+  Copilot review rounds with `/commanders`, `/discover` and `/collection` each mounting a
+  per-route wrapper around `FilterChassis`; every check of the form "does this route use the
+  chassis" passed, and the routes did not look alike. `browser.tsx` imports
+  `CHASSIS_WIDE_MIN_PX` and a type from that module and renders its own `FilterBar`, so
+  matching the module rather than the binding calls it shared. A default or namespace import
+  binds something else to a local name that merely reads like the export. And nothing in this
+  repo flags an unused local, so an import alone could be added to buy a green.
+
+  `view` names the route's OWN view file, never a wrapper it mounts — naming the wrapper
+  makes the check pass and say nothing. A shared wrapper is a legitimate answer; a wrapper
+  each is the failure. If routes converge on one wrapper, point `shares.module` at it.
+
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 
