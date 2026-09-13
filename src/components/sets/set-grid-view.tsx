@@ -197,7 +197,22 @@ export function SetGridView(props: SetGridViewProps) {
     if (queryTimer.current !== null) clearTimeout(queryTimer.current);
     queryTimer.current = null;
   };
-  useEffect(() => cancelQueryTimer, []);
+  // Keyed on `urlKey`, not `[]`, and inlined rather than calling the helper — the helper is
+  // a new function every render, so naming it here is either an exhaustive-deps breach or a
+  // cleanup that runs each render and cancels a live debounce.
+  //
+  // The key is what makes this more than an unmount guard. Back/Forward gives a new URL, the
+  // render-time sync puts its query in the box, and a timer armed before the navigation
+  // would then write the OLD value 150ms later, undoing the state the reader just navigated
+  // to. This page's own applies go through `replaceState`, which does not move `urlKey`, so
+  // the debounce is never cancelled by its own result.
+  useEffect(
+    () => () => {
+      if (queryTimer.current !== null) clearTimeout(queryTimer.current);
+      queryTimer.current = null;
+    },
+    [urlKey],
+  );
   const typeQuery = (value: string) => {
     setDraft(value);
     cancelQueryTimer();

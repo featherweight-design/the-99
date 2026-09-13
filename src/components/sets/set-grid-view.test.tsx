@@ -1,3 +1,4 @@
+import { cloneElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
@@ -42,7 +43,10 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
   const holdings = ownedNumbers.map((n) => ({
     oracleId: `o-${n}`, collectorNumber: n, finish: "nonfoil" as const,
   }));
-  return render(
+  // A re-render of the SAME tree is returned as a FUNCTION, not as the element: React bails
+  // out of a subtree re-rendered with an identical element reference, so passing the stored
+  // element back to `rerender` silently does nothing and any assertion after it is vacuous.
+  const el = (
     <SetGridView
       code="dsk"
       name={name}
@@ -55,8 +59,9 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
       newestAsOf={null}
       baseSetSize={printings.filter((x) => x.booster === true).length || null}
       staleAsOf={null}
-    />,
+    />
   );
+  return Object.assign(render(el), { again: () => cloneElement(el) });
 }
 
 /**
@@ -1065,6 +1070,30 @@ describe("SetGridView — the name search", () => {
     expect((field() as HTMLInputElement).value).toBe("plains");
     fireEvent.click(screen.getByRole("button", { name: /^Clear all filters/ }));
     expect((field() as HTMLInputElement).value).toBe("");
+  });
+
+  // Back/Forward gives a new URL and the render-time sync puts its query in the box — but a
+  // timer armed before the navigation would write the OLD value 150ms later, undoing the
+  // state the reader just navigated to.
+  it("drops a pending keystroke when the URL changes underneath it", () => {
+    vi.useFakeTimers();
+    try {
+      const r = view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "plains" } });
+      act(() => void vi.advanceTimersByTime(50));
+      // A navigation: a different query arrives through the URL.
+      search = "q=mountain";
+      r.rerender(r.again());
+      act(() => void vi.advanceTimersByTime(300));
+      expect((field() as HTMLInputElement).value).toBe("mountain");
+      // The stale keystroke never reaches the URL. Asserted on the ARGUMENT rather than the
+      // call count: the page legitimately rewrites the URL on a navigation.
+      expect(replaceState).not.toHaveBeenCalledWith(
+        null, "", "/collection/sets/dsk?q=plains",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // The phone slot is 173px, and the long placeholder truncates in it. The accessible name
