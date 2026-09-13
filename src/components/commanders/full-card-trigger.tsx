@@ -123,7 +123,10 @@ export function FullCardTrigger({
         />
       ) : null}
 
-      {/* ⛶ affordance control. Icon only, on every render and every frame: the
+      {/* ⛶ affordance control. Icon only on every render but ONE — the desktop
+          deck header keeps its words, where the control sits in a wide empty
+          corner with nothing to compete with (see `LABELLED`). Everywhere else:
+          the
           words were doing two jobs — naming the action and being visible against
           art — and THE PLATE now does the second, which leaves the words as the
           redundant part. At 44px the icon flanks a centred title instead of

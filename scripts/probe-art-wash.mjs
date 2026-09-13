@@ -696,8 +696,12 @@ async function checkChrome(page, label, note) {
   // as a floor, so a long two-faced commander name drew the deck header outside
   // the viewport on both sides. Measured on every route at every width, because
   // the name that does it is data, not a layout the probe could pick.
+  // Against the scrolling element's own `clientWidth`, not `window.innerWidth`:
+  // the two differ by the vertical scrollbar, which is exactly the width a
+  // marginal overflow hides behind. `probe-price-ui.mjs` already measures it
+  // this way.
   const overflow = await page.evaluate(
-    `Math.round(document.documentElement.scrollWidth - window.innerWidth)`,
+    `(() => { const d = document.scrollingElement; return Math.round(d.scrollWidth - d.clientWidth); })()`,
   );
   if (overflow > 1) {
     note(`  FAIL ${label}: the document is ${overflow}px wider than the window — content is outside the viewport`);

@@ -7,12 +7,16 @@ const tint = (token: string, pct: number) =>
 
 export type ScrimStops = readonly (readonly [number, number])[];
 
-/** The bands a commander's image is drawn at. Four plain numbers chosen per
-    class, rather than an aspect ratio that made a band's height a function of
-    the column it landed in: a page header is 288, a grid cell telling you which
-    deck is which is 248, a full-width result row you scan down is 208, and a
+/** The bands a commander's image is drawn at. Plain numbers chosen per class,
+    rather than an aspect ratio that made a band's height a function of the
+    column it landed in: a page header is 288, a grid cell telling you which deck
+    is which is 248, a full-width result row you scan down is 208, and a
     secondary cell on a page about something else is 168. What governs which is
-    what the box is for, never the viewport. */
+    what the box is for, never the viewport.
+
+    72 is the resume row's, and it is the one band that is not a class: that row
+    draws its portrait as a COLUMN beside its type rather than under it, which is
+    the treatment it has always shipped. */
 export type BandHeight = 72 | 168 | 208 | 248 | 288;
 
 /** The ramp under a label block, in `[alphaPercent, positionPercent]` pairs:
@@ -112,7 +116,11 @@ const reducible = (opacity: number, art: boolean): CSSProperties =>
     header picks the portrait's shape first and lets the band follow, because 288
     is what keeps that crop from scaling past ~42%.
 
-    The four a stated band may draw. */
+    99 joins them as the resume row's portrait column — not derived from that
+    row's 72px band but the width it has always drawn, with its own mask, ground
+    and clear stop in the table below.
+
+    The five a stated band may draw. */
 export type PortraitWidth = 560 | 340 | 285 | 230 | 99;
 
 /** Keyed to the portrait's **width**, not to the band's height. Every column here

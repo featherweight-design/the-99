@@ -51,9 +51,9 @@ const alphaAt = (stops: ScrimStops, position: number): number => {
     block ends rather than where it starts. */
 const STATED_BANDS: readonly {
   surface: string;
-  /** `null` where the band draws no ramp: its ink starts past the portrait's
-      ink sits beside the portrait rather than over it, so no vertical ramp is
-      drawn for a block to be keyed to. */
+  /** `null` where the band draws no vertical ramp, because its ink sits beside
+      the portrait rather than over it — so there is no hold for a block to be
+      keyed to. */
   labelAtPx: number | null;
   band: number;
   /** The strategy, because the ground and the hold both follow from it: a
@@ -192,6 +192,11 @@ const PORTRAIT_INK: readonly {
   // on the thinnest ground anything on that row gets — the horizontal scrim
   // still climbing towards opaque. Sampling the inset itself is what proves the
   // row's restored geometry is legible rather than merely unchanged.
+  // BOTH insets. The row's type starts at 108 below 1000px and 116 above, and
+  // the horizontal scrim is still climbing between the 99px portrait and the
+  // 138px flat stop — so the narrow layout stands on thinner ground, and
+  // sampling only 116 would let a regression at 108 pass.
+  { surface: "resume row, narrow", portrait: 99, band: 72, labelAtPx: null, x: 108, y: 0 },
   { surface: "resume row", portrait: 99, band: 72, labelAtPx: null, x: 116, y: 0 },
   // The deck spine's `⛶ Card details` control: 16px in, 14px off the foot, and
   // the one thing on that band whose ink sits over the crop. THE PLATE is opaque
