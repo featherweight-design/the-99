@@ -1,4 +1,6 @@
-// E3 for #349: the view well on both surfaces at 390px and at desktop.
+// E3 for #349: the view well on both surfaces at 390px and at desktop, and
+// (since the preference started persisting) whether the choice survives leaving
+// the route.
 //
 // The question the plan asks is whether `/collection`'s phone filter bar can
 // absorb the segments growing from 28×24 to 44×44 — and the answer has to be
@@ -101,6 +103,45 @@ async function well(page, names) {
   }, names);
 }
 
+/** Press a segment and wait for it to take. */
+async function press(page, label) {
+  await page.click(`button[aria-label="${label}"]`);
+  await page.waitForFunction(
+    (l) => document.querySelector(`button[aria-label="${l}"]`)?.getAttribute("aria-pressed") === "true",
+    label,
+    { timeout: 5_000 },
+  );
+}
+
+async function pressed(page, labels) {
+  return page.evaluate(
+    (ls) =>
+      ls.find(
+        (l) => document.querySelector(`button[aria-label="${l}"]`)?.getAttribute("aria-pressed") === "true",
+      ) ?? null,
+    labels,
+  );
+}
+
+/**
+ * The preference is localStorage, so nothing short of a real navigation proves
+ * it: component state survives a client-side route change on its own if the
+ * tree is not unmounted, and a URL mirror survives anything with the parameter
+ * still in it. Each surface is therefore left by loading another route, then
+ * re-entered at a bare URL.
+ */
+async function persistence(page, { url, labels, choose, bare }) {
+  await page.goto(url, { waitUntil: "networkidle" });
+  const opened = await pressed(page, labels);
+  await press(page, choose);
+
+  await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+  await page.goto(bare, { waitUntil: "networkidle" });
+  const returned = await pressed(page, labels);
+
+  return { opened, chose: choose, returned, kept: returned === choose };
+}
+
 async function main() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -126,7 +167,33 @@ async function main() {
     await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
     const deck = await well(page, ["List view", "Card view"]);
 
-    report[vp.label] = { collection, deck };
+    // The deck's own view, and `/collection`'s, each pressed and then returned
+    // to. `/collection` mirrors the choice into `?view=`, so it is re-entered at
+    // a bare URL — otherwise the parameter would answer instead of the store.
+    const deckPersists = await persistence(page, {
+      url: `${BASE}${deckHref}`,
+      labels: ["List view", "Card view"],
+      choose: "Card view",
+      bare: `${BASE}${deckHref}`,
+    });
+    const collectionPersists = await persistence(page, {
+      url: `${BASE}/collection`,
+      labels: ["Rows view", "Grid view"],
+      choose: vp.width < 768 ? "Grid view" : "Rows view",
+      bare: `${BASE}/collection`,
+    });
+
+    // A link naming a view has to beat the stored habit, or a shared URL shows
+    // the recipient their own list rather than the sender's.
+    const contrary = collectionPersists.chose === "Grid view" ? "rows" : "grid";
+    await page.goto(`${BASE}/collection?view=${contrary}`, { waitUntil: "networkidle" });
+    const urlWins = {
+      param: contrary,
+      pressed: await pressed(page, ["Rows view", "Grid view"]),
+    };
+    urlWins.honoured = urlWins.pressed?.toLowerCase().startsWith(contrary) ?? false;
+
+    report[vp.label] = { collection, deck, deckPersists, collectionPersists, urlWins };
     await context.close();
   }
 

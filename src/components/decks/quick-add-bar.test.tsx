@@ -213,7 +213,7 @@ describe("QuickAddBar — the owned filter", () => {
   });
 
   // A search that landed empty is a result, so the status line has to say so
-  // rather than falling back to the standing identity note.
+  // rather than going quiet the way the idle bar does.
   it("announces a zero count when the search lands empty", async () => {
     searchCards.mockResolvedValue([]);
     mount();
@@ -221,6 +221,24 @@ describe("QuickAddBar — the owned filter", () => {
 
     const status = await screen.findByRole("status");
     await waitFor(() => expect(status).toHaveTextContent("0 matches"));
+  });
+
+  // The field states the constraint where the player is about to type. It used
+  // to stand under the bar as its own line, which said the same thing on every
+  // visit whether or not anyone was searching.
+  it("names the identity in the field, and in the field's accessible name", () => {
+    mount({ commanderIdentity: ["B", "G"] });
+    expect(field()).toHaveAttribute("placeholder", "Add a card by name · Golgari only");
+    expect(field()).toHaveAccessibleName("Add a card to this deck by name, Golgari only");
+  });
+
+  // Empty, not absent: the element is a live region, and a region that mounts
+  // with its first value never announces it.
+  it("says nothing under the bar until a search lands", () => {
+    mount({ commanderIdentity: ["B", "G"] });
+    const status = screen.getByRole("status");
+    expect(status).toBeEmptyDOMElement();
+    expect(status).not.toHaveTextContent("Golgari");
   });
 
   // The deck header names the identity as a guild, so the bar has to as well.

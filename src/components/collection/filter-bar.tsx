@@ -42,6 +42,15 @@ export { useIsDesktop };
 
 export type ViewMode = "rows" | "grid";
 
+/** The key `useStoredView` keeps the browse choice under. Separate from the
+ *  deck's: reading a collection as a grid of art and reading a deck as a list
+ *  of lines are different habits, and a reader holds both at once. */
+export const COLLECTION_VIEW_KEY = "the99:collection-view";
+
+export function isViewMode(value: string): value is ViewMode {
+  return value === "rows" || value === "grid";
+}
+
 const COLLECTION_VIEWS: readonly [ViewToggleOption<ViewMode>, ViewToggleOption<ViewMode>] = [
   { value: "rows", glyph: "≣", label: viewToggleCopy.collection.rows },
   { value: "grid", glyph: "▦", label: viewToggleCopy.collection.grid },

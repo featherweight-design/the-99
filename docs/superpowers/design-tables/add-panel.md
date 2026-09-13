@@ -390,18 +390,15 @@ them / the brand sheet names them.
 | Field inner gap / padding | `gap 9px`, `padding 0 12px` | Canvas C:439 |
 | Leading icon | `⌕` in `--fg-faint`; `13px` desktop / `14px` mobile. Turns `--brass` on focus | README §Component notes; Canvas C:439, E:537 |
 | Placeholder colour | `#6A6152` (dimmest caption) | Canvas C:439 |
-| Placeholder copy | `Add a card by name…` | copy.quickAdd.placeholder |
+| Placeholder copy | `Add a card by name · {identity} only` — **amended**, see §Amendments | copy.quickAdd.placeholder |
 | Typed value colour | `--fg` | Canvas E:537 |
 | Caret drawn | `1px` wide, `--brass`; `18px` tall mobile / `16px` desktop | Canvas E:537, E:559 |
 | Trailing clear control | `✕` in an `--elevated` circle, **only once a query exists** | README §Component notes |
 | Clear circle size | `20px` desktop / `22px` mobile, radius `999px`, glyph `10px` / `11px` in `--fg-faint`, `margin-left:auto` | Canvas E:559, E:537 |
 | Clear accessible name | `Clear search` | copy.quickAdd.clear |
-| Field accessible name | `Add a card to this deck by name` | copy.quickAdd.fieldAria |
+| Field accessible name | `Add a card to this deck by name, {identity} only` — **amended**, see §Amendments | copy.quickAdd.fieldAria |
 | Component reuse | Reuses `SearchField` from `text-field.tsx` | README §Component notes |
-| Idle hint, desktop | `Jeskai only · ↵ adds the top match` — Plex Mono `10.5px`, `#6A6152`, `margin-left:auto` | Canvas C:440; copy.quickAdd.identityNote + copy.quickAdd.enterHint |
-| Identity note copy | `{identity} only` | copy.quickAdd.identityNote |
-| Enter hint copy | `↵ adds the top match` | copy.quickAdd.enterHint |
-| Idle hint, mobile | **Not drawn** — mobile idle bar is field only (plus, in some states, nothing else) | Canvas C:389, R2:95 |
+| Idle hint | **Not drawn, at either width** — **amended**, see §Amendments. The slot stays in the DOM and empty, because it is the results count's live region | Canvas C:389, R2:95 |
 | Owned toggle on mobile idle bar | **Not drawn** on the mobile idle bar; appears in the mobile **results header** when typing | Canvas C:389 vs Canvas E:530 — **see Open questions** |
 | Focus ring | Global `:focus-visible`, `2px var(--brass)` at `+2px` | README §Accessibility contract |
 
@@ -556,7 +553,7 @@ them / the brand sheet names them.
 | Guided banner body copy | `Search cards or pick from your suggestions below — every card you add is counted toward your 99.` — **needs no edit**; already names both doors and already says "below" | Canvas R2:75, R2:208 |
 | Guided banner, desktop | `linear-gradient(120deg,#221D14,#1A160F 60%)`, `1px --border-strong`, radius `14px`, `padding 22px 26px`, `margin 26px 32px 0`, with a right-hand mark block (`CardFan 52px` placeholder, `0/99` in Plex Mono `600/30px --fg`, `+ {commander}` in Plex Mono `10px --fg-faint`) | Canvas R2:168–179 |
 | Returning-user variant | **Identical composition, banner absent.** The mark centres in the taller space; **nothing else moves** | Canvas R2:139 |
-| Quick-add bar in the desktop empty state | Field + owned toggle (on) + `Jeskai only · ↵ adds the top match` hint | Canvas R2:194–198 |
+| Quick-add bar in the desktop empty state | Field + owned toggle (on). The idle hint that sat to their right is **amended away**; the identity is in the placeholder | Canvas R2:194–198 |
 
 ---
 
@@ -674,3 +671,36 @@ Recorded as Design states them — not as engineering judgements.
     then appears in the same slot — is implied by `copy.consider.collapse` but never drawn.
 18. **The device frame ground `#100D0A`** (distinct from `--bg` `#14110E`) is used for every
     drawn panel body but never named as a token.
+
+---
+
+## 17. Amendments after the handoff
+
+Changes made against a shipped surface, recorded here because the tables above are
+the contract and an unrecorded departure is a table that lies.
+
+### A1 · The idle hint is gone; the identity is in the field (2026-09-12)
+
+**Was:** a standing line under the quick-add bar reading `{identity} only` —
+`Jeskai only · ↵ adds the top match` on desktop, not drawn on mobile (§7).
+
+**Is:** nothing under the bar until a search lands. The constraint moved into the
+field itself, as `Add a card by name · Gruul only`, and into the field's
+accessible name.
+
+**Why:** the line said the same thing on every visit whether or not anyone was
+searching, in a slot the eye learns to ignore. The constraint belongs where the
+player is about to type. Requested by the product owner; not a Design ruling, and
+open to reversal.
+
+**What did not change:** the results count still carries `· {identity} only`
+(§8). That is the one moment the filter is actually acting on something, and the
+placeholder that stated it is gone by then because the player has typed.
+
+**The slot itself stays in the DOM,** empty. It is the results count's
+`role="status"`, and a live region that mounts already holding its first value
+never announces it.
+
+**Never built:** `copy.quickAdd.enterHint` (`↵ adds the top match`). §7 specified
+it as the second half of the idle hint, but no build ever rendered it, so it went
+with the half that shipped.

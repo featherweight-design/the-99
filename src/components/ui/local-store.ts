@@ -1,9 +1,10 @@
 "use client";
 
-// The localStorage plumbing shared by the hooks in this directory that persist
-// a per-deck fact — a dismissal (useLocalFlag) or an uncommitted selection
-// (useTopOffDraft). Both need the same four behaviours, and none of them is
-// obvious enough to be worth writing twice:
+// The localStorage plumbing shared by every hook that persists a small fact the
+// player would expect to find again — a dismissal (useLocalFlag), an
+// uncommitted selection (useTopOffDraft), a reading preference
+// (useStoredView). They need the same four behaviours, and none of them is
+// obvious enough to be worth writing three times:
 //
 //  - a subscription, because localStorage is an external store and reading it
 //    into state inside an effect is the cascading-render pattern the lint rule

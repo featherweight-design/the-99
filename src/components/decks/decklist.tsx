@@ -4,8 +4,6 @@
 // Owns filter/grouping render; filter and grouping come as props from BuilderShell.
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
-import { useState } from "react";
-
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
@@ -13,12 +11,13 @@ import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { GroupToggle, type AutoControls, type DeckView } from "./group-toggle";
+import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
+import { useStoredView } from "../ui/use-stored-view";
 import type { PendingChangeMove } from "./pending-change";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
@@ -139,11 +138,16 @@ export function Decklist({
   pendingChanges = EMPTY_PENDING_CHANGES,
   pendingVersion = null,
 }: DecklistProps) {
-  // The view does not persist and does not touch the URL: it is one visit's
-  // reading preference, where `/collection`'s `?view=` answers a browse
-  // surface's different question. Held here because nothing above the list
-  // reads it.
-  const [view, setView] = useState<DeckView>("list");
+  // The view persists and does not touch the URL. It is a reading preference,
+  // not a description of what is on screen — `/collection`'s `?view=` answers
+  // a browse surface's different question, and a deck link that carried a view
+  // would hand the recipient this reader's habit. Held in localStorage because
+  // nothing above the list reads it and no other device needs to agree.
+  //
+  // List until this browser says otherwise, which is also what the server
+  // renders: the stored choice arrives on the pass after hydration.
+  const [storedView, chooseView] = useStoredView(DECK_VIEW_KEY, isDeckView);
+  const view = storedView ?? "list";
 
   // The toolbar's right slot while a draft exists. Needs both answers: a deck
   // with no version has no vN to count against, and a set with nothing in it has
@@ -347,7 +351,7 @@ export function Decklist({
             onFilterChange={onFilterChange}
             onGroupingChange={onGroupingChange}
             view={view}
-            onViewChange={setView}
+            onViewChange={chooseView}
             autoCount={autoCount}
             keptCount={keptCount}
             sweepPending={sweepPending}
@@ -410,7 +414,7 @@ export function Decklist({
           onFilterChange={onFilterChange}
           onGroupingChange={onGroupingChange}
           view={view}
-          onViewChange={setView}
+          onViewChange={chooseView}
           autoCount={autoCount}
           keptCount={keptCount}
           sweepPending={sweepPending}
@@ -594,7 +598,7 @@ export function Decklist({
         onFilterChange={onFilterChange}
         onGroupingChange={onGroupingChange}
         view={view}
-        onViewChange={setView}
+        onViewChange={chooseView}
         autoCount={autoCount}
         keptCount={keptCount}
         sweepPending={sweepPending}

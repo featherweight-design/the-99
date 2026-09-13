@@ -36,7 +36,14 @@ import {
   serializeAvailability,
 } from "../../lib/collection/availability-filter";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
-import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
+import {
+  COLLECTION_VIEW_KEY,
+  FilterBar,
+  isViewMode,
+  useIsDesktop,
+  type FilterChangeIntent,
+  type ViewMode,
+} from "./filter-bar";
 import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
 import { useMinWidth } from "../ui/use-min-width";
 import { collectionChips } from "../../lib/collection/chips";
@@ -45,6 +52,7 @@ import { collectionChassisCopy } from "../../lib/copy/collection";
 import type { FilterChip } from "../ui/filter-chassis";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
+import { useStoredView } from "../ui/use-stored-view";
 import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { parseColors } from "../../lib/color-param";
@@ -262,9 +270,27 @@ export function CollectionBrowser({
   // null = "auto" (no explicit user choice); resolves to rows on mobile, grid on desktop.
   const [view, setView] = useState<ViewMode | null>(() => {
     const v = search.get("view");
-    return v === "rows" || v === "grid" ? v : null;
+    return isViewMode(v ?? "") ? (v as ViewMode) : null;
   });
-  const effectiveView: ViewMode = view ?? (isDesktop ? "grid" : "rows");
+  // The choice this browser made on some earlier visit. It sits UNDER the URL
+  // and OVER the width default: a shared link carrying `?view=` describes the
+  // list its sender meant, and nothing a reader stored should overwrite that.
+  //
+  // The STORED value is never serialised — arriving at a bare `/collection` and
+  // being shown your grid leaves the address bar bare, so the URL still means
+  // "somebody chose this here". Pressing the toggle does still write `?view=`,
+  // exactly as it did before this file knew anything about storage: that press
+  // IS a choice made here, and it is what makes the current list shareable.
+  // The two are different acts and only one of them touches the URL.
+  const [storedView, chooseView] = useStoredView(COLLECTION_VIEW_KEY, isViewMode);
+  const effectiveView: ViewMode = view ?? storedView ?? (isDesktop ? "grid" : "rows");
+  const chooseAndKeepView = useCallback(
+    (next: ViewMode) => {
+      setView(next);
+      chooseView(next);
+    },
+    [chooseView],
+  );
   // The modal itself lives in the page's CardDetailProvider, which fetches the card's
   // printings and oracle text on click. The browse list ships without them.
   const {
@@ -554,7 +580,7 @@ export function CollectionBrowser({
         onFiltersChange={updateFilters}
         sortDirection={sortDirection}
         onSortChange={updateSort}
-        onViewChange={setView}
+        onViewChange={chooseAndKeepView}
       />
       
 

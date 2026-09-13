@@ -207,9 +207,14 @@ export const addPanelCopy = {
 
   // ── Quick add (retrieval) ─────────────────────────────────────────────
   quickAdd: {
-    placeholder: "Add a card by name…",
-    fieldAria: "Add a card to this deck by name",
-    identityNote: (identity: string) => `${identity} only`,
+    // The identity rides in the field rather than under it. The bar used to
+    // carry a standing `{identity} only` line while idle — a note that said the
+    // same thing on every visit, in a slot the eye had to learn to ignore. It
+    // is the field's own constraint, so it is written where the player is about
+    // to type, and the count below repeats it only while a search is landing
+    // and the placeholder is gone.
+    placeholder: (identity: string) => `Add a card by name · ${identity} only`,
+    fieldAria: (identity: string) => `Add a card to this deck by name, ${identity} only`,
     keyboardHint: "↑↓ to move · ↵ to add · Esc to dismiss",
 
     resultsAria: "Card search results",

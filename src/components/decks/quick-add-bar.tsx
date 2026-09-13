@@ -142,8 +142,8 @@ export function QuickAddBar({
           aria-controls={open ? listId : undefined}
           aria-activedescendant={open ? optionId(activeIndex) : undefined}
           aria-autocomplete="list"
-          aria-label={addPanelCopy.quickAdd.fieldAria}
-          placeholder={addPanelCopy.quickAdd.placeholder}
+          aria-label={addPanelCopy.quickAdd.fieldAria(identity)}
+          placeholder={addPanelCopy.quickAdd.placeholder(identity)}
           autoComplete="off"
           spellCheck={false}
           value={query}
@@ -224,16 +224,19 @@ export function QuickAddBar({
           className="font-mono text-[10.5px] ml-auto"
           style={{ color: "var(--fg-locked)" }}
         >
-          {/* noResults is a landed search too, and "0 matches" is the one thing
-              a screen reader most needs to hear — falling back to the identity
-              note there would announce nothing had changed. */}
+          {/* Empty while idle, and the element stays mounted: a live region has
+              to be in the document before it updates, or the first count it
+              carries is never announced. Idle used to draw the identity note,
+              which the placeholder now carries — a standing line in a live
+              region also meant a screen reader heard the identity again every
+              time the search emptied. */}
           {open || noResults
             ? ownedOnly
               ? addPanelCopy.quickAdd.resultCountWithIdentity(results.length, identity)
               : unownedShown > 0
                 ? addPanelCopy.quickAdd.ownedFilterOffNote(unownedShown)
                 : addPanelCopy.quickAdd.resultCountWithIdentity(results.length, identity)
-            : addPanelCopy.quickAdd.identityNote(identity)}
+            : ""}
         </span>
       </div>
 
