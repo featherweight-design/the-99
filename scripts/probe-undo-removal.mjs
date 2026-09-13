@@ -96,6 +96,10 @@ async function seed(userId) {
     insert into decks (user_id, name, commander_oracle_id)
     values (${userId}, ${`Undo probe ${Date.now()}`}, ${commander})
     returning id`;
+  // Registered the moment it exists, not when the seed finishes: a throw while
+  // inserting the version or its cards would otherwise leave a deck behind that
+  // the `finally` has no id for.
+  deckIds.push(deck.id);
   const [version] = await sql`
     insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
     values (${deck.id}, 1, now(), ${commander}, now()) returning id`;
@@ -158,7 +162,6 @@ try {
     await signIn(page);
     const userId = await page.evaluate(() => window.Clerk.user.id);
     const deckId = await seed(userId);
-    deckIds.push(deckId);
 
     await page.goto(`${BASE}/decks/${deckId}/changes`, { waitUntil: "networkidle" });
     // The phone puts the two directions behind a segmented pair; the column is

@@ -521,7 +521,12 @@ export function ReviewChanges({
   // A draft that moved only basic lands: a version to cut, and no row either
   // column can draw. Counting changes on it would print a nought standing for a
   // real edit, so the heading and the lede name the edit instead.
-  const basicsOnly = !firstCommit && inCount === 0 && outCount === 0 && state.basicsChanged;
+  // `basicsMoved` as well as `basicsChanged`: on a mixed draft the narrower flag
+  // is false by design, so restoring the last non-basic row would empty both
+  // lists and this would claim "0 changes" over a draft that still moves a
+  // basic. The two together are "nothing is left but the mana base".
+  const basicsOnly =
+    !firstCommit && inCount === 0 && outCount === 0 && (state.basicsChanged || state.basicsMoved);
   // The draft's own size, which a restore grows: the card is back in the deck.
   const liveCardCount = cardCount + restoredCopies;
 
@@ -581,6 +586,12 @@ export function ReviewChanges({
           // optimistic id when this transition settles, so the row returns and
           // this message lands on it.
           setRestoreErrors((current) => ({ ...current, [card.oracleId]: restoreCopy.failed }));
+          // The outcome is UNKNOWN, not failed: a lost response after the
+          // transaction committed looks identical here, and without this the
+          // row would sit saying "still going out" over a card already back in
+          // `deck_cards` until something else navigated. Re-reading the route
+          // is what the commit and discard paths do with the same ambiguity.
+          router.refresh();
           return;
         }
         if (!result.ok) {

@@ -15,7 +15,8 @@ import { cardDetailCopy } from "../cards/card-detail-provider";
 import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
@@ -1031,6 +1032,23 @@ describe("ReviewChanges", () => {
       // list the modal pages through.
       expect(screen.queryByText("Mox Diamond")).toBeNull();
       await held.release();
+    });
+
+    // A throw is an UNKNOWN outcome, not a failed one: a response lost after
+    // the transaction committed looks identical from here. Without the re-read
+    // the row would sit saying "still going out" over a card already back in
+    // the deck.
+    it("re-reads the route when the outcome is unknown", async () => {
+      addCardToDeck.mockImplementation(async () => {
+        throw new Error("network");
+      });
+      mount({ in: [], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      await screen.findByText(deckVersioningCopy.restore.failed);
+      expect(refresh).toHaveBeenCalled();
     });
 
     // The whole row is a button that opens the card. Without `stopPropagation`
