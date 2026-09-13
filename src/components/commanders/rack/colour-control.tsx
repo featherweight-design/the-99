@@ -15,7 +15,7 @@
 // in the accessibility tree.
 
 import { useRef } from "react";
-import { WUBRG_COLOR } from "../../../lib/collection/browse";
+import { ColourPips } from "../../ui/colour-pips";
 import type { JoinMode } from "../../../lib/commanders/filter";
 import { filterCopy } from "../../../lib/copy/lanes";
 
@@ -78,8 +78,11 @@ export function ColourControl({
 
   return (
     <div
-      role="group"
-      aria-label={filterCopy.colour.legend}
+      // No `role="group"` here any more. `ColourPips` brings its own, named
+      // `Colour identity` by this caller, and the match modifier beside it is
+      // its own `radiogroup`. An umbrella group around both would put a second
+      // name on one control and have it read out twice. This div is what it
+      // looks like: a box.
       className={[
         wide
           ? "flex items-center gap-[8px] h-[34px] rounded-[9px] px-[10px] border border-solid bg-[color:var(--bg)]"
@@ -91,45 +94,23 @@ export function ColourControl({
     >
       {!wide && <Caption>{filterCopy.colour.legend}</Caption>}
 
-      {/* `contents` on the rack, so the pips are direct children of the wrapper
-          and sit in its one 8px rhythm rather than in a nested box. */}
-      <div className={wide ? "contents" : "flex flex-wrap gap-[8px]"}>
-        {WUBRG.map((hue) => {
-          const lit = colors.includes(hue);
-          return (
-            <button
-              key={hue}
-              type="button"
-              aria-pressed={lit}
-              aria-label={filterCopy.colour.names[hue]}
-              onClick={() => toggle(hue)}
-              className={[
-                "block shrink-0 cursor-pointer p-0 overflow-hidden border-solid",
-                wide ? "h-[22px] w-[22px] rounded-[6px]" : "h-[44px] w-[44px] rounded-[11px]",
-                // Hue is never the only signal: lit is a bone rim, unlit a
-                // hairline over a fill held back to a third.
-                lit
-                  ? `border-[color:var(--fg)] ${wide ? "border-[1.5px]" : "border-2"}`
-                  : "border border-[color:var(--border-strong)]",
-              ].join(" ")}
-            >
-              {/* The fill is a child so the dimming lands on the colour alone —
-                  an opacity on the button would take the rim with it. */}
-              <span
-                aria-hidden
-                className="block h-full w-full"
-                style={{
-                  // The fill is the mana colour itself, looked up per render;
-                  // no class can name it. It sits on this span rather than on
-                  // the button so it outranks no hover state of the button's.
-                  background: WUBRG_COLOR[hue.toUpperCase()],
-                  opacity: lit ? 1 : wide ? 0.34 : 0.4,
-                }}
-              />
-            </button>
-          );
-        })}
-      </div>
+      {/* The app's ONE colour control. This drew its own swatches until the
+          filter chassis landed: a token square dimmed to .34 unlit on the rack
+          and .40 in the sheet, which across six themes floors at 1.37:1 and
+          fails the 3:1 non-text minimum in 30 of 30 theme-and-hue combinations
+          here — the worst of the three controls `ColourPips` replaced, and the
+          last to be migrated. The symbols are Scryfall's own artwork at full
+          strength, and a 2px `--accent` ring is the entire lit treatment.
+
+          The rack keeps its state lowercase, so the canonical uppercase code
+          the pips emit is mapped back on the way out. Reading is
+          case-tolerant, so the lit set needs no conversion going in. */}
+      <ColourPips
+        form={wide ? "wide" : "sheet"}
+        legend={filterCopy.colour.legend}
+        value={colors}
+        onToggle={(code) => toggle(code.toLowerCase() as Hue)}
+      />
 
       {wide && (
         <span

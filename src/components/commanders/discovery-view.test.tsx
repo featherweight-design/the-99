@@ -84,10 +84,12 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
 });
 
 // The rack's controls, by the names they actually carry. The pips are
-// `aria-pressed` buttons labelled with the colour alone; the match mode is a
+// `role="switch"` pips labelled with the colour alone — the shared `ColourPips`
+// contract, which this rack took when the last of the three old colour controls
+// was retired. The match mode beside them is a
 // radiogroup whose radios announce the full phrase at either width, even where
 // the rack draws the short one.
-const pip = (name: string) => screen.getByRole("button", { name });
+const pip = (name: string) => screen.getByRole("switch", { name });
 const mode = (label: string) => screen.getByRole("radio", { name: label });
 const field = () => screen.getByRole("searchbox", { name: filterCopy.search.placeholderWide });
 const orderTrigger = (label: string = discoverCopy.order.bestFit) =>
@@ -298,7 +300,7 @@ describe("DiscoveryView", () => {
       <DiscoveryView encoded={list({ items, candidateCount: 2 })} />,
     );
     expect(container.textContent).toContain(discoverCopy.result.filtered(1, 2));
-    expect(pip(filterCopy.colour.names.g).getAttribute("aria-pressed")).toBe("true");
+    expect(pip(filterCopy.colour.names.g).getAttribute("aria-checked")).toBe("true");
   });
 
   // The header used to report the count and is now a fixed title and gloss, so
@@ -737,7 +739,7 @@ describe("DiscoveryView", () => {
     // The pips survive: the button cleared what the reader typed, and clearing
     // the colours too would undo a filter this state never blamed.
     await waitFor(() =>
-      expect(pip(filterCopy.colour.names.g).getAttribute("aria-pressed")).toBe("true"),
+      expect(pip(filterCopy.colour.names.g).getAttribute("aria-checked")).toBe("true"),
     );
   });
 

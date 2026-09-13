@@ -45,6 +45,16 @@ export type ColourPipsProps = {
    */
   form: "wide" | "sheet";
   /**
+   * The group's accessible name. Defaults to `Colour`, which is what three of
+   * the four routes filter by. The commander lanes filter by colour IDENTITY
+   * and say so — a Commander deck is built on identity, not on the colours
+   * printed in a cost, and flattening the two would be wrong rather than
+   * merely terse. The caller passing this owns the name; it does NOT wrap this
+   * group in another one, because a group inside a group with two names for
+   * one control is read out twice.
+   */
+  legend?: string;
+  /**
    * Hue codes no surviving card carries. `collection/color-filter.ts` states
    * the contract: a colour with no matches stays listed and disabled, because
    * the vocabulary is fixed and dropping one would move the other four.
@@ -56,7 +66,7 @@ export type ColourPipsProps = {
   unavailable?: readonly string[];
 };
 
-export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsProps) {
+export function ColourPips({ value, onToggle, form, unavailable, legend }: ColourPipsProps) {
   // Read is case-tolerant so a lowercase caller still lights its pips; the
   // WRITE is always canonical uppercase (`PIP_ORDER`). A caller whose state is
   // lowercase maps on the way out — the commander rack is the only one.
@@ -67,7 +77,7 @@ export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsPro
   return (
     <div
       role="group"
-      aria-label={chassisCopy.colour.legend}
+      aria-label={legend ?? chassisCopy.colour.legend}
       className={form === "wide" ? "flex items-center gap-[6px]" : "flex items-center gap-[10px]"}
     >
       {PIP_ORDER.map((code) => {
