@@ -329,10 +329,16 @@ const readReview = (page) =>
         .filter((s) => /^(none free|short \d+|\d+ in a brew)/.test(text(s)))
         .map((s) => {
           const style = getComputedStyle(s);
-          // The row is the marker's own parent: `DiffRowName` and the
-          // availability slot are siblings inside `ROW_SHELL`, and the name is
-          // the row's first button.
-          const name = s.parentElement?.querySelector("button");
+          // The name is the row's TITLED trigger, and the title is what
+          // identifies it: a phone row carrying a pull stacks, putting the
+          // marker on a second line whose first button is `PullControl`, so
+          // taking the first button of the marker's own parent measured the
+          // action's type on exactly the row this probe exists for. Step up one
+          // level when the marker's line holds no name.
+          const name =
+            s.parentElement?.querySelector("button[title]") ??
+            s.parentElement?.parentElement?.querySelector("button[title]") ??
+            null;
           return {
             label: text(s),
             family: style.fontFamily,
@@ -499,7 +505,7 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
  *
  * This is the only fixture shape that reaches the marker on this page. An `in`
  * row passes `selfClaimed={false}` and buys by default, so any add that is
- * unowned, hard-claimed or short short-circuits to a buy tag. An `out` row
+ * unowned, hard-claimed or short draws a buy tag instead. An `out` row
  * passes `selfClaimed`, which turns `free === 0` into silence, so a cut can
  * only speak when it is over or softly claimed. What is left is an add whose
  * lone copy is claimed *softly*: a brew — a deck with no committed version —
@@ -511,21 +517,28 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
  * the report then says the marker checks measured nothing, which is the honest
  * reading and not a pass.
  */
-async function brewClaim(userId, excludeOracleIds, reviewDeckId, holderDeckId, commanderOracleId) {
+async function brewClaim(userId, excludeOracleIds, commanderOracleId) {
   const { rows } = await pool.query(
-    // Same exclusion set as `claimOneCopy` — not a basic, not already in either
-    // fixture deck, not sleeved in any of this user's versions (a committed
-    // claim is hard and would buy instead), not anybody's commander (a hard
-    // claim the deck_cards exclusions cannot see), and not the card that
-    // fixture already took.
+    // Not a basic, not in ANY deck of this reader's, not sleeved in any of their
+    // versions (a committed claim is hard and would buy instead), not anybody's
+    // commander (a hard claim the deck_cards exclusion cannot see), and not the
+    // card `claimOneCopy` already took.
+    //
+    // Every deck, not just the two fixture ones: a card sitting in another BREW
+    // is softly claimed by it too, so the marker would read `2 in a brew` and the
+    // named-row lookup below would fail on a fixture that is otherwise fine. The
+    // brew this function creates has to be the only soft claim on the card.
     `select ci.oracle_id, c.name
        from collection_items ci
        join cards c on c.oracle_id = ci.oracle_id
       where ci.user_id = $1
         and c.type_line not like 'Basic Land%'
-        and ci.oracle_id <> all ($4::uuid[])
-        and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $2)
-        and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $3)
+        and ci.oracle_id <> all ($2::uuid[])
+        and not exists (
+          select 1 from deck_cards dc
+            join decks d on d.id = dc.deck_id
+           where d.user_id = $1 and dc.oracle_id = ci.oracle_id
+        )
         and not exists (
           select 1 from deck_version_cards vc
             join deck_versions v on v.id = vc.version_id
@@ -540,7 +553,7 @@ async function brewClaim(userId, excludeOracleIds, reviewDeckId, holderDeckId, c
       group by ci.oracle_id, c.name
      having sum(ci.quantity) = 1
       limit 1`,
-    [userId, reviewDeckId, holderDeckId, excludeOracleIds],
+    [userId, excludeOracleIds],
   );
   if (rows.length === 0) return null;
   const { oracle_id: oracleId, name } = rows[0];
@@ -662,13 +675,7 @@ try {
   underReview = await buildDeck(userId, "Probe · under review", template);
   holder = await buildDeck(userId, "Probe · holder", template);
   claimed = await claimOneCopy(userId, holder.deckId, holder.versionId, underReview.deckId);
-  brewed = await brewClaim(
-    userId,
-    [claimed.oracleId],
-    underReview.deckId,
-    holder.deckId,
-    template.commander_oracle_id,
-  );
+  brewed = await brewClaim(userId, [claimed.oracleId], template.commander_oracle_id);
   console.log(`signed in as ${userId}`);
   console.log(`deck under review ${underReview.deckId} · holder ${holder.deckId}`);
   console.log(
