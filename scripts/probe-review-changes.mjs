@@ -153,12 +153,19 @@ const readReview = (page) =>
         // height: the figure that matters is how many rows of text the heading
         // occupies, and that survives a font-size change.
         const lineHeight = parseFloat(getComputedStyle(h).lineHeight);
+        const box = h.getBoundingClientRect();
         return {
           text: h.innerText,
           visible: visible(h.closest("section") ?? h),
-          lines: Number.isFinite(lineHeight)
-            ? Math.round(h.getBoundingClientRect().height / lineHeight)
-            : null,
+          // The heading's own box, not its section's: below `md:` a column whose
+          // direction is already named by the segmented pair above it hides the
+          // heading while the section stays on screen, so a line count taken off
+          // the section would read 0 and look like a crush.
+          drawn: box.height > 0,
+          lines:
+            Number.isFinite(lineHeight) && box.height > 0
+              ? Math.round(box.height / lineHeight)
+              : null,
         };
       }),
       segments: buttons
@@ -545,14 +552,16 @@ try {
     );
     for (const h of seen.headings) {
       console.log(
-        `  column heading: "${h.text}" ${h.visible ? "visible" : "HIDDEN"} · ${h.lines} line(s)`,
+        `  column heading: "${h.text}" ${h.visible ? "visible" : "HIDDEN"} · ${
+          h.drawn ? `${h.lines} line(s)` : "not drawn"
+        }`,
       );
     }
     // Hugh, of `GOING OUT · 15` on this surface: "crushed into three stacked
     // lines by the oversized adjacent note." The note lost a sentence and the
     // heading gained `flex-none`, either of which alone would leave the other
     // free to regress.
-    const crushed = seen.headings.filter((h) => h.visible && h.lines !== 1);
+    const crushed = seen.headings.filter((h) => h.drawn && h.lines !== 1);
     console.log(
       `  headings on more than one line: ${
         crushed.map((h) => `"${h.text}" on ${h.lines}`).join(", ") || "none"
