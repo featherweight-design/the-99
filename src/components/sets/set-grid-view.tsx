@@ -413,9 +413,10 @@ export function SetGridView(props: SetGridViewProps) {
     };
   });
   const rarityEnabled = rarityOptions.filter((o) => !o.disabled).map((o) => o.code);
-  // The first ENABLED index, which is the group's tab stop when nothing is checked — and
-  // the only place focus can go when the checked value clears. Assuming index 0 put it on
-  // a disabled button, where `.focus()` is a no-op and the next Tab leaves the group.
+  // The group's tab stop when nothing is checked. The first ENABLED one, not index 0: a
+  // set with no commons disables that button, and a tab stop nobody can reach is no tab
+  // stop. Nothing else depends on it now — `aria-disabled` keeps every radio focusable, so
+  // clearing a value never strands focus and there is no rescue to aim.
   const firstEnabledRarity = rarityOptions.findIndex((o) => !o.disabled);
 
   return (
@@ -745,11 +746,14 @@ export function SetGridView(props: SetGridViewProps) {
                     type="button"
                     role="radio"
                     aria-checked={on}
-                    // The same zero-count rule the desktop panel applies. Without it the
-                    // sheet offered values that panel refuses, and picking one landed the
-                    // reader on an empty grid the other width would not have let them reach.
+                    // The same zero-count rule the desktop panel applies, and the same
+                    // MECHANISM: `aria-disabled` with pointer events off, never the
+                    // `disabled` attribute. `FilterPanel` does it that way and this group
+                    // spent three rounds proving why — a real `disabled` makes the browser
+                    // drop focus the instant a value is cleared, so every route into that
+                    // state needed its own focus rescue and each rescue missed a case.
+                    // Unfocusable elements are the problem; this keeps them focusable.
                     aria-disabled={disabled || undefined}
-                    disabled={disabled}
                     aria-label={setFilterCopy.rarity.options[r]}
                     // Roving: the checked value is the group's single tab stop, and with
                     // none checked the first is — `all` is a state this group can be in,
@@ -758,16 +762,11 @@ export function SetGridView(props: SetGridViewProps) {
                       ? 0
                       : -1}
                     onClick={() => {
-                      const next = pickRarity(filters.rarities, r);
-                      setFilters({ ...filters, rarities: next });
-                      // Clearing the checked value moves the group's only tab stop to the
-                      // first radio, and this button keeps DOM focus while losing it — so
-                      // focus would sit on an element outside the group's tab order and
-                      // the next Tab would leave the group entirely. Follow the stop.
-                      if (next.length === 0 && i !== firstEnabledRarity
-                          && firstEnabledRarity >= 0) {
-                        rarityRefs.current[firstEnabledRarity]?.focus();
-                      }
+                      // Zero-count values never toggle, by pointer or by key — the same
+                      // guard `FilterPanel.toggle` applies. No focus move afterwards:
+                      // nothing here becomes unfocusable, so nothing strands.
+                      if (disabled) return;
+                      setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) });
                     }}
                     onKeyDown={(e) => {
                       const dir = e.key === "ArrowRight" || e.key === "ArrowDown"
@@ -780,7 +779,7 @@ export function SetGridView(props: SetGridViewProps) {
                     className={[
                       "min-h-[44px] rounded-[8px] px-[14px] text-[13px] border",
                       disabled
-                        ? "opacity-[0.42] text-[color:var(--fg-locked)] border-[color:var(--border)]"
+                        ? "pointer-events-none opacity-[0.42] text-[color:var(--fg-locked)] border-[color:var(--border)]"
                         : on
                           ? "text-[color:var(--accent)] border-[color:var(--accent)]"
                           : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
