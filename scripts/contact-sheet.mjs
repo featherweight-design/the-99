@@ -118,11 +118,19 @@ try {
   const sheetPage = await (await browser.newContext({
     viewport: { width: 1800, height: 1200 },
   })).newPage();
-  const cards = shots.map((s) => `
+  // Inlined as data URIs rather than linked with `file://`: the sheet is built on
+  // `about:blank`, which is a different origin, and every image came out blank.
+  const cards = await Promise.all(shots.map(async (s) => {
+    const data = await readFile(s.file).then((b) => b.toString("base64")).catch(() => null);
+    const img = data
+      ? `<img src="data:image/png;base64,${data}" />`
+      : `<div class="missing">no screenshot</div>`;
+    return `
     <figure>
-      <img src="file://${s.file}" />
+      ${img}
       <figcaption>${s.label} · ${s.size}${s.note ? ` <b>— ${s.note}</b>` : ""}</figcaption>
-    </figure>`).join("");
+    </figure>`;
+  })).then((x) => x.join(""));
   await sheetPage.setContent(`
     <style>
       body { background: #14110E; color: #EDE6D8; font: 13px/1.4 ui-sans-serif, system-ui; margin: 0; padding: 20px; }
@@ -131,6 +139,7 @@ try {
       figure { margin: 0; width: 420px; }
       img { width: 100%; border: 1px solid #3A3229; display: block; }
       figcaption { padding-top: 6px; color: #A89B84; }
+      .missing { height: 200px; display: grid; place-items: center; border: 1px dashed #6E6654; color: #6E6654; }
       b { color: #E8927C; }
     </style>
     <h1>${inventory.feature} — every route, both widths</h1>
