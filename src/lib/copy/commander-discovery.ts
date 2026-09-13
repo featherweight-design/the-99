@@ -85,9 +85,9 @@ export const discoveryCopy = {
     newAria: "Rank by distance from the archetypes the decks you have built play",
 
     // Ruling 8. Short form on the menu row; the long form is `empty.noDecks`.
-    newDisabled: "needs a deck to compare against — build one and this turns on",
+    newDisabled: "needs a deck to compare against. Build one and this turns on",
     newDisabledAria:
-      "Something new is unavailable — we need a deck to compare against",
+      "Something new is unavailable. We need a deck to compare against",
 
     announce: (sort: "fit" | "new", count: number) =>
       sort === "new"
@@ -126,7 +126,7 @@ export const discoveryCopy = {
     // Novelty. Up to three tag names, then a count — a fourth name buys nothing.
     distanceLabel: "New to you",
     tagList: (tags: string[], extra: number) =>
-      extra > 0 ? `${tags.join(" · ")} — and ${n(extra)} more` : tags.join(" · "),
+      extra > 0 ? `${tags.join(" · ")}, and ${n(extra)} more` : tags.join(" · "),
     // What the nearest deck shares, from the labels and the count of the rest.
     // Two names then a number, for the same reason `tagList` stops at three: a
     // third name reads as a list and the clause is a summary.
@@ -148,7 +148,7 @@ export const discoveryCopy = {
     // ones are disjoint sets, and the figure the row needs is already printed
     // beside this sentence by `figureUnitNew`.
     distanceNear: (deckName: string, shared: string) =>
-      `Your closest build, ${deckName}, plays ${shared} — the rest are new.`,
+      `Your closest build, ${deckName}, plays ${shared}. The rest are new.`,
     distanceAria: (unplayed: number, total: number) =>
       `${n(unplayed)} of its ${n(total)} archetypes are ones you have never built`,
 
@@ -162,9 +162,9 @@ export const discoveryCopy = {
     // (`discovery-row.tsx:542`, inside `<Emphasised>`) and `floorNoteShort` the
     // mobile one (`:401`).
     floorNote: (floorPct: number, pct: number) =>
-      `clears the ${floorPct}% floor — you own ${pct}% of its support list`,
+      `clears the ${floorPct}% floor: you own ${pct}% of its support list`,
     floorNoteShort: (floorPct: number, pct: number) =>
-      `clears the ${floorPct}% floor — you own ${pct}% of its list`,
+      `clears the ${floorPct}% floor: you own ${pct}% of its list`,
   },
 
   // ── Ownership on the row (§7.3) ───────────────────────────────────────
@@ -215,7 +215,7 @@ export const discoveryCopy = {
     // No card count: the page header directly above this banner already ends
     // "read against N cards", and the figure is the same one.
     noDecksBody:
-      "We rank “new” by how far a commander sits from the archetypes the decks you have built already play — and you have not built one yet. Best fit works from day one: it only needs your collection.",
+      "We rank “new” by how far a commander sits from the archetypes the decks you have built already play, and you have not built one yet. Best fit works from day one: it only needs your collection.",
     /** The one clause the banner marks. A substring of `noDecksBody` rather than
         a fragment the component splices in, so the sentence has one author. */
     noDecksEmphasis: "Best fit works from day one",
@@ -225,7 +225,7 @@ export const discoveryCopy = {
     // "the collection is just early" is the second expressive moment.
     floorHeading: "Nothing clears the bar for “new” yet",
     floorBody: (floorPct: number, candidates: number, cards: number, bestPct: number) =>
-      `Something new only shows commanders you could actually build — at least ${floorPct}% of their support list already in your collection. None of the ${n(
+      `Something new only shows commanders you could actually build: at least ${floorPct}% of their support list already in your collection. None of the ${n(
         candidates,
       )} clears that against ${n(
         cards,
@@ -255,10 +255,10 @@ export const discoveryCopy = {
       // `matching` can never exceed `total`, so a one-deck player is always the
       // whole count and "One of your 1 decks" never needs to be said.
       total === 1
-        ? `Your only deck covers ${identity} — that is where those commanders went.`
+        ? `Your only deck covers ${identity}. That is where those commanders went.`
         : `${matching === 1 ? "One" : n(matching)} of your ${n(
             total,
-          )} decks ${matching === 1 ? "covers" : "cover"} ${identity} — that is where those commanders went.`,
+          )} decks ${matching === 1 ? "covers" : "cover"} ${identity}. That is where those commanders went.`,
     filteredCta: "Clear the colour filter",
     // Names the lane, the way `discoverCopy.otherLane` names it. The old wording
     // was the deleted scope control's option label, and it opened on "or", which

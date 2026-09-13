@@ -417,7 +417,7 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...rhystic, availability: claimed(["Atraxa"]) }]);
     mount();
     await search();
-    expect(screen.getByRole("option")).toHaveTextContent("none free — in Atraxa");
+    expect(screen.getByRole("option")).toHaveTextContent("none free, in Atraxa");
   });
 
   it("stays silent on a card this deck is already running", async () => {

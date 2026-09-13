@@ -147,7 +147,7 @@ describe("the discard confirm", () => {
     // the words around it another.
     const why = screen.getByText(/not stored anywhere/);
     expect(why.textContent).toBe(sentence);
-    expect(why.textContent).toContain(`v2 as committed on ${DATE} — 99 cards`);
+    expect(why.textContent).toContain(`v2 as committed on ${DATE}, 99 cards`);
     expect(why.querySelector("b")?.textContent).toBe(`v2 as committed on ${DATE}`);
     // Both answers point at it: the question repeats the destructive button's own
     // label, so describing the buttons with it would say the same words twice.

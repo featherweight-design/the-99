@@ -42,17 +42,17 @@ describe("AvailabilityMarker", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
     );
-    expect(composed(container)).toBe("none free — in Atraxa");
+    expect(composed(container)).toBe("none free, in Atraxa");
   });
 
   // The space before the deck name lives at the end of the prefix, and a flex
   // item trims its own trailing whitespace. `whitespace-pre` is what keeps
-  // `none free — in Atraxa` from rendering as `none free — inAtraxa` in a browser.
+  // `none free, in Atraxa` from rendering as `none free, inAtraxa` in a browser.
   // jsdom collapses nothing, so only the class can be asserted here.
   it("preserves the space the prefix ends with", () => {
     render(<AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />);
     const prefix = deckName().previousElementSibling!;
-    expect(prefix.textContent).toBe("none free — in ");
+    expect(prefix.textContent).toBe("none free, in ");
     expect(prefix.className).toContain("whitespace-pre");
     expect(prefix.className).not.toContain("whitespace-nowrap");
   });
@@ -139,7 +139,7 @@ describe("AvailabilityMarker", () => {
         density="row"
       />,
     );
-    expect(screen.getByText("none free — across 2 decks")).toBeInTheDocument();
+    expect(screen.getByText("none free, across 2 decks")).toBeInTheDocument();
   });
 
   it("says how short the player is when over-committed", () => {
@@ -376,7 +376,7 @@ describe("AvailabilityMarker sparse claimants", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(4, 9, 0, ["Rats"])} density="row" />,
     );
-    expect(container.textContent).toBe("short 5 — also in 1 deck");
+    expect(container.textContent).toBe("short 5, also in 1 deck");
     expect(markerAria(a(4, 9, 0, ["Rats"]))).toBe(
       "1 of your finished lists includes this card and you own 5 too few",
     );
@@ -411,7 +411,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     const { container } = render(
       <AvailabilityMarker availability={av} density="row" selfExcluded />,
     );
-    expect(container.textContent).toBe("short 1 — also in Atraxa");
+    expect(container.textContent).toBe("short 1, also in Atraxa");
     expect(markerAria(av, { selfExcluded: true })).toBe(
       "your Atraxa list also includes this card and you don’t own enough for both",
     );
@@ -424,7 +424,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     const { container } = render(
       <AvailabilityMarker availability={av} density="row" selfExcluded />,
     );
-    expect(container.textContent).toBe("short 2 — also in 2 decks");
+    expect(container.textContent).toBe("short 2, also in 2 decks");
     expect(markerAria(av, { selfExcluded: true })).toBe(
       "2 of your finished lists include this card and you own 2 too few",
     );
