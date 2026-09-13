@@ -290,6 +290,10 @@ export function CardModal({
   // is actually on screen.
   const zoomTriggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const zoomCloseRef = useRef<HTMLButtonElement>(null);
+  const zoomFlipRef = useRef<HTMLButtonElement>(null);
+  // The layer turns its own copy. `flipped` belongs to the art behind it, which the
+  // reader may have turned for their own reasons.
+  const [zoomFlipped, setZoomFlipped] = useState(false);
   // The two shipped ✕ buttons, one per breakpoint tree.
   const closeRefs = useRef<(HTMLButtonElement | null)[]>([]);
   /**
@@ -504,7 +508,13 @@ export function CardModal({
    * taken quietly.
    */
   const closeZoom = useCallback(() => setZoomed(false), []);
-  const openZoom = useCallback(() => setZoomed(true), []);
+  const openZoom = useCallback(() => {
+    // A zoom is a look, not a setting (table row 4.10): it always opens on the front,
+    // whatever the last one was turned to. Its own face rather than the art's, so
+    // closing the layer never reaches out and turns the card behind it back.
+    setZoomFlipped(false);
+    setZoomed(true);
+  }, []);
 
   // Three rungs: the zoom, then the printing region (returning focus to the Set
   // field), then the dialog. The region's shipped two-stage shape with one added on
@@ -536,10 +546,9 @@ export function CardModal({
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef });
 
-  // Focus follows the layer. In: to the close — row 3.12's "otherwise" branch, and
-  // for now the only one, because the layer holds no flip control until the animated
-  // turn lands with the next slice of this feature and brings its own focus target.
-  // Out: to the art that opened it, at whichever width has layout (row 3.10).
+  // Focus follows the layer. In: to the flip control when the card has a back face,
+  // otherwise to the close (row 3.12). Out: to the art that opened it, at whichever
+  // width has layout (row 3.10).
   const wasZoomed = useRef(false);
   useEffect(() => {
     // Transitions only. Without this the effect's first run — on mount, with the
@@ -548,7 +557,9 @@ export function CardModal({
     if (wasZoomed.current === zoomed) return;
     wasZoomed.current = zoomed;
     if (zoomed) {
-      zoomCloseRef.current?.focus();
+      // The turn where there is a face to turn to, the close otherwise — row 3.12,
+      // now that the layer has both.
+      (zoomFlipRef.current ?? zoomCloseRef.current)?.focus();
       return;
     }
     // Only when nothing else has claimed focus. A close leaves focus on the button
@@ -663,6 +674,14 @@ export function CardModal({
   // name the same card.
   const faces = faceNames(printedNameOf(preview));
 
+  function onZoomFlip() {
+    const next = !zoomFlipped;
+    setZoomFlipped(next);
+    // The modal's one live region reports it, on settle rather than on press: the
+    // reader is told what happened, not what was asked for.
+    setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+  }
+
   function onFlip() {
     const next = !flipped;
     setFlipped(next);
@@ -678,6 +697,16 @@ export function CardModal({
   // so a flip on a card whose front is a picked printing can show a back from a
   // different one. Known limitation — closing it means a `back_image_uri` on
   // `printings` and the art-tier subqueries reading it.
+  // The two faces are drawn from their own images rather than from `faceImage`,
+  // which follows `flipped`: a turning card shows both at once, and a box whose
+  // background swapped mid-turn would be the swap this amendment exists to replace.
+  const frontStyle: React.CSSProperties = resolved?.imageUri
+    ? { backgroundImage: cssUrl(resolved.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: identityGradient(card.colorIdentity) };
+  const backStyle: React.CSSProperties = card.backImageUri
+    ? { backgroundImage: cssUrl(card.backImageUri), backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: identityGradient(card.colorIdentity) };
+
   // `set · code · collector number`, and the field AND its separator go when the
   // holding carries no number — never "no number" (the printing picker's ruling).
   const zoomCaption = resolved
@@ -685,7 +714,7 @@ export function CardModal({
         resolved.setName ?? resolved.setCode,
         resolved.setCode,
         resolved.collectorNumber,
-      )}${flipped ? cardZoomCopy.backSuffix : ""}`
+      )}${zoomFlipped ? cardZoomCopy.backSuffix : ""}`
     // A card with no printings at all names nothing, and ` · ` is not a caption.
     // The zoom draws the card and no line rather than a line with nothing in it.
     : null;
@@ -1152,6 +1181,8 @@ export function CardModal({
             className="absolute inset-0 z-20 flex flex-col items-center justify-center anim-zoom-in"
             onClick={closeZoom}
             style={{
+              // Shallow enough to be a turn rather than a lens (table row 4.2).
+              perspective: "1400px",
               background: "color-mix(in srgb, var(--bg) 94%, transparent)",
               backdropFilter: "blur(10px)",
               // WebKit honours only the prefixed declaration, and without the blur the
@@ -1163,7 +1194,10 @@ export function CardModal({
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
             <div
               data-testid="card-zoom-card"
-              className="rounded-[13px] md:rounded-[14px] w-[var(--zoom-w)] md:w-[var(--zoom-w-md)]"
+              className={`relative rounded-[13px] md:rounded-[14px] w-[var(--zoom-w)] md:w-[var(--zoom-w-md)] ${
+                twoFaced ? "anim-card-turn" : ""
+              }`}
+              data-face={twoFaced ? (zoomFlipped ? "back" : "front") : undefined}
               style={{
                 // ONE dimension is set and the ratio derives the other, because a
                 // definite width AND a height cap is how an `aspect-ratio` box gets
@@ -1178,10 +1212,51 @@ export function CardModal({
                 "--zoom-w": "min(318px, calc(100vw - 32px), calc((100vh - 140px) * 0.7159))",
                 "--zoom-w-md": "min(372px, calc((min(620px, 85vh) - 72px) * 0.7159))",
                 aspectRatio: "63/88",
-                ...artStyle,
+                // A one-faced card is its own picture; a two-faced one draws both faces
+                // inside and this box only turns them.
+                ...(twoFaced ? null : artStyle),
+                transformStyle: twoFaced ? "preserve-3d" : undefined,
+                transform: twoFaced && zoomFlipped ? "rotateY(180deg)" : undefined,
                 boxShadow: "0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.35)",
               } as React.CSSProperties}
-            />
+            >
+              {/* Two faces on one piece of card stock. Both are drawn, both hide their
+                  own back, and the card turns — so neither face is ever seen mirrored
+                  and the reader watches one object move rather than one picture being
+                  replaced by another. */}
+              {twoFaced && (
+                <>
+                  <div
+                    aria-hidden
+                    data-testid="card-zoom-face-front"
+                    className="absolute inset-0 rounded-[13px] md:rounded-[14px]"
+                    style={{ ...frontStyle, backfaceVisibility: "hidden" }}
+                  />
+                  <div
+                    aria-hidden
+                    data-testid="card-zoom-face-back"
+                    className="absolute inset-0 rounded-[13px] md:rounded-[14px]"
+                    style={{
+                      ...backStyle,
+                      backfaceVisibility: "hidden",
+                      transform: "rotateY(180deg)",
+                    }}
+                  />
+                  {/* The press must not reach the layer, which dismisses on click:
+                      the card, the scrim and the ✕ are the three doors out, and a
+                      control that turns the card is not one of them. Without this,
+                      turning the card put it away. */}
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <FlipControl
+                      controlRef={zoomFlipRef}
+                      otherFaceName={zoomFlipped ? faces.front : faces.back}
+                      onFlip={onZoomFlip}
+                      size={44}
+                    />
+                  </span>
+                </>
+              )}
+            </div>
             {/* One mono line: which printing you are holding. Never the price — a card
                 in your hand has none printed on it, and the tag is one dismissal away. */}
             {zoomCaption && (
@@ -1267,15 +1342,18 @@ function ZoomMark({ size }: { size: number }) {
  * going round.
  */
 function FlipControl({
-  otherFaceName, onFlip, size,
+  otherFaceName, onFlip, size, controlRef,
 }: {
   otherFaceName: string;
   onFlip: () => void;
-  /** 44 on the phone's art header, 34 in the desktop art column. */
+  /** 44 on the phone's art header, 34 in the desktop art column, 44 inside the zoom. */
   size: number;
+  /** The zoom passes one so it can hand focus to the turn on open. */
+  controlRef?: React.Ref<HTMLButtonElement>;
 }) {
   return (
     <button
+      ref={controlRef}
       type="button"
       onClick={onFlip}
       aria-label={twoFacedCopy.flipToAria(otherFaceName)}

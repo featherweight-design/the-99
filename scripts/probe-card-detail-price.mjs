@@ -243,6 +243,33 @@ try {
     console.log(`\nFAIL: zoomed card is ${JSON.stringify(zoom?.card)}, expected about 372x520.`);
     process.exitCode = 1;
   }
+  // The turn, where a browser is the only witness: jsdom has no transforms, so a
+  // unit test can see `data-face` change and nothing about the card actually turning.
+  const turn = page.locator('[data-testid="card-zoom"] button[aria-label^="Turn over to"]');
+  if (await turn.count()) {
+    const before = await page.locator('[data-testid="card-zoom-card"]').evaluate(
+      (n) => getComputedStyle(n).transform,
+    );
+    await turn.click();
+    await page.waitForTimeout(500);
+    const after = await page.locator('[data-testid="card-zoom-card"]').evaluate(
+      (n) => getComputedStyle(n).transform,
+    );
+    const stillOpen = await page.locator('[data-testid="card-zoom"]').count();
+    console.log("\n── desktop · the turn ──");
+    console.log(JSON.stringify({ before, after, stillOpen: Boolean(stillOpen) }, null, 2));
+    if (before === after) {
+      console.log("\nFAIL: the card did not turn — the transform is unchanged.");
+      process.exitCode = 1;
+    }
+    if (!stillOpen) {
+      console.log("\nFAIL: turning the card dismissed the zoom.");
+      process.exitCode = 1;
+    }
+  } else {
+    console.log("\n(one-faced card — point PROBE_CARD at a transform card to check the turn)");
+  }
+
   await page.keyboard.press("Escape");
   await page.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
   if (!(await page.locator('[role="dialog"]').count())) {

@@ -1,7 +1,7 @@
 // The zoom (card detail R2, §3): the whole card at something like hand size, as a
 // region inside the dialog rather than a second one.
 import { describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cardZoomCopy } from "../../lib/copy/card-surfaces";
 
@@ -107,8 +107,10 @@ describe("the zoom", () => {
   it("names the printing on the reverse face", () => {
     mount(card({ layout: "transform", backImageUri: "https://img/back.jpg", name: "Delver of Secrets // Insectile Aberration" }));
 
-    fireEvent.click(screen.getAllByRole("button", { name: /Turn over to/ })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /Look at/ })[0]);
+    // Turned INSIDE the layer. The zoom keeps its own face, so turning the art behind
+    // it would say nothing about what the zoom is showing.
+    fireEvent.click(within(screen.getByTestId("card-zoom")).getByRole("button", { name: /Turn over to/ }));
 
     expect(screen.getByTestId("card-zoom")).toHaveTextContent(`RVR 12${cardZoomCopy.backSuffix}`);
   });
@@ -256,5 +258,109 @@ describe("the zoom", () => {
 
     expect(screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0])
       .toHaveAttribute("aria-expanded", "true");
+  });
+});
+
+// The turn (card detail R2, §4): inside the zoom the card turns; everywhere else the
+// ratified swap stands.
+describe("the turn inside the zoom", () => {
+  const twoFaced = () => card({
+    layout: "transform",
+    backImageUri: "https://img/back.jpg",
+    name: "Delver of Secrets // Insectile Aberration",
+  });
+
+  const openTwoFaced = () => {
+    mount(twoFaced());
+    fireEvent.click(screen.getAllByRole("button", { name: /Look at/ })[0]);
+    return screen.getByTestId("card-zoom");
+  };
+
+  it("draws both faces, each hiding its own back", () => {
+    // A turning card shows both at once. A single box whose background swapped
+    // mid-turn would be the instant swap this amendment replaces.
+    const layer = openTwoFaced();
+
+    const front = within(layer).getByTestId("card-zoom-face-front");
+    const back = within(layer).getByTestId("card-zoom-face-back");
+    expect(front.getAttribute("style")).toContain("front.jpg");
+    expect(back.getAttribute("style")).toContain("back.jpg");
+    expect(front.getAttribute("style")).toContain("backface-visibility: hidden");
+    expect(back.getAttribute("style")).toContain("rotateY(180deg)");
+  });
+
+  it("turns the card rather than swapping the picture", () => {
+    const layer = openTwoFaced();
+    const box = within(layer).getByTestId("card-zoom-card");
+    expect(box.getAttribute("data-face")).toBe("front");
+
+    fireEvent.click(within(layer).getByRole("button", { name: /Turn over to/ }));
+
+    expect(box.getAttribute("data-face")).toBe("back");
+    expect(box.getAttribute("style")).toContain("rotateY(180deg)");
+    expect(box.className).toContain("anim-card-turn");
+  });
+
+  it("does not put the card away when the reader turns it", () => {
+    // The layer dismisses on click and the control sits on top of it.
+    const layer = openTwoFaced();
+
+    fireEvent.click(within(layer).getByRole("button", { name: /Turn over to/ }));
+
+    expect(screen.getByTestId("card-zoom")).toBeInTheDocument();
+  });
+
+  it("names the face it turns to, and announces the one it landed on", () => {
+    const layer = openTwoFaced();
+    const turn = within(layer).getByRole("button", { name: "Turn over to Insectile Aberration" });
+
+    fireEvent.click(turn);
+
+    expect(within(screen.getByTestId("card-zoom")).getByRole("button", { name: "Turn over to Delver of Secrets" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent)
+      .toBe("Showing Insectile Aberration");
+  });
+
+  it("gives a one-faced card no control at all", () => {
+    // The gate is the `layout` column, never a `//` in the name: a split or adventure
+    // card carries the separator and has no back.
+    mount(card({ name: "Fire // Ice", layout: "split" }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Look at/ })[0]);
+
+    expect(within(screen.getByTestId("card-zoom")).queryByRole("button", { name: /Turn over to/ })).toBeNull();
+  });
+
+  it("opens on the front however the last zoom was left", () => {
+    // A zoom is a look, not a setting.
+    const layer = openTwoFaced();
+    fireEvent.click(within(layer).getByRole("button", { name: /Turn over to/ }));
+    fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /Look at/ })[0]);
+
+    expect(within(screen.getByTestId("card-zoom")).getByTestId("card-zoom-card").getAttribute("data-face"))
+      .toBe("front");
+  });
+
+  it("leaves the art behind it on the face the reader chose", () => {
+    // `flipped` belongs to the un-zoomed control, which the reader may have turned
+    // for their own reasons; the layer turns its own copy.
+    mount(twoFaced());
+    fireEvent.click(screen.getAllByRole("button", { name: /Turn over to/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Look at/ })[0]);
+
+    expect(within(screen.getByTestId("card-zoom")).getByTestId("card-zoom-card").getAttribute("data-face"))
+      .toBe("front");
+    fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+    expect(screen.getAllByRole("button", { name: "Turn over to Delver of Secrets" }).length)
+      .toBeGreaterThan(0);
+  });
+
+  it("puts focus on the turn rather than the close", () => {
+    const layer = openTwoFaced();
+
+    expect(document.activeElement)
+      .toBe(within(layer).getByRole("button", { name: /Turn over to/ }));
   });
 });

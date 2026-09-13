@@ -548,6 +548,23 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    on the first frame and never animated: at 10px it is invisible in motion and
    expensive. */
 .anim-zoom-in { animation: zoom-in 0.2s ease-out both; }
+/* THE TURN (card detail R2, §4). `rotateY`, because that is how a hand turns a card
+   over: `rotateX` tumbles it end over end, which nobody does with a card, and reads
+   as a page turning — the wrong metaphor for an object you are holding.
+
+   320ms is the one number in this feature worth an opinion. Above the app's 180
+   because this is an object moving rather than a box opening, and at 160 a 520px
+   card reads as a glitch; below half a second because a second press must never
+   queue, and comparing two faces is a press a reader repeats. The curve is fast out
+   of rest and settles long — linear reads mechanical at this size, and `ease-in-out`
+   reads slow.
+
+   It is a TRANSITION, not a keyframe animation, so a press mid-turn reverses from
+   wherever the card is rather than restarting or queueing. The faces hide their own
+   backs, so the swap happens behind the edge at the midpoint with nothing to
+   schedule. */
+.anim-card-turn { transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
 /* There is no exit animation. The layer unmounts on close — see the note at
    `closeZoom` in `cards/card-modal.tsx` for why the 160ms fade was dropped. */
 
@@ -571,6 +588,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
        for an animation that will never run. */
     will-change: auto;
   }
+
+  /* The turn's static state is face replaces face — which is not a fallback invented
+     here, it is the swap the un-zoomed control has always done. So the animated path
+     is this feature's amendment and the still one is the status quo. */
+  .anim-card-turn { transition: none; }
 }
 
 /* The wash trades legibility against drama. A reader who has asked for less
