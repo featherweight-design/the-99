@@ -1,8 +1,9 @@
 // The deck details header at ≥768px — property table §B.
 //
-// The commander's art is the band now, washed as a 168px `left-portrait`, and
-// every string sits at a 254px inset: past the scrim's 240px flat stop, on flat
-// ground, so nothing here carries a shadow.
+// The commander's art is the band now, washed as a 288px `left-portrait` at one
+// of two portrait widths, and every string sits past whichever flat stop is
+// drawn — a 592px inset past the 560px portrait's 584, or 364 past the 340px
+// portrait's 356. On flat ground either way, so nothing here carries a shadow.
 "use client";
 
 import { useState } from "react";
@@ -56,7 +57,11 @@ export interface SpineBandProps {
 
 /** §B16 — the field's box, identical in all four editing states. Declared
     rather than left to layout: zero reflow between states is the point. */
-const FIELD_BOX = { width: 352, height: 29 } as const;
+// `maxWidth`, not a fixed `width`: the title column's inset is 364px below
+// ~1200px of row, so a 768px viewport leaves about 318px of column — less than
+// 352 — and a fixed field would have run under the action controls beside it
+// while renaming. 352 stays the intended size wherever the column can hold it.
+const FIELD_BOX = { width: "100%", maxWidth: 352, height: 29 } as const;
 
 /**
  * Decision 18's shrinking half. Both names take it; the partner additionally
@@ -115,18 +120,58 @@ export function SpineDesktop({
 
   return (
     <header
-      className="group relative hidden md:block"
+      // `@container`, because the switch below is about the ROW's width and not
+      // the viewport's: this header is the flex sibling of a 62px desktop rail, so
+      // a 1200px viewport is a ~1138px row and a viewport query would have picked
+      // the wide portrait for a row that cannot hold it. The container is
+      // declared here because this element IS the row.
+      className="group @container relative hidden md:block"
       // minHeight, not the table's height + overflow:hidden: an over-99 deck
       // draws a trim paragraph inside this band, and clipping it would hide
-      // copy rather than art. The wash still declares 168px itself.
-      style={{ minHeight: 168, borderBottom: "1px solid var(--border)" }}
+      // copy rather than art. Each wash still declares 288px itself.
+      style={{ minHeight: 288, borderBottom: "1px solid var(--border)" }}
     >
-      <ArtWash
-        strategy="left-portrait"
-        band={168}
-        artCropUri={commander.artCropUri}
-        colorIdentity={commander.colorIdentity}
-      />
+      {/* TWO geometries, both mounted, one shown by a media query — the same
+          arrangement `builder-spine.tsx` already uses for this component and its
+          phone twin, and for the same reason: the wash's stops are inline
+          gradients computed from numbers, so no stylesheet can switch them.
+
+          The wide one is the round's only inverted geometry: its portrait's SHAPE
+          was chosen first at 560 and the 288 band follows, because 288 is what
+          keeps that crop from scaling past ~42%. Below ~1200px of row a 560px
+          portrait crowds the title column, so the header falls back to the 340px
+          portrait the deck tile's own band already ships, at a 364px inset which
+          clears that portrait's 356px flat stop.
+
+          The switch is a CONTAINER query on this header, because the handoff's
+          floor is 1200px OF ROW: the header is the flex sibling of a 62px
+          desktop rail, so a 1200px viewport is a ~1138px row and a viewport
+          query would have chosen the wide portrait for a row that cannot hold
+          it.
+
+          `labelAtPx="flat"`: this band's ink starts past the portrait's flat stop
+          and stands on the row's own ground, so a vertical ramp would darken the
+          header for nothing. */}
+      <div className="hidden @min-[1200px]:block">
+        <ArtWash
+          strategy="left-portrait"
+          height={288}
+          portrait={560}
+          labelAtPx="flat"
+          artCropUri={commander.artCropUri}
+          colorIdentity={commander.colorIdentity}
+        />
+      </div>
+      <div className="@min-[1200px]:hidden">
+        <ArtWash
+          strategy="left-portrait"
+          height={288}
+          portrait={340}
+          labelAtPx="flat"
+          artCropUri={commander.artCropUri}
+          colorIdentity={commander.colorIdentity}
+        />
+      </div>
       {/* §G — with no crop there is no printing to open, so the pill is absent.
           It is absolutely positioned, so its absence shifts nothing. */}
       {commander.artCropUri ? (
@@ -138,8 +183,21 @@ export function SpineDesktop({
       ) : null}
 
       <div
-        className="relative flex h-full items-center"
-        style={{ padding: "0 24px 0 254px", gap: 18 }}
+        // The inset switches on the same breakpoint the portrait does: 592 clears
+        // the 560px portrait's 584px flat stop, and 364 clears the 340px one's
+        // 356. Ink that starts before the flat stop stands on a crop rather than
+        // on the row's ground, which is what makes `flat` safe.
+        // `min-h-[288px]`, not `h-full`: the header states `minHeight` rather
+        // than a definite height — an over-99 deck grows a trim paragraph inside
+        // it — and `h-full` against an indefinite parent resolves to `auto`, so
+        // `items-center` would centre this row in its own content height and
+        // leave it sitting near the band's top edge.
+        className="relative flex min-h-[288px] items-center pl-[364px] @min-[1200px]:pl-[592px]"
+        // `paddingRight` alone: a `padding` shorthand here would set
+        // `padding-left` too, and an inline declaration outranks the `pl-`
+        // classes above — the inset would silently stay at 24px and the title
+        // would print over the portrait.
+        style={{ paddingRight: 24, gap: 18 }}
       >
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center">
@@ -176,35 +234,76 @@ export function SpineDesktop({
                 {/* Selectable text, not a control — §B15 makes the pencil the
                     one trigger. */}
                 <h1
-                  className="font-display font-[700] min-w-0"
-                  style={{
-                    fontSize: 21,
-                    lineHeight: 1.2,
-                    color: "var(--fg)",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
+                  // The clamp lives on the SPAN inside, not on the heading: a
+                  // clamped box needs `overflow: hidden`, and anything beside the
+                  // text inside it gets clipped when the heading shrink-wraps a
+                  // short name.
+                  className="flex min-w-0 items-end font-display font-[700]"
+                  style={{ fontSize: 21, lineHeight: 1.2, color: "var(--fg)" }}
                 >
-                  {deck.name}
+                  {/* `data-deck-title` marks the deck's name for anything that
+                      needs it apart from the heading's own layout — the browser
+                      probe compares it to the rename control's accessible name.
+                      The clamp lives here rather than on the heading so the
+                      heading can be a flex line: a clamped box clips, and the
+                      glyph beside the title would be clipped with it. */}
+                  <span
+                    data-deck-title
+                    className="min-w-0"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {deck.name}
+                  </span>
                 </h1>
-                <button
-                  type="button"
-                  onClick={() => setRenaming(true)}
-                  aria-label={renameCopy.triggerAria(deck.name)}
-                  // Focus-visible reveals it too, or it is keyboard-unreachable.
-                  className="flex flex-none items-center justify-center rounded-[6px] border border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-muted)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[color:var(--elevated-hover)]"
-                  style={{
-                    width: 28,
-                    height: 28,
-                    marginLeft: 6,
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✎
-                </button>
+                {/* A SIBLING of the heading, in the same row, not a child of it.
+                    Inside the heading its `aria-label` joined the heading's own
+                    accessible name, so heading navigation announced
+                    "…Rename deck: …" and then the control announced itself again.
+                    Beside the title it is still the title's control rather than a
+                    corner one, which is the point of the treatment — and the box
+                    and the hover reveal both stay gone: a control revealed on
+                    hover has to be discovered by accident, and there is no hover
+                    where the same glyph also has to work on a phone.
+
+                    `relative z-[1]` because the 15px hit padding reaches below the
+                    title line and the identity row starts 3px later: two
+                    positioned elements at auto z-index are ordered by document
+                    position, so that row — which carries the partner printing
+                    control — won the hit test across the bottom of this target.
+                    The same defect #534 fixed one control over. */}
+                {/* `self-end`, because the row is `items-center` and the
+                    `items-end` on the heading only aligns the heading's own
+                    child: without this the glyph centres across a two-line name
+                    instead of sitting on its last line. */}
+                <span className="relative z-[1] inline-flex flex-none self-end" style={{ width: 14 }}>
+                  <button
+                    type="button"
+                    onClick={() => setRenaming(true)}
+                    aria-label={renameCopy.triggerAria(deck.name)}
+                    className="inline-flex items-center justify-center bg-transparent text-[color:var(--fg-muted)]"
+                    style={{
+                      // Stated rather than inferred from the glyph: a 14px font
+                      // size does not guarantee a 14px advance, and this app draws
+                      // six display faces. 14 of content plus 15 either side is 44
+                      // with `content-box`.
+                      boxSizing: "content-box",
+                      width: 14,
+                      height: 14,
+                      padding: 15,
+                      margin: -15,
+                      fontSize: 14,
+                      lineHeight: 1,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✎
+                  </button>
+                </span>
               </>
             )}
           </div>

@@ -216,9 +216,11 @@ const READ_COVER_STOPS = `() => {
   // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
   // selector while drawing nothing — counting it would report a phone-only
   // treatment as shipping on both widths.
-  // One class. A migrated band carries `.art-wash-scrim-cover` and names no
-  // edge, so a reader asking for `-bottom` found nothing on the very surface this
-  // slice migrates — and then failed it for drawing no cover band at all.
+  // One class, and no backticks in this comment: it lives inside a template
+  // literal, where a bare one ends the string. A migrated band carries the base
+  // cover class and names no edge, so a reader asking for the -bottom class
+  // found nothing on the very surface a slice migrates — and then failed it for
+  // drawing no cover band at all.
   return [...document.querySelectorAll('.art-wash-scrim-cover')]
     .filter((s) => s.getClientRects().length)
     .map((s) => {
@@ -248,9 +250,10 @@ const READ_STATED_BANDS = `() => {
       const scrims = [...root.querySelectorAll('.art-wash-scrim')]
         .filter((s) => getComputedStyle(s).display !== 'none');
       const s = scrims.at(-1);
-      // Counted, not just read: reading `.at(-1)` alone passes a band that has
-      // grown a SECOND vertical ramp under a valid last one, and two ramps over
-      // one band is twice the darkening the round settled.
+      // Counted, not just read: taking the last scrim alone passes a band that
+      // has grown a SECOND vertical ramp under a valid last one, and two ramps
+      // over one band is twice the darkening the round settled. (No backticks:
+      // this comment travels to the browser inside a template literal.)
       // Same definition the row reader uses: the vertical ramp is the gradient
       // that names no angle at all, because the browser drops the default 180deg.
       const verticals = scrims.filter((s) =>
@@ -382,10 +385,28 @@ const THUMB_BOXES = ["44×62", "64×89"];
 
 const THUMB_RING_RE = /rgba\(0,\s*0,\s*0,\s*0\.4\)/;
 
+/** A third width, and it exists for one surface: the desktop deck header draws a
+    560px portrait above 1200px OF ROW and a 340px one below, and the row is the
+    viewport minus the 62px rail. 1440 gives a ~1378px row and only ever exercises
+    the wide geometry, so the fallback — the one surface in the round with two of
+    them — went undrawn in every run. 1160 gives a ~1098px row. */
+// The third entry carries a LAYOUT, not just a name. Every responsive assertion
+// below branches on `phone`, because `vpName === "desktop"` skipped all of them
+// at 1160 — a width that is a desktop layout in every sense the app cares about,
+// so a regression specific to the narrow fallback would have passed unchecked.
 const VIEWPORTS = [
-  ["mobile", 375, 812],
-  ["desktop", 1440, 900],
+  ["mobile", 375, 812, "phone"],
+  ["narrow-desktop", 1160, 900, "desktop"],
+  ["desktop", 1440, 900, "desktop"],
 ];
+
+/** Which portrait the desktop deck header must draw at each width, and the inset
+    its title column must take. Keyed to the viewport rather than derived, because
+    the point is to check the switch rather than to restate it. */
+const DECK_HEADER_GEOMETRY = {
+  "narrow-desktop": { portrait: 340, inset: 364 },
+  desktop: { portrait: 560, inset: 592 },
+};
 
 /** A stated band's LABEL BLOCK against the ramp its own `labelAtPx` produced.
     This is the check the round's own failure asks for: `labelAtPx` is the
@@ -739,7 +760,7 @@ await clerkSetup();
 
 const browser = await chromium.launch();
 try {
-  for (const [vpName, width, height] of VIEWPORTS) {
+  for (const [vpName, width, height, layout] of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width, height } });
     const page = await context.newPage();
     await signIn(page);
@@ -863,10 +884,10 @@ try {
       // Desktop draws no bottom-labelled band at all — the treatment is the
       // phone's — so an empty list is the desktop answer, not a silent pass.
       note(`${vpName} ${slug}: ${bottoms.length} bottom-labelled cover bands`);
-      if (vpName === "mobile" && bottoms.length !== 1) {
+      if (layout === "phone" && bottoms.length !== 1) {
         note(`  FAIL expected exactly one bottom-labelled band on the phone`);
       }
-      if (vpName === "desktop" && bottoms.length !== 0) {
+      if (layout === "desktop" && bottoms.length !== 0) {
         note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
       }
       await checkChrome(page, `${vpName} ${slug}`, note);
@@ -908,7 +929,7 @@ try {
     const CREATE_SURFACES = [
       ["the picker's candidate rows", "/decks/new", ["44×62"]],
       ...(commanderOracleId
-        ? [["the pre-filled door", commanderOracleId, vpName === "mobile" ? ["64×89"] : []]]
+        ? [["the pre-filled door", commanderOracleId, layout === "phone" ? ["64×89"] : []]]
         : []),
     ];
     for (const [what, path, required] of CREATE_SURFACES) {
@@ -1017,10 +1038,10 @@ try {
       // it is DESKTOP's: the summary lives in a `hidden md:block` sidebar and the
       // phone's dock is text-only, so requiring it at both widths would fail
       // every mobile run for drawing exactly what it should.
-      if (vpName === "desktop" && !boxes.has("64×89")) {
+      if (layout === "desktop" && !boxes.has("64×89")) {
         note(`  FAIL the picker's selected summary draws no 64×89 thumb`);
       }
-      if (vpName === "mobile" && boxes.has("64×89")) {
+      if (layout === "phone" && boxes.has("64×89")) {
         note(`  FAIL a summary thumb drew on the phone, whose dock is text-only`);
       }
       await checkChrome(page, `${vpName} the picker, picked`, note);
@@ -1035,7 +1056,6 @@ try {
     // written down, so no deck id is hard-coded.
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
-
     // The tile's small-cell band, at the one width that lays it out. Neither
     // 375 nor 1440 does: the phone is one column and 1440 gives a 456px cell,
     // both above the ~330px floor, so the 248 arm is the only one measured at
@@ -1095,11 +1115,41 @@ try {
       }
       await page.screenshot({ path: `/tmp/art-wash-${vpName}-deck.png`, fullPage: false });
       await checkChrome(page, `${vpName} ${deckHref}`, note);
-      // The full band checks, not a count. This route's washes are legacy until
-      // the spines migrate, so what it reports today is the unmigrated-band
-      // countdown — and the moment they do migrate, every declared-versus-laid
-      // height and every hold on this page is checked without another edit here.
+      // The full band checks, not a count. The spines are migrated, so this is
+      // the stated 288 header being checked here: its declared height against
+      // the laid-out one, its ramp's stops, and the hold against the block its
+      // own labelAtPx implies — the same checks every other migrated route gets,
+      // with no per-route table to keep in step.
       await checkBands(page, `${vpName} ${deckHref}`, note);
+
+      // The two geometries, each at the width that draws it. Both wash layers are
+      // mounted and CSS picks one, so the check is which of them is laid out —
+      // and a container query cannot be verified from a class name, which is all
+      // a unit test can see.
+      const expected = DECK_HEADER_GEOMETRY[vpName];
+      if (expected) {
+        const drawn = await page.evaluate(
+          `(() => {
+            const art = [...document.querySelectorAll('[data-art-wash-band] .art-wash-art')]
+              .filter((el) => el.getClientRects().length);
+            const column = document.querySelector('header [class*="pl-[364px]"]');
+            return {
+              widths: art.map((el) => Math.round(el.getBoundingClientRect().width)),
+              inset: column ? Math.round(Number.parseFloat(getComputedStyle(column).paddingLeft)) : null,
+            };
+          })()`,
+        );
+        note(`${vpName} ${deckHref}: portrait ${drawn.widths.join(", ") || "none"} at a ${drawn.inset}px inset`);
+        if (!drawn.widths.includes(expected.portrait)) {
+          note(`  FAIL expected a ${expected.portrait}px portrait at this row width, got ${drawn.widths.join(", ") || "none"}`);
+        }
+        if (drawn.widths.length !== 1) {
+          note(`  FAIL ${drawn.widths.length} portraits laid out; one geometry is drawn at a time`);
+        }
+        if (drawn.inset !== expected.inset) {
+          note(`  FAIL title column inset ${drawn.inset}px, expected ${expected.inset} to clear this portrait's flat stop`);
+        }
+      }
       walkedADeck = true;
       break;
     }

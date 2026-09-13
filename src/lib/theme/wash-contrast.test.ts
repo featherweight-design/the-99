@@ -57,14 +57,13 @@ const TOP_AT_SUBTITLE = alphaAt(COVER_SCRIM_STOPS.top, COVER_SCRIM_STOPS.top[1][
     each still sizes itself from an `aspect-ratio` and a band with no height in px
     cannot state a block in px.
 
-    Commander detail migrated in this slice, so it is gone from here: leaving it
-    would have kept a retired percentage ramp under test while its real 109px/288
-    case was asserted separately, which is coverage pointing at nothing. The deck
-    spine's phone header is the last one, and it retires with the spines.
-    @deprecated retires with `spine-mobile.tsx`. */
-const LEGACY_BOTTOM_SURFACES: readonly (readonly [string, number])[] = [
-  ["deck spine, phone", 57],
-];
+    Empty now: commander detail migrated in the slice before this one and the deck
+    spine's phone header migrates in this one, so nothing draws a percentage ramp.
+    Kept as an empty list rather than deleted because `legacyBottomScrimStops`
+    itself survives until the last `labelEdge` consumer retires in the home slice
+    — this is what says the census found none rather than that nobody looked.
+    @deprecated retires with the `labelEdge` prop. */
+const LEGACY_BOTTOM_SURFACES: readonly (readonly [string, number])[] = [];
 
 /** Every band this round states, as `[surface, labelAtPx, band]`. Asserting a
     shared constant was the estimate the round removed — the floor has to hold at
@@ -209,8 +208,10 @@ const PORTRAIT_INK: readonly {
   // now, so `plate: 1` is not a shortcut — it is the whole argument for deleting
   // the top scrim, and asserting it here is what proves the control does not
   // depend on the band underneath it.
-  { surface: "deck spine control, top", portrait: 230, band: 168, x: 16, y: 76, plate: 1, tokens: ["fg"] },
-  { surface: "deck spine control, foot", portrait: 230, band: 168, x: 42, y: 92, plate: 1, tokens: ["fg"] },
+  { surface: "deck spine control, top", portrait: 560, band: 288, x: 16, y: 76, plate: 1, tokens: ["fg"] },
+  { surface: "deck spine control, foot", portrait: 560, band: 288, x: 42, y: 92, plate: 1, tokens: ["fg"] },
+  // The narrow fallback draws the same control over a different portrait.
+  { surface: "deck spine control, narrow row", portrait: 340, band: 288, x: 16, y: 76, plate: 1, tokens: ["fg"] },
 ];
 
 const verticalAlphaAt = (width: keyof typeof PORTRAITS, y: number): number => {
@@ -333,14 +334,11 @@ describe("art wash contrast floor", () => {
     }
 
     // The deck spine's desktop band is the one `left-portrait` surface whose ink
-    // never touches the crop: its type starts at a 254px inset and the band's
-    // horizontal scrim reaches opaque `--bg` at 240px. Asserting the inset is
-    // past the flat stop is the real invariant — a contrast figure there would
+    // never touches the crop: its type starts past the band's own flat stop,
+    // where the horizontal scrim has reached opaque `--bg`. Asserting the inset
+    // is past that stop is the real invariant — a contrast figure there would
     // only be measuring `--fg` against `--bg`.
-    it(`${theme}: the deck spine's desktop inset clears the band's flat stop`, () => {
-      expect(alphaAt(horizontalStops(230), 254)).toBe(1);
-    });
-
+    //
     // The 288 band's two geometries, both of them: a 560px portrait at a 592px
     // inset above ~1200px of row, and a 340px portrait at a 364px inset below it.
     // The narrow one is why the table is keyed by width rather than by band — one

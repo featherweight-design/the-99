@@ -129,7 +129,15 @@ const READ_HEADER = `() => {
     artUrl: /url\\(/.test(image) ? image.replace(/^.*?url\\(["']?/, '').replace(/["']?\\).*$/, '') : null,
     isGradientOnly: !/url\\(/.test(image) && /gradient/.test(image),
     scrims: header.querySelectorAll('.art-wash-scrim').length,
-    title: h1 ? h1.textContent.trim() : null,
+    // No backticks in this comment: it lives inside a template literal, and a
+    // bare one would end that string and put the rest of this reader outside it.
+    //
+    // data-deck-title is the deck's name alone, which is what the heading holds
+    // now: the rename control is its SIBLING, outside the clamped text, so
+    // neither the heading's text content nor its accessible name carries a
+    // glyph. Reading the marker rather than the heading keeps that honest if a
+    // future change puts anything beside the name again.
+    title: h1 ? (h1.querySelector('[data-deck-title]') ?? h1).textContent.trim() : null,
     titleShadow: h1 ? getComputedStyle(h1).textShadow : null,
     titleColor: h1 ? getComputedStyle(h1).color : null,
     barBackground: fill ? getComputedStyle(fill).backgroundColor : null,
@@ -324,6 +332,46 @@ try {
     const pencil = page
       .getByRole("button", { name: /^Rename deck: / })
       .locator("visible=true");
+
+    // The pencil is a button inside a 14px holder beside the heading, with its
+    // hit area made of padding and an equal negative margin, so its 44px box
+    // overhangs the 14px the holder occupies in flow. Painting
+    // is not the question — whether a tap LANDS on it is, and the band clips what
+    // overhangs it. Four points, because a clipped or overlapped edge is the
+    // failure and the centre would pass through either.
+    const reach = await page.evaluate(
+      `(() => {
+        const el = [...document.querySelectorAll('[aria-label^="Rename deck: "]')]
+          .find((b) => b.getClientRects().length);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const at = (x, y) => {
+          const hit = document.elementFromPoint(x, y);
+          return hit ? (hit === el || el.contains(hit) ? 'self' : hit.tagName.toLowerCase()) : 'nothing';
+        };
+        return {
+          box: [Math.round(r.width), Math.round(r.height)],
+          centre: at(r.left + r.width / 2, r.top + r.height / 2),
+          left: at(r.left + 2, r.top + r.height / 2),
+          right: at(r.right - 2, r.top + r.height / 2),
+          bottom: at(r.left + r.width / 2, r.bottom - 2),
+        };
+      })()`,
+    );
+    if (!reach) {
+      fail(`no rename control laid out to hit-test`);
+    } else {
+      note(`${vpName} rename target: ${reach.box.join("×")} — centre ${reach.centre}, left ${reach.left}, right ${reach.right}, bottom ${reach.bottom}`);
+      if (reach.box[0] < 44 || reach.box[1] < 44) {
+        fail(`rename target measures ${reach.box.join("×")}, under the 44px floor`);
+      }
+      for (const [where, result] of Object.entries(reach)) {
+        if (where !== "box" && result !== "self") {
+          fail(`rename target unreachable at its ${where}: ${result}`);
+        }
+      }
+    }
+
     await pencil.click();
     await page.waitForTimeout(300);
     const editing = await page.evaluate(`(${READ_HEADER})()`);
