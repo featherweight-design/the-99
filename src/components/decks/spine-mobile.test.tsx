@@ -357,6 +357,9 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect(heading.style.display).toBe("inline");
     expect(heading.style.webkitLineClamp).toBe("");
     expect(heading.style.overflow).toBe("");
+    // An unbroken name breaks mid-word rather than running past the block: an
+    // inline element takes no `min-w-0`, so this is the only thing holding it.
+    expect(heading.style.overflowWrap).toBe("anywhere");
     expect(holder.className).toContain("inline-flex");
     expect(holder.className).not.toContain("absolute");
     // A non-breaking space before it, so a line break never falls between the

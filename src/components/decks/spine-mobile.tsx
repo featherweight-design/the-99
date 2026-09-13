@@ -334,6 +334,12 @@ export function SpineMobile({
                     // `inline-block`, a flex item) takes the full available
                     // width when it wraps and puts the glyph at the far right.
                     display: "inline",
+                    // An unbroken name cannot be held by `min-w-0` on an inline
+                    // element, so it would run past the block rather than wrap.
+                    // `anywhere` breaks it mid-word instead — the one case where
+                    // a broken word beats content outside the viewport, which is
+                    // the bug this branch also fixes.
+                    overflowWrap: "anywhere",
                     fontSize: 20,
                     lineHeight: 1.25,
                     textAlign: "left",
