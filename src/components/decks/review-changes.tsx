@@ -15,7 +15,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useOptimistic, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { pullCandidate, releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
@@ -27,12 +27,16 @@ import { PrimaryButton } from "../ui/button";
 import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
-import { DISCARD_RECEIPT_HASH } from "./draft-announcer";
+import { DISCARD_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { PullControl } from "./pull-control";
+import { PutBackControl } from "./put-back-control";
+import { MutationError } from "./mutation-error";
+import { addCardToDeck } from "../../app/decks/actions";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
 
 const copy = deckVersioningCopy.review;
+const restoreCopy = deckVersioningCopy.restore;
 
 type ReviewChangesProps = {
   /** The deck being reviewed — the one a pull moves a copy INTO, which is why
@@ -70,6 +74,16 @@ type ReviewChangesProps = {
  * word to be the alternative to, and "free" on a row drawn as nothing would be
  * the description of an element that is not there.
  */
+/** Stable, so `useOptimistic`'s base identity never changes between renders. */
+const EMPTY_RESTORED: string[] = [];
+
+/** The id a group heading takes focus by, scoped to its column: both columns can
+ *  hold an `Artifacts` group, and two elements with one id is a focus target
+ *  that lands on whichever came first. */
+function groupHeadingId(prefix: string, column: "in" | "out", group: string): string {
+  return `${prefix}-${column}-${group.replace(/\W+/g, "-").toLowerCase()}`;
+}
+
 function bucketWord(bucket: DraftRow["bucket"]): string | null {
   if (bucket === "unowned") return copy.chipBuy;
   if (bucket === "claimed") return copy.chipPullable;
@@ -138,6 +152,9 @@ function Column({
   hiddenOnPhone,
   phoneHeading,
   onPulled,
+  onRestore,
+  restoreError,
+  columnKey,
   newestAsOf,
   claimsKnown,
 }: {
@@ -157,6 +174,16 @@ function Column({
    *  pair naming the direction and the heading has to. */
   phoneHeading: boolean;
   onPulled: () => void;
+  /** Null in the `Coming in` column, which has nothing to put back. The list
+   *  owns the write because the row is what leaves. */
+  onRestore: ((card: { oracleId: string; name: string }) => void) | null;
+  /** The oracle id whose restore came back refused or threw, and what to say.
+   *  One at a time: a second attempt clears the first. */
+  restoreError: { oracleId: string; message: string } | null;
+  /** Which column this is, so its group headings get ids of their own. Both
+   *  columns can hold an `Artifacts` group, and two elements with one id is a
+   *  focus target that lands on whichever came first. */
+  columnKey: "in" | "out";
   /** The newest `as_of` in the price table, so a row can tell a live price from
    *  a sold-out printing's last one. */
   newestAsOf: Date | null;
@@ -169,7 +196,11 @@ function Column({
 }) {
   const renderGroup = ([group, groupRows]: TypeGroup) => (
     <div key={group} className="mb-[16px] last:mb-0">
-      <DecklistGroupHeader label={group} count={groupRows.length} />
+      {/* tabIndex −1 so it can receive focus without joining the tab order: it
+          is a landing place after a write, not a stop on the way through. */}
+      <div id={groupHeadingId(descriptionId, columnKey, group)} tabIndex={-1}>
+        <DecklistGroupHeader label={group} count={groupRows.length} />
+      </div>
       <div className="flex flex-col gap-[4px]">
         {groupRows.map((row) => {
           // The claim the row's control is drawn against, guards and all —
@@ -276,6 +307,25 @@ function Column({
                   siblings={siblings}
                   describedBy={word ? wordId : undefined}
                   recount={recount}
+                  // The slot `DiffRowOut` already reserves, and draws nothing in
+                  // when it is null. A column, because a refusal is written
+                  // underneath the control rather than beside it — the same
+                  // shape `PullControl` uses on the other side of the page.
+                  action={
+                    onRestore
+                      ? (
+                          <div className="inline-flex flex-col items-end flex-none">
+                            <PutBackControl
+                              card={{ oracleId: row.oracleId, name: row.name }}
+                              onRestore={onRestore}
+                            />
+                            {restoreError?.oracleId === row.oracleId && (
+                              <MutationError message={restoreError.message} />
+                            )}
+                          </div>
+                        )
+                      : null
+                  }
                 />
               )}
             </div>
@@ -390,6 +440,24 @@ export function ReviewChanges({
   // width would put every card name, every buy tag and every card-modal trigger
   // in the DOM twice.
   const [shown, setShown] = useState<"in" | "out">("in");
+
+  // The first optimistic write on this surface. `PullControl` beside it is
+  // deliberately NOT optimistic, and the difference is the whole reason: a
+  // pull's row STAYS — it changes the row's availability — while a restore's
+  // row LEAVES, because the list is derived from `draftDiff.removes` and the
+  // card is no longer in it. A row that leaves has nothing to hold a spinner.
+  //
+  // Oracle ids rather than rows: the rows come back from the server on the next
+  // render and this list only has to say which of them to hide meanwhile. React
+  // discards it when the transition settles, which is also the revert.
+  const [restoredIds, addRestoredId] = useOptimistic<string[], string>(
+    EMPTY_RESTORED,
+    (current, oracleId) => [...current, oracleId],
+  );
+  const [restoreError, setRestoreError] = useState<{ oracleId: string; message: string } | null>(
+    null,
+  );
+  const [, startRestore] = useTransition();
   // The same hook the banner's control uses, so the question asked from either
   // door is one construct with one set of answers.
   const discard = useDiscardConfirm(state);
@@ -401,7 +469,19 @@ export function ReviewChanges({
   const versionCards = (before ?? []).reduce((n, card) => n + card.quantity, 0);
 
   const inCount = rows.in.length;
-  const outCount = rows.out.length;
+  // Every figure below reads the OPTIMISTIC list, not `rows.out`. Reading the
+  // server list for any one of them leaves that figure a round trip behind the
+  // row that just left — and on the phone it leaves a stale `Going out · 1` tab
+  // selected over a hidden `Coming in` list.
+  const outRows = rows.out.filter((row) => !restoredIds.includes(row.oracleId));
+  const outCount = outRows.length;
+  // Copies the restores took back out of the pool. Every row here is a whole
+  // removal — basics never reach this list and no other card can hold a second
+  // copy — so `from - to` is `from`, but it is written as the subtraction
+  // `releasedCopies` does, so the two cannot drift.
+  const restoredCopies = rows.out
+    .filter((row) => restoredIds.includes(row.oracleId))
+    .reduce((sum, row) => sum + (row.from - row.to), 0);
   // One list across both columns, so the card modal's Prev/Next pages the whole
   // change set in the order the page draws it rather than stopping at a column.
   // Grouped order, not the payload's: the columns group by type, and Prev/Next
@@ -426,10 +506,76 @@ export function ReviewChanges({
   // column can draw. Counting changes on it would print a nought standing for a
   // real edit, so the heading and the lede name the edit instead.
   const basicsOnly = !firstCommit && inCount === 0 && outCount === 0 && state.basicsChanged;
+  // The draft's own size, which a restore grows: the card is back in the deck.
+  const liveCardCount = cardCount + restoredCopies;
 
   // Copies going back in the pool, never rows: one remove of `3 → 1` releases
   // two, and this figure is printed beside `buyCount`, which counts copies.
-  const released = releasedCopies(state);
+  // Clamped, because the two terms come from different reads: `state.removes`
+  // is the server's and the rows are this render's. In production they agree —
+  // the rows ARE that diff — so the clamp only ever catches a test fixture or a
+  // payload that disagrees with itself, and a negative "back in the pool" is
+  // the one thing the figure must never say.
+  const released = Math.max(0, releasedCopies(state) - restoredCopies);
+
+  // The write. `addCardToDeck` unwrapped, exactly as the handoff says: every row
+  // here is a whole removal of a single copy, so there is no quantity to carry
+  // and no bespoke action to write. It already ends in `revalidateClaims`, which
+  // is the helper a claim write owes every other deck's availability.
+  const restore = useCallback(
+    (card: { oracleId: string; name: string }) => {
+      setRestoreError(null);
+      const groupOfRow = rows.out.find((row) => row.oracleId === card.oracleId)?.cardTypeGroup;
+      // Read BEFORE the write, from the figures this render already has: after
+      // it, the row is gone from both the optimistic list and the server's.
+      const outAfter = outCount - 1;
+      const cardsAfter = liveCardCount + 1;
+      startRestore(async () => {
+        addRestoredId(card.oracleId);
+        let result: Awaited<ReturnType<typeof addCardToDeck>>;
+        try {
+          result = await addCardToDeck(deckId, card.oracleId);
+        } catch {
+          // A throw is a transport or database failure, not a refusal: nothing
+          // was decided and trying again is the whole remedy. React drops the
+          // optimistic id when this transition settles, so the row returns and
+          // this message lands on it.
+          setRestoreError({ oracleId: card.oracleId, message: restoreCopy.failed });
+          return;
+        }
+        if (!result.ok) {
+          // `addCardToDeck` can still refuse on its own vocabulary — an
+          // off-identity card, say, if the catalogue moved under a committed
+          // list. Passed through rather than re-worded: it is a sentence about
+          // the card, not about this surface.
+          setRestoreError({ oracleId: card.oracleId, message: result.message });
+          return;
+        }
+        // Announced into the region that outlives this row, because the row is
+        // removed by its own success. Which sentence depends on what is left.
+        draftAnnouncer().textContent =
+          outAfter === 0 && inCount === 0 && !state.basicsChanged
+            ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
+            : outAfter === 0
+              ? restoreCopy.announcedLastOut(card.name, cardsAfter)
+              : restoreCopy.announced(card.name, cardsAfter, outAfter);
+        // Focus before the refresh, while the tree this render built is still
+        // in the document. The group heading the row left, never the next row's
+        // control — and the page heading when the column itself is going, which
+        // is the one case the heading cannot receive it.
+        const target =
+          outAfter > 0 && groupOfRow
+            ? document.getElementById(groupHeadingId(descriptionId, "out", groupOfRow))
+            : null;
+        (target ?? document.querySelector("h1"))?.focus?.();
+        router.refresh();
+      });
+    },
+    [
+      addRestoredId, deckId, descriptionId, inCount, liveCardCount, outCount,
+      rows.out, router, state.basicsChanged, state.version,
+    ],
+  );
 
   // Four figures, each dropped at nought rather than drawn as one. The purchase
   // rides on the to-buy chip because the two are one fact: a count of copies and
@@ -454,7 +600,13 @@ export function ReviewChanges({
   // Both columns present is the only case with anything to switch between, and
   // its absence is also what keeps a one-column page from drawing a control
   // whose other segment leads nowhere.
+  // Both counts are the optimistic ones. Restoring the last `out` row while the
+  // reader is standing on the Out segment would otherwise leave a stale
+  // `Going out · 1` tab selected over a hidden `Coming in` list.
   const segmented = inCount > 0 && outCount > 0;
+  // The segment a restore emptied is no longer a place to stand. Derived rather
+  // than set in the write, so it cannot disagree with the counts beside it.
+  const shownColumn = outCount === 0 ? "in" : inCount === 0 ? "out" : shown;
 
   return (
     // The rows open the card modal, and the builder's provider does not reach
@@ -477,7 +629,7 @@ export function ReviewChanges({
           </Link>
           <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
             {firstCommit
-              ? copy.firstHeading(cardCount)
+              ? copy.firstHeading(liveCardCount)
               : basicsOnly
                 ? copy.basicsHeading(state.version?.number ?? 1)
                 : copy.heading(inCount + outCount, state.version?.number ?? 1)}
@@ -526,7 +678,7 @@ export function ReviewChanges({
                   key={value}
                   type="button"
                   onClick={() => setShown(value)}
-                  aria-pressed={shown === value}
+                  aria-pressed={shownColumn === value}
                   // Verbatim the builder bar's filter pill: selection is bone on
                   // `--elevated`, never an accent fill, and it drops the ring the
                   // unselected segment carries. `ViewToggle` is the app's other
@@ -536,7 +688,7 @@ export function ReviewChanges({
                   className={[
                     "font-sans transition-[filter] hover:brightness-125 text-[12.5px]",
                     "flex-1 rounded-full px-[11px] py-[6px] min-h-[38px]",
-                    shown === value
+                    shownColumn === value
                       ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]"
                       : "font-medium text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
                   ].join(" ")}
@@ -569,10 +721,15 @@ export function ReviewChanges({
               rows={rows.in}
               siblings={siblings}
               descriptionId={descriptionId}
-              hiddenOnPhone={segmented && shown !== "in"}
+              hiddenOnPhone={segmented && shownColumn !== "in"}
               phoneHeading={!segmented}
               newestAsOf={state.newestAsOf}
               claimsKnown={state.claimsKnown}
+              // Nothing to put back in this column: the reverse of an add is a
+              // removal, and the deck page does that.
+              onRestore={null}
+              restoreError={null}
+              columnKey="in"
               // Every figure on this page is the server's — the breakdown beside
               // the heading, the buy count, the row's own tag — so a pull that
               // moved a copy is read again rather than patched in place.
@@ -584,14 +741,14 @@ export function ReviewChanges({
               deckId={deckId}
               heading={copy.groupOut(outCount)}
               headingTone="var(--warning)"
-              // Said once beside the heading, never per row: there is no Keep on
-              // a removal here, because putting one back is adding it to the
-              // deck and the deck page already does that.
               note={copy.outNote(released)}
-              rows={rows.out}
+              rows={outRows}
+              onRestore={restore}
+              restoreError={restoreError}
+              columnKey="out"
               siblings={siblings}
               descriptionId={descriptionId}
-              hiddenOnPhone={segmented && shown !== "out"}
+              hiddenOnPhone={segmented && shownColumn !== "out"}
               phoneHeading={!segmented}
               newestAsOf={state.newestAsOf}
               claimsKnown={state.claimsKnown}
@@ -605,7 +762,8 @@ export function ReviewChanges({
               deckId={deckId}
               state={state}
               rows={rows}
-              cardCount={cardCount}
+              cardCount={liveCardCount}
+              releasedOverride={released}
               onCancel={closeCommitSheet}
             />
           ) : (
@@ -662,8 +820,8 @@ export function ReviewChanges({
                         the sheet one click down counts: two figures under each other
                         that disagreed would be the same commit priced twice. */}
                     {state.claimsKnown
-                      ? copy.footer(cardCount, state.buyCount, released)
-                      : copy.footerUnknown(cardCount, released)}
+                      ? copy.footer(liveCardCount, state.buyCount, released)
+                      : copy.footerUnknown(liveCardCount, released)}
                   </span>
                 </>
               )}

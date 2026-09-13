@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { addPanelCopy } from "./decks-builder";
 import { INLINE_CHANGE_MAX, deckVersioningCopy as copy } from "./deck-versioning";
 
 describe("deckVersioningCopy", () => {
@@ -14,7 +15,14 @@ describe("deckVersioningCopy", () => {
       "Nothing here is a decision except the pulls. The deck page already shows this list: " +
         "this is what it costs to lock in as v2.",
     );
-    expect(copy.review.outNote(3)).toBe("all 3 go back in the pool when you commit.");
+    expect(copy.review.outNote(3)).toBe(
+      "all 3 go back in the pool when you commit. Put one back and it never left.",
+    );
+    // The singular arm survives the second sentence: the handoff writes the
+    // replacement in its plural head only, and "all 1 go back" is not English.
+    expect(copy.review.outNote(1)).toBe(
+      "it goes back in the pool when you commit. Put one back and it never left.",
+    );
     expect(copy.history.diffNote).toBe("this is what the deck was, not what it needs");
     expect(copy.history.initialBody).toBe(
       "the first list, with nothing before it to compare against.",
@@ -129,5 +137,36 @@ describe("deckVersioningCopy", () => {
     // for "{name} {from} → {to}". Both deletions are load-bearing.
     expect("bucketFree" in copy.review).toBe(false);
     expect("recounted" in copy.review).toBe(false);
+  });
+
+  // The restore's own strings. There is no refusal string and that is a ruling
+  // rather than an omission — a restore is an add, and adds never refuse on
+  // claims — so the guard that matters is that `failed` describes a write that
+  // did not happen rather than a card that did not move.
+  describe("restore", () => {
+    it("names the card in the accessible name, because the label repeats", () => {
+      expect(copy.restore.ctaA11y("Mox Diamond")).toBe("Put Mox Diamond back in the deck");
+      expect(copy.restore.cta).toBe("Put back");
+    });
+
+    // Two features on two surfaces, ratified at R2. A later tidy-up that
+    // unified them would be reverting a decision rather than removing a
+    // duplicate.
+    it("keeps its own word, not #185's", () => {
+      expect(copy.restore.cta).not.toBe(addPanelCopy.undo.action);
+    });
+
+    // The card is OUT and the restore is what failed. The removal's fallback
+    // says the opposite, which is why this string exists at all.
+    it("says the card is still going out when the write fails", () => {
+      expect(copy.restore.failed).toContain("going out");
+      expect(copy.restore.failed).not.toContain("still in the deck");
+    });
+
+    // No count of nought is ever drawn, including in an announcement.
+    it("has a sentence for the last cut that draws no nought", () => {
+      expect(copy.restore.announcedLastOut("Mox", 100)).not.toMatch(/\b0\b/);
+      expect(copy.restore.announced("Mox", 100, 3)).toContain("3 going out");
+    });
   });
 });
