@@ -2061,6 +2061,95 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     }
   });
 
+  // A reader who asked for no motion gets the two heights and the step between them, with
+  // nothing drawn in between — so the head must arrive at its collapsed form carrying no
+  // inline height and no transition.
+  //
+  // Both halves are stubbed, and both are load-bearing. `matchMedia` answers every query in
+  // this suite, so it has to tell the motion query from the breakpoint one; and jsdom
+  // computes no styles, so without a transition duration the hook's own "this engine will
+  // not animate" guard returns first and the test passes with the motion check deleted —
+  // which is what the first version of it did.
+  function stubMotion(reduce: boolean) {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: /prefers-reduced-motion/.test(query) ? reduce : false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const real = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation(((el: Element) => {
+      const style = real(el as HTMLElement);
+      return el instanceof HTMLElement && el.hasAttribute("data-set-head")
+        ? new Proxy(style, {
+          get: (t, k) => (k === "transitionDuration" ? "0.18s" : Reflect.get(t, k)),
+        })
+        : style;
+    }) as typeof window.getComputedStyle);
+  }
+
+  it("writes no transition when the reader asks for reduced motion", () => {
+    stubMotion(true);
+    const { container } = view([p("1"), p("2")], []);
+    // The head has to be measurable, or the hook falls back before it reaches the question.
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      if (this.hasAttribute("data-set-head-reserve")) {
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    try {
+      scrollTo(400);
+      const el = head(container);
+      expect(isShy(container)).toBe(true);
+      expect(el.style.height).toBe("");
+      expect(el.style.transition).toBe("");
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+      // Restored here, not left to the next test: `getComputedStyle` is spied on, and a
+      // second `spyOn` over a live spy wraps itself.
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  // And the other side of the same switch: with motion allowed and an engine that reports a
+  // duration, the step IS animated — the head carries an inline height while it runs. This
+  // is what makes the test above a measurement rather than a restatement of jsdom.
+  it("animates the step when motion is allowed", () => {
+    stubMotion(false);
+    const { container } = view([p("1"), p("2")], []);
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      if (this.hasAttribute("data-set-head-reserve")) {
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    try {
+      scrollTo(400);
+      const el = head(container);
+      expect(isShy(container)).toBe(true);
+      expect(el.style.height).toBe("52px");
+      expect(el.style.transition).toMatch(/height/);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
+  });
+
   // Hidden, not unmounted. Unmounting threw away the reader's expanded cost disclosure and
   // any focus in it, and the head that came back was a different height from the one the
   // reserve had been holding.

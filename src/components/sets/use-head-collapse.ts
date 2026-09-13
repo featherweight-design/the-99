@@ -48,6 +48,12 @@ export type HeadCollapse = {
   /** Goes on the always-mounted spacer BESIDE the head, never wrapping it. */
   spacerRef: React.RefObject<HTMLDivElement | null>;
   /**
+   * Goes on the element that holds the head, the spacer and the grid. Scroll anchoring is
+   * suspended on it for the length of a collapse and restored afterwards — see the switch in
+   * the layout effect below for why it is neither left on nor left off.
+   */
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  /**
    * Open the head now, without waiting for a scroll event.
    *
    * The collapsed bar's search control needs this: the field it stands for is inside the
@@ -107,6 +113,7 @@ export function useHeadCollapse({
 
   const headRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const restHeightRef = useRef<number | null>(null);
   /** The collapsed bar's height, measured the same way and only while it is drawn. */
   const barHeightRef = useRef<number | null>(null);
@@ -298,8 +305,20 @@ export function useHeadCollapse({
 
     // Nothing to animate: the swap has already happened in this commit, so the only other
     // move is to hold the reserve right.
-    if (el === null || !changed || prefersReducedMotion()) {
+    // Reduced motion still gets the anchoring switch — the leap is not the animation's
+    // doing, it is the height change's — so the suspension is taken before this returns and
+    // released on the next frame, once the new height has been laid out.
+    if (el === null || !changed) {
       sizeSpacer();
+      return;
+    }
+    if (prefersReducedMotion()) {
+      const still = containerRef.current;
+      if (still !== null) still.style.overflowAnchor = "none";
+      sizeSpacer();
+      requestAnimationFrame(() => {
+        if (still !== null) still.style.overflowAnchor = "";
+      });
       return;
     }
 
@@ -307,6 +326,20 @@ export function useHeadCollapse({
     // and NOT a reading taken here: a layout effect runs after its own commit, so by now the
     // head is already the height it is meant to arrive at, and measuring would give the same
     // number twice and animate nothing.
+    // Anchoring off for the length of the change, and on again after it.
+    //
+    // It ignores sticky boxes, so it sees the reserve grow by the head's own shrink and not
+    // the shrink, and compensates for a net change of nothing: an 80px wheel step lands
+    // 293px down at the crossing. Off permanently, the reader would lose their place on a
+    // filter change instead — cards removed above them is the case anchoring exists for — so
+    // it is suspended here and restored on the far side of the transition, or on the next
+    // frame when there is none to run.
+    const container = containerRef.current;
+    if (container !== null) container.style.overflowAnchor = "none";
+    const releaseAnchor = () => {
+      if (container !== null) container.style.overflowAnchor = "";
+    };
+
     const from = lastHeightRef.current;
     el.style.transition = "";
     el.style.height = "";
@@ -323,6 +356,7 @@ export function useHeadCollapse({
     }
     if (from === null || Math.abs(to - from) < 1) {
       sizeSpacer();
+      requestAnimationFrame(releaseAnchor);
       return;
     }
 
@@ -336,6 +370,7 @@ export function useHeadCollapse({
     if (!Number.isFinite(duration) || duration <= 0) {
       el.style.transition = "";
       sizeSpacer();
+      requestAnimationFrame(releaseAnchor);
       return;
     }
 
@@ -368,6 +403,7 @@ export function useHeadCollapse({
       // Now, and only now, the head is its own height again — so this is the first read
       // that may be recorded.
       sizeSpacer();
+      releaseAnchor();
       // And now that the bar's height is finally measurable, ask the threshold question
       // again. A reader who scrolled up while this was running was answered on the fallback
       // and may have come to rest inside the band; nothing else would revisit that until
@@ -409,6 +445,7 @@ export function useHeadCollapse({
         settle();
         lastHeightRef.current = reached;
       }
+      releaseAnchor();
     };
     // Keyed, not every render. Without a list this ran after every keystroke in the search
     // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
@@ -416,5 +453,5 @@ export function useHeadCollapse({
     // changes; this covers the transitions it cannot see.
   }, [shy, deltaFiring, isDesktop, sizeSpacer, evaluateCollapse]);
 
-  return { shy, headRef, spacerRef, openHead: () => setCollapsed(false) };
+  return { shy, headRef, spacerRef, containerRef, openHead: () => setCollapsed(false) };
 }

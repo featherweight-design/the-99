@@ -188,9 +188,26 @@ async function run() {
         y: Math.round(window.scrollY),
         overflow: document.body.style.overflow,
       }));
-      await page.mouse.move(195, 500);
-      await page.mouse.wheel(0, 900);
+      // Wheeled OUTSIDE the dialog, because a sheet is bottom-anchored, capped at 78vh and
+      // carries its own `overflow-y-auto`: a wheel aimed at the middle of the viewport lands
+      // inside it and its own list eats the scroll, so the page reads as held whether or not
+      // the lock exists. The point is picked above the dialog's own top edge.
+      //
+      // And ONLY a wheel. `window.scrollBy` was tried as a belt and is the wrong
+      // instrument: `overflow: hidden` on the viewport stops the user's gesture, not the
+      // script's, so a programmatic push moves a correctly locked page 900px and would fail
+      // every surface here — measured, on all seven.
+      const dialogTop = await page.evaluate(() => {
+        const d = document.querySelector('main [role="dialog"]');
+        return d === null ? null : Math.round(d.getBoundingClientRect().top);
+      });
+      const aim = dialogTop !== null && dialogTop > 80 ? Math.round(dialogTop / 2) : null;
+      if (aim !== null) {
+        await page.mouse.move(195, aim);
+        await page.mouse.wheel(0, 900);
+      }
       await page.waitForTimeout(400);
+
       const after = await page.evaluate(() => ({
         y: Math.round(window.scrollY),
         overflow: document.body.style.overflow,
@@ -205,9 +222,20 @@ async function run() {
           ? "no dialog was up after the trigger — nothing measured"
           : start === 0
             ? "the route had nowhere to scroll — nothing measured"
-            : `opened at ${start}, held at ${held.y}, ${after.y} after 900px of wheel;`
+            : `opened at ${start}, held at ${held.y}, ${after.y} after`
+              + `${aim === null ? " the lock alone — see below" : " 900px of wheel above it"};`
               + ` body overflow "${after.overflow}"`,
       );
+      if (aim === null) {
+        // Its own marker, outside the pass/fail tally. A dialog that reaches the top of the
+        // viewport leaves no page to aim a wheel at, so for that surface the lock is
+        // asserted and the gesture is not — and saying so is the difference between a check
+        // and a claim of coverage.
+        console.log(
+          `  n/a  ${surface.label} · the gesture — the dialog covers the viewport`
+          + ` (top ${dialogTop}), so there is nowhere to wheel that is not inside it.`,
+        );
+      }
 
       // Released on close, or the route the reader goes back to cannot scroll at all.
       await page.keyboard.press("Escape");
