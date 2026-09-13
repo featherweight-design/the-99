@@ -809,7 +809,7 @@ not positions in one flat 1–45 sequence.
 | 37 | Many versions | `versions.length > 1` | Versions tab with count, full rail newest-first, current row marked `current` | the same list, plus which id is current; no filter or search props |
 | 37b | No versions at all | `versions.length === 0` | **nothing** — the tab does not render; not empty, not disabled | the count alone decides; the route must also refuse |
 | 38 | A version with no note | `version.note == null` | `no note`, italic `--fg-faint`, in the rail row and in the opened panel's header | `note: string \| null` |
-| 39 | v1 opened | the opened version has no predecessor | v1 panel — **no columns**, `Initial` + one sentence + `Browse the {n} cards →`; never `+99` | `cardCount` (for the browse label and the right block), `manaValue`, `gamesHeld` |
+| 39 | v1 opened | the opened version has no predecessor | v1 panel — **no columns**, `Initial` + one sentence, and **no link** (amended 2026-09-13; the canvas drew `Browse the {n} cards →`); never `+99` | `cardCount` (for the right block), `manaValue`, `gamesHeld` |
 | 40 | A later version opened | the opened version has a predecessor | opened version diff — two equal columns, type-grouped, cost track, no dot/price/marker/action | in/out card sets (name, type, mana cost symbols), `manaValue` before and after, `gamesHeld` |
 | 40b | A version diff with a quantity change | an entry carrying both `from > 0` and `to > 0` | the same card row, rendering `{name} {from} → {to}` via `recountedItem` | `from`, `to` on the diff entry |
 | 41 | A version that changed commander | the version's commander differs from its predecessor's | the opened panel's **right-hand block**, naming both: `The Mimeoplasm → Muldrotha` (`history.commanderChange`) — **not drawn on the canvas** | `commanderBefore`, `commanderAfter` |
@@ -984,12 +984,14 @@ not positions in one flat 1–45 sequence.
     Enchantments 1` and `… 2 more` sit inside the column flow, styled like a product note, with
     no copy key, no state and no truncation rule anywhere in the bundle. Whether a long diff
     truncates at all is therefore unanswered.
-54. **`diffNote` has two first clauses.** The copy module and the canvas say `no ownership dot,
-    no prices, no pull offers`; §Copy per state says `no availability, no prices, no pull
-    offers`.
-55. **The v1 panel is desktop-only.** The phone frame draws the rail and the v2 diff and stops.
-    `Browse the {n} cards →` is the one route out of a v1 version and the only link on either
-    surface, and it is never drawn at a width where its target size would matter.
+54. **`diffNote` had two first clauses — moot 2026-09-13.** The copy module and the canvas said
+    `no ownership dot, no prices, no pull offers`; §Copy per state said `no availability, no
+    prices, no pull offers`. The shipped note is now `this is what the deck was, not what it
+    needs`, so neither first clause survives to disagree with the other.
+55. **The v1 panel is desktop-only, and its route out is retired 2026-09-13.** The phone frame
+    draws the rail and the v2 diff and stops. `Browse the {n} cards →` was the one route out of
+    a v1 version and the only link on either surface; it is gone, so the target size it was
+    never drawn at is moot with it.
 56. **The opened panel's right block names the mana value where the Component notes name the
     commander.** Notes: "mono 10px right block (`{n} cards · {commander}` / `held {n} games`)".
     Canvas v1 panel: `99 cards · mv 3.34` / `held 2 games`. The commander appears in no drawn
