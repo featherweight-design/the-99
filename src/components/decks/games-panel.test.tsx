@@ -168,6 +168,16 @@ describe("GamesPanel — empty", () => {
   it("pitches the pattern rather than the first game", () => {
     mount([]);
     expect(screen.getByText(gameLogCopy.empty.cost)).toBeInTheDocument();
-    expect(screen.getByText(gameLogCopy.empty.scope)).toBeInTheDocument();
+  });
+
+  // The scope note was removed: it restated the tab's own promise under a
+  // headline that had already made it. A NEGATIVE assertion, because every
+  // other test on this surface asks what is present — reintroducing the note
+  // would leave all of them green. The sentence is written out rather than
+  // read from a copy key, since the point is that no key holds it any more.
+  it("draws no scope note", () => {
+    mount([]);
+    expect(screen.queryByText(/letting the deck down/i)).toBeNull();
+    expect(Object.keys(gameLogCopy.empty)).not.toContain("scope");
   });
 });

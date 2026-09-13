@@ -24,7 +24,7 @@ component table disagree, the disagreement is called out inline.
 | `--bg` | `#14110E` | product frame background, label on accent/success fills |
 | `--surface` | `#1E1A15` | axis cell, form container, form rows, history row, browser-chrome bar |
 | `--surface-rail` | `#1A160F` | canvas documentation panels (not product) |
-| `--surface-sunken` | `#181410` | aggregate panel, scope note, ladder tier frames |
+| `--surface-sunken` | `#181410` | aggregate panel, ladder tier frames |
 | `--elevated` | `#2A241D` | mark chip fill, split-bar track |
 | `--elevated-hover` | `#211C15` | checked axis row fill |
 | `--border` | `#2A241D` | axis cell, history row, aggregate panel, delete button |
@@ -1411,15 +1411,30 @@ Component note: 30px `×` (44px phone), `1px --border`, glyph `--fg-locked`, `--
 ## Component: Empty state
 
 Component note: Brand sheet's card-fan mark at 150px (96px phone), Cinzel 26px (21px phone)
-headline, two body paragraphs at 14.5px `--fg-body`, brass-solid CTA, and the scope note in the
-shipped provenance shape (`--surface-sunken`, `border-left 3px --accent`, 20px `i` disc).
+headline, two body paragraphs at 14.5px `--fg-body`, and a brass-solid CTA.
+
+> **Errata (2026-09-13).** Four corrections supersede the drawing for this component.
+> 1. The desktop container **centres its content** (`justify-content: center`) rather than
+>    hugging the left edge of a 1500px tab. The canvas was drawn at a narrower frame, where
+>    left-aligned and centred were the same picture.
+> 2. The desktop container aligns on `flex-start`, not `center`. The mark is centred against
+>    the collapsed pitch but floats to the middle of a 900px-tall expanded form, which is the
+>    state the surface is seen in most.
+> 3. **The scope note is removed** — the `--surface-sunken` block with the accent left border
+>    and the 20px `i` disc, and its `empty.scope` string. It restated the tab's own promise
+>    underneath a headline that had already made it. Its two property tables are deleted
+>    below, and the token map no longer lists it.
+> 4. **The CTA note was never built.** Its table is deleted too: `empty.ctaNote` is not a key
+>    in `gameLogCopy`, and `GamesPanel` draws no mono line under the CTA. It was documented
+>    but never shipped, so the table described a surface nobody could open.
 
 ### Container
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | display | block | flex |
-| align-items | — | center |
+| align-items | — | flex-start |
+| justify-content | — | center |
 | gap | — | 34 |
 | padding | 34 20 40 | 44 24 34 |
 | text-align | center | left |
@@ -1494,6 +1509,12 @@ shipped provenance shape (`--surface-sunken`, `border-left 3px --accent`, 20px `
 |----------|--------|---------|
 | flex | — | 1 1 auto |
 | min-width | — | 0 |
+| max-width | — | 720 |
+
+> The `max-width` is what makes the centring visible. Without a ceiling the column grows to
+> the full tab and `justify-content` has no free space to distribute. 720 is the widest at
+> which the expanded form's two mark columns still read as a pair rather than as two distant
+> lists.
 
 ### Heading
 
@@ -1567,55 +1588,6 @@ shipped provenance shape (`--surface-sunken`, `border-left 3px --accent`, 20px `
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | background | `--accent-hover` (`#D8B25E`) | `--accent-hover` (`#D8B25E`) |
-
-### CTA note
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Rendered | — (absent in the phone frame) | yes |
-| font-family | — | `--font-mono` |
-| font-size | — | 11 |
-| color | — | `--fg-faint` (`#8E8269`) |
-| Copy key | — | `empty.ctaNote` |
-
-### Scope note (provenance shape)
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | block | flex |
-| align-items | — | flex-start |
-| gap | — | 11 |
-| margin-top | 16 | 26 |
-| background | `--surface-sunken` (`#181410`) | `--surface-sunken` (`#181410`) |
-| border | 1px solid `--border` (`#2A241D`) | 1px solid `--border` (`#2A241D`) |
-| border-left | 3px solid `--accent` (`#C9A24B`) | 3px solid `--accent` (`#C9A24B`) |
-| border-radius | 9 | 9 |
-| padding | 11 13 | 12 15 |
-| max-width | — | 560 |
-| text-align | left | left |
-| font-size | 12 | 12.5 |
-| line-height | 1.55 | 1.55 |
-| color | `--fg-faint` (`#8E8269`) | `--fg-body` (`#C6B79A`) |
-| emphasis color | `--fg-body` (`#C6B79A`) | `--fg` (`#EDE6D8`) |
-| Copy key | `empty.scope` | `empty.scope` |
-
-### Scope note — `i` disc
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Rendered | — (absent in the phone frame) | yes |
-| width | — | 20 |
-| height | — | 20 |
-| flex | — | none |
-| border-radius | — | 999 |
-| border | — | 1.5px solid `--accent` (`#C9A24B`) |
-| color | — | `--accent` (`#C9A24B`) |
-| display | — | flex |
-| align-items | — | center |
-| justify-content | — | center |
-| font-family | — | `--font-display` (Cinzel) |
-| font-weight | — | 700 |
-| font-size | — | 12 |
 
 ### Conditional rendering
 

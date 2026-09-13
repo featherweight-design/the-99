@@ -150,9 +150,9 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
   // and the pitch is the third game, not the act of logging one.
   if (games.length === 0) {
     return (
-      <section className="md:flex md:items-center md:gap-[34px] px-[20px] pt-[34px] pb-[40px] md:px-[24px] md:pt-[44px] md:pb-[34px] text-center md:text-left">
+      <section className="md:flex md:items-start md:justify-center md:gap-[34px] px-[20px] pt-[34px] pb-[40px] md:px-[24px] md:pt-[44px] md:pb-[34px] text-center md:text-left">
         <CardFanMark />
-        <div className="md:flex-1 md:min-w-0">
+        <div className="md:flex-1 md:min-w-0 md:max-w-[720px]">
           <h3 className="font-display font-bold text-[21px] md:text-[26px] mt-[22px] md:mt-0 text-fg">
             {gameLogCopy.empty.heading}
           </h3>
@@ -172,18 +172,6 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
               ctaLabel={gameLogCopy.empty.cta}
               ctaSolid
             />
-          </div>
-          {/* Scope note in the shipped provenance shape — see provenance-line.tsx. */}
-          <div className="md:flex md:items-start md:gap-[11px] mt-[16px] md:mt-[26px] md:max-w-[560px] text-left rounded-[9px] px-[13px] py-[11px] md:px-[15px] md:py-[12px] bg-surface-sunken border border-border border-l-[3px] border-l-accent">
-            <span
-              aria-hidden
-              className="hidden md:flex flex-none items-center justify-center w-[20px] h-[20px] rounded-full font-display font-bold text-[12px] border-[1.5px] border-accent text-accent"
-            >
-              i
-            </span>
-            <p className="text-[12px] md:text-[12.5px] leading-[1.55] text-fg-faint md:text-fg-body">
-              {gameLogCopy.empty.scope}
-            </p>
           </div>
         </div>
         <span className="sr-only" aria-live="polite" aria-atomic="true">
