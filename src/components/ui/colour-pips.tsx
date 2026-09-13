@@ -18,9 +18,14 @@ import { chassisCopy, PIP_ORDER, type PipCode } from "../../lib/copy/filter-chas
  * Scryfall's own symbols, committed under `public/mana/`. They are finished
  * multi-colour illustrations — a filled `<circle>` ground with the symbol pathed
  * over it, and the hybrids carry two differently-coloured halves — so they are
- * drawn as images and never masked, tinted or given an opacity (decision 7).
- * Masking would flatten a hybrid to one colour, which is the thing the decision
- * exists to prevent; an opacity is what the shipped controls did wrong.
+ * drawn as images and never masked or tinted (decision 7). Masking would
+ * flatten a hybrid to one colour, which is the thing the decision exists to
+ * prevent; dimming an available pip is what the shipped controls did wrong.
+ *
+ * The single exception is the UNAVAILABLE state, which takes the design
+ * system's own `.42` disabled dimming — reasoned about at the `aria-disabled`
+ * line below. Decision 7 rules on how an available filter is drawn; a filter
+ * with nothing to match is not one.
  */
 const PIP_SRC: Record<PipCode, string> = {
   W: "/mana/W.svg", U: "/mana/U.svg", B: "/mana/B.svg", R: "/mana/R.svg", G: "/mana/G.svg",
@@ -39,13 +44,24 @@ export type ColourPipsProps = {
    * pips lead the sheet (decision 22) and carry a real touch target.
    */
   form: "wide" | "sheet";
+  /**
+   * Hue codes no surviving card carries. `collection/color-filter.ts` states
+   * the contract: a colour with no matches stays listed and disabled, because
+   * the vocabulary is fixed and dropping one would move the other four.
+   *
+   * Both forms, not just the phone's. The route's retired mobile panel
+   * disabled these and its desktop row did not, which is the kind of
+   * two-forms-one-control disagreement this component exists to end.
+   */
+  unavailable?: readonly string[];
 };
 
-export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
+export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsProps) {
   // Read is case-tolerant so a lowercase caller still lights its pips; the
   // WRITE is always canonical uppercase (`PIP_ORDER`). A caller whose state is
   // lowercase maps on the way out — the commander rack is the only one.
   const on = new Set(value.map((v) => v.toUpperCase()));
+  const off = new Set((unavailable ?? []).map((v) => v.toUpperCase()));
   const size = form === "wide" ? DESKTOP_PX : PHONE_PX;
 
   return (
@@ -56,6 +72,9 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
     >
       {PIP_ORDER.map((code) => {
         const lit = on.has(code);
+        // A lit hue stays interactive even with no matches left, or the reader
+        // could not turn off the filter that emptied the list.
+        const dead = !lit && off.has(code);
         return (
           <button
             key={code}
@@ -67,17 +86,47 @@ export function ColourPips({ value, onToggle, form }: ColourPipsProps) {
             // the control this replaces.
             role="switch"
             aria-checked={lit}
-            aria-label={chassisCopy.colour.pipAria(chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>])}
-            onClick={() => onToggle(code)}
-            // The ring is the entire lit treatment. No opacity on either state:
-            // an unlit pip is the symbol at full strength, which is what makes it
-            // legible on every ground in every theme.
+            // `aria-disabled`, not the native attribute, and `opacity .42` —
+            // the treatment the design table already gives a zero-count filter
+            // option (`collection-filter-panel.md` row · disabled), which is
+            // what the retired mobile Color panel drew for exactly this state.
+            // It stays focusable so a keyboard reader can still find it and
+            // hear why it is out; the native attribute took it off the tab ring
+            // and left a sighted reader a pip that looked ordinary and did
+            // nothing.
+            //
+            // This is not the opacity decision 7 forbids. That one rules on the
+            // UNLIT state, where dimming put the symbol at 1.37:1 and made an
+            // available filter illegible. Dimming an UNAVAILABLE one is the
+            // system's own disabled convention, and the table records that it
+            // fails AA deliberately.
+            aria-disabled={dead || undefined}
+            aria-label={
+              dead
+                ? chassisCopy.colour.pipAriaUnavailable(
+                    chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>],
+                  )
+                : chassisCopy.colour.pipAria(
+                    chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>],
+                  )
+            }
+            onClick={() => { if (!dead) onToggle(code); }}
+            // The ring is the entire lit treatment. No opacity separates lit
+            // from unlit: an unlit pip is the symbol at full strength, which is
+            // what makes it legible on every ground in every theme. The one
+            // opacity here says UNAVAILABLE, which is a different question.
             className={[
               // `shrink-0` is load-bearing, not tidiness: these are flex items
               // in the chassis's control row, which is deliberately allowed to
               // compress. Without it a narrow row would shrink the inline width
               // below the 44px the phone form promises as a touch target.
-              "shrink-0 cursor-pointer rounded-full border-0 p-0 transition-shadow",
+              // No transition on the ring. READINESS 19 forbids motion on this
+              // surface outright, and the selected state changes instantly.
+              "shrink-0 rounded-full border-0 p-0",
+              // `.42` is the system's disabled dimming, reasoned about on the
+              // `aria-disabled` line above — the one opacity on this control,
+              // and not the one decision 7 rules out.
+              dead ? "cursor-default opacity-[0.42]" : "cursor-pointer",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
             ].join(" ")}
             // The symbol is a background rather than an `<img>`: it is

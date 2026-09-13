@@ -1,10 +1,16 @@
 // Collection copy — set filter panel block, ported verbatim from
 // design/design_handoff_the99_collection_filter/collection-filter · copy strings.ts
 // Shape follows src/lib/copy/shell.ts: flat const object, functions for
-// interpolated strings, no JSX. Callers hand over pre-formatted,
-// thousands-separated strings, with one exception: an option's aria label
-// takes the raw count, because it pluralises on it and a formatted number
-// cannot be read back out under every locale.
+// interpolated strings, no JSX. Callers hand over RAW COUNTS and this module
+// formats them, through the one `count()` helper below.
+//
+// It took pre-formatted strings once, on the reasoning that the caller owned
+// presentation. That put two separator conventions in a single sentence on a
+// non-`en-US` browser — `1.234 of 2,933` — because only the figures going
+// through `cards()` were pinned, and it made `1 cards shown` reachable for any
+// figure whose caller had already turned it into a string. A number that a
+// sentence pluralises on cannot be read back out of its own formatting, which
+// was always true of the option aria labels; it is true of all of them.
 
 import { availabilityCopy } from "./availability";
 
@@ -17,24 +23,59 @@ import { availabilityCopy } from "./availability";
  * verbatim, and an unpinned toLocaleString renders "1.240" or "1 240" under a
  * European locale.
  */
-const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")} cards`);
+const cards = (n: number) => (n === 1 ? "1 card" : `${count(n)} cards`);
+/**
+ * Every figure in this file goes through one formatter. `cards()` pinned its
+ * count to `en-US` while callers pre-formatted the other with a bare
+ * `toLocaleString()`, so a non-en-US browser announced "1.234 of 2,933" — one
+ * sentence, two separator conventions.
+ */
+const count = (n: number) => n.toLocaleString("en-US");
 
 /**
- * `/collection`'s chassis rows. The route states both today — `browser.tsx`
- * renders `ChipRow` below the bar with the selected values and the count — and
- * the chassis draws them itself, so this is what the replacement says rather
- * than the route's first version of it.
+ * `/collection`'s chassis rows. The route drew these itself before — a chip row
+ * below the bar, carrying the selected values and the count — and the chassis
+ * draws both rows now, so this is what the replacement says rather than the
+ * route's first version of it.
  */
 export const collectionChassisCopy = {
-  result: (shown: number, total: number) =>
-    shown === total ? cards(total) : `${shown.toLocaleString("en-US")} of ${cards(total)} match`,
+  /**
+   * The phone's shorter line. The retired chip row drew this at `md:hidden`,
+   * and it matters more now: row 3 also carries the `By set` link and the view
+   * toggle, so the long sentence and those controls compete for 390px.
+   */
+  resultCompact: (shown: number) => (shown === 1 ? "1 result" : `${count(shown)} results`),
+  /**
+   * The route's wide line, in two states.
+   *
+   * Three figures, because `/collection` counts three things and they are not
+   * interchangeable: `shown` is the distinct cards surviving the filters,
+   * `unique` the distinct cards in the whole collection, and `total` the sum of
+   * quantities across it. "1,240" meaning names and "2,933" meaning copies are
+   * different facts, which is why the rest state states both and labels each.
+   *
+   * The filtered state compares `shown` to `unique` — distinct against
+   * distinct. It carried `shown` over `total` out of `ChipRow`, which read as
+   * 4 cards out of 2,933 cards when 2,933 counted copies: a denominator the
+   * reader cannot get to the numerator from. Changed rather than moved, and
+   * recorded in the plan alongside the question that asked for the ruling.
+   */
+  result: (shown: number, unique: number, total: number, filtered: boolean) =>
+    filtered
+      ? `Showing ${count(shown)} of ${count(unique)}`
+      : `Showing ${count(unique)} unique · ${count(total)} total`,
+  /** The chassis's Clear — every dimension at once, named as such. */
+  announceClearedAll: (total: number) =>
+    // Through the shared helper, which singularises: a one-card collection
+    // reads "1 card shown." where the raw count read "1 cards shown."
+    `Filters cleared. ${cards(total)} shown.`,
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
     search: (q: string) => `"${q}"`,
-    colours: (n: number) => (n === 1 ? "1 colour" : `${n} colours`),
-    types: (n: number, first: string) => (n === 1 ? first : `${n} types`),
-    sets: (n: number, first: string) => (n === 1 ? first : `${n} sets`),
-    availability: (n: number, first: string) => (n === 1 ? first : `${n} states`),
+    colours: (n: number) => (n === 1 ? "1 colour" : `${count(n)} colours`),
+    types: (n: number, first: string) => (n === 1 ? first : `${count(n)} types`),
+    sets: (n: number, first: string) => (n === 1 ? first : `${count(n)} sets`),
+    availability: (n: number, first: string) => (n === 1 ? first : `${count(n)} states`),
   },
 } as const;
 
@@ -44,7 +85,7 @@ export const collectionFilterCopy = {
     triggerLabel: "Set",
     triggerOne: (setName: string) => `Set: ${setName}`,
     triggerAriaCollapsed: "Filter by set, collapsed",
-    triggerAriaWithSelection: (n: number) => `Filter by set, ${n} selected, collapsed`,
+    triggerAriaWithSelection: (n: number) => `Filter by set, ${count(n)} selected, collapsed`,
 
     // Panel chrome
     panelAriaLabel: "Filter by set",
@@ -55,16 +96,16 @@ export const collectionFilterCopy = {
 
     // Group labels (Plex Mono, uppercased in CSS — written sentence case here)
     groupDefault: "Newest first",
-    groupSelected: (n: number) => `Selected · ${n}`,
-    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    groupSelected: (n: number) => `Selected · ${count(n)}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${count(n)} matches`),
 
     // Option
     optionAria: (setName: string, count: number) => `${setName}, ${cards(count)}`,
     optionAriaUnavailable: (setName: string) => `${setName}, no cards match your other filters`,
 
     // Footer
-    footerTotal: (total: string) => `${total} sets owned`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} sets owned`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     /** Accessible name for the sheet's ✕ — the sheet's one accessible close control. */
@@ -82,14 +123,14 @@ export const collectionFilterCopy = {
 
     // Live region (shared with the filter bar — one region for the whole bar)
     announceMatches: (n: number, query: string) =>
-      n === 0 ? `No sets match ${query}` : `${n} ${n === 1 ? "set matches" : "sets match"} ${query}`,
-    announceAdded: (setName: string, sets: number, shown: string, total: string) =>
-      `${setName} added. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (setName: string, sets: number, shown: string, total: string) =>
+      n === 0 ? `No sets match ${query}` : `${count(n)} ${n === 1 ? "set matches" : "sets match"} ${query}`,
+    announceAdded: (setName: string, sets: number, shown: number, total: number) =>
+      `${setName} added. ${count(sets)} ${sets === 1 ? "set" : "sets"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (setName: string, sets: number, shown: number, total: number) =>
       sets === 0
-        ? `${setName} removed. No set filter, ${total} cards shown.`
-        : `${setName} removed. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Set filter cleared. ${total} cards shown.`,
+        ? `${setName} removed. No set filter, ${cards(shown)} shown.`
+        : `${setName} removed. ${count(sets)} ${sets === 1 ? "set" : "sets"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceCleared: (shown: number) => `Set filter cleared. ${cards(shown)} shown.`,
   },
 
   // Type ▾ (#100) — the same panel with `searchable={false}`. The search and
@@ -99,7 +140,7 @@ export const collectionFilterCopy = {
     triggerLabel: "Type",
     triggerOne: (typeName: string) => `Type: ${typeName}`,
     triggerAriaCollapsed: "Filter by type, collapsed",
-    triggerAriaWithSelection: (n: number) => `Filter by type, ${n} selected, collapsed`,
+    triggerAriaWithSelection: (n: number) => `Filter by type, ${count(n)} selected, collapsed`,
 
     panelAriaLabel: "Filter by type",
     sheetTitle: "Types",
@@ -108,15 +149,15 @@ export const collectionFilterCopy = {
     clearSearch: "Clear search",
 
     groupDefault: "All types",
-    groupSelected: (n: number) => `Selected · ${n}`,
-    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    groupSelected: (n: number) => `Selected · ${count(n)}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${count(n)} matches`),
 
     optionAria: (typeName: string, count: number) => `${typeName}, ${cards(count)}`,
     optionAriaUnavailable: (typeName: string) =>
       `${typeName}, no cards match your other filters`,
 
-    footerTotal: (total: string) => `${total} cards`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} cards`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     closeLabel: "Close",
@@ -129,14 +170,14 @@ export const collectionFilterCopy = {
     }),
 
     announceMatches: (n: number, query: string) =>
-      n === 0 ? `No types match ${query}` : `${n} ${n === 1 ? "type matches" : "types match"} ${query}`,
-    announceAdded: (typeName: string, types: number, shown: string, total: string) =>
-      `${typeName} added. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (typeName: string, types: number, shown: string, total: string) =>
+      n === 0 ? `No types match ${query}` : `${count(n)} ${n === 1 ? "type matches" : "types match"} ${query}`,
+    announceAdded: (typeName: string, types: number, shown: number, total: number) =>
+      `${typeName} added. ${count(types)} ${types === 1 ? "type" : "types"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (typeName: string, types: number, shown: number, total: number) =>
       types === 0
-        ? `${typeName} removed. No type filter, ${total} cards shown.`
-        : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Type filter cleared. ${total} cards shown.`,
+        ? `${typeName} removed. No type filter, ${cards(shown)} shown.`
+        : `${typeName} removed. ${count(types)} ${types === 1 ? "type" : "types"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceCleared: (shown: number) => `Type filter cleared. ${cards(shown)} shown.`,
   },
 
   // Availability ▾ (#43) — the Type ▾ shape (no search, no footer total).
@@ -147,7 +188,7 @@ export const collectionFilterCopy = {
     triggerLabel: availabilityCopy.collection.filterLabel,
     triggerOne: (name: string) => `${availabilityCopy.collection.filterLabel}: ${name}`,
     triggerAriaCollapsed: "Filter by availability, collapsed",
-    triggerAriaWithSelection: (n: number) => `Filter by availability, ${n} selected, collapsed`,
+    triggerAriaWithSelection: (n: number) => `Filter by availability, ${count(n)} selected, collapsed`,
 
     panelAriaLabel: "Filter by availability",
     sheetTitle: availabilityCopy.collection.filterLabel,
@@ -156,16 +197,16 @@ export const collectionFilterCopy = {
     clearSearch: "Clear search",
 
     groupDefault: "All",
-    groupSelected: (n: number) => `Selected · ${n}`,
-    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    groupSelected: (n: number) => `Selected · ${count(n)}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${count(n)} matches`),
 
     optionAria: (name: string, count: number) =>
       availabilityCopy.collection.filterOptionAria(name, count),
     optionAriaUnavailable: (name: string) =>
       availabilityCopy.collection.filterEmptyOptionAria(name),
 
-    footerTotal: (total: string) => `${total} cards`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} cards`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     closeLabel: "Close",
@@ -180,14 +221,14 @@ export const collectionFilterCopy = {
     announceMatches: (n: number, query: string) =>
       n === 0
         ? `No options match ${query}`
-        : `${n} ${n === 1 ? "option matches" : "options match"} ${query}`,
-    announceAdded: (name: string, n: number, shown: string, total: string) =>
-      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (name: string, n: number, shown: string, total: string) =>
+        : `${count(n)} ${n === 1 ? "option matches" : "options match"} ${query}`,
+    announceAdded: (name: string, n: number, shown: number, total: number) =>
+      `${name} added. ${count(n)} ${n === 1 ? "filter" : "filters"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (name: string, n: number, shown: number, total: number) =>
       n === 0
-        ? `${name} removed. No availability filter, ${total} cards shown.`
-        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Availability filter cleared. ${total} cards shown.`,
+        ? `${name} removed. No availability filter, ${cards(shown)} shown.`
+        : `${name} removed. ${count(n)} ${n === 1 ? "filter" : "filters"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceCleared: (shown: number) => `Availability filter cleared. ${cards(shown)} shown.`,
   },
 
   // Color ▾ (#116) — mobile only. Desktop keeps the inline pip row, so nothing
@@ -196,7 +237,7 @@ export const collectionFilterCopy = {
     triggerLabel: "Color",
     triggerOne: (colorName: string) => `Color: ${colorName}`,
     triggerAriaCollapsed: "Filter by color, collapsed",
-    triggerAriaWithSelection: (n: number) => `Filter by color, ${n} selected, collapsed`,
+    triggerAriaWithSelection: (n: number) => `Filter by color, ${count(n)} selected, collapsed`,
 
     panelAriaLabel: "Filter by color",
     sheetTitle: "Colors",
@@ -205,15 +246,15 @@ export const collectionFilterCopy = {
     clearSearch: "Clear search",
 
     groupDefault: "All colors",
-    groupSelected: (n: number) => `Selected · ${n}`,
-    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    groupSelected: (n: number) => `Selected · ${count(n)}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${count(n)} matches`),
 
     optionAria: (colorName: string, count: number) => `${colorName}, ${cards(count)}`,
     optionAriaUnavailable: (colorName: string) =>
       `${colorName}, no cards match your other filters`,
 
-    footerTotal: (total: string) => `${total} cards`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} cards`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     closeLabel: "Close",
@@ -222,16 +263,16 @@ export const collectionFilterCopy = {
     emptyBody: (query: string) => ({ before: "No color matches ", query: `“${query}”`, after: "." }),
 
     announceMatches: (n: number, query: string) =>
-      n === 0 ? `No colors match ${query}` : `${n} ${n === 1 ? "color matches" : "colors match"} ${query}`,
+      n === 0 ? `No colors match ${query}` : `${count(n)} ${n === 1 ? "color matches" : "colors match"} ${query}`,
     // Colors AND with each other, so the announcement says "and" rather than a
     // bare count — two colors selected means cards in BOTH, not either.
-    announceAdded: (colorName: string, colors: number, shown: string, total: string) =>
-      `${colorName} added. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${total} cards shown.`,
-    announceRemoved: (colorName: string, colors: number, shown: string, total: string) =>
+    announceAdded: (colorName: string, colors: number, shown: number, total: number) =>
+      `${colorName} added. ${count(colors)} ${colors === 1 ? "color" : "colors"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceRemoved: (colorName: string, colors: number, shown: number, total: number) =>
       colors === 0
-        ? `${colorName} removed. No color filter, ${total} cards shown.`
-        : `${colorName} removed. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${total} cards shown.`,
-    announceCleared: (total: string) => `Color filter cleared. ${total} cards shown.`,
+        ? `${colorName} removed. No color filter, ${cards(shown)} shown.`
+        : `${colorName} removed. ${count(colors)} ${colors === 1 ? "color" : "colors"}, ${count(shown)} of ${cards(total)} shown.`,
+    announceCleared: (shown: number) => `Color filter cleared. ${cards(shown)} shown.`,
   },
 
   // Sort ▾ (#119) — the same panel in single-select mode. Sorting never narrows
@@ -252,7 +293,7 @@ export const collectionFilterCopy = {
 
     groupDefault: "Sort by",
     groupSelected: () => "Current",
-    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${count(n)} matches`),
 
     // The hint carries the direction ("A–Z"), so the name reads as the whole
     // order — and the chosen row says how to reverse it, since re-picking is
@@ -272,7 +313,7 @@ export const collectionFilterCopy = {
     emptyTitle: "No sort orders",
     emptyBody: (query: string) => ({ before: "No sort order matches ", query: `“${query}”`, after: "." }),
 
-    announceMatches: (n: number) => `${n} sort orders`,
+    announceMatches: (n: number) => `${count(n)} sort orders`,
     announceAdded: (order: string) => `Sorted by ${order}.`,
     announceRemoved: (order: string) => `Sorted by ${order}.`,
     announceCleared: () => "",
@@ -316,8 +357,8 @@ export type FilterPanelCopy = {
   optionAria: (name: string, count: number, selected?: boolean) => string;
   optionAriaUnavailable: (name: string) => string;
 
-  footerTotal: (total: string) => string;
-  footerSelected: (n: number, total: string) => string;
+  footerTotal: (total: number) => string;
+  footerSelected: (n: number, total: number) => string;
   clear: string;
   done: string;
   /** Accessible name for the sheet's ✕ — the sheet's one accessible close control. */
@@ -327,9 +368,9 @@ export type FilterPanelCopy = {
   emptyBody: (query: string) => { before: string; query: string; after: string };
 
   announceMatches: (n: number, query: string) => string;
-  announceAdded: (name: string, n: number, shown: string, total: string) => string;
-  announceRemoved: (name: string, n: number, shown: string, total: string) => string;
-  announceCleared: (total: string) => string;
+  announceAdded: (name: string, n: number, shown: number, total: number) => string;
+  announceRemoved: (name: string, n: number, shown: number, total: number) => string;
+  announceCleared: (shown: number) => string;
 };
 
 // Voice: Kitchen Table. A printing is a card you own, out of a set, with a
@@ -349,11 +390,11 @@ export const printingPickerCopy = {
   printing: {
     // ---- Set field, when 2+ printings are owned ----------------------------
     // At one printing the Set field is untouched — no strings from this block.
-    triggerCount: (n: number) => `${n} printings you own`,
+    triggerCount: (n: number) => `${count(n)} printings you own`,
     triggerAria: (n: number, caption: string) =>
-      `Set: ${caption}. ${n} printings owned. Choose which one represents this card.`,
+      `Set: ${caption}. ${count(n)} printings owned. Choose which one represents this card.`,
     triggerPicked: "Your pick",
-    triggerPickedOf: (n: number) => `· of ${n}`,
+    triggerPickedOf: (n: number) => `· of ${count(n)}`,
     triggerCollapseAria: "Hide the printings you own",
     /** The field label the trigger replaces — the same word the plain meta field uses. */
     triggerLabel: "Set",
@@ -362,15 +403,15 @@ export const printingPickerCopy = {
     // ---- Region -----------------------------------------------------------
     regionLabel: "Printings you own",
     regionIntro: (n: number) =>
-      `You own ${n} of these. Pick the one that represents this card.`,
+      `You own ${count(n)} of these. Pick the one that represents this card.`,
     // Scope is collection surfaces only (decision 2). Do not mention decks.
     regionIntroPicked: "Your pick shows wherever this card appears in your collection.",
 
     // ---- Entry ------------------------------------------------------------
     // Quantity + finish. Decision 9: plain nonfoil shows nothing extra.
-    entryQty: (n: number) => `×${n}`,
-    entryQtyAllFoil: (n: number) => `×${n} foil`,
-    entryQtyMixed: (n: number, foil: number) => `×${n} · ${foil} foil`,
+    entryQty: (n: number) => `×${count(n)}`,
+    entryQtyAllFoil: (n: number) => `×${count(n)} foil`,
+    entryQtyMixed: (n: number, foil: number) => `×${count(n)} · ${count(foil)} foil`,
     // Collector number may be "" (bare Name,Qty import). Omit the field and its
     // separator entirely — never "#—", never a leading "· ".
     entryMeta: (collectorNumber: string, qty: string) =>
@@ -416,11 +457,11 @@ export const printingPickerCopy = {
     // ---- Overflow (search + finish filter) --------------------------------
     searchPlaceholder: "Search sets",
     searchAriaLabel: "Search the sets you own this in",
-    filterAll: (n: number) => `All ${n}`,
-    filterFoil: (n: number) => `Foil ${n}`,
-    filterNonFoil: (n: number) => `Non-foil ${n}`,
+    filterAll: (n: number) => `All ${count(n)}`,
+    filterFoil: (n: number) => `Foil ${count(n)}`,
+    filterNonFoil: (n: number) => `Non-foil ${count(n)}`,
     groupSet: (setName: string, setCode: string, n: number) =>
-      `${setName} · ${setCode} · ${n}`,
+      `${setName} · ${setCode} · ${count(n)}`,
     emptyTitle: "Not in that set",
     emptyBody: (query: string, cardName: string) =>
       `No printing of ${cardName} you own comes from a set matching “${query}”.`,
@@ -428,7 +469,7 @@ export const printingPickerCopy = {
 
     // ---- Live region (the modal's existing one — do not add a second) -----
     announceOpen: (n: number) =>
-      `Showing ${n} printings you own. Use the arrow keys to choose.`,
+      `Showing ${count(n)} printings you own. Use the arrow keys to choose.`,
     announcePicked: (setName: string, collectorNumber: string) =>
       collectorNumber
         ? `Now showing ${setName} number ${collectorNumber}.`
@@ -439,6 +480,6 @@ export const printingPickerCopy = {
     announceMatches: (n: number, query: string) =>
       n === 0
         ? `No sets match ${query}`
-        : `${n} ${n === 1 ? "printing" : "printings"} from sets matching ${query}`,
+        : `${count(n)} ${n === 1 ? "printing" : "printings"} from sets matching ${query}`,
   },
 } as const;

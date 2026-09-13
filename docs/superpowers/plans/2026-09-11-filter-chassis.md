@@ -378,6 +378,33 @@ than the addition it was on `/decks`, and three things have to be reconciled rat
    chassis's result line states one. Decide which figure the line carries before wiring it, because
    "1,240 cards" meaning copies and meaning distinct names are different sentences.
 
+   **Settled in 3b.** The unfiltered sentence keeps both figures and labels them —
+   `Showing 1,240 unique · 2,933 total`. The filtered one states distinct against distinct —
+   `Showing 412 of 1,240`. It previously put `resultCount` over `totalQuantity`, which read as
+   412 cards out of 2,933 cards when the denominator counted copies. Recorded here rather than
+   left to a copy pass: the migration was going to carry the sentence into the new frame either
+   way, and carrying it unchanged meant the next reader inherited the wrong denominator.
+
 **Also in 3b:** `ColourPips` replaces `ColorFilterRow` *and* the mobile Color panel, the `COLOR`
 caption goes with the row that carried it (decision 17), and the five `FilterPanel` mounts take
 `desktopRowMinPx={44}`.
+
+
+---
+
+## One behaviour difference the migration made deliberately, recorded for a copy pass
+
+`ChipRow` drew **one chip per value** — `filters.colors.map(...)`, `types.map(...)`,
+`setCodes.map(...)`, `availability.map(...)` — so five selected sets were five chips.
+`collectionChips` draws **one chip per control**, collapsing those five to `5 sets` with the values
+in its spoken name and the panel beside it.
+
+That matches `rack/chip-line.tsx`, which already collapsed colours, and it is what keeps the chip
+row a fixed height with five dimensions active. But it does **not** match `/decks`, whose
+`chipLabels` still emits one chip per status and per colour.
+
+So the shared frame now carries two chip granularities: per value on `/decks`, per control on
+`/collection` and the two commander lanes. Neither is wrong on its own and this round is not the
+place to pick, but a reader moving between routes sees the same row behave differently, which is the
+kind of inconsistency the chassis exists to remove. **Worth a ruling in the next Design round**, and
+cheap to change afterwards in either direction — the derivations are three small pure functions.

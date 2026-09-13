@@ -781,11 +781,18 @@ changed in quick succession read in order instead of on top of each other.
 | Query changed, no matches | polite, debounced 300ms | `No sets match eldraen` | `announceMatches(0, query)` |
 | Option toggled on | polite | `Bloomburrow added. 3 sets, 328 of 2,933 cards shown.` | `announceAdded(name, sets, shown, total)` |
 | Option toggled off | polite | `Bloomburrow removed. 2 sets, 186 of 2,933 cards shown.` | `announceRemoved(name, sets, shown, total)` |
-| Last option toggled off | polite | `Bloomburrow removed. No set filter, 2,933 cards shown.` | `announceRemoved(...)` with `sets === 0` |
-| `Clear` pressed | polite | `Set filter cleared. 2,933 cards shown.` | `announceCleared(total)` |
+| Last option toggled off | polite | `Bloomburrow removed. No set filter, 186 cards shown.` | `announceRemoved(...)` with `sets === 0` |
+| `Clear` pressed | polite | `Set filter cleared. 186 cards shown.` | `announceCleared(shown)` |
 
-Numbers are passed in **pre-formatted** with thousands separators — the copy module does no
-number formatting.
+Numbers are passed in as **raw counts**; the copy module formats and pluralises them. It
+previously took pre-formatted strings, which put two separator conventions in one sentence
+on a non-`en-US` browser — `1.234 of 2,933` — because only some of the figures were pinned.
+One formatter now owns every figure in the module, and `1 card` is singular.
+
+**The figure in a clear is what the other filters leave, not the collection.** Clearing Set
+does not clear Type, so `announceCleared` and the `sets === 0` branch of `announceRemoved`
+both report the surviving count — a clear that reported the whole collection announced a
+list the reader was not looking at.
 
 Contrast, as measured in the handoff: option name `#EDE6D8` on `#1A160F` ≈ 12.9:1; count
 `#8E8269` ≈ 4.6:1 at 11.5px (AA, and supplementary — the name alone carries the meaning);

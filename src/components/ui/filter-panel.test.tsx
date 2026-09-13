@@ -100,6 +100,11 @@ describe("FilterPanel form override", () => {
   });
 });
 
+// Two cases retired with the control they covered: the mobile `Color ▾` panel
+// is gone, because `ColourPips` draws one colour control at both widths rather
+// than a desktop pip row and a phone panel with different ARIA roles for the
+// same filter. `src/components/ui/colour-pips.test.tsx` covers what replaced
+// them, including the toggle and the lit state.
 describe("FilterPanel", () => {
   it("announces why a disabled trigger will not open", () => {
     renderPanel({ disabled: true, disabledAriaLabel: "Availability unavailable right now" });
@@ -578,12 +583,15 @@ describe("FilterPanel Clear announcement", () => {
         filters={filtersWith(setCodes)}
         sort="name"
         sortDirection="asc"
-        colorOptions={[]}
         view="grid"
         setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
         typeOptions={[]}
         availabilityOptions={[]}
-        availabilityOk
+      colorOptions={[]}
+        chips={[]}
+      onClearAll={() => {}}
+      resultLine="Showing 0 unique · 0 total"
+    availabilityOk
         hasCollection
         announcement=""
         onAnnounce={() => {}}
@@ -606,12 +614,39 @@ describe("FilterPanel Clear announcement", () => {
   it("reads the cleared string for Clear with exactly one set selected", () => {
     expect(
       setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933, "clear-sets"),
-    ).toBe(collectionFilterCopy.set.announceCleared("2,933"));
+    ).toBe(collectionFilterCopy.set.announceCleared(0));
   });
 
   it("still reads the removed string when the last set is toggled off", () => {
     expect(setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, "0", "2,933"),
+      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, 0, 2933),
+    );
+  });
+
+  // Clearing ONE dimension leaves the others on, so the figure the clear
+  // announces is what survives them — not the whole collection, which is a list
+  // the reader is not looking at.
+  const CARDS = [
+    { oracleId: "a", name: "A", quantity: 2, colorIdentity: ["R"], typeLine: "Instant",
+      setCodes: ["BLB"], setCounts: [["BLB", 2]], primarySetCode: "BLB", rarity: "common", cmc: 1 },
+    { oracleId: "b", name: "B", quantity: 5, colorIdentity: ["U"], typeLine: "Instant",
+      setCodes: ["BLB"], setCounts: [["BLB", 5]], primarySetCode: "BLB", rarity: "common", cmc: 1 },
+  ] as unknown as Parameters<typeof setChangeAnnouncement>[2];
+
+  it("counts what the OTHER filters leave when one dimension is cleared", () => {
+    const before = { search: "", colors: ["R"], types: [], setCodes: ["BLB"] } as BrowseFilters;
+    const after = { ...before, setCodes: [] };
+    // Red still filters, so 2 copies survive — not the 7 in the fixture.
+    expect(
+      setChangeAnnouncement(before, after, CARDS, OPTIONS, 7, "clear-sets"),
+    ).toBe(collectionFilterCopy.set.announceCleared(2));
+  });
+
+  it("counts the same way when the last value is toggled off", () => {
+    const before = { search: "", colors: ["R"], types: [], setCodes: ["BLB"] } as BrowseFilters;
+    const after = { ...before, setCodes: [] };
+    expect(setChangeAnnouncement(before, after, CARDS, OPTIONS, 7)).toBe(
+      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, 2, 7),
     );
   });
 });
@@ -694,12 +729,15 @@ describe("Type ▾ in the filter bar", () => {
         filters={filtersWith(types)}
         sort="name"
         sortDirection="asc"
-        colorOptions={[]}
         view="grid"
         setOptions={[]}
         typeOptions={TYPE_OPTIONS}
         availabilityOptions={[]}
-        availabilityOk
+      colorOptions={[]}
+        chips={[]}
+      onClearAll={() => {}}
+      resultLine="Showing 0 unique · 0 total"
+    availabilityOk
         hasCollection
         announcement=""
         onAnnounce={() => {}}
@@ -753,10 +791,10 @@ describe("Type ▾ in the filter bar", () => {
       typeChangeAnnouncement(
         filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933, "clear-types",
       ),
-    ).toBe(collectionFilterCopy.type.announceCleared("2,933"));
+    ).toBe(collectionFilterCopy.type.announceCleared(0));
     expect(
       typeChangeAnnouncement(filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933),
-    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, "0", "2,933"));
+    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, 0, 2933));
   });
 
   it("says nothing about types when only the set selection moved", () => {
@@ -771,13 +809,6 @@ describe("Type ▾ in the filter bar", () => {
 // what broke before was the wiring, not the panel.
 describe("FilterBar sort and color controls", () => {
   const NO_FILTERS: BrowseFilters = { search: "", colors: [], types: [], setCodes: [] };
-  const COLOR_OPTIONS = [
-    { code: "W", label: "White", hint: "W", count: 4, disabled: false },
-    { code: "U", label: "Blue", hint: "U", count: 2, disabled: false },
-    { code: "B", label: "Black", hint: "B", count: 0, disabled: true },
-    { code: "R", label: "Red", hint: "R", count: 3, disabled: false },
-    { code: "G", label: "Green", hint: "G", count: 1, disabled: false },
-  ];
 
   function renderBar(over: Partial<React.ComponentProps<typeof FilterBar>> = {}) {
     const onFiltersChange = vi.fn();
@@ -787,12 +818,15 @@ describe("FilterBar sort and color controls", () => {
         filters={NO_FILTERS}
         sort="name"
         sortDirection="asc"
-        colorOptions={COLOR_OPTIONS}
         view="grid"
         setOptions={[]}
         typeOptions={[]}
         availabilityOptions={[]}
-        availabilityOk
+      colorOptions={[]}
+        chips={[]}
+      onClearAll={() => {}}
+      resultLine="Showing 0 unique · 0 total"
+    availabilityOk
         hasCollection
         announcement=""
         onAnnounce={() => {}}
@@ -850,45 +884,9 @@ describe("FilterBar sort and color controls", () => {
     expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Clear" })).toBeNull();
   });
 
-  it("mobile color is an overlaid panel, not an in-flow <details>", () => {
-    setViewport(false);
-    const { container } = render(
-      <FilterBar
-        filters={NO_FILTERS}
-        sort="name"
-        sortDirection="asc"
-        colorOptions={COLOR_OPTIONS}
-        view="rows"
-        setOptions={[]}
-        typeOptions={[]}
-        availabilityOptions={[]}
-        availabilityOk
-        hasCollection
-        announcement=""
-        onAnnounce={() => {}}
-        onFiltersChange={() => {}}
-        onSortChange={() => {}}
-        onViewChange={() => {}}
-      />,
-    );
-    expect(container.querySelector("details")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Filter by color/ }));
-    expect(screen.getByRole("dialog", { name: "Filter by color" })).toBeTruthy();
-  });
-
-  it("color rows toggle the filter and a zero-count color is disabled, not hidden", () => {
-    setViewport(false);
-    const { onFiltersChange } = renderBar({ view: "rows" });
-    fireEvent.click(screen.getByRole("button", { name: /Filter by color/ }));
-    expect(screen.getByRole("option", { name: /Black/ }).getAttribute("aria-disabled")).toBe("true");
-    fireEvent.click(screen.getByRole("option", { name: /Red/ }));
-    expect(onFiltersChange).toHaveBeenCalledWith({ ...NO_FILTERS, colors: ["R"] });
-  });
-});
-
-// The desktop WUBRG pip row and the mobile Color ▾ panel are the same selection,
-// and neither announced until #116.
-describe("colorChangeAnnouncement", () => {
+  // Local to these announcement cases: the module-level OPTIONS is the panel's
+  // own fixture and carries no colour labels, so the announcement would read
+  // the hue code where it should read the name.
   const OPTIONS = [
     { code: "W", label: "White" },
     { code: "R", label: "Red" },
@@ -898,20 +896,20 @@ describe("colorChangeAnnouncement", () => {
 
   it("reads the added string when a color is toggled on", () => {
     expect(colorChangeAnnouncement(base, withColors(["R"]), [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.color.announceAdded("Red", 1, "0", "2,933"),
+      collectionFilterCopy.color.announceAdded("Red", 1, 0, 2933),
     );
   });
 
   it("reads the removed string when a color is toggled off", () => {
     expect(colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933)).toBe(
-      collectionFilterCopy.color.announceRemoved("Red", 0, "0", "2,933"),
+      collectionFilterCopy.color.announceRemoved("Red", 0, 0, 2933),
     );
   });
 
   it("reads the cleared string for Clear rather than the removed string", () => {
     expect(
       colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933, "clear-colors"),
-    ).toBe(collectionFilterCopy.color.announceCleared("2,933"));
+    ).toBe(collectionFilterCopy.color.announceCleared(0));
   });
 
   it("says nothing about colors when only the type selection moved", () => {

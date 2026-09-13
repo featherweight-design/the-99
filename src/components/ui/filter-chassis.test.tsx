@@ -116,7 +116,7 @@ describe("FilterChassis", () => {
   it("gives a chip's remove a real 44px target without growing the chip", () => {
     // The chip line's height is the invariant the whole frame rests on, so the
     // target is an overlay rather than padding — the same treatment
-    // `collection/chip-row.tsx` uses.
+    // `/collection`'s retired chip row used.
     render(<FilterChassis {...base} controls={null} chips={[chip("a", "3 colours")]} />);
     const remove = screen.getByRole("button", { name: "Remove filter: 3 colours" });
     expect(remove.className).toContain("after:h-[44px]");
@@ -266,10 +266,34 @@ describe("FilterChassis", () => {
     expect(screen.getByTestId("marker")).toBeTruthy();
   });
 
+  it("scrolls the compact row only when a route asks, and never when wide", () => {
+    // /collection has no compact filter surface, so its five controls stay
+    // inline; without this they run off a 390px screen, because the row cannot
+    // wrap by design.
+    const { container, rerender } = render(
+      <FilterChassis {...base} form="compact" scrollCompactControls controls={null} chips={[]} />,
+    );
+    const row = () => container.querySelector("[data-chassis-row='controls']")!.firstElementChild!;
+    expect(row().className).toContain("overflow-x-auto");
+    rerender(
+      <FilterChassis {...base} form="wide" scrollCompactControls controls={null} chips={[]} />,
+    );
+    expect(row().className).not.toContain("overflow-x-auto");
+    rerender(<FilterChassis {...base} form="compact" controls={null} chips={[]} />);
+    expect(row().className).not.toContain("overflow-x-auto");
+  });
+
   it("carries exactly one live region", () => {
     const { container } = render(
       <FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />,
     );
     expect(container.querySelectorAll("[aria-live]")).toHaveLength(1);
   });
+
+
+
+
+
+
+
 });

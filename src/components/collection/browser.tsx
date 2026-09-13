@@ -37,7 +37,12 @@ import {
 } from "../../lib/collection/availability-filter";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
-import { ChipRow } from "./chip-row";
+import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
+import { useMinWidth } from "../ui/use-min-width";
+import { collectionChips } from "../../lib/collection/chips";
+import { AvailabilityGlyph } from "../ui/availability-marker";
+import { collectionChassisCopy } from "../../lib/copy/collection";
+import type { FilterChip } from "../ui/filter-chassis";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
 import { NoResults } from "./no-results";
@@ -95,6 +100,19 @@ function quantityOf(list: BrowseListCard[]): number {
 }
 
 /**
+ * The clear intent each chip's removal carries, keyed by the chip it belongs to.
+ * Lives here rather than in `chips.ts` because the intents are the mount's
+ * vocabulary and that module is pure — it has no business naming this layer's
+ * announcement paths.
+ */
+const CHIP_CLEAR_INTENT: Record<string, FilterChangeIntent | undefined> = {
+  colors: "clear-colors",
+  types: "clear-types",
+  sets: "clear-sets",
+  avail: "clear-availability",
+};
+
+/**
  * The live-region string for a change to one multi-select, or null when that
  * selection did not move. Set and Type share it: the two copy blocks have the
  * same shape, and only the field read and the clear intent differ.
@@ -110,18 +128,20 @@ function selectionAnnouncement(
   totalQuantity: number,
 ): string | null {
   if (before.length === after.length && before.every((c, i) => c === after[i])) return null;
-  const total = totalQuantity.toLocaleString();
   // Always the cleared string for `Clear`, including at exactly one selection —
   // "Bloomburrow removed. No set filter, …" belongs to toggling the last option
   // off, not to pressing the button.
-  if (cleared) return copy.announceCleared(total);
+  // What survives `next`, which is what every branch below reports. Clearing
+  // ONE dimension does not clear the others, so announcing the whole
+  // collection here claimed a list the reader is not looking at.
+  const shown = quantityOf(filterCards(cards, next));
+  if (cleared) return copy.announceCleared(shown);
   const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
-  const shown = quantityOf(filterCards(cards, next)).toLocaleString();
   const added = after.find((c) => !before.includes(c));
-  if (added !== undefined) return copy.announceAdded(label(added), after.length, shown, total);
+  if (added !== undefined) return copy.announceAdded(label(added), after.length, shown, totalQuantity);
   const removed = before.find((c) => !after.includes(c));
   if (removed !== undefined) {
-    return copy.announceRemoved(label(removed), after.length, shown, total);
+    return copy.announceRemoved(label(removed), after.length, shown, totalQuantity);
   }
   return null;
 }
@@ -219,6 +239,10 @@ export function CollectionBrowser({
 }) {
   const search = useSearchParams();
   const isDesktop = useIsDesktop();
+  // The result line lives in the chassis, so which of the two it draws follows
+  // the CHASSIS's breakpoint rather than this file's 768. `isDesktop` still
+  // picks the default view, which is its own question.
+  const chassisWide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
   const [filters, setFilters] = useState<BrowseFilters>(() => ({
     search: search.get("q") ?? "",
@@ -323,13 +347,24 @@ export function CollectionBrowser({
     [cards, filterColors, filterTypes, filterSetCodes],
   );
 
-  // Chips read set NAMES, not codes — the locked "names over codes" decision.
-  const setLabels = useMemo(
-    () => Object.fromEntries(setOptions.map((o) => [o.code, o.label])),
-    [setOptions],
-  );
 
   const [announcement, setAnnouncement] = useState("");
+  const [announceSeq, setAnnounceSeq] = useState(0);
+
+  /**
+   * The one way an announcement is published. Every writer goes through it —
+   * filter changes, sort, the panels' arrow-key and search-match messages —
+   * because `ResultLine` prefers the id over the text as the event's identity.
+   * A writer that set the message without bumping the sequence would have every
+   * later message read as the same event and go unspoken until some other path
+   * moved the counter.
+   */
+  const publishAnnouncement = useCallback((message: string) => {
+    setAnnouncement(message);
+    setAnnounceSeq((n) => n + 1);
+  }, []);
+  // Bumped whenever an announcement is published, so a repeated sentence is a
+  // new event rather than an unchanged string the live region would not re-read.
 
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
@@ -340,17 +375,23 @@ export function CollectionBrowser({
       // filter set, and the string quotes that figure. At most one of the two
       // selections moves per change, so the first non-null wins outright.
       const message =
+        // Short-circuits the per-dimension chain: with every filter emptied at
+        // once, whichever dimension answered first would name itself as the
+        // thing that changed.
+        (intent === "clear-all"
+          ? collectionChassisCopy.announceClearedAll(totalQuantity)
+          : null) ??
         setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity, intent) ??
         typeChangeAnnouncement(filters, f, cards, typeOptions, totalQuantity, intent) ??
         colorChangeAnnouncement(filters, f, cards, colorOptions, totalQuantity, intent) ??
         availabilityChangeAnnouncement(
           filters, f, cards, availabilityOptions, totalQuantity, intent,
         );
-      if (message) setAnnouncement(message);
+      if (message) publishAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
     },
-    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity],
+    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
   );
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
@@ -360,6 +401,65 @@ export function CollectionBrowser({
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
   const sorted = useMemo(() => sortCards(filtered, sort, sortDirection), [filtered, sort, sortDirection]);
+
+  const anyFilterActive =
+    filters.search.trim() !== "" ||
+    filters.colors.length > 0 ||
+    filters.types.length > 0 ||
+    filters.setCodes.length > 0 ||
+    (filters.availability ?? []).length > 0;
+
+  // `collectionChips` needs a label per code; the bar already built these.
+  const chassisChips: FilterChip[] = collectionChips(filters, {
+    types: typeOptions,
+    sets: setOptions,
+    availability: availabilityOptions,
+  }).map((chip) => ({
+    key: chip.key,
+    label: chip.label,
+    spoken: chip.spoken,
+    dots: chip.dots,
+    // The same marker the list rows draw. `chips.ts` reports the states as
+    // codes because it is pure; building the glyph is this layer's job.
+    leading:
+      chip.markers && chip.markers.length > 0 ? (
+        <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
+          {chip.markers.map((state) => (
+            <AvailabilityGlyph
+              key={state}
+              // `chips.ts` filters `free` out, which is the markerless state.
+              state={state as "soft" | "hard" | "over"}
+              seam="var(--bg)"
+            />
+          ))}
+        </span>
+      ) : undefined,
+    // A chip stands for a whole CONTROL, so removing one is the same event as
+    // that control's Clear — `chip.next` empties the dimension outright. Without
+    // the intent the change falls through to the per-value branch, and removing
+    // a `2 colours` chip unsets both while the live region says only
+    // "White removed". The search chip has no clear intent because no
+    // announcement claims a search change.
+    onRemove: () => updateFilters(chip.next, CHIP_CLEAR_INTENT[chip.key]),
+  }));
+
+  // `ChipRow`'s clear also reset the sort. The chassis's Clear names itself
+  // "Clear all filters" and promises the sort is unchanged, so it no longer
+  // does — a visible behaviour change on this route, and the chassis's promise
+  // is the one that has to hold.
+  //
+  // The intent is what makes the live region say "Filters cleared" — so it is
+  // carried only when a filter was actually on. `NoResults` draws its CTA in
+  // the catalog-unmatched state too, where the reader has a collection but not
+  // one card of it resolved: nothing is filtered, the button changes nothing,
+  // and announcing a clear would describe an event that did not happen.
+  // The write still goes through, so a search of nothing but whitespace — which
+  // `anyFilterActive` trims to inactive — is still emptied.
+  const clearAllFilters = () =>
+    updateFilters(
+      { search: "", colors: [], types: [], setCodes: [], availability: [] },
+      anyFilterActive ? "clear-all" : undefined,
+    );
   const windowed = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 
   // The ordered ids Prev/Next pages through — the sorted list, not the window,
@@ -419,6 +519,28 @@ export function CollectionBrowser({
   return (
     <>
       <FilterBar
+        colorOptions={colorOptions}
+        chips={chassisChips}
+        onClearAll={clearAllFilters}
+        // A counter per announcement, so the same sentence spoken twice — the
+        // same search re-run to the same count — is heard twice.
+        announceId={announceSeq}
+        // What the queue measures staleness against. The count alone cannot:
+        // two filters can leave the same number of rows.
+        revision={JSON.stringify(filters)}
+        warnResult={sorted.length === 0}
+        resultLine={
+          chassisWide
+            ? collectionChassisCopy.result(
+                sorted.length,
+                cards.length,
+                totalQuantity,
+                anyFilterActive,
+              )
+            : // The phone keeps the shorter line the chip row drew: row 3 also
+              // carries `By set` and the view toggle at 390px.
+              collectionChassisCopy.resultCompact(sorted.length)
+        }
         filters={filters}
         sort={sort}
         view={effectiveView}
@@ -428,57 +550,24 @@ export function CollectionBrowser({
         availabilityOptions={availabilityOptions}
         availabilityOk={availabilityOk}
         announcement={announcement}
-        onAnnounce={setAnnouncement}
+        onAnnounce={publishAnnouncement}
         onFiltersChange={updateFilters}
         sortDirection={sortDirection}
-        colorOptions={colorOptions}
         onSortChange={updateSort}
         onViewChange={setView}
       />
-      <div className="px-[16px] md:px-[34px]">
-        <ChipRow
-          filters={filters}
-          sort={sort}
-          resultCount={sorted.length}
-          uniqueCount={cards.length}
-          totalQuantity={totalQuantity}
-          onClearAll={() => {
-            updateFilters(
-              { search: "", colors: [], types: [], setCodes: [], availability: [] },
-              "clear-sets",
-            );
-            updateSort("name", DEFAULT_SORT_DIRECTION.name);
-          }}
-          onRemoveColor={(c) => updateFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
-          onRemoveType={(t) =>
-            updateFilters({ ...filters, types: filters.types.filter((x) => x !== t) })
-          }
-          setLabels={setLabels}
-          onRemoveSet={(code) =>
-            updateFilters({ ...filters, setCodes: filters.setCodes.filter((c) => c !== code) })
-          }
-          onClearSearch={() => updateFilters({ ...filters, search: "" })}
-          onRemoveAvailability={(state) =>
-            updateFilters({
-              ...filters,
-              availability: (filters.availability ?? []).filter((s) => s !== state),
-            })
-          }
-        />
-      </div>
+      
 
       {sorted.length === 0 ? (
         <NoResults
           query={filters.search}
           colors={filters.colors}
           totalCount={totalQuantity}
-          onClearAll={() => {
-            updateFilters(
-              { search: "", colors: [], types: [], setCodes: [], availability: [] },
-              "clear-sets",
-            );
-            updateSort("name", DEFAULT_SORT_DIRECTION.name);
-          }}
+          // The same `clearAllFilters` the chassis's Clear uses. This was a
+          // second implementation of the same action that still reset the sort
+          // and announced itself as a set clear — two visible controls with one
+          // name behaving differently.
+          onClearAll={clearAllFilters}
           onKeepSearch={() =>
             updateFilters({
               search: filters.search,

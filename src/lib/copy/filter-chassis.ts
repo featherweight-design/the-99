@@ -10,6 +10,9 @@ import { filterCopy } from "./lanes";
 import { refreshCopy } from "./refresh";
 import type { FilterPanelCopy } from "./collection";
 
+/** One formatter for every figure this module prints. */
+const fmt = (n: number) => n.toLocaleString("en-US");
+
 export const chassisCopy = {
   chips: {
     /**
@@ -41,6 +44,13 @@ export const chassisCopy = {
      * state belongs to `aria-checked`; the name stays the colour.
      */
     pipAria: (name: string) => name,
+    /**
+     * A hue no surviving card carries. `collection/color-filter.ts` states the
+     * contract — listed and disabled, because the vocabulary is fixed and a hue
+     * vanishing from the row would move the other four — and the name has to
+     * say so, since the pip itself draws no disabled treatment.
+     */
+    pipAriaUnavailable: (name: string) => `${name}, no matches`,
     /** Reused on the commander lanes; stated for the two routes that had none. */
     legend: "Colour",
     /** Chip label past one pip — never one chip per hue. */
@@ -51,7 +61,7 @@ export const chassisCopy = {
      * that return very different lists.
      */
     collapsedExactly: (count: number) =>
-      `Exactly ${count} ${count === 1 ? "colour" : "colours"}`,
+      `Exactly ${fmt(count)} ${count === 1 ? "colour" : "colours"}`,
     /** The five hues, in WUBRG order, with the names the lanes already use. */
     /**
      * Keyed lowercase by `lanes.ts`; the pips look up through a lowercased
@@ -78,7 +88,7 @@ const deckPanel = (
   triggerLabel: dimension,
   triggerOne: (name) => `${dimension} · ${name}`,
   triggerAriaCollapsed: `${dimension} filter`,
-  triggerAriaWithSelection: (n) => `${dimension} filter, ${n} on`,
+  triggerAriaWithSelection: (n) => `${dimension} filter, ${fmt(n)} on`,
 
   panelAriaLabel: `${dimension} options`,
   sheetTitle: dimension,
@@ -89,18 +99,18 @@ const deckPanel = (
   clearSearch: "",
 
   groupDefault: dimension,
-  groupSelected: (n) => `${n} on`,
+  groupSelected: (n) => `${fmt(n)} on`,
   groupMatches: (n) => countNoun(n),
 
   optionAria: (name, count) => `${name}, ${countNoun(count)}`,
   optionAriaUnavailable: (name) => `${name}, no decks`,
 
-  // `FilterPanel` formats the count before calling this, so `total` arrives as
-  // "1,000" and `Number(total)` would be NaN — a player with four figures of
-  // decks would hear "NaN decks". The string is used as given; only the
-  // singular needs a case.
-  footerTotal: (total) => `${total} ${total === "1" ? "deck" : "decks"}`,
-  footerSelected: (n, total) => `${n} of ${total} on`,
+  // Raw counts, formatted here. `FilterPanel` used to format before calling,
+  // which meant a caller could not pluralise without parsing its own string
+  // back out — and left two separator conventions reachable in one sentence on
+  // a non-`en-US` browser, since only some figures were pinned.
+  footerTotal: (total) => `${fmt(total)} ${total === 1 ? "deck" : "decks"}`,
+  footerSelected: (n, total) => `${fmt(n)} of ${fmt(total)} on`,
   clear: refreshCopy.filters.clear,
   done: "Done",
   closeLabel: `Close ${dimension.toLowerCase()} filter`,
@@ -109,19 +119,19 @@ const deckPanel = (
   emptyBody: (query) => ({ before: "No ", query, after: " to show" }),
 
   announceMatches: (n) => countNoun(n),
-  announceAdded: (name, n, shown, total) => `${name} on. ${shown} of ${total} decks.`,
-  announceRemoved: (name, n, shown, total) => `${name} off. ${shown} of ${total} decks.`,
-  announceCleared: (total) => `Filters cleared. ${total} decks.`,
+  announceAdded: (name, n, shown, total) => `${name} on. ${fmt(shown)} of ${fmt(total)} decks.`,
+  announceRemoved: (name, n, shown, total) => `${name} off. ${fmt(shown)} of ${fmt(total)} decks.`,
+  announceCleared: (total) => `Filters cleared. ${fmt(total)} decks.`,
 });
 
-const deckCount = (n: number) => `${n} ${n === 1 ? "deck" : "decks"}`;
+const deckCount = (n: number) => `${fmt(n)} ${n === 1 ? "deck" : "decks"}`;
 
 export const deckChassisCopy = {
   status: deckPanel(refreshCopy.filters.statusHeading, deckCount),
   played: deckPanel(refreshCopy.filters.lastPlayedHeading, deckCount),
   /** Row 3. The count the header used to print, now the chassis's result line. */
   result: (shown: number, total: number) =>
-    shown === total ? deckCount(total) : `${shown} of ${deckCount(total)} match`,
+    shown === total ? deckCount(total) : `${fmt(shown)} of ${deckCount(total)} match`,
 } as const;
 
 /**

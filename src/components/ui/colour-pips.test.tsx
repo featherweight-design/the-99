@@ -96,4 +96,28 @@ describe("chassisCopy.colour", () => {
     expect(chassisCopy.colour.collapsedExactly(1)).toBe("Exactly 1 colour");
     expect(chassisCopy.colour.collapsedExactly(3)).toBe("Exactly 3 colours");
   });
+
+  it("refuses a hue no surviving card carries, and says why", () => {
+    // `collection/color-filter.ts` states the contract: a colour with no
+    // matches stays listed and disabled. The row it replaces dropped nothing,
+    // because the vocabulary is fixed and losing one pip would move the rest.
+    const onToggle = vi.fn();
+    render(<ColourPips form="wide" value={[]} onToggle={onToggle} unavailable={["B"]} />);
+    const black = screen.getByRole("switch", { name: "Black, no matches" });
+    expect(black).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(black);
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("keeps a lit hue interactive even with nothing left to match", () => {
+    // Otherwise the filter that emptied the list is the one filter the reader
+    // cannot turn off.
+    const onToggle = vi.fn();
+    render(<ColourPips form="wide" value={["B"]} onToggle={onToggle} unavailable={["B"]} />);
+    const black = screen.getByRole("switch", { name: "Black" });
+    expect(black).not.toHaveAttribute("aria-disabled");
+    fireEvent.click(black);
+    expect(onToggle).toHaveBeenCalledWith("B");
+  });
+
 });

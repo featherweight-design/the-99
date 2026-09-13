@@ -1,11 +1,11 @@
 // `/collection`'s chip derivation, the shape `decks/filter.ts`'s `chipLabels`
 // and `rack/chip-line.tsx`'s `chipsFor` already have on the other three routes.
 //
-// This REPLACES the route's existing chip row. `browser.tsx` renders `ChipRow`
-// below the filter bar today, with the selected values and the result count;
-// the chassis draws both rows itself, so 3b retires that component and this is
-// what feeds the replacement. Unlike `/decks`, nothing here is new behaviour —
-// it is the same information in the shared frame.
+// This REPLACED the route's own chip row. `browser.tsx` rendered `ChipRow`
+// below the filter bar, with the selected values and the result count; the
+// chassis draws both rows itself, so that component is deleted and this is what
+// feeds the replacement. Unlike `/decks`, nothing here is new behaviour — it is
+// the same information in the shared frame.
 //
 // One chip per CONTROL rather than per value — five sets collapse to "5 sets",
 // and the trigger beside it is where the five are listed.

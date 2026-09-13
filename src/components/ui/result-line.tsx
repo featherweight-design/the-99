@@ -27,6 +27,7 @@ export function ResultLine({
   announceId,
   revision,
   silent,
+  warn,
 }: {
   line: string;
   /**
@@ -63,6 +64,13 @@ export function ResultLine({
    * only the region goes quiet.
    */
   silent?: boolean;
+  /**
+   * Draw the line in `--warning` rather than `--fg-muted`. `/collection`'s
+   * retired chip row turned its count amber at zero, which is the one state
+   * where the number is telling the reader something went wrong rather than
+   * reporting a total.
+   */
+  warn?: boolean;
 }) {
   // The announcement and the event that produced it. Text alone is not enough:
   // setting the same string leaves React's DOM untouched, and a live region
@@ -89,6 +97,17 @@ export function ResultLine({
   const queuedId = useRef<string | number | undefined>(undefined);
   // The `announce` last seen, so a message is spoken once and never re-used.
   const lastAnnounce = useRef<string | number | undefined>(undefined);
+  // The revision the current `announced` line was filed under. `revision` is
+  // the caller's statement of what the RESULT is, and the line is only its
+  // rendering — so a line that moves while the revision holds describes the
+  // same list in different words, and is not something to announce.
+  //
+  // The case that needs it: a breakpoint-driven caller picks its short or long
+  // sentence from a media query, and `useMinWidth` hydrates from its server
+  // snapshot. On a wide first load the line therefore flips form once, just
+  // after mount, with nothing having happened — and the region announced a
+  // count the reader never asked for, past the initial-arrival silence.
+  const announcedFor = useRef<string | number | undefined>(undefined);
   useEffect(() => {
     // Both halves matter. A custom message can arrive while the count holds —
     // a filter that narrows to the same number still changed something — so
@@ -100,7 +119,12 @@ export function ResultLine({
     // otherwise — so a surface that can repeat a sentence stays able to.
     const identity = announceId ?? announce;
     const fresh = announce !== undefined && announce !== "" && identity !== lastAnnounce.current;
-    if (!fresh && (announced.current === null || announced.current === line)) {
+    // A line that moved while the revision held is a re-rendering of the same
+    // result, not a new one.
+    const sameResult =
+      revision !== undefined && announced.current !== null && announcedFor.current === revision;
+    if (!fresh && (announced.current === null || announced.current === line || sameResult)) {
+      announcedFor.current = revision;
       announced.current = line;
       // Silence may have been entered and left while this line sat unchanged.
       // Leaving the timestamp set lets a later, genuinely new count read as
@@ -172,6 +196,7 @@ export function ResultLine({
     // come through. Suppressing it here lost it permanently.
     if (silentFor !== null && silentFor >= ANNOUNCE_DELAY_MS && !fresh) {
       announced.current = line;
+      announcedFor.current = revision;
       return;
     }
     // `fresh` is the guard, not `announce ?? line`: the caller's initial value
@@ -191,6 +216,7 @@ export function ResultLine({
     // component composes itself is the only thing that waits.
     if (fresh && !heldWentStale) {
       announced.current = line;
+      announcedFor.current = revision;
       setAnnouncement((a) => ({ text: message, seq: a.seq + 1 }));
       return;
     }
@@ -201,6 +227,7 @@ export function ResultLine({
     // announced at all.
     const t = setTimeout(() => {
       announced.current = line;
+      announcedFor.current = revision;
       setAnnouncement((a) => ({ text: message, seq: a.seq + 1 }));
     }, ANNOUNCE_DELAY_MS);
     return () => clearTimeout(t);
@@ -210,7 +237,9 @@ export function ResultLine({
     <>
       <p
         aria-hidden
-        className="m-0 font-mono text-[11px] leading-[1.5] tabular-nums text-[color:var(--fg-muted)]"
+        className={`m-0 font-mono text-[11px] leading-[1.5] tabular-nums ${
+          warn ? "text-[color:var(--warning)]" : "text-[color:var(--fg-muted)]"
+        }`}
       >
         {line}
       </p>

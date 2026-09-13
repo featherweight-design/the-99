@@ -346,7 +346,17 @@
 | Mobile placeholder | `Search your cards…` |
 | Desktop placeholder | `Search by card name…` |
 
-### Color Filter (desktop — pip selector widget)
+### Color Filter (ONE pip control, both widths)
+
+> **Superseded by the filter chassis.** This table described a desktop-only pip row beside a
+> separate mobile `Color ▾` panel — two drawings and two ARIA roles for one filter. `ColourPips`
+> now draws it at both widths: 22px pips on the wide form, 44px on the compact one, Scryfall's
+> own symbols as images (never masked or tinted), a 2px `--accent` ring as the entire lit
+> treatment, and no opacity separating lit from unlit. A hue the other filters leave no cards in
+> stays listed and takes the system's `.42` disabled dimming with `aria-disabled`. The `COLOR`
+> caption went with the row that carried it: it existed to explain five abstract squares, and
+> the symbols explain themselves. The geometry below is the wide form's.
+
 | Property | Desktop |
 |----------|---------|
 | display | flex |
@@ -512,10 +522,18 @@
 ### Copy (result count variants)
 | Context | Copy |
 |---------|------|
-| Mobile default | `1,418 results` |
-| Desktop with filters | `Showing 3 of 2,933` |
-| Desktop zero results | `Showing 0 of 2,933` |
-| Desktop no filters | `No filters active` / `Showing 1,418 unique · 2,933 total` |
+| Mobile default | `1,418 results` (`1 result` at one) |
+| Desktop with filters | `Showing 3 of 1,418` |
+| Desktop zero results | `Showing 0 of 1,418` |
+| Desktop no filters | `No filters on` / `Showing 1,418 unique · 2,933 total` |
+
+**The filtered denominator is the DISTINCT count, not the quantity total.** It read
+`Showing 3 of 2,933` until the chassis migration: 3 distinct cards over 2,933 copies, two
+different units, and a denominator no filtering can arrive at the numerator from. Both halves
+are now distinct counts. The rest state still names both figures because it labels them.
+
+The rest state's leading half is the chassis's own `No filters on`, not this route's former
+`No filters active` — one frame, one sentence.
 
 ---
 
@@ -2098,7 +2116,7 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | **Replace · Step 3 (Confirm)** | User clicks `Continue to replace →` from step 2 | Type-to-confirm modal over dimmed step-2 content | `importCount` (2,904), `currentCount` (2,933), filename; confirm button disabled until input === "REPLACE" |
 | **Type-to-Confirm — Armed** | User has typed exactly `REPLACE` in the input | Confirm button opacity goes from 0.6 → 1 | `inputValue === "REPLACE"` |
 | **Filter Active (chips shown)** | Any filter applied (color, type, set, or search has value) | Filter chip row visible below filter bar | `activeFilters[]`, `resultCount`, `totalCount` |
-| **Filter Empty (no filters)** | No active filters | Chip row shows "No filters active" / total count | — |
+| **Filter Empty (no filters)** | No active filters | Chassis row 2 shows "No filters on" / total count | — |
 
 ---
 
@@ -2132,13 +2150,13 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 ### Filter bar / chips
 - `Search your cards…` (mobile placeholder)
 - `Search by card name…` (desktop placeholder)
-- `Color`, `Type ▾`, `Set ▾`, `A–Z ▾` (mobile filter buttons)
+- `Type ▾`, `Set ▾`, `A–Z ▾` (compact filter buttons — `Color` is retired; the pips are drawn inline at both widths)
 - `Type ▾`, `Set ▾`, `Sort: Name ▾` (desktop filter buttons)
-- `FILTERS:` (chip row desktop label)
+- `FILTERS:` (chip row desktop label — retired with the chip row; the chassis draws row 2 itself)
 - `Clear all`
-- `No filters active`
-- `Showing N of 2,933`
-- `Showing 0 of 2,933` (turns amber)
+- `No filters on`
+- `Showing N of 1,418` (distinct over distinct — see the result-copy note above)
+- `Showing 0 of 1,418` (turns amber)
 - `1,418 results` (mobile)
 - `Showing 1,418 unique · 2,933 total` (desktop, no filters)
 

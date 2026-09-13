@@ -129,6 +129,19 @@ export type FilterChassisProps = {
    * can leave the same count.
    */
   revision?: string | number;
+  /**
+   * Let the compact control row scroll horizontally instead of fitting.
+   *
+   * Decision 18 gives every route two forms and no wrapping, which assumes the
+   * compact form puts its dimensions behind one trigger. `/collection` has no
+   * such surface yet — it shipped a scrolling row — and mounting its five
+   * controls inline at 390px pushes them off-screen, since the row cannot wrap
+   * by design. Scrolling preserves what that route already did until it gains a
+   * compact surface of its own; no other route sets this.
+   */
+  scrollCompactControls?: boolean;
+  /** Draw the result line as a warning — see `ResultLine`'s `warn`. */
+  warnResult?: boolean;
 };
 
 /**
@@ -155,7 +168,7 @@ export const CHASSIS_WIDE_MIN_PX = 1000;
 
 export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
-  silentResult, resultTrailing, announce, announceId, revision,
+  silentResult, resultTrailing, announce, announceId, revision, scrollCompactControls, warnResult,
 }: FilterChassisProps) {
   return (
     <div
@@ -182,7 +195,13 @@ export function FilterChassis({
             every panel the chassis opens — and it clips focus outlines with
             them. `min-w-0` is what lets the group shrink; the shrinking is
             constrained on the one control that may shrink, not by a clip. */}
-        <div className="flex min-w-0 flex-auto items-center gap-[8px]">
+        <div
+          className={[
+            "flex min-w-0 flex-auto items-center gap-[8px]",
+            // Never on the wide form, where the row is sized to fit.
+            scrollCompactControls && form === "compact" ? "overflow-x-auto" : "",
+          ].join(" ")}
+        >
           {controls}
         </div>
         {/* The hairline is the separation, and it is why sort reads as not-a-filter. */}
@@ -208,7 +227,7 @@ export function FilterChassis({
         ) : (
           chips.map((chip) => (
             // The chip is a span and the ✕ inside it is the button, which is
-            // how `collection/chip-row.tsx:186-203` does it and why. Making
+            // how `/collection`'s retired chip row did it, and why. Making
             // the whole chip the target and centring a 44px overlay on it
             // looks equivalent and is not: chips sit 6px apart, so adjacent
             // overlays overlap and a tap near the boundary removes the
@@ -290,7 +309,7 @@ export function FilterChassis({
 
       {/* Row 3 — the chassis's only live region. */}
       <div className="flex items-center gap-[10px]" data-chassis-row="result">
-        <ResultLine line={resultLine} announce={announce} announceId={announceId} revision={revision} silent={silentResult} />
+        <ResultLine line={resultLine} announce={announce} announceId={announceId} revision={revision} silent={silentResult} warn={warnResult} />
         {resultTrailing && (
           <div className="ml-auto flex items-center gap-[8px]">{resultTrailing}</div>
         )}

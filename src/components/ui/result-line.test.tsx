@@ -261,6 +261,15 @@ describe("ResultLine", () => {
     expect(container.querySelector("[role='status']")?.textContent).not.toBe("EOE added.");
   });
 
+  it("draws the line as a warning when asked", () => {
+    // /collection's retired chip row turned amber at zero — the one state where
+    // the number reports something wrong rather than a total.
+    const { rerender } = render(<ResultLine line="0 results" warn />);
+    expect(screen.getByText("0 results").className).toContain("var(--warning)");
+    rerender(<ResultLine line="41 decks" />);
+    expect(screen.getByText("41 decks").className).toContain("var(--fg-muted)");
+  });
+
   it("is the one live region, and it is atomic", () => {
     const { container } = render(<ResultLine line="41 decks" />);
     const regions = container.querySelectorAll("[aria-live]");
@@ -269,4 +278,26 @@ describe("ResultLine", () => {
     // The visible line must not be read a second time by the same reader.
     expect(screen.getByText("41 decks").getAttribute("aria-hidden")).toBe("true");
   });
+
+  it("says nothing when only the line's wording changes under one revision", () => {
+    // A breakpoint-driven caller picks its short or long sentence from a media
+    // query, and `useMinWidth` hydrates from its server snapshot — so on a wide
+    // first load the line flips form once, just after mount, with nothing
+    // having happened. The revision is what says the result did not move.
+    const { rerender, container } = render(<ResultLine line="1,240 results" revision="r1" />);
+    rerender(<ResultLine line="Showing 1,240 unique · 2,933 total" revision="r1" />);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
+  });
+
+  it("still announces once the revision moves", () => {
+    // The guard above must not swallow the next real change.
+    const { rerender, container } = render(<ResultLine line="1,240 results" revision="r1" />);
+    rerender(<ResultLine line="Showing 1,240 unique · 2,933 total" revision="r1" />);
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<ResultLine line="Showing 412 of 1,240" revision="r2" />);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(container.querySelector("[role='status']")?.textContent).toBe("Showing 412 of 1,240");
+  });
+
 });

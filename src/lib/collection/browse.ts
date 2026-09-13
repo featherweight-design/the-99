@@ -178,7 +178,7 @@ export function formatLastUpdated(date: Date, now: Date = new Date()): string {
   return date.toLocaleDateString("en-US", opts);
 }
 
-/** Shared WUBRG palette — used by mana-pips, rows-view, chip-row, card-modal. */
+/** Shared WUBRG palette — used by mana-pips, rows-view, the chassis chips, card-modal. */
 export const WUBRG_COLOR: Record<string, string> = {
   W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)",
 };

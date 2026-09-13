@@ -55,4 +55,24 @@ describe("ViewToggle", () => {
     );
     expect(container.innerHTML).not.toContain("--accent");
   });
+
+  // The chassis switches form at 1000px and `md:` is 768, so a chassis-mounted
+  // toggle tells this component which form it is in rather than asking Tailwind.
+  // Both overrides are asserted: emitting the desktop size for `compact` would
+  // drop /collection below its 44px target, and leaving the responsive classes
+  // on for `compact={false}` would put the phone size on a desktop bar.
+  it("takes the compact size when told it is compact", () => {
+    render(<ViewToggle options={OPTIONS} value="a" onChange={() => {}} compact />);
+    const button = screen.getByRole("button", { name: "A view" });
+    expect(button).toHaveClass("w-[44px]", "h-[44px]");
+    expect(button.className).not.toMatch(/\bmd:w-\[32px\]/);
+  });
+
+  it("takes the wide size when told it is not", () => {
+    render(<ViewToggle options={OPTIONS} value="a" onChange={() => {}} compact={false} />);
+    const button = screen.getByRole("button", { name: "A view" });
+    expect(button).toHaveClass("w-[32px]", "h-[32px]");
+    expect(button.className).not.toMatch(/\bw-\[44px\]/);
+  });
+
 });
