@@ -2182,7 +2182,7 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 - `[N] rows will be skipped`
 - `Unmatched names — [N]` (section header)
 - `Parse errors — [N]` (section header)
-- Issue CTA strip (v2, Surfaces v2 §Collection): heading `That CSV put up a fight.`, body `[N] rows didn't parse — quantity columns, mostly. Nothing fatal. Want to see the carnage?` (singular `1 row` derived), CTA `View [N] issues`
+- Issue CTA strip (v2, Surfaces v2 §Collection): heading `That CSV put up a fight.`, body `[N] rows didn't parse: quantity columns, mostly. Nothing fatal. Want to see the carnage?` (singular `1 row` derived), CTA `View [N] issues`
 - `View all 29 issues →` (v1, replaced by the strip above)
 - `Show all 21 unmatched →` / `Show all 8 errors →` (desktop)
 - Sticky bar (mobile): `Skips 29 rows · replaces your 2,933 cards with 2,904`

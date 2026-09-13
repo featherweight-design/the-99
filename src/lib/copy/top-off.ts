@@ -222,18 +222,18 @@ export const topOffCopy = {
      *  nudge — an assurance that stopping short is a choice with a way back. */
     slotsStayOpen: (n: string) =>
       n === '1'
-        ? '1 slot stays open — you can come back to it'
-        : `${n} slots stay open — you can come back to them`,
+        ? '1 slot stays open: you can come back to it'
+        : `${n} slots stay open: you can come back to them`,
 
     /** Zero ticks, and the zero-owned case, which is the same state. */
-    nothingTicked: 'nothing ticked — the list arrives with what you own already ticked',
+    nothingTicked: 'nothing ticked: the list arrives with what you own already ticked',
     nothingTickedUnowned: (cand: string) =>
-      `nothing ticked — you own none of these ${cand}, so every tick is one to buy`,
+      `nothing ticked: you own none of these ${cand}, so every tick is one to buy`,
     /** Zero ticks because every candidate was declined. The other two variants
      *  both explain a list that is there to be ticked; this one is the only
      *  state where the rows are gone, so it names the way back instead. */
     nothingTickedAllDeclined: (cand: string) =>
-      `you've set all ${cand} aside — show any of them again to pick it up`,
+      `you've set all ${cand} aside: show any of them again to pick it up`,
 
     /** ADOPTED from recommendationsCopy.fill.fillingRows, which this key
      *  replaces: a 27-row write is exactly what that sentence was written for,
@@ -276,9 +276,9 @@ export const topOffCopy = {
 
     /** The seed's sentence — the shipped provenance wording, recast as a line. */
     seedLine: (n: string, buy: string) =>
-      `${plural(n, 'card', 'cards')} — the roles and the mana base, ${buy} to buy.`,
+      `${plural(n, 'card', 'cards')}: the roles and the mana base, ${buy} to buy.`,
     seedLineNoBuy: (n: string) =>
-      `${plural(n, 'card', 'cards')} — the roles and the mana base.`,
+      `${plural(n, 'card', 'cards')}: the roles and the mana base.`,
     /** The seed NAMES its reversal rather than growing a button for it: that
      *  control is a rule and a row away in the toolbar, and duplicating it here
      *  would put two destructive controls in one box.

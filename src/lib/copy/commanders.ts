@@ -1,4 +1,4 @@
-// Commanders copy — transcribed verbatim from
+// Commanders copy — wording transcribed from
 // design/design_handoff_the99_richness/The 99 - Surfaces v2.dc.html §Commanders.
 // The degraded/EDHREC-offline banner is deliberately absent: the handoff ships
 // it as the counter-example showing where character is NOT allowed. Its copy
@@ -24,7 +24,7 @@ export const commandersCopy = {
     line: (cardsRead: number, candidates: number) =>
       `${cardsRead.toLocaleString("en-US")} card${cardsRead === 1 ? "" : "s"} read. ${candidates.toLocaleString("en-US")} can lead. I ranked ${
         candidates === 1 ? "it" : "them"
-      } — you're welcome.`,
+      }. You're welcome.`,
     // Not from the mock. The mock wrote this line for a crumb row; here it sits
     // in the guided-setup banner, whose job is to say what to do next. The v1
     // body it replaces carried this instruction, and the mock line carries no

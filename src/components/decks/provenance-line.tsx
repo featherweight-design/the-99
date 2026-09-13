@@ -318,7 +318,7 @@ function LedgerLine({
  * dropped to `--fg-locked`.
  *
  * A recount REPLACES the base sentence rather than joining it: "68 cards · 5
- * now yours" is what the pass holds now, and appending it to "68 cards — the
+ * now yours" is what the pass holds now, and appending it to "68 cards: the
  * roles and the mana base, 7 to buy." would state the same 68 twice and then
  * quote a buy figure for cards that have since left.
  *

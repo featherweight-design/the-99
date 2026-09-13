@@ -4,9 +4,9 @@ import { issueInspectorCopy } from "./issue-inspector";
 // The mock only draws the plural, three-row case. A one-row import is reachable
 // and must not read "1 rows"; a four-figure one must not read "1418".
 describe("issueInspectorCopy.entry", () => {
-  it("reproduces the Surfaces v2 body verbatim", () => {
+  it("pins the Surfaces v2 body, repunctuated", () => {
     expect(issueInspectorCopy.entry.body(3)).toBe(
-      "3 rows didn't parse — quantity columns, mostly. Nothing fatal. Want to see the carnage?",
+      "3 rows didn't parse: quantity columns, mostly. Nothing fatal. Want to see the carnage?",
     );
   });
 

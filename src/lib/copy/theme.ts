@@ -7,7 +7,7 @@ export const themeCopy = {
   // Announced to screen readers on the radiogroup.
   groupLabel: "Colour theme",
   // aria-label per option. The plane is included because it is visible text.
-  optionLabel: (name: string, plane: string) => `${name} — ${plane}`,
+  optionLabel: (name: string, plane: string) => `${name}, ${plane}`,
   // Live-region announcement after a selection. There is no Save, so this is the receipt.
   applied: (name: string) => `${name} applied.`,
   // Shown once to a user whose persisted theme no longer exists, per MIGRATION.md.

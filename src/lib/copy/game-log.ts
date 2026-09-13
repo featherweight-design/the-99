@@ -105,7 +105,7 @@ export const gameLogCopy = {
     // Quotes the aggregate panel's real output. Showing the output is the only
     // honest way to pitch an output — the italicised clause is rendered as
     // <i>, and it is the app talking.
-    body: 'One game you already remember. The third one is where this tab earns its keep \u2014 it starts saying things like',
+    body: 'One game you already remember. The third one is where this tab earns its keep. It starts saying things like',
     bodyQuote: 'ran out of gas, 3 of 3 games',
     // The sentence closes on the quote. Telling the reader the quote is worth
     // acting on explains a demonstration they have just read.
@@ -152,7 +152,7 @@ export const gameLogCopy = {
     sub: (marked: string, count: string, record: string) =>
       `Marked in ${marked} of ${count} games. Record ${record}.`,
     subAll: (count: string, record: string) =>
-      `Marked in ${count} of ${count} games \u2014 every one you have logged. Record ${record}.`,
+      `Marked in ${count} of ${count} games: every one you have logged. Record ${record}.`,
 
     // The record itself. An en dash between the figures, never a hyphen.
     record: (w: string, l: string) => `${w}\u2013${l}`,
@@ -175,7 +175,7 @@ export const gameLogCopy = {
     // this way so a clause's whole wording lives here, rather than half here and
     // half in whichever component does the joining.
     mixedClause: (axis: string, up: string, down: string) =>
-      `${axis} \u2014 ${up} up, ${down} down.`,
+      `${axis}: ${up} up, ${down} down.`,
     mixedLine: (clauses: string) => `${clauses} Cut both ways so far.`,
 
     // N = 1 only. A true title for a panel that is not a finding.
@@ -228,7 +228,7 @@ export const gameLogCopy = {
     cancel: 'Cancel',
     // Says the quiet part out loud: two empty columns otherwise read as a
     // required field whose requirement you cannot see.
-    optionalNote: 'marks are optional \u2014 a result on its own is a game',
+    optionalNote: 'marks are optional: a result on its own is a game',
     // Returned by logGame, rendered in the shipped MutationError. Defined here
     // rather than in REJECTION_MESSAGES, which holds the deck-add rejections.
     refused: 'We couldn\u2019t save that game. Nothing has been logged.',

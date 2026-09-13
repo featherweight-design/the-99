@@ -1,4 +1,4 @@
-// Issue Inspector copy — ported verbatim from
+// Issue Inspector copy — wording ported from
 // design/design_handoff_the99_issue_inspector/Issue Inspector - copy strings.js
 // Voice: terse; mono for structured data; no reassurance fluff; no exclamation marks.
 
@@ -11,8 +11,8 @@ export const issueInspectorCopy = {
     // bar's copy branching (added in #48's confirm-modal work and extended in
     // this PR to the review-screen sticky bar). "Replaces your collection" is
     // wrong when there's no existing collection to replace.
-    help: "Skipped rows are left out of the import — every other row still replaces your collection.",
-    helpInitial: "Skipped rows are left out of the import — every other row still gets imported.",
+    help: "Skipped rows are left out of the import. Every other row still replaces your collection.",
+    helpInitial: "Skipped rows are left out of the import. Every other row still gets imported.",
     closeAriaLabel: "Close",
   },
   tabs: {
@@ -65,7 +65,7 @@ export const issueInspectorCopy = {
   entry: {
     heading: "That CSV put up a fight.",
     body: (total: number) =>
-      `${total.toLocaleString("en-US")} row${total === 1 ? "" : "s"} didn't parse — quantity columns, mostly. Nothing fatal. Want to see the carnage?`,
+      `${total.toLocaleString("en-US")} row${total === 1 ? "" : "s"} didn't parse: quantity columns, mostly. Nothing fatal. Want to see the carnage?`,
     cta: (total: number) => `View ${total.toLocaleString("en-US")} issue${total === 1 ? "" : "s"}`,
   },
 };

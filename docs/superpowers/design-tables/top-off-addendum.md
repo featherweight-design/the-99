@@ -379,7 +379,7 @@ base rule would have used on a box nobody can see.
 | Rung | Condition | Copy key | Longest measured form |
 |---|---|---|---|
 | 1 | `atCap` | `list.cap` — `Untick one to swap another in` | — |
-| 2 | `openSlots - tickedCount > 0` | `commit.slotsStayOpen` | `31 slots stay open — you can come back to them`, 45 chars ≈ 281px inside 366px |
+| 2 | `openSlots - tickedCount > 0` | `commit.slotsStayOpen` | `31 slots stay open: you can come back to them`, 45 chars ≈ 281px inside 366px |
 
 Rungs 1 and 2 partition the whole space by arithmetic: `atCap` is
 `tickedCount >= openSlots`, which is exactly `openSlots - tickedCount <= 0`, so
@@ -574,7 +574,7 @@ Pattern is `game-history-row.tsx`'s inline confirm **verbatim, minus the danger 
 | `restoreAllAria` | `topOffCopy.list` | `` `Put all ${declined} declined candidates back on the list` `` | `declined: string` |
 | `doorNoteMobile` | `topOffCopy.strip` | `'0'` → `You own none of these. Nothing is added until you say so.` · `'1'` → `1 arrives ticked. Nothing is added until you say so.` · else → `` `${seeded} arrive ticked. Nothing is added until you say so.` `` | `seeded: string` |
 | `doorNoteAgainMobile` | `topOffCopy.strip` | `Reopens where you left it, declines and all.` | — (not parameterised) |
-| `nothingTickedAllDeclined` | `topOffCopy.commit` | `` `you've set all ${cand} aside — show any of them again to pick it up` `` | `cand: string` |
+| `nothingTickedAllDeclined` | `topOffCopy.commit` | `` `you've set all ${cand} aside: show any of them again to pick it up` `` | `cand: string` |
 | `restoredAll` | `topOffCopy.announce` | `` `${declined} candidates back on the list. ${ticked} of ${n} ticked.` `` | `declined: string, ticked: string, n: string` |
 
 ### New — four for the ratified keep-all confirm
@@ -591,7 +591,7 @@ Pattern is `game-history-row.tsx`'s inline confirm **verbatim, minus the danger 
 | Key | Change | Detail |
 |---|---|---|
 | `list.cap` | **string verbatim, home moved** | `Untick one to swap another in`. Phone → the pinned bar (rung 1). Desktop → the selection head, after the counts, behind a `border-left: 1px var(--border-strong)` divider. Renders at both widths; `capLineId` never dropped. Amendment 2: one element, home selected by `use-min-width.ts`. |
-| `commit.slotsStayOpen` | **string unchanged, one class deleted** | `hidden md:block` removed; joins the phone ladder at rung 2. Desktop keeps `md:ml-auto` in the commit row. No new string. |
+| `commit.slotsStayOpen` | **string unchanged by this amendment, one class deleted** | `hidden md:block` removed; joins the phone ladder at rung 2. Desktop keeps `md:ml-auto` in the commit row. No new string. |
 
 ### Ratifications — three, adopted without change
 

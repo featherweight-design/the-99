@@ -551,7 +551,7 @@ Same 7px dot/ring as desktop.
 
 **Non-zero selection, all owned**
 
-- `synergyCopy.select.promise(filled, picked, total)` — "We'll fill {filled}, plus your {picked} — {total} of the 99."
+- `synergyCopy.select.promise(filled, picked, total)` — "We'll fill {filled}, plus your {picked}: {total} of the 99."
 - `{total}` rendered in `var(--fg)` (`#EDE6D8`)
 
 **Non-zero selection with unowned cards**
@@ -561,7 +561,7 @@ Same 7px dot/ring as desktop.
 
 **Selection fills 99 (clamp case)**
 
-- `synergyCopy.select.promiseFull(picked)` — "Your {picked} fill the 99 on their own — we'll leave the rest to you."
+- `synergyCopy.select.promiseFull(picked)` — "Your {picked} fill the 99 on their own. We'll leave the rest to you."
 
 ### Promise line (mobile — in sticky bar)
 
@@ -802,7 +802,7 @@ Promise text column (flex:1, flex-direction:column):
 | font-size | 12.5px |
 | color | `var(--fg-body)` (`#C6B79A`) |
 | line-height | 1.6 |
-| content | `synergyCopy.lastSlots.short(total, n)` — "{total} of 99. Your collection ran out {n} short — you own what you own, EDHREC knows what it knows, and that is everything we have." |
+| content | `synergyCopy.lastSlots.short(total, n)` — "{total} of 99. Your collection ran out {n} short — you own what you own, EDHREC knows what it knows, and that is everything we have."<br>**⚠ Drift, pre-dating the 2026-09-13 punctuation sweep:** the shipped string reads "…ran out {n} short: there was nothing left in it that EDHREC ranks for this commander." The tail diverged in WORDING, not punctuation, so the sweep left it rather than half-correcting a quotation that was already stale. Needs a Design ruling on which wording stands. |
 | border-color | `var(--accent)` — **not** `var(--warning)` (running out of cards is not an outage) |
 
 ---

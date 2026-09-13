@@ -1,6 +1,8 @@
-// Shell copy — transcribed verbatim from
+// Shell copy — wording transcribed from
 // design/design_handoff_the99_richness/The 99 - App Shell v2.dc.html.
-// Voice: Kitchen Table. Do not paraphrase; the wink is load-bearing.
+// Voice: Kitchen Table. Do not paraphrase; the wink is load-bearing. Punctuation
+// diverges from the handoff as of 2026-09-13 — rule 4 applies here and the handoff
+// has not been reissued.
 
 export type LoadingCopy = { heading: string; status: string };
 
@@ -79,7 +81,7 @@ export const shellCopy = {
     manageAccount: "Manage account",
     signOut: "Sign out",
     // The trigger names the person, not the glyphs — the initials are aria-hidden.
-    triggerLabel: (name: string) => `Account — ${name}`,
+    triggerLabel: (name: string) => `Account: ${name}`,
     // Stands in for the name when Clerk has neither a name nor an email.
     fallbackName: "your account",
   },

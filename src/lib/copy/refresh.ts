@@ -149,7 +149,7 @@ export const refreshCopy = {
   zero: {
     decksHeading: 'No decks yet',
     decksBody:
-      'Pick a commander and we assemble the 99 from cards you already own — then track what is missing.',
+      'Pick a commander and we assemble the 99 from cards you already own, then track what is missing.',
     decksBodyShort: 'Pick a commander and we assemble the 99 from cards you already own.',
     browseCommanders: 'Browse commanders',
     importDeck: 'Import a deck',
@@ -179,7 +179,7 @@ export const refreshCopy = {
     importPrompt: 'Already have a deck elsewhere?',
     // Locked rail and tab items are dimmed and inert; the accessible name still
     // carries the reason.
-    lockedItemAria: (label: string) => `${label} — unlocks once a collection is read`,
+    lockedItemAria: (label: string) => `${label}: unlocks once a collection is read`,
   },
 
   // ── Filters, both surfaces ────────────────────────────────────────────
