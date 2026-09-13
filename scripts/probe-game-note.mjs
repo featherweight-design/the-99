@@ -10,10 +10,17 @@
 // #9's own two heights — and that a note at the 140-character cap wraps instead
 // of pushing the row off the viewport.
 //
-// The note is written by hand — nothing in the app produces one — so this needs
-// a game with a note under the account it signs in as. That is not the fixture
-// account: see the local-dev note in memory. Point `WALK_DECK` at a deck the
-// probe user owns.
+// The form writes notes now, but not the one this probe needs: the cap fixture
+// is 140 characters with no whitespace, which nobody types. Seed it by hand
+// under the account this signs in as — NOT the fixture account, see the
+// local-dev note in memory — and point `WALK_DECK` at a deck the probe user
+// owns:
+//
+//   insert into deck_games (deck_id, user_id, result, pod_size, played_at, note)
+//   values ('<deck>', '<probe user>', 'loss', 4, now(), repeat('x', 140));
+//
+// A game with no note has to be on the same deck, which is the ordinary case
+// and usually already there.
 //
 // Run by hand against a local `pnpm dev`: `node scripts/probe-game-note.mjs`
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

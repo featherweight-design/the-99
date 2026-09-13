@@ -429,9 +429,10 @@ export const deckGames = pgTable("deck_games", {
   // cap and the reason the history line needs no truncation: it wraps to three
   // lines at 390px and two at 900px, and that is the whole design.
   //
-  // Nothing in the app writes it. The log form has no field and the actions do
-  // not accept one — it is entered by hand against the database and read back
-  // here. The check is therefore the only thing enforcing the cap.
+  // The log form writes it and `logGame` enforces the same cap in code points,
+  // so this check is the backstop rather than the only gate. A game ALREADY
+  // logged is the exception: #9 ships no edit action, so a note added to one
+  // afterwards is written by hand, and then this check is all there is.
   note: text("note"),
 }, (t) => [
   check("deck_games_result_check", sql`${t.result} in ('win', 'loss', 'draw')`),

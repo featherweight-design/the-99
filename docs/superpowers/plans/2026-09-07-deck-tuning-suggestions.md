@@ -536,8 +536,13 @@ Add to `LogGameInput`:
 and validate it in the same inline style the action already uses (lines 861-889 — no zod), remembering the action's own comment that "a server action is a public endpoint, so the input's declared type is a claim and not a guarantee":
 
 ```typescript
-  const note = typeof input.note === "string" ? input.note.trim() : "";
-  if (note.length > deckTuningCopy.note.maxLength) return refuse;
+  // As shipped. A non-string is REFUSED rather than read as an empty note: the
+  // signature is a claim, and quietly dropping a crafted value hides it.
+  if (input.note !== undefined && typeof input.note !== "string") return refuse;
+  const note = input.note?.trim() ?? "";
+  // Code points, not `.length` — the column's check counts the way Postgres
+  // `char_length` does, and `.length` would refuse 71 emoji as 142 characters.
+  if (countCharacters(note) > deckTuningCopy.note.maxLength) return refuse;
 ```
 
 `refuse` is the existing local at line 855. Pass `note: note.length > 0 ? note : null` in the `deckGames` insert. A blank note stores null, not an empty string — so "has a note" is one predicate everywhere.
@@ -632,7 +637,11 @@ Expected: FAIL — no element with the note label.
 
 - [x] ~~**Step 3: Add the field to the form**~~ — shipped
 
-A `<textarea name="note">` with `maxLength={deckTuningCopy.note.maxLength}`, labelled by `deckTuningCopy.note.label`, described by `deckTuningCopy.note.ariaDescription`, hinted with `deckTuningCopy.note.hint`. The counter renders only once the length reaches `deckTuningCopy.note.warnAt` — below that it is absent from the DOM, not merely hidden, because a screen reader reading a live counter on every keystroke is the noise the design is avoiding. Amend the existing optional-note line to `deckTuningCopy.note.optionalNote`; do not change `gameLogCopy.form.optionalNote` itself, which other tests assert on.
+**As shipped, and this paragraph is corrected — it described two things the design table does not.** An `<input>`, never a `<textarea>`: the table says so outright, and one line is the whole promise. `maxLength={deckTuningCopy.note.maxLength}`, labelled by `deckTuningCopy.note.label`, described by `deckTuningCopy.note.ariaDescription`, hinted with `deckTuningCopy.note.hint` (and `hintShort` below `md:`, where the full gloss pushes the counter onto a second line).
+
+The counter appears **on focus or content** — S1 states 1 and 2 — not at `warnAt`. It turns `--warning` at `warnAt` and stops at the cap with no error. This plan originally held the counter back until 130 to spare a screen reader a live count on every keystroke; the field solves that instead by naming the counter through `aria-describedby` rather than making it a live region, so it is read on demand and never announced.
+
+Amend the existing optional-note line to `deckTuningCopy.note.optionalNote`; do not change `gameLogCopy.form.optionalNote` itself, which other tests assert on.
 
 - [x] ~~**Step 4: Add the note to the history row**~~ — shipped
 

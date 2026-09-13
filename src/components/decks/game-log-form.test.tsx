@@ -316,6 +316,22 @@ describe("GameLogForm", () => {
       expect(logGame.mock.calls.at(-1)?.[1]).toMatchObject({ note: "  Flooded out on turn six.  " });
     });
 
+    // S1 state 7. There is no edit action on a logged game, so a refusal that
+    // wiped the field would mean retyping a sentence the player has already
+    // written — and the refusal is the one moment they are least inclined to.
+    it("keeps the note, and its counter, when the save is refused", async () => {
+      logGame.mockResolvedValueOnce({ ok: false, message: "nope" });
+      mount();
+      open();
+      fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+      fireEvent.change(field(), { target: { value: "Flooded out on turn six." } });
+      fireEvent.click(save());
+
+      await screen.findByRole("alert");
+      expect(field()).toHaveValue("Flooded out on turn six.");
+      expect(counter("Flooded out on turn six.".length)).toBeInTheDocument();
+    });
+
     // S1 state 8. A note is about one game, so the next game starts blank —
     // and the counter goes with it.
     it("reopens blank after a save", async () => {
