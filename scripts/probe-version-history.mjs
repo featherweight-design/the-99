@@ -642,11 +642,12 @@ try {
         /Initial/.test(v1Panel.text) && /nothing before it to compare/.test(v1Panel.text),
         v1Panel.text.slice(0, 160),
       );
-      const browse = v1Panel.links.find((a) => /^Browse the \d+ cards/.test(a.text));
+      // The arm used to link out to the deck page. The rail now draws on the deck
+      // page itself, so any link here would point at the page already on screen.
       check(
-        `${viewport.label} · the first version offers the list instead`,
-        browse !== undefined && browse.href === `/decks/${deck.deckId}`,
-        browse ? `${browse.text} → ${browse.href}` : v1Panel.links.map((a) => a.text).join(", ") || "no link",
+        `${viewport.label} · the first version links nowhere`,
+        v1Panel.links.length === 0,
+        v1Panel.links.map((a) => `${a.text} → ${a.href}`).join(", ") || "no link",
       );
     }
 

@@ -11,7 +11,6 @@
 // The two lists are fetched when the row opens rather than with the rail: a
 // ten-version deck would otherwise pay ten diffs to draw ten closed rows.
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getVersionDiff } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -130,16 +129,12 @@ function StatBox({ label, children }: { label: string; children: React.ReactNode
  * The v1 arm: a version with nothing before it to compare against.
  *
  * Not an empty diff — an empty diff would say the reader took ninety-nine
- * decisions and then changed nothing. It says instead where the list came from,
- * and offers the one thing there is to do with it: read it on the deck page.
+ * decisions and then changed nothing. It says instead why there is no diff.
+ *
+ * No link out: the rail now draws on the deck page itself, so every link to the
+ * deck page from here pointed at the page the reader was already on.
  */
-function InitialPanel({
-  deckId,
-  version,
-}: {
-  deckId: string;
-  version: VersionSummary;
-}) {
+function InitialPanel() {
   return (
     <div className="flex items-start gap-[11px] rounded-[9px] px-[15px] py-[12px] max-w-[640px] bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--elevated)] [border-left:3px_solid_var(--accent)]">
       <span
@@ -151,13 +146,7 @@ function InitialPanel({
       <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
         <b className="font-semibold text-[color:var(--fg)]">{copy.initialHeading}</b>
         {" — "}
-        {copy.initialBody}{" "}
-        <Link
-          href={`/decks/${deckId}`}
-          className="text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
-        >
-          {copy.initialBrowse(version.cardCount)}
-        </Link>
+        {copy.initialBody}
       </p>
     </div>
   );
@@ -367,7 +356,7 @@ export function VersionDiff({
       )}
 
       {initial ? (
-        <InitialPanel deckId={deckId} version={version} />
+        <InitialPanel />
       ) : diff === null ? (
         // The panel's height, held empty. Two absences decide this between them:
         // the surface takes no SVG — every mark on it is a CSS disc, a border or a

@@ -127,8 +127,8 @@ export const deckVersioningCopy = {
   review: {
     heading: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
     lede: (version: number) =>
-      "Nothing here is a decision except the pulls. The list on the deck page is already " +
-      `this list — this page exists to show you what it costs before you lock it in as v${version}.`,
+      "Nothing here is a decision except the pulls. The deck page already shows this list — " +
+      `this is what it costs to lock in as v${version}.`,
 
     // A versionless deck reaches this page to cut v1, and neither line above can
     // describe it: there is no predecessor to count changes against, so the pair
@@ -188,8 +188,7 @@ export const deckVersioningCopy = {
       `${card} is ${deck}'s commander. It cannot be pulled.`,
 
     outNote: (n: number) =>
-      `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit. No per-row ` +
-      "toggle: putting one back is adding it to the deck, and the deck page already does that.",
+      `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit.`,
 
     // The breakdown and the footer each carry a purchase figure, and a failed
     // claim read leaves every add's bucket null — so all three terms of the
@@ -383,8 +382,7 @@ export const deckVersioningCopy = {
 
     diffIn: (n: number) => `In · ${n}`,
     diffOut: (n: number) => `Out · ${n}`,
-    diffNote:
-      "no ownership dot, no prices, no pull offers — this is what the deck was, not what it needs",
+    diffNote: "this is what the deck was, not what it needs",
     // A version with a predecessor and no card movement: the note, the commander
     // or the basics moved instead. Without this the panel opens on nothing at all,
     // which reads as a failed read rather than as an answer. No count in it — a
@@ -396,10 +394,7 @@ export const deckVersioningCopy = {
     diffUnavailable: "we couldn't read what this version changed — open the row again to retry",
 
     initialHeading: "Initial",
-    initialBody:
-      "the list as it stood when versioning arrived. There is nothing before it to compare " +
-      "against, so there is no diff to show.",
-    initialBrowse: (cards: number) => `Browse the ${plural(cards, "card")} →`,
+    initialBody: "the first list, with nothing before it to compare against.",
 
     commanderChange: (from: string, to: string) => `${from} → ${to}`,
     /** One side of that arrow when the version was piloted by a pair. A partner

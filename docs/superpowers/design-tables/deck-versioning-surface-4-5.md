@@ -34,7 +34,27 @@ the rail, namely:
 - **State 37b** (no versions) is unchanged in effect: the tab is absent entirely, so a URL naming
   `?tab=versions` on a deck with none lands on `Your deck`.
 
-Everything about the rail's rows, the opened diff, the v1 panel and the game stamp is untouched.
+Everything about the rail's rows, the opened diff, the v1 panel and the game stamp is untouched
+by that ruling. A second ruling of the same date follows.
+
+## Ruling of 2026-09-13 — the copy pass
+
+Hugh, of the v1 panel: *"There's a lot of superfluous content."* Four strings were cut or
+shortened under `/copy-review`, and one link retired outright. Each is recorded at its own row
+below; collected here so a verify agent reads them before the canvas values:
+
+- **`history.initialBody`** now reads `the first list, with nothing before it to compare
+  against.` It named the feature being built ("when versioning arrived") and then restated its
+  own point ("so there is no diff to show").
+- **`history.initialBrowse`** is **retired**. Its only target was the deck page, which the rail
+  now draws on.
+- **`history.diffNote`** now reads `this is what the deck was, not what it needs`. Its opening
+  clause enumerated three things the panel visibly does not draw.
+- **`review.outNote`** drops its second sentence, which explained a per-row toggle that does not
+  exist. That sentence was also long enough to crush the `GOING OUT · n` heading beside it into
+  three stacked lines, so the heading now carries `flex-none`.
+- **`review.lede`** drops `this page exists to show you what it costs`, which restated the
+  sentence before it.
 
 Scope: exactly five components, across the two surfaces.
 
@@ -45,7 +65,8 @@ Scope: exactly five components, across the two surfaces.
    two comparison stat blocks, two equal columns of type-grouped name-and-cost-track rows,
    and the closing note. Phone substitutes a segmented In/Out pair for the two columns.
 4. **The v1 opened panel** — no columns at all: the shipped provenance shape carrying
-   `Initial`, one sentence, and `Browse the {n} cards →`.
+   `Initial` and one sentence. The canvas also drew `Browse the {n} cards →`, retired
+   2026-09-13 once the rail moved onto the deck page.
 5. **The game log version stamp** — one fixed 44px slot in the existing log row, between the
    meta line and the marks, plus its `—` variant.
 
@@ -602,14 +623,15 @@ reads as a canvas state label rather than product chrome (Discrepancy 40).
 | font-size | — | `10px` |
 | color | — | `#6A6152` (`--fg-locked`) |
 | margin-top | — | `14px` |
-| text drawn | — | `no ownership dot, no prices, no pull offers — this is what the deck was, not what it needs` — §Copy per state writes the first clause as `no availability` (Discrepancy 54) |
+| text drawn | — | `this is what the deck was, not what it needs` — **amended 2026-09-13** (Hugh's copy ruling); the canvas and §Copy per state both open with an enumeration of absences (`no ownership dot, no prices, no pull offers` / `no availability`), which labelled what the panel visibly does not draw. Discrepancy 54 is moot with it. |
 
 ---
 
 ## Component: v1 opened (no predecessor)
 
 State 39 / READINESS 8: **no columns at all**, never `+99`. The shipped provenance shape
-carrying `Initial`, one sentence and a route into the list. Preceded on the canvas by the same
+carrying `Initial` and one sentence. (The canvas also drew a route into the list; retired
+2026-09-13, see below.) Preceded on the canvas by the same
 mono caption treatment as the v2 panel, reading `v1 opened — there is no predecessor`
 (Discrepancy 40).
 
@@ -704,34 +726,15 @@ mono caption treatment as the v2 panel, reading `v1 opened — there is no prede
 | `Initial` colour | — | `#EDE6D8` (`--fg`) |
 | `Initial` font-weight | — | `600` (drawn as `<b>` with an explicit weight) |
 | dash after `Initial` | — | `—` (em dash) |
-| text | — | `Initial — the list as it stood when versioning arrived. There is nothing before it to compare against, so there is no diff to show.` |
+| text | — | `Initial — the first list, with nothing before it to compare against.` — **amended 2026-09-13** (Hugh's copy ruling); the canvas draws `Initial — the list as it stood when versioning arrived. There is nothing before it to compare against, so there is no diff to show.` |
 
-### `Browse the {n} cards →` (`history.initialBrowse(cards)`)
+### `Browse the {n} cards →` (`history.initialBrowse(cards)`) — RETIRED 2026-09-13
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| element | — | `a` (`href="#"` on the canvas; the real target is the deck's card list) |
-| display | — | inline, inside the body paragraph's last sentence |
-| font-family | — | `var(--font-sans)` (inherited) |
-| font-size | — | `12.5px` (inherited) |
-| color | — | `#C9A24B` (`--accent`) — from the global `a` rule, not a local declaration |
-| text-decoration | — | `none` (global `a` rule) |
-| arrow | — | `→` (`&rarr;`), part of the string |
-| target size | — | inline text; **no 44px target is drawn or specified** — and there is no phone frame to check it against (Discrepancy 55) |
-
-#### `Browse the {n} cards →` — hover
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| color | — | `#D8B25E` (`--accent-hover`) — the global `a:hover` rule, the **only** hover declaration in the entire bundle |
-| text-decoration | — | `none` (unchanged) |
-| transition | — | — (none declared) |
-
-#### `Browse the {n} cards →` — focus
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| outline / ring | — | **— (not specified anywhere in the bundle)** (Discrepancy 57) |
+The canvas drew this link, and the shipped panel carried it until the rail moved onto the deck
+page itself (PR #580). Its only target was `/decks/{id}`, which is now the page the panel is
+drawn on, so the link pointed at the page already on screen. The key, the `<Link>`, and every
+property below are gone: the v1 arm carries no link at all, which `probe:versions` asserts.
+Discrepancies 55 and 57, both about this link's target size and focus ring, are moot with it.
 
 ---
 
@@ -991,9 +994,10 @@ not positions in one flat 1–45 sequence.
     commander.** Notes: "mono 10px right block (`{n} cards · {commander}` / `held {n} games`)".
     Canvas v1 panel: `99 cards · mv 3.34` / `held 2 games`. The commander appears in no drawn
     version surface at all.
-57. **No focus style is specified for anything on either surface.** The one link
-    (`Browse the {n} cards →`) inherits the global `a` colour and a hover, and nothing in the
-    bundle declares a focus ring — for it, for the rail rows, or for the segmented pair.
+57. **No focus style is specified for anything on either surface.** The canvas's one link
+    (`Browse the {n} cards →`, retired 2026-09-13) inherited the global `a` colour and a hover,
+    and nothing in the bundle declares a focus ring — for the rail rows or for the segmented
+    pair. With the link gone these surfaces carry no link at all.
 58. **The tab row's own metrics contradict the shipped row this table declares to be shipped
     chrome.** "Tab row container" above rules `gap: 18px / 26px` with `overflow: hidden` at
     390px, and "Versions tab — active cell" rules `gap: 6px / 7px` with `padding-bottom:
