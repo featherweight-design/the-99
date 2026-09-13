@@ -451,12 +451,21 @@ try {
     // pick at any time and row 1.14 forbids anything above it moving, so the art
     // reserves the tag's row whether or not this card has a figure. The invariant
     // is therefore about the ROOM under the art, not about today's stack.
-    const twoFaced = Boolean(stack.querySelector('button[aria-label^="Turn over to"]'));
-    const reserved = 10 + 15 + (twoFaced ? 38 : 0) + 24;
+    //
+    // The stack's height is MEASURED and the tag's row is added only when it is
+    // not already there. The figures this file used to repeat from the component
+    // were a second copy of an arithmetic the component had already got wrong —
+    // 18px for a tag whose box is 21 — so a probe agreeing with them proved they
+    // agreed, not that either was right.
+    const priced = stack.querySelector('[data-testid^="modal-price-"]');
+    const TAG_ROW = 6 + 21; // the 6px gap and the tag's own measured box
+    const needed = Math.ceil(s.height) + 10 + (priced ? 0 : TAG_ROW);
     return {
       dialogHeight: Math.round(d.height),
       artWidth: Math.round(a.width),
-      reserved,
+      stackHeight: Math.round(s.height),
+      priced: Boolean(priced),
+      needed,
       roomUnderArt: Math.round(d.bottom - a.bottom),
       overflowPx: Math.round(s.bottom - d.bottom),
       // Clipped is not the same as absent: the node is laid out either way, so
@@ -473,7 +482,7 @@ try {
   });
   console.log("\n── desktop 1300x600 · the stack still fits ──");
   console.log(JSON.stringify(short, null, 2));
-  if (!short || short.overflowPx > 0 || short.roomUnderArt < short.reserved || !short.lastRowReachable) {
+  if (!short || short.overflowPx > 0 || short.roomUnderArt < short.needed || !short.lastRowReachable) {
     console.log(
       "\nFAIL: the under-card stack is clipped by the dialog on a short window (E19)."
         + " The art has to give back the height the stack needs.",

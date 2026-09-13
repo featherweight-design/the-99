@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cardZoomCopy } from "../../lib/copy/card-surfaces";
+import { indexPriceRows } from "../../lib/cards/price-lookup";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -465,6 +466,26 @@ describe("the turn inside the zoom", () => {
       .toBeGreaterThan(0);
   });
 
+  it("holds a face the art landed on behind the zoom until the zoom closes", () => {
+    // Turn the art, open the zoom before the 320ms turn ends, let it land. The
+    // layer shows the FRONT, so announcing the back there would describe a card
+    // nobody is looking at — but on close that back face IS what is on screen,
+    // and a turn nobody announced is a face the reader was never told about.
+    mount(twoFaced());
+    fireEvent.click(screen.getAllByRole("button", { name: /Turn over to/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Look at/ })[0]);
+    const region = () => screen.getByRole("dialog").querySelector('[aria-live="polite"]');
+    expect(region()?.textContent).toBe("");
+
+    screen
+      .queryAllByTestId("modal-art-turn")
+      .forEach((box) => fireEvent.transitionEnd(box, { propertyName: "transform" }));
+    expect(region()?.textContent).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+    expect(region()?.textContent).toBe("Showing Insectile Aberration");
+  });
+
   it("puts focus on the turn rather than the close", () => {
     const layer = openTwoFaced();
 
@@ -496,16 +517,48 @@ describe("what sits under the card", () => {
     expect(screen.getByRole("dialog").textContent).not.toContain("⤢");
   });
 
+  // PRICED, or the order test proves two thirds of an order: without a figure the
+  // stack holds a hint and a turn, and a regression putting the price on top would
+  // sail through.
+  const pricedTwoFaced = (): BrowseCard => ({
+    ...twoFaced(),
+    // Built through `indexPriceRows`, the real indexer, rather than a hand-shaped
+    // object: the lookup asks about `catalogIds` and two identities, and a fixture
+    // shaped by hand agrees with whichever of them it was written against.
+    prices: indexPriceRows([{
+      newest_as_of: "2026-09-08 09:00:00",
+      scryfall_id: "s-1",
+      set_code: "RVR",
+      collector_number: "12",
+      price_cents: 241,
+      price_cents_foil: null,
+      price_cents_etched: null,
+      as_of: "2026-09-08 09:00:00",
+    }]),
+  });
+
   it("orders the stack hint, turn, price", () => {
-    mount(twoFaced());
+    mount(pricedTwoFaced());
     // Source order is the laid-out order in a flex column, so the DOM is the
     // assertion. A browser proves the geometry; this proves the sequence.
     const stack = screen.getAllByTestId("modal-under-card")[0];
     const rows = [...stack.querySelectorAll("[data-testid], button")];
-    const hint = rows.findIndex((n) => n.getAttribute("data-testid") === "modal-zoom-hint");
-    const turn = rows.findIndex((n) => n.getAttribute("aria-label")?.startsWith("Turn over to"));
+    const at = (pred: (n: Element) => boolean) => rows.findIndex(pred);
+    const hint = at((n) => n.getAttribute("data-testid") === "modal-zoom-hint");
+    const turn = at((n) => n.getAttribute("aria-label")?.startsWith("Turn over to") ?? false);
+    const price = at((n) => n.getAttribute("data-testid")?.startsWith("modal-price-") ?? false);
     expect(hint).toBeGreaterThanOrEqual(0);
     expect(turn).toBeGreaterThan(hint);
+    expect(price).toBeGreaterThan(turn);
+  });
+
+  it("keeps the hint out of the accessibility tree", () => {
+    // The art's own button is already named "Look at {card} up close". A second
+    // voice saying "Click to zoom" beside it is the same instruction twice.
+    mount();
+    for (const hint of screen.getAllByTestId("modal-zoom-hint")) {
+      expect(hint).toHaveAttribute("aria-hidden", "true");
+    }
   });
 
   it("keeps the turn OUT of the box that rotates", () => {

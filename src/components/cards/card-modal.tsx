@@ -294,6 +294,13 @@ export function CardModal({
   // The layer turns its own copy. `flipped` belongs to the art behind it, which the
   // reader may have turned for their own reasons.
   const [zoomFlipped, setZoomFlipped] = useState(false);
+  /**
+   * A face the art landed on while the zoom covered it, waiting for the zoom to
+   * close. A ref rather than state: nothing renders from it, and holding it in
+   * state would re-render the whole modal to record a sentence nobody can hear
+   * yet.
+   */
+  const heldArtFace = useRef<string | null>(null);
   // The two shipped ✕ buttons, one per breakpoint tree.
   const closeRefs = useRef<(HTMLButtonElement | null)[]>([]);
   /**
@@ -512,7 +519,14 @@ export function CardModal({
     // The layer's own announcements go with it. Reopening shows the front, and a live
     // region still reading "Showing <back face>" would describe a card that is no
     // longer there.
-    setAnnouncement("");
+    //
+    // Unless the ART landed on a face while the layer covered it — that face is
+    // what the reader is now looking at, and it has not been said yet. It REPLACES
+    // the clear rather than preceding it: two `setAnnouncement` calls in one
+    // handler are one render, and the last one wins.
+    const held = heldArtFace.current;
+    heldArtFace.current = null;
+    setAnnouncement(held ?? "");
   }, []);
   const openZoom = useCallback(() => {
     // A zoom is a look, not a setting (table row 4.10): it always opens on the front,
@@ -717,14 +731,21 @@ export function CardModal({
 
   function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
+    const face = twoFacedCopy.flippedAria(flipped ? faces.back : faces.front);
     // NOT while the zoom is up. A reader who turns the art and opens the zoom
     // inside the 320ms turn leaves this transition still running underneath a
     // layer that deliberately opens on the FRONT — and `openZoom` clears the
     // region for exactly that reason. Announcing here would write the art's back
-    // face into it while the front is on screen. The art keeps its face; only
-    // the sentence about it is dropped, and the zoom announces its own turns.
-    if (zoomed) return;
-    setAnnouncement(twoFacedCopy.flippedAria(flipped ? faces.back : faces.front));
+    // face into it while the front is on screen.
+    //
+    // HELD, not dropped: when the zoom closes, that back face is what the reader
+    // is looking at, and a turn nobody ever announced is a face they were never
+    // told about. `closeZoom` flushes this.
+    if (zoomed) {
+      heldArtFace.current = face;
+      return;
+    }
+    setAnnouncement(face);
   }
 
   // Art follows the resolved printing, not the card-level image: they are the same value
@@ -836,7 +857,13 @@ export function CardModal({
    * How much room the stack under the art needs, in px, at DESKTOP — the width
    * whose column has a fixed height to fit inside. 10px clears the art, the hint
    * is a 15px line, and each further row is a 6px gap plus its own height: 32 for
-   * the turn control, 18 for the tag.
+   * the turn control, and **21** for the tag.
+   *
+   * 21, not 18: the tag is 10px text at the inherited 1.5 line-height, 2px of
+   * padding each side and a 1px border — measured in Chromium, and the same 21px
+   * the plate fix in `price-tag.tsx` was measured against. An 18px guess put the
+   * reservation 3px short, which is a clipped row on a short window and nothing at
+   * all on a tall one.
    *
    * A number rather than a measurement: it feeds a CSS `calc` that sizes the art,
    * and measuring the stack to size the box the stack is positioned against is a
@@ -847,7 +874,7 @@ export function CardModal({
    * the reservation followed `priceTag`, the art would change width under the
    * reader at the moment the tag appeared, which is the same defect one level up.
    */
-  const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 24;
+  const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 27;
 
   const underCard = (phone: boolean) => (
     <>
@@ -1060,7 +1087,10 @@ export function CardModal({
               // `aspect-ratio` box gets squashed. 63/88 is 0.7159, so the art is
               // 264px wherever there is room and narrower only where there is not
               // — at 900px tall it is 264 in every state.
-              width: `min(264px, calc((min(620px, 85vh) - ${2 * underCardHeight}px) * 0.7159))`,
+              // The extra 2px is the dialog's own 1px border, top and bottom: the
+              // box-sizing is border-box, so `h-[620px]` is 618px of padding box —
+              // the height the column actually stretches to.
+              width: `min(264px, calc((min(620px, 85vh) - 2px - ${2 * underCardHeight}px) * 0.7159))`,
               aspectRatio: "63/88",
               perspective: "1400px",
               ...(twoFaced ? null : artStyle),
