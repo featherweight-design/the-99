@@ -519,6 +519,10 @@ export function CardModal({
     // whatever the last one was turned to. Its own face rather than the art's, so
     // closing the layer never reaches out and turns the card behind it back.
     setZoomFlipped(false);
+    // Whatever the art behind announced belongs to the art behind. The zoom opens on
+    // the front, and a region still reading "Showing <back face>" would describe it
+    // wrongly from the first frame.
+    setAnnouncement("");
     setZoomed(true);
   }, []);
 
@@ -1141,8 +1145,6 @@ export function CardModal({
             </div>
           </div>
 
-          {/* The modal's one live region (handoff §Accessibility). Do not add a second. */}
-          <div aria-live="polite" className="sr-only">{announcement}</div>
 
           {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation */}
           <div
@@ -1179,6 +1181,13 @@ export function CardModal({
             </span>
           </div>
         </div>
+        {/* The modal's one live region (handoff §Accessibility). Do not add a second.
+            A direct child of the dialog rather than of the content column, because the
+            zoom marks that column `inert` — and an inert subtree is out of the
+            accessibility tree, so every announcement the layer makes would have been
+            written where nothing could read it. */}
+        <div aria-live="polite" className="sr-only">{announcement}</div>
+
         {/* THE ZOOM LAYER — a region inside this dialog, never a dialog of its own and
             never the viewport (table §3.1). `absolute inset-0` against the dialog
             element, so the backdrop's click-to-close survives underneath and no second
@@ -1275,7 +1284,7 @@ export function CardModal({
                 face. The press stops here too — the layer dismisses on click, and a
                 control that turns the card is not one of the three doors out. */}
             {twoFaced && (
-              <span onClick={(e) => e.stopPropagation()}>
+              <span onClick={(e) => e.stopPropagation()} style={{ display: "contents" }}>
                 <FlipControl
                   controlRef={zoomFlipRef}
                   otherFaceName={zoomFlipped ? faces.front : faces.back}
@@ -1322,9 +1331,10 @@ export function CardModal({
 }
 
 /**
- * The mark on the art. Bottom-LEFT on every card, because the flip control owns
- * bottom-right — a one-faced card keeps an empty right corner rather than a
- * shifted left one (table row 3.8).
+ * The mark on the art. Bottom-LEFT on every card, and it stays there now that the
+ * turn control has moved to bottom-centre: left is the corner the card itself
+ * prints nothing in, and a fixed corner means a one-faced card looks like a
+ * two-faced one minus a control rather than a different layout (table row 3.8).
  *
  * It draws THE PLATE the art-wash ratification defines: opaque `--bg` under one
  * `--border-strong` hairline at radius 7, which is what every control over art
@@ -1388,7 +1398,19 @@ function FlipControl({
       // The ground is a scrim rather than a solid: the control has to stay
       // legible over whatever art is under it without hiding a square of the card.
       className="absolute flex items-center justify-center cursor-pointer bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] border border-[color:var(--border-strong)] text-[color:var(--fg)]"
-      style={{ right: 10, bottom: 10, width: size, height: size, borderRadius: 7 }}
+      // BOTTOM-CENTRE, not the bottom-right corner it shipped in. That corner is
+      // where a creature prints its power and toughness, and the control covered them
+      // on every card that has them — the one number a reader most often opens a
+      // creature to check. Centre is the corner nothing is printed in, and it is where
+      // other card apps put the same control.
+      style={{
+        left: "50%",
+        transform: "translateX(-50%)",
+        bottom: 10,
+        width: size,
+        height: size,
+        borderRadius: 7,
+      }}
     >
       <TurnOverIcon size={Math.round(size * 0.5)} />
     </button>

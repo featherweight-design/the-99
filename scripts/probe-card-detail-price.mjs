@@ -258,9 +258,39 @@ try {
     const after = await page.locator('[data-testid="card-zoom-card"]').evaluate(
       (n) => getComputedStyle(n).transform,
     );
+    // Where the control actually sits, which only a browser can say: the wrapper that
+    // stops the click must contribute no box of its own, or the 44px control is
+    // pushed below the card instead of sitting in its bottom-right corner.
+    const placement = await page.evaluate(() => {
+      const card = document.querySelector('[data-testid="card-zoom-card"]');
+      const control = document.querySelector('[data-testid="card-zoom"] button[aria-label^="Turn over to"]');
+      if (!card || !control) return null;
+      const c = card.getBoundingClientRect();
+      const b = control.getBoundingClientRect();
+      // Centred, not cornered: bottom-right is where a creature prints its power and
+      // toughness, so the control that used to sit there covered it.
+      const centreOffset = Math.round((b.left + b.right) / 2 - (c.left + c.right) / 2);
+      return {
+        insideCard: b.bottom <= c.bottom + 1 && b.right <= c.right + 1 && b.top >= c.top,
+        fromBottom: Math.round(c.bottom - b.bottom),
+        centreOffset,
+        centred: Math.abs(centreOffset) <= 2,
+      };
+    });
     const stillOpen = await page.locator('[data-testid="card-zoom"]').count();
     console.log("\n── desktop · the turn ──");
-    console.log(JSON.stringify({ before, after, stillOpen: Boolean(stillOpen) }, null, 2));
+    console.log(JSON.stringify({ before, after, stillOpen: Boolean(stillOpen), placement }, null, 2));
+    if (!placement?.insideCard) {
+      console.log("\nFAIL: the turn control is not on the card — check the wrapper's own box.");
+      process.exitCode = 1;
+    }
+    if (!placement?.centred) {
+      console.log(
+        `\nFAIL: the turn control is ${placement?.centreOffset}px off centre — bottom-right`
+          + " covers a creature's power and toughness (erratum E14).",
+      );
+      process.exitCode = 1;
+    }
     if (before === after) {
       console.log("\nFAIL: the card did not turn — the transform is unchanged.");
       process.exitCode = 1;
