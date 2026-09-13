@@ -35,6 +35,7 @@ import {
   type DeckSort,
 } from "../../lib/decks/sort";
 import { useStoredView } from "../ui/use-stored-view";
+import { useLiveQuery } from "../../lib/commanders/live-query";
 import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
 import { ColourPips } from "../ui/colour-pips";
 import { FilterChassis, type FilterChip } from "../ui/filter-chassis";
@@ -175,26 +176,51 @@ export function DecksView({
   const [storedSort, chooseSort] = useStoredView(DECK_SORT_KEY, isDeckSort);
 
   /**
-   * THE URL IS READ ONCE, at mount, and this view owns it afterwards.
+   * THE URL IS RE-READ WHEN IT CHANGES, through the repo's own observer.
    *
-   * A reconciliation was built here and taken out again. Review asked for one —
-   * the shell's `Decks` link clears the query without unmounting, so an in-page
-   * choice outlives a URL that no longer names it — and one round of having it
-   * produced three defects: `apply`'s own `replaceState` is invisible to
-   * `useSearchParams`, so recording the written query made the NEXT render
-   * reconcile from the stale one and undo the choice that had just been made;
-   * two render-phase `setState` calls (this one and the `shelfMissing`
-   * correction below) overwrite rather than merge; and `useSearchParams` is not
-   * reliably notified for a same-document navigation at all, which is what
-   * `lib/commanders/live-query.ts` exists for.
+   * The seed above runs once, which was enough while the URL and this state
+   * could only disagree through this view's writes. They disagree the other way
+   * too: the shell's `Decks` link clears the query without unmounting anything,
+   * so a reader who chose `Newest` kept it while the address bar said nothing —
+   * and, now that an absence means "follow what this browser stored", kept it
+   * over their own stored order.
    *
-   * Three defects in one round, on a mechanism this feature does not need, is
-   * the three-round rule's answer rather than a fourth fix. The behaviour it
-   * chases is this view's own and predates the stored order: seed `status`,
-   * `colour`, `played`, `q` and `folder` once, own them after. Doing it properly
-   * means subscribing every one of them through `useLiveQuery`, which is a
-   * change to the view rather than to this feature.
+   * `useLiveQuery`, not `useSearchParams`. Built for exactly this and already
+   * shipped for the commander lanes: it subscribes to `popstate`, to the
+   * Navigation API where there is one, and to `history.pushState` /
+   * `replaceState` where there is not. `useSearchParams` is not reliably
+   * notified for a same-document navigation, and it does not hear this view's
+   * own `replaceState` at all — which is what made a first attempt at this
+   * reconcile from a stale query and undo the choice just made.
+   *
+   * ALL FIVE parameters, not just the sort. Reconciling one would give this view
+   * two rules for two halves of its own state, and the same navigation leaves a
+   * status filter on with a bare URL.
+   *
+   * `apply` records the query it writes, so this view's own write agrees on the
+   * next render and nothing re-parses. It would be harmless if it did — the
+   * parse of what `apply` just serialised is the state `apply` just set — but a
+   * re-render per filter click for no change is still a re-render.
+   *
+   * During render rather than in an effect: an effect paints the previous list
+   * once and then corrects it, which is the cascading-render pattern this repo's
+   * lint rejects. State rather than a ref, because a ref read during render is
+   * what the lint rejects next, and React documents this shape as adjusting
+   * state on a changed input.
    */
+  const liveQuery = useLiveQuery(search.toString());
+  const [seenQuery, setSeenQuery] = useState(liveQuery);
+  const reconciling = liveQuery !== seenQuery;
+  if (reconciling) {
+    const live = new URLSearchParams(liveQuery);
+    setSeenQuery(liveQuery);
+    setState({
+      ...filtersFromParams(live),
+      sort: deckSortFromParams(live.get("sort")),
+      shelf: shelfFromParams(live, folders),
+    });
+  }
+
   const sort = state.sort ?? storedSort ?? DEFAULT_DECK_SORT;
   const [sheet, setSheet] = useState<{
     open: boolean;
@@ -236,6 +262,13 @@ export function DecksView({
     for (const key of OWNED_PARAMS) live.delete(key);
     for (const [key, value] of params) live.set(key, value);
     const query = live.toString();
+    // This view's own write is not a navigation to reconcile against, and
+    // `useLiveQuery` DOES hear it — so it is recorded here or the next render
+    // re-parses what was just serialised. An optimisation rather than a
+    // correctness fix: the parse of what `apply` just wrote is the state `apply`
+    // just set, so removing this line costs a render per filter click and
+    // changes nothing on screen. Mutation-checked, and no test fails without it.
+    setSeenQuery(query);
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
   }, []);
 
@@ -295,7 +328,13 @@ export function DecksView({
     && (state.shelf === UNFILED
       ? !showsUnfiled(folders)
       : !folders.some((f) => f.id === state.shelf));
-  if (shelfMissing) setState({ ...state, shelf: ALL_DECKS });
+  // Not in the same pass as a reconciliation: both are render-phase updates and
+  // React applies them in order, so this one — built from the state the
+  // reconciliation is replacing — would overwrite the parsed URL wholesale. The
+  // reconciliation's own `shelfFromParams` already refuses an id that is not
+  // there, so the pass it queues needs no correction; a stale shelf that
+  // survives it is caught on the render after.
+  if (!reconciling && shelfMissing) setState({ ...state, shelf: ALL_DECKS });
 
   // Crossing to wide unmounts the sheet but would leave `open` true, so
   // crossing back would remount it already open — a modal the reader never

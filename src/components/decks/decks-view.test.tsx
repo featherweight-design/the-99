@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -495,6 +495,51 @@ describe("DecksView remembers the order", () => {
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "r" } });
     expect(window.location.search).toContain("sort=lastPlayed");
     expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+  });
+
+  it("re-reads the URL when it changes, not only at mount", () => {
+    // The shell's `Decks` link clears the query without unmounting this view. An
+    // absence now means "follow what this browser stored", so a reader who chose
+    // `Newest` would otherwise have kept it over their own stored order while
+    // the address bar said nothing. `useLiveQuery` wraps `replaceState`, so
+    // moving the URL IS the navigation here.
+    localStorage.setItem("the99:decks:sort", "name");
+    window.history.replaceState(null, "", "/decks?sort=newest");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
+
+    act(() => {
+      window.history.replaceState(null, "", "/decks");
+    });
+    expect(namesInOrder()).toEqual(["Atraxa", "Míriel", "Zur"]);
+  });
+
+  it("reconciles every parameter it owns, not only the sort", () => {
+    // One rule for the whole of this view's URL-owned state: the same navigation
+    // would otherwise leave a status filter on with a bare URL.
+    window.history.replaceState(null, "", "/decks?q=Zur");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur"]);
+
+    act(() => {
+      window.history.replaceState(null, "", "/decks");
+    });
+    expect(namesInOrder()).toHaveLength(3);
+  });
+
+  it("keeps an order chosen from a bare URL, against a stored one", () => {
+    // The case a first attempt at this reconciliation got wrong: it recorded the
+    // written query against `useSearchParams`, which had NOT heard the write, so
+    // the next render reconciled from the stale query and the choice undid
+    // itself. `useLiveQuery` hears it, so the round trip agrees either way —
+    // `apply`'s own `setSeenQuery` saves a re-render rather than a defect, and
+    // removing it leaves this green.
+    localStorage.setItem("the99:decks:sort", "name");
+    renderWide(view(threeDecks()));
+    fireEvent.click(sortTrigger());
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Newest" }));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Newest");
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
   });
 
   it("holds the stored order through a filter click, which writes no sort", () => {
