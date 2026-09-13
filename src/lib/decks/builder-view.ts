@@ -19,3 +19,11 @@ export function readBuilderView(value: string | string[] | undefined): BuilderVi
   if (typeof value !== "string") return "deck";
   return (VIEWS as readonly string[]).includes(value) ? (value as BuilderView) : "deck";
 }
+
+/** The tab the builder actually opens on. A URL can name `versions` on a deck
+ *  that has none — an old link to the retired route, or a hand-typed parameter —
+ *  and the row draws no Versions cell at zero, so landing there would leave every
+ *  cell unselected above an empty panel. */
+export function initialBuilderView(view: BuilderView, versionCount: number): BuilderView {
+  return view === "versions" && versionCount === 0 ? "deck" : view;
+}

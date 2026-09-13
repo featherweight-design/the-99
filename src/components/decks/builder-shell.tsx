@@ -31,6 +31,7 @@ import {
 } from "../../app/decks/actions";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
+import { initialBuilderView } from "../../lib/decks/builder-view";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
 import { gameLogCopy } from "../../lib/copy/game-log";
@@ -179,11 +180,8 @@ export function BuilderShell({
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
   const [grouping, setGrouping] = useState<"type" | "role">("type");
-  // A URL can name `versions` on a deck that has none — an old link to the
-  // retired route, or a hand-typed parameter. Landing on a tab the row does not
-  // draw would leave every cell unselected and an empty panel below them.
   const [view, setView] = useState<BuilderView>(
-    initialView === "versions" && versions.length === 0 ? "deck" : initialView,
+    initialBuilderView(initialView, versions.length),
   );
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
