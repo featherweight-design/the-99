@@ -1,4 +1,4 @@
-// The price under the art in the card modal (card-detail R2, table §1 and §2).
+// The price under the art, and the zoom, in the card modal (card-detail R2, §1-§3).
 //
 // What a browser proves and a test cannot: that the tag paints at all, WHERE it sits
 // relative to the art it belongs to (10px under at desktop, 9px at phone), and that
@@ -153,6 +153,35 @@ async function openCard(page, name) {
     );
 }
 
+/**
+ * The zoom, measured rather than described: the layer must cover the DIALOG's
+ * rectangle and not the viewport's — that is the whole of §3.1, and it is the one
+ * thing a unit test cannot see.
+ */
+async function readZoom(page) {
+  return page.evaluate(() => {
+    const layer = document.querySelector('[data-testid="card-zoom"]');
+    if (!layer) return null;
+    const dialog = document.querySelector('[role="dialog"]');
+    const card = document.querySelector('[data-testid="card-zoom-card"]');
+    const l = layer.getBoundingClientRect();
+    const d = dialog.getBoundingClientRect();
+    const c = card?.getBoundingClientRect();
+    return {
+      // Two pixels of tolerance, not one: above `md` the dialog draws a 1px border
+      // and the layer is sized to the padding box inside it. That hairline is the
+      // one part of the dialog the layer cannot cover, by construction.
+      coversDialog:
+        Math.abs(l.top - d.top) <= 2 && Math.abs(l.left - d.left) <= 2
+        && Math.abs(l.width - d.width) <= 3 && Math.abs(l.height - d.height) <= 3,
+      coversViewport: Math.abs(l.width - window.innerWidth) <= 1,
+      card: c ? { width: Math.round(c.width), height: Math.round(c.height) } : null,
+      caption: (layer.querySelector("p")?.textContent ?? "").trim(),
+      dialogs: document.querySelectorAll('[role="dialog"]').length,
+    };
+  });
+}
+
 const browser = await chromium.launch();
 try {
   await clerkSetup();
@@ -184,6 +213,42 @@ try {
   // not sealed inside the aria-hidden heading. That is all this probe claims now,
   // and it makes no writes at all.
 
+  // The zoom, at this width. 372x520 is the drawn figure; the layer is the dialog's
+  // rectangle, never the page's.
+  await page.getByRole("button", { name: /^Look at / }).first().click();
+  await page.waitForSelector('[data-testid="card-zoom"]', { timeout: 5_000 });
+  // The layer animates in over 200ms from `scale(.94)`, so a rect read on
+  // attachment measures a card mid-flight and fails the size check for no reason.
+  // Waited for the geometry to settle, not for a duration.
+  await page
+    .waitForFunction(
+      () => {
+        const c = document.querySelector('[data-testid="card-zoom-card"]');
+        if (!c) return false;
+        const { width } = c.getBoundingClientRect();
+        return width > 0 && Math.abs(width - c.offsetWidth) <= 1;
+      },
+      null,
+      { timeout: 5_000 },
+    )
+    .catch(() => {});
+  const zoom = await readZoom(page);
+  console.log("\n── desktop · zoom ──");
+  console.log(JSON.stringify(zoom, null, 2));
+  if (!zoom?.coversDialog || zoom.coversViewport || zoom.dialogs !== 1) {
+    console.log("\nFAIL: the zoom must be a region inside the one dialog, sized to it.");
+    process.exitCode = 1;
+  }
+  if (!zoom?.card || Math.abs(zoom.card.width - 372) > 2 || Math.abs(zoom.card.height - 520) > 3) {
+    console.log(`\nFAIL: zoomed card is ${JSON.stringify(zoom?.card)}, expected about 372x520.`);
+    process.exitCode = 1;
+  }
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
+  if (!(await page.locator('[role="dialog"]').count())) {
+    console.log("\nFAIL: the first Escape closed the dialog as well as the zoom.");
+    process.exitCode = 1;
+  }
   await context.close();
 
   // ── phone, including the compact header ──────────────────────────────────
@@ -195,6 +260,38 @@ try {
   console.log(`\n── phone · ${CARD} ──`);
   console.log(JSON.stringify(phoneRead, null, 2));
   assertGap("phone", phoneRead.mobile, 9);
+
+  // The phone zoom is a different pair of numbers (318x444) drawn by CSS alone, so
+  // it is measured rather than assumed from the desktop pass.
+  await phonePage.getByRole("button", { name: /^Look at / }).first().click();
+  await phonePage.waitForSelector('[data-testid="card-zoom"]', { timeout: 5_000 });
+  await phonePage
+    .waitForFunction(
+      () => {
+        const c = document.querySelector('[data-testid="card-zoom-card"]');
+        if (!c) return false;
+        const { width } = c.getBoundingClientRect();
+        return width > 0 && Math.abs(width - c.offsetWidth) <= 1;
+      },
+      null,
+      { timeout: 5_000 },
+    )
+    .catch(() => {});
+  const phoneZoom = await readZoom(phonePage);
+  console.log("\n── phone · zoom ──");
+  console.log(JSON.stringify(phoneZoom, null, 2));
+  if (!phoneZoom?.coversDialog || phoneZoom.dialogs !== 1) {
+    console.log("\nFAIL: the phone zoom must be a region inside the one dialog, sized to it.");
+    process.exitCode = 1;
+  }
+  if (!phoneZoom?.card
+    || Math.abs(phoneZoom.card.width - 318) > 2
+    || Math.abs(phoneZoom.card.height - 444) > 3) {
+    console.log(`\nFAIL: phone zoomed card is ${JSON.stringify(phoneZoom?.card)}, expected about 318x444.`);
+    process.exitCode = 1;
+  }
+  await phonePage.keyboard.press("Escape");
+  await phonePage.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
 
   const phoneTrigger = phonePage.locator('button[aria-label*="printings owned"]').first();
   if (await phoneTrigger.count()) {
