@@ -548,15 +548,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    on the first frame and never animated: at 10px it is invisible in motion and
    expensive. */
 .anim-zoom-in { animation: zoom-in 0.2s ease-out both; }
-/* Leaving is shorter than arriving, deliberately: arriving is a reveal, leaving
-   should be gone before the hand is. Opacity ONLY — reversing `zoom-in` would scale
-   the card down on the way out, and a card that shrinks away reads as a second
-   object rather than the same one being put down. */
-@keyframes zoom-out {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
-.anim-zoom-out { animation: zoom-out 0.16s ease-in both; }
+/* There is no exit animation. The layer unmounts on close — see the note at
+   `closeZoom` in `cards/card-modal.tsx` for why the 160ms fade was dropped. */
 
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
@@ -572,7 +565,6 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   /* The zoom still opens — it is not a disabled feature. It is simply there, at
      full opacity and full size, with no scale and no fade. */
   .anim-zoom-in,
-  .anim-zoom-out,
   .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer

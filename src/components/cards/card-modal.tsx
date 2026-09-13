@@ -286,10 +286,6 @@ export function CardModal({
   const [expanded, setExpanded] = useState(false);
   // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
   const [zoomed, setZoomed] = useState(false);
-  // Held for the length of the exit while the layer plays it out. `zoomed` stays
-  // true until the timer lands, because a layer that unmounts on the click has no
-  // exit to play.
-  const [closingZoom, setClosingZoom] = useState(false);
   // Where focus goes back to on close: the art that opened it, at whichever width
   // is actually on screen.
   const zoomTriggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -498,53 +494,30 @@ export function CardModal({
    * the press rather than subscribed to: this is one transition, and a reader who
    * changes the setting mid-fade has bigger news than the fade.
    */
-  const exitTimer = useRef<number | null>(null);
-  const clearExit = useCallback(() => {
-    if (exitTimer.current !== null) {
-      window.clearTimeout(exitTimer.current);
-      exitTimer.current = null;
-    }
-  }, []);
-  const closeZoom = useCallback(() => {
-    // Idempotent while the exit runs. `pointer-events-none` stops the pointer, not
-    // the keyboard: the close keeps focus through its own fade, so Enter held down
-    // would clear and restart the timer on every repeat and the layer would never
-    // leave.
-    if (closingZoom) return;
-    const reduced = typeof window !== "undefined"
-      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    // One timer, replaced rather than stacked: a second close during the exit used to
-    // schedule a second callback, and if the reader reopened the zoom before it fired
-    // it would unmount the layer they had just opened.
-    clearExit();
-    if (reduced) {
-      setClosingZoom(false);
-      setZoomed(false);
-      return;
-    }
-    setClosingZoom(true);
-    exitTimer.current = window.setTimeout(() => {
-      exitTimer.current = null;
-      setZoomed(false);
-      setClosingZoom(false);
-    }, 160);
-  }, [clearExit, closingZoom]);
-  const openZoom = useCallback(() => {
-    clearExit();
-    setClosingZoom(false);
-    setZoomed(true);
-  }, [clearExit]);
-  useEffect(() => clearExit, [clearExit]);
+  /**
+   * Closing unmounts the layer.
+   *
+   * IT USED TO PLAY OUT over 160ms, per the motion table's exit row, and that one
+   * animation cost five rounds of review: a layer that is mounted but leaving has to
+   * answer Escape without restarting its own timer, ignore a keyboard press that
+   * `pointer-events-none` does not stop, not steal focus back from whatever the next
+   * Escape stage claimed, and not let a stale timer unmount a zoom the reader has
+   * reopened. Every one of those was a real defect, and all of them were the exit's.
+   *
+   * The enter animation is what makes the zoom feel picked up rather than pasted in;
+   * the exit was a 160ms fade nobody is waiting for. Dropping it is a deviation from
+   * row 5.2, recorded in the property table's errata for Design to ratify rather than
+   * taken quietly.
+   */
+  const closeZoom = useCallback(() => setZoomed(false), []);
+  const openZoom = useCallback(() => setZoomed(true), []);
 
   // Escape collapses the region first and returns focus to the Set field; a second Escape
   // closes the dialog exactly as it does today.
   const onEscape = useCallback(() => {
     // Zoom first, then the region, then the dialog — the printing region's shipped
     // two-stage shape with one rung added rather than a new shape to learn (§3.11).
-    // A zoom already leaving is a zoom already dismissed: a second Escape during the
-    // 160ms exit must fall through to the region and the dialog rather than restart
-    // the timer, or a quick double-press does nothing the second time.
-    if (zoomed && !closingZoom) {
+    if (zoomed) {
       closeZoom();
       return;
     }
@@ -563,7 +536,7 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, closingZoom, expanded, onClose, zoomed]);
+  }, [closeZoom, expanded, onClose, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef });
@@ -1135,8 +1108,10 @@ export function CardModal({
             className="hidden md:flex items-center gap-[16px] flex-none mx-[32px] mb-[30px] pt-[20px]"
             style={{ borderTop: "1px solid var(--border)" }}
           >
-            {/* The link is first in the DOM because the focus trap follows DOM
-                order — there is no initialFocusRef on this dialog. */}
+            {/* The link is first in the DOM because the focus trap follows DOM order
+                from wherever focus starts. That start is now named — the dialog
+                focuses the ✕ that has layout, since the art became a button and would
+                otherwise have taken it — but the order after it is still this one. */}
             <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
             <span className="ml-auto flex items-center gap-[14px] flex-none">
               <button
@@ -1179,10 +1154,7 @@ export function CardModal({
             // receives nothing. A click on the hairline therefore hits the dialog and
             // does nothing at all — which is the right failure for a 1px target that
             // was never a dismissal path, and better than pretending otherwise.
-            className={`absolute inset-0 z-20 flex flex-col items-center justify-center ${
-              closingZoom ? "anim-zoom-out pointer-events-none" : "anim-zoom-in"
-            }`}
-            data-closing={closingZoom ? "true" : undefined}
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center anim-zoom-in"
             onClick={closeZoom}
             style={{
               background: "color-mix(in srgb, var(--bg) 94%, transparent)",
