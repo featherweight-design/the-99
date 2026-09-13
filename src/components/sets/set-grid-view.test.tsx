@@ -18,13 +18,19 @@ vi.mock("next/navigation", () => ({
 // it vacuous.
 const deltaProps: { recheckKey?: string; firing?: boolean } = {};
 vi.mock("./delta-strip", () => ({
-  DeltaStrip: (props: { recheckKey?: string; onFiring?: (f: boolean) => void }) => {
-    deltaProps.recheckKey = props.recheckKey;
+  DeltaStrip: ({ recheckKey, onFiring }: {
+    recheckKey?: string; onFiring?: (f: boolean) => void;
+  }) => {
+    deltaProps.recheckKey = recheckKey;
     const firing = deltaProps.firing === true;
+    // The CALLBACK, not the whole props object. `props` is a new reference every render,
+    // so depending on it re-ran this effect on every parent update — reporting false and
+    // then true again, which briefly re-enabled the collapse and made the firing assertion
+    // weaker than it reads. The real strip does not behave that way.
     useEffect(() => {
-      props.onFiring?.(firing);
-      return () => props.onFiring?.(false);
-    }, [firing, props]);
+      onFiring?.(firing);
+      return () => onFiring?.(false);
+    }, [firing, onFiring]);
     return firing ? <div>a card arrived</div> : null;
   },
 }));
@@ -2008,12 +2014,18 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(isShy(container)).toBe(false);
   });
 
-  it("drops the chip line and the cost strip", () => {
+  // Hidden, not unmounted. Unmounting threw away the reader's expanded cost disclosure and
+  // any focus in it, and the head that came back was a different height from the one the
+  // reserve had been holding.
+  it("hides the chip line and the cost strip without unmounting them", () => {
     stubDesktop(false);
     const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const costBefore = container.querySelector("[data-set-cost]");
+    expect(costBefore).toBeTruthy();
     scrollTo(200);
     expect(container.querySelector("[data-set-chips]")?.className).toMatch(/hidden/);
-    expect(container.querySelector("[data-set-cost]")).toBeNull();
+    expect(container.querySelector("[data-set-cost]")).toBe(costBefore);
+    expect(container.querySelector("[data-set-cost]")?.closest("div.hidden")).toBeTruthy();
   });
 
   // `Filters` IS reachable from the collapsed bar, so the result count still changes
@@ -2155,6 +2167,44 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(head(container).parentElement?.contains(
       container.querySelector("[data-set-grid]"),
     )).toBe(true);
+  });
+
+  // Collapsing puts the open subtree behind `display:none` while the reader is standing in
+  // it, and the browser leaves focus on the hidden control. Not a focus rescue — this route
+  // deleted one of those over five rounds — the case is simply made impossible.
+  it("does not collapse while focus is inside the head", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    fireEvent.focus(screen.getByRole("searchbox", { name: /Search cards/ }));
+    scrollTo(400);
+    expect(isShy(container)).toBe(false);
+  });
+
+  it("and collapses once focus leaves it", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    const field = screen.getByRole("searchbox", { name: /Search cards/ });
+    fireEvent.focus(field);
+    scrollTo(400);
+    expect(isShy(container)).toBe(false);
+    // `relatedTarget` outside the head is what "left" means; a tab between two controls
+    // inside it must not re-enable the collapse.
+    fireEvent.blur(field, { relatedTarget: document.body });
+    scrollTo(401);
+    expect(isShy(container)).toBe(true);
+  });
+
+  // The region is `sr-only` to keep ANNOUNCING, not to keep offering: clipped to a 1px box
+  // the jump link is still focusable, so Tab landed on an invisible control.
+  it("takes the extras jump link out of the tab order while collapsed", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: false })], [],
+    );
+    scrollTo(400);
+    const jump = container.querySelector('a[href="#extras"]');
+    expect(jump).toBeTruthy();
+    expect(jump).toHaveAttribute("tabindex", "-1");
   });
 
   it("never collapses at desktop, however far the reader scrolls", () => {

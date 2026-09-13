@@ -104,6 +104,7 @@ export function CostStrip({
               ? setPageCopy.cost.collapsedTailExtras
               : setPageCopy.cost.collapsedTail)(cost.pricedCount, cost.missingCount)}`,
             caveats,
+            href !== null,
           )}
           className="flex h-[44px] w-full items-center gap-[8px] px-[12px] text-left md:hidden"
         >

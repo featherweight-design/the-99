@@ -244,3 +244,28 @@ describe("CostStrip — focus survives the swap", () => {
     expect(document.activeElement).toBe(document.body);
   });
 });
+
+// The strip renders without a link when the filters left nothing to buy, and a name
+// promising a send button there announces an action that is not on the page.
+describe("CostStrip — the accessible name with no send link", () => {
+  const opener = () => screen.getAllByRole("button")
+    .find((b) => b.hasAttribute("data-set-cost-toggle")
+      && b.getAttribute("aria-expanded") === "false");
+
+  it("does not promise a send button when there is none", () => {
+    render(<CostStrip cost={cost({ absentCount: 0 })} href={null} />);
+    const label = opener()?.getAttribute("aria-label") ?? "";
+    expect(label).toMatch(/Show the full cost/);
+    expect(label).not.toMatch(/send button/);
+  });
+
+  it("and still promises one when there is", () => {
+    render(<CostStrip cost={cost({ absentCount: 0 })} href="https://manapool.com/x" />);
+    expect(opener()?.getAttribute("aria-label")).toMatch(/send button/);
+  });
+
+  it("keeps the notes clause in both forms", () => {
+    render(<CostStrip cost={cost({ absentCount: 2 })} href={null} />);
+    expect(opener()?.getAttribute("aria-label")).toMatch(/1 note/);
+  });
+});

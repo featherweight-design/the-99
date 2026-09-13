@@ -18,7 +18,7 @@
 // scroll is paid for by the sticky head, the extras jump, and missing-only, which removes
 // the cells the reader is done with rather than shrinking everything.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail } from "../cards/card-detail-provider";
@@ -142,11 +142,25 @@ export function SetGridView(props: SetGridViewProps) {
    */
   const [deltaFiring, setDeltaFiring] = useState(false);
   const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
+  /**
+   * A third state that forbids a collapse: focus is inside the open head.
+   *
+   * Collapsing puts that subtree behind `display:none` while the reader is standing in it —
+   * in the search field, on a filter chip, inside the cost disclosure — and the browser
+   * leaves focus on the hidden control. The keyboard is then nowhere, with a visible bar
+   * somewhere else on screen.
+   *
+   * NOT a focus rescue. This route deleted one of those over five review rounds and the
+   * lesson held: the cheap answer is to make the case impossible rather than to catch it.
+   * A reader whose focus is in the head is using the head, and scrolling with it open is
+   * what they asked for; the collapse resumes the moment they leave.
+   */
+  const [focusInHead, setFocusInHead] = useState(false);
   // The two states that forbid a collapse are read during render rather than pushed into
   // `collapsed` by an effect: an effect that calls `setState` synchronously cascades a
   // render, and the answer here is derivable — desktop never collapses, and neither does a
   // head whose delta strip is firing.
-  const mayCollapse = !isDesktop && !deltaFiring;
+  const mayCollapse = !isDesktop && !deltaFiring && !focusInHead;
   useEffect(() => {
     if (!mayCollapse) return;
     const onScroll = () => {
@@ -170,20 +184,43 @@ export function SetGridView(props: SetGridViewProps) {
    * is a plain block of the right height and the head floats inside it.
    */
   const headRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
   const [restHeight, setRestHeight] = useState<number | null>(null);
-  const [liveHeight, setLiveHeight] = useState<number | null>(null);
+  /**
+   * The spacer's height, written to the DOM rather than held in state.
+   *
+   * State would arrive a commit late: on the render where the collapse lands, the head has
+   * already shrunk and a state-held measurement is still the open one, so the spacer paints
+   * at 0 and the document jumps exactly once — the jump the reserve exists to prevent, on
+   * the first crossing, which is the only crossing anyone notices.
+   *
+   * Reads refs only, so the `ResizeObserver` registered once can keep calling it.
+   */
+  const restHeightRef = useRef<number | null>(null);
+  const sizeSpacer = useRef(() => {
+    const el = headRef.current;
+    const spacer = spacerRef.current;
+    if (el === null || spacer === null) return;
+    const rest = restHeightRef.current;
+    spacer.style.height = rest === null
+      ? "0px"
+      : `${Math.max(0, rest - el.getBoundingClientRect().height)}px`;
+  }).current;
   useEffect(() => {
     const el = headRef.current;
     if (el === null) return;
     const measure = () => {
-      const h = el.getBoundingClientRect().height;
-      setLiveHeight(h);
       // Read off the DOM at callback time rather than off a `collapsed` this effect closed
       // over. `ResizeObserver` delivers at the end of a frame, so the shrink the collapse
       // causes can arrive BEFORE any cleanup — and the rest height would then record the
       // collapsed one, which is the number it must never hold. The probe caught this:
       // 288px reserved at rest, 140px collapsed.
-      if (!el.hasAttribute("data-set-head-collapsed")) setRestHeight(h);
+      if (!el.hasAttribute("data-set-head-collapsed")) {
+        const h = el.getBoundingClientRect().height;
+        restHeightRef.current = h;
+        setRestHeight(h);
+      }
+      sizeSpacer();
     };
     measure();
     // The head's open height is not a constant: a two-line title, the delta strip, and the
@@ -192,7 +229,11 @@ export function SetGridView(props: SetGridViewProps) {
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [sizeSpacer]);
+  // After the DOM has changed and before the browser paints, which is the whole point: the
+  // spacer has to be the right height on the frame the head first shrinks.
+  useLayoutEffect(sizeSpacer);
+
   const searchRef = useRef<HTMLInputElement>(null);
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
@@ -649,6 +690,14 @@ export function SetGridView(props: SetGridViewProps) {
     <div>
       <div
         ref={headRef}
+        onFocus={() => setFocusInHead(true)}
+        // `onBlur` is React's delegated `focusout`, so it fires with the NEW target in
+        // `relatedTarget` — which is how leaving the head is told apart from moving inside
+        // it. A plain `onBlur` that always cleared would re-enable the collapse on every
+        // tab between two controls in this block.
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusInHead(false);
+        }}
         data-set-head
         data-set-head-collapsed={shy ? "" : undefined}
         className="sticky top-0 z-[2] pb-[12px] pt-[10px]"
@@ -879,8 +928,11 @@ export function SetGridView(props: SetGridViewProps) {
               figure: a complete set whose extras are all owned would otherwise read
               "over 0 of the 0 you are missing" beside "Nothing left in this set". */}
           {/* The money is not on the collapsed bar: it is not acted on mid-scroll, and it
-              is the single largest member of the head. */}
-          {!shy && (complete
+              is the single largest member of the head. HIDDEN with the wrapper above rather
+              than unmounted — unmounting threw away the reader's expanded disclosure and
+              any focus in it, and the head that came back was a different height from the
+              one the reserve was holding. */}
+          {(complete
             ? sections.extrasTotal - sections.extrasOwned
             : sections.baseTotal) > 0 ? (
           <CostStrip
@@ -1343,7 +1395,14 @@ export function SetGridView(props: SetGridViewProps) {
           {shownExtras.length > 0 ? (
             <>
               {" · "}
-              <a href="#extras" className="text-[color:var(--accent)] hover:underline">
+              {/* Out of the tab order while the region is `sr-only`. Clipped to a 1px box
+                  it is still focusable, so Tab landed on an invisible link — the region is
+                  sr-only to keep ANNOUNCING, not to keep offering. */}
+              <a
+                href="#extras"
+                tabIndex={shy ? -1 : undefined}
+                className="text-[color:var(--accent)] hover:underline"
+              >
                 {setPageCopy.sections.jump}
               </a>
             </>
@@ -1362,8 +1421,8 @@ export function SetGridView(props: SetGridViewProps) {
           is given back by a spacer beside it.
           `aria-hidden` and no text: it is layout, and a screen reader has nothing to read
           in it. */}
-      {shy && restHeight !== null && liveHeight !== null ? (
-        <div aria-hidden="true" data-set-head-reserve style={{ height: Math.max(0, restHeight - liveHeight) }} />
+      {shy && restHeight !== null ? (
+        <div aria-hidden="true" data-set-head-reserve ref={spacerRef} />
       ) : null}
 
       {!sections.indexed ? (

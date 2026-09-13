@@ -829,7 +829,40 @@ async function run() {
       // Two frames: the listener is passive and the class change lands on the next paint.
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     };
-
+    // The FIRST crossing, sampled on the exact frame the collapse lands.
+    //
+    // The reserve used to be state-held, which arrives a commit late: the head had already
+    // shrunk while the spacer was still 0, and the document jumped once — on the only
+    // crossing anyone notices. A fixed two-frame sample cannot see that, and the first
+    // version of this check passed with the spacer DELETED ENTIRELY, because by the frame
+    // it looked at, the collapse had not applied yet.
+    //
+    // So it watches frame by frame and reports the shift measured on the first frame where
+    // the head is actually marked collapsed — and says so when it never sees one, rather
+    // than returning a 0 that reads like a pass.
+    const firstCrossingShift = async () => {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      return page.evaluate(() => new Promise((resolve) => {
+        const grid = document.querySelector("[data-set-grid]");
+        const head = document.querySelector("[data-set-head]");
+        if (grid === null || head === null) return resolve({ shift: null, saw: false });
+        // Where the grid sits in the DOCUMENT, which is what a reserve protects. Its
+        // VIEWPORT position necessarily changes — that is the scroll itself.
+        const docTop = () => Math.round(grid.getBoundingClientRect().top + window.scrollY);
+        const before = docTop();
+        window.scrollTo(0, 400);
+        let frames = 0;
+        const tick = () => {
+          if (head.hasAttribute("data-set-head-collapsed")) {
+            return resolve({ shift: Math.abs(docTop() - before), saw: true, frames });
+          }
+          if (++frames > 30) return resolve({ shift: null, saw: false, frames });
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }));
+    };
     const restState = await headNow();
     const tracksAtRest = await tracksNow();
     await scrollTo(400);
@@ -894,6 +927,15 @@ async function run() {
         "and stays there far down the grid",
         deep !== null && Math.abs(deep.top) <= 1 && deep.shy,
         deep === null ? "the head could not be measured" : `top ${deep.top}px, shy=${deep.shy}`,
+      );
+
+      const crossing = await firstCrossingShift();
+      failures += !report(
+        "the grid does not move in the document on the first crossing",
+        crossing.saw && crossing.shift !== null && crossing.shift <= 1,
+        !crossing.saw
+          ? "the head never reported itself collapsed — the check measured nothing"
+          : `${crossing.shift}px on the frame it collapsed, ${crossing.frames} frames in`,
       );
 
       await scrollTo(20);

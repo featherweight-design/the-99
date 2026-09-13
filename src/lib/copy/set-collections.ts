@@ -294,8 +294,11 @@ export const setPageCopy = {
     // The figure and its coverage are IN the name, not only on the screen. An explicit
     // `aria-label` replaces the button's descendant text, so a name that stated only the
     // action removed the very audit information this row exists to keep.
-    expandAria: (figure: string, caveats: number) =>
-      `${figure}. Show the full cost, with the send button`
+    // `hasSend` because the strip renders without a link when the filters left nothing to
+    // buy, and a name promising a send button there announces an action that is not there.
+    expandAria: (figure: string, caveats: number, hasSend: boolean) =>
+      `${figure}. Show the full cost`
+      + (hasSend ? ", with the send button" : "")
       + (caveats === 0 ? "" : caveats === 1 ? " and 1 note" : ` and ${caveats} notes`),
     collapseAria: "Hide the full cost",
     // R3: at 100% the same strip re-scopes to the extras rather than being
