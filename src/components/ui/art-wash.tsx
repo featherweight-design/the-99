@@ -159,9 +159,11 @@ export const PORTRAITS: Record<
   // The resume row's portrait column, restored with the row it belongs to. Its
   // numbers are the ones that shipped before this round, not new ones: a 62%
   // mask rather than 58, the row's own `--surface-inset` ground, and a flat stop
-  // at 138 — 99px of portrait plus a 17px gap is where that row's 116px type
-  // inset comes from, and the inset is past the stop, so nothing on the row
-  // reads on art and the band draws no ramp at all.
+  // at 138. 99px of portrait plus a 17px gap is where that row's 116px type
+  // inset comes from — BESIDE the art, which is why the band draws no vertical
+  // ramp. The inset is 22px short of the flat stop, not past it, so that ink
+  // stands on a horizontal scrim still climbing: `flat` suppresses the vertical
+  // ramp and says nothing about the horizontal ground.
   // The resume row's portrait column, restored with the row it belongs to, and
   // restored to what SHIPPED rather than to the rule: 0.95 is the lift it took
   // when the ambient layer under it was deleted, and its clear stop is an

@@ -245,29 +245,21 @@ export function CommanderDetail({
         <ArtWash
           strategy="cover"
           height={288}
-          // The block's MEASURED height at 390px, in pixels from the foot, keyed
-          // to the worst case exactly as the percentage was: a 25px name wrapping
-          // to two lines. Adding it up — 15 bottom inset, a 12.5px type line at
-          // 1.2 for 15, a 4px gap, two 25px name lines at 1.15 for 58, another
-          // 4px gap and an 11px rank line at 1.2 for 14 — gives 96. Every line
-          // box in the block states its own leading for exactly this reason: an
-          // inherited 1.5 would make this figure a function of the app's body
-          // leading, and the round's own failure is a `labelAt` that describes a
+          // The block's MEASURED height, counted line by line at its ceiling:
+          // a 15px bottom inset, a 15px type line at 12.5/1.2, its 4px margin,
+          // two clamped name lines at 19/1.15 for 44, another 4px margin and a
+          // 14px rank line at 11/1.2 — 96. Measured, never intended: the same
+          // block was 110 while the name was 25px, which is the 109 that
+          // shipped, and the round's own failure is a `labelAt` that describes a
           // block other than the one drawn.
           //
           // NOT the handoff's 57, which is the one figure in that package that
           // cannot be reconciled with the block it describes: a single 25px name
-          // line is 29px on its own, and this block carries a rank line and a type
-          // line besides. The rule is the handoff's — measure the block, key the
-          // ramp to its wrapped height — and only its arithmetic is wrong, which
-          // its own open item 2 predicted by asking for this to be measured
-          // rather than trusted.
-          // 96, re-measured after the name came down to 19px, and counted line
-          // by line at the block's CEILING: a 15px bottom inset, a 15px type
-          // line at 1.2, its 4px margin, two clamped name lines at 19/1.15 for
-          // 44, another 4px margin and a 14px rank line at 11/1.2. At 25px the
-          // same block was 110 — two name lines of 58 — which is the 109 that
-          // shipped.
+          // line was 29px on its own, and this block carries a rank line and a
+          // type line besides. The rule is the handoff's — measure the block, key
+          // the ramp to its wrapped height — and only its arithmetic was wrong,
+          // which its own open item 2 predicted by asking for this to be
+          // measured rather than trusted.
           labelAtPx={96}
           artCropUri={c.artCropUri}
           colorIdentity={c.colorIdentity}

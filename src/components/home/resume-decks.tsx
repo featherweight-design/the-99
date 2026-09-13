@@ -87,7 +87,7 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
       // be a second way to do the one thing the row already does.
       // The height is stated, not a floor: the wash beside it is a hard 72px, so
       // a row allowed to grow past that would show an unwashed strip.
-      className="relative flex h-[72px] min-w-0 flex-1 items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[18px]"
+      className="relative flex h-[72px] min-w-0 flex-1 items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[10px] min-[1000px]:pr-[18px]"
     >
       {/* §ResumeRow — the commander's portrait, at the band's own height. It is
           a column the type starts clear of, not a plate the type sits on: 99px
@@ -114,7 +114,16 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
 
       <span
         data-resume-text
-        className="relative flex min-w-0 flex-auto flex-col gap-[4px] pl-[116px]"
+        // 108 below 1000px, 116 above. The inset clears the 99px portrait and
+        // then a gap, and the gap is the only part of it that can give: at 640px
+        // the dashboard's left column is 252px, and 116 of inset plus 18 of right
+        // padding left 118 for a meta line whose fixed content — pill, gap, count
+        // — needs 121. Three pixels, and the count was clipped by the row's own
+        // `overflow-hidden`. A 9px gap instead of 17, and 10px of right padding
+        // instead of 18, give that line 134 and the commander's name what is
+        // left. Nothing moves at 1000px and above, where the row has the room it
+        // was drawn with.
+        className="relative flex min-w-0 flex-auto flex-col gap-[4px] pl-[108px] min-[1000px]:pl-[116px]"
       >
         {/* The DECK name, not the commander's. The frame prints the commander
             in both rows only because a new deck is named after its commander by

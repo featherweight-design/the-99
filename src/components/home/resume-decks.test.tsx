@@ -210,4 +210,29 @@ describe("ResumeDecks", () => {
     const { container } = render(<ResumeDecks decks={[]} shopping={rollup()} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  // The row's fixed content has to fit the narrowest column it is drawn in. At
+  // 640px the dashboard's left column is 252px, and a 116px inset with 18px of
+  // right padding left 118 for a meta line needing 121 — the count was clipped
+  // by the row's own `overflow-hidden`. The inset's gap and the right padding
+  // are the parts that give, and only below 1000px.
+  it("tightens its inset and padding below the width it was drawn for", () => {
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    const text = container.querySelector<HTMLElement>("[data-resume-text]")!;
+    expect(text.className).toContain("pl-[108px]");
+    expect(text.className).toContain("min-[1000px]:pl-[116px]");
+    const row = container.querySelector<HTMLElement>('a[href^="/decks/"]')!;
+    expect(row.className).toContain("pr-[10px]");
+    expect(row.className).toContain("min-[1000px]:pr-[18px]");
+  });
+
+  // Two-up only where two rows clear their own fixed content.
+  it("stacks the rows until the column can hold two of them", () => {
+    const { container } = render(
+      <ResumeDecks decks={[deck(), deck({ id: "d2" })]} shopping={rollup()} />,
+    );
+    const rows = container.querySelector<HTMLElement>('a[href^="/decks/"]')!.parentElement!;
+    expect(rows.className).toContain("flex-col");
+    expect(rows.className).toContain("min-[1000px]:flex-row");
+  });
 });

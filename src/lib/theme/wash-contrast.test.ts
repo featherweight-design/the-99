@@ -73,8 +73,11 @@ const STATED_BANDS: readonly {
   // lane's its identity column with a type line under the name.
   { surface: "discovery row", labelAtPx: 56, band: 208, strategy: "left-portrait", portrait: 285 },
   { surface: "owned-lane row", labelAtPx: 63, band: 208, strategy: "left-portrait", portrait: 285 },
-  // Flat: the row's type starts at its 116px inset, past the portrait's flat
-  // stop, so the band draws no ramp for a block to be keyed to.
+  // Flat in the VERTICAL direction only: the row's type starts at its 116px
+  // inset, beside the 99px portrait rather than over it, so the band draws no
+  // vertical ramp for a block to be keyed to. Horizontally that inset is 22px
+  // short of the row's 138px flat stop, so the scrim is still fading through it
+  // — which is the ground `PORTRAIT_INK` samples below.
   { surface: "resume row", labelAtPx: null, band: 72, strategy: "left-portrait", portrait: 99 },
 ];
 
@@ -203,8 +206,8 @@ const PORTRAIT_INK: readonly {
 
 /** The vertical ramp a `left-portrait` band draws, from the same function the
     `cover` bands use — one ramp for both strategies, which is what retired the
-    hand-written column this used to read. A band whose ink starts past the flat
-    stop passes `null` and draws none. */
+    hand-written column this used to read. A band whose ink sits beside the
+    portrait passes `null` and draws none. */
 const verticalAlphaAt = (labelAtPx: number | null, band: number, y: number): number =>
   labelAtPx === null ? 0 : alphaAt(bottomScrimStops(labelAtPx, band, PORTRAIT_HOLD), y);
 

@@ -61,7 +61,12 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
             band just stops carrying three separate anchors. */}
         <div
           data-wash-label
-          className="absolute inset-x-0 bottom-0 flex flex-col gap-[4px] p-[11px] sm:p-[12px]"
+          // `pr-[46px]`, overriding the padding shorthand's right side: this
+          // band's own card-details trigger sits in the bottom-right corner, and
+          // its 44px target reached under the fit chip at the end of row 2 — a
+          // chip partly hidden, and a right edge that answered the wrong control.
+          // The same reservation the commander detail and deck spine blocks make.
+          className="absolute inset-x-0 bottom-0 flex flex-col gap-[4px] p-[11px] pr-[46px] sm:p-[12px] sm:pr-[46px]"
         >
           {/* Row 1 — the name and its pips. Two rows, not one: at 390px a
               condensed single row truncated the name to `Preston Garvey,
