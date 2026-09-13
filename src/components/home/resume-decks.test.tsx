@@ -77,20 +77,45 @@ describe("resumeDecks", () => {
 });
 
 describe("ResumeDecks", () => {
-  it("gives the art its own column and starts type clear of it", () => {
+  // A4, the round's largest single reversal: a 72px band with a 99px portrait
+  // beside it becomes a 168px `cover` band with the text ON the wash. The whole
+  // exception goes together — the portrait column, the 116px inset that column
+  // bought, and the no-shadow exemption that inset justified.
+  it("takes the resume band and puts its text on the wash", () => {
     const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
     const row = container.querySelector("a");
-    // Stated, not a floor — the wash beside it is a hard 72px, so a row that
-    // could grow past it would show an unwashed strip.
-    expect(row?.className).toContain("h-[72px]");
-    expect(row?.className).not.toContain("min-h-[72px]");
-    const text = row?.querySelector("[data-resume-text]");
-    expect(text?.className).toContain("pl-[116px]");
+    // Stated, not a floor: the wash is a hard 168px, so a row that could grow
+    // past it would show an unwashed strip.
+    expect(row?.className).toContain("h-[168px]");
+    expect(row?.className).not.toMatch(/min-h-\[/);
+    expect(row?.firstElementChild).toHaveAttribute("data-art-wash-band", "168");
+
+    const text = row?.querySelector<HTMLElement>("[data-resume-text]");
+    expect(text?.className).not.toContain("pl-[116px]");
+    expect(text?.className).toContain("pb-[12px]");
+    // The block the ramp is keyed to.
+    expect(text).toHaveAttribute("data-wash-label");
   });
 
-  it("needs no text shadow, because type never sits on art", () => {
-    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
-    expect(container.innerHTML).not.toContain("text-shadow");
+  // Decision 3, with its exception deleted: ink over art carries a shadow at
+  // full opacity. The exemption was the 116px inset, and the inset is gone — for
+  // EVERY string on the row, not just the name, which is why the shadow sits on
+  // the meta row rather than on each child.
+  it("shadows every string, now that they all stand on art", () => {
+    const { container } = render(
+      <ResumeDecks
+        decks={[deck({ commanderName: "Ishai", partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup({ d1: 3 })}
+      />,
+    );
+    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
+    const name = block.firstElementChild as HTMLElement;
+    expect(name.style.textShadow).not.toBe("");
+    // The row carrying the pair line and the count, so both inherit it. The
+    // status pill inside is opaque and needs none.
+    const metaRow = block.children[1] as HTMLElement;
+    expect(metaRow.style.textShadow).not.toBe("");
+    expect(metaRow.textContent).toContain("+ Bruse Tarl");
   });
 
   it("prints the built count and the copies clause together", () => {
@@ -105,15 +130,41 @@ describe("ResumeDecks", () => {
 
   // §ResumeRow — the commander names the row's art. The deck name is the deck's
   // own, so without this line the portrait is unattributed.
-  it("names the commander under the deck name", () => {
-    render(
+  // The commander's name is cut on a single-commander row: the band is 168px of
+  // that commander's art, so the name repeats what the picture says. The row's
+  // accessible name still carries it.
+  it("drops the commander's name on a single-commander row", () => {
+    const { container } = render(
       <ResumeDecks
         decks={[deck({ name: "Four colours, one plan", commanderName: "Atraxa, Praetors' Voice" })]}
         shopping={rollup()}
       />,
     );
     expect(screen.getByText("Four colours, one plan")).toBeInTheDocument();
-    expect(screen.getByText("Atraxa, Praetors' Voice")).toBeInTheDocument();
+    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
+    // Cut from the DRAWING, not from the accessible name: the band that makes
+    // the visible string redundant is `aria-hidden` art, so the name survives in
+    // an `sr-only` span — a picture cannot say a commander's name to a screen
+    // reader.
+    const visible = Array.from(block.querySelectorAll<HTMLElement>("span")).filter(
+      (el) => !el.className.includes("sr-only"),
+    );
+    expect(visible.some((el) => el.textContent === "Atraxa, Praetors' Voice")).toBe(false);
+    expect(block.querySelector(".sr-only")?.textContent).toBe("Atraxa, Praetors' Voice");
+  });
+
+  // Kept on a pair row, and for the same reason it is cut on a single one: a
+  // pair's band shows ONE of two commanders, so the art cannot say it there.
+  it("keeps the shortened pair line on a pair row", () => {
+    const { container } = render(
+      <ResumeDecks
+        decks={[deck({ commanderName: "Ishai, Ojutai Dragonspeaker", partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
+    expect(block.textContent).toContain("Ishai");
+    expect(block.textContent).toContain("+ Bruse Tarl");
   });
 
   it("prints the count alone when there is nothing to buy", () => {
