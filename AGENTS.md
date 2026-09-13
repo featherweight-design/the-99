@@ -167,6 +167,17 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   them again, because the wrapper owns the import. Pick the component first, then set `view` to
   wherever each route renders it, which may be a wrapper.
 
+- Browser scripts reach the page through `scripts/lib/surface.mjs` — `onPage()` and `openSheet()`
+  — never a bare selector. The shell renders `NavRail`, `MobileHeader` and `TabBar` around
+  `<main>`, and its account menu is a `button[aria-haspopup="dialog"]` at phone width, first in
+  document order: an unscoped query finds the shell's control on every route and then measures it
+  while naming the surface it meant to measure. That produced two findings in `probe-sets.mjs`
+  that looked real and were not. `openSheet()` also waits for whatever is animating on the sheet
+  to finish — page sheets arrive under `anim-sheet-in`, the shell's menu under `anim-sheet-up`,
+  both 180ms — because a box measured mid-transform reads as hanging below the fold.
+  `scripts/lib/surface.test.mts` parses every `probe-*.mjs` and sweeps its string literals for
+  the unscoped forms, the same way `env.test.mts` enforces the env convention.
+
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the `pr-review` skill (`~/.claude/skills/pr-review/SKILL.md`), which is the single source of truth across every repo — invoke it rather than working from memory or from any copy. UI features additionally run `feature-acceptance` per PR and again at feature close. This repo merges via **squash**.
 

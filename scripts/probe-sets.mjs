@@ -20,6 +20,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { openSheet } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -1053,15 +1054,21 @@ async function run() {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
     await waitForCells(page);
-    const sheetTrigger = await page.$('button[aria-haspopup="dialog"]');
-    if (sheetTrigger === null) {
+    // Scoped to the page: the shell's account menu is also a
+    // `button[aria-haspopup="dialog"]` at this width and comes first in
+    // document order, so an unscoped query measured it instead — which is what
+    // this check reported as a painted-over footer. `openSheet` also waits for
+    // `anim-sheet-up` to finish, because a sheet measured mid-transform reads
+    // as overflowing the fold.
+    const sheet = await openSheet(page);
+    if (sheet === null) {
       failures += !report("the filter sheet can be opened", false, "no trigger on the page");
     } else {
-      await sheetTrigger.click();
-      await page.waitForSelector('[role="dialog"]', { timeout: 5_000 });
-      const hit = await page.evaluate(() => {
-        const d = document.querySelector('[role="dialog"]');
-        if (d === null) return null;
+      // Evaluated ON the sheet locator rather than re-finding a dialog in the
+      // document: an unscoped `querySelector` here would pick the shell's
+      // account sheet again and hand back its geometry, which is the exact
+      // substitution `openSheet` was added to stop.
+      const hit = await sheet.evaluate((d) => {
         const r = d.getBoundingClientRect();
         // 20px above the sheet's bottom edge, which is where the tab bar overlaps.
         // CLAMPED into the viewport. The panel overflows the fold here, so a point 20px
@@ -1085,7 +1092,7 @@ async function run() {
         };
       });
       if (hit === null) {
-        failures += !report("the sheet's footer can be hit-tested", false, "no dialog");
+        failures += !report("the sheet's footer can be hit-tested", false, "no geometry");
       } else {
         // REPORTED, not asserted. The sheet is a descendant of a `sticky z-[2]` head, which
         // is a stacking context, so its `z-50` cannot beat the shell's `fixed z-40` tab bar
@@ -1108,14 +1115,17 @@ async function run() {
             + (hit.clamped ? ", sampled at the fold because the panel overflows it" : ""),
           );
         }
-        // Also reported and not asserted, for the same reason: the panel already overflows
-        // the fold on `main` (658-1154 against 844), so a check here would fail on code
-        // this PR does not touch. Recorded so the follow-up that portals the sheet starts
-        // from a measured before rather than from a comment.
+        // Reported, not asserted — but the baseline it used to carry is gone. The
+        // `658-1154 against 844` this printed was the ACCOUNT MENU, measured mid-animation
+        // by the selector this change fixes, and PR #572 withdrew it from the tracker and
+        // the readiness doc. Measured properly the sheet sits inside the fold. The figure
+        // stays reported rather than asserted because nobody has run this since the
+        // instrument was corrected; the first run that does should turn it into an
+        // assertion, with `hit.clamped` as the failure.
         report(
           "the sheet panel against the fold",
           true,
-          `${hit.rect} against ${hit.vh}px — known, pre-existing on main at 658-1154`,
+          `${hit.rect} against ${hit.vh}px${hit.clamped ? " — CLAMPED, so it overflows" : ""}`,
         );
       }
       await page.keyboard.press("Escape");
@@ -1173,10 +1183,9 @@ async function run() {
     // duplicate field mounted in the sheet is absent from the document while the sheet is
     // closed, so counting there proves nothing about the invariant it is named for.
     const fieldsWithSheetOpen = async () => {
-      const trigger = await page.$('button[aria-expanded][aria-haspopup="dialog"]');
-      if (!trigger) return null;
-      await trigger.click();
-      await page.waitForSelector('[role="dialog"]', { timeout: 5_000 });
+      // Same scoping as above: unscoped, this opened the account menu and
+      // counted the fields behind it.
+      if ((await openSheet(page)) === null) return null;
       return page.evaluate(
         () => document.querySelectorAll('input[aria-label^="Search cards in"]').length,
       );
