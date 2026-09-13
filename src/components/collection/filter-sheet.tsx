@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { collectionChassisCopy } from "../../lib/copy/collection";
+import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
 import { toggleAvailability } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
 import type { BrowseFilters } from "../../lib/collection/browse";
@@ -113,6 +113,23 @@ function SheetBody({
     const seen = new Set(selected.map((o) => o.code));
     return [...selected, ...matching.filter((o) => !seen.has(o.code))];
   }, [setOptions, setQuery, filters.setCodes]);
+
+  // The set search announces its own match count, on the same region and the
+  // same debounce. `FilterPanel`'s search does this and the sheet's did not, so
+  // a reader typing `zzz` watched the list empty and heard nothing — the result
+  // effect above is keyed on `shown`, which a local query never moves.
+  const setQueried = useRef(false);
+  useEffect(() => {
+    if (!setQueried.current) {
+      setQueried.current = true;
+      return;
+    }
+    const timer = setTimeout(
+      () => setAnnouncement(collectionFilterCopy.set.announceMatches(sets.length, setQuery.trim())),
+      300,
+    );
+    return () => clearTimeout(timer);
+  }, [setQuery, sets.length]);
 
   const toggle = <T extends string>(list: readonly T[], code: T): T[] =>
     list.includes(code) ? list.filter((c) => c !== code) : [...list, code];

@@ -117,6 +117,15 @@ describe("CollectionFilterSheet", () => {
     expect(screen.getByRole("switch", { name: /Limited Edition Alpha/ })).toBeTruthy();
   });
 
+  it("announces the set-search match count, as the shared panel's search does", () => {
+    // The result region is keyed on `shown`, which a LOCAL query never moves —
+    // so a reader typing `zzz` watched the list empty and heard nothing.
+    const { container } = render(sheet());
+    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "zzz" } });
+    act(() => vi.advanceTimersByTime(301));
+    expect(container.querySelector("[role='status']")?.textContent).toContain("No sets match zzz");
+  });
+
   it("tells an empty set vocabulary apart from a failed search", () => {
     // A collection whose rows all went unmatched has no sets to filter by, and
     // the sheet opens with a blank query — so the search string rendered as
