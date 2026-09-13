@@ -267,7 +267,9 @@ export function DecksView({
    * as a deleted folder and drops the reader back on All decks — instead of the
    * empty shelf CR4 requires them to land on.
    */
-  const [justMade, setJustMade] = useState<DeckFolderWithCount | null>(null);
+  const [justMade, setJustMade] = useState<
+    (DeckFolderWithCount & { against: readonly DeckFolderWithCount[] }) | null
+  >(null);
   const [, startRefresh] = useTransition();
 
   /**
@@ -387,7 +389,11 @@ export function DecksView({
   // pass sees both. Left standing, a folder later deleted in another tab would
   // be re-added by this merge and the missing-shelf fallback below could never
   // fire on it.
-  if (justMade && serverFolders.some((f) => f.id === justMade.id)) setJustMade(null);
+  // Cleared by the FIRST payload after the create, whether or not it carries the
+  // id: a folder deleted in another tab before that response would otherwise be
+  // re-added by the merge below on every render, and the missing-shelf fallback
+  // could never fire on it.
+  if (justMade && serverFolders !== justMade.against) setJustMade(null);
 
   // The server's list, plus a folder made a moment ago that it has not returned
   // yet.
@@ -770,7 +776,14 @@ export function DecksView({
                 // sheet, and a create from move mode selects a new empty shelf,
                 // which takes the whole card away. The shelf control is the one
                 // thing on screen in either case.
-                if (createFrom !== "line") focusShelfControl();
+                // Whatever opened it may be gone: the sheet's row unmounts with
+                // the sheet, a create from move takes the whole card away, and
+                // even the wide line's own button goes if the width crossed
+                // while the dialog was open. The hook focuses a surviving
+                // trigger itself; this catches the case where there is none.
+                requestAnimationFrame(() => {
+                  if (document.activeElement === document.body) focusShelfControl();
+                });
               }}
               onCreate={async (name) => {
                 const result = await createFolderAction(name);
@@ -783,6 +796,9 @@ export function DecksView({
                   name: result.folder.name,
                   createdAt: new Date(),
                   deckCount: 0,
+                  // The payload it was made against. Any other payload is the
+                  // refresh arriving, and this entry has done its job.
+                  against: serverFolders,
                 });
                 // CR4: the new shelf is selected, which lands the reader on S2 —
                 // create, land on the empty shelf, and the state says how to
@@ -853,6 +869,7 @@ export function DecksView({
                       setCreating(true);
                     }}
                     say={setShelfSaid}
+                    keepsFocus={state.shelf === ALL_DECKS}
                     onMoved={() => {
                       refresh();
                       // On a named shelf the moved card leaves the grid, taking

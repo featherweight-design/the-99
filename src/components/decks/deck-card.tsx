@@ -123,6 +123,7 @@ interface DeckCardProps {
   onCreateFolder: () => void;
   say: (announcement: string) => void;
   onMoved: () => void;
+  keepsFocus: boolean;
 }
 
 /**
@@ -149,7 +150,7 @@ interface DeckCardProps {
  * pass a property check on both columns while being wrong.
  */
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, say, onMoved,
+  deck, shopping, now, folders, onCreateFolder, say, onMoved, keepsFocus,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -277,6 +278,7 @@ export function DeckCard({
           onCreateFolder={onCreateFolder}
           say={say}
           onMoved={onMoved}
+          keepsFocus={keepsFocus}
         />
         {/* The block at the foot, carrying identity alone: the deck's name, its
             commander and its colour. The chip and the bar are both statements

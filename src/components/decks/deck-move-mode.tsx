@@ -51,6 +51,10 @@ export function MoveMode({
 }) {
   const [pending, startTransition] = useTransition();
   const first = useRef<HTMLButtonElement>(null);
+  // A SYNCHRONOUS guard as well as `disabled`. A transition does not re-render
+  // before the next click lands, so two quick taps would start two moves whose
+  // order decides the final shelf.
+  const inFlight = useRef(false);
 
   // Entering this mode replaces the focused menu row, so without this the
   // keyboard reader is dropped on the body with the destinations unreachable by
@@ -61,6 +65,8 @@ export function MoveMode({
   }, []);
 
   function move(id: string | null, name: string | null) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     startTransition(async () => {
       // A THROWN ACTION IS HANDLED HERE, not left to reject. The action layer
       // lets an unexpected database error travel deliberately, and an
@@ -71,6 +77,7 @@ export function MoveMode({
       // `false` is "not yours, or gone" — the action revalidates for exactly
       // that reason, and the list this reader is looking at is the stale one.
       // Refreshed, and nothing announced: nothing moved.
+      inFlight.current = false;
       if (!ok) {
         onRefused();
         return;
@@ -135,7 +142,7 @@ export function MoveMode({
           // Guarded as well as disabled: a same-tick click lands before the
           // transition's re-render, and two flows open at once is the state
           // this prevents.
-          if (pending) return;
+          if (pending || inFlight.current) return;
           onCreate();
         }}
         className={ROW}

@@ -36,6 +36,11 @@ interface DeckCardOverflowProps {
   say: (announcement: string) => void;
   /** Refreshes the route after a move: the grid and every count are the view's. */
   onMoved: () => void;
+  /**
+   * Whether this card stays on screen after a move — true on All decks, false on
+   * a named shelf, where the deck leaves the grid and the view takes focus.
+   */
+  keepsFocus: boolean;
 }
 
 /**
@@ -54,6 +59,7 @@ export function DeckCardOverflow({
   onCreateFolder,
   say,
   onMoved,
+  keepsFocus,
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
@@ -93,17 +99,21 @@ export function DeckCardOverflow({
   // Optimistic, because the tile's own menu is the only place the fact is
   // stated: the server revalidates `/decks` behind this, and re-reading before
   // painting would leave the row naming the old shelf for a round trip.
-  const [movedTo, setMovedTo] = useState<{ id: string | null; name: string | null } | null>(null);
+  const [movedTo, setMovedTo] = useState<
+    { id: string | null; name: string | null; from: string | null } | null
+  >(null);
   // A ref, not state: this is a one-shot instruction to the DOM after a commit,
   // and holding it in state would mean setting state inside the effect that
   // consumes it — the cascading render this repo's lint rejects.
   const wantsMoveRowFocus = useRef(false);
   const moveRow = useRef<HTMLButtonElement>(null);
-  // The optimistic receipt EXPIRES: once the refreshed props agree with it, or
-  // disagree because something else moved this deck, the server's answer is the
-  // one on screen. Left standing it would outlive its own truth — a folder
-  // renamed or deleted in another tab would keep printing the old shelf here.
-  if (movedTo && movedTo.id === folderId) setMovedTo(null);
+  // The optimistic receipt EXPIRES ON THE FIRST CHANGED SERVER PROP, whether it
+  // agrees or not. Clearing only on agreement left it standing forever when the
+  // destination was deleted or the deck moved elsewhere before the refresh
+  // landed: the id never matched, and the menu went on printing a shelf that
+  // was no longer true. `from` is what the server said when the override was
+  // made, so any change to that is the answer arriving.
+  if (movedTo && movedTo.from !== folderId) setMovedTo(null);
   const shelf = movedTo ?? { id: folderId, name: folderName };
   const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
 
@@ -253,10 +263,13 @@ export function DeckCardOverflow({
                 onMoved();
               }}
               onMoved={(next) => {
-                setMovedTo(next);
+                setMovedTo({ ...next, from: folderId });
                 // The menu's Move row is the receipt, so it is also where focus
-                // belongs: the destination the reader just pressed is gone.
-                wantsMoveRowFocus.current = true;
+                // belongs — but only when this card SURVIVES the refresh. On a
+                // named shelf the moved deck leaves the grid, and the view
+                // focuses the shelf control instead; asking for the row here
+                // would put focus on a node about to be removed.
+                if (keepsFocus) wantsMoveRowFocus.current = true;
                 // The list, its counts and both denominators live in the view;
                 // without this a deck moved off the shelf being viewed stays in
                 // the grid and every figure above it is stale.
