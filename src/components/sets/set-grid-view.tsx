@@ -152,6 +152,25 @@ export function SetGridView(props: SetGridViewProps) {
    *   - and the reserve stops recording while it fires, so a delta-inclusive height is
    *     never the one the spacer is sized from.
    */
+  /**
+   * A breakpoint crossing reopens the head.
+   *
+   * A reader who collapses on the phone, widens to desktop and comes back is still
+   * `collapsed`, so the head is shy on the first mobile render — and the recorder, which
+   * refuses to measure a collapsed head, leaves the DESKTOP height reserved underneath it.
+   * Clearing the recorded height instead was tried and is worse: the reserve goes to 0
+   * where the desktop figure was accidentally close, so the grid moves further than before.
+   *
+   * Reopening is the answer that produces a correct number: the head measures itself at the
+   * width it is now, and the next scroll event collapses it again. Adjusted DURING RENDER,
+   * which is this file's existing pattern for deriving state from a changed input — the
+   * URL override two blocks up does the same thing for the same reason.
+   */
+  const [seenDesktop, setSeenDesktop] = useState(isDesktop);
+  if (seenDesktop !== isDesktop) {
+    setSeenDesktop(isDesktop);
+    if (collapsed) setCollapsed(false);
+  }
   const [deltaFiring, setDeltaFiring] = useState(false);
   const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
   const mayCollapse = !isDesktop && !(deltaFiring && !sheetOpen);
@@ -221,8 +240,9 @@ export function SetGridView(props: SetGridViewProps) {
     // Read off the DOM at call time rather than off a `collapsed` closed over anywhere:
     // `ResizeObserver` delivers at the end of a frame, so the shrink the collapse causes
     // can arrive BEFORE any cleanup, and the rest height would then record the collapsed
-    // one — the number it must never hold. The probe caught that: 288px at rest, 140px
-    // collapsed.
+    // one — the number it must never hold. The probe caught that: 288px reserved at rest
+    // and 140px once collapsed, which was the head's height before the one-row bar landed;
+    // it is 75px now, and the reserve holds 288 through both.
     //
     // Refreshed HERE, before sizing, whenever the head is open. While collapsed the open
     // subtree is `display:none` and cannot resize, so a filter changed through the bar's

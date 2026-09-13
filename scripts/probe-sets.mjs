@@ -991,6 +991,41 @@ async function run() {
         );
       }
 
+      // The breakpoint round trip. A reader who collapses on the phone, widens to desktop
+      // and comes back is still `collapsed`, so the recorder refuses on the first mobile
+      // render — and the DESKTOP height stayed reserved under a phone head. Only a real
+      // engine can catch it: JSDOM reports every height as 0, so the unit test written for
+      // this passed with the fix removed.
+      await scrollTo(400);
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const afterTrip = await page.evaluate(() => {
+        const head = document.querySelector("[data-set-head]");
+        const spacer = document.querySelector("[data-set-head-reserve]");
+        if (head === null || spacer === null) return null;
+        return {
+          head: Math.round(head.getBoundingClientRect().height),
+          spacer: Math.round(spacer.getBoundingClientRect().height),
+          shy: head.hasAttribute("data-set-head-collapsed"),
+        };
+      });
+      // The document must still hold the PHONE's own rest height, measured at the top of
+      // this block. A loose bound is not a check here: the desktop figure happened to land
+      // within 3px of the right one on this fixture, so anything short of the exact sum
+      // passes on the bug.
+      failures += !report(
+        "a trip to desktop and back reserves the phone's own rest height",
+        afterTrip !== null
+          && Math.abs(afterTrip.head + afterTrip.spacer - restState.height) <= 1,
+        afterTrip === null
+          ? "the head or spacer was not on the page — the check measured nothing"
+          : `head ${afterTrip.head} + spacer ${afterTrip.spacer} = `
+            + `${afterTrip.head + afterTrip.spacer}px against a phone rest of`
+            + ` ${restState.height}px, shy=${afterTrip.shy}`,
+      );
+
       const crossing = await firstCrossingShift();
       failures += !report(
         "the grid does not move in the document on the first crossing",

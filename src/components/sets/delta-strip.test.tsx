@@ -162,3 +162,53 @@ describe("DeltaStrip — a same-tab pick", () => {
       .toBeInTheDocument();
   });
 });
+
+// §31: while this strip is showing a message the head may not collapse. The parent decides
+// that from what the strip reports, and the parent's own tests use a MOCK — so a real strip
+// that stopped reporting would leave both suites green. This is the only place that fact is
+// tested against the component that has to produce it.
+describe("DeltaStrip — what it reports to the head", () => {
+  const props = { code: "dsk", fingerprint: "a:1", indexed: true };
+
+  it("reports firing when the fingerprint has moved", async () => {
+    const onFiring = vi.fn();
+    ownedFingerprintForSet.mockResolvedValue("a:2");
+    render(<DeltaStrip {...props} recheckKey="1" onFiring={onFiring} />);
+    await waitFor(() => expect(onFiring).toHaveBeenCalledWith(true));
+  });
+
+  it("does not report firing when it matches", async () => {
+    const onFiring = vi.fn();
+    ownedFingerprintForSet.mockResolvedValue("a:1");
+    render(<DeltaStrip {...props} recheckKey="1" onFiring={onFiring} />);
+    await waitFor(() => expect(ownedFingerprintForSet).toHaveBeenCalled());
+    expect(onFiring).not.toHaveBeenCalledWith(true);
+  });
+
+  // An unindexed set never polls, so it can never pin the head open.
+  it("does not report firing when the set is not indexed", async () => {
+    const onFiring = vi.fn();
+    ownedFingerprintForSet.mockResolvedValue("a:2");
+    render(<DeltaStrip {...props} indexed={false} recheckKey="1" onFiring={onFiring} />);
+    await waitFor(() => expect(onFiring).toHaveBeenCalledWith(false));
+    expect(onFiring).not.toHaveBeenCalledWith(true);
+  });
+
+  // Clearing on unmount matters as much as reporting: the head would otherwise stay pinned
+  // open after the strip left the page.
+  it("clears it on unmount", async () => {
+    const onFiring = vi.fn();
+    ownedFingerprintForSet.mockResolvedValue("a:2");
+    const { unmount } = render(<DeltaStrip {...props} recheckKey="1" onFiring={onFiring} />);
+    await waitFor(() => expect(onFiring).toHaveBeenCalledWith(true));
+    onFiring.mockClear();
+    unmount();
+    expect(onFiring).toHaveBeenCalledWith(false);
+  });
+
+  it("renders without one, because the prop is optional", async () => {
+    ownedFingerprintForSet.mockResolvedValue("a:2");
+    render(<DeltaStrip {...props} recheckKey="1" />);
+    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+  });
+});
