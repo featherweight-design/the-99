@@ -27,6 +27,7 @@ import { ColourPips } from "../ui/colour-pips";
 import { FilterPanel } from "../ui/filter-panel";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
 import { FilterChipPill } from "../ui/filter-chassis";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { GhostButton } from "../ui/button";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
@@ -292,7 +293,9 @@ export function SetGridView(props: SetGridViewProps) {
   // The chip line, in DIMENSION order and never click order — a line that re-orders itself
   // as you use it is a line you have to re-read. Colour collapses past one pip rather than
   // printing one chip per hue.
-  const chips: { key: string; label: string; spoken?: string; onRemove: () => void }[] = [];
+  const chips: {
+    key: string; label: string; spoken?: string; dots?: string[]; onRemove: () => void;
+  }[] = [];
   if (effective.colors.length === 1) {
     const only = effective.colors[0];
     chips.push({
@@ -303,17 +306,19 @@ export function SetGridView(props: SetGridViewProps) {
       onRemove: () => setFilters({ ...filters, colors: [] }),
     });
   } else if (effective.colors.length > 1) {
-    // The count is for the eye, the NAMES are for the ear — the split
-    // `filter-chassis.tsx` already makes with its `spoken` field. §28 rules the visible
-    // label (`3 colours`, never one chip per hue) and says nothing about the accessible
-    // name; without this a screen reader reading the row hears "3 colours" and, on a
-    // phone, has no pips mounted to find out which three.
+    // The count is for the eye, the SWATCHES are beside it, and the NAMES are for the
+    // ear. §28's "never one chip per hue" forbids a chip per colour — not swatches inside
+    // the one chip, which is what `FilterChipPill`'s `dots` draws and what `/collection`
+    // and the commander rack both pass. Without them a sighted reader on a phone sees
+    // `3 colours` with the pips unmounted behind the sheet; without `spoken`, a screen
+    // reader hears the same count and has nowhere to go for the names.
     const names = effective.colors
       .map((c) => chassisCopy.colour.names[c.toLowerCase() as "w" | "u" | "b" | "r" | "g"]);
     chips.push({
       key: "c",
       label: setFilterCopy.chip.colour(effective.colors.length),
       spoken: names.join(", "),
+      dots: effective.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
       onRemove: () => setFilters({ ...filters, colors: [] }),
     });
   }
@@ -540,8 +545,8 @@ export function SetGridView(props: SetGridViewProps) {
               and why this is not simply the panel's `single` contract as written. */}
           {/* Mounted at `md`, which is this page's own switch and not the chassis frame's
               1000. The chassis picks 1000 from `/collection`'s EIGHT controls summing to
-              987px; this row has four and a search field, and the probe measures it
-              unwrapped at 900 with two filters on. Following 1000 here would move the
+              987px; this row has THREE — pips, rarity, missing-only — and the probe
+              measures it unwrapped at 900 with two filters on. Following 1000 here would move the
               sticky head's whole form for a band where nothing is wrong.
 
               MOUNTED on the breakpoint, never CSS-hidden. `FilterPanel` holds its own open

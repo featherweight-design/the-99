@@ -635,7 +635,10 @@ describe("SetGridView — the rack, chassis-conformant", () => {
     [...chips().querySelectorAll("span")]
       .filter((el) => el.querySelector("button"))
       .map((el) => {
-        const shown = el.querySelector('[aria-hidden="true"]');
+        // The aria-hidden half that has TEXT: the swatch strip is aria-hidden too, and it
+        // comes first.
+        const shown = [...el.querySelectorAll('[aria-hidden="true"]')]
+          .find((n) => (n.textContent ?? "").trim() !== "");
         return (shown ? shown.textContent : el.textContent?.replace("×", ""))?.trim();
       });
 
@@ -1000,12 +1003,20 @@ describe("SetGridView — the phone chip scroller has room for its targets", () 
 // per hue) and says nothing about the accessible name; without the split a screen reader
 // hears "3 colours" and, on a phone, has no pips mounted to find out which three.
 describe("SetGridView — the collapsed colour chip names its hues", () => {
-  it("shows the count and speaks the names", () => {
+  it("shows the count, draws a swatch per hue, and speaks the names", () => {
     search = "c=W,U,B";
     const { container } = view([p("1"), p("2")], []);
     const row = container.querySelector("[data-set-chips]") as HTMLElement;
-    expect(row.querySelector('[aria-hidden="true"]')?.textContent).toBe("3 colours");
     expect(row.querySelector(".sr-only")?.textContent).toBe("White, Blue, Black");
+    // The count, in the half the eye reads.
+    const shown = [...row.querySelectorAll('[aria-hidden="true"]')]
+      .map((el) => el.textContent).filter(Boolean);
+    expect(shown).toContain("3 colours");
+    // And the swatches beside it. §28 forbids a chip PER hue, not swatches inside one —
+    // and on a phone the pips are unmounted, so this is the only thing a sighted reader
+    // has to tell them which three.
+    const dots = [...row.querySelectorAll<HTMLElement>("span.rounded-full")];
+    expect(dots.map((d) => d.style.background)).toEqual(["var(--w)", "var(--u)", "var(--b)"]);
   });
 
   it("names them on the dismiss control too, not the count", () => {

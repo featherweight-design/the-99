@@ -524,10 +524,6 @@ async function run() {
           pipOpacities: [...document.querySelectorAll('[role="switch"]')]
             .filter((el) => el.getClientRects().length > 0)
             .map((el) => getComputedStyle(el).opacity),
-          inFlowPanel: (() => {
-            const panel = document.querySelector('[role="dialog"]');
-            return panel ? getComputedStyle(panel).position : null;
-          })(),
         };
       });
     };
