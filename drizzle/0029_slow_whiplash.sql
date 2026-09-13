@@ -1,0 +1,2 @@
+ALTER TABLE "deck_games" ADD COLUMN "note" text;--> statement-breakpoint
+ALTER TABLE "deck_games" ADD CONSTRAINT "deck_games_note_length_check" CHECK ("deck_games"."note" is null or char_length("deck_games"."note") <= 140);

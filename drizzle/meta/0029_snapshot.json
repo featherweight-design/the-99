@@ -1,5 +1,5 @@
 {
-  "id": "aa2e4cd5-eede-4627-b2ed-0288915f0eda",
+  "id": "7d401139-5f13-4016-9fdb-70d956e23844",
   "prevId": "e20dae57-1c47-4ba2-92e1-a854cd90f204",
   "version": "7",
   "dialect": "postgresql",
@@ -970,8 +970,8 @@
           "notNull": true,
           "default": "now()"
         },
-        "notes": {
-          "name": "notes",
+        "note": {
+          "name": "note",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1035,6 +1035,10 @@
         "deck_games_result_check": {
           "name": "deck_games_result_check",
           "value": "\"deck_games\".\"result\" in ('win', 'loss', 'draw')"
+        },
+        "deck_games_note_length_check": {
+          "name": "deck_games_note_length_check",
+          "value": "\"deck_games\".\"note\" is null or char_length(\"deck_games\".\"note\") <= 140"
         },
         "deck_games_pod_size_check": {
           "name": "deck_games_pod_size_check",

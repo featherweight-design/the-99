@@ -223,6 +223,11 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 
 ## Component: Game History Row — Note Line (Surface 2, CHANGE)
 
+> **Shipped 2026-09-13**, ahead of the rest of this table, with `deck_games.note`
+> and its 140-character check (migration `0029_slow_whiplash`). The note is
+> entered by hand against the database — the form's Note Field above is still
+> unbuilt, so nothing in the app writes one yet.
+
 ### Row container (unchanged from #9)
 
 | Property | Mobile | Desktop |

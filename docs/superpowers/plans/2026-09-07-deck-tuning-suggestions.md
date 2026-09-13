@@ -37,6 +37,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 **Data and schema.**
 
+- **`deck_games.note`, its length check, and the History row's note line already shipped** — 2026-09-13, ahead of the rest of this plan, because the product owner wanted somewhere to record a game now. Migration `0029_slow_whiplash`. What remains here is the note *field* on the log form, its counter, and the note reaching the model. Do not add the column again.
 - The new game column is **`note`, singular** — `deck_games.note`. `decks.notes` (plural) already exists at `src/db/schema.ts:170` and is a different thing.
 - **Note ≤ 140 characters. Intent ≤ 120 characters.** The app-seeded intent string must itself fit inside 120.
 - **Five failure classes, not four:** `upstream_busy`, `timeout`, `malformed`, `ungrounded`, `interrupted`. `interrupted` is written by the reaper, never by the run itself.
@@ -113,8 +114,8 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 | File | Change |
 |---|---|
-| `src/db/schema.ts` | `deck_games.note`; `decks.intent` + `decks.intent_seeded`; `deck_suggestion_runs`; `deck_suggestion_items`. Adds the `uniqueIndex` import. |
-| `src/lib/decks/games.ts` | `DeckGame.note`, read by `listDeckGames`. |
+| `src/db/schema.ts` | ~~`deck_games.note`~~ (shipped 2026-09-13); `decks.intent` + `decks.intent_seeded`; `deck_suggestion_runs`; `deck_suggestion_items`. Adds the `uniqueIndex` import. |
+| `src/lib/decks/games.ts` | ~~`DeckGame.note`, read by `listDeckGames`~~ — shipped 2026-09-13. |
 | `src/lib/decks/read.ts` | `DeckDetail.intent` and `.intentSeeded`, projected by `getDeckDetail`. |
 | `src/app/decks/actions.ts` | `logGame` accepts and stores the note. |
 | `src/app/decks/[id]/page.tsx` | Reads tuning state; exports `maxDuration`. |

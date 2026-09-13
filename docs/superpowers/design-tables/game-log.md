@@ -1855,36 +1855,21 @@ card named, shown, suggested, linked or implied anywhere on this surface.
 
 ## Amendments after the handoff
 
-### A1 · A game can carry a note (2026-09-12)
+### A1 · A game can carry a note (2026-09-13)
 
-**Added:** `deck_games.notes`, a nullable free-text column, drawn as a full-width line
-inside the History row's marks slot when it holds anything.
+`deck_games.note` and the History row's note line, both drawn from **#10's**
+deck-tuning handoff rather than invented here — see
+`docs/superpowers/design-tables/deck-tuning.md` §Note line and §Note quote rule,
+and `design/design_handoff_the99_deck_tuning/README.md` §The history row
+rendering one. Nothing about the properties is new; what is new is that this
+half of #10 shipped ahead of the rest of it.
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| Container | the marks slot's own wrapping row, `width: 100%` | same |
-| font-family | `--font-sans` (the row's default) | same |
-| font-size | 11.5 | 11.5 |
-| line-height | 1.45 | 1.45 |
-| color | `--fg-body` (`#C0B8A6`) | same |
-| overflow-wrap | `break-word` | same |
-| Copy key | none — the note is the player's own words, drawn verbatim | same |
-| Conditional | drawn only when the column is neither null nor blank | same |
+**What #9's row gives up:** nothing. The `<li>` becomes a column so the note can
+be a second line, and every slot that was its child moves into an inner row with
+the same classes. A game with no note renders the same single line at the same
+`min-height`, which is the handoff's own requirement.
 
-**Why it sits inside the marks slot** rather than as a second row: that slot already
-wraps, so a full-width child opens a line there without touching the row's slot
-structure, and the `<li>` grows to fit at both widths. The row's `min-height` and every
-other slot are unchanged.
-
-**Nothing in the app writes it.** The log form has no field and the server actions do not
-accept one — the note is entered against the database by hand. That was the product
-owner's explicit scope: he wanted somewhere to put a note now, including on games
-already logged, without a feature being built for it. A form field is the obvious next
-step and is not in this change.
-
-**Not a Design ruling.** The placement above is engineering's, made because the marks
-slot was the one place a line could be added without redrawing anything. Design should
-ratify or replace it.
-
-**Forbidden list unaffected:** no new token, no new hex, no motion, no new empty-state
-construct, and the note names no card.
+**What is NOT here, and is still #10's:** the note *field* on the log form, the
+140-character counter, and the note being quoted to the model. The column's
+check constraint is the only thing enforcing the cap, because the note is
+entered by hand against the database.

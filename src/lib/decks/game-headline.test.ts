@@ -12,7 +12,7 @@ function game(over: Partial<DeckGame> = {}): DeckGame {
     podSize: 4,
     playedAt: new Date("2026-09-01"),
     versionNumber: null,
-    notes: null,
+    note: null,
     worked: [],
     hurt: [],
     ...over,

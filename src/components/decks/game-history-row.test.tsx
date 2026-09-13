@@ -18,7 +18,7 @@ const GAME: DeckGame = {
   podSize: 4,
   playedAt: new Date("2026-09-01T12:00:00"),
   versionNumber: 3,
-  notes: null,
+  note: null,
   worked: ["engine"],
   hurt: ["speed", "mana"],
 };
@@ -129,29 +129,45 @@ describe("GameHistoryRow", () => {
 
 // ── The note ──────────────────────────────────────────────────────────────────
 //
-// Written by hand against `deck_games.notes` — no form in the app produces one —
-// so the row's whole job is to draw whatever is in the column, and to draw
-// nothing at all when there isn't one.
+// `deck_games.note` is written by hand — no form in the app produces one — so
+// the row's whole job is to draw whatever is in the column, to the properties
+// deck-tuning.md §Note line specifies, and to reserve nothing when it is null.
 describe("a game's note", () => {
-  it("draws the note when the column holds one", () => {
-    mount({ ...GAME, notes: "Kept a two-lander and got there on turn four." });
-    expect(
-      screen.getByText("Kept a two-lander and got there on turn four."),
-    ).toBeInTheDocument();
+  const NOTE = "Kept a two-lander and got there on turn four.";
+  const line = (container: HTMLElement) => container.querySelector(".italic");
+
+  it("draws the note, inside typographic quotes", () => {
+    mount({ ...GAME, note: NOTE });
+    // The quotes are the handoff's: this is somebody's sentence, not a value.
+    expect(screen.getByText(`\u201C${NOTE}\u201D`)).toBeInTheDocument();
   });
 
   // Null is the ordinary case — most games have nothing worth writing down. An
   // empty or blank string is a column somebody cleared by hand, and drawing it
-  // would open a blank line under the chips for a note nobody wrote.
-  it.each([null, "", "   "])("draws no note line for %o", (notes) => {
-    const { container } = mount({ ...GAME, notes });
-    expect(container.querySelector(".break-words")).toBeNull();
+  // would open a second line for a note nobody wrote. The handoff is explicit:
+  // a row without one is exactly the shipped row, nothing reserved.
+  it.each([null, "", "   "])("draws no note line for %o", (note) => {
+    const { container } = mount({ ...GAME, note });
+    expect(line(container)).toBeNull();
   });
 
-  // Nothing constrains what gets typed into the column, and an unbroken string
-  // would push the row's own controls off a phone.
-  it("lets a long note break rather than widening the row", () => {
-    mount({ ...GAME, notes: "x".repeat(400) });
-    expect(screen.getByText("x".repeat(400))).toHaveClass("break-words");
+  it("indents to the mark column and carries the quote rule", () => {
+    const { container } = mount({ ...GAME, note: NOTE });
+    const row = line(container)!.parentElement!;
+    expect(row.className).toContain("md:pl-[40px]");
+    const rule = row.querySelector("span[aria-hidden]")!;
+    expect(rule.className).toContain("w-[2px]");
+    expect(rule.className).toContain("bg-border-strong");
+  });
+
+  // No truncation and no clamp. The 140-character cap is what makes that safe,
+  // and the column's own check is what enforces the cap.
+  it("wraps a note at the cap rather than truncating it", () => {
+    const at140 = "x".repeat(140);
+    const { container } = mount({ ...GAME, note: at140 });
+    const text = line(container)!;
+    expect(text.textContent).toBe(`\u201C${at140}\u201D`);
+    expect(text.className).not.toContain("truncate");
+    expect(text.className).not.toContain("line-clamp");
   });
 });
