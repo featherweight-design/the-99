@@ -143,10 +143,10 @@ const portraitGround = (
     Both edges of each label block are sampled, not just one. The ramps hold a
     flat value across the block precisely so the two agree — asserting only the
     block's foot is what let a ramp ship that had not finished climbing at the
-    block's top, which is where the desktop 148 row measured 4.0:1 before this
-    round.
+    block's top, which is where the desktop list row measured 4.0:1 before this
+    round, on the 148 band it took then.
 
-    The rank glyph each 148 row draws is deliberately absent. It is `--fg-faint`,
+    The rank glyph each list row draws is deliberately absent. It is `--fg-faint`,
     which measures below 4.5:1 against flat `--bg` with no art at all, so no scrim
     value can lift it — that is a token question, not a wash one. */
 const PORTRAIT_INK: readonly {
@@ -169,10 +169,11 @@ const PORTRAIT_INK: readonly {
       first honest tuning pass would have to argue its way past it. */
   tokens?: readonly string[];
 }[] = [
-  // Desktop: the name starts at 70px, its block top 81px down the band and its
-  // foot 24px off the band's own. Phone: the name starts at 39px and its block
-  // spans 65%–92%. Both are `items-end`, so the phone's block sits inside the
-  // desktop's and the four samples below bound every 148 row at either width.
+  // The two list rows, both at the 208 band over a 285 portrait they take now.
+  // Each row holds two breakpoint subtrees under one wash and both are
+  // `items-end`, so the phone's block sits inside the desktop's — the taller
+  // block is the one each `labelAtPx` is measured against, and sampling its top
+  // and its foot bounds every row of ink either width draws.
   { surface: "the owned row's block top", portrait: 285, band: 208, labelAtPx: 63, x: 165, y: 70 },
   { surface: "the owned row's block foot", portrait: 285, band: 208, labelAtPx: 63, x: 165, y: 100 },
   // 56, the rank column's measured figure — the same one `STATED_BANDS` and the

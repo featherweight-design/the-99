@@ -538,12 +538,12 @@ async function checkBands(page, label, note) {
   // a vertical ramp, so counting layers reported one unmigrated band as two.
   // Each scrim's own root is the band, so the distinct roots are the count.
   //
-  // A COUNTDOWN, not a failure. Surfaces migrate one slice at a time, so an
-  // unstated band is the expected state of everything not yet done — failing it
-  // would fail the probe on the round's own intermediate steps. What makes the
-  // end state safe is structural rather than a check: the last slice deletes the
-  // legacy props, after which the type system forbids an unstated band and there
-  // is nothing left for a check to catch.
+  // A FAILURE now, not the countdown it was while surfaces migrated one slice at
+  // a time. The legacy props are deleted, so the type system forbids an unstated
+  // band from inside the app — but a wash can still reach the page without one:
+  // a reverted surface, a new render that never went through the system, or a
+  // band whose marker was dropped while its wash stayed. The type check cannot
+  // see any of those; this can.
   const unstated = await page.evaluate(
     `new Set(
       [...document.querySelectorAll('.art-wash-scrim')]
@@ -1226,7 +1226,11 @@ try {
       }
       await page.waitForTimeout(300);
       const reduced = await page.evaluate(`(${READ_WASHES})()`);
-      await page.screenshot({ path: `/tmp/art-wash-${vpName}-reduced-${whatKind.split(" ")[0]}.png` });
+      // The whole label, slugged. Taking the first word wrote `the owned lane`
+      // and `the detail hero` to the same file, so the later route overwrote the
+      // earlier one and the run kept fewer screenshots than surfaces it checked.
+      const slugKind = whatKind.replace(/[^a-z0-9]+/gi, "-");
+      await page.screenshot({ path: `/tmp/art-wash-${vpName}-reduced-${slugKind}.png` });
 
       // B9 as a fact rather than a claim: no band's scrim is reachable from a
       // stylesheet any more, so the preference rides on the art layer's opacity
