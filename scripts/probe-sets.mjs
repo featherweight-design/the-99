@@ -651,7 +651,16 @@ async function run() {
     const phoneRest = await rackAt("");
     const phoneMissing2 = await rackAt("?m=1");
     const phoneThree = await rackAt("?c=W&r=rare&m=1");
-    if (phoneRest !== null) {
+    if (phoneRest === null) {
+      // Not a skip. The desktop path treats a missing rack as a failure and this silently
+      // returned a green run without measuring the phone invariant at all — the seventh
+      // instance of this class on this PR, in the code written last round to close it.
+      failures += !report(
+        "the phone rack is present to measure",
+        false,
+        "no [data-set-chips] at 390px, so the phone fixed-height invariant went unmeasured",
+      );
+    } else {
       // `?m=1` on a COMPLETE set renders identically to rest — the page drops missing-only
       // from what it applies — so on such a fixture this cannot see the wrapping
       // missing-only line it is named for. SKIPPED rather than passed: a check that cannot
