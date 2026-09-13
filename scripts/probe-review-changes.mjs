@@ -155,7 +155,18 @@ const readReview = (page) =>
         // squeeze `GOING OUT · 15` onto three lines. Lines rather than a pixel
         // height: the figure that matters is how many rows of text the heading
         // occupies, and that survives a font-size change.
-        const lineHeight = parseFloat(getComputedStyle(h).lineHeight);
+        //
+        // Counted off the text's own client rects, one per line box, rather than
+        // by dividing the box height by `getComputedStyle(...).lineHeight` — that
+        // property answers `normal` under a font stack that sets no length, and a
+        // division by `NaN` would report a healthy heading as unmeasurable.
+        const range = document.createRange();
+        range.selectNodeContents(h);
+        const rows = new Set(
+          [...range.getClientRects()]
+            .filter((r) => r.width > 0 && r.height > 0)
+            .map((r) => Math.round(r.top)),
+        );
         const box = h.getBoundingClientRect();
         return {
           text: h.innerText,
@@ -165,10 +176,7 @@ const readReview = (page) =>
           // heading while the section stays on screen, so a line count taken off
           // the section would read 0 and look like a crush.
           drawn: box.height > 0,
-          lines:
-            Number.isFinite(lineHeight) && box.height > 0
-              ? Math.round(box.height / lineHeight)
-              : null,
+          lines: box.height > 0 ? rows.size : null,
         };
       }),
       segments: buttons
@@ -564,7 +572,7 @@ try {
     // lines by the oversized adjacent note." The note lost a sentence and the
     // heading gained `flex-none`, either of which alone would leave the other
     // free to regress.
-    const crushed = seen.headings.filter((h) => h.drawn && h.lines !== 1);
+    const crushed = seen.headings.filter((h) => h.drawn && h.lines !== null && h.lines > 1);
     console.log(
       `  headings on more than one line: ${
         crushed.map((h) => `"${h.text}" on ${h.lines}`).join(", ") || "none"
