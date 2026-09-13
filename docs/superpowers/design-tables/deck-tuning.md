@@ -39,7 +39,7 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 > **Errata · the explanatory line.** The canvas draws *"Read back to you in the
 > history, and read by the tuning panel — quoted, never paraphrased"*. The
 > tuning panel does not exist, so the clause naming it is held back and the line
-> ships as *"Read back to you in the history — quoted, never paraphrased"*. The
+> ships as *"Read back to you in the history: quoted, never paraphrased"*. The
 > full sentence is in `deckTuningCopy.note.readBack`'s comment; restore it with
 > the panel. Shipping it now would promise a surface nobody can open.
 

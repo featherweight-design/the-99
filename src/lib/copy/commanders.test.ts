@@ -28,7 +28,7 @@ describe("commandersCopy.filteredEmpty", () => {
 });
 
 describe("commandersCopy.firstRun", () => {
-  it("reproduces the mock's first-run line", () => {
+  it("pins the first-run line, repunctuated from the mock", () => {
     expect(commandersCopy.firstRun.line(1418, 24)).toBe(
       "1,418 cards read. 24 can lead. I ranked them. You're welcome.",
     );

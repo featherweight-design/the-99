@@ -959,7 +959,7 @@
 | aria | `aria-hidden` | `aria-hidden` |
 
 > **v2 copy delta.** Surfaces v2 §Commanders: "crab joins the XCIX crumb row,
-> copy: *1,418 cards read. 24 can lead. I ranked them — you're welcome.*" That
+> copy: *1,418 cards read. 24 can lead. I ranked them. You're welcome.*" That
 > line **replaces** the v1 banner body (`{n} cards → {m} legal commanders…`)
 > rather than joining it; both state the same fact, and shipping both would put
 > two redundant strings on one surface. Numbers are live counts formatted with

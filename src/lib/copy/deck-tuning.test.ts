@@ -30,7 +30,7 @@ describe("deckTuningCopy", () => {
     for (const s of strings) expect(s).not.toMatch(/\bnet\b/i);
   });
 
-  // The readBack line ends on its dash because an emphasised clause follows it
+  // The readBack line ends on its separator because an emphasised clause follows it
   // in the markup. That is the only string here allowed to end unfinished, and
   // naming it is what stops a second one being added by habit.
   it("ends every line but the read-back one on a finished clause", () => {

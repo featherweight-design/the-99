@@ -314,7 +314,7 @@ export const explainedCopy = {
   // deliberately no shortened variant here: a second string doubles the review surface and
   // guarantees the two drift. See PROSE-one-string-two-surfaces.md.
   home: {
-    /** The card's accessible name is unchanged — the paragraph is inside the stretched Link's
+    /** The card's accessible name says the same words — the paragraph is inside the stretched Link's
         hit area and reads in document order after the name. Listed so the audit can see the
         decision rather than infer it from an absence. */
     cardAria: (name: string) => `${name}: view commander details`,
