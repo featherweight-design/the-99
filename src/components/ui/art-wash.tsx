@@ -139,6 +139,10 @@ export const PORTRAITS: Record<
     ground: string;
     sharpOpacity: number;
     sharpAlpha: number;
+    /** Where the horizontal scrim's clear run ends. Derived from `maskEnd` and
+        the width for every row that agrees with that rule; stated only by the
+        one shipped row that does not. */
+    clearTo?: number;
     /** Where the horizontal scrim has closed to opaque ground, so any type at or
         past it stands on `--bg` rather than on the crop. It does NOT derive from
         the width: each value was drawn against its own surface, chosen so the
@@ -158,7 +162,20 @@ export const PORTRAITS: Record<
   // at 138 — 99px of portrait plus a 17px gap is where that row's 116px type
   // inset comes from, and the inset is past the stop, so nothing on the row
   // reads on art and the band draws no ramp at all.
-  99: { maskEnd: 62, ground: "--surface-inset", sharpOpacity: 0.85, sharpAlpha: 80, flatStop: 138 },
+  // The resume row's portrait column, restored with the row it belongs to, and
+  // restored to what SHIPPED rather than to the rule: 0.95 is the lift it took
+  // when the ambient layer under it was deleted, and its clear stop is an
+  // explicit 58 where the rule would derive 61. Three pixels, and they are the
+  // fade this row has always drawn — a "restoration" that changed them would be
+  // a new geometry wearing the old one's numbers.
+  99: {
+    maskEnd: 62,
+    ground: "--surface-inset",
+    sharpOpacity: 0.95,
+    sharpAlpha: 80,
+    clearTo: 58,
+    flatStop: 138,
+  },
 };
 
 const portrait = (
@@ -167,7 +184,7 @@ const portrait = (
   band: number,
 ) => {
   const b = PORTRAITS[width];
-  const clearTo = Math.round((b.maskEnd / 100) * width);
+  const clearTo = b.clearTo ?? Math.round((b.maskEnd / 100) * width);
   // Which dimension the crop is scaled by, derived rather than declared. A
   // portrait no wider than `band × 1.37` is filled by scaling the crop to the
   // band's height — `auto 100%` — which is what every derived width does, and

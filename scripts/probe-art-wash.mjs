@@ -113,10 +113,10 @@ const READ_WASHES = `() => {
 // — a band-wide second scaling of the crop behind the portrait, which read as a
 // double image. Either value computing again is that layer returning.
 //
-// 0.95 goes with the resume row's 72px band: it was the one portrait drawn at
-// that opacity, that row is a `cover` band now, and leaving the value in the set
-// would have let the retired arm return without the census noticing.
-const LIFTED_OPACITIES = [1, 0.8, 0.92];
+// 0.95 is the resume row's portrait, and the row is back: it is the lift that
+// layer took when the ambient copy under it was deleted, so dropping the value
+// while the row still draws it would fail every Home load.
+const LIFTED_OPACITIES = [1, 0.8, 0.92, 0.95];
 
 /** Every band on the page, with how many art layers inside it resolved a crop
     URL. A `left-portrait` band draws exactly one: the masked portrait. Two is

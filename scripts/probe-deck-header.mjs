@@ -146,11 +146,13 @@ const READ_HEADER = `() => {
       : null,
     status: pill ? pill.textContent.trim() : null,
     // R6 ruling 3 — the inks that read the over-99 state out, so the walk can
-    // check that one state is not painted in two alarm colours. The figure row
-    // is the bar track's previous sibling, which holds at both breakpoints; the
-    // type sizes do not.
+    // check that one state is not painted in two alarm colours. Found by its own
+    // marker: the figure used to sit in the row above the bar and was reachable
+    // as the track's previous sibling, and now the two share a row — a positional
+    // lookup returns null there, and this check would have filtered an empty list
+    // and reported success with the invariant unmeasured.
     overInks: (() => {
-      const row = fill?.parentElement?.previousElementSibling;
+      const row = header.querySelector('[data-spine-count]');
       if (!row) return null;
       return [...row.children]
         .filter(visible)

@@ -352,6 +352,12 @@ describe("commander detail — the art header band", () => {
     // which is the round's own bug. Only an assertion on the figure itself
     // catches the drift.
     expect(band!.firstElementChild).toHaveAttribute("data-art-wash-label-at", "96");
+    // And the size the figure was measured against. At 25px a two-word commander
+    // filled the phone's width and anything longer took both clamped lines,
+    // pushing the pips off the row — so restoring 25 while leaving 96 in place is
+    // exactly the regression this pins.
+    const heading = band!.querySelector<HTMLElement>("h1")!;
+    expect(heading.style.fontSize).toBe("19px");
   });
 
   // The 96px figure is only true while the name is two lines at most, and the

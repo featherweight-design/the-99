@@ -403,7 +403,12 @@ export function SpineMobile({
               style={statusBarStyle(status, built, bodySize)}
             />
           </div>
-          <div className="flex flex-none items-baseline" style={{ gap: 4 }}>
+          <div
+            // The marker the deck-header probe reads the over-99 inks off. It used to
+            // find this group as the bar track's previous sibling; the two share a row
+            // now, so a positional lookup returned null and the check went quiet.
+            data-spine-count
+            className="flex flex-none items-baseline" style={{ gap: 4 }}>
             <span
               className="font-mono font-semibold"
               style={{ fontSize: 14, color: over ? overInk : "var(--fg)" }}

@@ -114,6 +114,11 @@ describe("HeroCommander", () => {
     const { container } = render(<HeroCommander item={item()} inUse={0} />);
     const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
     expect(block.className).toContain("flex-col");
+    // The figure the ramp is keyed to, pinned here: the contrast suite holds 71
+    // as its own constant, so nothing but this ties the number to the render —
+    // reverting the call site to 46 would leave every other check green.
+    const wash = container.querySelector("[data-art-wash-band]")!;
+    expect(wash).toHaveAttribute("data-art-wash-label-at", "71");
     const [nameRow, typeRow] = Array.from(block.children) as HTMLElement[];
     expect(nameRow.textContent).toContain("Atraxa, Praetors' Voice");
     expect(nameRow.querySelector('[aria-hidden="true"]')).not.toBeNull();
