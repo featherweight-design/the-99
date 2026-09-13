@@ -145,10 +145,53 @@ for (const vp of VIEWPORTS) {
 await browser.close();
 console.log(JSON.stringify(report, null, 2));
 
-// A probe that reports a partial fixture as a result is worse than no probe:
-// it reads as an audit that passed.
-const incomplete = Object.entries(report).filter(([, r]) => r.failed);
-if (incomplete.length > 0) {
-  for (const [label, r] of incomplete) console.error(`${label}: ${r.failed}`);
+// The table, as values this run can be compared against. A probe that only
+// prints its measurements is a report, not a gate: every one of these could
+// come back wrong and the run would still exit 0, which is the failure this
+// probe exists to prevent. `--fg-muted` is read from the theme rather than
+// written here for the same reason the icon test reads its tokens back.
+const EXPECTED = {
+  "iPhone 13 · 390x844": { indent: "0px", gap: "10px", marginTop: "8px", lines: 3 },
+  "desktop · 1300x900": { indent: "40px", gap: "11px", marginTop: "7px", lines: 1 },
+};
+const FG_MUTED = "rgb(165, 156, 137)";
+
+const failures = [];
+for (const [label, r] of Object.entries(report)) {
+  if (r.failed) {
+    failures.push(`${label}: ${r.failed}`);
+    continue;
+  }
+  const want = EXPECTED[label];
+  const n = r.note;
+  const check = (name, got, expected) => {
+    if (got !== expected) failures.push(`${label} · ${name}: ${got} (table says ${expected})`);
+  };
+  check("padding-left", n.indent, want.indent);
+  check("gap", n.gap, want.gap);
+  check("margin-top", n.marginTop, want.marginTop);
+  check("font-size", n.fontSize, "12.5px");
+  check("font-style", n.fontStyle, "italic");
+  check("line-height", n.lineHeight, "18.75px");
+  check("colour", n.color, FG_MUTED);
+  check("typographic quotes", n.quoted, true);
+  check("spoken note", n.spoken, `note:\u201C${"x".repeat(140)}\u201D`);
+  check("visible line hidden from the ear", n.visibleLineHidden, true);
+  check("quote rule width", n.rule.width, 2);
+  // The rule stretches to the text block rather than to a guessed height.
+  check("quote rule height", n.rule.height, n.rule.textHeight);
+  check("quote rule fill", n.rule.background, "rgb(58, 50, 41)");
+  // The cap's whole point: 140 unbroken characters wrap instead of scrolling
+  // the page sideways. Three lines at 390px, one at 1300px.
+  check("lines at the cap", n.lines, want.lines);
+  check("horizontal overflow", r.overflowsX, false);
+  // A row without a note is exactly #9's row — 64px phone, 52px desktop.
+  check("row without a note", r.rowWithoutNote.minHeight, label.startsWith("iPhone") ? "64px" : "52px");
+}
+
+if (failures.length > 0) {
+  console.error("\nAgainst deck-tuning.md §Note line / §Note quote rule:");
+  for (const failure of failures) console.error(`  ✗ ${failure}`);
   process.exit(1);
 }
+console.error("\nEvery property matches deck-tuning.md §Note line / §Note quote rule.");
