@@ -129,17 +129,6 @@ export type FilterChassisProps = {
    * can leave the same count.
    */
   revision?: string | number;
-  /**
-   * Let the compact control row scroll horizontally instead of fitting.
-   *
-   * Decision 18 gives every route two forms and no wrapping, which assumes the
-   * compact form puts its dimensions behind one trigger. `/collection` has no
-   * such surface yet — it shipped a scrolling row — and mounting its five
-   * controls inline at 390px pushes them off-screen, since the row cannot wrap
-   * by design. Scrolling preserves what that route already did until it gains a
-   * compact surface of its own; no other route sets this.
-   */
-  scrollCompactControls?: boolean;
   /** Draw the result line as a warning — see `ResultLine`'s `warn`. */
   warnResult?: boolean;
 };
@@ -237,7 +226,7 @@ export function FilterChipPill({ chip }: { chip: FilterChip }) {
 
 export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
-  silentResult, resultTrailing, announce, announceId, revision, scrollCompactControls, warnResult,
+  silentResult, resultTrailing, announce, announceId, revision, warnResult,
 }: FilterChassisProps) {
   return (
     <div
@@ -266,9 +255,13 @@ export function FilterChassis({
             constrained on the one control that may shrink, not by a clip. */}
         <div
           className={[
+            // No `overflow-x-auto` here, in either form. `/collection` set a
+            // `scrollCompactControls` flag for a while so its five inline
+            // controls could scroll at 390px; a scroll affordance is not a
+            // filter surface, and the three dimensions past the fold had
+            // nothing on screen saying they existed. Every route now puts its
+            // compact dimensions behind one trigger, so the row fits.
             "flex min-w-0 flex-auto items-center gap-[8px]",
-            // Never on the wide form, where the row is sized to fit.
-            scrollCompactControls && form === "compact" ? "overflow-x-auto" : "",
           ].join(" ")}
         >
           {controls}

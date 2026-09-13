@@ -588,6 +588,8 @@ describe("FilterPanel Clear announcement", () => {
         typeOptions={[]}
         availabilityOptions={[]}
       colorOptions={[]}
+      shown={0}
+      total={0}
         chips={[]}
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
@@ -734,6 +736,8 @@ describe("Type ▾ in the filter bar", () => {
         typeOptions={TYPE_OPTIONS}
         availabilityOptions={[]}
       colorOptions={[]}
+      shown={0}
+      total={0}
         chips={[]}
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
@@ -823,6 +827,8 @@ describe("FilterBar sort and color controls", () => {
         typeOptions={[]}
         availabilityOptions={[]}
       colorOptions={[]}
+      shown={0}
+      total={0}
         chips={[]}
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"

@@ -520,6 +520,8 @@ export function CollectionBrowser({
     <>
       <FilterBar
         colorOptions={colorOptions}
+        shown={sorted.length}
+        total={cards.length}
         chips={chassisChips}
         onClearAll={clearAllFilters}
         // A counter per announcement, so the same sentence spoken twice — the

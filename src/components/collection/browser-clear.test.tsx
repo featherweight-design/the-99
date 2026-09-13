@@ -41,6 +41,16 @@ function view(cards: BrowseListCard[]) {
   );
 }
 
+/**
+ * jsdom's `matchMedia` stub reports `matches: false`, so the chassis renders its
+ * COMPACT form here and every dimension lives in the sheet. That is the real
+ * phone path rather than a test artifact — the wide form's pips are only
+ * mounted above 1000px.
+ */
+function openFilters() {
+  fireEvent.click(screen.getByRole("button", { name: /Filter cards/i }));
+}
+
 describe("CollectionBrowser — clearing filters", () => {
   beforeEach(() => {
     window.history.replaceState(null, "", "/collection");
@@ -73,6 +83,7 @@ describe("CollectionBrowser — clearing filters", () => {
     // route wires that code into `filters.colors`. The bar's deleted test was
     // the only cover, so an inert colour filter would have passed everything.
     render(view([card(), card({ oracleId: "o2", name: "Counterspell", colorIdentity: ["U"] })]));
+    openFilters();
     const red = screen.getAllByRole("switch", { name: /Red/i })[0];
     fireEvent.click(red);
     expect(window.location.search).toContain("c=R");
@@ -93,6 +104,7 @@ describe("CollectionBrowser — clearing filters", () => {
         card({ oracleId: "b", name: "Ogre", colorIdentity: ["B"], typeLine: "Creature" }),
       ]),
     );
+    openFilters();
     // Black exists in the collection but not among the Instants.
     expect(screen.getAllByRole("switch", { name: /Black/i })[0]).toHaveAttribute("aria-disabled", "true");
     expect(screen.getAllByRole("switch", { name: /Red/i })[0]).not.toHaveAttribute("aria-disabled");

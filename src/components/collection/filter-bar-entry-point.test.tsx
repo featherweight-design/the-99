@@ -22,6 +22,8 @@ function bar(
       typeOptions={[]}
       availabilityOptions={[]}
       colorOptions={[]}
+      shown={0}
+      total={0}
       chips={[]}
       onClearAll={() => {}}
       resultLine="Showing 0 unique · 0 total"
