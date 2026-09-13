@@ -177,7 +177,20 @@ export function SpineMobile({
           // than guessing at it.
           data-wash-label
           className="absolute flex flex-col items-center"
-          style={{ left: 18, right: 18, bottom: 12, gap: renaming ? 8 : 6 }}
+          // 40 of padding on BOTH sides, not a right inset: the card-details
+          // control now sits in this band's bottom-right corner, and its 44px
+          // target overlapped the meta row's right end — a title that ran under
+          // it, and a tap that could land on either. Padding both sides keeps the
+          // title centred on the band while clearing the corner; an inset on one
+          // side would move the centre by half of it.
+          style={{
+            left: 18,
+            right: 18,
+            bottom: 12,
+            paddingLeft: 40,
+            paddingRight: 40,
+            gap: renaming ? 8 : 6,
+          }}
         >
           {renaming ? (
             <>

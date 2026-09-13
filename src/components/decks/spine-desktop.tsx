@@ -120,6 +120,11 @@ export function SpineDesktop({
 
   return (
     <header
+      // The marker a browser probe reads to tell this band from every other one
+      // that draws the same control: this is the single placement allowed to keep
+      // the control's words, and the check that enforces that everywhere else
+      // needs to know which band it is looking at.
+      data-deck-spine-desktop
       // `@container`, because the switch below is about the ROW's width and not
       // the viewport's: this header is the flex sibling of a 62px desktop rail, so
       // a 1200px viewport is a ~1138px row and a viewport query would have picked

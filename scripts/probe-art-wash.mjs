@@ -316,6 +316,10 @@ const READ_PLATES = `() => {
         alpha: alpha * composited,
         border: p ? p.borderTopWidth : '',
         text: (b.textContent ?? '').replace('⛶', '').trim(),
+        // Which band this control sits on, so the one placement that keeps its
+        // words can be told from every placement that must not. Read off the
+        // nearest surface marker rather than a prop the browser cannot see.
+        onDeckDesktop: Boolean(b.closest('[data-deck-spine-desktop]')),
       };
     });
 }`;
@@ -369,9 +373,9 @@ const ROUTES = [
   ["discover", "/discover"],
 ];
 
-/** The four bands this round settles. A stated band outside the set is either a
+/** The bands this round settles, plus the 72 the resume row kept. A stated band outside the set is either a
     fifth number nobody decided or an aspect ratio that survived the migration. */
-const SETTLED_BANDS = [168, 208, 248, 288];
+const SETTLED_BANDS = [72, 168, 208, 248, 288];
 
 /** The two thumb boxes. A third is a render that kept its own geometry. */
 const THUMB_BOXES = ["44×62", "64×89"];
@@ -720,7 +724,16 @@ async function checkChrome(page, label, note) {
     // where a parent's own opacity is what composites it.
     if (plate.alpha < 0.999) note(`  FAIL plate is translucent: ${plate.fill} at ${plate.alpha}`);
     if (Number.parseFloat(plate.border) < 1) note(`  FAIL plate draws no hairline: ${plate.border}`);
-    if (plate.text) note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
+    // Words at ONE placement: the desktop deck header, where the control sits in
+    // a wide empty corner with nothing to compete with. Everywhere else the words
+    // were doing the job THE PLATE now does, and a phone's centred title had them
+    // flanking it.
+    if (plate.text && !plate.onDeckDesktop) {
+      note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
+    }
+    if (!plate.text && plate.onDeckDesktop) {
+      note(`  FAIL the desktop deck header's control lost its words`);
+    }
   }
 
   const hits = await page.evaluate(`(${READ_PLATE_HIT})()`);

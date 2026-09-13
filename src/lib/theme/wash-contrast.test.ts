@@ -63,8 +63,8 @@ const STATED_BANDS: readonly {
   /** The portrait a `left-portrait` row draws, for composing its own ground. */
   portrait?: keyof typeof PORTRAITS;
 }[] = [
-  { surface: "home hero", labelAtPx: 59, band: 288, strategy: "cover" },
-  { surface: "commander detail mobile", labelAtPx: 95, band: 288, strategy: "cover" },
+  { surface: "home hero", labelAtPx: 71, band: 288, strategy: "cover" },
+  { surface: "commander detail mobile", labelAtPx: 96, band: 288, strategy: "cover" },
   { surface: "deck spine, phone", labelAtPx: 90, band: 288, strategy: "cover" },
   { surface: "deck tile", labelAtPx: 46, band: 248, strategy: "cover" },
   // The two rows differ: one wash under two breakpoint subtrees on each, and the
@@ -182,6 +182,12 @@ const PORTRAIT_INK: readonly {
   // 56, the rank column's measured figure — the same one `STATED_BANDS` and the
   // component carry. 46 was the handoff's number for a block that does not ship.
   { surface: "discovery's block top", portrait: 285, band: 208, labelAtPx: 56, x: 165, y: 78 },
+  // The resume row's type, at the 116px inset it starts from. That inset is past
+  // the 99px portrait but SHORT of the row's 138px flat stop, so this ink stands
+  // on the thinnest ground anything on that row gets — the horizontal scrim
+  // still climbing towards opaque. Sampling the inset itself is what proves the
+  // row's restored geometry is legible rather than merely unchanged.
+  { surface: "resume row", portrait: 99, band: 72, labelAtPx: null, x: 116, y: 0 },
   // The deck spine's `⛶ Card details` control: 16px in, 14px off the foot, and
   // the one thing on that band whose ink sits over the crop. THE PLATE is opaque
   // now, so `plate: 1` is not a shortcut — it is the whole argument for deleting

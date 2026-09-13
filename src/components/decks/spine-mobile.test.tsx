@@ -263,12 +263,29 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect(row.textContent).toContain("/ 99");
   });
 
+  // The control sits in this band's bottom-right corner, and its 44px target
+  // reached into the meta row — a title running under it, and a tap that could
+  // land on either. Both sides are padded so the title stays centred on the band
+  // while clearing the corner.
+  it("keeps the block clear of the card-details corner", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    expect(Number.parseInt(block.style.paddingRight, 10)).toBeGreaterThanOrEqual(40);
+    expect(block.style.paddingLeft).toBe(block.style.paddingRight);
+  });
+
   // No pips on this band. The chip and the names are what the phone's line
   // carries; five swatches beside them is what pushed it past the band's width.
   it("draws no identity pips in the phone band", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
-    expect(block.querySelectorAll('[data-testid="identity-pip"]')).toHaveLength(0);
+    // `IdentityPips` draws an `aria-hidden` span of squared swatches and no test
+    // marker, so the pips are counted by what they actually are: the 10px
+    // rounded blocks that component emits. Querying a marker nothing draws
+    // passed whether or not the pips were there.
+    expect(block.querySelectorAll('span[aria-hidden="true"] > span.rounded-\\[2px\\]')).toHaveLength(
+      0,
+    );
     expect(block.textContent).not.toContain("Naya");
   });
 });

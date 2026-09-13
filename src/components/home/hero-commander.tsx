@@ -40,13 +40,16 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
         <ArtWash
           strategy="cover"
           height={288}
-          // The block's MEASURED box, keyed to the taller (desktop) arm as every
-          // shared wash in this round is. TWO rows now, measured at the taller (desktop) arm: a 12px bottom
-          // inset, a 22px chip row — the chip is the tallest thing in row 2 — a
-          // 4px gap and a 21px name line at 1.15 gives 59. The single-row block
-          // this replaced measured 46, and a name truncated to `Preston Garvey,
-          // Minutema…` is what split it in two.
-          labelAtPx={59}
+          // The block's MEASURED box — its own height, which is what the ramp
+          // has to clear, so BOTH insets count. Keyed to the taller (desktop)
+          // arm as every shared wash in this round is: 12 of padding above, a
+          // 21px name line at 1.15, a 4px gap, a 22px row 2 (the fit chip is the
+          // tallest thing in it) and 12 of padding below gives 71.
+          //
+          // The single-row block this replaced measured 46 for the same reason —
+          // padding on both sides of one 22px row — and a name truncated to
+          // `Preston Garvey, Minutema…` is what split it in two.
+          labelAtPx={71}
           artCropUri={item.artCropUri}
           colorIdentity={item.colorIdentity}
         />

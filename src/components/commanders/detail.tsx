@@ -249,7 +249,7 @@ export function CommanderDetail({
           // to the worst case exactly as the percentage was: a 25px name wrapping
           // to two lines. Adding it up — 15 bottom inset, a 12.5px type line at
           // 1.2 for 15, a 4px gap, two 25px name lines at 1.15 for 58, another
-          // 4px gap and an 11px rank line at 1.2 for 13 — gives 95. Every line
+          // 4px gap and an 11px rank line at 1.2 for 14 — gives 96. Every line
           // box in the block states its own leading for exactly this reason: an
           // inherited 1.5 would make this figure a function of the app's body
           // leading, and the round's own failure is a `labelAt` that describes a
@@ -262,10 +262,13 @@ export function CommanderDetail({
           // ramp to its wrapped height — and only its arithmetic is wrong, which
           // its own open item 2 predicted by asking for this to be measured
           // rather than trusted.
-          // 95, re-measured after the name came down to 19px: two clamped name
-          // lines are 44 at 1.15 rather than the 58 they were at 25px, and the
-          // rank line, the type line and the two gaps around them are unchanged.
-          labelAtPx={95}
+          // 96, re-measured after the name came down to 19px, and counted line
+          // by line at the block's CEILING: a 15px bottom inset, a 15px type
+          // line at 1.2, its 4px margin, two clamped name lines at 19/1.15 for
+          // 44, another 4px margin and a 14px rank line at 11/1.2. At 25px the
+          // same block was 110 — two name lines of 58 — which is the 109 that
+          // shipped.
+          labelAtPx={96}
           artCropUri={c.artCropUri}
           colorIdentity={c.colorIdentity}
         />
