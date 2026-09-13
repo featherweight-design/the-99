@@ -139,13 +139,12 @@ export const PORTRAITS: Record<
     ground: string;
     sharpOpacity: number;
     sharpAlpha: number;
-    /** How far the portrait runs unwashed. Past it the scrim climbs to its flat
-        stop, closing the crop out into the row before any type starts. Derived
-        from `maskEnd` and the width — the crop runs clear to where its own mask
-        starts fading and not a pixel further — so only a row whose shipped value
-        disagrees with its own rule states one. */
-    /** Does not derive: each was drawn against its own surface, chosen so the
-        title column clears the mask's tail by ~15px. */
+    /** Where the horizontal scrim has closed to opaque ground, so any type at or
+        past it stands on `--bg` rather than on the crop. It does NOT derive from
+        the width: each value was drawn against its own surface, chosen so the
+        title column clears the mask's tail by about 15px — 584 for the 560
+        portrait, 356 for 340, 300 for 285 and 240 for 230, each a little past
+        the portrait's own edge. */
     flatStop: number;
   }
 > = {

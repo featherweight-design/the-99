@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { HeroCommander } from "./hero-commander";
@@ -70,6 +70,17 @@ describe("HeroCommander", () => {
     const footer = container.querySelector(".hero-footer") as HTMLElement;
     expect(footer.style.borderTop).toBe("1px solid var(--border)");
     expect(footer.querySelector(".hero-band")).toBeNull();
+  });
+
+  // The route, not just the words. The old CTA pointed at
+  // `/decks/new?commander=<oracleId>`, which reads identically to anyone
+  // checking the label — and this round's whole ruling is that nobody builds a
+  // deck without seeing the pool first.
+  it("points its one action at the commander's own page", () => {
+    render(<HeroCommander item={item()} inUse={0} />);
+    expect(screen.getByRole("link", { name: "See the pool" }).getAttribute("href")).toBe(
+      "/commanders/atraxa-praetors-voice",
+    );
   });
 
   it("draws the frame-free crop, never the printed card", () => {
