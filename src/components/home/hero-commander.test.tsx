@@ -106,4 +106,30 @@ describe("HeroCommander", () => {
     // commander, while a half-truncated type line still reads as a type line.
     expect(typeLine.style.flexShrink).toBe("1000");
   });
+
+  // Two rows, not one. A condensed single row truncated the name to
+  // `Preston Garvey, Minutema…` at 390px, and a half-truncated name reads as a
+  // different commander.
+  it("puts the name and its pips on their own row, above the type line", () => {
+    const { container } = render(<HeroCommander item={item()} inUse={0} />);
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    expect(block.className).toContain("flex-col");
+    const [nameRow, typeRow] = Array.from(block.children) as HTMLElement[];
+    expect(nameRow.textContent).toContain("Atraxa, Praetors' Voice");
+    expect(nameRow.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(typeRow.textContent).toContain("Legendary Creature");
+    // The fit chip rides at the type line's right, not on the name's row.
+    expect(typeRow.querySelector(".hero-fit-chip")).not.toBeNull();
+    expect(nameRow.querySelector(".hero-fit-chip")).toBeNull();
+  });
+
+  // The card's only action spans it. Sized to its words, the footer read as a
+  // row that had lost its second button — which is what happened when
+  // `Start this deck` was cut.
+  it("spans the card with its one action at both widths", () => {
+    render(<HeroCommander item={item()} inUse={0} />);
+    const cta = screen.getByRole("link", { name: "See the pool" });
+    expect(cta.className).toContain("w-full");
+    expect(cta.className).not.toContain("sm:flex-none");
+  });
 });

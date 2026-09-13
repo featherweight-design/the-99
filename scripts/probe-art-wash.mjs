@@ -686,6 +686,19 @@ async function checkBands(page, label, note) {
     empty and every assertion under it passes without executing. A check that
     cannot fail is worse than no check. */
 async function checkChrome(page, label, note) {
+  // Nothing may push the document wider than the window. This is the one class
+  // of bug a property table cannot catch and jsdom cannot see: a `flex-nowrap`
+  // row without a zero minimum of its own takes its content's min-content width
+  // as a floor, so a long two-faced commander name drew the deck header outside
+  // the viewport on both sides. Measured on every route at every width, because
+  // the name that does it is data, not a layout the probe could pick.
+  const overflow = await page.evaluate(
+    `Math.round(document.documentElement.scrollWidth - window.innerWidth)`,
+  );
+  if (overflow > 1) {
+    note(`  FAIL ${label}: the document is ${overflow}px wider than the window — content is outside the viewport`);
+  }
+
   const plates = await page.evaluate(`(${READ_PLATES})()`);
   if (plates.length) {
     note(`${label}: ${plates.length} card-details control(s) at ${[...new Set(plates.map((p) => p.drawn?.join("×")))].join(", ")}`);
@@ -694,8 +707,12 @@ async function checkChrome(page, label, note) {
     if (plate.target[0] < 44 || plate.target[1] < 44) {
       note(`  FAIL control target ${plate.target.join("×")} under the 44px floor`);
     }
-    if (!plate.drawn || plate.drawn[0] !== 26 || plate.drawn[1] !== 26) {
-      note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26×26`);
+    // 26 TALL always; 26 wide unless the control carries its words. The desktop
+    // deck header is the one placement that keeps them — it sits in a wide empty
+    // corner with nothing to compete with — so its plate is a pill, and asserting
+    // a square there would fail the label rather than the geometry.
+    if (!plate.drawn || plate.drawn[1] !== 26 || plate.drawn[0] < 26) {
+      note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26 tall and at least 26 wide`);
     }
     // Opaque is the whole argument for deleting the top scrim: a translucent plate
     // passes the brightest pixel of an unscrimmed crop through to the glyph. A

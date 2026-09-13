@@ -249,7 +249,7 @@ export function CommanderDetail({
           // to the worst case exactly as the percentage was: a 25px name wrapping
           // to two lines. Adding it up — 15 bottom inset, a 12.5px type line at
           // 1.2 for 15, a 4px gap, two 25px name lines at 1.15 for 58, another
-          // 4px gap and an 11px rank line at 1.2 for 13 — gives 109. Every line
+          // 4px gap and an 11px rank line at 1.2 for 13 — gives 95. Every line
           // box in the block states its own leading for exactly this reason: an
           // inherited 1.5 would make this figure a function of the app's body
           // leading, and the round's own failure is a `labelAt` that describes a
@@ -262,7 +262,10 @@ export function CommanderDetail({
           // ramp to its wrapped height — and only its arithmetic is wrong, which
           // its own open item 2 predicted by asking for this to be measured
           // rather than trusted.
-          labelAtPx={109}
+          // 95, re-measured after the name came down to 19px: two clamped name
+          // lines are 44 at 1.15 rather than the 58 they were at 25px, and the
+          // rank line, the type line and the two gaps around them are unchanged.
+          labelAtPx={95}
           artCropUri={c.artCropUri}
           colorIdentity={c.colorIdentity}
         />
@@ -320,13 +323,18 @@ export function CommanderDetail({
             <h1
               className="font-display font-[700] m-0 min-w-0"
               style={{
-                fontSize: 25,
+                // 19, not 25. At 25 a two-word commander already filled the
+                // phone's width and anything longer took both clamped lines,
+                // which pushed the pips off the visible row and made the block
+                // the tallest thing on the band. This is the home hero's own
+                // size, and the two surfaces draw the same thing.
+                fontSize: 19,
                 color: "var(--fg)",
                 lineHeight: 1.15,
                 textShadow: COVER_INK_SHADOW,
                 // Two lines is a CEILING, not an estimate — which is what makes
                 // `labelAtPx` a measurement rather than a hope. Without the
-                // clamp a long name on a narrow phone grows the block past 109
+                // clamp a long name on a narrow phone grows the block past 95
                 // and the hold starts below its top edge, printing the first line
                 // on a rising ramp: the round's own failure, from the other
                 // direction.

@@ -9,13 +9,12 @@
 import { useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { IdentityPips } from "../commanders/commander-art";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { colorLabel, deckIdentity } from "../../lib/decks/format";
+import { colorLabel } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
@@ -33,7 +32,6 @@ export function SpineMobile({
   const { commander, partner } = deck;
   const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
-  const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
   const over = built > bodySize;
   const toCut = built - bodySize;
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
@@ -52,7 +50,26 @@ export function SpineMobile({
     // second line, grew the block to about 120px, and left the title's first
     // line on a ramp still climbing. The names group already ellipsises under
     // pressure, and it is the half that should give.
-    <div className="flex flex-nowrap items-center justify-center" style={{ gap: 8 }}>
+    // `min-w-0 w-full`, and it is the fix for a real overflow: the row is
+    // `flex-nowrap`, and without a zero minimum of its OWN the row inherits its
+    // content's min-content width as a floor — so a long two-faced commander
+    // name pushed the row wider than the band and drew outside the viewport on
+    // both sides. The names group waives its minimum; the row has to waive its
+    // own for that to reach the layout.
+    <div
+      className="flex w-full min-w-0 flex-nowrap items-center justify-center"
+      style={{ gap: 8 }}
+    >
+      {/* The chip leads the row, as the drawings have it: it is the one thing on
+          this line whose width never changes, so leading with it keeps the line's
+          left edge still while the names shrink behind it. */}
+      <StatusPillBadge
+        status={status}
+        // `h-[22px]`, the settled chip height, rather than vertical padding over
+        // an inherited line box: that made this pill 23px and the block 91, one
+        // pixel past the ramp keyed to it.
+        className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
+      />
       {/* Decision 18. The caption is centred inside `left:18 right:18`, so a
           pair of names is already the width of the row at 390 — the identity
           label is dropped rather than wrapped, and a single commander keeps it
@@ -113,19 +130,6 @@ export function SpineMobile({
           </span>
         )}
       </span>
-      <IdentityPips colorIdentity={identity} size={10} />
-      {/* No shadow at either call site: the chip carries its own opaque plate.
-          The prop replaces the tile's class outright, so §C8's box is restated
-          in full — there is no merge with the default. */}
-      <StatusPillBadge
-        status={status}
-        // `h-[22px]`, the settled chip height, rather than vertical padding over
-        // an inherited line box: that made this pill 23px and the block 91, one
-        // pixel past the ramp keyed to it — the first pixels of a two-line title
-        // on a rising ramp. A stated height is also what the round settles for
-        // every other chip, so this is the bespoke one converging.
-        className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
-      />
     </div>
   );
 
@@ -250,11 +254,11 @@ export function SpineMobile({
           ) : (
             <>
               <div className="flex items-center justify-center" style={{ maxWidth: "100%" }}>
-                {/* The glyph's own width, opposite it. 14px rather than the 44 the
-                    old plated control needed: the row centres title and glyph
-                    together, so without this the name sits half a glyph left of
-                    the band's centre. */}
-                <span aria-hidden="true" className="flex-none" style={{ width: 14 }} />
+                {/* The glyph's flow width, opposite it — 20px now: 14 of glyph
+                    plus the 6px that sets it off from the name. The row centres
+                    title and glyph together, so a spacer that does not match
+                    leaves the name off the band's centre by the difference. */}
+                <span aria-hidden="true" className="flex-none" style={{ width: 20 }} />
                 {/* The spacer above is what balances this. The pencil is a 14px
                     holder in flow — not a zero-width one, which put its whole
                     44px box past the text where the band clips it — so the row
@@ -318,7 +322,13 @@ export function SpineMobile({
                     `items-end` on the heading only aligns the heading's own
                     child: without this the glyph centres across a two-line name
                     instead of sitting on its last line. */}
-                <span className="relative z-[1] inline-flex flex-none self-end" style={{ width: 14 }}>
+                <span
+                  // Centred and set off from the name, as on desktop: against a
+                  // two-line title a bottom-aligned glyph reads as a footnote to
+                  // the second line.
+                  className="relative z-[1] inline-flex flex-none self-center"
+                  style={{ width: 14, marginLeft: 6 }}
+                >
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}
@@ -360,40 +370,45 @@ export function SpineMobile({
         }}
       >
         {renaming ? metaRow(false) : null}
-        <div className="flex items-baseline" style={{ gap: 4 }}>
-          <span
-            className="font-mono font-semibold"
-            style={{ fontSize: 14, color: over ? overInk : "var(--fg)" }}
+        {/* The bar and its figure on one row, the figure to the bar's right: the
+            count is what the bar is a picture of, and stacking them made the
+            reader carry a number down to the thing it describes. */}
+        <div className="flex w-full items-center" style={{ gap: 10 }}>
+          <div
+            className="min-w-0 flex-1"
+            style={{
+              height: 6,
+              borderRadius: 999,
+              background: "var(--elevated)",
+              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
+              overflow: "hidden",
+            }}
           >
-            {built}
-          </span>
-          <span className="font-mono" style={{ fontSize: 14, color: "var(--fg-faint)" }}>
-            {overCopy.figure.denominator(bodySize)}
-          </span>
-          {over && (
+            <div
+              data-testid="spine-bar-fill"
+              className="h-full"
+              style={statusBarStyle(status, built, bodySize)}
+            />
+          </div>
+          <div className="flex flex-none items-baseline" style={{ gap: 4 }}>
             <span
               className="font-mono font-semibold"
-              style={{ fontSize: 12, marginLeft: 4, color: overInk }}
+              style={{ fontSize: 14, color: over ? overInk : "var(--fg)" }}
             >
-              {overCopy.figure.delta(String(toCut))}
+              {built}
             </span>
-          )}
-        </div>
-        <div
-          className="w-full"
-          style={{
-            height: 6,
-            borderRadius: 999,
-            background: "var(--elevated)",
-            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            data-testid="spine-bar-fill"
-            className="h-full"
-            style={statusBarStyle(status, built, bodySize)}
-          />
+            <span className="font-mono" style={{ fontSize: 14, color: "var(--fg-faint)" }}>
+              {overCopy.figure.denominator(bodySize)}
+            </span>
+            {over && (
+              <span
+                className="font-mono font-semibold"
+                style={{ fontSize: 12, marginLeft: 4, color: overInk }}
+              >
+                {overCopy.figure.delta(String(toCut))}
+              </span>
+            )}
+          </div>
         </div>
         {over && (
           <p

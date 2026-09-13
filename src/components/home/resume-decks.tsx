@@ -21,7 +21,7 @@ import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { TRUNCATES } from "../decks/spine-desktop";
 import { StatusPillBadge } from "../decks/status-pill";
-import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
+import { ArtWash } from "../ui/art-wash";
 
 export const RESUME_COUNT = 2;
 
@@ -72,53 +72,46 @@ function toBuyCopies(shopping: ShoppingRollup, deckId: string): number | null {
 function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null }) {
   const { partnerName } = deck;
   const count = `${deck.built} / ${deckBodySize(partnerName !== null)}`;
-  // Decision 23, and step 6 cuts the clause OUTRIGHT rather than on pair rows
-  // alone. The long form leaves negative room for a name at all — 62px of pill,
-  // 28px of gaps and a 113px count against the 200px this line gets — and the
-  // one thing that must never be partly truncated is the figure: `86 / 9…` reads
-  // as a different number in a way `3 car…` does not. Dropping the clause on
-  // every row is not a new state either, since a deck with no roll-up entry
-  // already drew the count alone. It survives in the row's accessible name,
-  // which is the one place the pixels are not allowed to drop it.
+  // Decision 23. The long form leaves negative room for a name at all — 62px of
+  // pill, 28px of gaps and a 113px count against the 200px this line gets — so
+  // something has to not render, and it is never a partly truncated figure:
+  // `86 / 9…` reads as a different number in a way `Bruse Ta…` does not. A pair
+  // row therefore drops the clause outright. One boolean, no measurement, and
+  // not a new state — a deck with no roll-up entry already draws the count
+  // alone. The figure survives in the row's accessible name.
+  const clause = copies !== null && partnerName === null;
   return (
     <Link
       href={`/decks/${deck.id}`}
       // The whole row is the target — no per-row button, because a button would
       // be a second way to do the one thing the row already does.
-      // The height is stated, not a floor: the wash inside it is a hard 168px, so
+      // The height is stated, not a floor: the wash beside it is a hard 72px, so
       // a row allowed to grow past that would show an unwashed strip.
-      // A4, and it is the round's largest single reversal: this row was a 72px
-      // band with a 99px portrait beside it, and it is a 168px `cover` band with
-      // the text on the wash. The whole exception goes with it — the 72 band's
-      // `.95/.22` figures, its `--surface-inset` ground, the 116px type inset and
-      // decision 3's stated no-shadow exemption were all one arrangement, and
-      // they were justified by nothing reading on the art. Every string on this
-      // row now stands on the wash, so every string takes `COVER_INK_SHADOW`.
-      //
-      // The rule that chose it is the box's own aspect rather than a viewport:
-      // two-up at 380–520px and 168px tall this row is 2.3–3.1:1, which is
-      // `cover` by the 3:1 threshold, and the home redesign reshaping the section
-      // to three or four items makes each one narrower still.
-      className="relative flex h-[168px] min-w-0 flex-1 items-end overflow-hidden rounded-[12px] border border-[color:var(--border)]"
+      className="relative flex h-[72px] min-w-0 flex-1 items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[18px]"
     >
+      {/* §ResumeRow — the commander's portrait, at the band's own height. It is
+          a column the type starts clear of, not a plate the type sits on: 99px
+          of portrait plus a 17px gap is where the 116px inset comes from, and
+          nothing on this row needs a text shadow as a result. */}
       <ArtWash
-        strategy="cover"
-        height={168}
-        // The block's MEASURED height: 12px bottom inset, a 19px pill row, a 4px
-        // gap and a 14.5px name at 1.2 for 18 — 53. NOT the handoff's 40, which
-        // describes a block one row shorter than the one that ships; a ramp keyed
-        // to 40 holds 13px below this block's top and leaves the deck name on a
-        // rising scrim. Cutting the commander's name shortened the row's content,
-        // not its block: the pill row it sat in is still there.
-        labelAtPx={53}
+        strategy="left-portrait"
+        // The portrait's width is stated now rather than derived from the band:
+        // one band can carry two portraits elsewhere in the system, so the table
+        // is keyed by width. 99 on a 72 band is this row's own pairing, the one
+        // it has always drawn.
+        height={72}
+        portrait={99}
+        // No ramp. This row's type starts at the 116px inset, past the
+        // portrait's flat stop, so it stands on the row's own ground and there
+        // is nothing for a vertical scrim to protect.
+        labelAtPx="flat"
         artCropUri={deck.commanderArtCropUri}
         colorIdentity={deck.commanderColorIdentity}
       />
 
       <span
         data-resume-text
-        data-wash-label
-        className="relative flex min-w-0 flex-auto flex-col gap-[4px] px-[13px] pb-[12px]"
+        className="relative flex min-w-0 flex-auto flex-col gap-[4px] pl-[116px]"
       >
         {/* The DECK name, not the commander's. The frame prints the commander
             in both rows only because a new deck is named after its commander by
@@ -126,21 +119,12 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
             rail and the deck tile both already do. */}
         <span
           className="truncate font-display text-[14.5px] font-semibold text-[color:var(--fg)]"
-          style={{ lineHeight: 1.2, textShadow: COVER_INK_SHADOW }}
+          style={{ lineHeight: 1.2 }}
         >
           {deck.name}
         </span>
 
-        {/* A4 deletes decision 3's no-shadow exemption for this row, and it
-            deletes it for EVERY string: the exemption existed because the type
-            started at a 116px inset clear of the portrait, and a `cover` band
-            puts all of it on the wash. The shadow sits on the row rather than on
-            each child so the pair line and the count carry it too — the status
-            pill is opaque and needs none, and inherits nothing it can show. */}
-        <span
-          className="flex min-w-0 items-center gap-[14px]"
-          style={{ textShadow: COVER_INK_SHADOW }}
-        >
+        <span className="flex min-w-0 items-center gap-[14px]">
           <StatusPillBadge
             status={deck.statusPill}
             // §ResumeRow — status pill: shorter and tighter than the tile's, and
@@ -148,10 +132,9 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
             // fill and the label stay where they are written once.
             className="flex h-[19px] flex-none items-center rounded-[5px] px-[7px] font-mono text-[10px]"
           />
-          {/* The commander names the portrait beside it. It takes the row's
-              shadow like everything else in the block now: the 116px inset that
-              earned decision 9's no-shadow exception went with the portrait, and
-              this row's ink stands on a cover wash from edge to edge.
+          {/* The commander names the portrait beside it. No text shadow, here
+              or anywhere on this row: the type starts at the 116px inset, clear
+              of the art, which is decision 9's stated exception.
 
               Decision 19 — a pair prints SHORT names, the substring before the
               first comma: `Ishai + Bruse Tarl` is 18 characters against 55 for
@@ -165,43 +148,10 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
               `Ishai + Br…`, which still says *pair*. Both commanders are named
               in full, primary first, in the row's accessible name below —
               truncation is a layout compromise, never an information one. */}
-          {/* The commander's name is CUT on a single-commander row: the band
-              below it is 168px of that commander's art, so the name repeats what
-              the picture says. It is kept on a pair row, and the reason is the
-              same one — a pair's band shows ONE of two commanders, so the art
-              cannot say it there. The row's accessible name carries both in full
-              either way. */}
           {partnerName === null ? (
-            // Cut from the drawing, NOT from the accessible name. The band that
-            // makes the visible name redundant is `aria-hidden` art, so dropping
-            // the string outright would take the commander out of this row's
-            // accessible name altogether — the one thing a picture cannot say to
-            // a screen reader. Same device the pair row below already uses.
-            //
-            // Only where there IS art. The cut is earned by the picture saying
-            // the same thing, and a deck whose commander has no crop draws the
-            // identity gradient instead — which says nothing — so hiding the
-            // name there would leave a sighted reader with no way to tell which
-            // deck this is.
-            <>
-              {deck.commanderArtCropUri === null ? (
-                <span
-                  className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]"
-                  style={{ textShadow: COVER_INK_SHADOW }}
-                >
-                  {deck.commanderName}
-                </span>
-              ) : (
-                <span className="sr-only">{deck.commanderName}</span>
-              )}
-              {/* The cut clause, spoken. It rides in its own span rather than in
-                  the name's, because whether the NAME is drawn depends on the
-                  crop and whether the FIGURE is spoken does not — sharing one
-                  span meant a no-art row lost the figure entirely. */}
-              {copies !== null && (
-                <span className="sr-only">{partnerCopy.pairRowBuyAria(copies)}</span>
-              )}
-            </>
+            <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
+              {deck.commanderName}
+            </span>
           ) : (
             <>
               <span
@@ -229,13 +179,30 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
               character — right for one name, wrong now that the denominator
               carries the pair's other signal. It is pinned; the names above are
               the only thing that gives. */}
-          {/* The figure alone. The clause that used to sit beside it is cut, so
-              there is nothing here left to shrink — which is also why the group
-              needs no `min-w-0` gymnastics any more: one unshrinkable figure
-              cannot be eaten into, and `86 / 9…` was only ever reachable when a
-              second child shared its span. */}
+          {/* The figure and its clause are two children of one group rather than
+              one string, so that the clause, and never the figure, is what a
+              narrow row eats into: `86 / 9…` reads as a different number in a
+              way `3 car…` does not. That is also the latent bug this fixes — the
+              two shared a span that truncated to `86 / 98 · 3 t…`.
+
+              The name beside them takes its width from a zero basis and the
+              figure cannot shrink at all, so on a single row the clause is the
+              only child with anything left to give.
+
+              The group deliberately does NOT carry `min-w-0`: its automatic
+              minimum is its min-content width, which is the figure's — the
+              clause waives its own with `min-w-0`. So the group shrinks exactly
+              as far as the clause has left to give and then stops, which is what
+              pins the figure. With `min-w-0` here the group keeps going and the
+              unshrinkable figure inside is clipped by the row instead, printing
+              the `86 / 9` this whole arrangement exists to prevent. */}
           <span className="flex gap-[4px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
             <span className="flex-none whitespace-nowrap">{count}</span>
+            {clause && (
+              <span className="min-w-0 truncate">
+                {`· ${refreshCopy.decks.detailCopies(copies!)}`}
+              </span>
+            )}
           </span>
         </span>
       </span>

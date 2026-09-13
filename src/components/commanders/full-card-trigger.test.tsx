@@ -132,7 +132,8 @@ describe("FullCardTrigger placement", () => {
       hero: { right: 16, bottom: 15 },
       "commander-desktop": { left: 12, bottom: 12 },
       "deck-desktop": { left: 16, bottom: 14 },
-      "deck-mobile": { top: 13, right: 16 },
+      // Bottom-right too: no placement sits at a top edge any more.
+      "deck-mobile": { right: 16, bottom: 14 },
     } as const;
     for (const [placement, at] of Object.entries(drawn)) {
       const { unmount } = mount(
@@ -175,13 +176,14 @@ describe("FullCardTrigger placement", () => {
     expect(container.querySelector('[aria-hidden="true"].inset-0')).not.toBeNull();
   });
 
-  // The one placement still at a top edge, and the exception is earned: that band
-  // centres its title with the rename pencil beside it, so the block holds both
-  // bottom corners.
-  it("sits top-right on the mobile deck header", () => {
+  // No placement is at a top edge. The mobile deck header was the last one, and
+  // its block is centred — so the right corner is free and the control takes it,
+  // which leaves every band in the app with an empty top edge.
+  it("sits bottom-right on the mobile deck header, like every other placement", () => {
     mount(<FullCardTrigger oracleId="o-atraxa" placement="deck-mobile" bandTapTarget={false} />);
     const pill = screen.getByRole("button", { name: "View card details" });
-    expect(pill.style.top).toBe("4px");
+    expect(pill.style.top).toBe("");
+    expect(pill.style.bottom).toBe("5px");
     expect(pill.style.right).toBe("7px");
   });
 

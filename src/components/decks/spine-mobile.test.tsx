@@ -45,12 +45,17 @@ describe("SpineMobile", () => {
     );
   });
 
-  // Decision 18's ordered shrink. The names lead this row rather than following
-  // the pips, which is the one ordering difference from the desktop caption.
-  it("leads the row with the names and shrinks the partner first", () => {
+  // Decision 18's ordered shrink, behind the status chip: the chip leads this
+  // row because it is the one child whose width never changes, and the names
+  // follow it and give first.
+  it("leads the row with the chip and shrinks the partner first", () => {
     renderSpine(<SpineMobile {...props} deck={pairDeck} />);
     const row = screen.getByText("Atraxa, Praetors’ Voice").parentElement!.parentElement!;
-    expect(row.firstElementChild!.textContent).toContain("Atraxa, Praetors’ Voice");
+    expect(row.firstElementChild!.textContent).toBe("Building");
+    // And the row can shrink: without a zero minimum of its own, a `flex-nowrap`
+    // row takes its content's min-content width as a floor, which is how a long
+    // two-faced commander name drew outside the viewport.
+    expect(row.className).toContain("min-w-0");
 
     const trigger = screen.getByRole("button", {
       name: "Show the printing for Kratos, God of War",
@@ -197,7 +202,10 @@ describe("SpineMobile", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const spacers = Array.from(container.querySelectorAll<HTMLElement>('span[aria-hidden="true"]'));
     expect(spacers.filter((el) => el.style.width === "44px")).toHaveLength(0);
-    expect(spacers.filter((el) => el.style.width === "14px").length).toBeGreaterThan(0);
+    // 20px: the glyph's 14 plus the 6 that sets it off from the name. A spacer
+    // that does not match the glyph's flow width leaves the centred title off
+    // centre by the difference.
+    expect(spacers.filter((el) => el.style.width === "20px").length).toBeGreaterThan(0);
   });
 });
 
@@ -244,5 +252,23 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     const block = container.querySelector("[data-wash-label]")!;
     expect(block.querySelector(".flex-nowrap")).not.toBeNull();
     expect(block.querySelector(".flex-wrap")).toBeNull();
+  });
+
+  // Same row, figure to the right, for the same reason as desktop.
+  it("puts the figure beside the bar", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const fill = container.querySelector<HTMLElement>('[data-testid="spine-bar-fill"]')!;
+    const row = fill.parentElement!.parentElement!;
+    expect(row.className).toContain("items-center");
+    expect(row.textContent).toContain("/ 99");
+  });
+
+  // No pips on this band. The chip and the names are what the phone's line
+  // carries; five swatches beside them is what pushed it past the band's width.
+  it("draws no identity pips in the phone band", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    expect(block.querySelectorAll('[data-testid="identity-pip"]')).toHaveLength(0);
+    expect(block.textContent).not.toContain("Naya");
   });
 });

@@ -51,7 +51,9 @@ const alphaAt = (stops: ScrimStops, position: number): number => {
     block ends rather than where it starts. */
 const STATED_BANDS: readonly {
   surface: string;
-  labelAtPx: number;
+  /** `null` where the band draws no ramp: its ink starts past the portrait's
+      flat stop and stands on the row's own ground. */
+  labelAtPx: number | null;
   band: number;
   /** The strategy, because the ground and the hold both follow from it: a
       `cover` band fades its art to 0.8 and holds at 73, and a `left-portrait`'s
@@ -61,9 +63,8 @@ const STATED_BANDS: readonly {
   /** The portrait a `left-portrait` row draws, for composing its own ground. */
   portrait?: keyof typeof PORTRAITS;
 }[] = [
-
-  { surface: "home hero", labelAtPx: 46, band: 288, strategy: "cover" },
-  { surface: "commander detail mobile", labelAtPx: 109, band: 288, strategy: "cover" },
+  { surface: "home hero", labelAtPx: 59, band: 288, strategy: "cover" },
+  { surface: "commander detail mobile", labelAtPx: 95, band: 288, strategy: "cover" },
   { surface: "deck spine, phone", labelAtPx: 90, band: 288, strategy: "cover" },
   { surface: "deck tile", labelAtPx: 46, band: 248, strategy: "cover" },
   // The two rows differ: one wash under two breakpoint subtrees on each, and the
@@ -71,7 +72,9 @@ const STATED_BANDS: readonly {
   // lane's its identity column with a type line under the name.
   { surface: "discovery row", labelAtPx: 56, band: 208, strategy: "left-portrait", portrait: 285 },
   { surface: "owned-lane row", labelAtPx: 63, band: 208, strategy: "left-portrait", portrait: 285 },
-  { surface: "resume row", labelAtPx: 53, band: 168, strategy: "cover" },
+  // Flat: the row's type starts at its 116px inset, past the portrait's flat
+  // stop, so the band draws no ramp for a block to be keyed to.
+  { surface: "resume row", labelAtPx: null, band: 72, strategy: "left-portrait", portrait: 99 },
 ];
 
 const over = (fg: string, bg: string, alpha: number): string => {
@@ -215,6 +218,10 @@ describe("art wash contrast floor", () => {
     // band where the drawing puts it at 81% — the scrim landing where the round
     // removes it, which is worse than not moving it at all.
     for (const { surface, labelAtPx, band, strategy, portrait: width } of STATED_BANDS) {
+      // A flat band draws no ramp, so there is no hold to measure ink against —
+      // its ink stands on the row's own ground, which `PORTRAIT_INK` samples
+      // directly at the inset it starts from.
+      if (labelAtPx === null) continue;
       const stops = bottomScrimStops(labelAtPx, band, strategy === "cover" ? undefined : PORTRAIT_HOLD);
       for (const [edge, y] of [
         ["top", Math.round(((band - labelAtPx) / band) * 100)],

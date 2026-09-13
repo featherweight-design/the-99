@@ -219,16 +219,20 @@ describe("optimistic deck list", () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
 
-    renderBuilder();
+    const { container } = renderBuilder();
     // The progress bar is the biggest thing on the page and the thing the user
     // is looking at when they click, so it is the worst possible place to wait
-    // for the round-trip.
-    expect(screen.getByText("1 owned · 0 to buy")).toBeInTheDocument();
+    // for the round-trip. The bar's own fill is the figure now: the
+    // `x owned · y to buy` split under it was cut, and the bar and the count
+    // beside it carry the same fact.
+    const fill = () =>
+      container.querySelector<HTMLElement>('[data-testid="spine-bar-fill"]')!.style.width;
+    expect(fill()).toBe(`${(1 / 99) * 100}%`);
 
     await addSolRing();
     await showTab(/your deck/i);
 
-    expect(screen.getByText("1 owned · 1 to buy")).toBeInTheDocument();
+    expect(fill()).toBe(`${(2 / 99) * 100}%`);
 
     await act(async () => { pending.resolve({ ok: true }); });
   });

@@ -59,7 +59,8 @@ describe("SpineDesktop", () => {
 
   it("insets the title column past whichever flat stop is drawn", () => {
     const { container } = renderSpine(<SpineDesktop {...props} />);
-    const column = container.querySelector<HTMLElement>(".relative.flex.items-center")!;
+    // `items-end`, not `items-center`: both columns sit at the band's foot.
+    const column = container.querySelector<HTMLElement>(".relative.flex.items-end")!;
     expect(column.className).toContain("pl-[364px]");
     expect(column.className).toContain("@min-[1200px]:pl-[592px]");
     // `min-h-[288px]`, not `h-full`: the header states `minHeight`, and `h-full`
@@ -272,5 +273,26 @@ describe("SpineDesktop — the rename glyph", () => {
     const clamped = heading.querySelector("[data-deck-title]") as HTMLElement;
     expect(clamped.style.overflow).toBe("hidden");
     expect(clamped.style.webkitLineClamp).toBe("2");
+  });
+
+  // The count is what the bar is a picture of, so they share a row and the
+  // figure sits to the bar's right. The `x owned · y to buy` split under it is
+  // cut — the fill and the figure carry it between them.
+  it("puts the figure beside the bar and drops the owned/to-buy split", () => {
+    const { container } = renderSpine(<SpineDesktop {...props} />);
+    const fill = container.querySelector<HTMLElement>('[data-testid="spine-bar-fill"]')!;
+    const row = fill.parentElement!.parentElement!;
+    expect(row.className).toContain("items-center");
+    expect(row.textContent).toContain("99");
+    expect(container.textContent).not.toContain("owned ·");
+  });
+
+  // Desktop keeps the control's words: it sits in a wide empty corner of the
+  // band with nothing to compete with. The phone is icon-only, which is what the
+  // round cut them for.
+  it("names the card-details control in words on desktop", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    const control = screen.getByRole("button", { name: "View card details" });
+    expect(control.textContent).toContain("Card details");
   });
 });

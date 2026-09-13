@@ -13,7 +13,7 @@ export type ScrimStops = readonly (readonly [number, number])[];
     deck is which is 248, a full-width result row you scan down is 208, and a
     secondary cell on a page about something else is 168. What governs which is
     what the box is for, never the viewport. */
-export type BandHeight = 168 | 208 | 248 | 288;
+export type BandHeight = 72 | 168 | 208 | 248 | 288;
 
 /** The ramp under a label block, in `[alphaPercent, positionPercent]` pairs:
     clear above the block, climbing into it, then holding one value to the band's
@@ -113,7 +113,7 @@ const reducible = (opacity: number, art: boolean): CSSProperties =>
     is what keeps that crop from scaling past ~42%.
 
     The four a stated band may draw. */
-export type PortraitWidth = 560 | 340 | 285 | 230;
+export type PortraitWidth = 560 | 340 | 285 | 230 | 99;
 
 /** Keyed to the portrait's **width**, not to the band's height. Every column here
     is a function of the width — `clearTo` is `maskEnd%` of it by derivation, the
@@ -152,6 +152,13 @@ export const PORTRAITS: Record<
   340: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 356 },
   285: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 300 },
   230: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 240 },
+  // The resume row's portrait column, restored with the row it belongs to. Its
+  // numbers are the ones that shipped before this round, not new ones: a 62%
+  // mask rather than 58, the row's own `--surface-inset` ground, and a flat stop
+  // at 138 — 99px of portrait plus a 17px gap is where that row's 116px type
+  // inset comes from, and the inset is past the stop, so nothing on the row
+  // reads on art and the band draws no ramp at all.
+  99: { maskEnd: 62, ground: "--surface-inset", sharpOpacity: 0.85, sharpAlpha: 80, flatStop: 138 },
 };
 
 const portrait = (

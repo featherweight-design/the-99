@@ -15,9 +15,9 @@ import { PENDING_OPACITY } from "./pending";
     it used to stack under sit beside the name inside the label block — and that
     block reserves this corner with its own right padding, so the plate lands on
     the band rather than on the type line. `deck-mobile` is the one placement
-    that stays at a top edge, and the exception is earned rather than inherited:
-    that band centres its title and carries the rename pencil beside it, so the
-    block holds both bottom corners. */
+    that once stayed at a top edge; it takes the bottom-right corner too now,
+    which its centred title leaves free. No placement is at a top edge any
+    more. */
 const PLACEMENT = {
   // Bottom-right. `top: 56` existed only to stack this control below the identity
   // pips, and those now sit beside the name inside the label block — which also
@@ -37,7 +37,11 @@ const PLACEMENT = {
   // a drawn inset for a corner that already answers.
   "commander-desktop": { left: 12, bottom: 12 },
   "deck-desktop": { left: 16, bottom: 14 },
-  "deck-mobile": { top: 13, right: 16 },
+  // Bottom-right, like every other placement. This band's block is centred and
+  // its title carries the rename pencil beside it, so the right corner is the
+  // one the block does not reach — the top edge it used to take is now empty on
+  // every band in the app.
+  "deck-mobile": { right: 16, bottom: 14 },
 } as const;
 
 /** THE PLATE. Every control that sits over art draws this box and nothing else:
@@ -69,6 +73,12 @@ const PLATE =
     past the band's edge clipped out of its own hit area — a 44px target that only
     answers on 35 of them. Every placement's smallest inset is 12, so no target
     reaches an edge. */
+/** The one placement that keeps its words: the desktop deck header, where the
+    control sits in a wide empty corner of the band with nothing to compete with.
+    Every other render is icon-only — on a phone the words flanked a centred
+    title, which is what the round cut them for. */
+const LABELLED = new Set(["deck-desktop"]);
+
 const TARGET_OFFSET = (44 - 26) / 2;
 const targetInset = (at: Record<string, number>) =>
   Object.fromEntries(Object.entries(at).map(([side, v]) => [side, v - TARGET_OFFSET]));
@@ -86,6 +96,7 @@ export function FullCardTrigger({
 }) {
   const { open, pendingOracleId } = useCardDetail();
   const pending = pendingOracleId === oracleId;
+  const labelled = LABELLED.has(placement);
 
   return (
     <>
@@ -128,7 +139,10 @@ export function FullCardTrigger({
         className="absolute z-[2] flex items-center justify-center bg-transparent p-0"
         style={{
           ...targetInset(PLACEMENT[placement]),
-          width: 44,
+          // A labelled control sizes to its words; the icon-only one is the 44px
+          // square the touch floor asks for. Height is 44 either way, so the
+          // floor holds on the axis a thumb is least forgiving about.
+          width: labelled ? "auto" : 44,
           height: 44,
           cursor: "pointer",
         }}
@@ -145,7 +159,14 @@ export function FullCardTrigger({
             there is nothing underneath to catch it. The plate being opaque is the
             argument that lets the scrim go, so it cannot be opaque only when
             nothing is happening. */}
-        <span className={PLATE} style={{ width: 26, height: 26 }}>
+        <span
+          className={PLATE}
+          style={
+            labelled
+              ? { height: 26, padding: "0 9px", gap: 6 }
+              : { width: 26, height: 26 }
+          }
+        >
           <span
             style={{
               color: "var(--fg)",
@@ -156,6 +177,19 @@ export function FullCardTrigger({
           >
             ⛶
           </span>
+          {labelled ? (
+            <span
+              className="font-mono whitespace-nowrap"
+              style={{
+                color: "var(--fg)",
+                fontSize: 11,
+                lineHeight: 1,
+                opacity: pending ? PENDING_OPACITY : undefined,
+              }}
+            >
+              Card details
+            </span>
+          ) : null}
         </span>
       </button>
     </>
