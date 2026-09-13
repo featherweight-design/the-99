@@ -1249,6 +1249,19 @@ describe("SetGridView — the sheet's rarity group honours the radio pattern", (
     expect(screen.getByRole("radio", { name: "Common" })).toHaveAttribute("tabindex", "0");
   });
 
+  // Round 31: assuming index 0 put focus on a DISABLED button, where `.focus()` is a no-op
+  // and the next Tab leaves the group. With Common empty, the stop is Uncommon.
+  it("sends focus to the first ENABLED radio when the checked one clears", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "uncommon" }), p("2", { rarity: "rare" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getByRole("radio", { name: "Common" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("radio", { name: "Rare" }));
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Uncommon" }));
+    expect(screen.getByRole("radio", { name: "Uncommon" })).toHaveAttribute("tabindex", "0");
+  });
+
   it("leaves focus alone when the first radio is the one cleared", () => {
     stubDesktop(false);
     search = "r=common";

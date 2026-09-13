@@ -600,18 +600,21 @@ async function run() {
     const phoneMissing2 = await rackAt("?m=1");
     const phoneThree = await rackAt("?c=W&r=rare&m=1");
     if (phoneRest !== null) {
-      failures += !report(
-        "the phone rack's three rows do not move either",
-        phoneRest.rack === phoneMissing2.rack && phoneMissing2.rack === phoneThree.rack,
-        `rest ${phoneRest.rack}px, missing-only ${phoneMissing2.rack}px, three ${phoneThree.rack}px`,
-      );
       // `?m=1` on a COMPLETE set renders identically to rest — the page drops missing-only
-      // from what it applies — so on such a fixture the line above never sees the wrapping
-      // missing-only result it is named for. Said out loud rather than passing quietly: a
-      // check that cannot fail on the fixture it ran against has measured nothing.
+      // from what it applies — so on such a fixture this cannot see the wrapping
+      // missing-only line it is named for. SKIPPED rather than passed: a check that cannot
+      // fail on the fixture it ran against has measured nothing, and reporting it green
+      // is the failure mode this whole file exists to avoid.
       if (setIsComplete) {
-        console.log("  note  this set is complete, so `?m=1` is not applied — the phone "
-          + "missing-only wrap is UNTESTED here. Probe an incomplete set to cover it.");
+        console.log("  skip this set's base run is complete, so `?m=1` is not applied — "
+          + "the phone missing-only wrap is UNTESTED. Probe an incomplete set to cover it.");
+      } else {
+        failures += !report(
+          "the phone rack's three rows do not move either",
+          phoneRest.rack === phoneMissing2.rack && phoneMissing2.rack === phoneThree.rack,
+          `rest ${phoneRest.rack}px, missing-only ${phoneMissing2.rack}px, `
+            + `three ${phoneThree.rack}px`,
+        );
       }
     }
 

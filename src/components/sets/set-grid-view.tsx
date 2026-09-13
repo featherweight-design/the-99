@@ -413,6 +413,10 @@ export function SetGridView(props: SetGridViewProps) {
     };
   });
   const rarityEnabled = rarityOptions.filter((o) => !o.disabled).map((o) => o.code);
+  // The first ENABLED index, which is the group's tab stop when nothing is checked — and
+  // the only place focus can go when the checked value clears. Assuming index 0 put it on
+  // a disabled button, where `.focus()` is a no-op and the next Tab leaves the group.
+  const firstEnabledRarity = rarityOptions.findIndex((o) => !o.disabled);
 
   return (
     <div>
@@ -750,9 +754,9 @@ export function SetGridView(props: SetGridViewProps) {
                     // Roving: the checked value is the group's single tab stop, and with
                     // none checked the first is — `all` is a state this group can be in,
                     // and a group with no tab stop cannot be reached by keyboard at all.
-                    tabIndex={
-                      on || (filters.rarities.length === 0 && r === rarityEnabled[0]) ? 0 : -1
-                    }
+                    tabIndex={on || (filters.rarities.length === 0 && i === firstEnabledRarity)
+                      ? 0
+                      : -1}
                     onClick={() => {
                       const next = pickRarity(filters.rarities, r);
                       setFilters({ ...filters, rarities: next });
@@ -760,8 +764,9 @@ export function SetGridView(props: SetGridViewProps) {
                       // first radio, and this button keeps DOM focus while losing it — so
                       // focus would sit on an element outside the group's tab order and
                       // the next Tab would leave the group entirely. Follow the stop.
-                      if (next.length === 0 && r !== RARITIES[0]) {
-                        rarityRefs.current[0]?.focus();
+                      if (next.length === 0 && i !== firstEnabledRarity
+                          && firstEnabledRarity >= 0) {
+                        rarityRefs.current[firstEnabledRarity]?.focus();
                       }
                     }}
                     onKeyDown={(e) => {
