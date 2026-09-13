@@ -12,6 +12,9 @@
 //
 // Run by hand with the dev server up:
 //   PROBE_CARD="<card name>" node scripts/probe-card-detail-price.mjs
+// The turn is only checked on a two-faced card, and the script says so rather than
+// passing quietly. Run it a second time against a `transform` card with
+// PROBE_TWO_FACED=1, which makes a missing turn control a failure.
 // Point PROBE_CARD at a card the signed-in account owns in MORE THAN TWELVE
 // printings — `OVERFLOW_THRESHOLD` is 12 and the header collapses only past it, so
 // a card owned in two opens the picker and never reaches the compact state. A basic
@@ -266,8 +269,14 @@ try {
       console.log("\nFAIL: turning the card dismissed the zoom.");
       process.exitCode = 1;
     }
+  } else if (process.env.PROBE_TWO_FACED === "1") {
+    console.log("\nFAIL: PROBE_TWO_FACED is set but this card has no turn control.");
+    process.exitCode = 1;
   } else {
-    console.log("\n(one-faced card — point PROBE_CARD at a transform card to check the turn)");
+    console.log(
+      "\n(one-faced card: the turn was NOT checked. Run again with"
+        + ' PROBE_CARD="<a transform card>" PROBE_TWO_FACED=1 to require it.)',
+    );
   }
 
   await page.keyboard.press("Escape");

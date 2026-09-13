@@ -507,7 +507,13 @@ export function CardModal({
    * row 5.2, recorded in the property table's errata for Design to ratify rather than
    * taken quietly.
    */
-  const closeZoom = useCallback(() => setZoomed(false), []);
+  const closeZoom = useCallback(() => {
+    setZoomed(false);
+    // The layer's own announcements go with it. Reopening shows the front, and a live
+    // region still reading "Showing <back face>" would describe a card that is no
+    // longer there.
+    setAnnouncement("");
+  }, []);
   const openZoom = useCallback(() => {
     // A zoom is a look, not a setting (table row 4.10): it always opens on the front,
     // whatever the last one was turned to. Its own face rather than the art's, so
@@ -677,9 +683,20 @@ export function CardModal({
   function onZoomFlip() {
     const next = !zoomFlipped;
     setZoomFlipped(next);
-    // The modal's one live region reports it, on settle rather than on press: the
-    // reader is told what happened, not what was asked for.
-    setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+    // Announced when the card has LANDED, not when the press happened: a reader who
+    // presses twice quickly would otherwise be told about a face the card never
+    // rested on. `onTransitionEnd` below carries the animated path; where there is no
+    // transition to wait for — a reader who asked for less motion — the press is the
+    // landing.
+    const reduced = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+  }
+
+  function onTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
+    // Only the box's own turn, not a transition bubbling from something inside it.
+    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
+    setAnnouncement(twoFacedCopy.flippedAria(zoomFlipped ? faces.back : faces.front));
   }
 
   function onFlip() {
@@ -1192,12 +1209,14 @@ export function CardModal({
           >
             {/* The whole card, at the largest 63/88 the rect allows — 372x520 desktop,
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
+            <div className="relative" data-testid="card-zoom-stage">
             <div
               data-testid="card-zoom-card"
               className={`relative rounded-[13px] md:rounded-[14px] w-[var(--zoom-w)] md:w-[var(--zoom-w-md)] ${
                 twoFaced ? "anim-card-turn" : ""
               }`}
               data-face={twoFaced ? (zoomFlipped ? "back" : "front") : undefined}
+              onTransitionEnd={twoFaced ? onTurnSettled : undefined}
               style={{
                 // ONE dimension is set and the ratio derives the other, because a
                 // definite width AND a height cap is how an `aspect-ratio` box gets
@@ -1246,16 +1265,25 @@ export function CardModal({
                       the card, the scrim and the ✕ are the three doors out, and a
                       control that turns the card is not one of them. Without this,
                       turning the card put it away. */}
-                  <span onClick={(e) => e.stopPropagation()}>
-                    <FlipControl
-                      controlRef={zoomFlipRef}
-                      otherFaceName={zoomFlipped ? faces.front : faces.back}
-                      onFlip={onZoomFlip}
-                      size={44}
-                    />
-                  </span>
+
                 </>
               )}
+            </div>
+            {/* OUTSIDE the box that turns. Inside it, the control rode the rotation:
+                on the back face its corner became the opposite one and its glyph was
+                drawn from behind, mirrored. It belongs to the zoom, not to either
+                face. The press stops here too — the layer dismisses on click, and a
+                control that turns the card is not one of the three doors out. */}
+            {twoFaced && (
+              <span onClick={(e) => e.stopPropagation()}>
+                <FlipControl
+                  controlRef={zoomFlipRef}
+                  otherFaceName={zoomFlipped ? faces.front : faces.back}
+                  onFlip={onZoomFlip}
+                  size={44}
+                />
+              </span>
+            )}
             </div>
             {/* One mono line: which printing you are holding. Never the price — a card
                 in your hand has none printed on it, and the tag is one dismissal away. */}

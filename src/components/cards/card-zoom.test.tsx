@@ -318,8 +318,36 @@ describe("the turn inside the zoom", () => {
 
     expect(within(screen.getByTestId("card-zoom")).getByRole("button", { name: "Turn over to Delver of Secrets" }))
       .toBeInTheDocument();
+    // Announced on the landing, not the press: a reader pressing twice quickly is
+    // never told about a face the card did not rest on.
+    expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent).toBe("");
+
+    fireEvent.transitionEnd(within(screen.getByTestId("card-zoom")).getByTestId("card-zoom-card"), {
+      propertyName: "transform",
+    });
+
     expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent)
       .toBe("Showing Insectile Aberration");
+  });
+
+  it("keeps the control off the face that turns", () => {
+    // Inside the rotating box the control rode the rotation: on the back its corner
+    // became the opposite one and its glyph was drawn mirrored from behind.
+    const layer = openTwoFaced();
+
+    const control = within(layer).getByRole("button", { name: /Turn over to/ });
+    expect(control.closest('[data-testid="card-zoom-card"]')).toBeNull();
+    expect(control.closest('[data-testid="card-zoom-stage"]')).not.toBeNull();
+  });
+
+  it("does not leave a stale announcement behind when the zoom closes", () => {
+    const layer = openTwoFaced();
+    fireEvent.click(within(layer).getByRole("button", { name: /Turn over to/ }));
+    fireEvent.transitionEnd(within(layer).getByTestId("card-zoom-card"), { propertyName: "transform" });
+
+    fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+
+    expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent).toBe("");
   });
 
   it("gives a one-faced card no control at all", () => {
