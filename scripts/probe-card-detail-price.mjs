@@ -12,6 +12,9 @@
 //
 // Run by hand with the dev server up:
 //   PROBE_CARD="<card name>" node scripts/probe-card-detail-price.mjs
+// The turn is only checked on a two-faced card, and the script says so rather than
+// passing quietly. Run it a second time against a `transform` card with
+// PROBE_TWO_FACED=1, which makes a missing turn control a failure.
 // Point PROBE_CARD at a card the signed-in account owns in MORE THAN TWELVE
 // printings — `OVERFLOW_THRESHOLD` is 12 and the header collapses only past it, so
 // a card owned in two opens the picker and never reaches the compact state. A basic
@@ -243,6 +246,69 @@ try {
     console.log(`\nFAIL: zoomed card is ${JSON.stringify(zoom?.card)}, expected about 372x520.`);
     process.exitCode = 1;
   }
+  // The turn, where a browser is the only witness: jsdom has no transforms, so a
+  // unit test can see `data-face` change and nothing about the card actually turning.
+  const turn = page.locator('[data-testid="card-zoom"] button[aria-label^="Turn over to"]');
+  if (await turn.count()) {
+    const before = await page.locator('[data-testid="card-zoom-card"]').evaluate(
+      (n) => getComputedStyle(n).transform,
+    );
+    await turn.click();
+    await page.waitForTimeout(500);
+    const after = await page.locator('[data-testid="card-zoom-card"]').evaluate(
+      (n) => getComputedStyle(n).transform,
+    );
+    // Where the control actually sits, which only a browser can say: the wrapper that
+    // stops the click must contribute no box of its own, or the 44px control is
+    // pushed below the card instead of sitting in its bottom-right corner.
+    const placement = await page.evaluate(() => {
+      const card = document.querySelector('[data-testid="card-zoom-card"]');
+      const control = document.querySelector('[data-testid="card-zoom"] button[aria-label^="Turn over to"]');
+      if (!card || !control) return null;
+      const c = card.getBoundingClientRect();
+      const b = control.getBoundingClientRect();
+      // Centred, not cornered: bottom-right is where a creature prints its power and
+      // toughness, so the control that used to sit there covered it.
+      const centreOffset = Math.round((b.left + b.right) / 2 - (c.left + c.right) / 2);
+      return {
+        insideCard: b.bottom <= c.bottom + 1 && b.right <= c.right + 1 && b.top >= c.top,
+        fromBottom: Math.round(c.bottom - b.bottom),
+        centreOffset,
+        centred: Math.abs(centreOffset) <= 2,
+      };
+    });
+    const stillOpen = await page.locator('[data-testid="card-zoom"]').count();
+    console.log("\n── desktop · the turn ──");
+    console.log(JSON.stringify({ before, after, stillOpen: Boolean(stillOpen), placement }, null, 2));
+    if (!placement?.insideCard) {
+      console.log("\nFAIL: the turn control is not on the card — check the wrapper's own box.");
+      process.exitCode = 1;
+    }
+    if (!placement?.centred) {
+      console.log(
+        `\nFAIL: the turn control is ${placement?.centreOffset}px off centre — bottom-right`
+          + " covers a creature's power and toughness (erratum E14).",
+      );
+      process.exitCode = 1;
+    }
+    if (before === after) {
+      console.log("\nFAIL: the card did not turn — the transform is unchanged.");
+      process.exitCode = 1;
+    }
+    if (!stillOpen) {
+      console.log("\nFAIL: turning the card dismissed the zoom.");
+      process.exitCode = 1;
+    }
+  } else if (process.env.PROBE_TWO_FACED === "1") {
+    console.log("\nFAIL: PROBE_TWO_FACED is set but this card has no turn control.");
+    process.exitCode = 1;
+  } else {
+    console.log(
+      "\n(one-faced card: the turn was NOT checked. Run again with"
+        + ' PROBE_CARD="<a transform card>" PROBE_TWO_FACED=1 to require it.)',
+    );
+  }
+
   await page.keyboard.press("Escape");
   await page.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
   if (!(await page.locator('[role="dialog"]').count())) {
