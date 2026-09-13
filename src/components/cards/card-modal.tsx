@@ -522,10 +522,10 @@ export function CardModal({
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape);
 
-  // Focus follows the layer: in to the flip control when there is a face to turn to,
-  // otherwise to the close; out to the art that opened it, at whichever width is on
-  // screen — `focus()` on a `display:none` element is a no-op, so the loop lands on
-  // the one that has layout (table rows 3.10, 3.12).
+  // Focus follows the layer. In: to the close — row 3.12's "otherwise" branch, and
+  // for now the only one, because the layer holds no flip control until the animated
+  // turn lands with the next slice of this feature and brings its own focus target.
+  // Out: to the art that opened it, at whichever width has layout (row 3.10).
   const wasZoomed = useRef(false);
   useEffect(() => {
     // Transitions only. Without this the effect's first run — on mount, with the
