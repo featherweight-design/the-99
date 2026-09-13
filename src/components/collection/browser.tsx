@@ -447,10 +447,18 @@ export function CollectionBrowser({
   // "Clear all filters" and promises the sort is unchanged, so it no longer
   // does — a visible behaviour change on this route, and the chassis's promise
   // is the one that has to hold.
+  //
+  // The intent is what makes the live region say "Filters cleared" — so it is
+  // carried only when a filter was actually on. `NoResults` draws its CTA in
+  // the catalog-unmatched state too, where the reader has a collection but not
+  // one card of it resolved: nothing is filtered, the button changes nothing,
+  // and announcing a clear would describe an event that did not happen.
+  // The write still goes through, so a search of nothing but whitespace — which
+  // `anyFilterActive` trims to inactive — is still emptied.
   const clearAllFilters = () =>
     updateFilters(
       { search: "", colors: [], types: [], setCodes: [], availability: [] },
-      "clear-all",
+      anyFilterActive ? "clear-all" : undefined,
     );
   const windowed = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 
