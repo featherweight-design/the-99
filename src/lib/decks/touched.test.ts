@@ -86,6 +86,21 @@ describe("touchedBy", () => {
     );
     expect(t.verb).toBe("edited");
   });
+
+  // Only reachable by two Dates colliding at the millisecond: no transaction
+  // writes a game and a commit together. Tested so the choice is stated rather
+  // than left to the order of two `if`s.
+  it("resolves a commit and a game at the same instant to the game", () => {
+    const same = at("2026-09-12T12:00:00Z");
+    expect(
+      touchedBy(deck({
+        id: "a",
+        lastEditedAt: at("2026-01-01T00:00:00Z"),
+        lastCommittedAt: same,
+        lastPlayedAt: same,
+      })).verb,
+    ).toBe("played");
+  });
 });
 
 describe("byTouched", () => {

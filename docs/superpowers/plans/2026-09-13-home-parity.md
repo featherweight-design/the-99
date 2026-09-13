@@ -153,9 +153,21 @@ export function byTouched(a, b): number   // touchedAt desc, then name asc, then
 ```
 
 `greatest()` in TypeScript rather than SQL, because the three sources are already on the row and a
-second ordering expression in the query would be a second definition of the same rule. Ties between
-two verbs at the same instant resolve **commit > play > edit**: a commit writes rows and stamps a
-version in one transaction, so an equal timestamp means the commit caused the rest.
+second ordering expression in the query would be a second definition of the same rule.
+
+**Ties resolve `played` > `edited` > `committed`** — corrected here from this plan's first draft,
+which said `commit > play > edit`, on what rounds 3 and 5 of review turned up.
+
+A commit must be **strictly newer** than the edit to win, because migration `0024` stamped a
+synthetic v1 on every already-full deck with `committed_at = decks.created_at` and this round's
+migration seeds `last_edited_at` from that same column. Every deck predating versioning therefore
+carries both at the same instant, having never been committed by anyone, and the first draft's rule
+would have printed `committed 3mo ago` across the whole list.
+
+A game takes its tie against both. No path writes a game and a commit in one transaction, so an
+equal instant there is two `Date` values colliding at the millisecond rather than a fact about
+ordering — and when the tie carries no information, the act that happened to the deck in the world
+is the better thing to print than a snapshot taken of it.
 
 Name-ascending tiebreak, per the handoff, replacing the shipped `createdAt` tiebreak. Then `id`,
 because deck names are not unique (`read.ts:529`).

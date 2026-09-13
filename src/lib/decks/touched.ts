@@ -44,9 +44,13 @@ export type Touch = { at: Date; verb: TouchVerb };
  * is true in the rare case is worth more than one that is false on every deck
  * that predates versioning.
  *
- * A game ties to the game. Nothing writes a game and an edit in one transaction,
- * so an equal instant there is a coincidence rather than a migration, and the
- * game is the more specific claim.
+ * A game takes its tie against both, which is why it is tested last here.
+ * Nothing writes a game together with an edit or a commit in one transaction, so
+ * an equal instant against either is two `Date` values colliding at the
+ * millisecond — Postgres keeps microseconds and this does not — rather than a
+ * fact about which came first. When a tie carries no information, the act that
+ * happened to the deck in the world is worth more on the row than a snapshot
+ * taken of it.
  */
 export function touchedBy(deck: TouchableDeck): Touch {
   let best: Touch = { at: deck.lastEditedAt, verb: "edited" };
