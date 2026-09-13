@@ -221,6 +221,21 @@ describe("DeckCard", () => {
     expect(screen.getByText("3 in use elsewhere")).toBeInTheDocument();
   });
 
+  // The clause is Building's. `Complete` lost its own figure this round, which
+  // opened the fallback to it — and a finished deck can still hold a card a
+  // senior deck claims, so it would have read `3 in use elsewhere` with a full
+  // bar beside it.
+  it("draws no clause on a Complete tile, which has no figure of its own", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Complete", toBuyCount: 0, ownedCount: 99, inUseElsewhere: 3 })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.queryByText("3 in use elsewhere")).toBeNull();
+  });
+
   it("never lets the clause displace a status's own figure", () => {
     render(
       <DeckCard

@@ -32,7 +32,12 @@ function detailFor(
   // about the deck the reader opened the tile for — the narrower reading of the
   // table's "in place of the ordinary detail figure", and the one that never
   // hides a warning. Flagged for Design to ratify.
-  if (statusDetail === null && deck.inUseElsewhere > 0) {
+  // `Building` only, which is the scope the state table gives the clause. Before
+  // this round `Complete` had a figure of its own (`all owned`) and could not
+  // reach here; cutting that figure opened the fallback to it, and a finished
+  // deck reading `3 in use elsewhere` is a state nobody drew. Building is also
+  // the status the clause answers a question for — what is holding this deck up.
+  if (statusDetail === null && deck.statusPill === "Building" && deck.inUseElsewhere > 0) {
     return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent)" };
   }
   return statusDetail === null
