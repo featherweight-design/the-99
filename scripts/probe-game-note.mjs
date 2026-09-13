@@ -5,21 +5,26 @@
 // answer four of them: that the line indents to the mark column on desktop and
 // sits flush on the phone, that the quote rule stretches to the height of the
 // text rather than to a guess, that a row WITHOUT a note is still exactly the
-// shipped 52px row with nothing reserved, and that a note at the 140-character
-// cap wraps instead of pushing the row off the viewport.
+// shipped row with nothing reserved — 64px on the phone, 52px on the desktop,
+// #9's own two heights — and that a note at the 140-character cap wraps instead
+// of pushing the row off the viewport.
 //
 // The note is written by hand — nothing in the app produces one — so this needs
 // a game with a note under the account it signs in as. That is not the fixture
 // account: see the local-dev note in memory. Point `WALK_DECK` at a deck the
 // probe user owns.
 //
-// Run by hand: `PROBE_BASE=http://localhost:3000 node scripts/probe-game-note.mjs`
+// Run by hand against a local `pnpm dev`: `node scripts/probe-game-note.mjs`
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
-const BASE = process.env.PROBE_BASE ?? "http://localhost:3210";
+const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
+  throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
+}
+const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const DECK = process.env.WALK_DECK ?? "47eb032a-4a19-43c9-86be-c45203365ed1";
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
@@ -30,10 +35,12 @@ async function signIn(page) {
   await setupClerkTestingToken({ page });
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 30_000 });
-  const failure = await page.evaluate(async (email) => {
+  const failure = await page.evaluate(async ([email, password]) => {
     try {
       const signIn = window.Clerk.client.signIn;
-      let attempt = await signIn.create({ identifier: email });
+      let attempt = email.includes("+clerk_test")
+        ? await signIn.create({ identifier: email })
+        : await signIn.create({ identifier: email, password });
       if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
         const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
         await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: factor?.emailAddressId });
@@ -45,7 +52,7 @@ async function signIn(page) {
     } catch (error) {
       return error?.errors?.[0]?.longMessage ?? String(error);
     }
-  }, EMAIL);
+  }, [EMAIL, PASSWORD ?? ""]);
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
