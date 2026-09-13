@@ -12,7 +12,7 @@
 // it is not a success: the row reverts to the shelf it named, and nothing is
 // announced.
 
-import { useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { moveDeckAction } from "../../app/decks/folder-actions";
 import { folderCopy } from "../../lib/copy/folders";
 
@@ -31,6 +31,7 @@ export function MoveMode({
   onMoved,
   onCreate,
   say,
+  onRefused,
 }: {
   deckId: string;
   deckName: string;
@@ -45,13 +46,30 @@ export function MoveMode({
    * the same commit as its text is never read.
    */
   say: (announcement: string) => void;
+  /** A refused move: refresh, because what this list shows is what went stale. */
+  onRefused: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const first = useRef<HTMLButtonElement>(null);
+
+  // Entering this mode replaces the focused menu row, so without this the
+  // keyboard reader is dropped on the body with the destinations unreachable by
+  // Tab. The CURRENT destination takes focus where there is one, because that is
+  // where the reader already is in the list.
+  useEffect(() => {
+    first.current?.focus();
+  }, []);
 
   function move(id: string | null, name: string | null) {
     startTransition(async () => {
       const ok = await moveDeckAction(deckId, id);
-      if (!ok) return;
+      // `false` is "not yours, or gone" — the action revalidates for exactly
+      // that reason, and the list this reader is looking at is the stale one.
+      // Refreshed, and nothing announced: nothing moved.
+      if (!ok) {
+        onRefused();
+        return;
+      }
       say(name ? folderCopy.move.announceFiled(name) : folderCopy.move.announceUnfiled);
       onMoved({ id, name });
     });
@@ -68,11 +86,12 @@ export function MoveMode({
         {folderCopy.move.heading}
       </p>
 
-      {destinations.map((destination) => {
+      {destinations.map((destination, index) => {
         const current = destination.id === currentId;
         return (
           <button
             key={destination.id ?? "unfiled"}
+            ref={current || (currentId === null && index === 0) ? first : undefined}
             type="button"
             disabled={pending}
             onClick={(e) => {
@@ -104,12 +123,18 @@ export function MoveMode({
           folders at all this and `Unfiled` are the whole list. */}
       <button
         type="button"
+        disabled={pending}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          // Guarded as well as disabled: a same-tick click lands before the
+          // transition's re-render, and two flows open at once is the state
+          // this prevents.
+          if (pending) return;
           onCreate();
         }}
         className={ROW}
+        style={{ cursor: pending ? "default" : "pointer" }}
       >
         <span aria-hidden className="h-[12px] w-[12px] flex-none" />
         <span>{folderCopy.create.actionFromMove}</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { deleteDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -94,8 +94,19 @@ export function DeckCardOverflow({
   // stated: the server revalidates `/decks` behind this, and re-reading before
   // painting would leave the row naming the old shelf for a round trip.
   const [movedTo, setMovedTo] = useState<{ id: string | null; name: string | null } | null>(null);
+  // A ref, not state: this is a one-shot instruction to the DOM after a commit,
+  // and holding it in state would mean setting state inside the effect that
+  // consumes it — the cascading render this repo's lint rejects.
+  const wantsMoveRowFocus = useRef(false);
+  const moveRow = useRef<HTMLButtonElement>(null);
   const shelf = movedTo ?? { id: folderId, name: folderName };
   const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
+
+  useEffect(() => {
+    if (mode !== "menu" || !wantsMoveRowFocus.current) return;
+    wantsMoveRowFocus.current = false;
+    moveRow.current?.focus();
+  }, [mode]);
 
   function handleClose() {
     setOpen(false);
@@ -196,6 +207,7 @@ export function DeckCardOverflow({
                   rendered — it is gated on `built > 0`, so the shipped menu is
                   two rows on a brew (errata E9). */}
               <button
+                ref={moveRow}
                 type="button"
                 onClick={handleMove}
                 aria-label={folderCopy.move.rowAria(deckName, shelfLabel)}
@@ -226,8 +238,12 @@ export function DeckCardOverflow({
               currentId={shelf.id}
               onCreate={onCreateFolder}
               say={say}
+              onRefused={onMoved}
               onMoved={(next) => {
                 setMovedTo(next);
+                // The menu's Move row is the receipt, so it is also where focus
+                // belongs: the destination the reader just pressed is gone.
+                wantsMoveRowFocus.current = true;
                 // The list, its counts and both denominators live in the view;
                 // without this a deck moved off the shelf being viewed stays in
                 // the grid and every figure above it is stale.

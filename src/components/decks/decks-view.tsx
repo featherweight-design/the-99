@@ -711,7 +711,11 @@ export function DecksView({
                 // row, so the hook has nothing to return focus to. The trigger
                 // that opens the sheet is the nearest equivalent, and it is the
                 // same handoff the filter sheet makes at its own breakpoint.
-                if (createFrom === "sheet") {
+                // Both origins can vanish: the sheet's row unmounts with the
+                // sheet, and a create from move mode selects a new empty shelf,
+                // which takes the whole card away. The shelf control is the one
+                // thing on screen in either case.
+                if (createFrom !== "line") {
                   document
                     .querySelector<HTMLElement>("[data-shelf-trigger] button")
                     ?.focus();

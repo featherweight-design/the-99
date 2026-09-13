@@ -22,10 +22,12 @@ beforeEach(() => {
   stub.calls = [];
   say.mockClear();
   onCreate.mockClear();
+  onRefused.mockClear();
 });
 
 const say = vi.fn();
 const onCreate = vi.fn();
+const onRefused = vi.fn();
 
 const mode = (currentId: string | null, onMoved = vi.fn()) =>
   render(
@@ -37,6 +39,7 @@ const mode = (currentId: string | null, onMoved = vi.fn()) =>
       onMoved={onMoved}
       onCreate={onCreate}
       say={say}
+      onRefused={onRefused}
     />,
   );
 
@@ -62,6 +65,7 @@ describe("MoveMode", () => {
         onMoved={vi.fn()}
         onCreate={onCreate}
         say={say}
+        onRefused={onRefused}
       />,
     );
     // `Unfiled` and `New folder…`, which is STATES M4 exactly.
@@ -123,6 +127,19 @@ describe("MoveMode", () => {
     await waitFor(() => expect(stub.calls).toHaveLength(1));
     expect(onMoved).not.toHaveBeenCalled();
     expect(say).not.toHaveBeenCalled();
+    // The action revalidates on its false path for a reason: what this list
+    // shows is what went stale.
+    expect(onRefused).toHaveBeenCalled();
+  });
+
+  it("focuses the current destination on entering the mode", () => {
+    mode("f1");
+    expect(screen.getByRole("button", { name: "Commander night, current" })).toHaveFocus();
+  });
+
+  it("focuses Unfiled when the deck is unfiled", () => {
+    mode(null);
+    expect(screen.getByRole("button", { name: "Unfiled, current" })).toHaveFocus();
   });
 
   it("offers New folder… as the last destination", () => {
