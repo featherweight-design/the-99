@@ -166,6 +166,75 @@ const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 /** The width at which the control row would have to wrap, so it changes form instead. */
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
+/**
+ * One removable chip. Exported because a route can need the chip row without the
+ * frame around it — `/collection/sets` has no sort, so `FilterChassis`'s
+ * never-empty sort slot does not fit it, and it showed a Clear only past one
+ * active control where this frame shows one always.
+ *
+ * That route copied this markup instead, and four review rounds went on
+ * hand-syncing the tokens back: the background, the border, the dismiss colour
+ * and the spoken-name split each drifted separately. Duplication is what made
+ * the drift possible, so the duplicate is gone rather than corrected again.
+ */
+export function FilterChipPill({ chip }: { chip: FilterChip }) {
+  return (
+    // The chip is a span and the ✕ inside it is the button, which is
+    // how `/collection`'s retired chip row did it, and why. Making
+    // the whole chip the target and centring a 44px overlay on it
+    // looks equivalent and is not: chips sit 6px apart, so adjacent
+    // overlays overlap and a tap near the boundary removes the
+    // neighbour's filter. Anchored to the ✕, the nearest competing
+    // target is a full chip-width away.
+    <span
+      className={[
+        "inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[7px]",
+        "border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)]",
+        "px-[8px] py-[3px] font-mono text-[11px] leading-[14px] text-[color:var(--fg-body)]",
+      ].join(" ")}
+    >
+      {chip.leading}
+      {chip.dots && chip.dots.length > 0 && (
+        <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
+          {chip.dots.map((fill, i) => (
+            <span
+              key={i}
+              className="h-[8px] w-[8px] flex-none rounded-full"
+              style={{ background: fill }}
+            />
+          ))}
+        </span>
+      )}
+      {chip.spoken ? (
+        // The same split `buy-tag.tsx` uses: the count is for the eye,
+        // the names are for the ear. Without this a screen reader
+        // reading the row hears "2 colours" and has to enter the
+        // dismiss button to learn which two — which the row this
+        // replaces never made them do.
+        <>
+          <span aria-hidden="true">{chip.label}</span>
+          <span className="sr-only">{chip.spoken}</span>
+        </>
+      ) : (
+        chip.label
+      )}
+      <button
+        type="button"
+        onClick={chip.onRemove}
+        aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
+        className={[
+          "relative cursor-pointer border-0 bg-transparent p-0",
+          "text-[color:var(--fg-faint)]",
+          "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
+          "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+        ].join(" ")}
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
 export function FilterChassis({
   controls, sort, chips, onClearAll, resultLine, form, after,
   silentResult, resultTrailing, announce, announceId, revision, scrollCompactControls, warnResult,
@@ -225,62 +294,7 @@ export function FilterChassis({
             {chassisCopy.chips.none}
           </span>
         ) : (
-          chips.map((chip) => (
-            // The chip is a span and the ✕ inside it is the button, which is
-            // how `/collection`'s retired chip row did it, and why. Making
-            // the whole chip the target and centring a 44px overlay on it
-            // looks equivalent and is not: chips sit 6px apart, so adjacent
-            // overlays overlap and a tap near the boundary removes the
-            // neighbour's filter. Anchored to the ✕, the nearest competing
-            // target is a full chip-width away.
-            <span
-              key={chip.key}
-              className={[
-                "inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[7px]",
-                "border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)]",
-                "px-[8px] py-[3px] font-mono text-[11px] leading-[14px] text-[color:var(--fg-body)]",
-              ].join(" ")}
-            >
-              {chip.leading}
-              {chip.dots && chip.dots.length > 0 && (
-                <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
-                  {chip.dots.map((fill, i) => (
-                    <span
-                      key={i}
-                      className="h-[8px] w-[8px] flex-none rounded-full"
-                      style={{ background: fill }}
-                    />
-                  ))}
-                </span>
-              )}
-              {chip.spoken ? (
-                // The same split `buy-tag.tsx` uses: the count is for the eye,
-                // the names are for the ear. Without this a screen reader
-                // reading the row hears "2 colours" and has to enter the
-                // dismiss button to learn which two — which the row this
-                // replaces never made them do.
-                <>
-                  <span aria-hidden="true">{chip.label}</span>
-                  <span className="sr-only">{chip.spoken}</span>
-                </>
-              ) : (
-                chip.label
-              )}
-              <button
-                type="button"
-                onClick={chip.onRemove}
-                aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
-                className={[
-                  "relative cursor-pointer border-0 bg-transparent p-0",
-                  "text-[color:var(--fg-faint)]",
-                  "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
-                  "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
-                ].join(" ")}
-              >
-                ×
-              </button>
-            </span>
-          ))
+          chips.map((chip) => <FilterChipPill key={chip.key} chip={chip} />)
         )}
 
         {/* Present and inert, never absent. The rule comes from the rack's own

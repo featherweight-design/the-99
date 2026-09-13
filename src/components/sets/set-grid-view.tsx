@@ -26,6 +26,7 @@ import { useSearchParams } from "next/navigation";
 import { ColourPips } from "../ui/colour-pips";
 import { FilterPanel } from "../ui/filter-panel";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
+import { FilterChipPill } from "../ui/filter-chassis";
 import { GhostButton } from "../ui/button";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
@@ -616,54 +617,7 @@ export function SetGridView(props: SetGridViewProps) {
               {chassisCopy.chips.none}
             </span>
           ) : (
-            chips.map((chip) => (
-              // The chip is a span and the x inside it is the button, exactly as the
-              // chassis draws it: chips sit 6px apart, so a 44px overlay centred on a whole
-              // chip would overlap its neighbour and a tap near the boundary would remove
-              // the wrong filter. Anchored to the x, the nearest competing target is a full
-              // chip away — which is also why 44px is safe here, and why the chassis uses
-              // it. §28 drew 34 as a granted exception, and its own open item 3 defers:
-              // "The chassis names the line and its position but not its pixels; if that
-              // package specs them differently, it wins and this page follows." It does
-              // (`filter-chassis.tsx`, `collection/chip-row.tsx`), so this follows.
-              <span
-                key={chip.key}
-                className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap
-                           rounded-[7px] px-[8px] py-[3px] font-mono text-[11px] leading-[14px]"
-                // The chassis's own tokens (`filter-chassis.tsx`), not this page's guess:
-                // §28's open item 3 defers the chip line's pixels to that package, and a
-                // visibly different chip on one route is what the deferral exists to stop.
-                style={{
-                  color: "var(--fg-body)",
-                  background: "var(--bg)",
-                  border: "1px solid var(--border-strong)",
-                }}
-              >
-                {chip.spoken ? (
-                  <>
-                    <span aria-hidden="true">{chip.label}</span>
-                    <span className="sr-only">{chip.spoken}</span>
-                  </>
-                ) : (
-                  chip.label
-                )}
-                <button
-                  type="button"
-                  onClick={chip.onRemove}
-                  aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
-                  // `--fg-faint`, which is the chassis's × token. The Clear beside it is
-                  // `--fg-muted` and matches already; the two are not the same control and
-                  // the chassis does not give them the same weight.
-                  className="relative cursor-pointer border-0 bg-transparent p-0
-                             text-[color:var(--fg-faint)]
-                             after:absolute after:left-1/2 after:top-1/2 after:h-[44px]
-                             after:w-[44px] after:-translate-x-1/2 after:-translate-y-1/2
-                             after:content-['']"
-                >
-                  ×
-                </button>
-              </span>
-            ))
+            chips.map((chip) => <FilterChipPill key={chip.key} chip={chip} />)
           )}
 
           </div>

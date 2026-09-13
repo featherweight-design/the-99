@@ -94,8 +94,9 @@ export const setFilterCopy = {
     optionAria: (name: string, count: number) =>
       `${name}, ${count === 1 ? "1 cell" : `${count} cells`}`,
     optionAriaUnavailable: (name: string) => `${name}, no cells match your other filters`,
-    footerTotal: (total: string) => `${total} rarities`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} on`,
+    // Numbers since the chassis's own change: `FilterPanelCopy` formats them itself now.
+    footerTotal: (total: number) => `${total} rarities`,
+    footerSelected: (n: number, total: number) => `${n} of ${total} on`,
     clear: "Clear rarity",
     done: "Done",
     closeLabel: "Close",
@@ -103,11 +104,11 @@ export const setFilterCopy = {
     emptyBody: (query: string) => ({ before: "No rarity matches ", query: `“${query}”`, after: "." }),
     announceMatches: (n: number, query: string) =>
       n === 0 ? `No rarities match ${query}` : `${n} ${n === 1 ? "rarity matches" : "rarities match"} ${query}`,
-    announceAdded: (name: string, _n: number, shown: string, total: string) =>
+    announceAdded: (name: string, _n: number, shown: number, total: number) =>
       `${name} on. ${shown} of ${total} cells shown.`,
-    announceRemoved: (name: string, _n: number, shown: string, total: string) =>
+    announceRemoved: (name: string, _n: number, shown: number, total: number) =>
       `${name} off. ${shown} of ${total} cells shown.`,
-    announceCleared: (total: string) => `Rarity filter cleared. ${total} cells shown.`,
+    announceCleared: (total: number) => `Rarity filter cleared. ${total} cells shown.`,
   },
 } as const;
 

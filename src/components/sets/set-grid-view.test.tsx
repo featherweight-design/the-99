@@ -1024,13 +1024,14 @@ describe("SetGridView — the collapsed colour chip names its hues", () => {
     expect(screen.getByRole("button", { name: "Remove filter: White" })).toBeInTheDocument();
   });
 
-  // §28's open item 3 defers the chip line's pixels to the chassis package.
-  it("takes the chassis's chip tokens", () => {
+  // §28's open item 3 defers the chip line's pixels to the chassis package — and since
+  // round 21 the chip IS the chassis's component, so there are no pixels here to defer.
+  it("renders the shared chip rather than a copy of it", () => {
     search = "c=W";
     const { container } = view([p("1"), p("2")], []);
-    const chip = container.querySelector("[data-set-chips] span[style]") as HTMLElement;
-    expect(chip.style.background).toBe("var(--bg)");
-    expect(chip.style.border).toBe("1px solid var(--border-strong)");
+    const chip = container.querySelector("[data-set-chips] span.inline-flex") as HTMLElement;
+    expect(chip.className).toMatch(/bg-\[color:var\(--bg\)\]/);
+    expect(chip.className).toMatch(/border-\[color:var\(--border-strong\)\]/);
   });
 });
 
@@ -1038,19 +1039,57 @@ describe("SetGridView — the collapsed colour chip names its hues", () => {
 // a review happened to name — the background, the border and the × each drifted separately
 // and each cost a round.
 describe("SetGridView — the chip row's tokens are the chassis's", () => {
-  it("matches filter-chassis.tsx on every one", () => {
+  // Round 21 made this true by construction rather than by matching: the chip is
+  // `FilterChipPill`, exported from the chassis. Three tokens drifted separately before
+  // that — background, border, and the × — each costing its own round.
+  it("carries the chassis's tokens because it IS the chassis's chip", () => {
     search = "c=W,U&r=rare";
     const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
-    const row = container.querySelector("[data-set-chips]") as HTMLElement;
-    const chip = row.querySelector("span[style]") as HTMLElement;
-    expect(chip.style.background).toBe("var(--bg)");
-    expect(chip.style.border).toBe("1px solid var(--border-strong)");
-    expect(chip.style.color).toBe("var(--fg-body)");
+    const chip = container
+      .querySelector("[data-set-chips] span.inline-flex") as HTMLElement;
+    expect(chip.className).toMatch(/bg-\[color:var\(--bg\)\]/);
+    expect(chip.className).toMatch(/border-\[color:var\(--border-strong\)\]/);
+    expect(chip.className).toMatch(/text-\[color:var\(--fg-body\)\]/);
     // The × is --fg-faint; the Clear beside it is --fg-muted. Different controls, and the
     // chassis does not give them the same weight.
-    const dismiss = chip.querySelector("button") as HTMLElement;
-    expect(dismiss.className).toMatch(/text-\[color:var\(--fg-faint\)\]/);
-    const clear = screen.getByRole("button", { name: /^Clear all filters/ });
-    expect(clear.className).toMatch(/text-\[color:var\(--fg-muted\)\]/);
+    expect((chip.querySelector("button") as HTMLElement).className)
+      .toMatch(/text-\[color:var\(--fg-faint\)\]/);
+    expect(screen.getByRole("button", { name: /^Clear all filters/ }).className)
+      .toMatch(/text-\[color:var\(--fg-muted\)\]/);
+  });
+});
+
+// Every other colour case seeds `c=` in the URL, and `ColourPips`' own test only proves it
+// emits a code to its callback. Nothing pressed the pip on this page — so a regression in
+// this adapter or its URL write would leave the visible control dead with the suite green.
+describe("SetGridView — the colour pips are wired, not just painted", () => {
+  it("filters the grid and writes the URL when a pip is clicked", () => {
+    stubDesktop(true);
+    view([
+      p("1", { name: "Plains", colorIdentity: ["W"] }),
+      p("2", { name: "Island", colorIdentity: ["U"] }),
+    ], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W");
+    expect(screen.getAllByRole("button", { name: /Plains/ }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Island/ })).toBeNull();
+  });
+
+  it("turns the same pip off again", () => {
+    stubDesktop(true);
+    search = "c=W";
+    view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("adds a second hue rather than replacing the first", () => {
+    stubDesktop(true);
+    search = "c=W";
+    view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "Blue" })[0]);
+    // `URLSearchParams.toString()` percent-encodes the separator, which `parseFilters`
+    // reads back through `URLSearchParams` and so never sees.
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W%2CU");
   });
 });
