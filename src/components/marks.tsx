@@ -27,7 +27,10 @@ interface Crowned99Props {
 }
 
 // Per-context pixel geometry from §SVG / Marks Summary and §Rail / §Hero tables.
-const CROWNED99_SPECS: Record<
+// Exported because `src/app/icon.svg` is drawn from the `rail-62` entry and
+// nothing renders that file — `icon.test.ts` reads the spec back out of here so
+// the two cannot drift apart the way two copies of a number always do.
+export const CROWNED99_SPECS: Record<
   Crowned99Variant,
   {
     smallDiamond: number; // s diamond side length in px
