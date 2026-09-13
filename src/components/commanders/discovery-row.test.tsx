@@ -246,6 +246,16 @@ describe("DiscoveryRow", () => {
     expect(label.split("Lathril, Blade of the Elves").length - 1).toBe(1);
   });
 
+  // The separator before "view commander details" is a screen-reader PAUSE, and
+  // the two assertions above pass on either punctuation because they test for
+  // substrings. So it is pinned literally: a revert to the em dash fails here
+  // and nowhere else.
+  it("ends the accessible name on a colon before the destination", () => {
+    row({});
+    const label = screen.getAllByRole("link")[0].getAttribute("aria-label") ?? "";
+    expect(label.endsWith(": view commander details")).toBe(true);
+  });
+
   it("renders the price with its provenance, and speaks it", () => {
     row({ price: { kind: "priced", cents: 1840 } });
     expect(screen.getAllByText("$18.40").length).toBeGreaterThan(0);

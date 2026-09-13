@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resultSentence } from "./result-line";
-import { filterCopy } from "../../../lib/copy/lanes";
+import { resultLineWithAside, resultSentence } from "./result-line";
 
 // The component these cases used to render is gone: the rack is a
 // `FilterChassis` mount now, and the chassis draws `ui/result-line.tsx`.
@@ -30,7 +29,15 @@ describe("resultSentence", () => {
   // The aside is appended to this sentence by the caller rather than opening a
   // second line — a second line would move the list under the reader's eye.
   it("composes with the Exactly aside on one line", () => {
-    const line = `${resultSentence(2, 148, "owned")} — ${filterCopy.match.excludedAside(6)}`;
-    expect(line).toBe("2 of 148 commanders match — Exactly excludes 6 that Any would show");
+    // Calls the SHARED composer the rack calls. Hand-composing the separator
+    // here asserted a second copy of the rule and stayed green when the rack's
+    // copy changed, which is how this test survived the em-dash sweep.
+    expect(resultLineWithAside(2, 148, "owned", 6)).toBe(
+      "2 of 148 commanders match. Exactly excludes 6 that Any would show",
+    );
+  });
+
+  it("is the sentence alone when nothing is excluded", () => {
+    expect(resultLineWithAside(2, 148, "owned", null)).toBe(resultSentence(2, 148, "owned"));
   });
 });
