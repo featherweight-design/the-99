@@ -46,7 +46,13 @@ export function SpineMobile({
   // editing, where the field needs the band's whole width. Its ink differs with
   // its ground, which is the only reason the two call sites take an argument.
   const metaRow = (onWash: boolean) => (
-    <div className="flex flex-wrap items-center justify-center" style={{ gap: 8 }}>
+    // `flex-nowrap`, and it is load-bearing. `labelAtPx` measures ONE 22px row,
+    // and at 390px a pair's two names plus five 10px pips, the chip and the two
+    // 8px gaps exceed the caption's width — so a wrapping row put the chip on a
+    // second line, grew the block to about 120px, and left the title's first
+    // line on a ramp still climbing. The names group already ellipsises under
+    // pressure, and it is the half that should give.
+    <div className="flex flex-nowrap items-center justify-center" style={{ gap: 8 }}>
       {/* Decision 18. The caption is centred inside `left:18 right:18`, so a
           pair of names is already the width of the row at 390 — the identity
           label is dropped rather than wrapped, and a single commander keeps it
@@ -113,7 +119,12 @@ export function SpineMobile({
           in full — there is no merge with the default. */}
       <StatusPillBadge
         status={status}
-        className="flex flex-none items-center rounded-[6px] px-[7px] py-[3px] font-mono text-[10px]"
+        // `h-[22px]`, the settled chip height, rather than vertical padding over
+        // an inherited line box: that made this pill 23px and the block 91, one
+        // pixel past the ramp keyed to it — the first pixels of a two-line title
+        // on a rising ramp. A stated height is also what the round settles for
+        // every other chip, so this is the bespoke one converging.
+        className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
       />
     </div>
   );
@@ -122,16 +133,29 @@ export function SpineMobile({
     <header className="md:hidden" style={{ background: "var(--surface)", overflow: "hidden" }}>
       <div
         data-testid="spine-band"
+        // A page header, stated at 288px. The 2.2/1 ratio made this band 177px on
+        // a 390px phone and 236px on a 520px one, and because the ramp was a
+        // percentage the taller of the two scaled its own darkness with it.
         className="relative overflow-hidden"
-        style={{ aspectRatio: "2.2 / 1" }}
+        style={{ height: 288 }}
       >
         <ArtWash
           strategy="cover"
-          labelEdge="bottom"
-          // The block's top edge as a percentage of the 2.2/1 band, taken at
-          // its tallest. The title is `-webkit-line-clamp: 2`, so two lines is
-          // a hard ceiling rather than an estimate: 57% with two, 61% with one.
-          labelAt={57}
+          height={288}
+          // The block's MEASURED height in pixels from the foot, at 390px and at
+          // the title's own ceiling: `-webkit-line-clamp: 2` makes two lines hard
+          // rather than an estimate, so 12 bottom inset, a 22px meta row — the
+          // settled chip height, stated on the pill for exactly this reason — a
+          // 6px gap and two 20px title lines at 1.25 for 50 gives 90. The pill
+          // drew 23 from padding over an inherited line box before this round,
+          // which put the block at 91 and the title's first pixels on a rising
+          // ramp.
+          //
+          // The handoff's 83 was measured against a three-line title, which this
+          // clamp forbids; its own correction note is the reason the figure is
+          // measured here rather than taken — a `labelAt` derived from a block
+          // other than the one drawn is this round's own failure.
+          labelAtPx={90}
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
@@ -145,6 +169,9 @@ export function SpineMobile({
         ) : null}
 
         <div
+          // The block the ramp is keyed to, hooked so a probe measures it rather
+          // than guessing at it.
+          data-wash-label
           className="absolute flex flex-col items-center"
           style={{ left: 18, right: 18, bottom: 12, gap: renaming ? 8 : 6 }}
         >
@@ -222,50 +249,97 @@ export function SpineMobile({
             </>
           ) : (
             <>
-              <div
-                className="flex items-center justify-center"
-                style={{ gap: 8, maxWidth: "100%" }}
-              >
-                {/* The trigger's own width, opposite it: the row centres title
-                    and trigger together, so without this the name sits half a
-                    trigger left of the band's centre. */}
-                <span aria-hidden="true" className="flex-none" style={{ width: 44 }} />
+              <div className="flex items-center justify-center" style={{ maxWidth: "100%" }}>
+                {/* The glyph's own width, opposite it. 14px rather than the 44 the
+                    old plated control needed: the row centres title and glyph
+                    together, so without this the name sits half a glyph left of
+                    the band's centre. */}
+                <span aria-hidden="true" className="flex-none" style={{ width: 14 }} />
+                {/* No spacer opposite the pencil any more. It existed because the
+                    pencil was a 44px flex sibling that pushed the title half a
+                    control left of centre; the glyph sits inside the title's own
+                    text run now, in a zero-width container, so it steals no width
+                    and there is nothing to balance. */}
                 <h1
-                  className="min-w-0 font-display font-[700]"
+                  // The clamp lives on the SPAN inside, not on the heading: a
+                  // clamped box needs `overflow: hidden`, and anything beside the
+                  // text inside it gets clipped when the heading shrink-wraps a
+                  // short name. The heading holds the clamped text alone, and the
+                  // glyph is its sibling in the row.
+                  className="flex min-w-0 items-end justify-center font-display font-[700]"
                   style={{
                     fontSize: 20,
                     lineHeight: 1.25,
                     textAlign: "center",
                     color: "var(--fg)",
                     textShadow: COVER_INK_SHADOW,
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
                   }}
                 >
-                  {deck.name}
+                  {/* `data-deck-title` marks the deck's name for anything that
+                      needs it apart from the heading's own layout — the browser
+                      probe compares it to the rename control's accessible name.
+                      The clamp lives here rather than on the heading so the
+                      heading can be a flex line: a clamped box clips, and the
+                      glyph beside the title would be clipped with it. */}
+                  <span
+                    data-deck-title
+                    className="min-w-0"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {deck.name}
+                  </span>
                 </h1>
-                {/* Always visible, at a phone target: there is no hover here.
-                    The 44px target stays, but the box around it goes — it was
-                    the only chrome in the band, so a bordered fill outweighed
-                    the 20px title it sits beside. The glyph takes the title's
-                    ink and its shadow instead, because both are on art. */}
-                <button
-                  type="button"
-                  onClick={() => setRenaming(true)}
-                  aria-label={renameCopy.triggerAria(deck.name)}
-                  className="flex flex-none items-center justify-center text-[color:var(--fg)]"
-                  style={{
-                    width: 44,
-                    height: 44,
-                    fontSize: 17,
-                    textShadow: COVER_INK_SHADOW,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✎
-                </button>
+                {/* The glyph is a SIBLING of the heading, in the same row, not a
+                    child of it. Inside the heading its `aria-label` joined the
+                    heading's own accessible name, so heading navigation announced
+                    "…Rename deck: …" and then the control announced itself again.
+                    Beside the title it is still the title's control rather than a
+                    corner one, which is the point of the treatment.
+
+                    14px in flow, not zero: a zero-width holder puts the whole
+                    44px border box past the text — 29px beyond the block's right
+                    edge, which the band clips on a phone and the action buttons
+                    cover on desktop, for exactly the long names that fill the
+                    column. Only the 15px of hit padding overhangs now, inside the
+                    block's 18px inset and the desktop row's 18px gap alike.
+
+                    `relative z-[1]` because that overhang reaches 15px BELOW the
+                    title line and the meta row starts a few pixels later: two
+                    positioned elements at auto z-index are ordered by document
+                    position, so the row underneath won the hit test across the
+                    bottom third of this target. The same defect #534 fixed one
+                    control over. */}
+                <span className="relative z-[1] inline-flex flex-none" style={{ width: 14 }}>
+                  <button
+                    type="button"
+                    onClick={() => setRenaming(true)}
+                    aria-label={renameCopy.triggerAria(deck.name)}
+                    className="inline-flex items-center justify-center text-[color:var(--fg-muted)]"
+                    style={{
+                      // The 44px target is stated rather than inferred from the
+                      // glyph: a 14px font size does not guarantee a 14px advance,
+                      // and this app draws six display faces. 14 of content plus
+                      // 15 either side is 44 with `content-box`, and the negative
+                      // margin keeps it from shifting the title's baseline.
+                      boxSizing: "content-box",
+                      width: 14,
+                      height: 14,
+                      padding: 15,
+                      margin: -15,
+                      fontSize: 14,
+                      lineHeight: 1,
+                      cursor: "pointer",
+                      textShadow: COVER_INK_SHADOW,
+                    }}
+                  >
+                    ✎
+                  </button>
+                </span>
               </div>
               {metaRow(true)}
             </>

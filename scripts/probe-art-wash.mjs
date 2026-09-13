@@ -382,10 +382,24 @@ const THUMB_BOXES = ["44×62", "64×89"];
 
 const THUMB_RING_RE = /rgba\(0,\s*0,\s*0,\s*0\.4\)/;
 
+/** A third width, and it exists for one surface: the desktop deck header draws a
+    560px portrait above 1200px OF ROW and a 340px one below, and the row is the
+    viewport minus the 62px rail. 1440 gives a ~1378px row and only ever exercises
+    the wide geometry, so the fallback — the one surface in the round with two of
+    them — went undrawn in every run. 1160 gives a ~1098px row. */
 const VIEWPORTS = [
   ["mobile", 375, 812],
+  ["narrow-desktop", 1160, 900],
   ["desktop", 1440, 900],
 ];
+
+/** Which portrait the desktop deck header must draw at each width, and the inset
+    its title column must take. Keyed to the viewport rather than derived, because
+    the point is to check the switch rather than to restate it. */
+const DECK_HEADER_GEOMETRY = {
+  "narrow-desktop": { portrait: 340, inset: 364 },
+  desktop: { portrait: 560, inset: 592 },
+};
 
 /** A stated band's LABEL BLOCK against the ramp its own `labelAtPx` produced.
     This is the check the round's own failure asks for: `labelAtPx` is the
@@ -1035,7 +1049,6 @@ try {
     // written down, so no deck id is hard-coded.
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
-
     // The tile's small-cell band, at the one width that lays it out. Neither
     // 375 nor 1440 does: the phone is one column and 1440 gives a 456px cell,
     // both above the ~330px floor, so the 248 arm is the only one measured at
@@ -1100,6 +1113,35 @@ try {
       // countdown — and the moment they do migrate, every declared-versus-laid
       // height and every hold on this page is checked without another edit here.
       await checkBands(page, `${vpName} ${deckHref}`, note);
+
+      // The two geometries, each at the width that draws it. Both wash layers are
+      // mounted and CSS picks one, so the check is which of them is laid out —
+      // and a container query cannot be verified from a class name, which is all
+      // a unit test can see.
+      const expected = DECK_HEADER_GEOMETRY[vpName];
+      if (expected) {
+        const drawn = await page.evaluate(
+          `(() => {
+            const art = [...document.querySelectorAll('[data-art-wash-band] .art-wash-art')]
+              .filter((el) => el.getClientRects().length);
+            const column = document.querySelector('header [class*="pl-[364px]"]');
+            return {
+              widths: art.map((el) => Math.round(el.getBoundingClientRect().width)),
+              inset: column ? Math.round(Number.parseFloat(getComputedStyle(column).paddingLeft)) : null,
+            };
+          })()`,
+        );
+        note(`${vpName} ${deckHref}: portrait ${drawn.widths.join(", ") || "none"} at a ${drawn.inset}px inset`);
+        if (!drawn.widths.includes(expected.portrait)) {
+          note(`  FAIL expected a ${expected.portrait}px portrait at this row width, got ${drawn.widths.join(", ") || "none"}`);
+        }
+        if (drawn.widths.length !== 1) {
+          note(`  FAIL ${drawn.widths.length} portraits laid out; one geometry is drawn at a time`);
+        }
+        if (drawn.inset !== expected.inset) {
+          note(`  FAIL title column inset ${drawn.inset}px, expected ${expected.inset} to clear this portrait's flat stop`);
+        }
+      }
       walkedADeck = true;
       break;
     }

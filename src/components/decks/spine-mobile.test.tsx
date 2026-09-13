@@ -147,11 +147,100 @@ describe("SpineMobile", () => {
 
   // The phone has no hover, so the trigger is always visible — which is why it
   // must stay a full 44px target even after losing the box that used to draw it.
-  it("keeps the rename trigger at a phone target with no box of its own", () => {
+  // The pencil is block chrome, and block chrome takes no plate: the ramp
+  // protects the label block and plates protect what sits above it, and this
+  // glyph is INSIDE the block on ground held at 73%. Its hit area is padding and
+  // a negative margin rather than a box, so it clears the 44px floor without
+  // shifting the title's baseline — and its container is zero-width, so it takes
+  // no width from the name and moves with the title when that wraps.
+  it("draws the rename trigger inline, unplated, at a 44px hit area", () => {
     renderSpine(<SpineMobile {...props} />);
     const trigger = screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) });
-    expect([trigger.style.width, trigger.style.height]).toEqual(["44px", "44px"]);
     expect(trigger.className).not.toContain("border");
     expect(trigger.className).not.toContain("bg-");
+    expect(trigger.className).toContain("text-[color:var(--fg-muted)]");
+
+    // 14px of content plus 15px of padding each side is 44, with `content-box`
+    // so the padding adds rather than absorbs. Stated rather than inferred from
+    // the glyph: a 14px font size does not guarantee a 14px advance, and this app
+    // draws six display faces.
+    expect(trigger.style.padding).toBe("15px");
+    expect(trigger.style.margin).toBe("-15px");
+    expect(trigger.style.boxSizing).toBe("content-box");
+    expect(trigger.style.width).toBe("14px");
+    expect(trigger.style.height).toBe("14px");
+
+    const holder = trigger.parentElement as HTMLElement;
+    // 14px in flow, not zero: a zero-width holder puts the whole 44px border box
+    // past the text, which is 29px beyond the block's right edge — clipped by the
+    // band on a phone for exactly the long names that fill the column. Only the
+    // 15px of hit padding overhangs now, which fits the block's 18px inset.
+    expect(holder.style.width).toBe("14px");
+    expect(holder.className).toContain("flex-none");
+    // Beside the heading, not inside it: within the heading its `aria-label`
+    // joined the heading's own accessible name, so heading navigation announced
+    // the control and then the control announced itself again.
+    expect(holder.closest("h1")).toBeNull();
+    expect(holder.previousElementSibling?.tagName).toBe("H1");
+    // And it wins the hit test over the row below, whose own controls come later
+    // in the DOM — the 15px of hit padding reaches past the title line.
+    expect(holder.className).toContain("relative");
+    expect(holder.className).toContain("z-[1]");
+  });
+
+  // The spacer existed only to balance a 44px flex sibling. With the glyph
+  // inside the text run there is nothing to balance, and a spacer would push the
+  // centred title off centre in the other direction.
+  it("draws no spacer opposite the pencil", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const spacers = Array.from(container.querySelectorAll<HTMLElement>('span[aria-hidden="true"]'))
+      .filter((el) => el.style.width === "44px");
+    expect(spacers).toHaveLength(0);
+  });
+});
+
+describe("SpineMobile — the block the ramp is keyed to", () => {
+  // `labelAtPx` is only true if the block is the height it was measured at, and
+  // the pill is the tallest thing in its meta row. Padding over an inherited line
+  // box made it 23px and the block 91 against a ramp keyed to 90 — one pixel, and
+  // the first pixels of a two-line title land on a rising ramp for it.
+  it("states the pill's height rather than deriving it from padding", () => {
+    renderSpine(<SpineMobile {...props} />);
+    const pill = screen.getByText("Building");
+    expect(pill.className).toContain("h-[22px]");
+    expect(pill.className).not.toContain("py-[3px]");
+  });
+
+  // The heading is the deck's name and nothing else — no glyph in its text
+  // content and no control in its accessible name — and `data-deck-title` marks
+  // that name for anything reading it, which the browser probe does.
+  it("keeps the heading's name the deck's name alone", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const heading = container.querySelector("h1")!;
+    expect(heading.textContent).toBe(props.deck.name);
+    expect(heading.querySelector("button")).toBeNull();
+    expect(heading.querySelector("[data-deck-title]")!.textContent).toBe(props.deck.name);
+  });
+  // The band and the figure keyed to it, at this call site. The contrast table
+  // and the primitive's own tests both stay green if this component drifts back
+  // to the old geometry — the figures are only a contract where they are passed.
+  it("states the 288 band and the 90px block it measured", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const wash = container.querySelector("[data-art-wash-band]")!;
+    expect(wash).toHaveAttribute("data-art-wash-band", "288");
+    expect(wash).toHaveAttribute("data-art-wash-label-at", "90");
+    expect((wash as HTMLElement).style.height).toBe("288px");
+  });
+
+  // The row measured for that 90px block is ONE row. At 390px a pair's two
+  // names, five 10px pips, the chip and two 8px gaps are wider than the caption,
+  // so a wrapping row puts the chip on a second line and grows the block to
+  // about 120px while the ramp still holds at 90 — the title's first line on a
+  // climbing ramp, which is this round's own failure.
+  it("never lets the meta row wrap to a second line", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const block = container.querySelector("[data-wash-label]")!;
+    expect(block.querySelector(".flex-nowrap")).not.toBeNull();
+    expect(block.querySelector(".flex-wrap")).toBeNull();
   });
 });
