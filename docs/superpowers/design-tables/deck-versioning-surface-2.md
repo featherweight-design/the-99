@@ -134,7 +134,7 @@ value appears **only** here — no row carries one.
 | gap | `7px` | `10px` |
 | margin-bottom | `11px` | `10px` |
 | cells drawn | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` |
-| wrap | three columns, two rows (`grid-cols-3`) | — (single row, `flex:1` each) |
+| rows | three columns, two rows (`grid-cols-3`) | — (single row, `flex:1` each) |
 
 **Ruling 2026-09-13 (Hugh):** "We need to render all of these cards on mobile, we can't just
 selectively remove three." The canvas drew three cells at 390px; every role the deck is measured
@@ -145,7 +145,7 @@ rows rather than one row of ~55px columns. Only the per-cell verdict line stays 
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| flex | `1` | `1` |
+| flex | — (grid item; `flex-1` is `md:` only) | `1` |
 | background | `#1A1713` (`--surface`) | `#1A1713` (`--surface`) |
 | border | `1px solid #26211B` (`--border`) | `1px solid #26211B` (`--border`) |
 | border-radius | `8px` | `9px` |
@@ -161,7 +161,7 @@ rows rather than one row of ~55px columns. Only the per-cell verdict line stays 
 | text-transform | `uppercase` | `uppercase` |
 | color | `#8E8269` (`--fg-faint`) | `#8E8269` (`--fg-faint`) |
 | margin-bottom | `5px` | `7px` |
-| text | `Mana value` · role name | `Mana value` · `Removal` · `Draw` · `Ramp` · `Wipes` · `Land` |
+| text | `Mana value` · role name, in `ROLE_ORDER` | `Mana value` · `Ramp` · `Draw` · `Removal` · `Wipes` · `Land` |
 
 ### Strip cell — figures
 

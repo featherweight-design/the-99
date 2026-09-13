@@ -223,14 +223,30 @@ const readReview = (page) =>
         const labels = ["Mana value", "Ramp", "Draw", "Removal", "Wipes", "Land"];
         // A positive box is not being on screen. A cell pushed past the right edge
         // of a 390px viewport, or clipped out of an `overflow` parent, measures
-        // exactly as wide as one the reader can see — so the figure that decides
-        // it is the intersection of the cell's rect with the viewport's.
+        // exactly as wide as one the reader can see — and `getBoundingClientRect`
+        // reports the whole box either way, so what decides it is the cell's rect
+        // intersected with the viewport AND with every ancestor that clips.
         const onScreen = (el) => {
           if (!visible(el)) return false;
           const r = el.getBoundingClientRect();
-          const w = Math.min(r.right, innerWidth) - Math.max(r.left, 0);
-          const h = Math.min(r.bottom, innerHeight) - Math.max(r.top, 0);
-          return w > 0 && h > 0;
+          let left = Math.max(r.left, 0);
+          let top = Math.max(r.top, 0);
+          let right = Math.min(r.right, innerWidth);
+          let bottom = Math.min(r.bottom, innerHeight);
+          for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+            const s = getComputedStyle(p);
+            if (s.overflowX === "visible" && s.overflowY === "visible") continue;
+            const pr = p.getBoundingClientRect();
+            if (s.overflowX !== "visible") {
+              left = Math.max(left, pr.left);
+              right = Math.min(right, pr.right);
+            }
+            if (s.overflowY !== "visible") {
+              top = Math.max(top, pr.top);
+              bottom = Math.min(bottom, pr.bottom);
+            }
+          }
+          return right - left > 0 && bottom - top > 0;
         };
         const found = [...document.querySelectorAll("p")].filter((p) =>
           labels.includes(text(p)),

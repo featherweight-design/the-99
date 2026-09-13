@@ -406,14 +406,14 @@ The strip needs `cmc` in the detail select and the version's cards joined throug
 | display | `grid` | `flex` |
 | gap | `7px` | `10px` |
 | margin-bottom | `11px` | `10px` |
-| flex-wrap | three columns, two rows (`grid-cols-3`) | — (single row) |
+| rows | three columns, two rows (`grid-cols-3`) | — (single row) |
 | cells drawn | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` (Discrepancy 14, resolved) |
 
 ### Strip cell
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| flex | `1` | `1` |
+| flex | — (grid item; `flex-1` is `md:` only) | `1` |
 | background | `#1A1713` (`--surface`) | `#1A1713` (`--surface`) |
 | border | `1px solid #26211B` (`--border`) | `1px solid #26211B` (`--border`) |
 | border-radius | `8px` | `9px` |
@@ -430,7 +430,7 @@ The strip needs `cmc` in the detail select and the version's cards joined throug
 | text-transform | `uppercase` | `uppercase` |
 | color | `#8E8269` (`--fg-faint`) | `#8E8269` (`--fg-faint`) |
 | margin-bottom | `5px` | `7px` |
-| text | `Mana value` (`changed.manaValue`) · role name | `Mana value` · `Removal` · `Draw` · `Ramp` · `Wipes` · `Land` |
+| text | `Mana value` (`changed.manaValue`) · role name, in `ROLE_ORDER` | `Mana value` · `Ramp` · `Draw` · `Removal` · `Wipes` · `Land` |
 
 ### Strip cell — figures
 
