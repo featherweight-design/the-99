@@ -144,12 +144,17 @@ to the copy file's one refusal string.
 `OWNED_PARAMS` gains `folder`. `apply()` writes it. Per-option counts are computed over the narrowed
 list.
 
-### Task 1.7 — the result-line denominator
+### Task 1.7 — the result-line denominator, in both places it is printed
 
 `decks-view.tsx:340`: `deckChassisCopy.result(shown.length, shelfTotal(counts, state.shelf))`. One
 argument, and it reads out of the **same map the segment prints from** (constraint 3) rather than
 off `narrowed.length` — those are equal today and would drift the moment either side is adjusted
 optimistically after a move.
+
+**`DeckFilterSheet` takes the same figure.** It prints `shown of total` in its own header
+(`deck-filter-sheet.tsx:206`) and announces it in its own live region (`:156`), and it was being
+handed `decks.length` — so on a selected shelf the modal would state one denominator while the
+chassis behind it stated another.
 
 **Tests:** `folder-view.test.ts` over all four helpers, including the unknown-id fallback and
 `none`; `folders.test.ts` extended if the rename validation warrants it; the probe from 1.2.
@@ -177,8 +182,9 @@ count via `folderCopy.shelves.aria`.
 
 Below `CHASSIS_WIDE_MIN_PX`: a 44px trigger printing the shelf name at 15px semibold plus its count
 and `▾`. The 44px `…` beside it arrives with PR 3 and is **present only on a selected named
-folder** — absent rather than disabled on both `All decks` and `Unfiled` (STATES C2, corrected by
-errata E7: it opens rename and delete, which neither of those has). The sheet is
+folder** — absent rather than disabled on both `All decks` and `Unfiled` (STATES C1 and C2, corrected by
+errata E7 — C2 covers `Unfiled` and E7 extends the same rule to `All decks`: the `…` opens rename
+and delete, which neither of those has). The sheet is
 `aria-modal` with the app's shared focus trap, 48px rows, a **round** single-select mark
 (`filter-panel.tsx:519` — a square tick promises two), counts trailing, `New folder…` last, current
 shelf pinned first with the pin computed once on open (C4, corrected by errata E8: the pinned shelf
@@ -186,10 +192,11 @@ is **removed from the remainder** rather than printed twice, and `Unfiled` is om
 no folder exists).
 
 **Its own live region**, mirroring `deck-filter-sheet.tsx:142-155`, and `silentResult` on the chassis
-while it is open. **Keyed by the selected shelf, not by the sentence** — `ResultLine` suppresses
-identical text unless its `announceId`/`revision` moves (`ui/result-line.tsx`), so switching between
-two shelves that hold four decks each would announce once and then fall silent on exactly the change
-that matters. The shelf id is the identity, for the sheet's own region and for the chassis's.
+while it is open. **A shelf-scoped `announce` string, not the result sentence** —
+`ResultLine` returns early on identical text, and `announceId` only re-fires an `announce` that is
+already non-empty (`ui/result-line.tsx`), so switching between two shelves that hold four decks each
+would announce once and then fall silent on exactly the change that matters. The announcement names
+the shelf, and its id is the identity.
 
 ### Task 2.3 — S2 and S3
 
