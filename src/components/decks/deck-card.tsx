@@ -122,6 +122,7 @@ interface DeckCardProps {
   /** Passed through to the menu's move mode — see `DeckCardOverflow`. */
   onCreateFolder: () => void;
   say: (announcement: string) => void;
+  onMoved: () => void;
 }
 
 /**
@@ -147,7 +148,9 @@ interface DeckCardProps {
  * set of nodes; two subtrees would read the label twice to a screen reader and
  * pass a property check on both columns while being wrong.
  */
-export function DeckCard({ deck, shopping, now, folders, onCreateFolder, say }: DeckCardProps) {
+export function DeckCard({
+  deck, shopping, now, folders, onCreateFolder, say, onMoved,
+}: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
   const bodySize = deckBodySize(deck.partnerName !== null);
@@ -273,6 +276,7 @@ export function DeckCard({ deck, shopping, now, folders, onCreateFolder, say }: 
           folderName={deck.folderName}
           onCreateFolder={onCreateFolder}
           say={say}
+          onMoved={onMoved}
         />
         {/* The block at the foot, carrying identity alone: the deck's name, its
             commander and its colour. The chip and the bar are both statements

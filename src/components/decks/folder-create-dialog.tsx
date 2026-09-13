@@ -72,9 +72,10 @@ export function FolderCreateDialog({
       else if (refusal) setError(folderCopy.create.refused);
       else onDismiss();
     } catch {
-      // A thrown action — an outage, a timeout — must not leave the field
-      // read-only with a dead button. The reader can try again.
-      setError(folderCopy.create.refused);
+      // A thrown action — an outage, a timeout — is not a name refusal, and
+      // saying so would tell a reader their perfectly good name is invalid. It
+      // must also not leave the field read-only with a dead button.
+      setError(folderCopy.create.failed);
     } finally {
       setPending(false);
     }

@@ -86,10 +86,18 @@ export function ShelfLine({
       // WRAPS TO TWO ROWS AND THEN SCROLLS (STATES W5). The chassis below may
       // never wrap, because it promises a fixed height while a reader filters;
       // this line moves the list only when the reader changes shelf, which moves
-      // it anyway. Past two rows it scrolls rather than growing a third: the
-      // ceiling is `max-h` at two 34px rows plus their gap, and `overflow-x`
-      // carries the overflow sideways.
-      className="flex max-h-[74px] flex-wrap items-center gap-[6px] overflow-x-auto overflow-y-hidden bg-[color:var(--bg)] px-[22px] py-[10px]"
+      // it anyway.
+      //
+      // THE SCROLL IS VERTICAL, WHERE W5 SAYS HORIZONTAL, and it is deliberate.
+      // A wrapped flex row overflows on the cross axis: `overflow-x` cannot
+      // reach a third line, so pairing the two-row ceiling with a horizontal
+      // scroller CLIPS every shelf past the second row out of existence — which
+      // is worse than the state W5 was written to avoid. A horizontal answer
+      // needs a two-row column flow, and that reads wrong at three segments,
+      // where it would stack the second under the first. Recorded for Design
+      // rather than guessed at; a player with fifteen shelves is the reader
+      // READINESS itself says this round is not drawn for.
+      className="flex max-h-[74px] flex-wrap items-center gap-[6px] overflow-y-auto bg-[color:var(--bg)] px-[22px] py-[10px]"
     >
       {shelfSegments(folders, counts).map((segment) => {
         const selected = segment.shelf === shelf;

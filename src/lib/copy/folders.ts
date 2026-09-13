@@ -85,6 +85,12 @@ export const folderCopy = {
      * for a name that is not one) or fails silently.
      */
     refused: 'That name cannot be used.',
+    /**
+     * A write that threw rather than refused — a timeout, an outage. It is a
+     * different sentence because it asks for a different thing: the name was
+     * fine, and trying again is the answer.
+     */
+     failed: 'That did not save. Try again.',
   },
 
   // ── Rename (query to be added: `renameFolder`) ────────────────────────

@@ -34,6 +34,8 @@ interface DeckCardOverflowProps {
   onCreateFolder: () => void;
   /** The route's own live region, which outlives this panel's mode switch. */
   say: (announcement: string) => void;
+  /** Refreshes the route after a move: the grid and every count are the view's. */
+  onMoved: () => void;
 }
 
 /**
@@ -51,6 +53,7 @@ export function DeckCardOverflow({
   folderName,
   onCreateFolder,
   say,
+  onMoved,
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
@@ -196,7 +199,10 @@ export function DeckCardOverflow({
                 type="button"
                 onClick={handleMove}
                 aria-label={folderCopy.move.rowAria(deckName, shelfLabel)}
-                className={`${ITEM} cursor-pointer bg-transparent text-[color:var(--fg)]`}
+                // ITEM without its `transition-colors`: this round draws no
+                // motion, and an easing hover is motion. The shipped rows keep
+                // theirs — changing those is a different round's decision.
+                className={`${ITEM.replace(" transition-colors", "")} cursor-pointer bg-transparent text-[color:var(--fg)]`}
               >
                 <span className="truncate" title={shelfLabel}>
                   {folderCopy.move.row(shelfLabel)}
@@ -222,6 +228,10 @@ export function DeckCardOverflow({
               say={say}
               onMoved={(next) => {
                 setMovedTo(next);
+                // The list, its counts and both denominators live in the view;
+                // without this a deck moved off the shelf being viewed stays in
+                // the grid and every figure above it is stale.
+                onMoved();
                 // Back to the menu, not closed: the row now reads the new shelf,
                 // and that is the receipt.
                 setMode("menu");

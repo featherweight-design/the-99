@@ -658,7 +658,10 @@ export function DecksView({
             // The sheet is aria-modal and now carries its own region, so the
             // chassis's goes quiet while it is open rather than announcing the
             // same count from behind the modal.
-            silentResult={!wide && sheet.open}
+            // Quiet behind EITHER modal: both put the result line out of the
+            // reader's reach and both carry their own announcement, so leaving
+            // it live says the same change twice.
+            silentResult={!wide && (sheet.open || shelfSheet)}
             after={
               /* Unmounted when wide, never merely hidden. Resizing from compact
                  to wide with the sheet open would otherwise leave an
@@ -789,6 +792,7 @@ export function DecksView({
                       setCreating(true);
                     }}
                     say={setShelfSaid}
+                    onMoved={refresh}
                   />
                 </li>
               ))}
