@@ -1318,24 +1318,7 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
         </div>
 
-        {/* A `sticky z-[2]` head is a stacking context, so this sheet's `z-50` is confined
-            to it and cannot beat the shell's `fixed z-40` tab bar on paper. NOT reproduced
-            once the probe's hit test was corrected: sampled at a point inside both the
-            sheet and the viewport, the sheet is what comes back. An earlier run said the
-            tab bar won, from a coordinate 20px above the panel's own bottom edge — which is
-            off-screen here, so the browser returned null and the check called it a hit.
-
-            And the panel overflows the viewport regardless of where it is mounted —
-            `main` puts it at 658-1154 against an 844px fold, this branch at 747-1243. So
-            the footer the tab bar covers is off-screen either way, and moving the sheet out
-            of the head changes nothing a reader can see. Left where it has always been:
-            a pre-existing surface is not this PR's to rewrite at round 5.
-
-            The real fix is a portal on `FilterSheet` plus a panel that fits, which is a
-            change to every route that mounts it. Both figures are in `probe:sets` so the
-            follow-up starts from measurements rather than from this comment.
-
-            The phone sheet. Same URL-backed state as the rack above it, and the same
+        {/* The phone sheet. Same URL-backed state as the rack above it, and the same
             controls at a 44px target. */}
         {sheetOpen && !isDesktop ? (
           <FilterSheet onClose={() => setSheetOpen(false)}>
