@@ -11,6 +11,14 @@ import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
 
 export type DeckView = "list" | "card";
 
+/** The key `useStoredView` keeps the deck's choice under. One key for every
+ *  deck, not one per deck: "I read decks as cards" is a fact about the reader. */
+export const DECK_VIEW_KEY = "the99:deck-view";
+
+export function isDeckView(value: string): value is DeckView {
+  return value === "list" || value === "card";
+}
+
 const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
   { value: "list", glyph: "≣", label: viewToggleCopy.deck.list },
   { value: "card", glyph: "▦", label: viewToggleCopy.deck.card },

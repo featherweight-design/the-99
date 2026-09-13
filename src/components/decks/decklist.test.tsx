@@ -2,7 +2,7 @@
 // Tests for the role-grouped Shopping view: group headers, gap clauses, footer
 // variants, empty-covered state, row heights, and the EDHREC figure meta line.
 
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -708,5 +708,40 @@ describe("the pending-change notes are the row view's, because the mark is", () 
     expect(
       screen.queryByText(deckVersioningCopy.pending.groupChangeNote(1)),
     ).not.toBeInTheDocument();
+  });
+});
+
+// ── The view is a reading preference, and it keeps ────────────────────────────
+//
+// It used to reset to list on every mount, so a player who reads decks as cards
+// re-chose cards each time they opened one. localStorage rather than the URL:
+// a deck link that carried a view would hand the recipient this reader's habit.
+describe("view preference", () => {
+  const cardSegment = () => screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0];
+  const listSegment = () => screen.getAllByRole("button", { name: viewToggleCopy.deck.list })[0];
+
+  it("opens in list view when this browser has never chosen", () => {
+    renderDecklist([rampOwned], { filter: "all" });
+    expect(listSegment()).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("opens in the view the last visit chose", () => {
+    renderDecklist([rampOwned], { filter: "all" });
+    fireEvent.click(cardSegment());
+    expect(cardSegment()).toHaveAttribute("aria-pressed", "true");
+    cleanup();
+
+    renderDecklist([rampOwned], { filter: "all" });
+    expect(cardSegment()).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("forgets it again when the reader goes back to list", () => {
+    renderDecklist([rampOwned], { filter: "all" });
+    fireEvent.click(cardSegment());
+    fireEvent.click(listSegment());
+    cleanup();
+
+    renderDecklist([rampOwned], { filter: "all" });
+    expect(listSegment()).toHaveAttribute("aria-pressed", "true");
   });
 });

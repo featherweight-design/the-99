@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import { readRaw, subscribeToKey, writeRaw } from "./local-store";
+import { readRaw, subscribeToKey, writeRaw } from "../ui/local-store";
 
 // A per-deck "this has happened, don't show it again" bit, persisted in
 // localStorage rather than a DB column: a cosmetic one-shot does not justify a
@@ -15,7 +15,7 @@ import { readRaw, subscribeToKey, writeRaw } from "./local-store";
 //
 // The store underneath — subscription, cross-tab handler, the session fallback
 // for a storage that throws, the read back that catches a quota-evicting
-// write — lives in ./local-store, shared with useTopOffDraft.
+// write — lives in ../ui/local-store, shared with useTopOffDraft and useStoredView.
 
 /**
  * Returns `[isSet, set]` for the given localStorage key.

@@ -7,7 +7,7 @@ import {
   type TopOffDraft,
   topOffDraftKey,
 } from "../../lib/decks/top-off-draft";
-import { readRaw, removeRaw, subscribeToKey, writeRaw } from "./local-store";
+import { readRaw, removeRaw, subscribeToKey, writeRaw } from "../ui/local-store";
 
 const EMPTY: TopOffDraft = { ticked: new Set(), declined: new Set() };
 
