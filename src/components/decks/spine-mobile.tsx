@@ -14,7 +14,8 @@ import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { colorLabel } from "../../lib/decks/format";
+import { IdentityPips } from "../commanders/commander-art";
+import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
@@ -43,6 +44,8 @@ export function SpineMobile({
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while
   // editing, where the field needs the band's whole width. Its ink differs with
   // its ground, which is the only reason the two call sites take an argument.
+  const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
+
   const metaRow = (onWash: boolean) => (
     // `flex-nowrap`, and it is load-bearing. `labelAtPx` measures ONE 22px row,
     // and at 390px a pair's two names plus five 10px pips, the chip and the two
@@ -75,6 +78,14 @@ export function SpineMobile({
         // pixel past the ramp keyed to it.
         className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
       />
+      {/* The pips, between the chip and the names — the same adjacency desktop
+          draws (pips then names), with the chip moved to the front of the line.
+          They cost 62px at five colours against this row's 314px, which is about
+          eleven characters of the commander's name, and the name ellipsises
+          either way on a two-faced pair. The colour stays worded beside them:
+          the deck tile's ruling dropped pips in favour of the word because a
+          grid cell cannot afford both, and a page header can. */}
+      <IdentityPips colorIdentity={identity} size={10} />
       {/* Decision 18. The caption is centred inside `left:18 right:18`, so a
           pair of names is already the width of the row at 390 — the identity
           label is dropped rather than wrapped, and a single commander keeps it

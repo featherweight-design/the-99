@@ -277,19 +277,22 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect(block.style.paddingLeft).toBe("");
   });
 
-  // No pips on this band. The chip and the names are what the phone's line
-  // carries; five swatches beside them is what pushed it past the band's width.
-  it("draws no identity pips in the phone band", () => {
+  // The pips are back, between the chip and the names — the same adjacency
+  // desktop draws. They cost about eleven characters of the commander's name at
+  // 390px, and the colour stays worded beside them: a grid cell cannot afford
+  // both, a page header can.
+  it("draws the identity pips between the chip and the names", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
-    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
-    // `IdentityPips` draws an `aria-hidden` span of squared swatches and no test
-    // marker, so the pips are counted by what they actually are: the 10px
-    // rounded blocks that component emits. Querying a marker nothing draws
-    // passed whether or not the pips were there.
-    expect(block.querySelectorAll('span[aria-hidden="true"] > span.rounded-\\[2px\\]')).toHaveLength(
-      0,
-    );
-    expect(block.textContent).not.toContain("Naya");
+    const meta = container.querySelector<HTMLElement>("[data-spine-meta]")!;
+    const pips = meta.querySelectorAll('span[aria-hidden="true"] > span.rounded-\\[2px\\]');
+    expect(pips.length).toBeGreaterThan(0);
+    // Second child: the chip leads, the pips follow it, the names come last and
+    // are the only child that shrinks.
+    expect(meta.children[0].textContent).toBe("Building");
+    expect(meta.children[1].contains(pips[0])).toBe(true);
+    // The colour is still a word, which is the only form a screen reader gets —
+    // the pips are `aria-hidden`.
+    expect(meta.textContent).toContain("Non-red");
   });
 
   // The band reads from the left: title, then the chip and the commander under
