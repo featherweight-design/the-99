@@ -133,7 +133,11 @@ async function openCard(page, name) {
   await page.goto(`${BASE}/collection?view=rows&q=${encodeURIComponent(name)}`, {
     waitUntil: "domcontentloaded",
   });
-  await page.locator(`button[aria-label^="${name},"]`).first().click();
+  // A role locator with an escaped pattern, not an interpolated attribute selector:
+  // a card name carrying a quote, a bracket or a backslash would make that selector
+  // invalid or change what it means, and the probe would fail before opening anything.
+  const pattern = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
+  await page.getByRole("button", { name: pattern }).first().click();
   await page.waitForSelector('[role="dialog"]', { timeout: 15_000 });
   // The card is fetched on click, and the price rides that fetch.
   await page.waitForTimeout(1_500);

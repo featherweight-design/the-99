@@ -214,6 +214,38 @@ describe("the price under the art", () => {
   });
 });
 
+describe("a card opened at a printing", () => {
+  it("prices the printing the caller named, even when it hands over no art", () => {
+    // The set grid knows the exact catalog row. An owned holding matching the same
+    // (set, collector number) may carry no id of its own — nullable on
+    // `collection_items`, or dropped because two holdings disagreed — so the
+    // caller's id has to travel whether or not it also overrode the art.
+    render(
+      <CardModal
+        card={card({
+          printings: [printing({ scryfallId: undefined })],
+          // Two catalog rows share this (set, collector number) — `printings` puts no
+          // uniqueness on the pair — so the fallback identity refuses to answer and
+          // ONLY the caller's exact id can price this card. Without that, the key path
+          // would answer and the test would pass with the id dropped.
+          prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-exact", price_cents: 1500 }),
+            priceRow({ scryfall_id: "s-twin", price_cents: 100 }),
+          ]),
+        })}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{ setCode: "RVR", collectorNumber: "12", scryfallId: "s-exact", imageUri: null }}
+      />,
+    );
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$15.00");
+  });
+});
+
 describe("the compact art header", () => {
   // Reached only with 2+ owned printings and the region open past the overflow
   // threshold, which is the state the R1 handoff did not draw and R2 rules.

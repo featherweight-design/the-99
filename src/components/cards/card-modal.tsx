@@ -370,25 +370,25 @@ export function CardModal({
     // caller handed over the exact art, it wins over that fallback.
     const known = card.printings.some((p) => matchesPreference(p, at));
     const printings = known
-      ? (at.imageUri
-          ? card.printings.map((p) =>
-              // The flavour name goes with the art it described — but only when the art
-              // actually changes. `aggregateCollection` fills the name from the set
-              // REPRESENTATIVE when a holding has no `scryfall_id`, and it is that fallback
-              // the exact art replaces; where the two URLs already agree, the row is the
-              // printing and its name is the right one. Clearing unconditionally took the
-              // name off an owned Secret Lair whose art was never in question.
-              matchesPreference(p, at)
-                ? {
-                    ...p,
-                    imageUri: at.imageUri ?? p.imageUri,
-                    flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
-                    // The caller's id names the printing exactly; the row's own may be
-                    // absent, or dropped because two holdings disagreed about it.
-                    scryfallId: at.scryfallId ?? p.scryfallId,
-                  }
-                : p)
-          : card.printings)
+      ? card.printings.map((p) => {
+          if (!matchesPreference(p, at)) return p;
+          // The caller's id names the printing exactly, and travels whether or not it
+          // also handed over art: the row's own id may be absent, or dropped because
+          // two holdings disagreed about it, and the price is looked up by it.
+          const withId = at.scryfallId ? { ...p, scryfallId: at.scryfallId } : p;
+          if (!at.imageUri) return withId;
+          // The flavour name goes with the art it described — but only when the art
+          // actually changes. `aggregateCollection` fills the name from the set
+          // REPRESENTATIVE when a holding has no `scryfall_id`, and it is that fallback
+          // the exact art replaces; where the two URLs already agree, the row is the
+          // printing and its name is the right one. Clearing unconditionally took the
+          // name off an owned Secret Lair whose art was never in question.
+          return {
+            ...withId,
+            imageUri: at.imageUri,
+            flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
+          };
+        })
       : [...card.printings, {
       setCode: at.setCode,
       setName: at.setCode,
