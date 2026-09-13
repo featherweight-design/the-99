@@ -276,7 +276,7 @@ would otherwise re-apply a flip that has been reverted once.
 | §A4: "the resume row's whole exception is deleted" — band 72's figures, its `--surface-inset` ground, the type inset and the no-shadow exemption all go | The exception stands. 72px band, 99px portrait column, `--surface-inset` ground, and no text shadow on that row. The type inset is **108px below 1000px of viewport and 116px at or above it** — the gap after the portrait is the part that gives, because at 640px the column leaves the meta line 3px less than its fixed content needs |
 | The aspect rule's one flip: "the resume row leaves `left-portrait`" at 2.3–3.1:1 | It stays `left-portrait`. The rule is unchanged for every other render; this row is its one exception |
 | Render 02 at a 168 `cover` band, `labelAtPx` 53 (verdict §5c) | 72 band, `labelAtPx="flat"` — no vertical ramp at all, because the row's ink sits beside the portrait rather than over it |
-| Every string on that row takes `COVER_INK_SHADOW` | No string on that row takes a shadow. Its type starts at the 116px inset, clear of the art |
+| Every string on that row takes `COVER_INK_SHADOW` | No string on that row takes a shadow. Its type starts at that inset — 108px below 1000px of viewport, 116px at or above it — clear of the art either way |
 
 Restoring it meant restoring what SHIPPED rather than what the rule derives, and
 two figures differ from their formulas: the portrait draws at **0.95** (the lift
