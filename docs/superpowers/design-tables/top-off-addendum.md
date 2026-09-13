@@ -591,7 +591,7 @@ Pattern is `game-history-row.tsx`'s inline confirm **verbatim, minus the danger 
 | Key | Change | Detail |
 |---|---|---|
 | `list.cap` | **string verbatim, home moved** | `Untick one to swap another in`. Phone → the pinned bar (rung 1). Desktop → the selection head, after the counts, behind a `border-left: 1px var(--border-strong)` divider. Renders at both widths; `capLineId` never dropped. Amendment 2: one element, home selected by `use-min-width.ts`. |
-| `commit.slotsStayOpen` | **string unchanged, one class deleted** | `hidden md:block` removed; joins the phone ladder at rung 2. Desktop keeps `md:ml-auto` in the commit row. No new string. |
+| `commit.slotsStayOpen` | **string unchanged by this amendment, one class deleted** | `hidden md:block` removed; joins the phone ladder at rung 2. Desktop keeps `md:ml-auto` in the commit row. No new string. |
 
 ### Ratifications — three, adopted without change
 
