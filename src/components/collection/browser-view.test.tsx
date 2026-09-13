@@ -79,13 +79,23 @@ describe("CollectionBrowser — which view it opens as", () => {
     expect(rows()).toHaveAttribute("aria-pressed", "true");
   });
 
-  // The preference is not a description of this page, so it stays out of the
-  // address bar. A reader who never touched the toggle has an unmarked URL to
-  // share, whatever their habit is.
+  // The STORED value stays out of the address bar: a reader who never touched
+  // the toggle has an unmarked URL to share, whatever their habit is. Pressing
+  // the toggle still writes `?view=`, as it did before storage existed — that
+  // press is a choice made here, and it is what makes the list shareable. The
+  // test after this one holds that half.
   it("keeps the stored choice out of the URL", () => {
     localStorage.setItem(COLLECTION_VIEW_KEY, "grid");
     render(view());
     expect(grid()).toHaveAttribute("aria-pressed", "true");
     expect(window.location.search).not.toContain("view=");
+  });
+
+  // Unchanged by this PR, and asserted because the comment above claims it: the
+  // toggle writing `?view=` is what a shared link is made of.
+  it("still writes the view a reader picks here", () => {
+    render(view());
+    fireEvent.click(grid());
+    expect(window.location.search).toContain("view=grid");
   });
 });

@@ -275,8 +275,13 @@ export function CollectionBrowser({
   // The choice this browser made on some earlier visit. It sits UNDER the URL
   // and OVER the width default: a shared link carrying `?view=` describes the
   // list its sender meant, and nothing a reader stored should overwrite that.
-  // It is also deliberately not mirrored back into the URL — a preference is
-  // not a description of this page, and `?view=` means "chosen here".
+  //
+  // The STORED value is never serialised — arriving at a bare `/collection` and
+  // being shown your grid leaves the address bar bare, so the URL still means
+  // "somebody chose this here". Pressing the toggle does still write `?view=`,
+  // exactly as it did before this file knew anything about storage: that press
+  // IS a choice made here, and it is what makes the current list shareable.
+  // The two are different acts and only one of them touches the URL.
   const [storedView, chooseView] = useStoredView(COLLECTION_VIEW_KEY, isViewMode);
   const effectiveView: ViewMode = view ?? storedView ?? (isDesktop ? "grid" : "rows");
   const chooseAndKeepView = useCallback(
