@@ -9,8 +9,11 @@
 // stale when a fourth kind of work is added.
 
 /**
- * A note on the three clocks. `last_edited_at` and `committed_at` are written by
- * Postgres's `now()`; `deck_games.played_at` is the date the game was PLAYED,
+ * A note on the three clocks. `last_edited_at` and `committed_at` are both
+ * written with Postgres's `clock_timestamp()`, read when each statement runs and
+ * so after it has waited for the deck row's lock — `now()` would be the
+ * transaction's start, which can predate a write it actually followed.
+ * `deck_games.played_at` is the date the game was PLAYED,
  * which the log lets the player set and which therefore may be days old and does
  * not come from the database's clock at all. That is the column's contract, not
  * a gap in it — Home's shipped resume order has always read it — and it is why

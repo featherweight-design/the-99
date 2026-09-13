@@ -1868,10 +1868,11 @@ export async function pullCardFromDeck(
         .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
     }
     // The source deck's list really did change, so the column stays truthful.
-    // The commit on the next line moves `committed_at` to the same instant —
-    // both statements take the transaction's `now()` — and `touchedBy` resolves
-    // that tie to `edited`, deliberately: see the migration note there. A card
-    // left this deck, so `edited` is true of it either way.
+    // Both stamps are `clock_timestamp()`, read when their own statement runs,
+    // so the commit on the next line lands microseconds later and the row reads
+    // `committed`. Either verb is true of this path — a card left the deck AND a
+    // version was cut — which is why the tie rule in `touched.ts` is decided by
+    // the migration case rather than by this one.
     await touchDeck(tx, sourceDeckId);
     await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
     return { ok: true };
