@@ -258,6 +258,38 @@ try {
   console.log(JSON.stringify(phoneRead, null, 2));
   assertGap("phone", phoneRead.mobile, 9);
 
+  // The phone zoom is a different pair of numbers (318x444) drawn by CSS alone, so
+  // it is measured rather than assumed from the desktop pass.
+  await phonePage.getByRole("button", { name: /^Look at / }).first().click();
+  await phonePage.waitForSelector('[data-testid="card-zoom"]', { timeout: 5_000 });
+  await phonePage
+    .waitForFunction(
+      () => {
+        const c = document.querySelector('[data-testid="card-zoom-card"]');
+        if (!c) return false;
+        const { width } = c.getBoundingClientRect();
+        return width > 0 && Math.abs(width - c.offsetWidth) <= 1;
+      },
+      null,
+      { timeout: 5_000 },
+    )
+    .catch(() => {});
+  const phoneZoom = await readZoom(phonePage);
+  console.log("\n── phone · zoom ──");
+  console.log(JSON.stringify(phoneZoom, null, 2));
+  if (!phoneZoom?.coversDialog || phoneZoom.dialogs !== 1) {
+    console.log("\nFAIL: the phone zoom must be a region inside the one dialog, sized to it.");
+    process.exitCode = 1;
+  }
+  if (!phoneZoom?.card
+    || Math.abs(phoneZoom.card.width - 318) > 2
+    || Math.abs(phoneZoom.card.height - 444) > 3) {
+    console.log(`\nFAIL: phone zoomed card is ${JSON.stringify(phoneZoom?.card)}, expected about 318x444.`);
+    process.exitCode = 1;
+  }
+  await phonePage.keyboard.press("Escape");
+  await phonePage.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
+
   const phoneTrigger = phonePage.locator('button[aria-label*="printings owned"]').first();
   if (await phoneTrigger.count()) {
     await phoneTrigger.click();

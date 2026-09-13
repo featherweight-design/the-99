@@ -1,6 +1,6 @@
 // The zoom (card detail R2, §3): the whole card at something like hand size, as a
 // region inside the dialog rather than a second one.
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cardZoomCopy } from "../../lib/copy/card-surfaces";
@@ -48,6 +48,12 @@ function mount(c: BrowseCard = card()) {
   return { onClose };
 }
 
+// The exit plays over 160ms before the layer unmounts, so the assertions that care
+// about it being GONE have to let that land.
+beforeEach(() => { vi.useFakeTimers({ shouldAdvanceTime: true }); });
+afterEach(() => { vi.useRealTimers(); });
+const settleClose = () => { act(() => { vi.advanceTimersByTime(200); }); };
+
 const openZoom = () => {
   // Both breakpoint trees mount an art trigger; either opens the same layer.
   fireEvent.click(screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0]);
@@ -81,14 +87,17 @@ describe("the zoom", () => {
 
     openZoom();
     fireEvent.click(screen.getByTestId("card-zoom-card"));
+    settleClose();
     expect(screen.queryByTestId("card-zoom")).toBeNull();
 
     openZoom();
     fireEvent.click(screen.getByTestId("card-zoom"));
+    settleClose();
     expect(screen.queryByTestId("card-zoom")).toBeNull();
 
     openZoom();
     fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+    settleClose();
     expect(screen.queryByTestId("card-zoom")).toBeNull();
   });
 
@@ -97,6 +106,7 @@ describe("the zoom", () => {
     openZoom();
 
     act(() => { fireEvent.keyDown(document, { key: "Escape" }); });
+    settleClose();
     expect(screen.queryByTestId("card-zoom")).toBeNull();
     expect(onClose).not.toHaveBeenCalled();
 
@@ -148,6 +158,7 @@ describe("the zoom", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: cardZoomCopy.close }));
 
     fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+    settleClose();
     expect(document.activeElement).toBe(
       screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0],
     );
@@ -195,6 +206,22 @@ describe("the zoom", () => {
 
     expect(screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0])
       .toHaveAttribute("aria-controls", "card-zoom");
+  });
+
+  it("plays the layer out rather than snatching it away", () => {
+    // Row 5.2: leaving is 160ms, shorter than arriving. While it plays, the layer is
+    // still on screen and no longer takes clicks — a control that answers during its
+    // own exit is a control the reader cannot aim at.
+    mount();
+    openZoom();
+
+    fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+    const leaving = screen.getByTestId("card-zoom");
+    expect(leaving).toHaveAttribute("data-closing", "true");
+    expect(leaving.className).toContain("pointer-events-none");
+
+    settleClose();
+    expect(screen.queryByTestId("card-zoom")).toBeNull();
   });
 
   it("reports its own state on the trigger", () => {

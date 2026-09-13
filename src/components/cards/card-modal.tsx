@@ -286,6 +286,10 @@ export function CardModal({
   const [expanded, setExpanded] = useState(false);
   // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
   const [zoomed, setZoomed] = useState(false);
+  // Held for the length of the exit while the layer plays it out. `zoomed` stays
+  // true until the timer lands, because a layer that unmounts on the click has no
+  // exit to play.
+  const [closingZoom, setClosingZoom] = useState(false);
   // Where focus goes back to on close: the art that opened it, at whichever width
   // is actually on screen.
   const zoomTriggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -469,13 +473,33 @@ export function CardModal({
   // an 812px phone, so past the threshold — and only there — the header collapses.
   const compactArt = hasPicker && expanded && overflowing;
 
+  /**
+   * Leaves over 160ms, or at once for a reader who has asked for less motion —
+   * where the static state is "gone", not "gone slowly". The media query is read at
+   * the press rather than subscribed to: this is one transition, and a reader who
+   * changes the setting mid-fade has bigger news than the fade.
+   */
+  const closeZoom = useCallback(() => {
+    const reduced = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setZoomed(false);
+      return;
+    }
+    setClosingZoom(true);
+    window.setTimeout(() => {
+      setZoomed(false);
+      setClosingZoom(false);
+    }, 160);
+  }, []);
+
   // Escape collapses the region first and returns focus to the Set field; a second Escape
   // closes the dialog exactly as it does today.
   const onEscape = useCallback(() => {
     // Zoom first, then the region, then the dialog — the printing region's shipped
     // two-stage shape with one rung added rather than a new shape to learn (§3.11).
     if (zoomed) {
-      setZoomed(false);
+      closeZoom();
       return;
     }
     if (!expanded) {
@@ -493,7 +517,7 @@ export function CardModal({
         return;
       }
     }
-  }, [expanded, onClose, zoomed]);
+  }, [closeZoom, expanded, onClose, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape);
@@ -1094,11 +1118,17 @@ export function CardModal({
             role="region"
             aria-label={cardZoomCopy.layerAria(printedNameOf(preview))}
             data-testid="card-zoom"
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center anim-zoom-in"
-            onClick={() => setZoomed(false)}
+            className={`absolute inset-0 z-20 flex flex-col items-center justify-center ${
+              closingZoom ? "anim-zoom-out pointer-events-none" : "anim-zoom-in"
+            }`}
+            data-closing={closingZoom ? "true" : undefined}
+            onClick={closeZoom}
             style={{
               background: "color-mix(in srgb, var(--bg) 94%, transparent)",
               backdropFilter: "blur(10px)",
+              // WebKit honours only the prefixed declaration, and without the blur the
+              // scrim alone is not enough separation from the art behind it.
+              WebkitBackdropFilter: "blur(10px)",
             }}
           >
             {/* The whole card, at the largest 63/88 the rect allows — 372x520 desktop,
@@ -1125,7 +1155,7 @@ export function CardModal({
             <button
               type="button"
               ref={zoomCloseRef}
-              onClick={(e) => { e.stopPropagation(); setZoomed(false); }}
+              onClick={(e) => { e.stopPropagation(); closeZoom(); }}
               aria-label={cardZoomCopy.close}
               // The modal's shipped X in its shipped slot at both widths, gaining a
               // plate so it clears the scrim. Its label changes, its position does not.
