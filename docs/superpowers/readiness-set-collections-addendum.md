@@ -136,7 +136,7 @@ URL parameter is `q` either way, which is what §29 rules and what a reader sees
   ~302px — about 334px of viewport, since the rail is hidden below `md` and the padding is
   16px a side there. A probe asserting it must measure the viewport, not the content box.
 
-## Two corrections from building finding 6, both measured
+## Three corrections from building finding 6, all measured
 
 Recorded here rather than sent back to Design: the ruling's intent survives both, and only
 its arithmetic and one anchor row move. Both figures come from `pnpm probe:sets` at 390
@@ -162,9 +162,23 @@ taller under missing-only, which is the exact defect the rule exists to prevent.
 still ships — the line reads better without a subtraction the head already made two lines
 above — but as copy, not as pixels.
 
-**So PR 5a's measured total is −28px, not −40**: 388px to 360px. The remaining distance to
-§31's 148px rest height is PR 5b's collapse, which is where it was always going to come
-from.
+**So PR 5a's measured total is −28px, not −40**: 388px to 360px.
+
+**And §31's rest and collapsed figures predate §28.** Its 148px rest was written before
+#549's 44px chip line and 32px result reserve landed, which is the same staleness the plan
+already flagged when the head went 366 to 388. The shipped figures, measured at 390 on the
+same fixture after PR 5b:
+
+| | rest | collapsed |
+|---|---|---|
+| head | 288px | 75px |
+| bar | — | 52px exactly |
+| reserved in the document | 288px | 288px |
+| grid tracks | 2 | 2 |
+
+The **bar** is exactly the 52px §31 draws. The rest height is above 148 for the reason
+above, and the reserve holds through both states — measured at scroll 0, 400 and 2000, and
+on the single frame the collapse lands.
 
 ## The route's own geometry, and the 62px nobody counted
 
