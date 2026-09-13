@@ -591,15 +591,6 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .art-wash-art {
     opacity: var(--art-wash-reduced-opacity) !important;
   }
-  .art-wash-scrim-cover-top {
-    background: linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--bg) 95%, transparent) 0%,
-      color-mix(in oklab, var(--bg) 95%, transparent) 31%,
-      color-mix(in oklab, var(--bg) 30%, transparent) 62%,
-      color-mix(in oklab, var(--bg) 30%, transparent) 100%
-    ) !important;
-  }
 }
 
 /* Forced colours is a different mechanism: the system takes the palette, so the

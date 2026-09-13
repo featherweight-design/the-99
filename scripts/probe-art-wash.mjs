@@ -553,7 +553,11 @@ async function checkBands(page, label, note) {
     ).size`,
   );
   if (unstated) {
-    note(`  ${label}: ${unstated} band(s) not yet stated — surfaces still to migrate`);
+    // A FAIL, not a countdown. Every surface is migrated as of this slice, so an
+    // unstated band is a reverted one or a new render that never went through the
+    // system — and a line that only reports would have let either stand while the
+    // probe stayed green.
+    note(`  FAIL ${label}: ${unstated} band(s) draw a wash without stating a band`);
   }
   for (const band of stated) {
     if (!SETTLED_BANDS.some((h) => `${h}px` === band.declared)) {
@@ -834,7 +838,9 @@ try {
       const edged = await page.evaluate(
         `document.querySelectorAll('.art-wash-scrim-cover-top, .art-wash-scrim-cover-bottom').length`,
       );
-      if (edged) note(`  ${edged} band(s) still name a label edge — surfaces still to migrate`);
+      // Also a FAIL now: the `labelEdge` prop retires in this slice, so the class
+      // cannot be emitted at all and a band carrying it is the legacy arm back.
+      if (edged) note(`  FAIL ${edged} band(s) still name a label edge`);
 
       await checkBands(page, `${vpName} ${routeName}`, note);
 
@@ -1185,9 +1191,18 @@ try {
     // draws the `left-portrait` rows and Home draws a `cover` hero — and the
     // override this round deletes was a cover-only rule, so sampling portraits
     // alone would have let exactly the regression B9 asks about through.
+    // Every route that can mount a scrim, not one of each strategy. The rule
+    // this round deletes was cover-only, and cover bands are mounted on four
+    // routes — Home's hero and resume rows, both deck-tile arms on `/decks`, the
+    // owned lane's rows on `/discover`, and the detail hero on a commander page.
+    // Sampling two of them would have let a selector regression on any of the
+    // others through, which is the whole question B9 asks.
     for (const [whatKind, path] of [
       ["portrait rows", "/commanders"],
-      ["cover bands", "/"],
+      ["home's cover bands", "/"],
+      ["deck tiles", "/decks"],
+      ["the owned lane", "/discover"],
+      ...(commanderSlug ? [["the detail hero", commanderSlug]] : []),
     ]) {
       await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
