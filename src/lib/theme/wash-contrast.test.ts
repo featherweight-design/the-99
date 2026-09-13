@@ -108,7 +108,11 @@ const horizontalStops = (width: keyof typeof PORTRAITS): ScrimStops => {
   const b = PORTRAITS[width];
   return [
     [0, 0],
-    [0, Math.round((b.maskEnd / 100) * width)],
+    // `clearTo ?? derived`, exactly as the component does: the resume row's 99px
+    // portrait states 58 where the rule gives 61, and deriving it here evaluated
+    // every resume contrast case against a gradient three pixels from the one
+    // that ships.
+    [0, b.clearTo ?? Math.round((b.maskEnd / 100) * width)],
     [b.sharpAlpha, width],
     [100, b.flatStop],
   ];
@@ -254,7 +258,8 @@ describe("art wash contrast floor", () => {
               : portraitGround(
                   theme,
                   width,
-                  Math.round((PORTRAITS[width].maskEnd / 100) * width),
+                  PORTRAITS[width].clearTo ??
+                    Math.round((PORTRAITS[width].maskEnd / 100) * width),
                   alphaAt(stops, y),
                 );
           expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);
