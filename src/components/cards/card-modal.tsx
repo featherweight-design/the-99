@@ -380,13 +380,16 @@ export function CardModal({
     // id-less holding could be either sibling, and stamping the caller's id onto it
     // would put the opened printing's figure under a picture that may be the other
     // one's. There the exact row is injected instead.
-    const pairAmbiguous = at.scryfallId !== undefined
-      && (card.prices?.ambiguousKeys.includes(priceKeyFor(at)) ?? false);
+    const pairAmbiguous = card.prices?.ambiguousKeys.includes(priceKeyFor(at)) ?? false;
     const isTarget = (p: BrowsePrinting) =>
       at.scryfallId
         ? p.scryfallId === at.scryfallId
           || (!pairAmbiguous && p.scryfallId === undefined && matchesPreference(p, at))
-        : matchesPreference(p, at);
+        // With no id from the caller either, an ambiguous pair identifies nothing at
+        // all: rewriting an owned row's art here would leave that row's id — and so
+        // its price — under a picture that may belong to its sibling. The caller's
+        // printing is injected instead, and prices itself or nothing.
+        : !pairAmbiguous && matchesPreference(p, at);
     const known = card.printings.some(isTarget);
     const printings = known
       ? card.printings.map((p) => {

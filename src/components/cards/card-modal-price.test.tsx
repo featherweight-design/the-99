@@ -298,6 +298,35 @@ describe("a card opened at a printing", () => {
 
     expect(screen.queryByTestId("modal-price-desktop")).toBeNull();
   });
+
+  it("will not rewrite an owned row's art when the caller names no id and the pair is ambiguous", () => {
+    // No id from either side and two printings behind the pair: rewriting the owned
+    // row's picture while keeping its id would show that row's price under what may
+    // be its sibling's art. The caller's printing is injected instead, the resolver
+    // keeps the owned row (the only one with a picture of its own), and the figure
+    // is that row's — art and price still naming one printing.
+    render(
+      <CardModal
+        card={card({
+          printings: [printing({ scryfallId: "s-owned", imageUri: "https://img/owned.jpg" })],
+          prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-owned", price_cents: 100 }),
+            priceRow({ scryfall_id: "s-twin", price_cents: 1500 }),
+          ]),
+        })}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{ setCode: "RVR", collectorNumber: "12", imageUri: "https://img/other.jpg" }}
+      />,
+    );
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$1.00");
+    expect(screen.getByTestId("modal-art-desktop").getAttribute("style"))
+      .toContain("owned.jpg");
+  });
 });
 
 describe("the compact art header", () => {
