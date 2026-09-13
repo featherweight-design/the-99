@@ -6,6 +6,21 @@ describe("deckVersioningCopy", () => {
     expect(copy.pending.commitCta(3)).toBe("Commit as v3");
   });
 
+  // Pinned literally, not derived: each of these four was cut down from something
+  // longer, and every other test on them reads a substring the long form also
+  // contained, so a regression to the long form would stay green.
+  it("states the shortened strings in full", () => {
+    expect(copy.review.lede(2)).toBe(
+      "Nothing here is a decision except the pulls. The deck page already shows this list — " +
+        "this is what it costs to lock in as v2.",
+    );
+    expect(copy.review.outNote(3)).toBe("all 3 go back in the pool when you commit.");
+    expect(copy.history.diffNote).toBe("this is what the deck was, not what it needs");
+    expect(copy.history.initialBody).toBe(
+      "the first list, with nothing before it to compare against.",
+    );
+  });
+
   it("draws a sign on a movement and a bare zero on none", () => {
     expect(copy.changed.delta(2)).toBe("+2");
     expect(copy.changed.delta(-2)).toBe("−2");

@@ -63,6 +63,9 @@ const {
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const TEMPLATE = process.env.PROBE_TEMPLATE_DECK ?? "a1111111-1111-1111-1111-111111111111";
 
+/** Column headings a run found on more than one line. The one hard failure here. */
+const crushedHeadings = [];
+
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
   { label: "desktop · 1300x900", width: 1300, height: 900 },
@@ -147,10 +150,35 @@ const readReview = (page) =>
         .filter((el) => el.className.includes?.("hidden md:flex"))
         .map((el) => el.innerText.replace(/\n/g, " "))
         .slice(0, 1),
-      headings: [...(columns?.querySelectorAll("h2") ?? [])].map((h) => ({
-        text: h.innerText,
-        visible: visible(h.closest("section") ?? h),
-      })),
+      headings: [...(columns?.querySelectorAll("h2") ?? [])].map((h) => {
+        // A flex item shrinks by default, so the note beside the heading used to
+        // squeeze `GOING OUT · 15` onto three lines. Lines rather than a pixel
+        // height: the figure that matters is how many rows of text the heading
+        // occupies, and that survives a font-size change.
+        //
+        // Counted off the text's own client rects, one per line box, rather than
+        // by dividing the box height by `getComputedStyle(...).lineHeight` — that
+        // property answers `normal` under a font stack that sets no length, and a
+        // division by `NaN` would report a healthy heading as unmeasurable.
+        const range = document.createRange();
+        range.selectNodeContents(h);
+        const rows = new Set(
+          [...range.getClientRects()]
+            .filter((r) => r.width > 0 && r.height > 0)
+            .map((r) => Math.round(r.top)),
+        );
+        const box = h.getBoundingClientRect();
+        return {
+          text: h.innerText,
+          visible: visible(h.closest("section") ?? h),
+          // The heading's own box, not its section's: below `md:` a column whose
+          // direction is already named by the segmented pair above it hides the
+          // heading while the section stays on screen, so a line count taken off
+          // the section would read 0 and look like a crush.
+          drawn: box.height > 0,
+          lines: box.height > 0 ? rows.size : null,
+        };
+      }),
       segments: buttons
         .filter((b) => b.hasAttribute("aria-pressed"))
         .map((b) => ({
@@ -534,8 +562,27 @@ try {
       } (expect ~100%)`,
     );
     for (const h of seen.headings) {
-      console.log(`  column heading: "${h.text}" ${h.visible ? "visible" : "HIDDEN"}`);
+      console.log(
+        `  column heading: "${h.text}" ${h.visible ? "visible" : "HIDDEN"} · ${
+          h.drawn ? `${h.lines} line(s)` : "not drawn"
+        }`,
+      );
     }
+    // Hugh, of `GOING OUT · 15` on this surface: "crushed into three stacked
+    // lines by the oversized adjacent note." The note lost a sentence and the
+    // heading gained `flex-none`, either of which alone would leave the other
+    // free to regress.
+    const crushed = seen.headings.filter((h) => h.drawn && h.lines !== null && h.lines > 1);
+    console.log(
+      `  headings on more than one line: ${
+        crushed.map((h) => `"${h.text}" on ${h.lines}`).join(", ") || "none"
+      } (expect none)`,
+    );
+    // The rest of this script reports figures for a reader to weigh. This one is
+    // an invariant with a single right answer, so it exits non-zero instead: a
+    // wrapped heading is the defect Hugh reported, and a line nobody reads is no
+    // guard against it coming back.
+    for (const h of crushed) crushedHeadings.push(`${label} · "${h.text}" on ${h.lines} lines`);
     console.log(
       `  segments: ${
         seen.segments.length === 0
@@ -796,4 +843,10 @@ try {
   }
   await pool.end();
   await browser.close();
+}
+
+if (crushedHeadings.length > 0) {
+  console.log(`\n########## FAIL · a column heading wrapped`);
+  for (const line of crushedHeadings) console.log(`  ${line}`);
+  process.exitCode = 1;
 }

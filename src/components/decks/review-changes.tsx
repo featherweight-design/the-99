@@ -297,8 +297,10 @@ function Column({
           phoneHeading ? "flex" : "hidden"
         } md:flex items-baseline justify-between gap-[10px] pb-[10px] mb-[14px] [border-bottom:1px_solid_var(--elevated)]`}
       >
+        {/* flex-none: a flex item shrinks by default, so a long note crushed the
+            heading into three stacked lines. */}
         <h2
-          className="font-mono text-[11px] uppercase tracking-[0.16em] m-0"
+          className="flex-none font-mono text-[11px] uppercase tracking-[0.16em] m-0"
           style={{ color: headingTone }}
         >
           {heading}

@@ -292,7 +292,7 @@ can be pulled. A count of nought is never drawn.
 | label text | — | `Coming in · 19` · `Going out · 17` |
 | right slot | — | mono `10px` `#6A6152` |
 | right slot text — in | — | `11 free · 5 sleeved · 3 to buy` (`review.groupInBreakdown`) |
-| right slot text — out | — | `all back in the pool on commit` — canvas; the copy module ships the longer `review.outNote(n)` |
+| right slot text — out | — | `all back in the pool on commit` — canvas; the copy module ships `review.outNote(n)`, which since **2026-09-13** is one sentence: `{it goes\|all {n} go} back in the pool when you commit.` The second sentence it used to carry explained a per-row toggle that does not exist, and crushed the heading beside it |
 
 ---
 
@@ -651,7 +651,7 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 | Count-chip background | canvas `#1E1A15` | Component notes' `--surface` (`#1A1713`); `#1E1A15` is in no brand ramp |
 | `Pull it` border | canvas `1px #3A3229` (`--border-strong`) | Component notes' `1px --border` |
 | `Pull it` padding | canvas `0 11px` | Component notes' `0 12px` |
-| Removes-column right slot | canvas `all back in the pool on commit` | the copy module's longer `review.outNote(n)` |
+| Removes-column right slot | canvas `all back in the pool on commit` | the copy module's `review.outNote(n)`, shortened to one sentence 2026-09-13 |
 | State numbering | **section-scoped** | any flat 1–45 reading — table B's 21–25 and table C's 21–25 are different states |
 
 ## Ambiguous or missing in the design (no value to verify against)
@@ -692,9 +692,11 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 
 1. **The lede.** Canvas: `Nothing here is a decision except the pulls. Tap any card to open it.
    Commit turns this into v3 and hands you the buy list.` Copy module `review.lede(version)`:
-   `Nothing here is a decision except the pulls. The list on the deck page is already this list
-   — this page exists to show you what it costs before you lock it in as v{n}.` Same first
-   sentence, different body, and the canvas's "Tap" is a touch verb on a 1180px frame.
+   `Nothing here is a decision except the pulls. The deck page already shows this list — this is
+   what it costs to lock in as v{n}.` Same first sentence, different body, and the canvas's
+   "Tap" is a touch verb on a 1180px frame. (**Amended 2026-09-13**: the shipped body dropped
+   `this page exists to show you what it costs`, which restated the sentence before it. Hugh's
+   copy ruling — see §Errata in the handoff README.)
 2. **Count-chip background.** Canvas `#1E1A15`; Component notes say `--surface`. `#1E1A15` is
    not in the brand ramp at all (it is also the canvas's browser-chrome plate).
 3. **Direction-header rule.** Canvas `border-bottom: 1px solid #2A241D` (the `--elevated`

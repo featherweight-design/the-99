@@ -227,10 +227,9 @@ describe("VersionDiff", () => {
   it("draws the initial arm for a v1 and fetches nothing", () => {
     const { container } = mount({ version: version({ number: 1 }), previous: null });
     expect(screen.getByText(copy.initialHeading)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: copy.initialBrowse(99) })).toHaveAttribute(
-      "href",
-      "/decks/deck_1",
-    );
+    // No link out: the rail draws on the deck page itself, so the only link this
+    // panel ever carried pointed at the page the reader was already on.
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
     expect(getVersionDiff).not.toHaveBeenCalled();
     expect(container.querySelector("[data-diff-pending]")).toBeNull();
   });
