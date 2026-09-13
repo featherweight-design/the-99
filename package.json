@@ -24,6 +24,7 @@
     "db:seed:games": "tsx scripts/seed-games.ts",
     "check:scryfall": "tsx scripts/check-scryfall-contract.ts",
     "check:manapool": "tsx scripts/check-manapool-contract.ts",
+    "check:shared": "node scripts/check-shared-imports.mjs",
     "db:build:index": "tsx scripts/build-commander-index.ts",
     "db:build:prose": "tsx scripts/generate-commander-prose.ts",
     "db:copy:prose": "tsx scripts/copy-commander-prose.ts",
