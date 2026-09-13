@@ -99,9 +99,25 @@ describe("setFilterCopy", () => {
     expect(setFilterCopy.countBadgeAria(3)).toBe("3 filters on");
   });
 
-  it("carries a rarity letter for every rarity it offers", () => {
-    for (const key of Object.keys(setFilterCopy.rarity.options)) {
-      expect(setFilterCopy.rarity.letters).toHaveProperty(key);
+  // The four letter buttons retired with addendum R2 §28: the trigger's two labels shipped
+  // in this file unused from the first round, which is evidence the trigger was the intent
+  // and the letters were the shortcut. The chip group in the phone sheet takes Title Case,
+  // because a chip is a control; the trigger's value form is lowercase, because the caption
+  // under it reads `042 · uncommon` in the same register.
+  it("labels the rarity trigger at rest and at a value", () => {
+    expect(setFilterCopy.rarity.all).toBe("Rarity · all");
+    expect(setFilterCopy.rarity.value("uncommon")).toBe("Rarity · uncommon");
+    expect(setFilterCopy.rarityPanel.triggerLabel).toBe(setFilterCopy.rarity.all);
+    // The mount passes lowercase option labels, because `FilterPanel` composes the
+    // trigger's accessible name from them and Title Case there breaks label-in-name.
+    expect(setFilterCopy.rarityPanel.triggerOne("uncommon"))
+      .toBe(setFilterCopy.rarity.value("uncommon"));
+  });
+
+  it("names every rarity it offers as a chip", () => {
+    for (const key of Object.keys(setFilterCopy.rarity.options) as
+      ("common" | "uncommon" | "rare" | "mythic")[]) {
+      expect(setFilterCopy.chip.rarity(key)).toBe(setFilterCopy.rarity.options[key]);
     }
   });
 });

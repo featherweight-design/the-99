@@ -23,13 +23,18 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { useSearchParams } from "next/navigation";
-import { ColorFilterRow, WUBRG } from "../collection/color-filter-row";
+import { ColourPips } from "../ui/colour-pips";
+import { FilterPanel } from "../ui/filter-panel";
+import { chassisCopy } from "../../lib/copy/filter-chassis";
+import { FilterChipPill, type FilterChip } from "../ui/filter-chassis";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { GhostButton } from "../ui/button";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { parseAsOf, type PriceFact } from "../../lib/decks/price";
 import {
-  applyFilters, parseFilters, RARITIES, serialiseFilters, type SetGridFilters,
+  applyFilters, EMPTY_FILTERS, parseFilters, RARITIES, serialiseFilters,
+  WUBRG, type SetGridFilters,
 } from "../../lib/sets/filters";
 import { sectionsOf, type Cell } from "../../lib/sets/completion";
 import { costToComplete } from "../../lib/sets/cost";
@@ -112,7 +117,6 @@ export function SetGridView(props: SetGridViewProps) {
   // mounted: crossing the breakpoint with it open left the desktop page scroll-locked and
   // trapped focus in a dialog nobody could see. Unmounted rather than hidden.
   const isDesktop = useIsDesktop();
-  const desktopRackRef = useRef<HTMLDivElement>(null);
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
   // a sheet the reader never reopened.
@@ -124,17 +128,29 @@ export function SetGridView(props: SetGridViewProps) {
 
   // The dialog hook returns focus to the trigger it saved, and after a crossing to desktop
   // that trigger is `md:hidden` — focus lands on a control nobody can see. Rather than
-  // tracking why focus moved, this asks the only question that matters: is it on something
-  // with no box? Runs after the unmount this breakpoint change causes.
-  useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      const active = document.activeElement as HTMLElement | null;
-      if (active && active !== document.body && active.getClientRects().length === 0) {
-        desktopRackRef.current?.focus();
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, [isDesktop]);
+  // tracking why focus moved, this asks the only question that matters: is what holds focus
+  // reachable? Runs after the unmount this breakpoint change causes.
+  //
+  // `document.body` counts as unreachable, which is the crossing in the OTHER direction:
+  // going to phone unmounts the rarity panel, and a focused subtree being removed drops
+  // focus to the body. Treating the body as "fine" lost the keyboard there entirely — the
+  // reader was inside a control, and the control's replacement is one tab away at most.
+  /**
+   * There is no focus rescue across the `md` crossing, deliberately.
+   *
+   * One lived here and was rewritten five times: it fired on a fresh load where the body
+   * holds focus; it fired long after a chip's × removed the control; it missed
+   * `hidden md:flex`, which stays connected while going invisible; and it never covered the
+   * phone sheet, which sits outside this container so `useDialogA11y` returns focus to a
+   * trigger the crossing has just hidden. Each fix was correct and uncovered the next hole,
+   * which is the shape of a mechanism guarding a case too narrow to be worth it: a reader
+   * resizing the window while focused inside the filter rack.
+   *
+   * No other route in this app rescues focus across a breakpoint. Left to the browser, as
+   * they leave it. If this ever needs solving it belongs in one place for all of them, not
+   * in thirty-five lines here.
+   */
+
   const filters = local ?? urlFilters;
 
   function setFilters(next: SetGridFilters) {
@@ -240,14 +256,44 @@ export function SetGridView(props: SetGridViewProps) {
     : manapoolAddDeckUrl(sending.map((c) => ({ name: c.name, quantity: 1 })));
 
 
-  const toggleIn = (list: string[], value: string) =>
-    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+  // Canonical WUBRG order, not click order. `serialiseFilters` writes the URL in WUBRG and
+  // the pips draw in WUBRG, so a list kept in click order left the collapsed chip speaking
+  // and drawing "Blue, White" while everything else beside it said "White, Blue" — until a
+  // navigation happened to re-parse the URL and quietly reorder it. `/decks`' own colour
+  // toggle canonicalises for the same reason.
+  const toggleIn = (list: string[], value: string) => {
+    const next = list.includes(value)
+      ? list.filter((v) => v !== value)
+      : [...list, value];
+    return WUBRG.filter((c) => next.includes(c));
+  };
 
   // Rarity is single-select. Two letters lit produced `r=common,mythic`, a union the
   // designed control cannot express and the reader cannot reach twice the same way.
   // Picking the lit one clears it, which is how "all" is reached.
   const pickRarity = (current: string[], value: string) =>
     (current.includes(value) ? [] : [value]);
+
+  // The radio pattern the sheet's group owes once it claims the role: arrows move focus AND
+  // the selection, wrapping at the ends, following `rack/availability-control.tsx`. Claiming
+  // `role="radio"` without this is worse than the toggles it replaced — it promises a
+  // keyboard contract and then does not honour it.
+  const rarityRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  // Which radio cleared the selection, so the off state's tab stop stays under the reader's
+  // finger rather than jumping to the first. Cleared whenever a value is chosen again.
+  const [offStopRarity, setOffStopRarity] = useState<number | null>(null);
+  const stepRarity = (from: number, dir: 1 | -1) => {
+    // Walks the ENABLED values only. Arrowing onto a zero-count rarity would select a
+    // value the desktop panel refuses and land the reader on an empty grid.
+    if (rarityEnabled.length === 0) return;
+    let next = from;
+    for (let i = 0; i < RARITIES.length; i++) {
+      next = (next + dir + RARITIES.length) % RARITIES.length;
+      if (!rarityOptions[next].disabled) break;
+    }
+    rarityRefs.current[next]?.focus();
+    setFilters({ ...filters, rarities: [RARITIES[next]] });
+  };
 
   // What the colour and rarity filters match, missing-only aside: the denominator behind
   // both the owns-all claim and its correction.
@@ -259,8 +305,145 @@ export function SetGridView(props: SetGridViewProps) {
   // `effective`, not `filters`: at 100% missing-only is dropped from what is applied, and
   // counting the raw value showed "1 filter on" with a Clear button for a filter that is
   // neither applied nor reachable.
+  //
+  // The BADGE counts only what the sheet holds (§28): missing-only sits on the phone row
+  // beside the badge, so counting it is the same fact twice in one glance.
+  // DIMENSIONS, not values. `c=W,U` is one colour filter, and counting its values put a `2`
+  // on `Filters` for a single control — and could exceed the chassis's three-dimension cap
+  // on a page that only has three dimensions to begin with.
   const filtersOn =
-    effective.colors.length + effective.rarities.length + (effective.missingOnly ? 1 : 0);
+    (effective.colors.length > 0 ? 1 : 0) + (effective.rarities.length > 0 ? 1 : 0);
+  // The sheet's Clear reads the RAW filters, not `effective`. At 100% missing-only is
+  // dropped from what is applied, but `m=1` can still be in the URL — a reader completes a
+  // set with it set — and gating Clear on `effective` left that parameter with no way out
+  // of the UI, ready to reactivate the moment the set stopped being complete.
+  const anyFilterOn =
+    filters.colors.length > 0 || filters.rarities.length > 0 || filters.missingOnly;
+
+  // The chip line, in DIMENSION order and never click order — a line that re-orders itself
+  // as you use it is a line you have to re-read. Colour collapses past one pip rather than
+  // printing one chip per hue.
+  // The chassis's own type, not a copy of its shape — the same reason the chip itself is
+  // `FilterChipPill` now. A re-declared shape is how this adapter drifts the next time a
+  // chip field is added.
+  const chips: FilterChip[] = [];
+  if (effective.colors.length === 1) {
+    const only = effective.colors[0];
+    chips.push({
+      key: `c-${only}`,
+      label: setFilterCopy.chip.colourOne(
+        chassisCopy.colour.names[only.toLowerCase() as "w" | "u" | "b" | "r" | "g"],
+      ),
+      onRemove: () => setFilters({ ...filters, colors: [] }),
+    });
+  } else if (effective.colors.length > 1) {
+    // The count is for the eye, the SWATCHES are beside it, and the NAMES are for the
+    // ear. §28's "never one chip per hue" forbids a chip per colour — not swatches inside
+    // the one chip, which is what `FilterChipPill`'s `dots` draws and what `/collection`
+    // and the commander rack both pass. Without them a sighted reader on a phone sees
+    // `3 colours` with the pips unmounted behind the sheet; without `spoken`, a screen
+    // reader hears the same count and has nowhere to go for the names.
+    const names = effective.colors
+      .map((c) => chassisCopy.colour.names[c.toLowerCase() as "w" | "u" | "b" | "r" | "g"]);
+    chips.push({
+      key: "c",
+      label: setFilterCopy.chip.colour(effective.colors.length),
+      spoken: names.join(", "),
+      dots: effective.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
+      onRemove: () => setFilters({ ...filters, colors: [] }),
+    });
+  }
+  if (effective.rarities.length > 0) {
+    const r = effective.rarities[0] as "common" | "uncommon" | "rare" | "mythic";
+    chips.push({
+      key: `r-${r}`,
+      label: setFilterCopy.chip.rarity(r),
+      onRemove: () => setFilters({ ...filters, rarities: [] }),
+    });
+  }
+  if (effective.missingOnly) {
+    chips.push({
+      key: "m",
+      label: setFilterCopy.chip.missingOnly,
+      onRemove: () => setFilters({ ...filters, missingOnly: false }),
+    });
+  }
+  const clearAll = () => setFilters(EMPTY_FILTERS);
+  // A filter that is SET but not APPLIED draws no chip, so the chip line alone would offer
+  // no way out of it. That happens exactly once: `m=1` still in the URL on a set the reader
+  // has completed, where `effective` drops missing-only and its control is gone too. Clear
+  // stays, because it is the only route left to a parameter that would start filtering
+  // again the moment the set stopped being complete.
+  //
+  // Named precisely rather than inferred from an empty chip line: `?m=1&c=W` on a complete
+  // set draws a White chip, so "no chips" was false and the hidden `m` had neither a toggle
+  // nor a Clear. This is the one filter this page can hold without applying, and this is
+  // the one condition under which it does.
+  const staleFilter = complete && filters.missingOnly;
+
+  // Per-row counts from the ONE filtered computation, so the panel never disagrees with
+  // the result line beside it. Rarity is excluded from its own counts — a panel whose rows
+  // read 0 for every value but the lit one tells the reader nothing about what picking a
+  // different one would do.
+  const rarityCounts = (() => {
+    const pool = applyFilters(
+      [...sections.base, ...sections.extras],
+      { ...effective, rarities: [] },
+    );
+    const counts = new Map<string, number>();
+    for (const c of pool) {
+      const r = (c.rarity ?? "").toLowerCase();
+      counts.set(r, (counts.get(r) ?? 0) + 1);
+    }
+    return counts;
+  })();
+
+  /**
+   * ONE options list, read by both mounts. The desktop panel derives a count and a
+   * disabled state from `rarityCounts`; the phone sheet used to offer every value
+   * regardless — so the same colour filter exposed different rarity choices at the two
+   * widths, and the sheet could send a reader to a zero-result state for a value the
+   * desktop panel declares unavailable. Two mounts re-deriving one rule is the same shape
+   * as the chip markup this PR stopped copying.
+   */
+  // Hues with no surviving cards under the OTHER filters — the shared pip component's own
+  // contract, which `/collection` also passes. Without it a rarity or missing-only filter
+  // left dead hues clickable while the rarity control correctly greyed its own zero values:
+  // the same rule applied at one control and not the one beside it. A LIT hue is never
+  // unavailable, or it could not be turned off.
+  const unavailableColours = WUBRG.filter((c) => {
+    if (effective.colors.includes(c)) return false;
+    return !applyFilters(
+      [...sections.base, ...sections.extras],
+      { ...effective, colors: [c] },
+    ).length;
+  });
+
+  const rarityOptions = RARITIES.map((r) => {
+    const count = rarityCounts.get(r) ?? 0;
+    return {
+      code: r,
+      count,
+      // A lit value is never disabled, or it could not be turned off.
+      disabled: count === 0 && !filters.rarities.includes(r),
+    };
+  });
+  const rarityEnabled = rarityOptions.filter((o) => !o.disabled).map((o) => o.code);
+  // The group's tab stop when nothing is checked: the first ENABLED value, or — when a
+  // colour combination leaves NO rarity with cards — the first radio regardless. A group
+  // with no tab stop is unreachable by keyboard, and "unreachable" is a worse answer than
+  // "reachable and every option announced unavailable", which is a state the reader can
+  // understand and back out of. `aria-disabled` is what makes that safe: every radio stays
+  // focusable, so this only decides where Tab lands, never whether focus can survive.
+  const firstEnabledRarity = Math.max(0, rarityOptions.findIndex((o) => !o.disabled));
+  // The saved stop, unless a later colour or missing-only change has since zeroed that
+  // rarity — a disabled radio holding the group's only tab stop is a tab stop that cannot
+  // be used, which is the same defect as having none.
+  const offStateStop =
+    offStopRarity !== null && !rarityOptions[offStopRarity]?.disabled
+      ? offStopRarity
+      : firstEnabledRarity;
+
 
   return (
     <div>
@@ -372,7 +555,17 @@ export function SetGridView(props: SetGridViewProps) {
             sheet. The desktop rack was previously mounted directly at every width, which
             put five 15px pips below the 44px target and wrapped the controls into the
             head. */}
-        <div className="mt-[10px] flex flex-wrap items-center gap-[8px]">
+        {/* Row 1 of three. The rack is three FIXED rows — controls, chips, result — and its
+            height never depends on THE FILTER STATE, which matters more here than on any
+            other route: this bar lives inside a sticky head, and every height change under
+            a reader's thumb moves the grid they are reading. `flex-nowrap`, because a
+            control landing on its own line is the same defect by another route.
+
+            Row 3 is absent on an unindexed set, which is not an exception to that: an
+            unindexed set has no cells in either section, so there is no count to state and
+            no grid beneath the head for a height change to move. The invariant is about the
+            rack not moving what the reader is reading, and there is nothing there to move. */}
+        <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
@@ -395,49 +588,143 @@ export function SetGridView(props: SetGridViewProps) {
             ) : null}
           </button>
 
-          {/* The colour and rarity racks are desktop-only; Missing-only is mounted ONCE
+          {/* The colour and rarity controls are desktop-only; Missing-only is mounted ONCE
               and shown at both widths, which is what keeps one control with one
-              accessible name in the document. */}
-          <ColorFilterRow
-            containerRef={desktopRackRef}
-            className="hidden md:flex"
-            selected={filters.colors}
-            onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
-          />
+              accessible name in the document.
 
-          <div className="hidden items-center gap-[4px] md:flex">
-            {RARITIES.map((r) => {
-              const on = filters.rarities.includes(r);
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  aria-pressed={on}
-                  aria-label={setFilterCopy.rarity.options[r]}
-                  onClick={() => setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) })}
-                  className={[
-                    "min-h-[44px] md:min-h-[32px] rounded-[6px] px-[9px] font-mono text-[11px] border",
-                    "hover:bg-[color:var(--elevated)]",
-                    on
-                      ? "text-[color:var(--accent)] border-[color:var(--accent)]"
-                      : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
-                  ].join(" ")}
-                >
-                  {setFilterCopy.rarity.letters[r]}
-                </button>
-              );
-            })}
+              The pips are the chassis's, mounted and never forked. The control they
+              replace drew a token square at `opacity .34-.40` when unlit, measuring
+              1.38:1; these are Scryfall's own full-colour symbols, undimmed, with a 2px
+              --accent ring as the entire lit treatment. A fork here is how six themes of
+              measurement get re-derived by hand. */}
+          {/* Layout only: `hidden md:flex` is the width gate, and the wrapper exists so the
+              pips sit as one flex item beside the trigger. It is deliberately not a focus
+              target — see the note above on why this route has no breakpoint rescue. */}
+          <div className="hidden shrink-0 md:flex">
+            <ColourPips
+              value={filters.colors}
+              unavailable={unavailableColours}
+              form="wide"
+              onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
+            />
           </div>
 
-          {complete ? null : <MissingOnlyToggle filters={filters} onChange={setFilters} />}
+          {/* Four values, single-select, with an off state — the chassis's own test makes
+              that a panel rather than a segmented run or four buttons.
 
-          {filtersOn > 0 ? (
-            <GhostButton
-              className="hidden md:inline-flex"
-              onClick={() => setFilters({ colors: [], rarities: [], missingOnly: false })}
+              `selectionMode="single"`, which is what the CONTROL is: `multi` would have
+              told assistive technology `aria-multiselectable="true"` and drawn a square
+              tick, promising a second value the caller then silently discards. The cost is
+              the desktop footer, which `single` drops — Design drew an `n of 4 on` beside a
+              `Clear rarity` there. The chip line carries the same removal one row down, and
+              a correct promise to a screen reader outranks a duplicated one to a mouse.
+
+              The off state is still reachable, because `onToggle` below returns an empty
+              selection when the lit value is picked again — which is how `all` is reached
+              and why this is not simply the panel's `single` contract as written. */}
+          {/* Mounted at `md`, which is this page's own switch and not the chassis frame's
+              1000. The chassis picks 1000 from `/collection`'s EIGHT controls summing to
+              987px; this row has THREE — pips, rarity, missing-only — and the probe
+              measures it unwrapped at 900 with two filters on. Following 1000 here would move the
+              sticky head's whole form for a band where nothing is wrong.
+
+              MOUNTED on the breakpoint, never CSS-hidden. `FilterPanel` holds its own open
+              state and picks popover or sheet off the same `useIsDesktop`: hidden with
+              `display:none` it would keep that state across a resize, put its mobile dialog
+              inside an invisible ancestor, and hand focus to a panel nobody can see. The
+              phone's rarity control is the chip group in the sheet, and this is the other
+              half of that one-control-per-width rule. */}
+          {isDesktop ? (
+            <FilterPanel
+              copy={setFilterCopy.rarityPanel}
+              searchable={false}
+              selectionMode="single"
+              widthPx={280}
+              // 44px rows, which is the chassis contract and not this mount's choice: the
+              // panel defaults desktop rows to 40, and `/decks` passes 44 for the same
+              // reason. ADDENDUM-STATES §4 states it too.
+              desktopRowMinPx={44}
+              footerStatus
+              options={rarityOptions.map((o) => ({
+                code: o.code,
+                // LOWERCASE, because `FilterPanel` composes the trigger's accessible name
+                // from this label while `triggerOne` only styles the visible text — so
+                // lowercasing in the copy alone announced `Uncommon` under a button reading
+                // `Rarity · uncommon`, which is the label-in-name breach (WCAG 2.5.3) this
+                // page just fixed on Clear. The sheet's chip group keeps Title Case from
+                // `rarity.options`, per §28's amendment 3: a chip is a control, and the
+                // trigger's value is a caption in the register of `042 · uncommon`.
+                label: setFilterCopy.rarity.options[o.code].toLowerCase(),
+                count: o.count,
+                disabled: o.disabled,
+              }))}
+              selected={filters.rarities}
+              onToggle={(code) =>
+                setFilters({ ...filters, rarities: pickRarity(filters.rarities, code) })}
+              onClear={() => setFilters({ ...filters, rarities: [] })}
+            />
+          ) : null}
+
+          {complete ? null : <MissingOnlyToggle filters={filters} onChange={setFilters} />}
+        </div>
+
+        {/* Row 2 — the chip line, present at rest rather than conditionally rendered. The
+            line IS the invariant that keeps the head's height constant; collapsing it is
+            the bug the three-row rule exists to forbid.
+
+            At desktop it can never reach two lines: three dimensions cap the widest
+            possible line at ~380px, so the chassis's one legitimate height change is
+            unreachable here. At phone the chips scroll horizontally and never wrap, and
+            Clear is outside that scroll — so the clipped item is a chip and never the way
+            out. */}
+        <div
+          data-set-chips
+          className="mt-[8px] flex items-center gap-[6px]"
+          style={{ minHeight: 22 }}
+        >
+          {/* Clear sits OUTSIDE the scrolling strip, which is how "the clipped item is a
+              chip and never Clear all filters" is actually delivered. Inside it, Clear is
+              the last flex item and a phone's overflow starts at the LEADING edge — so the
+              only way out of three filters was off-screen until the reader discovered
+              horizontal scrolling. Scroll the chips; keep the exit still. */}
+          {/* 44px tall at phone, and that is not spacing: `overflow-x-auto` makes the other
+              axis scroll too, so a 44px pseudo target centred in a 22px row is CLIPPED to
+              22 and the chip keeps only its small × box. The band gives the overlay
+              somewhere to be. Desktop wraps instead of scrolling and needs none of it. */}
+          <div className="flex min-w-0 flex-1 items-center gap-[6px] overflow-x-auto
+                          h-[44px] md:h-auto md:flex-wrap md:overflow-visible">
+          {chips.length === 0 ? (
+            <span
+              className="font-mono text-[11px] leading-[14px] py-[3px] whitespace-nowrap"
+              style={{ color: "var(--fg-faint)" }}
             >
-              {setFilterCopy.clear}
-            </GhostButton>
+              {chassisCopy.chips.none}
+            </span>
+          ) : (
+            chips.map((chip) => <FilterChipPill key={chip.key} chip={chip} />)
+          )}
+
+          </div>
+
+          {/* Past ONE active control only. At one filter the chip's own x and the lit
+              control beside it are both shorter routes off, and a third control there is
+              noise. Not a GhostButton: it was the only one in a row of 32px hairlines, and
+              the chassis's answer to "what should this button look like" is that it is not
+              a button on that row at all. */}
+          {chips.length > 1 || staleFilter ? (
+            <button
+              type="button"
+              onClick={clearAll}
+              aria-label={setFilterCopy.clearAllAria}
+              className="relative shrink-0 cursor-pointer border-0 bg-transparent p-0
+                         font-mono text-[11px] leading-[14px] underline whitespace-nowrap
+                         text-[color:var(--fg-muted)]
+                         after:absolute after:left-1/2 after:top-1/2 after:h-[44px]
+                         after:min-w-[44px] after:w-full after:-translate-x-1/2
+                         after:-translate-y-1/2 after:content-['']"
+            >
+              {chassisCopy.chips.clearAll}
+            </button>
           ) : null}
         </div>
 
@@ -445,50 +732,90 @@ export function SetGridView(props: SetGridViewProps) {
             controls at a 44px target. */}
         {sheetOpen && !isDesktop ? (
           <FilterSheet onClose={() => setSheetOpen(false)}>
+            {/* Pips lead every sheet in the app, and they are the chassis's pips here too —
+                a sheet that drew its own would be the fork §28 names. 44px is a real touch
+                target, which the `sheet` form is what provides. */}
             <p className="font-mono text-[10px] mb-[10px]" style={{ color: "var(--fg-faint)" }}>
               {setFilterCopy.colourLabel}
             </p>
-            <div className="mb-[16px] flex flex-wrap gap-[8px]">
-              {WUBRG.map((c) => {
-                const on = filters.colors.includes(c);
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={on}
-                    aria-label={setFilterCopy.colourAria(c)}
-                    onClick={() => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
-                    className={[
-                      "min-h-[44px] min-w-[44px] rounded-[8px] px-[12px] font-mono text-[13px] border",
-                      on
-                        ? "text-[color:var(--accent)] border-[color:var(--accent)]"
-                        : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
-                    ].join(" ")}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
+            <div className="mb-[16px]">
+              <ColourPips
+                value={filters.colors}
+                unavailable={unavailableColours}
+                form="sheet"
+                onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
+              />
             </div>
 
             <p className="font-mono text-[10px] mb-[10px]" style={{ color: "var(--fg-faint)" }}>
               {setFilterCopy.rarity.label}
             </p>
-            <div className="mb-[16px] flex flex-wrap gap-[8px]">
-              {RARITIES.map((r) => {
+            {/* A 44px chip group, not the desktop trigger: four short values is what a chip
+                group is for, and a panel behind a panel is two dialogs deep. Wrapping to
+                two rows is allowed HERE and nowhere else — a sheet may change height, the
+                control row inside the sticky head may not. */}
+            {/* A RADIOGROUP, because the control holds one value. As independent
+                `aria-pressed` toggles it told assistive technology four things could be on
+                at once while `pickRarity` silently allowed one — the same mismatch the
+                desktop mount fixed by taking the panel's `single` mode. Re-picking the
+                checked one still clears it, which is how `all` is reached here too, and is
+                why these are not plain radios in a form. */}
+            <div
+              role="radiogroup"
+              aria-label={setFilterCopy.rarity.label}
+              className="mb-[16px] flex flex-wrap gap-[8px]"
+            >
+              {rarityOptions.map(({ code: r, disabled }, i) => {
                 const on = filters.rarities.includes(r);
                 return (
                   <button
                     key={r}
+                    ref={(node) => { rarityRefs.current[i] = node; }}
                     type="button"
-                    aria-pressed={on}
+                    role="radio"
+                    aria-checked={on}
+                    // The same zero-count rule the desktop panel applies, and the same
+                    // MECHANISM: `aria-disabled` with pointer events off, never the
+                    // `disabled` attribute. `FilterPanel` does it that way and this group
+                    // spent three rounds proving why — a real `disabled` makes the browser
+                    // drop focus the instant a value is cleared, so every route into that
+                    // state needed its own focus rescue and each rescue missed a case.
+                    // Unfocusable elements are the problem; this keeps them focusable.
+                    aria-disabled={disabled || undefined}
                     aria-label={setFilterCopy.rarity.options[r]}
-                    onClick={() => setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) })}
+                    // Roving: the checked value is the group's single tab stop, and with
+                    // none checked the first is — `all` is a state this group can be in,
+                    // and a group with no tab stop cannot be reached by keyboard at all.
+                    // The off state's tab stop is whichever radio the reader last used to
+                    // reach it — moving it to the first radio while focus sits on another
+                    // makes the next Tab skip the group entirely.
+                    tabIndex={on || (filters.rarities.length === 0 && i === offStateStop)
+                      ? 0
+                      : -1}
+                    onClick={() => {
+                      // Zero-count values never toggle, by pointer or by key — the same
+                      // guard `FilterPanel.toggle` applies. No focus move afterwards:
+                      // nothing here becomes unfocusable, so nothing strands.
+                      if (disabled) return;
+                      const next = pickRarity(filters.rarities, r);
+                      setOffStopRarity(next.length === 0 ? i : null);
+                      setFilters({ ...filters, rarities: next });
+                    }}
+                    onKeyDown={(e) => {
+                      const dir = e.key === "ArrowRight" || e.key === "ArrowDown"
+                        ? 1
+                        : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+                      if (dir === 0) return;
+                      e.preventDefault();
+                      stepRarity(i, dir);
+                    }}
                     className={[
                       "min-h-[44px] rounded-[8px] px-[14px] text-[13px] border",
-                      on
-                        ? "text-[color:var(--accent)] border-[color:var(--accent)]"
-                        : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
+                      disabled
+                        ? "pointer-events-none opacity-[0.42] text-[color:var(--fg-locked)] border-[color:var(--border)]"
+                        : on
+                          ? "text-[color:var(--accent)] border-[color:var(--accent)]"
+                          : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
                     ].join(" ")}
                   >
                     {setFilterCopy.rarity.options[r]}
@@ -498,10 +825,8 @@ export function SetGridView(props: SetGridViewProps) {
             </div>
 
             <div className="flex items-center gap-[10px]">
-              <GhostButton
-                onClick={() => setFilters({ colors: [], rarities: [], missingOnly: false })}
-              >
-                {setFilterCopy.clear}
+              <GhostButton onClick={clearAll} disabled={!anyFilterOn}>
+                {chassisCopy.chips.clearAll}
               </GhostButton>
               <button
                 type="button"
@@ -515,15 +840,28 @@ export function SetGridView(props: SetGridViewProps) {
           </FilterSheet>
         ) : null}
 
-        {/* No result line while the catalog is unindexed: every cell falls out of both
-            sections, so the summary would read "0 cells · 0 yours, 0 missing" beside an
-            empty state that correctly says the set has not been indexed. */}
+        {/* Row 3, and the BOX is unconditional even though the sentence is not — which is
+            what makes "three rows, always all three" true rather than argued. No result
+            line while the catalog is unindexed: every cell falls out of both sections, so
+            the summary would read "0 cells · 0 yours, 0 missing" beside an empty state
+            correctly saying the set has not been indexed. But a set that becomes indexed
+            under a visible sticky head would otherwise grow the head by a line. */}
+        {/* TWO lines' worth at phone, one at desktop. `minHeight: 16` was a minimum, and
+            the missing-only line — "N missing · numbers skip, because the cards you own are
+            hidden" — wraps in 358px of phone content, so toggling that filter grew row 3
+            and moved the grid under the reader's thumb: the exact motion the fixed-height
+            rule exists to prevent, arriving through the row meant to guarantee it. Desktop
+            has 1112px and never wraps. */}
+        <div className="mt-[8px] min-h-[32px] md:min-h-[16px]" data-set-result>
         {sections.indexed ? (
         <p
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          className="mt-[8px] font-mono text-[11px]"
+          // `leading-[16px]` stated rather than inherited, for the same reason the chassis
+          // states its own: Tailwind's 1.5 on 11px is 16.5, so two lines are 33 and no
+          // whole-number reserve can cover them. At 16 the wrapped line is exactly 32.
+          className="font-mono text-[11px] leading-[16px]"
           style={{ color: "var(--fg-muted)" }}
         >
           {effective.missingOnly
@@ -553,6 +891,7 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
         </p>
         ) : null}
+        </div>
       </div>
 
       {!sections.indexed ? (
@@ -586,7 +925,7 @@ export function SetGridView(props: SetGridViewProps) {
           // Turns missing-only off and keeps the rest: the promised correction is "show
           // the ones you DO own that match", not "discard what you filtered to".
           onShowAll={() => setFilters({ ...filters, missingOnly: false })}
-          onClearAll={() => setFilters({ colors: [], rarities: [], missingOnly: false })}
+          onClearAll={clearAll}
         />
       ) : (
         <>
@@ -778,7 +1117,7 @@ function ZeroResults({
         <GhostButton onClick={missingOnly ? onShowAll : onClearAll}>
           {missingOnly
             ? setPageCopy.zeroResults.showAll(ownedCount)
-            : setPageCopy.zeroResults.clear}
+            : chassisCopy.chips.clearAll}
         </GhostButton>
       </div>
     </EmptyState>

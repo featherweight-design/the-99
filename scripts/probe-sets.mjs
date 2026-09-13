@@ -178,11 +178,38 @@ async function run() {
     // Pick a set from the reader's own index rather than hardcoding one, so the probe
     // works against any fixture.
     await page.goto(`${BASE}/collection/sets`, { waitUntil: "networkidle" });
+    // Prefer an INCOMPLETE set: a complete one drops missing-only from what it applies, so
+    // the phone fixed-row check below cannot see the wrapping missing-only line and would
+    // skip. Picking the first link regardless is how that check went untested.
     const code = SET ?? await page.evaluate(() => {
-      const link = document.querySelector('a[href^="/collection/sets/"]');
-      return link ? link.getAttribute('href').split('/').pop() : null;
+      const rows = [...document.querySelectorAll('a[href^="/collection/sets/"]')];
+      // Read the RATIO out of the row's accessible name — `setsIndexCopy.row.ratioAria`
+      // renders "you have 62 of 276 in the base run", and `zeroAria` renders "none of 276".
+      // Neither ever says "complete", so a word match was true for every row and picked the
+      // first one regardless — the bug this selection was added to fix.
+      const incomplete = rows.find((a) => {
+        const label = a.getAttribute("aria-label") ?? "";
+        if (/you have none of \d+/.test(label)) return true;
+        const m = label.match(/you have (\d+) of (\d+) in the base run/);
+        return m !== null && Number(m[1]) < Number(m[2]);
+      });
+      // The fallback must still be INDEXED: an unindexed row's label carries no ratio at
+      // all, and that page draws no cells — `waitForCells` would time out on a fixture the
+      // probe chose for itself while a usable set sat further down the list.
+      const indexed = rows.find((a) =>
+        /you have (none of \d+|\d+ of \d+) in the base run/.test(a.getAttribute("aria-label") ?? ""));
+      // No `?? rows[0]`: an unindexed page draws no cells, so falling back to one makes
+      // `waitForCells` time out instead of saying the index had no usable fixture.
+      const link = incomplete ?? indexed ?? null;
+      return link ? link.getAttribute("href").split("/").pop() : null;
     });
-    if (!code) throw new Error("No set to probe: the index listed none and PROBE_SET was unset.");
+    if (!code) {
+      throw new Error(
+        "No set to probe: the index listed no INDEXED set (a row whose accessible name "
+        + "carries a base-run ratio), and PROBE_SET was unset. An unindexed page draws no "
+        + "cells, so probing one would time out rather than report this.",
+      );
+    }
 
     // The index row, while we are on it (addendum R2 §30). The extras figure ranks UNDER
     // the base ratio rather than trailing a code and a year, and takes --fg-muted — which
@@ -493,6 +520,173 @@ async function run() {
       `${phoneRarity} visible rarity captions`,
     );
 
+    // The rack (addendum R2 §28). Its height must not depend on the filter state — it lives
+    // inside a sticky head — and an unlit pip must carry no opacity. Both are resolved-style
+    // questions; neither is answerable in JSDOM.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const rackAt = async (query) => {
+      await page.goto(`${BASE}/collection/sets/${code}${query}`, { waitUntil: "networkidle" });
+      // The RACK, not the cells: a filtered state can legitimately render the zero page,
+      // which has no card buttons at all, and waiting for cells there would time out and
+      // report a layout failure for a correct empty result.
+      await page.waitForSelector("[data-set-chips]", { timeout: 20_000 });
+      return page.evaluate(() => {
+        const chipRow = document.querySelector("[data-set-chips]");
+        if (!chipRow) return null;
+        // The RACK's rows, not the whole sticky head. `CostStrip` is still inside that head
+        // and adds a pricing or staleness line as the filtered set changes — real,
+        // deferred to the phone-head PR where the strip becomes a fixed row, and until then
+        // measuring the head here would fail this check for valid data. The rack's own
+        // three rows are what §28 promises are fixed, and they are what this measures.
+        const controls = chipRow.previousElementSibling;
+        const result = document.querySelector("[data-set-result]");
+        // All THREE, or nothing. Summing whatever happened to be present let the check
+        // report equal heights while measuring two rows — the invariant is "three rows,
+        // always all three", so a missing row is the failure, not a smaller sum.
+        const rows = [controls, chipRow, result];
+        const rackHeight = rows.every(Boolean)
+          ? rows.reduce((sum, el) => sum + el.getBoundingClientRect().height, 0)
+          : null;
+        return {
+          rowsFound: rows.filter(Boolean).length,
+          rack: rackHeight === null ? null : Math.round(rackHeight),
+          chips: chipRow.querySelectorAll("span > button").length,
+          // AVAILABLE pips only. `ColourPips` dims an `aria-disabled` hue to .42 by its own
+          // contract, so including them made this check report the dimming defect it was
+          // written to catch on a set that simply lacks a colour.
+          pipOpacities: [...document.querySelectorAll('[role="switch"]')]
+            .filter((el) => el.getClientRects().length > 0)
+            .filter((el) => el.getAttribute("aria-disabled") !== "true")
+            .map((el) => getComputedStyle(el).opacity),
+        };
+      });
+    };
+    // 900px too: this page switches form at `md` (768) while the chassis frame switches at
+    // 1000, so the band between them shows the wide inline controls. Whether that wraps is
+    // the only question that matters, and it is measurable.
+    const narrowDesktop = await (async () => {
+      await page.setViewportSize({ width: 900, height: 900 });
+      await page.goto(`${BASE}/collection/sets/${code}?c=W&r=rare`, { waitUntil: "networkidle" });
+      await page.waitForSelector("[data-set-chips]", { timeout: 20_000 });
+      return page.evaluate(() => {
+        const row = document.querySelector("[data-chassis-row], [class*='flex-nowrap']");
+        if (!row) return null;
+        const kids = [...row.children].filter((c) => c.getClientRects().length > 0);
+        const tallest = Math.max(...kids.map((c) => c.getBoundingClientRect().height));
+        return {
+          wrapped: row.getBoundingClientRect().height > tallest + 2,
+          rowHeight: Math.round(row.getBoundingClientRect().height),
+          tallest: Math.round(tallest),
+        };
+      });
+    })();
+    failures += !report(
+      "the control row does not wrap at 900, between this page's md and the chassis's 1000",
+      narrowDesktop !== null && !narrowDesktop.wrapped,
+      narrowDesktop === null
+        ? "no control row found"
+        : `row ${narrowDesktop.rowHeight}px against a tallest child of ${narrowDesktop.tallest}px`,
+    );
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    // `null === null` is the trap round 36's own fix walked into: `rackAt` returns a null
+    // rack when a row is missing, so comparing three states could pass by all three being
+    // absent. Every comparison goes through here, which requires the measurements to exist
+    // before it will call them equal.
+    const rackHeightsAgree = (label, states) => {
+      const missing = states.filter((st) => st === null || st.rack === null);
+      if (missing.length > 0) {
+        return report(label, false,
+          `${missing.length} of ${states.length} states could not be measured — a rack row `
+          + "was absent, which is the finding rather than a matching height");
+      }
+      const heights = states.map((st) => st.rack);
+      return report(label, new Set(heights).size === 1, heights.map((h) => `${h}px`).join(", "));
+    };
+
+    const rest = await rackAt("");
+    const one = await rackAt("?c=W");
+    // Three ACTIVE dimensions, which a complete set cannot have: at 100% the page drops
+    // missing-only from what it applies, and its control with it, so `m=1` draws no chip
+    // there by design. Asserting three against the first set in the index would report a
+    // failure for correct behaviour on a fixture that happens to be finished.
+    const three = await rackAt("?c=W&r=rare&m=1");
+    // Read off a STRUCTURE the page maintains, not off copy: the first attempt grepped for
+    // sentences this page has never rendered, so it always answered false and the check it
+    // guards would have failed on the fixture it exists to allow. At 100% the page removes
+    // the missing-only control, because the base run has nothing left to hide — the absence
+    // of that control IS completeness, and it is the same fact `effective` is derived from.
+    const setIsComplete = await page.evaluate(
+      () => document.querySelectorAll('button[aria-label^="Showing "]').length === 0,
+    );
+    if (rest === null) {
+      failures += !report("the chip row is on the page", false, "no [data-set-chips]");
+    } else {
+      failures += !rackHeightsAgree(
+        "the rack's three rows do not move with the filter state",
+        [rest, one, three],
+      );
+      failures += !report(
+        "no unlit pip is dimmed — the shipped control's 1.38:1 is what this replaces",
+        rest.pipOpacities.length > 0 && rest.pipOpacities.every((o) => Number(o) === 1),
+        rest.pipOpacities.length === 0
+          ? "every hue is unavailable on this set — no available pip to measure"
+          : `${rest.pipOpacities.length} available: ${rest.pipOpacities.join(", ")}`,
+      );
+      failures += !report(
+        setIsComplete
+          ? "two filters on draw two chips (complete set: missing-only is not applied)"
+          : "three filters on draw three chips",
+        three.chips === (setIsComplete ? 2 : 3),
+        `${three.chips} chip removals`,
+      );
+    }
+
+    // The head's height at PHONE too, which is where it was actually moving: the
+    // missing-only result line wraps in 358px, so toggling that filter grew row 3 and the
+    // desktop-only check above never saw it.
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phoneRest = await rackAt("");
+    const phoneMissing2 = await rackAt("?m=1");
+    const phoneThree = await rackAt("?c=W&r=rare&m=1");
+    if (phoneRest === null) {
+      // Not a skip. The desktop path treats a missing rack as a failure and this silently
+      // returned a green run without measuring the phone invariant at all — the seventh
+      // instance of this class on this PR, in the code written last round to close it.
+      failures += !report(
+        "the phone rack is present to measure",
+        false,
+        "no [data-set-chips] at 390px, so the phone fixed-height invariant went unmeasured",
+      );
+    } else {
+      // `?m=1` on a COMPLETE set renders identically to rest — the page drops missing-only
+      // from what it applies — so on such a fixture this cannot see the wrapping
+      // missing-only line it is named for. SKIPPED rather than passed: a check that cannot
+      // fail on the fixture it ran against has measured nothing, and reporting it green
+      // is the failure mode this whole file exists to avoid.
+      if (setIsComplete) {
+        // A PREREQUISITE the probe could not meet, not a passing check. It selects an
+        // incomplete set when one exists, so reaching here means the fixture has none —
+        // which the run has to say, or the phone height invariant silently goes untested.
+        failures += !report(
+          "an incomplete set was available to test the phone missing-only wrap",
+          false,
+          "every set in this collection is complete — `?m=1` is never applied, so the "
+            + "wrapping result line cannot be measured. Probe a collection with one.",
+        );
+      } else {
+        failures += !rackHeightsAgree(
+          "the phone rack's three rows do not move either",
+          [phoneRest, phoneMissing2, phoneThree],
+        );
+      }
+    }
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
     const phoneControls = await page.evaluate(() => {
       const visible = (el) => el.getClientRects().length > 0;
       const byName = (re) => [...document.querySelectorAll("button")]
@@ -502,8 +696,11 @@ async function run() {
       return {
         filtersTrigger: byName(/^Filters$/).length,
         barePips: pips.length,
-        smallestTarget: Math.min(99, ...byName(/Showing (only|every)/)
-          .map((b) => Math.round(b.getBoundingClientRect().height))),
+        // The Filters trigger counts too: on a complete set the missing-only button is
+        // intentionally absent, and `Math.min(99, ...[])` then returned the sentinel and
+        // passed the 44px check having measured nothing at all.
+        targets: [...byName(/Showing (only|every)/), ...byName(/^Filters/)]
+          .map((b) => Math.round(b.getBoundingClientRect().height)),
       };
     });
     failures += !report(
@@ -512,9 +709,11 @@ async function run() {
       `Filters triggers ${phoneControls.filtersTrigger}, exposed pips ${phoneControls.barePips}`,
     );
     failures += !report(
-      "the phone's visible filter control clears the 44px target",
-      phoneControls.smallestTarget >= 44,
-      `smallest ${phoneControls.smallestTarget}px`,
+      "the phone's visible filter controls clear the 44px target",
+      phoneControls.targets.length > 0 && Math.min(...phoneControls.targets) >= 44,
+      phoneControls.targets.length === 0
+        ? "no phone filter control found to measure — the check would have passed empty"
+        : `${phoneControls.targets.length} measured, smallest ${Math.min(...phoneControls.targets)}px`,
     );
 
     console.log(failures === 0 ? "\nAll checks passed.\n" : `\n${failures} check(s) failed.\n`);

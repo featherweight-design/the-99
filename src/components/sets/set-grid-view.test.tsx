@@ -59,9 +59,35 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
   );
 }
 
+/**
+ * The rarity trigger is MOUNTED on the breakpoint rather than CSS-hidden — `FilterPanel`
+ * holds its own open state and picks popover or sheet off the same hook, so hiding it with
+ * `display:none` would keep that state across a resize. JSDOM reports no width, so a test
+ * that wants the desktop control has to say so.
+ */
+function stubDesktop(wide: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: wide, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    }),
+  );
+}
+
+/**
+ * Rarity is a trigger and a panel since addendum R2 §28, not four letter buttons: four
+ * values, single-select, with an off state is the chassis's own test for a panel dimension.
+ * So a test that wants a rarity opens the trigger first.
+ */
+function pickRarity(label: string) {
+  fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${label.toLowerCase()},`, "i") }));
+}
+
 const replaceState = vi.spyOn(window.history, "replaceState");
 
 beforeEach(() => {
+  vi.unstubAllGlobals();
   search = "";
   replaceState.mockClear();
   openCard.mockClear();
@@ -356,9 +382,18 @@ describe("SetGridView — phone and desktop are one document", () => {
   });
 
   it("puts the filters behind a sheet on the phone, with a count badge", () => {
-    search = "c=W&m=1";
+    search = "c=W&r=rare";
     view([p("1"), p("2")], ["1"]);
     expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
+  });
+
+  // Addendum R2 §28: the badge counts DIMENSIONS only. Missing-only is a control on the
+  // row beside the badge, so counting it states the same fact twice in one glance — and it
+  // put a `1` on `Filters` with nothing behind `Filters`.
+  it("leaves missing-only out of the badge, which sits beside it", () => {
+    search = "m=1";
+    view([p("1"), p("2")], ["1"]);
+    expect(screen.queryByRole("button", { name: /filter(s)? on/ })).toBeNull();
   });
 
   it("keeps the cost strip when the filters match nothing", () => {
@@ -370,9 +405,10 @@ describe("SetGridView — phone and desktop are one document", () => {
   });
 
   it("treats rarity as single select rather than a union", () => {
+    stubDesktop(true);
     search = "r=common";
     view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
-    fireEvent.click(screen.getByRole("button", { name: "Rare" }));
+    pickRarity("Rare");
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?r=rare");
   });
 
@@ -434,6 +470,7 @@ describe("SetGridView — the phone filter sheet is a real dialog", () => {
 
 describe("SetGridView — the URL wins over a local override", () => {
   it("adopts filters the reader navigated to with Back", () => {
+    stubDesktop(true);
     // The local override is keyed on the URL it wrote. Without that key, Back changed the
     // query string while the grid went on rendering the filters just navigated away from.
     const { rerender } = render(
@@ -451,7 +488,7 @@ describe("SetGridView — the URL wins over a local override", () => {
         staleAsOf={null}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Rare" }));
+    pickRarity("Rare");
     expect(screen.getAllByRole("button", { name: /not in your collection/ })).toHaveLength(1);
 
     // Back to a genuinely different URL. (Setting it to the same string would not be a
@@ -588,5 +625,675 @@ describe("SetGridView — the cell forwards its full-size art", () => {
         scryfallId: "s-1",
       },
     );
+  });
+});
+
+// Addendum R2 §28 — the rack conforms to the filter chassis. Every state from
+// ADDENDUM-STATES §1-5, and what each must NOT do, which is half of what the file says.
+describe("SetGridView — the rack, chassis-conformant", () => {
+  const chips = () => document.querySelector("[data-set-chips]") as HTMLElement;
+  // The visible text: a collapsed colour chip splits its count (aria-hidden) from its
+  // spoken names (sr-only), so read the aria-hidden half where one exists.
+  const chipLabels = () =>
+    [...chips().querySelectorAll("span")]
+      .filter((el) => el.querySelector("button"))
+      .map((el) => {
+        // The aria-hidden half that has TEXT: the swatch strip is aria-hidden too, and it
+        // comes first.
+        const shown = [...el.querySelectorAll('[aria-hidden="true"]')]
+          .find((n) => (n.textContent ?? "").trim() !== "");
+        return (shown ? shown.textContent : el.textContent?.replace("×", ""))?.trim();
+      });
+
+  // ——— 1 · Rest ———
+  it("prints the rest line rather than collapsing row 2", () => {
+    view([p("1"), p("2")], ["1"]);
+    expect(chips()).toBeInTheDocument();
+    expect(screen.getByText("No filters on")).toBeInTheDocument();
+  });
+
+  it("offers no Clear at rest", () => {
+    view([p("1"), p("2")], ["1"]);
+    expect(screen.queryByRole("button", { name: /Clear all filters/ })).toBeNull();
+  });
+
+  // The whole reason the line exists: this bar is inside a sticky head, and a height that
+  // changed with the filter state would move the grid under the reader's thumb.
+  it("reserves the chip row's height whether or not a chip is in it", () => {
+    view([p("1"), p("2")], ["1"]);
+    expect(chips().style.minHeight).toBe("22px");
+  });
+
+  // ——— 2 · One filter on ———
+  it("shows the chip but no Clear at one filter, where two shorter routes already exist", () => {
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    expect(chipLabels()).toEqual(["Rare"]);
+    expect(screen.queryByRole("button", { name: /Clear all filters/ })).toBeNull();
+  });
+
+  // ——— 3 · Several filters on ———
+  it("orders chips by dimension, never by click order", () => {
+    search = "m=1&r=rare&c=W";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    expect(chipLabels()).toEqual(["White", "Rare", "Missing only"]);
+  });
+
+  it("collapses colour past one pip rather than drawing a chip per hue", () => {
+    search = "c=W,U,B";
+    view([p("1"), p("2")], []);
+    expect(chipLabels()).toContain("3 colours");
+    expect(chipLabels()).not.toContain("White");
+  });
+
+  it("offers Clear all filters past one active control", () => {
+    search = "m=1&c=W";
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+  });
+
+  it("clears every dimension from that one control", () => {
+    search = "m=1&c=W";
+    view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("removes one dimension from a chip's own ×", () => {
+    search = "m=1&c=W";
+    view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter: White" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?m=1");
+  });
+
+  // ——— 4 · The rarity panel ———
+  it("mounts rarity as a trigger, not four letter buttons", () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: /Filter by rarity/ })).toBeInTheDocument();
+    for (const letter of ["C", "U", "R", "M"]) {
+      expect(screen.queryByRole("button", { name: letter })).toBeNull();
+    }
+  });
+
+  it("carries no search field: four values have nothing to search", () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    const boxes = screen.queryAllByRole("searchbox");
+    expect(boxes.filter((b) => /rarit/i.test(b.getAttribute("aria-label") ?? ""))).toHaveLength(0);
+  });
+
+  // Single-select, and picking the lit value is how `all` is reached — the panel's own
+  // `single` mode has no off state, so the rule is the caller's.
+  it("replaces the lit value rather than unioning, and clears when picked again", () => {
+    stubDesktop(true);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    pickRarity("Rare");
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("counts its rows off the same filtered computation the result line reads", () => {
+    stubDesktop(true);
+    // One rare and two commons; with no other filter on, the rows say so.
+    view([
+      p("1", { rarity: "rare" }), p("2", { rarity: "common" }), p("3", { rarity: "common" }),
+    ], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    expect(screen.getByRole("option", { name: /^rare, 1 cell/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /^common, 2 cells/ })).toBeInTheDocument();
+  });
+
+  // ——— The pips ———
+  it("mounts the chassis pips rather than a dimmed token square", () => {
+    stubDesktop(true);
+    // One card of every hue, so no pip is UNAVAILABLE: the chassis dims those at .42 by
+    // its own contract, and this test is about the old unlit-but-available dimming that
+    // measured 1.49:1.
+    const { container } = view(
+      ["W", "U", "B", "R", "G"].map((c, i) => p(String(i + 1), { colorIdentity: [c] })),
+      [],
+    );
+    const pips = [...container.querySelectorAll<HTMLElement>('[role="switch"]')];
+    expect(pips.length).toBeGreaterThanOrEqual(5);
+    // An unlit pip carries no opacity, no tint and no rim — the dimming is exactly what
+    // the shipped control got wrong, at 1.38:1.
+    for (const pip of pips) {
+      expect(pip.style.opacity).toBe("");
+      expect(pip.className).not.toMatch(/opacity-/);
+    }
+  });
+
+  it("names each pip by its colour, never by its letter", () => {
+    // Stubbed deliberately: JSDOM applies no CSS, so `hidden md:flex` hides nothing and
+    // this would pass at either width by accident rather than by testing the desktop rack.
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    expect(screen.getAllByRole("switch", { name: "White" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("switch", { name: "Filter by W" })).toBeNull();
+  });
+});
+
+// Review round 1 on the rack: three states that are reachable and were not covered.
+describe("SetGridView — the rack's edges", () => {
+  it("keeps the sheet's Clear live for a stale m=1 on a complete set", () => {
+    // At 100% missing-only is dropped from what is APPLIED, but the parameter can still be
+    // in the URL — a reader completes a set with it set. Gating Clear on the applied value
+    // left it with no way out of the UI.
+    search = "m=1";
+    view([p("1")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const clear = screen.getAllByRole("button", { name: /Clear all filters/ })
+      .find((b) => b.closest('[role="dialog"]'));
+    expect(clear).toBeDefined();
+    expect(clear).not.toBeDisabled();
+    fireEvent.click(clear as HTMLElement);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  // The desktop trigger is mounted on the breakpoint rather than CSS-hidden, so it cannot
+  // keep an open state across a resize, hide its mobile dialog inside a display:none
+  // ancestor, or hold focus in a panel nobody can see.
+  it("mounts the rarity trigger only at desktop", () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: /Filter by rarity/ })).toBeInTheDocument();
+  });
+
+  it("does not mount it at phone, where the sheet's chip group is the control", () => {
+    stubDesktop(false);
+    view([p("1"), p("2")], []);
+    expect(screen.queryByRole("button", { name: /Filter by rarity/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getByRole("radio", { name: "Rare" })).toBeInTheDocument();
+  });
+});
+
+// The control is single-select, so it must SAY single-select. `multi` promised assistive
+// technology a second value the caller silently discards.
+describe("SetGridView — the rarity panel's semantics", () => {
+  it("never announces itself as multi-selectable", () => {
+    stubDesktop(true);
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    const list = screen.getByRole("listbox", { name: "Filter by rarity" });
+    expect(list).not.toHaveAttribute("aria-multiselectable", "true");
+  });
+
+  it("still reaches `all` by picking the lit value again", () => {
+    stubDesktop(true);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    pickRarity("Rare");
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+});
+
+// Review round 2 on the rack.
+describe("SetGridView — the badge counts dimensions", () => {
+  it("counts a multi-pip colour selection once", () => {
+    search = "c=W,U";
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: /1 filter on/ })).toBeInTheDocument();
+  });
+
+  it("counts colour and rarity as two", () => {
+    search = "c=W,U,B&r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    expect(screen.getByRole("button", { name: /2 filters on/ })).toBeInTheDocument();
+  });
+
+});
+
+// Review round 3 on the rack. A filter that is SET but not APPLIED draws no chip, so the
+// chip line alone would offer no way out of it — which happens exactly once, and is the
+// desktop half of the same defect the sheet's Clear had.
+describe("SetGridView — a stale filter a complete set does not apply", () => {
+  it("keeps Clear on the chip line with m=1 on a completed set", () => {
+    search = "m=1";
+    view([p("1")], ["1"]);
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+  });
+
+  it("removes the parameter when it is used", () => {
+    search = "m=1";
+    view([p("1")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("still shows no Clear when nothing at all is on", () => {
+    view([p("1")], ["1"]);
+    expect(screen.queryByRole("button", { name: "Clear all filters" })).toBeNull();
+  });
+});
+
+// Review round 4: the chip row promised "the clipped item is a chip and never Clear", and
+// nothing delivered it — Clear was the last item inside the scrolling strip, and a phone's
+// overflow starts at the LEADING edge, so the only way out of three filters sat off-screen.
+describe("SetGridView — Clear is not inside the scrolling strip", () => {
+  it("scrolls the chips and leaves Clear outside that scroll", () => {
+    search = "m=1&r=rare&c=W";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    const scroller = row.querySelector(".overflow-x-auto") as HTMLElement;
+    const clear = screen.getByRole("button", { name: "Clear all filters" });
+    expect(scroller).not.toBeNull();
+    expect(scroller.querySelectorAll("span > button").length).toBe(3);
+    expect(scroller.contains(clear)).toBe(false);
+    expect(row.contains(clear)).toBe(true);
+  });
+});
+
+// Review round 7.
+describe("SetGridView — the last route out of a stale m=1", () => {
+  // `?m=1&c=W` on a complete set draws a White chip, so an "empty chip line" test was false
+  // and the hidden `m` had neither a toggle nor a Clear.
+  it("keeps Clear beside a chip when m=1 is still set on a completed set", () => {
+    search = "m=1&c=W";
+    view([p("1")], ["1"]);
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+  });
+
+  it("removes both from it", () => {
+    search = "m=1&c=W";
+    view([p("1")], ["1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  // The accessible name has to contain the visible label, or a voice-control user cannot
+  // say the words they can see.
+  it("names the control with the words it shows", () => {
+    search = "m=1&c=W";
+    view([p("1")], ["1"]);
+    const clear = screen.getByRole("button", { name: "Clear all filters" });
+    expect(clear.textContent).toContain("Clear all filters");
+  });
+});
+
+// The chassis contract puts the panel's desktop rows at 44px; `FilterPanel` defaults to 40,
+// and `/decks` passes the 44 for the same reason.
+describe("SetGridView — the rarity panel's rows", () => {
+  it("asks for the chassis's 44px rows rather than the panel's default", () => {
+    stubDesktop(true);
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    const row = screen.getAllByRole("option")[0] as HTMLElement;
+    expect(row.style.minHeight).toBe("44px");
+  });
+});
+
+// "Three rows, always all three" — made true rather than argued. The sentence is absent on
+// an unindexed set (there is no count to state), but its box is not, so a set that becomes
+// indexed under a visible sticky head does not grow the head by a line.
+describe("SetGridView — row 3's box is unconditional", () => {
+  it("reserves the result row even with no checklist to count", () => {
+    const { container } = view([p("1", { booster: null, isVariant: true })], []);
+    const row = container.querySelector("[data-set-result]") as HTMLElement;
+    expect(row).not.toBeNull();
+    // The margin is on the BOX, not on the paragraph inside it — or a wrapped line would
+    // need 8 + 2×16 = 40 against a 32px reserve and the head would grow after all.
+    expect(row.className).toMatch(/mt-\[8px\] min-h-\[32px\] md:min-h-\[16px\]/);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("and holds the same box once there is one", () => {
+    const { container } = view([p("1"), p("2")], ["1"]);
+    const row = container.querySelector("[data-set-result]") as HTMLElement;
+    expect(row.className).toMatch(/mt-\[8px\] min-h-\[32px\] md:min-h-\[16px\]/);
+    const line = screen.getAllByRole("status")[0];
+    expect(line.className).not.toMatch(/mt-\[8px\]/);
+  });
+});
+
+// §28 drew a 34px chip target as a granted exception, and its own open item 3 defers the
+// chip line's pixels to the chassis package — which ships 44 (`filter-chassis.tsx`,
+// `collection/chip-row.tsx`). The anchoring to the × is what makes 44 safe between chips
+// sitting 6px apart, and it is what the chassis relies on too.
+describe("SetGridView — chip targets follow the chassis", () => {
+  it("gives the chip's × and the Clear control a 44px hit area", () => {
+    search = "m=1&r=rare&c=W";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    for (const button of row.querySelectorAll("button")) {
+      expect(button.className).toMatch(/after:h-\[44px\]/);
+      expect(button.className).not.toMatch(/after:h-\[34px\]/);
+    }
+  });
+});
+
+// `FilterPanel` composes the trigger's accessible name from the option's label, while
+// `triggerOne` only styles the visible text — so lowercasing the copy alone announced
+// `Uncommon` under a button reading `Rarity · uncommon`. Label-in-name, WCAG 2.5.3.
+describe("SetGridView — the rarity trigger says what it shows", () => {
+  it("announces the value in the case the button prints it", () => {
+    stubDesktop(true);
+    search = "r=uncommon";
+    view([p("1", { rarity: "uncommon" }), p("2", { rarity: "rare" })], []);
+    const trigger = screen.getByRole("button", { name: /Filter by rarity/ });
+    expect(trigger.textContent).toContain("Rarity · uncommon");
+    expect(trigger.getAttribute("aria-label")).toContain("uncommon");
+    expect(trigger.getAttribute("aria-label")).not.toContain("Uncommon");
+  });
+
+  // The sheet's chips stay Title Case: §28 amendment 3 — a chip is a control, and the
+  // trigger's value is a caption in the register of `042 · uncommon`.
+  it("keeps the phone sheet's chips in Title Case", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getByRole("radio", { name: "Rare" })).toBeInTheDocument();
+  });
+});
+
+// Label-in-name at REST too: the button reads `Rarity · all`, so its accessible name has to
+// carry that. The active state already did, by carrying its value.
+describe("SetGridView — the rarity trigger at rest", () => {
+  it("announces the value it shows when nothing is selected", () => {
+    stubDesktop(true);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    const trigger = screen.getByRole("button", { name: /Filter by rarity, all/ });
+    expect(trigger.textContent).toContain("Rarity · all");
+  });
+});
+
+// `overflow-x-auto` makes the OTHER axis scroll too, so a 44px pseudo target centred in a
+// 22px row is clipped to 22 and the chip keeps only its small × box. The scroller needs a
+// band for the overlay to live in — at phone, where it scrolls; desktop wraps and does not.
+describe("SetGridView — the phone chip scroller has room for its targets", () => {
+  it("gives the scrolling strip a 44px band", () => {
+    search = "m=1&r=rare&c=W";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const scroller = container.querySelector("[data-set-chips] .overflow-x-auto") as HTMLElement;
+    expect(scroller.className).toMatch(/h-\[44px\] md:h-auto/);
+  });
+});
+
+// The count is for the eye, the names are for the ear — the split `filter-chassis.tsx`
+// makes with its `spoken` field. §28 rules the VISIBLE label (`3 colours`, never one chip
+// per hue) and says nothing about the accessible name; without the split a screen reader
+// hears "3 colours" and, on a phone, has no pips mounted to find out which three.
+describe("SetGridView — the collapsed colour chip names its hues", () => {
+  it("shows the count, draws a swatch per hue, and speaks the names", () => {
+    search = "c=W,U,B";
+    const { container } = view([p("1"), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    expect(row.querySelector(".sr-only")?.textContent).toBe("White, Blue, Black");
+    // The count, in the half the eye reads.
+    const shown = [...row.querySelectorAll('[aria-hidden="true"]')]
+      .map((el) => el.textContent).filter(Boolean);
+    expect(shown).toContain("3 colours");
+    // And the swatches beside it. §28 forbids a chip PER hue, not swatches inside one —
+    // and on a phone the pips are unmounted, so this is the only thing a sighted reader
+    // has to tell them which three.
+    const dots = [...row.querySelectorAll<HTMLElement>("span.rounded-full")];
+    expect(dots.map((d) => d.style.background)).toEqual(["var(--w)", "var(--u)", "var(--b)"]);
+  });
+
+  it("names them on the dismiss control too, not the count", () => {
+    search = "c=W,U,B";
+    view([p("1"), p("2")], []);
+    expect(screen.getByRole("button", { name: "Remove filter: White, Blue, Black" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove filter: 3 colours" })).toBeNull();
+  });
+
+  it("leaves a single-colour chip alone — its label is already the name", () => {
+    search = "c=W";
+    const { container } = view([p("1"), p("2")], []);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    expect(row.querySelector(".sr-only")).toBeNull();
+    expect(screen.getByRole("button", { name: "Remove filter: White" })).toBeInTheDocument();
+  });
+
+  // §28's open item 3 defers the chip line's pixels to the chassis package — and since
+  // round 21 the chip IS the chassis's component, so there are no pixels here to defer.
+  it("renders the shared chip rather than a copy of it", () => {
+    search = "c=W";
+    const { container } = view([p("1"), p("2")], []);
+    const chip = container.querySelector("[data-set-chips] span.inline-flex") as HTMLElement;
+    expect(chip.className).toMatch(/bg-\[color:var\(--bg\)\]/);
+    expect(chip.className).toMatch(/border-\[color:var\(--border-strong\)\]/);
+  });
+});
+
+// The chip row's tokens are the chassis's, and this pins the whole set rather than the one
+// a review happened to name — the background, the border and the × each drifted separately
+// and each cost a round.
+describe("SetGridView — the chip row's tokens are the chassis's", () => {
+  // Round 21 made this true by construction rather than by matching: the chip is
+  // `FilterChipPill`, exported from the chassis. Three tokens drifted separately before
+  // that — background, border, and the × — each costing its own round.
+  it("carries the chassis's tokens because it IS the chassis's chip", () => {
+    search = "c=W,U&r=rare";
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const chip = container
+      .querySelector("[data-set-chips] span.inline-flex") as HTMLElement;
+    expect(chip.className).toMatch(/bg-\[color:var\(--bg\)\]/);
+    expect(chip.className).toMatch(/border-\[color:var\(--border-strong\)\]/);
+    expect(chip.className).toMatch(/text-\[color:var\(--fg-body\)\]/);
+    // The × is --fg-faint; the Clear beside it is --fg-muted. Different controls, and the
+    // chassis does not give them the same weight.
+    expect((chip.querySelector("button") as HTMLElement).className)
+      .toMatch(/text-\[color:var\(--fg-faint\)\]/);
+    expect(screen.getByRole("button", { name: /^Clear all filters/ }).className)
+      .toMatch(/text-\[color:var\(--fg-muted\)\]/);
+  });
+});
+
+// Every other colour case seeds `c=` in the URL, and `ColourPips`' own test only proves it
+// emits a code to its callback. Nothing pressed the pip on this page — so a regression in
+// this adapter or its URL write would leave the visible control dead with the suite green.
+describe("SetGridView — the colour pips are wired, not just painted", () => {
+  it("filters the grid and writes the URL when a pip is clicked", () => {
+    stubDesktop(true);
+    view([
+      p("1", { name: "Plains", colorIdentity: ["W"] }),
+      p("2", { name: "Island", colorIdentity: ["U"] }),
+    ], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W");
+    expect(screen.getAllByRole("button", { name: /Plains/ }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Island/ })).toBeNull();
+  });
+
+  it("turns the same pip off again", () => {
+    stubDesktop(true);
+    search = "c=W";
+    view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("adds a second hue rather than replacing the first", () => {
+    stubDesktop(true);
+    search = "c=W";
+    view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "Blue" })[0]);
+    // `URLSearchParams.toString()` percent-encodes the separator, which `parseFilters`
+    // reads back through `URLSearchParams` and so never sees.
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W%2CU");
+  });
+});
+
+// Round 24. The sheet's rarity group held one value while telling assistive technology
+// four could be on — independent `aria-pressed` toggles under a caller that allows one.
+describe("SetGridView — the sheet's rarity group is single-select", () => {
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+
+  it("exposes a radiogroup, not four toggles", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radiogroup", { name: "Rarity" })).toBeInTheDocument();
+    expect(screen.getAllByRole("radio")).toHaveLength(4);
+    // Scoped to the group: `MissingOnlyToggle` keeps `aria-pressed`, correctly — its whole
+    // value is on or off, which is what a toggle is and what a radio is not.
+    const group = screen.getByRole("radiogroup", { name: "Rarity" });
+    expect([...group.querySelectorAll("[aria-pressed]")]).toHaveLength(0);
+  });
+
+  it("checks exactly the lit one", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Rare", checked: true })).toBeInTheDocument();
+    expect(screen.getAllByRole("radio", { checked: false })).toHaveLength(3);
+  });
+
+  // Re-picking the checked one clears it, which is how `all` is reached — and why these
+  // are not plain radios in a form.
+  it("clears when the checked one is picked again", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    fireEvent.click(screen.getByRole("radio", { name: "Rare" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+});
+
+// The pips, the URL and the chip must agree on order regardless of click order.
+describe("SetGridView — colour order is canonical, not click order", () => {
+  it("stores WUBRG order when Blue is clicked before White", () => {
+    stubDesktop(true);
+    view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "Blue" })[0]);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?c=W%2CU");
+  });
+
+  it("speaks and draws the chip in that same order", () => {
+    stubDesktop(true);
+    const { container } = view(
+      [p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })],
+      [],
+    );
+    fireEvent.click(screen.getAllByRole("switch", { name: "Blue" })[0]);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    expect(row.querySelector(".sr-only")?.textContent).toBe("White, Blue");
+    expect([...row.querySelectorAll<HTMLElement>("span.rounded-full")]
+      .map((d) => d.style.background)).toEqual(["var(--w)", "var(--u)"]);
+  });
+});
+
+// Round 25: claiming `role="radio"` without the keyboard contract is worse than the toggles
+// it replaced — it promises arrow navigation and a single tab stop, then delivers neither.
+describe("SetGridView — the sheet's rarity group honours the radio pattern", () => {
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+
+  it("keeps one tab stop: the checked value", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Rare" })).toHaveAttribute("tabindex", "0");
+    for (const name of ["Common", "Uncommon", "Mythic"]) {
+      expect(screen.getByRole("radio", { name })).toHaveAttribute("tabindex", "-1");
+    }
+  });
+
+  // `all` is a state this group can be in, and a group with no tab stop is unreachable.
+  it("falls back to the first when none is checked", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Common" })).toHaveAttribute("tabindex", "0");
+  });
+
+  // All four rarities present, so nothing is disabled and the walk is plain.
+  const allFour = () => [
+    p("1", { rarity: "common" }), p("2", { rarity: "uncommon" }),
+    p("3", { rarity: "rare" }), p("4", { rarity: "mythic" }),
+  ];
+
+  it("moves focus and the selection on arrow keys", () => {
+    stubDesktop(false);
+    search = "r=common";
+    view(allFour(), []);
+    openSheet();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowRight" });
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=uncommon");
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Uncommon" }));
+  });
+
+  it("wraps at the ends", () => {
+    stubDesktop(false);
+    search = "r=common";
+    view(allFour(), []);
+    openSheet();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowLeft" });
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=mythic");
+  });
+
+  // The desktop panel refuses a zero-count rarity; the sheet has to refuse it too, or the
+  // same filters offer different choices at the two widths and the sheet can land the
+  // reader on an empty grid the other width would not have let them reach.
+  it("disables a rarity the set has none of", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Uncommon" }))
+      .toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("radio", { name: "Common" }))
+      .not.toHaveAttribute("aria-disabled");
+  });
+
+  it("arrows past the disabled ones rather than selecting them", () => {
+    stubDesktop(false);
+    search = "r=common";
+    view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
+    openSheet();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowRight" });
+    // Uncommon is empty, so the walk lands on Rare.
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=rare");
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Rare" }));
+  });
+});
+
+// A colour combination can leave no rarity with any cards. The group must still have a tab
+// stop then: unreachable is worse than reachable-and-all-unavailable, which the reader can
+// understand and back out of.
+describe("SetGridView — the rarity group is reachable when nothing matches", () => {
+  it("keeps a tab stop when every rarity is empty", () => {
+    stubDesktop(false);
+    search = "c=G";
+    view([p("1", { rarity: "common", colorIdentity: ["W"] }),
+          p("2", { rarity: "rare", colorIdentity: ["W"] })], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const radios = screen.getAllByRole("radio");
+    expect(radios.every((r) => r.getAttribute("aria-disabled") === "true")).toBe(true);
+    expect(radios.filter((r) => r.getAttribute("tabindex") === "0")).toHaveLength(1);
+    expect(radios[0]).toHaveAttribute("tabindex", "0");
+  });
+});
+
+// Round 36: the off-state tab stop is remembered on the radio that reached it, and a later
+// colour change can zero that rarity. A disabled radio holding the group's only tab stop is
+// a tab stop that cannot be used — the same defect as having none.
+describe("SetGridView — the off-state stop survives a filter change", () => {
+  it("falls back when the remembered radio has since been disabled", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([
+      p("1", { rarity: "rare", colorIdentity: ["U"] }),
+      p("2", { rarity: "common", colorIdentity: ["W"] }),
+    ], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    // Clear via Rare, so the off-state stop is remembered there.
+    fireEvent.click(screen.getByRole("radio", { name: "Rare" }));
+    // Now filter to White, which has no rares — Rare becomes unavailable.
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    const rare = screen.getByRole("radio", { name: "Rare" });
+    expect(rare).toHaveAttribute("aria-disabled", "true");
+    expect(rare).toHaveAttribute("tabindex", "-1");
+    const stops = screen.getAllByRole("radio")
+      .filter((r) => r.getAttribute("tabindex") === "0");
+    expect(stops).toHaveLength(1);
+    expect(stops[0]).not.toHaveAttribute("aria-disabled", "true");
   });
 });

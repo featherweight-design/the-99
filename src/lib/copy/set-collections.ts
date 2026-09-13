@@ -6,30 +6,120 @@
 //   - every plural has an explicit singular
 //   - nothing here names an internal noun (no "base_set_size", no "booster")
 
+// Hoisted so the chip labels can reach it from inside the same object literal. A chip is a
+// control and takes Title Case; the trigger's value form is lowercase because the caption
+// under it reads `042 · uncommon` in the same register.
+import { chassisCopy } from "./filter-chassis";
+
+const setFilterCopyRarityOptions = {
+  common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
+} as const;
+
+/** Hoisted for the same reason: the panel's trigger reads these, it does not restate them. */
+/** Hoisted so the chip label reads the control's own words rather than a second copy. */
+const setFilterCopyMissingOnly = {
+  label: "Missing only",
+  // The phone row has two controls and no room for three words.
+  short: "Missing",
+  ariaOn: "Showing only cards you do not own",
+  ariaOff: "Showing every card in the set",
+} as const;
+
+const setFilterCopyRarity = {
+  label: "Rarity",
+  all: "Rarity · all",
+  value: (r: "common" | "uncommon" | "rare" | "mythic") => `Rarity · ${r}`,
+  options: setFilterCopyRarityOptions,
+} as const;
+
 export const setFilterCopy = {
   // The colour filter's own strings ship with the component it is mounted from
   // (components/collection/color-filter-row.tsx) and are deliberately not redeclared
   // here — a second copy of a label is a second thing to keep in step.
-  rarity: {
-    label: "Rarity",
-    all: "Rarity · all",
-    value: (r: "common" | "uncommon" | "rare" | "mythic") => `Rarity · ${r}`,
-    options: { common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic" },
-    letters: { common: "C", uncommon: "U", rare: "R", mythic: "M" },
-  },
+  rarity: setFilterCopyRarity,
   label: "Filters",
   colourLabel: "Colour",
-  colourAria: (c: string) => `Filter by ${c}`,
-  missingOnly: {
-    label: "Missing only",
-    // The phone row has two controls and no room for three words.
-    short: "Missing",
-    ariaOn: "Showing only cards you do not own",
-    ariaOff: "Showing every card in the set",
-  },
-  clear: "Clear filters",
+  missingOnly: setFilterCopyMissingOnly,
   sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
+  // DIMENSIONS only — never missing-only, which sits on the row beside the badge where the
+  // reader can already see it. A badge counting a control visible next to it is the same
+  // fact twice, and it made `Filters 1` appear with nothing behind `Filters`.
   countBadgeAria: (n: number) => (n === 1 ? "1 filter on" : `${n} filters on`),
+
+  // The chip line (addendum R2 §28). Dimension order, never click order.
+  // Every field here READS its canonical source rather than restating it. Four routes share
+  // this chip line, and a second copy of a label is what leaves one of them on the old
+  // wording after a change — the same reason the chip's markup and its type are the
+  // chassis's own.
+  chip: {
+    // One lit pip is named; past one it collapses to a count. Never one chip per hue —
+    // five chips for a five-colour filter is a line that says less than the pips do.
+    colourOne: (name: string) => name,
+    colour: chassisCopy.colour.collapsed,
+    rarity: (r: "common" | "uncommon" | "rare" | "mythic") =>
+      setFilterCopyRarityOptions[r],
+    missingOnly: setFilterCopyMissingOnly.label,
+  },
+  // `Clear all filters` and `No filters on` are the chassis's, reused rather than restated:
+  // the addendum's own note says to take them from the chassis once it lands, and it has.
+  // Only the accessible name is this page's, because the chassis's names a sort this page
+  // does not have.
+  // CONTAINS the visible label, which is the chassis's `Clear all filters` — a voice-control
+  // user says what they can see (WCAG 2.5.3), and "Clear every filter" said the same thing
+  // in words the button does not show.
+  clearAllAria: "Clear all filters",
+
+  // The rarity panel. `FilterPanel` mounted, never forked (§28's named dependency).
+  rarityPanel: {
+    // Rest and active labels are `rarity.all` / `rarity.value`, which already shipped in
+    // this file unused — evidence the trigger was always the intent and the four letter
+    // buttons were the shortcut.
+    // ONE source. These were spelled out here while the comment above claimed they were
+    // reused, which is how a later copy edit makes the trigger disagree with the chips
+    // beside it.
+    triggerLabel: setFilterCopyRarity.all,
+    // The option labels arrive lowercase already — see the mount — so this does not case
+    // them itself. Lowercasing here alone left the accessible name in Title Case.
+    triggerOne: (name: string) =>
+      setFilterCopyRarity.value(name as "common" | "uncommon" | "rare" | "mythic"),
+    // Carries `all`, and in the same shape the selected state uses — `FilterPanel` builds
+    // that one as `Filter by rarity, uncommon, collapsed`. The button reads `Rarity · all`
+    // at rest, and a name omitting `all` left a voice-control user unable to address the
+    // value they can see (WCAG 2.5.3), while the selected state already carried its own.
+    triggerAriaCollapsed: "Filter by rarity, all, collapsed",
+    triggerAriaWithSelection: (n: number) => `Filter by rarity, ${n} selected, collapsed`,
+    panelAriaLabel: "Filter by rarity",
+    sheetTitle: "Rarity",
+    // Inert: four values have nothing to search, so the panel is mounted with
+    // `searchable={false}` and never renders these. Present because the shape demands
+    // them, exactly as the shipped `type` and `availability` blocks carry them.
+    searchPlaceholder: "Search rarities",
+    searchAriaLabel: "Search rarities",
+    clearSearch: "Clear search",
+    groupDefault: "All rarities",
+    groupSelected: (n: number) => `Selected · ${n}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    // Through the same `en-US` formatter the rest of the filter-panel copy uses: the
+    // visible count renders `1,234` while a bare interpolation announced `1234 cells`.
+    optionAria: (name: string, count: number) =>
+      `${name}, ${count === 1 ? "1 cell" : `${count.toLocaleString("en-US")} cells`}`,
+    optionAriaUnavailable: (name: string) => `${name}, no cells match your other filters`,
+    // Numbers since the chassis's own change: `FilterPanelCopy` formats them itself now.
+    footerTotal: (total: number) => `${total} rarities`,
+    footerSelected: (n: number, total: number) => `${n} of ${total} on`,
+    clear: "Clear rarity",
+    done: "Done",
+    closeLabel: "Close",
+    emptyTitle: "No rarities to show",
+    emptyBody: (query: string) => ({ before: "No rarity matches ", query: `“${query}”`, after: "." }),
+    announceMatches: (n: number, query: string) =>
+      n === 0 ? `No rarities match ${query}` : `${n} ${n === 1 ? "rarity matches" : "rarities match"} ${query}`,
+    announceAdded: (name: string, _n: number, shown: number, total: number) =>
+      `${name} on. ${shown} of ${total} cells shown.`,
+    announceRemoved: (name: string, _n: number, shown: number, total: number) =>
+      `${name} off. ${shown} of ${total} cells shown.`,
+    announceCleared: (total: number) => `Rarity filter cleared. ${total} cells shown.`,
+  },
 } as const;
 
 export const setsIndexCopy = {
