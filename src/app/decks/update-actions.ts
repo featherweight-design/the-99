@@ -381,7 +381,9 @@ export async function updateDeckFromList(
 
     // Replaced wholesale rather than merged: the list is the deck now, so a line
     // the new list does not carry is not a line the deck is still missing.
-    await tx.delete(deckUnresolvedRows).where(eq(deckUnresolvedRows.deckId, input.deckId));
+    const clearedLines = await tx.delete(deckUnresolvedRows)
+      .where(eq(deckUnresolvedRows.deckId, input.deckId))
+      .returning({ id: deckUnresolvedRows.id });
     for (let i = 0; i < plan.unresolved.length; i += INSERT_BATCH) {
       await tx.insert(deckUnresolvedRows).values(
         plan.unresolved.slice(i, i + INSERT_BATCH).map((r) => ({
@@ -404,11 +406,21 @@ export async function updateDeckFromList(
     // retry would apply it twice.
     const versioned = (await newestVersion(input.deckId, tx)) !== null;
 
-    // The list IS the deck now — rows deleted, inserted, requantified and
-    // unclaimed from the app. Unconditional: this path is reached only for a
-    // list that parsed, and a list that reconciled to no change at all still
-    // replaced the unresolved rows above.
-    await touchDeck(tx, input.deckId);
+    // Every write this transaction could have made, asked of the plan rather
+    // than assumed. A list can reconcile to nothing at all — an empty deck
+    // accepting a list naming only its own commander deletes no row, inserts
+    // none, requantifies none and clears no line — and stamping that would
+    // claim an edit the player did not make. `clearedLines` is read from the
+    // delete's own RETURNING for the same reason: the statement runs
+    // unconditionally, but on a deck with no unresolved lines it writes nothing.
+    const wrote =
+      removing.length > 0 ||
+      plan.in.length > 0 ||
+      named.length > 0 ||
+      byQuantity.size > 0 ||
+      clearedLines.length > 0 ||
+      plan.unresolved.length > 0;
+    if (wrote) await touchDeck(tx, input.deckId);
 
     return { plan, removing, kept, versioned };
   });

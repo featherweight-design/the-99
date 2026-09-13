@@ -89,9 +89,12 @@ ALTER TABLE "decks" ADD COLUMN "last_edited_at" timestamp DEFAULT now() NOT NULL
 UPDATE "decks" SET "last_edited_at" = "created_at";
 ```
 
-Index: `decks_user_edited_idx` on `(user_id, last_edited_at)` — home orders by a `greatest()` over
-three sources, so this one alone does not serve the sort, but it is the column the other two reach
-through and `decks_user_*` is the established shape here.
+**No index.** An earlier draft of this plan called for `decks_user_edited_idx` on
+`(user_id, last_edited_at)`; it was dropped before implementation and the plan is corrected here.
+The read narrows on `user_id` alone and then orders in TypeScript over a `greatest()` of three
+sources — two of which are subqueries — so no index on this column is reachable by that sort. An
+index nothing reads is a write cost on every deck mutation and a line of schema that implies a
+query plan that does not exist.
 
 ### Task 2 — `touchDeck`
 

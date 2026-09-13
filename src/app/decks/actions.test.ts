@@ -199,10 +199,21 @@ const stub = vi.hoisted(() => {
           returning.push({ id: "pass-new-uuid" });
         }
         state.insertCalls.push({ table: tableName, values, returning: returning.length ? returning : null });
+        // `onConflictDoNothing()` is awaited by some callers and read back with
+        // `.returning()` by the ones whose touch stamp depends on whether the
+        // insert actually wrote — so the fake has to be both, the way Drizzle's
+        // builder is. `deck_cards` reports the rows it was handed: this stub
+        // has no conflict state, so "wrote" means "was asked to write".
+        const conflictResult = () => {
+          const rows = tableName === "deck_cards"
+            ? (Array.isArray(values) ? values : [values])
+            : returning;
+          return Object.assign(Promise.resolve(rows), { returning: async () => rows });
+        };
         return {
           returning: async () => returning,
           onConflictDoUpdate: async () => {},
-          onConflictDoNothing: async () => {},
+          onConflictDoNothing: conflictResult,
         };
       },
     };

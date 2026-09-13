@@ -371,6 +371,11 @@ export async function deleteUnresolvedRow(deckId: string, rowId: string): Promis
       .where(and(eq(deckUnresolvedRows.id, rowId), eq(deckUnresolvedRows.deckId, deckId)))
       .returning({ id: deckUnresolvedRows.id });
     if (deleted.length === 0) throw new Error("unresolved row not found");
+    // The symmetric half of `resolveUnresolvedRow`'s stamp. Dropping a line
+    // changes what the deck is — its total falls — so the deck the player is
+    // left looking at is not the one they had, whether they answered the line
+    // or struck it out.
+    await touchDeck(tx, deckId);
   });
 
   // Dropping a line changes the deck's totals but claims nothing, so the

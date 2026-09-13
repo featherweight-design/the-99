@@ -617,10 +617,18 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
         target: [deckCards.deckId, deckCards.oracleId],
         set: { quantity: sql`${deckCards.quantity} + 1` },
       });
+      // The upsert always writes: either a new row or one more copy.
+      await touchDeck(tx, deckId);
     } else {
-      await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
+      // The conflict clause is what decides here, so the stamp reads its
+      // result rather than assuming the statement wrote. A repeat add of a
+      // singleton the deck already holds is a no-op, and a deck nothing was
+      // added to was not edited.
+      const inserted = await tx.insert(deckCards).values({ deckId, oracleId })
+        .onConflictDoNothing()
+        .returning({ oracleId: deckCards.oracleId });
+      if (inserted.length > 0) await touchDeck(tx, deckId);
     }
-    await touchDeck(tx, deckId);
     return null;
   });
   if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
@@ -877,12 +885,17 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     const count = [...byId]
       .filter(([oracleId]) => !here.has(oracleId))
       .reduce((n, [, quantity]) => n + quantity, 0);
-    await tx.insert(deckCards)
+    const restoredRows = await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
-      .onConflictDoNothing();
-    // `count`, not `byId.size`: a restore whose every row was re-added by hand
-    // put nothing back, and the conflict clause is what decided that.
-    if (count > 0) await touchDeck(tx, deckId);
+      .onConflictDoNothing()
+      .returning({ oracleId: deckCards.oracleId });
+    // The INSERT's own result, not `count`. `count` comes from the read above,
+    // and `removeCardFromDeck` takes the `deck_cards` row lock rather than this
+    // deck-row lock — so a row the read saw as the player's can be gone by the
+    // time the insert runs, which puts a card back while `count` still says
+    // nothing was restored. The toast keeps reporting `count`, which is the
+    // figure it has always reported; the stamp follows what was written.
+    if (restoredRows.length > 0) await touchDeck(tx, deckId);
     return count;
   });
   // AFTER the commit, never inside it. An invalidation from inside the callback

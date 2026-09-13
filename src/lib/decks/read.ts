@@ -474,11 +474,13 @@ export type DeckListItem = {
  * `lastPlayedAt`, and surfaces as a rendered `Invalid Date` far from its cause.
  * `parseAsOf` guards the same shape for `printing_prices.as_of`.
  */
-function toDate(value: Date | string | null): Date | null {
+function toDate(value: Date | string | null, column: string): Date | null {
   if (value === null) return null;
   const parsed = value instanceof Date ? value : new Date(toUtcInstant(value));
   if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`a deck timestamp is not readable: ${String(value)}`);
+    // Named, because two columns now come through here and they fail
+    // independently — a production failure has to say which one is malformed.
+    throw new Error(`${column} is not a readable timestamp: ${String(value)}`);
   }
   return parsed;
 }
@@ -713,11 +715,11 @@ export async function listDecksWithStats(
       // `new Date`, which would read it in the runtime's own zone — the same row
       // would then date to a different day in Denver than in CI, and `2 days
       // ago` is exactly the kind of figure that shifts.
-      lastPlayedAt: toDate(row.lastPlayedAt),
+      lastPlayedAt: toDate(row.lastPlayedAt, "deck_games.played_at"),
       // A mapped column, so the driver already hands back a Date — unlike the
       // two raw-SQL timestamps either side of it.
       lastEditedAt: row.lastEditedAt,
-      lastCommittedAt: toDate(row.lastCommittedAt),
+      lastCommittedAt: toDate(row.lastCommittedAt, "deck_versions.committed_at"),
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
     };

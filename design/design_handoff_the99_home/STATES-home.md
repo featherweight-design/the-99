@@ -36,7 +36,7 @@ not a deck you left off in — it arrives as an edit the moment anything is in i
 | **0 decks** | **Absent — heading and all.** The two CTAs carry the empty case; an empty box under a heading that says "pick up where you left off" is the app asserting a history the player has not got. *(Assumption — ratification needed.)* | absent | Drawn with zeroes; `To buy, all decks` reads `0 · $0.00`. |
 | **1–4 decks** | All of them, same sort | absent (`{n} more` is nought) | normal |
 | **5+ decks** | 4 | `{n} more decks` + `All {total} decks` | normal |
-| **Untouched decks only** (imported, never edited) | The import is a touch. Rows show `imported {t} ago`. | normal | normal |
+| **Untouched decks only** (imported, never edited) | ~~The import is a touch. Rows show `imported {t} ago`.~~ **Errata E5, 2026-09-13:** the row reads `edited {t} ago`, stamped at the deck's creation. `decks.last_edited_at` is seeded from `created_at`, so creation is the stamp's floor rather than a term in the sort — and once seeded, nothing distinguishes an import from an edit, so `imported` is a verb the reader cannot derive. | normal | normal |
 | **0 buildable commanders** | unaffected | unaffected | unaffected — Ready to build is a separate block's empty case, not this handoff's. |
 
 ## D · Row states
