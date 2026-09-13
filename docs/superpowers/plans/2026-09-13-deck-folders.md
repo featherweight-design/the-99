@@ -109,10 +109,22 @@ throws inside `validateFolderName`. Each action guards with `isUuid` (`src/lib/u
 a bad argument the way it answers a folder that is not the player's — `false`, or the result type's
 refusal.
 
-**`createFolderAction` returns the folder it made:**
-`{ ok: true; folder: { id, name } } | { ok: false; reason: "duplicate" }`. CR4 selects the new shelf
-and the client cannot derive an id from the name it submitted, so the id comes back from the action
-and is applied through the same `apply()` that writes every other shelf change.
+**Two shapes, and every action has one of them.** A write that produces a value returns
+`{ ok: true; folder: { id, name } } | { ok: false; reason: "duplicate" | "invalid" | "refused" }` —
+`createFolderAction` and `renameFolderAction`. A write that produces nothing returns a `boolean` —
+`moveDeckAction` and `deleteFolderAction`, where `false` already carries the meaning the queries gave
+it ("not yours, or gone", and "already done").
+
+The three refusals stay distinct because the UI answers them differently: **duplicate** is said in
+words and keeps the typed value, **invalid** is unreachable through the field and defensive against
+any other caller, and **refused** is a folder that is not this player's or is already gone, which
+needs no sentence at all. `createFolderAction` returns the folder because CR4 selects the new shelf
+and the client cannot derive an id from the name it submitted.
+
+**The field strips control characters on input** (errata E16). `validateFolderName` refuses C0, DEL
+and C1, and `maxLength` does not stop a paste, so without this the round would need a third refusal
+sentence for characters the reader cannot see. Stripping keeps decision 22's "exactly two reachable
+refusals" true, through the same pure validator the server throws on.
 
 **Failure shapes are already decided by the queries and must not be re-invented:**
 `deleteFolder` returning false is **done**, not an error (README 25). `moveDeck` returning false
