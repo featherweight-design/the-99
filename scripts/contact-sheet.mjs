@@ -1,15 +1,23 @@
 // The contact sheet: every route a feature touches, at both widths, in one image.
 //
 // NOT a probe. A probe is written by whoever wrote the feature and asserts what
-// they believed; this asserts nothing. It loads each surface, photographs it, and
-// lays the photographs out so a person can see in one glance that a route never
-// got the feature, or that the phone is wrong while the desktop is right — the two
-// failures a diff and a per-PR review structurally cannot show.
+// they believed; this asserts nothing ABOUT THE PIXELS. It loads each surface,
+// photographs it, and lays the photographs out so a person can see in one glance
+// that a route never got the feature, or that the phone is wrong while the desktop
+// is right — the two failures a diff and a per-PR review structurally cannot show.
+//
+// It does report one thing mechanically, in its exit code: whether every cell was
+// REACHED. A row whose steps time out produces no evidence either way, and a sheet
+// with a hole in it that exits 0 would be the same quiet pass this artifact exists
+// to prevent. Reaching a surface is not a judgement about how it looks.
 //
 // One script for the repository, not one per feature: the feature supplies its
 // inventory as JSON, this walks it.
 //
 //   node scripts/contact-sheet.mjs docs/superpowers/inventories/<feature>.json
+//
+// A route that needs an id writes it as `${SOME_VAR}` and takes it from the
+// environment, so no inventory carries one account's ids.
 //
 // Needs the dev server up and a signed-in session: PROBE_BASE selects the server.
 // Writes PNGs plus `sheet.png` into the inventory's `out` directory.
@@ -73,10 +81,25 @@ async function signIn(page) {
 /**
  * A row's `steps` are plain Playwright verbs, so a surface that needs three clicks
  * to reach is still one row of the inventory rather than a new script.
+ *
+ * Give every `goto` a `wait` naming something the finished page has. `settle` is a
+ * delay, not a readiness check: a slow route still renders its loading state for
+ * the first second, and a sheet that photographs skeletons reports success while
+ * showing nothing.
  */
 async function run(page, steps) {
   for (const step of steps ?? []) {
-    if (step.goto) await page.goto(`${BASE}${step.goto}`, { waitUntil: "domcontentloaded" });
+    if (step.goto) {
+      // `${VAR}` in a path comes from the environment, so an inventory can name a
+      // route that needs an id without committing one account's id to the
+      // repository — where it would 404 on anybody else's data.
+      const url = step.goto.replace(/\$\{(\w+)\}/g, (_, name) => {
+        const value = process.env[name];
+        if (!value) throw new Error(`${step.goto} needs ${name} in the environment`);
+        return value;
+      });
+      await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
+    }
     if (step.click) await page.locator(step.click).first().click({ timeout: 15_000 });
     if (step.clickRole) {
       await page.getByRole(step.clickRole, { name: new RegExp(step.name) }).first().click({ timeout: 15_000 });
@@ -151,7 +174,10 @@ try {
   console.log(`\nsheet: ${sheet}`);
   const failed = shots.filter((s) => s.note);
   if (failed.length) {
-    console.log(`\n${failed.length} of ${shots.length} cells did not reach their surface.`);
+    console.log(
+      `\n${failed.length} of ${shots.length} cells did not reach their surface.`
+        + " The sheet is still written; those cells have no evidence in them.",
+    );
     process.exitCode = 1;
   }
 } finally {

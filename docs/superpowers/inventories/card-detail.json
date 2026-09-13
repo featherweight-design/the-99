@@ -7,7 +7,8 @@
       "steps": [
         {
           "goto": "/collection?view=rows&q=Gravelgill",
-          "settle": 2500
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
         },
         {
           "click": "button[aria-label^=\"Gravelgill Scoundrel,\"]",
@@ -22,7 +23,8 @@
       "steps": [
         {
           "goto": "/collection?view=rows&q=Gravelgill",
-          "settle": 2500
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
         },
         {
           "click": "button[aria-label^=\"Gravelgill Scoundrel,\"]",
@@ -43,7 +45,8 @@
       "steps": [
         {
           "goto": "/collection?view=grid&q=Safewright",
-          "settle": 7000
+          "settle": 7000,
+          "wait": "main, [role=main], h1"
         },
         {
           "click": "text=Safewright Cavalry",
@@ -58,7 +61,8 @@
       "steps": [
         {
           "goto": "/collection/sets/tla",
-          "settle": 6000
+          "settle": 6000,
+          "wait": "main, [role=main], h1"
         },
         {
           "clickRole": "button",
@@ -73,8 +77,9 @@
       "label": "/decks/[id] \u2014 decklist row",
       "steps": [
         {
-          "goto": "/decks/56cf025b-1f4c-458a-84d7-4f2bdb36d93d",
-          "settle": 6000
+          "goto": "/decks/${PROBE_DECK}",
+          "wait": "main",
+          "settle": 7000
         },
         {
           "clickRole": "button",
@@ -90,7 +95,8 @@
       "steps": [
         {
           "goto": "/commanders",
-          "settle": 20000
+          "settle": 20000,
+          "wait": "main, [role=main], h1"
         },
         {
           "clickRole": "link",
@@ -111,7 +117,8 @@
       "steps": [
         {
           "goto": "/collection?view=rows&q=Toralf",
-          "settle": 6000
+          "settle": 6000,
+          "wait": "main, [role=main], h1"
         },
         {
           "clickRole": "button",
@@ -131,5 +138,6 @@
         }
       ]
     }
-  ]
+  ],
+  "note": "Steps are Playwright verbs. Every `goto` carries a `wait` for something the finished page has, because `settle` is a delay rather than a readiness check. No account's ids are committed: the deck row takes PROBE_DECK from the environment \u2014 any deck the signed-in account owns, e.g. `PROBE_DECK=<uuid> node scripts/contact-sheet.mjs ...`."
 }
