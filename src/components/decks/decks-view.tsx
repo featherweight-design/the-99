@@ -255,8 +255,6 @@ export function DecksView({
   const [shelfSheet, setShelfSheet] = useState<{ open: boolean; handOff?: boolean }>({
     open: false,
   });
-  /** Where the create dialog was opened from, so focus can be returned there. */
-  const [createFrom, setCreateFrom] = useState<"line" | "sheet" | "move">("line");
   /**
    * The deck whose move panel opened the create dialog. `New folder…` is on that
    * list so the destination can be made FROM THE ACT (handoff decision 16) — so
@@ -609,7 +607,6 @@ export function DecksView({
               shelf={state.shelf}
               onSelect={onShelf}
               onCreate={() => {
-                setCreateFrom("line");
                 setCreating(true);
               }}
             />
@@ -773,7 +770,6 @@ export function DecksView({
               shelf={state.shelf}
               onSelect={onShelf}
               onCreate={() => {
-                setCreateFrom("sheet");
                 setShelfSheet({ open: false });
                 setCreating(true);
               }}
@@ -889,7 +885,6 @@ export function DecksView({
                     now={now}
                     folders={folders}
                     onCreateFolder={() => {
-                      setCreateFrom("move");
                       setCreatingFor(deck.id);
                       setCreating(true);
                     }}

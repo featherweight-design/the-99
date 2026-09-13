@@ -122,7 +122,13 @@ export function ShelfLine({
                 : "border-transparent bg-transparent text-[color:var(--fg-muted)]"
             }`}
           >
-            {segment.label}
+            {/* Truncated, and the whole name stays in the accessible name and
+                the tooltip. Folder names run to 120 characters: unconstrained,
+                one long name makes this row wider than the viewport, and
+                wrapping cannot help because it moves whole segments. */}
+            <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
+              {segment.label}
+            </span>
             <span className="ml-[7px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
               {segment.count}
             </span>
