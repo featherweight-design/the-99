@@ -279,12 +279,14 @@ read against `main`, is 22px stale before this starts. **Re-measure first**, wit
 
 ### PR 5a — the content moves (no mechanism)
 
-- [ ] **`head.ratioNote` is absorbed into the figure** it annotates: `162 / 208 base · 78%`,
+- [x] **`head.ratioNote` is absorbed into the figure** it annotates: `162 / 208 base · 78%`,
   extras trailing. The note keeps its own line at desktop, and keeps standing alone in the
   unindexed state — where `base` has nothing to ride on, which is why it is ungated today.
-- [ ] **`head.metaShort(code, year)`** → `HOB · 2026` on the title line's trailing edge, phone
-  only. The full `head.meta` string is unchanged at desktop.
-- [ ] **The result line drops its redundant half** — `result.rest` restates a subtraction the
+- [x] **`head.metaShort(code, year)`** → `HOB · 2026` on the **ratio** line's trailing edge, phone
+  only — not the title line the handoff names; see the correction below and in the readiness
+  doc. Takes a NULLABLE date and falls back to the code alone, because an indexed set with no
+  recorded release date is a supported catalog state. The full `head.meta` string is unchanged at desktop.
+- [x] **The result line drops its redundant half** — `result.rest` restates a subtraction the
   ratio above already made. Its `role="status"` live region is untouched: it is what
   announces a filter change.
 - [x] Probe the phone head's new rest height and record it here. **Measured on `local-dev` at

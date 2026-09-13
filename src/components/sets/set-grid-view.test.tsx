@@ -1808,7 +1808,12 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
     expect(container.textContent).toMatch(/1 \/ 2 base/);
     const note = [...container.querySelectorAll("p")]
       .find((el) => /base run only/.test(el.textContent ?? ""));
-    expect(note?.className).toMatch(/hidden/);
+    expect(note).toBeDefined();
+    // The BARE token. `/hidden/` also matches `md:hidden`, so the substring passes on a
+    // note that was swapped to the wrong breakpoint — which is the whole thing this
+    // asserts. The helper above exists for exactly this and these two assertions did not
+    // use it.
+    expect(tokens(note as Element)).toContain("hidden");
   });
 
   it("and the extras ratio trails it, because the note promised they were counted apart", () => {
@@ -1839,7 +1844,8 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
     expect(container.textContent).toMatch(/DSK · 2026/);
     const long = [...container.querySelectorAll("p")]
       .find((el) => /released 2026-09-01/.test(el.textContent ?? ""));
-    expect(long?.className).toMatch(/hidden/);
+    expect(long).toBeDefined();
+    expect(tokens(long as Element)).toContain("hidden");
   });
 
   // Move 4. The second half restates the head's own subtraction.
