@@ -50,8 +50,14 @@ const BAR_BUTTON = "inline-flex items-center justify-center w-full md:w-auto";
 /** The sentence's opening clause, which the design sets in the reading ink while
  *  the rest stays faint. Split on its own punctuation rather than authored twice:
  *  `pullNote` is one sentence in the copy module, and the emphasis is a drawing
- *  decision about part of it. */
-const [PULL_NOTE_LEAD, ...PULL_NOTE_REST] = copy.pullNote.split(" — ");
+ *  decision about part of it.
+ *
+ *  The separator is a COPY DEPENDENCY, not a formatting detail: repunctuating
+ *  `pullNote` silently collapses this into one run and loses the emphasis, with
+ *  no type error and nothing on screen that reads as broken. The em-dash sweep
+ *  did exactly that. `commit-sheet.test.tsx` pins the two halves so the next
+ *  edit to that string fails loudly instead. */
+const [PULL_NOTE_LEAD, ...PULL_NOTE_REST] = copy.pullNote.split(": ");
 
 export type CommitSheetProps = {
   /** The deck being frozen. Also where a successful commit returns to. */
@@ -237,7 +243,7 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
                 </div>
                 <p className="font-mono text-[10.5px] leading-[1.55] m-0 text-[color:var(--fg-faint)]">
                   <b className="font-normal text-[color:var(--fg-body)]">{PULL_NOTE_LEAD}</b>
-                  {PULL_NOTE_REST.length > 0 && ` — ${PULL_NOTE_REST.join(" — ")}`}
+                  {PULL_NOTE_REST.length > 0 && `: ${PULL_NOTE_REST.join(": ")}`}
                 </p>
               </div>
             )}

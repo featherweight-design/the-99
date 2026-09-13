@@ -89,7 +89,7 @@ export const recommendationsCopy = {
     // Replaces detail.tsx's desktop seed note "Your owned pool will seed the
     // deck builder", which describes a seeding that no longer happens.
     seedNote: (n: string) =>
-      `We’ll fill ${n} of the 99: roles and lands. The rest is yours.`,
+      `We’ll fill ${n} of the 99 — roles and lands. The rest is yours.`,
   },
 
   // ── Surface B · the auto marker ───────────────────────────────────────
