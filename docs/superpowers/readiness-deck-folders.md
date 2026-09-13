@@ -51,6 +51,14 @@ argument and nothing else. `deckChassisCopy.result` (`src/lib/copy/filter-chassi
 | `deck-card-overflow` is a 186px panel with two modes | `deck-card-overflow.tsx:31,123` | **True** — `"menu" | "rename"`, `w-[186px]` |
 | The nav rail is 62px | `shell/nav.tsx:148` | **Exact** |
 
+**Nine corrections are recorded as errata** in the handoff's own README (`## Errata`, 2026-09-13),
+covering the five findings below plus four more the PR review surfaced: decision 2 lists `Unfiled`
+unconditionally where decision 13 omits it; decision 8's two counts "agree by construction" when one
+is a server read and the other is derived client-side; decision 15 and the S3 frame disagree about
+whether S3 has a route out; and STATES C1/C4 give the compact `…` to shelves that have no actions
+and pin a shelf that then prints twice. The `.dc.html` is not regenerated — the errata table is the
+authority where the two disagree.
+
 ## §2 Findings — five, all eng-resolvable
 
 ### 1. Rename's blur rule is wrong, and the shipped form says why (README decision 21)

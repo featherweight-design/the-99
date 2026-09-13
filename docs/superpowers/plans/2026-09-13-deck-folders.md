@@ -35,16 +35,21 @@ chassis's `/decks` slice is still open, that sentence goes to it now — not thi
    unknown id falls back to All decks, the way `readList` (`filter.ts:120`) already makes a
    hand-edited value harmless. **Not a route:** `page.tsx` would refetch an identical list and throw
    the filter state away.
-3. **The shelf narrows before `filterDecks`, in the same client-side pass**, and the panels'
+3. **One count map feeds the segment and the result line.** README decision 8 says the two "agree by
+   construction"; they do not, because the segment reads a server figure while the denominator comes
+   off the loaded list (errata E4). `shelfCounts()` computes both in one pass and the denominator is
+   read out of that same map, so the pair cannot drift — and an optimistic adjustment after a move
+   moves both figures at once.
+4. **The shelf narrows before `filterDecks`, in the same client-side pass**, and the panels'
    per-option counts are computed within the shelf — so a status reading 0 means 0 *on this shelf*,
    which is the same reasoning `decks-view.tsx:186-203` already applies to the other active filters.
-4. **The shelf line switches at `CHASSIS_WIDE_MIN_PX`** (`filter-chassis.tsx:167`), never at a
+5. **The shelf line switches at `CHASSIS_WIDE_MIN_PX`** (`filter-chassis.tsx:167`), never at a
    Tailwind stop. `deck-filter-sheet.tsx` already fixed that trap with `max-[999px]:flex`.
-5. **The line's counts are never filter-dependent.** Named shelves from `listFolders.deckCount`,
+6. **The line's counts are never filter-dependent.** Named shelves from `listFolders.deckCount`,
    All decks and Unfiled from the loaded list.
-6. **No motion on the shelf line.** Selection changes instantly; the compact sheet reuses the
+7. **No motion on the shelf line.** Selection changes instantly; the compact sheet reuses the
    existing entry animation. No reduced-motion state, because there is nothing to reduce.
-7. **Copy is `folderCopy`**, ported verbatim from `design/design_handoff_the99_deck_folders/`'s copy
+8. **Copy is `folderCopy`**, ported verbatim from `design/design_handoff_the99_deck_folders/`'s copy
    file into `src/lib/copy/folders.ts`. `refreshCopy.decks.menu.*`, `refreshCopy.filters.*`,
    `refreshCopy.zero.*` and `deckChassisCopy.result` are **reused, never restated**.
 
@@ -70,8 +75,8 @@ working.
 | PR | What lands | Why this cut |
 |---|---|---|
 | **1 — the shelf, server to state** | `renameFolder`, four server actions, `listFolders` on the page, `folderCopy`, the `shelf` field, `?folder=`, shelf-first narrowing, the result-line denominator | Everything with a test that is not a rendered pixel. The route behaves correctly with the URL typed by hand before any control exists to type it |
-| **2 — the level** | The shelf line (wide), the 44px trigger and sheet (compact), S2 and S3 | The drawing. One component pair, two empty states, no new queries |
-| **3 — the acts** | Move mode in the deck menu, create, rename, delete | Every act, each inside a panel the app already ships. Splits from PR 2 because a review of the line should not also be a review of four dialogs |
+| **2 — the level, and making one** | The shelf line (wide), the 44px trigger and sheet (compact), S2 and S3, **and create** | The drawing. Create ships here because the line and the sheet both draw a `New folder` control, and a control with no handler is not a mergeable state — PR 1 has already landed the action it calls |
+| **3 — the acts on what exists** | Move mode in the deck menu, rename, delete | Every act on a folder that is already there, each inside a panel the app already ships. Splits from PR 2 so a review of the line is not also a review of three dialogs |
 
 ---
 
@@ -94,6 +99,19 @@ a self-collision. **The unique index is the thing under test** — a unit test c
 `src/app/decks/folder-actions.ts`, in the shape `src/app/decks/actions.ts` already uses:
 `createFolderAction`, `renameFolderAction`, `moveDeckAction`, `deleteFolderAction`. Each takes the
 session's user id from `requireUserId()` — never the caller's — and revalidates `/decks`.
+
+**Every argument is validated at runtime, not by its type.** A server action's parameters arrive
+over the wire, so a TypeScript signature proves nothing: an id that is not a uuid reaches the
+`::uuid` cast inside `moveDeck` and becomes a 500 rather than a refusal, and a non-string name
+throws inside `validateFolderName`. Each action guards with `isUuid` (`src/lib/uuid.ts`, the pattern
+`actions.ts` already uses) and a `typeof … === "string"` check before it calls a query, and answers
+a bad argument the way it answers a folder that is not the player's — `false`, or the result type's
+refusal.
+
+**`createFolderAction` returns the folder it made:**
+`{ ok: true; folder: { id, name } } | { ok: false; reason: "duplicate" }`. CR4 selects the new shelf
+and the client cannot derive an id from the name it submitted, so the id comes back from the action
+and is applied through the same `apply()` that writes every other shelf change.
 
 **Failure shapes are already decided by the queries and must not be re-invented:**
 `deleteFolder` returning false is **done**, not an error (README 25). `moveDeck` returning false
@@ -132,13 +150,14 @@ list.
 
 ---
 
-## PR 2 — the level
+## PR 2 — the level, and making one
 
 ### Task 2.1 — `ShelfLine` (wide)
 
 `src/components/decks/shelf-line.tsx`. One 34px line above the chassis on `--bg`. Segments in
 `listFolders` order — `All decks`, folders by name, `Unfiled` last — with `New folder` at the
-trailing edge. Selected segment: `--fg` on `--elevated` under a `--border-strong` ring, **no accent**
+trailing edge. **`Unfiled` is omitted when no folder exists** (README decision 13, STATES W1, errata
+E3): a bucket equal to the whole list is a distinction without a difference. Selected segment: `--fg` on `--elevated` under a `--border-strong` ring, **no accent**
 (README 3). The selected segment carries a 22px `…`; no other segment does, and `Unfiled` never does
 (STATES W3/W4).
 
@@ -150,13 +169,20 @@ count via `folderCopy.shelves.aria`.
 ### Task 2.2 — the compact trigger and sheet
 
 Below `CHASSIS_WIDE_MIN_PX`: a 44px trigger printing the shelf name at 15px semibold plus its count
-and `▾`, with a 44px `…` beside it — absent, not disabled, on Unfiled (C2). The sheet is
+and `▾`, with a 44px `…` beside it — **present only on a selected named folder**, absent rather than
+disabled on both `All decks` and `Unfiled` (STATES C2, corrected by errata E7: the `…` opens rename
+and delete, which neither of those has). The sheet is
 `aria-modal` with the app's shared focus trap, 48px rows, a **round** single-select mark
 (`filter-panel.tsx:519` — a square tick promises two), counts trailing, `New folder…` last, current
-shelf pinned first with the pin computed once on open (C4).
+shelf pinned first with the pin computed once on open (C4, corrected by errata E8: the pinned shelf
+is **removed from the remainder** rather than printed twice, and `Unfiled` is omitted entirely when
+no folder exists).
 
 **Its own live region**, mirroring `deck-filter-sheet.tsx:142-155`, and `silentResult` on the chassis
-while it is open.
+while it is open. **Keyed by the selected shelf, not by the sentence** — `ResultLine` suppresses
+identical text unless its `announceId`/`revision` moves (`ui/result-line.tsx`), so switching between
+two shelves that hold four decks each would announce once and then fall silent on exactly the change
+that matters. The shelf id is the identity, for the sheet's own region and for the chassis's.
 
 ### Task 2.3 — S2 and S3
 
@@ -171,9 +197,16 @@ filters emptied a populated shelf → the shipped filtered empty, unchanged (N4)
 **Tests:** the ladder as a table-driven render test, both widths; the pinned sheet order; the
 `aria-current` and accessible names; `Unfiled` carrying no `…` at either width.
 
+### Task 2.4 — create
+
+From the line's trailing control and the sheet's last row; PR 3 adds the third entry, `New folder…`
+inside move mode. Empty **disables** `Create` with no message; duplicate is stated in words. Length
+is unreachable — `maxLength = FOLDER_NAME_MAX`. On success the action returns the new folder's id,
+the client selects that shelf, and the reader lands on S2 (CR4).
+
 ---
 
-## PR 3 — the acts
+## PR 3 — the acts on what exists
 
 ### Task 3.1 — move, in the menu the deck already has
 
@@ -185,18 +218,11 @@ folders by name, the current destination carrying a filled round mark, `New fold
 panel returns to its menu with the row now reading the new shelf (README 17): no toast, and on a
 named shelf the tile also leaves the grid. A `false` return reverts the row (M6).
 
-### Task 3.2 — create
-
-From the line's trailing control, the sheet's last row, or `New folder…` inside move mode. Empty
-**disables** `Create` with no message; duplicate is stated in words. Length is unreachable —
-`maxLength = FOLDER_NAME_MAX`. On success the new shelf is **selected**, which lands the reader on
-S2 (CR4).
-
-### Task 3.3 — rename
+### Task 3.2 — rename
 
 The selected shelf's `…` only. `RenameForm`'s real contract, per the correction above.
 
-### Task 3.4 — delete
+### Task 3.3 — delete
 
 `Delete "<name>"?` over **`Its 4 decks return to Unfiled. No deck is deleted.`**, or
 `Nothing is filed here.` when empty. Confirm either way — there is no undo. The confirming button

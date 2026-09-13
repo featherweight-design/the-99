@@ -223,3 +223,25 @@ motion to reduce.
 
 Nesting (no parent column exists), folders anywhere but `/decks`, and Home's grouping — which
 inherits whatever this settles.
+
+---
+
+## Errata — corrections carried eng-side, 2026-09-13
+
+Recorded here rather than by editing the prose above, so the round Design shipped stays legible and
+each correction can be ratified one by one. Sources: `docs/superpowers/readiness-deck-folders.md`
+and the review of PR #569. **The `.dc.html` deliverable is not regenerated this round** — where it
+repeats a sentence corrected below (the blur rule at its rename frame, the "no route to file"
+rationale, and S3's "no route out"), this table is the authority.
+
+| # | Where | Stated | Correction |
+|---|---|---|---|
+| E1 | Decision 1, bullet 1; READINESS "What is green"; canvas §1 | Under (a) "there is no route to file the first deck into it" | Overstated. §16's Move row files a deck from the deck's own menu and is not the filter panel, so filing has a path either way. What (a) actually breaks is **reaching** the shelf: the segment naming it is unclickable, so the reader can never stand on the folder they just made, and the S2 state that teaches the loop is unreachable. The ruling is unchanged |
+| E2 | Decision 1, bullet 2; READINESS "What is green"; canvas §2 | "Every padding, gap, pip size and span cap in that table is a literal from the shipped files" | Two are not. The **132px search floor** is a filter-chassis handoff spec (`README.md:181`) that the shipped `SearchField` does not implement, and the shipped row gap is **8px** (`filter-chassis.tsx:260`), not the 12px the chassis's own arithmetic used. The real margin is ~76px over rather than 108. The conclusion stands, and the `max-w-[230px]` structural ceiling never depended on the estimate |
+| E3 | Decision 2 | "Counted segments: `All decks`, then folders by name, then `Unfiled`" | Unconditional as written, and decision 13 and STATES W1 both require **omitting `Unfiled` when no folder exists**. Decision 13 governs |
+| E4 | Decision 8 | The segment's figure and the result line's denominator "agree by construction" | Not by construction: the segment reads `listFolders.deckCount` (a server read) and the denominator is derived from the client-side narrowed list, which READINESS itself notes can disagree for one frame after a move. They agree **because one computed map feeds both** — that is now a plan rule (`docs/superpowers/plans/2026-09-13-deck-folders.md`, constraint 8), not a property of the drawing |
+| E5 | Decision 15; canvas S3 frame | S3's "one route out is the shelf you came from" | Contradicts its own frame and STATES N3, both of which render an `All decks` action. S3 has no body copy **and** an `All decks` exit |
+| E6 | Decision 21; STATES R2; canvas rename frame | Folder rename "blur commits, but never an invalid value" | The shipped panel rename has **no `onBlur`**, deliberately: blur lands before Save's click and double-submits (`rename-form.tsx:21-23`). Blur-commit is the deck header's ruling, not this form's. Folder rename takes `RenameForm`'s real contract — autofocus, Escape cancels, `Cancel`/`Save`, revert on empty or unchanged. Nothing drawn changes |
+| E7 | STATES C1 | The compact trigger carries a 44px `…` for "any shelf selected" | The `…` opens rename and delete, which exist only for a **named folder**. It is absent on `All decks` as well as on `Unfiled` — W1 already draws All decks without one, so this aligns the compact form with the wide one |
+| E8 | STATES C4 | Sheet order: current shelf pinned first, then All decks, folders, Unfiled | Two edge cases: `Unfiled` is omitted entirely when no folder exists (E3), and the pinned shelf is **removed from the remainder** rather than printed twice |
+| E9 | STATES M1 | "Reorder the shipped three" | `Update from a list` renders only when `built > 0` (`deck-card-overflow.tsx:136`), so the shipped menu is two rows on a brew. `Move` is inserted between `Rename` and `Delete` either way |
