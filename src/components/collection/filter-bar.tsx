@@ -241,7 +241,15 @@ export function FilterBar({
               // The drawn padding gives ~37-41px, so search was the one
               // undersized target sitting beside pips, triggers, sort and the
               // view toggle that all enforce it.
-              : "gap-[8px] px-[12px] py-[9px] min-h-[44px]"
+              //
+              // `shrink-0` and a width floor for the same reason the row
+              // scrolls at all. A flex item with neither absorbs the row's
+              // overflow by compressing, and search is the only child that
+              // can — so the pips and four non-wrapping triggers would squeeze
+              // the card-name field down to its icon and padding instead of
+              // letting the row scroll past them. 220px is the phone floor
+              // `decks/quick-add-bar.tsx` already gives the same control.
+              : "gap-[8px] px-[12px] py-[9px] min-h-[44px] min-w-[220px] shrink-0"
           }
           className="text-[14px]"
           value={filters.search}
