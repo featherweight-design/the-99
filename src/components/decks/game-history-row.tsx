@@ -178,8 +178,18 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
         <div className="flex gap-[10px] md:gap-[11px] mt-[8px] md:mt-[7px] md:mb-[1px] md:pl-[40px]">
           <span aria-hidden className="flex-none w-[2px] rounded-full bg-border-strong" />
           {/* No truncation and no line clamp: the 140-character cap is what
-              makes that safe, and it is enforced by the column's own check. */}
-          <span className="italic text-[12.5px] leading-[1.5] text-fg-muted break-words">
+              makes that safe, and it is enforced by the column's own check.
+              `min-w-0` is what makes `break-words` bite — a flex item's
+              automatic min-content width otherwise holds an unbroken 140
+              characters at full width and pushes the row off a 390px screen,
+              which is exactly the case the cap was supposed to make safe. */}
+          <span className="min-w-0 italic text-[12.5px] leading-[1.5] text-fg-muted break-words">
+            {/* The row reads as one stop, and the visible line is a bare
+                sentence: without this the ear reaches somebody's prose with no
+                idea what it is. deck-tuning.md §Accessibility puts `note:`
+                inside the row's description, after the marks, which is where
+                the DOM already has it. */}
+            <span className="sr-only">{gameLogCopy.history.noteSpoken}</span>
             {`\u201C${note}\u201D`}
           </span>
         </div>

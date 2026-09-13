@@ -137,9 +137,22 @@ describe("a game's note", () => {
   const line = (container: HTMLElement) => container.querySelector(".italic");
 
   it("draws the note, inside typographic quotes", () => {
-    mount({ ...GAME, note: NOTE });
+    const { container } = mount({ ...GAME, note: NOTE });
     // The quotes are the handoff's: this is somebody's sentence, not a value.
-    expect(screen.getByText(`\u201C${NOTE}\u201D`)).toBeInTheDocument();
+    expect(line(container)).toHaveTextContent(`\u201C${NOTE}\u201D`);
+  });
+
+  // The eye reads a quoted sentence under a row of chips as a note. The ear
+  // reaches it with no idea what it is, which is why deck-tuning.md
+  // §Accessibility puts `note:` in the row's description after the marks.
+  it("says what the line is, to a reader who cannot see it", () => {
+    const { container } = mount({ ...GAME, note: NOTE });
+    const spoken = container.querySelector(".sr-only");
+    expect(spoken).toHaveTextContent(gameLogCopy.history.noteSpoken);
+    // Spoken, never drawn: the visible line is the sentence alone.
+    expect(line(container)!.textContent).toBe(
+      `${gameLogCopy.history.noteSpoken}\u201C${NOTE}\u201D`,
+    );
   });
 
   // Null is the ordinary case — most games have nothing worth writing down. An
@@ -166,8 +179,13 @@ describe("a game's note", () => {
     const at140 = "x".repeat(140);
     const { container } = mount({ ...GAME, note: at140 });
     const text = line(container)!;
-    expect(text.textContent).toBe(`\u201C${at140}\u201D`);
+    expect(text).toHaveTextContent(`\u201C${at140}\u201D`);
     expect(text.className).not.toContain("truncate");
     expect(text.className).not.toContain("line-clamp");
+    // jsdom lays nothing out, so this is the class contract rather than a
+    // measurement — `break-words` cannot shrink a flex item whose automatic
+    // min-content width is 140 unbroken characters. The measurement is
+    // `scripts/probe-game-note.mjs`, which now requires a cap-length note.
+    expect(text.className).toContain("min-w-0");
   });
 });

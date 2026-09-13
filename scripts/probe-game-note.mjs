@@ -71,18 +71,39 @@ for (const vp of VIEWPORTS) {
     const rows = [...document.querySelectorAll("li")].filter((li) =>
       li.querySelector("button[aria-label='Delete this game']"),
     );
-    const withNote = rows.find((r) => r.querySelector(".italic"));
+    // The cap is the whole reason the line needs no truncation, so the fixture
+    // has to hold a note AT it — a short sentence wraps in any width and would
+    // let this report cap behaviour it never measured. And the no-note row is
+    // half the contract: without one, "nothing reserved" goes unchecked.
+    const noted = rows.filter((r) => r.querySelector(".italic"));
+    const withNote = noted.find((r) => {
+      const text = r.querySelector(".italic").textContent;
+      // The visible line is the sentence in typographic quotes, and the ear's
+      // `note:` prefix is inside the same element — count neither.
+      return text.replace(/^note:/, "").replace(/[\u201C\u201D]/g, "").length >= 140;
+    });
     const without = rows.find((r) => !r.querySelector(".italic"));
     const read = (el, props) =>
       Object.fromEntries(props.map((p) => [p, getComputedStyle(el)[p]]));
-    if (!withNote) return { rows: rows.length, note: null };
+    if (!withNote || !without) {
+      return {
+        rows: rows.length,
+        failed:
+          `This deck needs BOTH a game whose note is 140 characters and a game with none. ` +
+          `Found ${noted.length} noted (${withNote ? "one at the cap" : "none at the cap"}) ` +
+          `and ${without ? "an unnoted row" : "no unnoted row"}.`,
+      };
+    }
     const text = withNote.querySelector(".italic");
     const rule = text.parentElement.querySelector("span[aria-hidden]");
     return {
       rows: rows.length,
       rowsWithNote: rows.filter((r) => r.querySelector(".italic")).length,
       note: {
-        quoted: text.textContent.startsWith("“") && text.textContent.endsWith("”"),
+        // The spoken `note:` prefix shares this element, so the quotes are
+        // checked against what is left after it.
+        quoted: /^(?:note:)?\u201C[\s\S]*\u201D$/.test(text.textContent),
+        spoken: text.querySelector(".sr-only")?.textContent ?? null,
         lines: Math.round(text.getBoundingClientRect().height / parseFloat(getComputedStyle(text).lineHeight)),
         ...read(text, ["fontSize", "fontStyle", "lineHeight", "color"]),
         indent: getComputedStyle(text.parentElement).paddingLeft,
@@ -110,3 +131,11 @@ for (const vp of VIEWPORTS) {
 }
 await browser.close();
 console.log(JSON.stringify(report, null, 2));
+
+// A probe that reports a partial fixture as a result is worse than no probe:
+// it reads as an audit that passed.
+const incomplete = Object.entries(report).filter(([, r]) => r.failed);
+if (incomplete.length > 0) {
+  for (const [label, r] of incomplete) console.error(`${label}: ${r.failed}`);
+  process.exit(1);
+}
