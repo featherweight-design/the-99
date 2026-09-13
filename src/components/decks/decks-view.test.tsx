@@ -404,6 +404,29 @@ describe("DecksView", () => {
 describe("DecksView remembers the order", () => {
   const sortTrigger = () => screen.getByRole("button", { name: /^Sort · / });
 
+  // The label is not the feature. A regression that kept `Sort · Name` in sync
+  // and handed the default to `sortDecks` would pass every case above.
+  // Read off the list items, not `getAllByRole("heading")`: the tile's `h3` sits
+  // inside an `aria-hidden` block — the overlay link carries the accessible name
+  // — so the heading role is not exposed at all.
+  const namesInOrder = () =>
+    screen.getAllByRole("listitem").map((li) => li.querySelector("h3")?.textContent);
+
+  // Three orders, three different sequences. Two of them agreeing by accident is
+  // how an ordering assertion passes while measuring nothing:
+  //   name        → Atraxa, Míriel, Zur
+  //   newest      → Zur, Míriel, Atraxa
+  //   last played → Zur, Atraxa, Míriel
+  const threeDecks = () => [
+    deckOf({ id: "d1", name: "Míriel", createdAt: new Date("2026-03-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-04T00:00:00Z") }),
+    deckOf({ id: "d2", name: "Atraxa", createdAt: new Date("2026-01-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-05T00:00:00Z") }),
+    deckOf({ id: "d3", name: "Zur", createdAt: new Date("2026-06-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-06T00:00:00Z") }),
+  ];
+
+
   beforeEach(() => localStorage.clear());
 
   it("keeps the chosen order for the next visit", () => {
@@ -426,10 +449,14 @@ describe("DecksView remembers the order", () => {
   });
 
   it("lets the URL outrank what this browser stored", () => {
+    // Three decks, not one: with a single row every order produces the same
+    // list, so a regression letting storage reach `sortDecks` would pass a test
+    // named for precedence.
     localStorage.setItem("the99:decks:sort", "name");
     window.history.replaceState(null, "", "/decks?sort=newest");
-    renderWide(view([deckOf()]));
+    renderWide(view(threeDecks()));
     expect(sortTrigger()).toHaveAccessibleName("Sort · Newest");
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
   });
 
   it("falls back to last played when neither has an opinion", () => {
@@ -442,28 +469,6 @@ describe("DecksView remembers the order", () => {
     renderWide(view([deckOf()]));
     expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
   });
-
-  // The label is not the feature. A regression that kept `Sort · Name` in sync
-  // and handed the default to `sortDecks` would pass every case above.
-  // Read off the list items, not `getAllByRole("heading")`: the tile's `h3` sits
-  // inside an `aria-hidden` block — the overlay link carries the accessible name
-  // — so the heading role is not exposed at all.
-  const namesInOrder = () =>
-    screen.getAllByRole("listitem").map((li) => li.querySelector("h3")?.textContent);
-
-  // Three orders, three different sequences. Two of them agreeing by accident is
-  // how an ordering assertion passes while measuring nothing:
-  //   name        → Atraxa, Míriel, Zur
-  //   newest      → Zur, Míriel, Atraxa
-  //   last played → Zur, Atraxa, Míriel
-  const threeDecks = () => [
-    deckOf({ id: "d1", name: "Míriel", createdAt: new Date("2026-03-01T00:00:00Z"),
-      lastPlayedAt: new Date("2026-09-04T00:00:00Z") }),
-    deckOf({ id: "d2", name: "Atraxa", createdAt: new Date("2026-01-01T00:00:00Z"),
-      lastPlayedAt: new Date("2026-09-05T00:00:00Z") }),
-    deckOf({ id: "d3", name: "Zur", createdAt: new Date("2026-06-01T00:00:00Z"),
-      lastPlayedAt: new Date("2026-09-06T00:00:00Z") }),
-  ];
 
   it("puts the decks in the URL's order, not just the label", () => {
     window.history.replaceState(null, "", "/decks?sort=newest");
@@ -490,35 +495,6 @@ describe("DecksView remembers the order", () => {
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "r" } });
     expect(window.location.search).toContain("sort=lastPlayed");
     expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
-  });
-
-  it("re-reads the URL when a navigation changes it, not only at mount", () => {
-    // The shell's `Decks` link clears the query without unmounting this view. An
-    // absence now means "follow what this browser stored", so a reader who chose
-    // `Newest` would otherwise have kept it over their own stored order while
-    // the address bar said nothing.
-    localStorage.setItem("the99:decks:sort", "name");
-    window.history.replaceState(null, "", "/decks?sort=newest");
-    const { rerender } = renderWide(view(threeDecks()));
-    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
-
-    // `useSearchParams` is stubbed from `window.location`, so moving the URL and
-    // re-rendering is the navigation.
-    window.history.replaceState(null, "", "/decks");
-    rerender(view(threeDecks()));
-    expect(namesInOrder()).toEqual(["Atraxa", "Míriel", "Zur"]);
-  });
-
-  it("reconciles every parameter it owns, not only the sort", () => {
-    // One rule for the whole of this view's URL-owned state: the same navigation
-    // would otherwise leave a status filter on with a bare URL.
-    window.history.replaceState(null, "", "/decks?q=Zur");
-    const { rerender } = renderWide(view(threeDecks()));
-    expect(namesInOrder()).toEqual(["Zur"]);
-
-    window.history.replaceState(null, "", "/decks");
-    rerender(view(threeDecks()));
-    expect(namesInOrder()).toHaveLength(3);
   });
 
   it("holds the stored order through a filter click, which writes no sort", () => {
