@@ -198,10 +198,18 @@ async function run() {
       // probe chose for itself while a usable set sat further down the list.
       const indexed = rows.find((a) =>
         /you have (none of \d+|\d+ of \d+) in the base run/.test(a.getAttribute("aria-label") ?? ""));
-      const link = incomplete ?? indexed ?? rows[0];
+      // No `?? rows[0]`: an unindexed page draws no cells, so falling back to one makes
+      // `waitForCells` time out instead of saying the index had no usable fixture.
+      const link = incomplete ?? indexed ?? null;
       return link ? link.getAttribute("href").split("/").pop() : null;
     });
-    if (!code) throw new Error("No set to probe: the index listed none and PROBE_SET was unset.");
+    if (!code) {
+      throw new Error(
+        "No set to probe: the index listed no INDEXED set (a row whose accessible name "
+        + "carries a base-run ratio), and PROBE_SET was unset. An unindexed page draws no "
+        + "cells, so probing one would time out rather than report this.",
+      );
+    }
 
     // The index row, while we are on it (addendum R2 §30). The extras figure ranks UNDER
     // the base ratio rather than trailing a code and a year, and takes --fg-muted — which
@@ -583,6 +591,21 @@ async function run() {
     );
 
     await page.setViewportSize({ width: 1280, height: 900 });
+    // `null === null` is the trap round 36's own fix walked into: `rackAt` returns a null
+    // rack when a row is missing, so comparing three states could pass by all three being
+    // absent. Every comparison goes through here, which requires the measurements to exist
+    // before it will call them equal.
+    const rackHeightsAgree = (label, states) => {
+      const missing = states.filter((st) => st === null || st.rack === null);
+      if (missing.length > 0) {
+        return report(label, false,
+          `${missing.length} of ${states.length} states could not be measured — a rack row `
+          + "was absent, which is the finding rather than a matching height");
+      }
+      const heights = states.map((st) => st.rack);
+      return report(label, new Set(heights).size === 1, heights.map((h) => `${h}px`).join(", "));
+    };
+
     const rest = await rackAt("");
     const one = await rackAt("?c=W");
     // Three ACTIVE dimensions, which a complete set cannot have: at 100% the page drops
@@ -600,18 +623,10 @@ async function run() {
     );
     if (rest === null) {
       failures += !report("the chip row is on the page", false, "no [data-set-chips]");
-    } else if (rest.rack === null) {
-      failures += !report(
-        "all three rack rows are present to measure",
-        false,
-        `found ${rest.rowsFound} of 3 — the invariant is "always all three", so a missing `
-          + "row is the finding rather than a smaller sum",
-      );
     } else {
-      failures += !report(
+      failures += !rackHeightsAgree(
         "the rack's three rows do not move with the filter state",
-        rest.rack === one.rack && one.rack === three.rack,
-        `rest ${rest.rack}px, one ${one.rack}px, three ${three.rack}px`,
+        [rest, one, three],
       );
       failures += !report(
         "no unlit pip is dimmed — the shipped control's 1.38:1 is what this replaces",
@@ -653,11 +668,9 @@ async function run() {
             + "wrapping result line cannot be measured. Probe a collection with one.",
         );
       } else {
-        failures += !report(
+        failures += !rackHeightsAgree(
           "the phone rack's three rows do not move either",
-          phoneRest.rack === phoneMissing2.rack && phoneMissing2.rack === phoneThree.rack,
-          `rest ${phoneRest.rack}px, missing-only ${phoneMissing2.rack}px, `
-            + `three ${phoneThree.rack}px`,
+          [phoneRest, phoneMissing2, phoneThree],
         );
       }
     }
