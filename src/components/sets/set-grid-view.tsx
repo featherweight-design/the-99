@@ -125,10 +125,6 @@ export function SetGridView(props: SetGridViewProps) {
    * keyboard on a control that is no longer there.
    */
   const searchRef = useRef<HTMLInputElement>(null);
-  const clearQuery = () => {
-    setFilters({ ...filters, query: "" });
-    searchRef.current?.focus();
-  };
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
   // a sheet the reader never reopened.
@@ -164,6 +160,62 @@ export function SetGridView(props: SetGridViewProps) {
    */
 
   const filters = local ?? urlFilters;
+
+  /**
+   * The typed value, held apart from the applied one — §29's 150ms debounce, the shipped
+   * card-search window.
+   *
+   * Applying on every keystroke recomputed both sections, the rarity counts, the cost and
+   * `Send N`, and re-announced the live result line, once per character. The INPUT stays
+   * uncontrolled-feeling and immediate; only the applied query and the URL wait.
+   */
+  const [draft, setDraft] = useState(filters.query);
+  /**
+   * The last value this field pushed. Anything else that moves `filters.query` — Clear all,
+   * the empty state, a fresh URL — has to reach the input, and comparing against the pushed
+   * value is what tells the two apart. Adjusted during render rather than in an effect, per
+   * AGENTS.md: an effect paints the stale text once before correcting it.
+   */
+  const [pushedQuery, setPushedQuery] = useState(filters.query);
+  if (filters.query !== pushedQuery) {
+    setPushedQuery(filters.query);
+    setDraft(filters.query);
+  }
+  const queryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * `setFilters` reads `filters` off the closure, and 150ms is long enough for the reader
+   * to press a pip in between — so the timer reads the live value rather than the one that
+   * existed when the key went down.
+   */
+  const filtersRef = useRef(filters);
+  // In an effect, not during render: `react-hooks/refs` forbids writing a ref while
+  // rendering, and this only has to be current by the time a 150ms timer reads it.
+  useEffect(() => {
+    filtersRef.current = filters;
+  });
+  const cancelQueryTimer = () => {
+    if (queryTimer.current !== null) clearTimeout(queryTimer.current);
+    queryTimer.current = null;
+  };
+  useEffect(() => cancelQueryTimer, []);
+  const typeQuery = (value: string) => {
+    setDraft(value);
+    cancelQueryTimer();
+    queryTimer.current = setTimeout(() => {
+      queryTimer.current = null;
+      setPushedQuery(value);
+      setFilters({ ...filtersRef.current, query: value });
+    }, 150);
+  };
+  const clearQuery = () => {
+    // Immediate, and the pending keystroke dies with it: a debounced apply landing after
+    // the clear would put the query back.
+    cancelQueryTimer();
+    setDraft("");
+    setPushedQuery("");
+    setFilters({ ...filters, query: "" });
+    searchRef.current?.focus();
+  };
 
   function setFilters(next: SetGridFilters) {
     // Only the parameters this page owns are replaced. Rebuilding the string from them
@@ -395,6 +447,9 @@ export function SetGridView(props: SetGridViewProps) {
   // sheet's Clear passes `false`: focusing a field behind an open dialog is worse than
   // leaving focus in the sheet the reader is still using.
   const clearAll = (refocus = true) => {
+    cancelQueryTimer();
+    setDraft("");
+    setPushedQuery("");
     setFilters(EMPTY_FILTERS);
     if (refocus) searchRef.current?.focus();
   };
@@ -614,14 +669,23 @@ export function SetGridView(props: SetGridViewProps) {
           <div data-set-search-slot className="min-w-[132px] flex-auto">
             <SearchField
               ref={searchRef}
-              containerClassName="px-[10px] py-[6px] md:py-[4px]"
+              // 9px, not 6: the field's own box is the 24px trailing slot plus its padding
+              // and borders, and at 6 that is 38px — under the phone's 44px target. The row
+              // measured 44 only because `MissingOnlyToggle` is 44, which is the toggle's
+              // height and not this control's. Desktop keeps 4.
+              containerClassName="px-[10px] py-[9px] md:py-[4px]"
               // 16px on the phone is not a type choice: iOS Safari zooms the page when a
               // text input under 16px takes focus, which would throw away the 390px
               // arithmetic this row is built on. The compact size starts at `md`.
               className="text-[16px] md:text-[12.5px]"
-              value={filters.query}
-              onChange={(e) => setFilters({ ...filters, query: e.target.value })}
-              placeholder={setFilterCopy.search.placeholder}
+              value={draft}
+              onChange={(e) => typeQuery(e.target.value)}
+              // The phone slot is 173px and the icon, padding and clear leave far less to
+              // the text, so the long placeholder truncates there. The ACCESSIBLE NAME is
+              // the full one at both widths — it is what carries the set.
+              placeholder={
+                isDesktop ? setFilterCopy.search.placeholder : setFilterCopy.search.placeholderShort
+              }
               aria-label={setFilterCopy.search.ariaLabel(name)}
               autoComplete="off"
               spellCheck={false}
@@ -639,8 +703,12 @@ export function SetGridView(props: SetGridViewProps) {
                   // TRIMMED, like every other reading of this value — serialisation,
                   // matching, the result line. Typing only spaces left the grid unfiltered
                   // under an enabled, focusable clear for a query that filtered nothing.
-                  aria-hidden={!isQueryActive(filters.query) || undefined}
-                  tabIndex={isQueryActive(filters.query) ? 0 : -1}
+                  // The DRAFT, not the applied query: the × belongs to the text in the
+                  // box, and reading the applied value left it hidden for the 150ms after
+                  // the first character — the moment a reader is most likely to reach for
+                  // it, and a control that appears late is worse than one that never does.
+                  aria-hidden={!isQueryActive(draft) || undefined}
+                  tabIndex={isQueryActive(draft) ? 0 : -1}
                   className="flex-none rounded-full flex items-center justify-center
                              bg-[color:var(--border)] text-[color:var(--fg-muted)]"
                   style={{
@@ -648,7 +716,7 @@ export function SetGridView(props: SetGridViewProps) {
                     // when the search is the sole active control — the chip line shows no
                     // Clear at one control — so it cannot be the smallest thing on screen.
                     width: 24, height: 24, fontSize: 12,
-                    visibility: isQueryActive(filters.query) ? "visible" : "hidden",
+                    visibility: isQueryActive(draft) ? "visible" : "hidden",
                   }}
                 >
                   ×

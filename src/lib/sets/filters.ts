@@ -105,6 +105,7 @@ export function serialiseFilters(f: SetGridFilters): URLSearchParams {
 
 /** Unknown values are dropped rather than thrown on: a hand-edited URL still renders. */
 export function parseFilters(params: URLSearchParams): SetGridFilters {
+  const raw = params.get("q") ?? "";
   // Case-insensitive, because the comment above promises a hand-edited URL still renders
   // and `?r=Mythic` is exactly the kind of thing a person types. Colours are compared
   // upper, rarities lower, which is how each is written everywhere else.
@@ -117,9 +118,14 @@ export function parseFilters(params: URLSearchParams): SetGridFilters {
     // rather than producing a state the control can neither show nor serialise back.
     rarities: RARITIES.filter((r) => rarities.includes(r)).slice(0, 1),
     missingOnly: params.get("m") === "1",
-    // Trimmed on the way in, because `serialiseFilters` omits a blank one on the way out:
-    // untrimmed, `?q=%20` would sit in the field looking empty and in a shared URL looking
-    // like a filter, until some other control happened to rewrite the string.
-    query: (params.get("q") ?? "").trim(),
+    // Canonicalised on the way in, because `serialiseFilters` omits an inactive one on the
+    // way out: untrimmed, `?q=%20` would sit in the field looking empty and in a shared URL
+    // looking like a filter, until some other control happened to rewrite the string.
+    //
+    // `isQueryActive` rather than a bare trim, because trimming is not the whole test. A
+    // hand-edited `?q=%CC%81` — a combining mark with no base letter — survives `trim` but
+    // folds to nothing, so the grid was unfiltered while the field's × and the sheet's
+    // Clear were both inert: a query in the URL with no visible way to clear it.
+    query: isQueryActive(raw) ? raw.trim() : "",
   };
 }

@@ -718,6 +718,16 @@ async function run() {
           fieldWidth: Math.round((slot ?? field).getBoundingClientRect().width),
           inputWidth: Math.round(field.getBoundingClientRect().width),
           fontSize: parseFloat(getComputedStyle(field).fontSize),
+          // The field's OWN box, not the row's. The row measures 44 because
+          // `MissingOnlyToggle` is 44; that says nothing about whether this control is a
+          // 44px target, and for eighteen rounds it was 38.
+          // `SearchField` renders container > (glyph, input, trailing), so the parent IS
+          // the padded box. Guarded: if that ever stops being true the parent becomes the
+          // row or the slot and the number would silently be someone else's.
+          fieldHeight:
+            field.parentElement && field.parentElement !== row && field.parentElement !== slot
+              ? Math.round(field.parentElement.getBoundingClientRect().height)
+              : null,
           fields: document.querySelectorAll('input[aria-label^="Search cards in"]').length,
         };
       });
@@ -763,6 +773,15 @@ async function run() {
         `the field clears the 16px iOS zoom floor at ${width}${query}`,
         width >= 768 || row.fontSize >= 16,
         `${row.fontSize}px`,
+      );
+      // 44px is the phone target, and the field has to reach it on its own box. Desktop is
+      // deliberately compact and exempt.
+      failures += !report(
+        `the field is a 44px target at ${width}${query}`,
+        width >= 768 || (row.fieldHeight !== null && row.fieldHeight >= 44),
+        row.fieldHeight === null
+          ? "could not identify the field's padded box — the check measured nothing"
+          : `field ${row.fieldHeight}px, row ${row.rowHeight}px`,
       );
     }
 

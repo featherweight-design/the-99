@@ -206,3 +206,27 @@ describe("isQueryActive — the one question every reader asks", () => {
     expect(isQueryActive("jötun")).toBe(true);
   });
 });
+
+// A hand-edited URL is a supported entry point — `parseFilters` is deliberately lenient
+// about case and about extra rarities. A combining mark with no base letter survives
+// `trim` but folds to nothing, which left `filters.query` set while every control that
+// clears it read inactive: a query in the URL with no visible way out.
+describe("parseFilters — a query that folds to nothing", () => {
+  it("canonicalises a combining-mark-only query to empty", () => {
+    expect(parseFilters(new URLSearchParams("q=%CC%81")).query).toBe("");
+  });
+
+  it("still canonicalises whitespace", () => {
+    expect(parseFilters(new URLSearchParams("q=%20%20")).query).toBe("");
+  });
+
+  it("and leaves a real one alone, trimmed", () => {
+    expect(parseFilters(new URLSearchParams("q=%20plains%20")).query).toBe("plains");
+  });
+
+  // The diacritic itself is not the thing being dropped — only a mark with nothing to
+  // attach to. `Jötun` must survive parsing, or the folding search has nothing to fold.
+  it("keeps an accented query", () => {
+    expect(parseFilters(new URLSearchParams("q=j%C3%B6tun")).query).toBe("jötun");
+  });
+});

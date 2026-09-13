@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
 
@@ -953,6 +953,7 @@ describe("SetGridView — the name search", () => {
   const field = () => screen.getByRole("searchbox", { name: "Search cards in Duskmourn" });
 
   it("leads the control row and names the set it searches", () => {
+    stubDesktop(true);
     view([p("1"), p("2")], []);
     expect(field()).toBeInTheDocument();
     // The set is in the accessible name and not in the placeholder: the index's own field
@@ -974,10 +975,111 @@ describe("SetGridView — the name search", () => {
   });
 
   it("filters the grid without reaching the server", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "plains" } });
+      act(() => void vi.advanceTimersByTime(150));
+      expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=plains");
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // §29: 150ms, the shipped card-search window. Applying per keystroke recomputed both
+  // sections, the rarity counts, the cost strip and the live result line once per
+  // character — and re-announced the line each time.
+  it("waits 150ms before applying, and keeps the box responsive meanwhile", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "pla" } });
+      // The text is in the box immediately…
+      expect((field() as HTMLInputElement).value).toBe("pla");
+      // …and nothing has been applied yet.
+      act(() => void vi.advanceTimersByTime(149));
+      expect(replaceState).not.toHaveBeenCalled();
+      expect(screen.getAllByRole("button", { name: /Mountain/ }).length).toBeGreaterThan(0);
+      act(() => void vi.advanceTimersByTime(1));
+      expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=pla");
+      expect(screen.queryByRole("button", { name: /Mountain/ })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("applies once for a burst of keystrokes, not once per character", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      for (const v of ["p", "pl", "pla", "plai", "plain", "plains"]) {
+        fireEvent.change(field(), { target: { value: v } });
+        act(() => void vi.advanceTimersByTime(40));
+      }
+      expect(replaceState).not.toHaveBeenCalled();
+      act(() => void vi.advanceTimersByTime(150));
+      expect(replaceState).toHaveBeenCalledTimes(1);
+      expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=plains");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // A pending keystroke landing after the clear would put the query straight back.
+  it("drops a pending keystroke when the field is cleared", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "plains" } });
+      act(() => void vi.advanceTimersByTime(50));
+      fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
+      act(() => void vi.advanceTimersByTime(300));
+      expect((field() as HTMLInputElement).value).toBe("");
+      expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // The × belongs to the text in the box. Reading the APPLIED query left it hidden for the
+  // 150ms after the first character.
+  it("shows the field's clear as soon as a character is typed", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "p" } });
+      const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+      expect(clear).toBeVisible();
+      expect(clear).toHaveAttribute("tabindex", "0");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // `Clear all filters` clears the query too, so the box has to follow — otherwise the text
+  // stays visible over an unfiltered grid.
+  it("empties the box when Clear all clears the query", () => {
+    search = "q=plains&c=W";
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
-    fireEvent.change(field(), { target: { value: "plains" } });
-    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=plains");
-    expect(replace).not.toHaveBeenCalled();
+    expect((field() as HTMLInputElement).value).toBe("plains");
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters/ }));
+    expect((field() as HTMLInputElement).value).toBe("");
+  });
+
+  // The phone slot is 173px, and the long placeholder truncates in it. The accessible name
+  // carries the set at both widths and does not change.
+  it("shortens the placeholder on the phone and keeps the full name", () => {
+    stubDesktop(false);
+    view([p("1"), p("2")], []);
+    expect(field()).toHaveAttribute("placeholder", "Find a card");
+    expect(field()).toHaveAccessibleName("Search cards in Duskmourn");
+  });
+
+  it("uses the long placeholder on the desktop", () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    expect(field()).toHaveAttribute("placeholder", "Find a card in this set");
   });
 
   // The badge counts dimensions. The field is visible on the row beside it, so counting it
@@ -1595,5 +1697,27 @@ describe("SetGridView — row 2 under a query alone", () => {
     const clear = screen.getByRole("button", { name: "Clear the search" });
     expect(clear.style.width).toBe("24px");
     expect(clear.style.height).toBe("24px");
+  });
+});
+
+
+// The rarity panel's per-row counts are a fourth reader of the same computation, and could
+// have gone on showing whole-set figures while the grid, the result line and the cost strip
+// all showed the query subset.
+describe("SetGridView — a query narrows the rarity panel's counts too", () => {
+  it("counts only what the query matches", () => {
+    stubDesktop(true);
+    search = "q=plains";
+    view([
+      p("1", { name: "Plains", rarity: "common" }),
+      p("2", { name: "Mountain", rarity: "common" }),
+      p("3", { name: "Island", rarity: "rare" }),
+    ], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    // One Plains, not the two commons the set holds.
+    expect(screen.getByRole("option", { name: /^common, 1 cell/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /^common, 2 cells/ })).toBeNull();
+    // And a rarity the query empties is offered as unavailable rather than as one card.
+    expect(screen.getByRole("option", { name: /^rare, no cells/ })).toBeInTheDocument();
   });
 });

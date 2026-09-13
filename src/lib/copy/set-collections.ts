@@ -43,6 +43,9 @@ export const setFilterCopy = {
   // away, and a screen-reader user has no other way to tell which population they are in.
   search: {
     placeholder: "Find a card in this set",
+    // Phone. The slot is 173px on the persistent row and the long form does not fit it;
+    // the set stays in the accessible name, which is unchanged at both widths.
+    placeholderShort: "Find a card",
     ariaLabel: (set: string) => `Search cards in ${set}`,
     clear: "Clear the search",
   },
