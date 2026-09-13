@@ -180,8 +180,9 @@ Nothing is redrawn. The handoff stands as delivered.
     same unplated inline glyph, always present.
 11. **The deck tile's 189px column is out of scope twice over.** The handoff's recommended fix is
     one-up below ~700px, which is a `decks-view.tsx:386` change — `sm:grid-cols-3` → a 700px
-    breakpoint — and that file is owned by a live filter round. It is out of scope on the handoff's own
-    account and unavailable on top of it. The tile ships at `0.76 : 1` between 640 and 699px, losing
+    breakpoint — and that file was owned by a live filter round when this was written. That round has
+    since merged; as of 2026-09-13 the file is PR #573's (deck folders), so the fix waits on that
+    rather than on a filter round. It is out of scope on the handoff's own account either way. The tile ships at `0.76 : 1` between 640 and 699px, losing
     ~44% of the crop's width, with `center top` keeping the face. **One capture at 640 before the deck
     PR merges**, per the handoff's own open item 1.
 
@@ -224,20 +225,32 @@ handoff says so in the imperative for whoever builds it.
 
 ---
 
-## §5c The seven figures that ship, in one place
+## §5c The figures that ship, in one place
 
 Every `labelAt` in this round, measured. STATES and the plan are both **superseded
-by this table** wherever they disagree with it, and the build matches it:
+by this table** wherever they disagree with it, and the build matches it.
 
-| render | ships | the handoff said |
-|---|---|---|
-| 01 home hero | **46** | 38 (STATES), 46 (§3.2), 63 (decision 7) |
-| 02 resume row | **53** | 40 |
-| 04 commander detail, mobile | **109** | 57 |
-| 06 discovery row | **56** | 46 |
-| 07 owned-lane row | **63** | 46 |
-| 08 deck tile | **46** | 46 ✓ |
-| 09 deck spine, phone | **90** | 83 |
+**Amended 2026-09-13 (PR #556).** Three rows moved after the round shipped: two
+because their blocks changed shape, and one because §A4 was overturned (§6a).
+The `ships` column is the current figure; the third column is what the round
+first shipped where that differs.
+
+| render | ships | shipped 2026-09-12 | the handoff said |
+|---|---|---|---|
+| 01 home hero | **71** | 46 | 38 (STATES), 46 (§3.2), 63 (decision 7) |
+| 02 resume row | **`flat`** — no vertical ramp | 53 | 40 |
+| 04 commander detail, mobile | **96** | 109 | 57 |
+| 06 discovery row | **56** | — | 46 |
+| 07 owned-lane row | **63** | — | 46 |
+| 08 deck tile | **46** | — | 46 ✓ |
+| 09 deck spine, phone | **90** | — | 83 |
+
+The hero's 46 counted one inset where its block has padding on both sides, and
+the block is two rows now (name and pips, then the type line and the fit chip):
+12 + 21 + 4 + 22 + 12 = **71**. Commander detail's name came down from 25px to
+19, so two clamped lines are 44 rather than 58: 15 + 15 + 4 + 44 + 4 + 14 =
+**96**. The resume row publishes no figure at all — its ink sits beside the
+portrait, so the band draws no vertical ramp to key one to.
 
 One of seven survives as given. The rule that produced them is the handoff's and
 is right — measure the block, key the ramp to its wrapped worst case — and every
@@ -299,7 +312,7 @@ checked one at a time.
 | The README's own title reads "design handoff · R1" | This is **R6** — six rounds, as its banner, `READINESS.md` and `STATES-commander-image.md` all say. The title line was never updated as the rounds stacked | A reader who trusts the title treats the newest package as the first draft |
 | The canvas stacks rounds `6a`…`1a` | There is **no `6a`**: the canvas's newest section is R5's. R6 exists in the prose only — the six statuses, the pencil reversal and the measured-block correction are all in `README.md` and `STATES`. So the canvas is superseded by its own package, and a reader opening it for the current geometry sees the round before last | The handoff names the canvas first in its own inventory. Anyone checking a drawing rather than a number needs to know the drawing is one round behind |
 | §3.5's aspect rule: `>3:1` → `left-portrait`, `1.37`–`3:1` → `cover`, `<1:1` → thumb | The rule has a **gap from 1:1 to 1.37** and is presented as complete. Ruled: **`cover`**, which makes the selector total — a box in that range is squarer than the crop, so `cover` crops its sides and `left-portrait` would leave ground beside a portrait narrower than its own box. No render in the app falls there today, and the 189px deck tile at 248 (0.76:1) is the nearest, which is below 1:1 and already priced | A selector with a hole is a selector the next surface has to guess at |
-| **Five of the seven `labelAt` figures are wrong, and the rule that produced them is right.** STATES gives 38 hero, 57 detail mobile, 46 both commander rows, 83 spine mobile | Measured against the blocks that ship: **46** hero (the block is a padded ROW — 12px above and below a 22px chip — and 38 counts one inset), **109** detail mobile (a 25px name clamped to two lines, plus a rank line and a type line; 57 cannot hold a block whose name alone is 29px), **46** discovery and **63** the owned row (one wash under two breakpoint subtrees, and the desktop block is the taller — the owned lane's carries a type line and discovery's does not), **90** spine mobile (`-webkit-line-clamp: 2` forbids the third title line the handoff's 83 was measured against). Only 40 resume and 78-becomes-46 on the deck tile survive as given | The handoff's own R6 note says a `labelAt` derived from an intended block rather than a measured one is the round's failure reintroduced. It is right, and five of its own figures are that. Every one of them now fails a browser check that measures the laid-out block against the ramp's hold rather than trusting either |
+| **Five of the seven `labelAt` figures are wrong, and the rule that produced them is right.** STATES gives 38 hero, 57 detail mobile, 46 both commander rows, 83 spine mobile | Measured against the blocks that ship — as audited; §5c carries the current figures, two of which moved again on 2026-09-13: **46** hero (the block is a padded ROW — 12px above and below a 22px chip — and 38 counts one inset), **109** detail mobile (a 25px name clamped to two lines, plus a rank line and a type line; 57 cannot hold a block whose name alone is 29px), **46** discovery and **63** the owned row (one wash under two breakpoint subtrees, and the desktop block is the taller — the owned lane's carries a type line and discovery's does not), **90** spine mobile (`-webkit-line-clamp: 2` forbids the third title line the handoff's 83 was measured against). Only 40 resume and 78-becomes-46 on the deck tile survive as given | The handoff's own R6 note says a `labelAt` derived from an intended block rather than a measured one is the round's failure reintroduced. It is right, and five of its own figures are that. Every one of them now fails a browser check that measures the laid-out block against the ramp's hold rather than trusting either |
 | The ramp standardises its hold on **73** for both strategies | **73 for `cover`, 78 for `left-portrait`.** 73 was measured against the cover band's 0.8 art; a portrait's sharp layer draws at 0.92, and the same hold leaves `--fg-body` at **4.33:1** over a white pixel in all six themes — which is why the hand-written column being deleted held at 78. The hold is a parameter with a 73 default, so there is still one ramp function and one shape | The handoff says deleting that column is "a deliberate re-drawing of two constants, not a no-op". This is the half of the re-drawing it got wrong, and the contrast suite caught it |
 | `READINESS.md`'s implementation order heads two steps "three call sites" and "six call sites" | **Four and seven.** Step 2 lists `full-card-trigger`, `deck-card-overflow` and the rename trigger on both spines; step 4 lists seven components. The scope under each heading is right and only the count is wrong | Cosmetic, and recorded because a reader ticking off a checklist by its stated count stops one file early |
 | `READINESS.md`'s step 1 tells the primitive slice to delete `COVER_SCRIM_STOPS.top`, the `labelEdge` prop, its stylesheet override and the 104px floor | Those deletions are **staged to the last slice**, and the plan says so: every one of them has a live consumer until the surfaces migrate, so deleting them in step 1 breaks four call sites. Only `OVER_ART_PLATE` and its assertion go with the primitive. The handoff's step is right about WHAT retires and wrong about when | Following the handoff's order literally makes the first build PR red |
