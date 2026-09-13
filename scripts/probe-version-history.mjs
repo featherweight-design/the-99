@@ -120,15 +120,23 @@ const readRail = (page) =>
   page.evaluate(({ selector, text }) => {
     const rows = [...document.querySelectorAll(selector)]
       .filter((b) => new RegExp(text).test(b.innerText));
-    const moving = [...document.querySelectorAll("main *")].filter((el) => {
+    const panel = document.getElementById("panel-versions");
+    // The DRAWN heading, not the first one in the document. The deck head ships
+    // a phone spine and a desktop spine, each with its own `h1` and one of them
+    // hidden at any width, so `querySelector("h1")` returned the desktop
+    // heading's collapsed box on the phone and read the deck's name as absent.
+    const headings = [...document.querySelectorAll("h1")];
+    const h1 = headings.find((h) => h.getBoundingClientRect().width > 1) ?? headings[0] ?? null;
+    // Scoped to the panel rather than `main`: READINESS 19 forbids motion on
+    // THIS surface, and the deck page's own chrome around it carries five
+    // transitioned elements that were never this ruling's to answer for.
+    const moving = [...(panel?.querySelectorAll("*") ?? [])].filter((el) => {
       const s = getComputedStyle(el);
       return (
         (s.transitionDuration !== "0s" && s.transitionProperty !== "none") ||
         s.animationName !== "none"
       );
     });
-    const panel = document.getElementById("panel-versions");
-    const h1 = document.querySelector("h1");
     return {
       url: location.pathname + location.search,
       // The deck's own head, which is the entire reason the rail moved into a
@@ -150,6 +158,12 @@ const readRail = (page) =>
       belowHead:
         h1 && rows.length
           ? rows[0].getBoundingClientRect().top > h1.getBoundingClientRect().bottom
+          : null,
+      headGeometry:
+        h1 && rows.length
+          ? `h1 bottom ${Math.round(h1.getBoundingClientRect().bottom)} · row top ${Math.round(
+              rows[0].getBoundingClientRect().top,
+            )} · scrollY ${Math.round(window.scrollY)}`
           : null,
       inPanel: rows.length > 0 && panel !== null && rows.every((row) => panel.contains(row)),
       // Versions is a tab over a panel in this document now, so the row is a
@@ -211,7 +225,10 @@ const readStamps = (page) =>
       /^[WLD]$/.test(li.innerText.trim().split("\n")[0] ?? ""),
     );
     return rows.map((li) => {
-      const spans = [...li.querySelectorAll(":scope > span")];
+      // Any depth, not `:scope > span`: a game carrying a note draws its slots
+      // inside an inner row, so the stamp is a grandchild there and a child
+      // otherwise. The pattern narrows this, not the depth.
+      const spans = [...li.querySelectorAll("span")];
       const stamp = spans.find((s) => /^(v\d+|—)$/.test(s.innerText.trim()));
       if (!stamp) return { stamp: null };
       const box = stamp.getBoundingClientRect();
@@ -537,7 +554,7 @@ try {
     check(
       `${viewport.label} · the deck's name is drawn above the rail`,
       rail.deckNameDrawn && rail.belowHead === true,
-      `${rail.deckName ?? "no h1"}${rail.belowHead === true ? " · rail below it" : " · rail NOT below it"}`,
+      `${rail.deckName ?? "no h1"}${rail.belowHead === true ? " · rail below it" : " · rail NOT below it"} · ${rail.headGeometry ?? "no geometry"}`,
     );
     check(
       `${viewport.label} · the rows are inside the Versions tab panel`,
