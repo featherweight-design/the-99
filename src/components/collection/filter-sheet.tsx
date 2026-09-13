@@ -36,8 +36,13 @@ import type { FilterChangeIntent } from "./filter-bar";
 const copy = collectionChassisCopy.sheet;
 
 /** 44px, not 36. This is the phone's only route to each filter (R3 §2). */
+// `shrink-0` is the height, not tidiness: in the set panel these are direct
+// children of a `flex-1` column holding hundreds of options, and a flex item's
+// default `flex-shrink: 1` compresses it toward min-content the moment the
+// column overflows. `h-[44px]` alone bought 26px rows on a real collection —
+// `min-h-0` constrains the LIST, and nothing was holding the options.
 const CHIP =
-  "flex h-[44px] cursor-pointer items-center gap-[7px] rounded-full border border-solid px-[13px] font-sans text-[13px]";
+  "flex h-[44px] shrink-0 cursor-pointer items-center gap-[7px] rounded-full border border-solid px-[13px] font-sans text-[13px]";
 
 const HEADING =
   "mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] tracking-[0.14em] uppercase text-[color:var(--fg-faint)]";

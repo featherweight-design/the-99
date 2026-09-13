@@ -336,6 +336,20 @@ describe("CollectionFilterSheet", () => {
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, setCodes: ["BLB"] });
   });
 
+  it("holds every option at 44px in a list that overflows", () => {
+    // The options are direct children of a `flex-1` column, and a flex item's
+    // default `flex-shrink: 1` compresses it toward min-content the moment the
+    // column overflows — `min-h-0` constrains the LIST, and nothing was holding
+    // these. jsdom lays nothing out, so the assertion is the property that stops
+    // it rather than a measured height.
+    render(sheet());
+    const panel = openSets();
+    for (const chip of within(panel).getAllByRole("switch")) {
+      expect(chip.className).toContain("h-[44px]");
+      expect(chip.className).toContain("shrink-0");
+    }
+  });
+
   it("gives the list the only flexible row, so narrowing it resizes nothing", () => {
     // The complaint that moved the list here was that typing shrank the whole
     // shelf. A fixed panel height with one `flex-1 min-h-0` row is what stops it.
