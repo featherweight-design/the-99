@@ -107,6 +107,18 @@ function SheetBody({
   // pressed `Filters` is not what they asked for.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog });
 
+  // The chosen set's own name, for the row's text AND for its accessible name —
+  // one source, so the two cannot name different sets. Falls back to the code
+  // where the option list has no row for it, which is what the wide panel does.
+  const oneSetName =
+    setOptions.find((o) => o.code === filters.setCodes[0])?.label ?? filters.setCodes[0];
+  const setAriaDetail =
+    filters.setCodes.length === 0
+      ? ""
+      : filters.setCodes.length === 1
+        ? `, ${oneSetName}`
+        : `, ${filters.setCodes.length} selected`;
+
   const toggle = <T extends string>(list: readonly T[], code: T): T[] =>
     list.includes(code) ? list.filter((c) => c !== code) : [...list, code];
 
@@ -252,10 +264,21 @@ function SheetBody({
             onClick={() => setSetsOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={setsOpen}
+            // Composed exactly as `FilterPanel` composes its own
+            // (`ui/filter-panel.tsx`): an `aria-label` REPLACES the button's
+            // text, so a bare "1 selected" throws away the set name the row is
+            // visibly showing — and the word at the end has to track
+            // `aria-expanded` or the label says `collapsed` while the panel is
+            // up. The copy module ships no key for either variant; every key it
+            // has ends `collapsed`.
             aria-label={
-              filters.setCodes.length === 0
-                ? collectionFilterCopy.set.triggerAriaCollapsed
-                : collectionFilterCopy.set.triggerAriaWithSelection(filters.setCodes.length)
+              setsOpen
+                ? `${collectionFilterCopy.set.panelAriaLabel}${setAriaDetail}, expanded`
+                : filters.setCodes.length === 0
+                  ? collectionFilterCopy.set.triggerAriaCollapsed
+                  : filters.setCodes.length === 1
+                    ? `${collectionFilterCopy.set.panelAriaLabel}, ${oneSetName}, collapsed`
+                    : collectionFilterCopy.set.triggerAriaWithSelection(filters.setCodes.length)
             }
             className="flex h-[44px] w-full cursor-pointer items-center justify-between gap-[10px] rounded-lg border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--fg-body)]"
           >
@@ -265,11 +288,7 @@ function SheetBody({
             <span className="truncate">
               {filters.setCodes.length === 0
                 ? copy.setAny
-                : collectionChassisCopy.chip.sets(
-                    filters.setCodes.length,
-                    setOptions.find((o) => o.code === filters.setCodes[0])?.label
-                      ?? filters.setCodes[0],
-                  )}
+                : collectionChassisCopy.chip.sets(filters.setCodes.length, oneSetName)}
             </span>
             <span aria-hidden className="shrink-0 text-[color:var(--fg-faint)]">›</span>
           </button>
@@ -303,6 +322,8 @@ function SheetBody({
           onToggle={(code) =>
             onChange({ ...filters, setCodes: toggle(filters.setCodes, code) })
           }
+          shown={shown}
+          total={total}
         />
       )}
     </div>
@@ -326,11 +347,16 @@ function SetPanel({
   options,
   selected,
   onToggle,
+  shown,
+  total,
 }: {
   onDismiss: () => void;
   options: SetOption[];
   selected: readonly string[];
   onToggle: (code: string) => void;
+  /** The result count a set toggle moves — announced HERE, not behind the sheet. */
+  shown: number;
+  total: number;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -359,6 +385,22 @@ function SetPanel({
     const seen = new Set(chosen.map((o) => o.code));
     return [...chosen, ...matching.filter((o) => !seen.has(o.code))];
   }, [matching, options, selected]);
+
+  // THE RESULT COUNT, from the foreground. The sheet runs the same effect and is
+  // `inert` while this panel is up, so its region is out of the accessibility
+  // tree — a set toggled in here moved the list and said so where nothing could
+  // read it. Same 300ms as every other count in this codebase, so four taps are
+  // one number, and the same first-render skip: opening the panel is not a result.
+  const announcedShown = useRef<number | null>(null);
+  useEffect(() => {
+    if (announcedShown.current === null || announcedShown.current === shown) {
+      announcedShown.current = shown;
+      return;
+    }
+    announcedShown.current = shown;
+    const timer = setTimeout(() => setAnnouncement(copy.match(shown, total)), 300);
+    return () => clearTimeout(timer);
+  }, [shown, total]);
 
   // Nothing is said for a blank query — clearing the field is not a result —
   // and nothing for an empty VOCABULARY, where the list already reads

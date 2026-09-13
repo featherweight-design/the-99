@@ -126,6 +126,17 @@ try {
     const page = await context.newPage();
     await signIn(page);
     for (const row of inventory.rows) {
+      // A surface that only EXISTS at one width says so, and the other width is
+      // not a failed cell. `/collection`'s filter sheet is the case: below 1000px
+      // the route draws a sheet, above it a row of popovers, and clicking
+      // `Filter cards` at 1300 times out because there is no such control — which
+      // is the routes behaving, not a gap. Without this the run reports a failure
+      // and exits 1 on a feature that is entirely correct, and a red cell nobody
+      // can act on is worse than no cell.
+      if (Array.isArray(row.widths) && !row.widths.includes(size.label)) {
+        console.log(`· ${row.id} · ${size.label} — not drawn at this width`);
+        continue;
+      }
       const file = path.join(outDir, `${row.id}-${size.label}.png`);
       let note = "";
       try {

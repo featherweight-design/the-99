@@ -289,6 +289,34 @@ describe("CollectionFilterSheet", () => {
     expect(sheetDialog).toHaveAttribute("inert");
   });
 
+  it("names the chosen set to a screen reader, and tracks its own expanded state", () => {
+    // An `aria-label` REPLACES the button's text, so a bare "1 selected" throws
+    // away the set name the row is visibly showing — and the word at the end has
+    // to track `aria-expanded`, or the label says `collapsed` while the panel is
+    // up. Composed exactly as `FilterPanel` composes its own.
+    const { rerender } = render(sheet({ filters: { ...FILTERS, setCodes: ["BLB"] } }));
+    expect(screen.getByRole("button", { name: "Filter by set, Bloomburrow, collapsed" }))
+      .toBeTruthy();
+    rerender(sheet({ filters: { ...FILTERS, setCodes: ["BLB", "LEA"] } }));
+    expect(screen.getByRole("button", { name: "Filter by set, 2 selected, collapsed" }))
+      .toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    expect(screen.getByRole("button", { name: "Filter by set, 2 selected, expanded" }))
+      .toBeTruthy();
+  });
+
+  it("announces the result count from the panel, not from behind it", () => {
+    // The sheet is `inert` while the panel is up, and an inert subtree is out of
+    // the accessibility tree — so a set toggled in here moved the list and said
+    // so where nothing could read it.
+    const { rerender } = render(sheet({ shown: 9 }));
+    const panel = openSets();
+    rerender(sheet({ shown: 3 }));
+    act(() => vi.advanceTimersByTime(301));
+    expect(panel.querySelector("[role='status']")?.textContent).toBe("3 of 40 match");
+  });
+
   it("says what is chosen on the row, not what the control is", () => {
     // The heading above already names the dimension; a row reading `Set` under a
     // heading reading `Set` tells the reader nothing.

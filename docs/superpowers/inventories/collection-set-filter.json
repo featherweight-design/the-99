@@ -1,6 +1,6 @@
 {
   "feature": "Collection — the set filter on the phone",
-  "note": "No `shares` block: the set panel is this sheet's own surface, and the wide form reaches the same filter through `FilterPanel`'s popover instead. The three rows draw nothing at 1300 for that reason — the desktop cell showing the wide bar rather than a sheet is the correct comparison, not a miss. Steps are Playwright verbs.",
+  "note": "No `shares` block: the set panel is this sheet's own surface, and the wide form reaches the same filter through `FilterPanel`'s popover instead. Every row is `\"widths\": [\"phone\"]` for that reason — below 1000px the route draws a sheet and above it a row of popovers, so `Filter cards` does not exist at 1300 and clicking it there is a timeout rather than a finding. The desktop comparison is the wide bar, which `filter-chassis.json` already photographs. Steps are Playwright verbs.",
   "rows": [
     {
       "id": "filter-sheet",
@@ -17,6 +17,9 @@
           "wait": "[role=dialog]",
           "settle": 1200
         }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
@@ -39,6 +42,9 @@
           "name": "^Filter by set",
           "settle": 1200
         }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
@@ -66,6 +72,9 @@
           "text": "hobbi",
           "settle": 900
         }
+      ],
+      "widths": [
+        "phone"
       ]
     }
   ]
