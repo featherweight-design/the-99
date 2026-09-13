@@ -40,7 +40,7 @@ describe("FilteredEmpty", () => {
   it("drops the promise when no single control fixes it", () => {
     render(<FilteredEmpty nearest={null} onDrop={() => {}} onClearAll={() => {}} />);
     expect(
-      screen.getByText("No single filter is doing this — several are overlapping."),
+      screen.getByText("No single filter is doing this. Several are overlapping."),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Drop / })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();

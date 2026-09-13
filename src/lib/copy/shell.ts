@@ -79,7 +79,7 @@ export const shellCopy = {
     manageAccount: "Manage account",
     signOut: "Sign out",
     // The trigger names the person, not the glyphs — the initials are aria-hidden.
-    triggerLabel: (name: string) => `Account — ${name}`,
+    triggerLabel: (name: string) => `Account: ${name}`,
     // Stands in for the name when Clerk has neither a name nor an email.
     fallbackName: "your account",
   },

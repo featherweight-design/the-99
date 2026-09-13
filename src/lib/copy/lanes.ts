@@ -109,7 +109,7 @@ export const commandersCopy = {
       } back.`,
     bodyMode: (q: string, control: string) =>
       `Two commanders match "${q}", but ${control} rules both out.`,
-    bodyNoSingleFix: "No single filter is doing this — several are overlapping.",
+    bodyNoSingleFix: "No single filter is doing this. Several are overlapping.",
     fixDrop: (control: string) => `Drop ${control}`,
     fixMode: "Switch to Any of these",
   },
@@ -122,7 +122,7 @@ export const commandersCopy = {
     body: (q: string, total: number) =>
       `Nothing in your commanders matches "${q}". This lane lists the ${n(
         total,
-      )} you own — if you don't own it yet, it's on Discover instead.`,
+      )} you own. If you don't own it yet, it's on Discover instead.`,
     clearSearch: "Clear search",
     otherLane: "Search Discover",
   },
@@ -175,7 +175,7 @@ export const discoverCopy = {
     body: (q: string, total: number) =>
       `Nothing here matches "${q}". This lane lists the ${n(
         total,
-      )} commanders you don't own — if you already own it, it's on your commanders instead.`,
+      )} commanders you don't own. If you already own it, it's on your commanders instead.`,
     clearSearch: "Clear search",
     otherLane: "Search your commanders",
   },

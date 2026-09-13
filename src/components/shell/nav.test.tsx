@@ -76,7 +76,7 @@ describe("NavRail", () => {
     render(<NavRail locked theme="amonkhet" />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
     expect(
-      within(nav).getByRole("link", { name: "Decks — unlocks once a collection is read" }),
+      within(nav).getByRole("link", { name: "Decks: unlocks once a collection is read" }),
     ).toHaveAttribute("aria-disabled", "true");
     // Home is never lockable.
     expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-disabled");
@@ -88,7 +88,7 @@ describe("NavRail", () => {
   it("still marks a locked item as the current page when it is one", () => {
     const { container } = render(<NavRail locked theme="amonkhet" />);
     const item = screen.getByRole("link", {
-      name: "Collection — unlocks once a collection is read",
+      name: "Collection: unlocks once a collection is read",
     });
     expect(item).toHaveAttribute("aria-current", "page");
     // …without taking the active fill, which would advertise a destination the
@@ -114,7 +114,7 @@ describe("NavRail", () => {
   // target to a pointer; a <span> offers neither and keeps the name and role.
   it("does not leave a locked item focusable or navigable", () => {
     render(<NavRail locked theme="amonkhet" />);
-    const item = screen.getByRole("link", { name: "Decks — unlocks once a collection is read" });
+    const item = screen.getByRole("link", { name: "Decks: unlocks once a collection is read" });
     expect(item.tagName).toBe("SPAN");
     expect(item).not.toHaveAttribute("href");
     expect(item).not.toHaveAttribute("tabindex");
@@ -154,7 +154,7 @@ describe("TabBar", () => {
   it("states the unlock reason on locked tabs too", () => {
     render(<TabBar locked />);
     expect(
-      screen.getByRole("link", { name: "Collection — unlocks once a collection is read" }),
+      screen.getByRole("link", { name: "Collection: unlocks once a collection is read" }),
     ).toHaveAttribute("aria-disabled", "true");
   });
 

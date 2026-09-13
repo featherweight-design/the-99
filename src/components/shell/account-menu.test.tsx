@@ -19,7 +19,7 @@ vi.mock("@clerk/nextjs", () => ({
 }));
 
 function trigger() {
-  return screen.getByRole("button", { name: "Account — Ana Ruiz" });
+  return screen.getByRole("button", { name: "Account: Ana Ruiz" });
 }
 
 /** A real pointer press focuses the button; fireEvent.click does not. */
@@ -154,7 +154,7 @@ describe("AccountMenu popover", () => {
   it("opens with the checked theme focused", () => {
     render(<AccountMenu panel="popover" theme="kaldheim" />);
     fireEvent.click(trigger());
-    expect(screen.getByRole("radio", { name: "First Frost — Kaldheim" })).toHaveFocus();
+    expect(screen.getByRole("radio", { name: "First Frost, Kaldheim" })).toHaveFocus();
   });
 
   it("closes on Escape and returns focus to the trigger", () => {
@@ -243,7 +243,7 @@ describe("AccountMenu items", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     press(trigger());
     expect(document.activeElement).toBe(
-      screen.getByRole("radio", { name: "Low Sun — Amonkhet" }),
+      screen.getByRole("radio", { name: "Low Sun, Amonkhet" }),
     );
     const [manage, signOutItem] = screen.getAllByRole("menuitem");
     expect(manage).toHaveAttribute("tabindex", "0");

@@ -30,19 +30,19 @@ describe("commandersCopy.filteredEmpty", () => {
 describe("commandersCopy.firstRun", () => {
   it("reproduces the mock's first-run line", () => {
     expect(commandersCopy.firstRun.line(1418, 24)).toBe(
-      "1,418 cards read. 24 can lead. I ranked them — you're welcome.",
+      "1,418 cards read. 24 can lead. I ranked them. You're welcome.",
     );
   });
 
   it("agrees in number for a one-card, one-commander collection", () => {
     expect(commandersCopy.firstRun.line(1, 1)).toBe(
-      "1 card read. 1 can lead. I ranked it — you're welcome.",
+      "1 card read. 1 can lead. I ranked it. You're welcome.",
     );
   });
 
   it("pins the thousands separator to en-US regardless of host locale", () => {
     expect(commandersCopy.firstRun.line(1418, 1200)).toBe(
-      "1,418 cards read. 1,200 can lead. I ranked them — you're welcome.",
+      "1,418 cards read. 1,200 can lead. I ranked them. You're welcome.",
     );
   });
 });

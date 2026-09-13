@@ -30,15 +30,15 @@ describe("ThemePicker", () => {
   // arrives with a prop that predates any choice made in the first.
   it("shows the theme in force, not the one the server last resolved", () => {
     const { unmount } = render(<ThemePicker current="amonkhet" />);
-    fireEvent.click(screen.getByRole("radio", { name: "Witching Hour — Wilds of Eldraine" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Witching Hour, Wilds of Eldraine" }));
     unmount();
 
     render(<ThemePicker current="amonkhet" />);
-    expect(screen.getByRole("radio", { name: "Witching Hour — Wilds of Eldraine" })).toHaveAttribute(
+    expect(screen.getByRole("radio", { name: "Witching Hour, Wilds of Eldraine" })).toHaveAttribute(
       "aria-checked",
       "true",
     );
-    expect(screen.getByRole("radio", { name: "Low Sun — Amonkhet" })).toHaveAttribute(
+    expect(screen.getByRole("radio", { name: "Low Sun, Amonkhet" })).toHaveAttribute(
       "aria-checked",
       "false",
     );
@@ -46,7 +46,7 @@ describe("ThemePicker", () => {
 
   it("names each option by theme and plane", () => {
     render(<ThemePicker current="amonkhet" />);
-    expect(screen.getByRole("radio", { name: "First Frost — Kaldheim" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "First Frost, Kaldheim" })).toBeInTheDocument();
   });
 
   it("marks the current theme checked, and only that one", () => {
@@ -55,14 +55,14 @@ describe("ThemePicker", () => {
       .getAllByRole("radio")
       .filter((r) => r.getAttribute("aria-checked") === "true");
     expect(checked).toHaveLength(1);
-    expect(checked[0]).toHaveAccessibleName("Witching Hour — Wilds of Eldraine");
+    expect(checked[0]).toHaveAccessibleName("Witching Hour, Wilds of Eldraine");
   });
 
   it("does not carry selection by colour alone — the checked chip draws a tick", () => {
     renderPicker("eldraine");
-    const checked = screen.getByRole("radio", { name: "Witching Hour — Wilds of Eldraine" });
+    const checked = screen.getByRole("radio", { name: "Witching Hour, Wilds of Eldraine" });
     expect(checked.querySelector("[data-selected-tick]")).not.toBeNull();
-    const other = screen.getByRole("radio", { name: "Canopy — Ixalan" });
+    const other = screen.getByRole("radio", { name: "Canopy, Ixalan" });
     expect(other.querySelector("[data-selected-tick]")).toBeNull();
   });
 
@@ -71,25 +71,25 @@ describe("ThemePicker", () => {
   // would preview whatever the app is currently wearing.
   it("paints each miniature in the theme it previews", () => {
     render(<ThemePicker current="amonkhet" />);
-    const chip = screen.getByRole("radio", { name: "Oil Haze — New Phyrexia" });
+    const chip = screen.getByRole("radio", { name: "Oil Haze, New Phyrexia" });
     expect(chip.querySelector("[data-theme]")?.getAttribute("data-theme")).toBe("phyrexia");
   });
 
   it("swaps the document attribute immediately on selection", () => {
     render(<ThemePicker current="amonkhet" />);
-    fireEvent.click(screen.getByRole("radio", { name: "First Frost — Kaldheim" }));
+    fireEvent.click(screen.getByRole("radio", { name: "First Frost, Kaldheim" }));
     expect(document.documentElement.dataset.theme).toBe("kaldheim");
   });
 
   it("persists the selection to the cookie", () => {
     render(<ThemePicker current="amonkhet" />);
-    fireEvent.click(screen.getByRole("radio", { name: "Neon Rain — Kamigawa: Neon Dynasty" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Neon Rain, Kamigawa: Neon Dynasty" }));
     expect(document.cookie).toContain("the99_theme=kamigawa");
   });
 
   it("announces the change, because there is no Save button to confirm it", () => {
     render(<ThemePicker current="amonkhet" />);
-    fireEvent.click(screen.getByRole("radio", { name: "Canopy — Ixalan" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Canopy, Ixalan" }));
     expect(screen.getByRole("status")).toHaveTextContent("Canopy applied.");
   });
 
@@ -125,7 +125,7 @@ describe("ThemePicker", () => {
   // than truncated mid-word, and the full name still carries in the label.
   it("shows a plane short enough for the chip, and the full one in the label", () => {
     render(<ThemePicker current="amonkhet" />);
-    const chip = screen.getByRole("radio", { name: "Witching Hour — Wilds of Eldraine" });
+    const chip = screen.getByRole("radio", { name: "Witching Hour, Wilds of Eldraine" });
     expect(chip).toHaveTextContent("Eldraine");
     expect(chip).not.toHaveTextContent("Wilds of Eldraine");
   });
@@ -197,12 +197,12 @@ describe("ThemePicker retirement notice", () => {
   it("hands focus to the checked chip rather than dropping it on the body", () => {
     renderRetired();
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(screen.getByRole("radio", { name: "Oil Haze — New Phyrexia" })).toHaveFocus();
+    expect(screen.getByRole("radio", { name: "Oil Haze, New Phyrexia" })).toHaveFocus();
   });
 
   it("drops the line once the user picks a theme, dismissed or not", () => {
     renderRetired();
-    fireEvent.click(screen.getByRole("radio", { name: "Canopy — Ixalan" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Canopy, Ixalan" }));
     expect(screen.queryByText(/has been retired/)).not.toBeInTheDocument();
     expect(document.cookie).toContain("the99_theme=ixalan");
   });

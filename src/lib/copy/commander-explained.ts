@@ -200,7 +200,7 @@ export const explainedCopy = {
          the ceiling visible, and it is interpolated rather than typed so the prose cannot
          outlive the constant it describes. */
       body: (fullAt: number) =>
-        `How much of your collection is even legal here \u2014 cards inside this commander's color identity that could go in the 99. Full marks at ${n(fullAt)}, so a deep collection sits at the top of this one for most commanders. Breadth, not quality.`,
+        `How much of your collection is even legal here: cards inside this commander's color identity that could go in the 99. Full marks at ${n(fullAt)}, so a deep collection sits at the top of this one for most commanders. Breadth, not quality.`,
       bodyMobile: (fullAt: number) =>
         `Cards in your collection legal in this identity. Full marks at ${n(fullAt)}. Breadth, not quality.`,
     },
@@ -288,7 +288,7 @@ export const explainedCopy = {
       /** Same option, no figures to sort by: the panel is in pool order and says so, rather
           than claiming a ranking it does not have. Selectable (it is the default and the
           shipped behaviour) — only its sub-line changes. */
-      subNoFigures: "No EDHREC figures on this commander — the list is in collection order.",
+      subNoFigures: "No EDHREC figures on this commander. The list is in collection order.",
     },
 
     availability: {
@@ -317,7 +317,7 @@ export const explainedCopy = {
     /** The card's accessible name is unchanged — the paragraph is inside the stretched Link's
         hit area and reads in document order after the name. Listed so the audit can see the
         decision rather than infer it from an absence. */
-    cardAria: (name: string) => `${name} \u2014 view commander details`,
+    cardAria: (name: string) => `${name}: view commander details`,
   },
 } as const;
 

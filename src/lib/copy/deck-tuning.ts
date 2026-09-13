@@ -34,7 +34,7 @@ export const deckTuningCopy = {
     // The desktop gloss. The phone frame draws the short form: the label row
     // is a flex line and the full sentence would push the counter onto a
     // second one at 390px.
-    hint: "optional — one line, in your words",
+    hint: "optional: one line, in your words",
     hintShort: "optional",
     // A count with its denominator, like everything else on this surface.
     // ABSENT until the field has focus or content; `--warning` from `warnAt`;
@@ -45,7 +45,7 @@ export const deckTuningCopy = {
     warnAt: 130,
     // AMENDS `gameLogCopy.form.optionalNote`, which said "marks are optional".
     // Three words longer, still one line.
-    optionalNote: "marks and the note are optional — a result on its own is a game",
+    optionalNote: "marks and the note are optional: a result on its own is a game",
     // Never parsed for axis marks: the checkboxes are the structured answer
     // and inferring marks from prose would corrupt the aggregate the player
     // thinks they control.
@@ -57,7 +57,7 @@ export const deckTuningCopy = {
     // exist yet, so the clause that promises it is held back rather than
     // shipped as a claim about a surface nobody can open. Restore the full
     // sentence when the panel lands — see §Errata in the design table.
-    readBack: "Read back to you in the history —",
+    readBack: "Read back to you in the history:",
     readBackEmphasis: "quoted, never paraphrased",
   },
 } as const;

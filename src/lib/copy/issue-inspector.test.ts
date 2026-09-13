@@ -6,7 +6,7 @@ import { issueInspectorCopy } from "./issue-inspector";
 describe("issueInspectorCopy.entry", () => {
   it("reproduces the Surfaces v2 body verbatim", () => {
     expect(issueInspectorCopy.entry.body(3)).toBe(
-      "3 rows didn't parse — quantity columns, mostly. Nothing fatal. Want to see the carnage?",
+      "3 rows didn't parse: quantity columns, mostly. Nothing fatal. Want to see the carnage?",
     );
   });
 
