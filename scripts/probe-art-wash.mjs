@@ -1236,10 +1236,13 @@ try {
     for (const deckHref of deckHrefs) {
       await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
-      // Before the crop-less skip: a commander with no crop draws no control by
-      // ruling, but it mounts the same spine and can carry the same long name —
-      // and the overflow that name caused is the bug this walk is here for.
+      // EVERY deck, before the crop-less skip and regardless of whether the
+      // geometry checks below have already run: a commander with no crop draws
+      // no control by ruling but mounts the same spine, and the long two-faced
+      // name that caused this bug belongs to one particular deck — which the
+      // first-qualifying-deck break would walk straight past.
       await checkNoOverflow(page, `${vpName} ${deckHref}`, note);
+      if (walkedADeck) continue;
       const deckPlates = await page.evaluate(`(${READ_PLATES})()`);
       if (!deckPlates.length) {
         note(`${vpName} ${deckHref}: no card-details control — this commander has no crop`);
@@ -1284,7 +1287,9 @@ try {
       }
       walkedADeck = true;
       walkedDeckHref = deckHref;
-      break;
+      // No `break`: the chrome and geometry checks want one deck, and the
+      // overflow check wants all of them. The flag above is what stops the
+      // former from repeating.
     }
     if (!walkedADeck) {
       note(`  FAIL no deck page drew a card-details control — the deck header's chrome goes unchecked`);

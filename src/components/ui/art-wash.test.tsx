@@ -501,6 +501,11 @@ describe("ArtWash — the inverted portrait", () => {
     expect(scrim.style.background).toContain("58px");
     expect(scrim.style.background).toContain("99px");
     expect(scrim.style.background).toContain("138px");
+    // The fade's ALPHA, independently: the contrast suite reads `sharpAlpha`
+    // out of the same table it would be changed in, so its expectations move
+    // with any change and a regression there stays green. 80% at the portrait's
+    // own width is the figure this row ships.
+    expect(scrim.style.background).toContain("--surface-inset) 80%, transparent) 99px");
     // Flat: one scrim, no vertical ramp.
     expect(container.querySelectorAll(".art-wash-scrim")).toHaveLength(1);
   });
