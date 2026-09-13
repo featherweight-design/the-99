@@ -94,8 +94,8 @@ describe("CollectionBrowser — clearing filters", () => {
       ]),
     );
     // Black exists in the collection but not among the Instants.
-    expect(screen.getAllByRole("switch", { name: /Black/i })[0]).toBeDisabled();
-    expect(screen.getAllByRole("switch", { name: /Red/i })[0]).not.toBeDisabled();
+    expect(screen.getAllByRole("switch", { name: /Black/i })[0]).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getAllByRole("switch", { name: /Red/i })[0]).not.toHaveAttribute("aria-disabled");
   });
 
 });

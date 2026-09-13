@@ -104,7 +104,7 @@ describe("chassisCopy.colour", () => {
     const onToggle = vi.fn();
     render(<ColourPips form="wide" value={[]} onToggle={onToggle} unavailable={["B"]} />);
     const black = screen.getByRole("switch", { name: "Black, no matches" });
-    expect(black).toBeDisabled();
+    expect(black).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(black);
     expect(onToggle).not.toHaveBeenCalled();
   });
@@ -115,7 +115,7 @@ describe("chassisCopy.colour", () => {
     const onToggle = vi.fn();
     render(<ColourPips form="wide" value={["B"]} onToggle={onToggle} unavailable={["B"]} />);
     const black = screen.getByRole("switch", { name: "Black" });
-    expect(black).not.toBeDisabled();
+    expect(black).not.toHaveAttribute("aria-disabled");
     fireEvent.click(black);
     expect(onToggle).toHaveBeenCalledWith("B");
   });

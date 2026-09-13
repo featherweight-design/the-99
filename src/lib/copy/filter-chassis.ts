@@ -10,6 +10,9 @@ import { filterCopy } from "./lanes";
 import { refreshCopy } from "./refresh";
 import type { FilterPanelCopy } from "./collection";
 
+/** One formatter for every figure this module prints. */
+const fmt = (n: number) => n.toLocaleString("en-US");
+
 export const chassisCopy = {
   chips: {
     /**
@@ -102,12 +105,12 @@ const deckPanel = (
   optionAria: (name, count) => `${name}, ${countNoun(count)}`,
   optionAriaUnavailable: (name) => `${name}, no decks`,
 
-  // `FilterPanel` formats the count before calling this, so `total` arrives as
-  // "1,000" and `Number(total)` would be NaN — a player with four figures of
-  // decks would hear "NaN decks". The string is used as given; only the
-  // singular needs a case.
-  footerTotal: (total) => `${total} ${total === "1" ? "deck" : "decks"}`,
-  footerSelected: (n, total) => `${n} of ${total} on`,
+  // Raw counts, formatted here. `FilterPanel` used to format before calling,
+  // which meant a caller could not pluralise without parsing its own string
+  // back out — and left two separator conventions reachable in one sentence on
+  // a non-`en-US` browser, since only some figures were pinned.
+  footerTotal: (total) => `${fmt(total)} ${total === 1 ? "deck" : "decks"}`,
+  footerSelected: (n, total) => `${fmt(n)} of ${fmt(total)} on`,
   clear: refreshCopy.filters.clear,
   done: "Done",
   closeLabel: `Close ${dimension.toLowerCase()} filter`,

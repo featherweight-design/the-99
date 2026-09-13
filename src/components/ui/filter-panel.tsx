@@ -560,7 +560,10 @@ export function FilterPanel({
                 : "text-[color:var(--fg-faint)]",
             ].join(" ")}
           >
-            {option.count.toLocaleString()}
+            {/* Pinned, like every other figure the panel prints. An ambient
+                locale here put a different separator on the option count from
+                the one its own aria label and the result line use. */}
+            {option.count.toLocaleString("en-US")}
           </span>
         ) : null}
       </li>
@@ -671,7 +674,9 @@ export function FilterPanel({
     // Single-select has no Clear and no "N of M" to report, which leaves the
     // desktop bar with nothing in it. The sheet still needs its `Done`.
     if (selectionMode === "single" && isDesktop) return null;
-    const total = options.length.toLocaleString();
+    // Raw. The copy module formats every figure it prints, so a count arriving
+    // pre-formatted would be the one separator convention it did not choose.
+    const total = options.length;
     const status =
       selected.length === 0 ? copy.footerTotal(total) : copy.footerSelected(selected.length, total);
     const clearButton = (

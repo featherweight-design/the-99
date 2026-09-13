@@ -104,8 +104,8 @@ export const collectionFilterCopy = {
     optionAriaUnavailable: (setName: string) => `${setName}, no cards match your other filters`,
 
     // Footer
-    footerTotal: (total: string) => `${total} sets owned`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} sets owned`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     /** Accessible name for the sheet's ✕ — the sheet's one accessible close control. */
@@ -156,8 +156,8 @@ export const collectionFilterCopy = {
     optionAriaUnavailable: (typeName: string) =>
       `${typeName}, no cards match your other filters`,
 
-    footerTotal: (total: string) => `${total} cards`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} cards`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     closeLabel: "Close",
@@ -205,8 +205,8 @@ export const collectionFilterCopy = {
     optionAriaUnavailable: (name: string) =>
       availabilityCopy.collection.filterEmptyOptionAria(name),
 
-    footerTotal: (total: string) => `${total} cards`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} cards`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     closeLabel: "Close",
@@ -253,8 +253,8 @@ export const collectionFilterCopy = {
     optionAriaUnavailable: (colorName: string) =>
       `${colorName}, no cards match your other filters`,
 
-    footerTotal: (total: string) => `${total} cards`,
-    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    footerTotal: (total: number) => `${count(total)} cards`,
+    footerSelected: (n: number, total: number) => `${count(n)} of ${count(total)} selected`,
     clear: "Clear",
     done: "Done",
     closeLabel: "Close",
@@ -357,8 +357,8 @@ export type FilterPanelCopy = {
   optionAria: (name: string, count: number, selected?: boolean) => string;
   optionAriaUnavailable: (name: string) => string;
 
-  footerTotal: (total: string) => string;
-  footerSelected: (n: number, total: string) => string;
+  footerTotal: (total: number) => string;
+  footerSelected: (n: number, total: number) => string;
   clear: string;
   done: string;
   /** Accessible name for the sheet's ✕ — the sheet's one accessible close control. */

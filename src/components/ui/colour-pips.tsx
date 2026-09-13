@@ -81,7 +81,21 @@ export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsPro
             // the control this replaces.
             role="switch"
             aria-checked={lit}
-            disabled={dead}
+            // `aria-disabled`, not the native attribute, and `opacity .42` —
+            // the treatment the design table already gives a zero-count filter
+            // option (`collection-filter-panel.md` row · disabled), which is
+            // what the retired mobile Color panel drew for exactly this state.
+            // It stays focusable so a keyboard reader can still find it and
+            // hear why it is out; the native attribute took it off the tab ring
+            // and left a sighted reader a pip that looked ordinary and did
+            // nothing.
+            //
+            // This is not the opacity decision 7 forbids. That one rules on the
+            // UNLIT state, where dimming put the symbol at 1.37:1 and made an
+            // available filter illegible. Dimming an UNAVAILABLE one is the
+            // system's own disabled convention, and the table records that it
+            // fails AA deliberately.
+            aria-disabled={dead || undefined}
             aria-label={
               dead
                 ? chassisCopy.colour.pipAriaUnavailable(
@@ -91,7 +105,7 @@ export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsPro
                     chassisCopy.colour.names[code.toLowerCase() as Lowercase<PipCode>],
                   )
             }
-            onClick={() => onToggle(code)}
+            onClick={() => { if (!dead) onToggle(code); }}
             // The ring is the entire lit treatment. No opacity on either state:
             // an unlit pip is the symbol at full strength, which is what makes it
             // legible on every ground in every theme.
@@ -104,8 +118,10 @@ export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsPro
               // reason unlit pips draw at full strength holds whatever the
               // reason for not drawing them lit. The name carries the state,
               // and a visual affordance for it is a Design question.
-              "shrink-0 rounded-full border-0 p-0 transition-shadow",
-              dead ? "cursor-default" : "cursor-pointer",
+              // No transition on the ring. READINESS 19 forbids motion on this
+              // surface outright, and the selected state changes instantly.
+              "shrink-0 rounded-full border-0 p-0",
+              dead ? "cursor-default opacity-[0.42]" : "cursor-pointer",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
             ].join(" ")}
             // The symbol is a background rather than an `<img>`: it is
