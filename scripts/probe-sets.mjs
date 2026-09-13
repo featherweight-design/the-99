@@ -684,6 +684,107 @@ async function run() {
       }
     }
 
+    // R3 finding 6, PR 5a. The four content moves are asked to buy a specific number of
+    // pixels, so the head's rest height is REPORTED rather than merely bounded — a check
+    // that only says "under 388" cannot tell a 4px saving from a 40px one, and the plan's
+    // own arithmetic was 22px stale for exactly that reason.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const phoneHead = await page.evaluate(() => {
+      const el = document.querySelector("[data-set-head]");
+      if (!el) return null;
+      const px = (sel) => {
+        const node = document.querySelector(sel);
+        return node ? Math.round(node.getBoundingClientRect().height) : null;
+      };
+      const h1 = el.querySelector("h1");
+      const shortCode = document.querySelector("[data-set-provenance-short]");
+      // PRESENCE and DISPLAY reported separately, because collapsing them is how a guard
+      // reads clean on a node that is not there: `display` of a missing element is not
+      // "none", it is nothing, and a negated check turns that into a pass. Each marker
+      // therefore answers two questions, and the assertions below ask both.
+      const marker = (sel) => {
+        const node = document.querySelector(sel);
+        return { present: node !== null, display: node && getComputedStyle(node).display };
+      };
+      return {
+        total: Math.round(el.getBoundingClientRect().height),
+        title: h1 ? Math.round(h1.getBoundingClientRect().height) : null,
+        // Found by its own marker, and reported as absent rather than as false: the first
+        // version of this guard read `h1.parentElement.textContent`, which is the whole
+        // identity block — ratio, provenance and note included — so it never ended in the
+        // year and reported clean no matter where the code was put.
+        shortCode: {
+          present: shortCode !== null,
+          display: shortCode && getComputedStyle(shortCode).display,
+          insideTitle: shortCode !== null && h1 !== null && h1.contains(shortCode),
+        },
+        // The two lines moves 1 and 2 remove. Structural, and true on any fixture — which
+        // an absolute height bound is not: a set with a short title or no cost strip is
+        // already under 388px with none of this PR applied.
+        longProvenance: marker("[data-set-provenance-long]"),
+        note: marker("[data-set-ratio-note]"),
+        chips: px("[data-set-chips]"),
+        result: px("[data-set-result]"),
+      };
+    });
+    if (phoneHead === null) {
+      failures += !report("the phone head can be measured", false, "no [data-set-head]");
+    } else {
+      // REPORTED, not asserted. The probe picks whatever incomplete indexed set the
+      // fixture offers, and a set with a short title or no priced cost strip is already
+      // under 388px with none of this PR applied — so a `< 388` predicate passes on a
+      // reverted build and proves nothing. What the moves actually did is structural, and
+      // that is what the three checks below assert. The number is here to be read.
+      report(
+        "the phone head at rest measures",
+        true,
+        `${phoneHead.total}px — 388px was the shipped height when these moves were written`
+        + ` · chips ${phoneHead.chips}px, result ${phoneHead.result}px`,
+      );
+      // The chip line is what makes the expanded head's height a constant, and #549 spent
+      // four rounds getting it to 44. A content move above it must not have cost that.
+      failures += !report(
+        "the chip line still holds its 44px band",
+        phoneHead.chips === 44,
+        `${phoneHead.chips}px`,
+      );
+      // The trap this PR fell into once: the provenance was placed on the title line, the
+      // title wrapped, and the head got 15px BIGGER while every unit test passed. Nothing
+      // in JSDOM can see a wrap, so the guard has to live here — and it fails on an ABSENT
+      // marker as loudly as on a misplaced one, because a guard that cannot find the thing
+      // it guards is not passing.
+      failures += !report(
+        "the phone's provenance is on the page, shown, and off the title line",
+        phoneHead.shortCode.present
+          && phoneHead.shortCode.display !== "none"
+          && !phoneHead.shortCode.insideTitle,
+        !phoneHead.shortCode.present
+          ? "no [data-set-provenance-short] — the guard measured nothing"
+          : phoneHead.shortCode.display === "none"
+            ? "the short provenance is present but display:none at 390"
+            : phoneHead.shortCode.insideTitle
+              ? `the set code is inside the h1, title ${phoneHead.title}px`
+              : `title ${phoneHead.title}px, code on the ratio line, display ${phoneHead.shortCode.display}`,
+      );
+      // Moves 1 and 2, asserted where they actually happen rather than through a height.
+      // Both halves stated: a node that has been DELETED is not the same result as one
+      // correctly hidden, and only one of the two is what this PR did.
+      for (const [label, m] of [
+        ["the long provenance", phoneHead.longProvenance],
+        ["the scope note", phoneHead.note],
+      ]) {
+        failures += !report(
+          `${label} is present and not shown on the phone`,
+          m.present && m.display === "none",
+          !m.present
+            ? "the marker is missing entirely — the node was removed, not hidden"
+            : `display ${m.display} at 390`,
+        );
+      }
+    }
+
     // The search field (§29). It is the only child of the control row that shrinks, and the
     // row must not wrap at either width — a control landing on its own line inside a sticky
     // head is the defect the three-row rule exists to prevent, arriving by another route.

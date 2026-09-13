@@ -39,7 +39,14 @@ const p = (n: string, over: Partial<SetPrinting> = {}): SetPrinting => ({
   isVariant: false, ...over,
 });
 
-function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Duskmourn") {
+function view(
+  printings: SetPrinting[],
+  ownedNumbers: string[] = [],
+  name = "Duskmourn",
+  // A supported catalog state, and the only prop a case here needs to vary beyond the two
+  // above — passed rather than duplicating the whole render for one null.
+  releasedAt: string | null = "2026-09-01",
+) {
   const holdings = ownedNumbers.map((n) => ({
     oracleId: `o-${n}`, collectorNumber: n, finish: "nonfoil" as const,
   }));
@@ -51,7 +58,7 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
       code="dsk"
       name={name}
       iconSvgUri={null}
-      releasedAt="2026-09-01"
+      releasedAt={releasedAt}
       ownedFingerprint=""
       artGeneration={0}
       cells={placeCells(printings, holdings)}
@@ -1769,5 +1776,185 @@ describe("SetGridView — a query narrows the rarity panel's counts too", () => 
     expect(screen.queryByRole("option", { name: /^common, 2 cells/ })).toBeNull();
     // And a rarity the query empties is offered as unavailable rather than as one card.
     expect(screen.getByRole("option", { name: /^rare, no cells/ })).toBeInTheDocument();
+  });
+});
+
+// JSDOM applies no CSS, so BOTH responsive forms are in the tree and the class list is the
+// only discriminator. `hidden` as a bare token means desktop-only (`hidden md:block`);
+// `md:hidden` means phone-only. Matching on the substring "hidden" catches both and reads
+// as neither — the first version of these tests did exactly that and asserted on "".
+const tokens = (el: Element) => (el.getAttribute("class") ?? "").split(/\s+/);
+const phoneOnlyHidden = (el: Element) => tokens(el).includes("hidden");
+const desktopOnlyHidden = (el: Element) => tokens(el).includes("md:hidden");
+const textOf = (root: ParentNode, sel: string, drop: (el: Element) => boolean) =>
+  [...root.querySelectorAll(sel)].filter((el) => !drop(el))
+    .map((el) => el.textContent).join(" | ");
+
+// R3 finding 6, moves 1, 2 and 4 — the content the phone head stops carrying, before any
+// collapse mechanism exists. Every one of them is a PHONE FORM BESIDE the shipped string,
+// never a replacement: desktop is asserted unchanged in the same block.
+describe("SetGridView — the phone head carries less than the desktop one", () => {
+  const indexed = () => [
+    p("1", { name: "Plains", booster: true }),
+    p("2", { name: "Island", booster: true }),
+    p("3", { name: "Token", booster: false }),
+  ];
+
+  // Move 1. The scope note is a whole line saying what the denominator counts, so the word
+  // goes into the figure and the line goes away.
+  it("puts the scope word in the figure and drops the note", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    expect(container.textContent).toMatch(/1 \/ 2 base/);
+    const note = [...container.querySelectorAll("p")]
+      .find((el) => /base run only/.test(el.textContent ?? ""));
+    expect(note).toBeDefined();
+    // The BARE token. `/hidden/` also matches `md:hidden`, so the substring passes on a
+    // note that was swapped to the wrong breakpoint — which is the whole thing this
+    // asserts. The helper above exists for exactly this and these two assertions did not
+    // use it.
+    expect(tokens(note as Element)).toContain("hidden");
+  });
+
+  it("and the extras ratio trails it, because the note promised they were counted apart", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    expect(container.textContent).toMatch(/0 \/ 1 extra/);
+  });
+
+  // The one state where the note still stands alone: no ratio for `base` to ride on.
+  it("keeps the note standing when the set is not indexed", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { name: "Plains", booster: false })], [],
+    );
+    const note = [...container.querySelectorAll("p")]
+      .find((el) => /base run only/.test(el.textContent ?? ""));
+    expect(note).toBeDefined();
+    expect(note?.className).not.toMatch(/hidden/);
+  });
+
+  // Move 2. The full interpolated string is the desktop form and is unchanged; the phone
+  // gets what identifies the set, on the RATIO line's trailing edge. The handoff names the
+  // title line; that placement wrapped a real set name and is corrected in the readiness
+  // doc, so the title line appears here only as the thing being ruled out.
+  it("rides a short provenance on the ratio line and hides the long one", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), []);
+    expect(container.textContent).toMatch(/DSK · 2026/);
+    const long = [...container.querySelectorAll("p")]
+      .find((el) => /released 2026-09-01/.test(el.textContent ?? ""));
+    expect(long).toBeDefined();
+    expect(tokens(long as Element)).toContain("hidden");
+  });
+
+  // Move 4. The second half restates the head's own subtraction.
+  it("drops the result line's redundant half", () => {
+    stubDesktop(false);
+    const status = () => screen.getAllByRole("status")
+      .find((el) => /cell/.test(el.textContent ?? ""));
+    view(indexed(), ["1"]);
+    const region = status();
+    expect(region).toBeDefined();
+    const shown = textOf(region as HTMLElement, "span", phoneOnlyHidden);
+    expect(shown).toMatch(/3 cells/);
+    expect(shown).not.toMatch(/yours/);
+  });
+
+  // The live region is the thing that announces a filter change, and it has to be ONE
+  // region holding both forms rather than two regions of which one is hidden.
+  // An `aria-label` REPLACES everything its descendants contribute, so the extras figure
+  // and the code were on the screen and absent from the accessible name while nested
+  // inside the ratio's labelled span. They sit outside it now.
+  it("announces the extras figure and the code rather than swallowing them", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    const labelled = container.querySelector("[aria-label^='You have']") as HTMLElement;
+    expect(labelled).toBeTruthy();
+    expect(labelled.textContent).not.toMatch(/extras|extra|DSK/);
+    expect(container.querySelector("[data-set-provenance-short]")).toBeTruthy();
+    expect(container.querySelector("[data-set-provenance-short]")?.closest("[aria-label]"))
+      .toBeNull();
+  });
+
+  // Scoped to the incomplete branch, this left a completed set's phone with no code and no
+  // year at all — the long paragraph is hidden there too.
+  it("keeps the code and year when the set is complete", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { name: "Plains", booster: true }), p("2", { name: "Island", booster: true })],
+      ["1", "2"],
+    );
+    expect(container.textContent).toMatch(/DSK · 2026/);
+  });
+
+  // The noun agrees with the denominator, as `head.meta` and the set index both do.
+  it("says one extra, not one extras", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    expect(container.textContent).toMatch(/0 \/ 1 extra(?!s)/);
+  });
+
+  it("keeps both forms inside a single live region", () => {
+    stubDesktop(false);
+    view(indexed(), ["1"]);
+    const regions = screen.getAllByRole("status")
+      .filter((el) => /cell/.test(el.textContent ?? ""));
+    expect(regions).toHaveLength(1);
+  });
+});
+
+// Asserted in its own block so a phone-only change that quietly rewrote the desktop head
+// fails here rather than passing as "the form the test happened to read".
+describe("SetGridView — the desktop head is untouched by finding 6", () => {
+  const indexed = () => [
+    p("1", { name: "Plains", booster: true }),
+    p("2", { name: "Island", booster: true }),
+    p("3", { name: "Token", booster: false }),
+  ];
+
+  it("keeps the bare ratio, the full provenance and the standalone note", () => {
+    stubDesktop(true);
+    const { container } = view(indexed(), ["1"]);
+    const visible = textOf(container, "p, span", desktopOnlyHidden);
+    expect(visible).toMatch(/1 \/ 2 · 50%/);
+    expect(visible).toMatch(/DSK · released 2026-09-01 · 2 in the base run · 1 extra/);
+    expect(visible).toMatch(/base run only · extras counted apart/);
+  });
+
+  it("keeps the result line's full form", () => {
+    stubDesktop(true);
+    view(indexed(), ["1"]);
+    const status = screen.getAllByRole("status")
+      .find((el) => /cell/.test(el.textContent ?? ""));
+    expect(status).toBeDefined();
+    const shown = textOf(status as HTMLElement, "span", desktopOnlyHidden);
+    expect(shown).toMatch(/3 cells · 1 yours, 2 missing/);
+  });
+});
+
+// An indexed set with no recorded release date is a supported catalog state: the desktop
+// string says "an unrecorded date" rather than dropping itself, and the set index falls
+// back to the code alone. Gated on the date, the phone lost the code with it.
+describe("SetGridView — the phone provenance without a release date", () => {
+  it("shows the code alone rather than nothing", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: true })], [], "Duskmourn", null,
+    );
+    const short = container.querySelector("[data-set-provenance-short]");
+    expect(short).toBeTruthy();
+    expect(short?.textContent).toMatch(/DSK/);
+    expect(short?.textContent).not.toMatch(/null|undefined|NaN/);
+  });
+
+  // The desktop form does not drop itself either; it names the gap.
+  it("keeps the desktop string naming the unrecorded date", () => {
+    stubDesktop(true);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: true })], [], "Duskmourn", null,
+    );
+    expect(container.querySelector("[data-set-provenance-long]")?.textContent)
+      .toMatch(/an unrecorded date/);
   });
 });

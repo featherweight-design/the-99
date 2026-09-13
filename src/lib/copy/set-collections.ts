@@ -246,6 +246,30 @@ export const setPageCopy = {
       `${code.toUpperCase()} · released ${released} · ${base} in the base run`
       + ` · ${extras} ${extras === 1 ? "extra" : "extras"}`,
     ratioNote: "base run only · extras counted apart",
+    // R3 finding 6, move 1. The scope note is a whole line saying what the denominator
+    // counts, so on a phone the word goes INTO the figure and the line goes away. Desktop
+    // keeps both, and the unindexed state keeps the standalone note — there is no ratio
+    // there for `base` to ride on.
+    // `percent` is nullable on the section summary even though an indexed set always has
+    // one; the desktop form has always interpolated it raw. Taken as nullable here so the
+    // phone form cannot be the place that prints "null%".
+    ratioScoped: (have: number, total: number, percent: number | null) =>
+      percent === null ? `${have} / ${total} base` : `${have} / ${total} base · ${percent}%`,
+    // The extras ratio, trailing the scoped figure. It is what the absorbed note promised
+    // was counted apart, so dropping the note without it would lose the fact.
+    // The noun agrees with the denominator, as `head.meta` and the set index both do:
+    // a one-printing extras section reads "0 / 1 extra".
+    extrasTrail: (have: number, total: number) =>
+      `${have} / ${total} ${total === 1 ? "extra" : "extras"}`,
+    // R3 finding 6, move 2. `meta` is one interpolated string of four values; this is the
+    // phone form beside it, never a replacement. The two counts it drops are the two
+    // figures move 1 puts on the line above, which is the only reason dropping them is free.
+    // The year is optional, because an indexed set with no recorded release date is a
+    // supported catalog state and the code alone still identifies the set. The desktop
+    // string says "an unrecorded date" rather than dropping itself, and the set index
+    // falls back the same way.
+    metaShort: (code: string, released: string | null) =>
+      released ? `${code.toUpperCase()} · ${released.slice(0, 4)}` : code.toUpperCase(),
     ratioAria: (have: number, total: number) =>
       `You have ${have} of ${total} ${total === 1 ? "card" : "cards"} in the base run`,
   },
@@ -310,6 +334,10 @@ export const setPageCopy = {
   result: {
     rest: (cells: number, have: number, missing: number) =>
       `${cells} ${cells === 1 ? "cell" : "cells"} · ${have} yours, ${missing} missing`,
+    // R3 finding 6, move 4. The second half restates a subtraction the ratio in the head
+    // has already made two lines above, so the phone keeps the count and drops it. The
+    // filtered and missing-only forms are untouched: neither is stated anywhere else.
+    restShort: (cells: number) => `${cells} ${cells === 1 ? "cell" : "cells"}`,
     missingOnly: (n: number) =>
       `${n} missing · numbers skip, because the cards you own are hidden`,
     filtered: (shown: number, total: number) =>
