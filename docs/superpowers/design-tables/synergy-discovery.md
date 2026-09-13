@@ -551,7 +551,7 @@ Same 7px dot/ring as desktop.
 
 **Non-zero selection, all owned**
 
-- `synergyCopy.select.promise(filled, picked, total)` — "We'll fill {filled}, plus your {picked} — {total} of the 99."
+- `synergyCopy.select.promise(filled, picked, total)` — "We'll fill {filled}, plus your {picked}: {total} of the 99."
 - `{total}` rendered in `var(--fg)` (`#EDE6D8`)
 
 **Non-zero selection with unowned cards**

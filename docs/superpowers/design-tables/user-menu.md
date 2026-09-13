@@ -178,7 +178,7 @@ eng-side item.
 |---|---|---|---|
 | T1 | `Manage account` | Popover menu item 1; sheet menu item 1; keyboard note "focus moves to *Manage account*" | RM:114, CV:219, CV:306, CV:513 |
 | T2 | `Sign out` | Popover menu item 2; sheet menu item 2 | RM:114, CV:220, CV:307 |
-| T3 | `Account — Ana Ruiz` | Trigger's accessible name (`aria-label`); em dash; "Ana Ruiz" is the account holder's name | RM:145, CV:265, CV:532 |
+| T3 | `Account: Ana Ruiz` | Trigger's accessible name (`aria-label`); colon; "Ana Ruiz" is the account holder's name | RM:145, CV:265, CV:532 |
 | T4 | `Ana Ruiz` | Popover + sheet identity name line; also `<UserProfile/>` profile row. **Fabricated mock identity** — real value comes from the session | RM:169, CV:214, CV:302 |
 | T5 | `ana.ruiz@example.com` | Popover + sheet identity email line; `<UserProfile/>` email section. **Fabricated** | RM:169, CV:215, CV:303 |
 | T6 | `AR` | Avatar initials, all sizes. **Fabricated**; `aria-hidden` | RM:169, CV:89, CV:212, CV:300 |
@@ -216,7 +216,7 @@ Both utility names join the existing `prefers-reduced-motion: reduce` block at `
 |---|---|---|---|
 | X1 | Trigger element | native `<button>` | RM:144, CV:531 |
 | X2 | Trigger ARIA | `aria-haspopup="menu"`, `aria-expanded` (true when open), `aria-controls` (points at the panel) | RM:144, CV:531 |
-| X3 | Trigger accessible name | `"Account — Ana Ruiz"` — the person, not the glyphs | RM:145, CV:532 |
+| X3 | Trigger accessible name | `"Account: Ana Ruiz"` — the person, not the glyphs | RM:145, CV:532 |
 | X4 | Initials hidden | avatar initials `aria-hidden` | RM:145, CV:532 |
 | X5 | Panel role | `role="menu"` with exactly two `role="menuitem"` children | RM:146, CV:533 |
 | X6 | Identity header semantics | not a menu item, **not focusable** | RM:128, CV:533 |
@@ -274,7 +274,7 @@ Unresolved here by design — an implementer would have to guess. Not resolved i
 10. **Popover `aria-labelledby` / accessible name.** The sheet gets "a label pointing at the name";
     the desktop popover's `role="menu"` accessible name is not specified.
 11. **Sheet label string.** The exact `aria-label`/`aria-labelledby` text for the sheet is not given
-    verbatim, unlike the trigger's "Account — Ana Ruiz".
+    verbatim, unlike the trigger's "Account: Ana Ruiz".
 12. **Home/End, type-ahead, and `Tab` inside the menu.** `↑ ↓` and `ESC` are specified; APG menu
     conventions (`Home`/`End`, first-letter type-ahead, whether `Tab` closes or cycles) are not.
     "Trapped inside the panel" implies cycling, but the two items' tab order is not stated.
@@ -285,7 +285,7 @@ Unresolved here by design — an implementer would have to guess. Not resolved i
     is in flight or fails.
 15. **Avatar fallback rules.** Initials are the only avatar treatment drawn. What happens with a
     Clerk profile image, a one-word name, a name with no letters, or a user with no name at all
-    (accessible name is `"Account — {name}"`) is unspecified.
+    (accessible name is `"Account: {name}"`) is unspecified.
 16. **Reduced-motion + trigger colour transition.** A4's 120ms colour change is not listed in the
     reduced-motion block; whether it should be suppressed is unstated.
 17. **Backdrop for the popover on a touch-capable desktop.** "No backdrop on desktop" is by viewport,
