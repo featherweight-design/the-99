@@ -200,9 +200,17 @@ export function SpineMobile({
             </CardDetailTrigger>
           </>
         ) : (
-          <span style={TRUNCATES}>
-            {commander.name} · {colorLabel(commander.colorIdentity)}
-          </span>
+          <>
+            {/* Two spans, not one truncating string. The pips take 62px of this
+                314px line at five colours, and a single `truncate` across both
+                halves ellipsised the COLOUR away — the half that never needs to,
+                since it is three or four characters. The name gives instead,
+                which is the same ordered shrink the pair row above uses. */}
+            <span style={TRUNCATES}>{commander.name}</span>
+            <span style={{ flex: "none", whiteSpace: "nowrap" }}>
+              &nbsp;· {colorLabel(commander.colorIdentity)}
+            </span>
+          </>
         )}
       </span>
     </div>

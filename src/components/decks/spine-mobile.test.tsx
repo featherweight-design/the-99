@@ -40,9 +40,13 @@ describe("SpineMobile", () => {
     ]);
     cleanup();
     renderSpine(<SpineMobile {...props} />);
-    expect(screen.getByText(/Praetors’ Voice/).textContent).toBe(
-      "Atraxa, Praetors’ Voice · Non-red",
-    );
+    // Two spans on a single commander too: the name truncates and the colour
+    // does not, because a shared `truncate` ellipsised away the three-character
+    // half rather than the fifty-character one.
+    const single = screen.getByText("Atraxa, Praetors’ Voice").parentElement!;
+    expect(single.textContent?.replace(/\u00a0/g, " ")).toBe("Atraxa, Praetors’ Voice · Non-red");
+    const colour = screen.getByText(/Non-red/);
+    expect(colour.style.flex).toBe("0 0 auto");
   });
 
   // Decision 18's ordered shrink, behind the status chip: the chip leads this
