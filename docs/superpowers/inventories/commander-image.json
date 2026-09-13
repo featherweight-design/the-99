@@ -1,0 +1,110 @@
+{
+  "feature": "One commander image — every render of a commander's art",
+  "note": "Written at close-out rather than before implementation, which is the wrong order and is recorded as such: the round shipped before this repository had a contact sheet. Every row here is a surface the round changed, and the two the corrections round changed are marked. A row's ids come from the environment so no account's data is committed.",
+  "rows": [
+    {
+      "id": "home",
+      "label": "/ — the hero and the resume rows (both changed by #556)",
+      "steps": [
+        {
+          "goto": "/",
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    },
+    {
+      "id": "commanders",
+      "label": "/commanders — the owned lane's rows",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    },
+    {
+      "id": "discover",
+      "label": "/discover — the discovery rows",
+      "steps": [
+        {
+          "goto": "/discover",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    },
+    {
+      "id": "commander-detail",
+      "label": "/commanders/<slug> — the detail hero (phone band, desktop card)",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "click": "a[href^=\"/commanders/\"]",
+          "wait": "h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "decks",
+      "label": "/decks — the deck tiles, at the widths the container query splits",
+      "steps": [
+        {
+          "goto": "/decks",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    },
+    {
+      "id": "deck-header",
+      "label": "/decks/<id> — the deck header spine (changed by #577)",
+      "steps": [
+        {
+          "goto": "/decks",
+          "settle": 3000,
+          "wait": "ul a[href^=\"/decks/\"]"
+        },
+        {
+          "click": "ul a[href^=\"/decks/\"]:not([href$=\"/new\"]):not([href$=\"/import\"])",
+          "wait": "h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "deck-new",
+      "label": "/decks/new — the commander picker's rows and its selected summary",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    }
+  ],
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "narrow",
+      "width": 900,
+      "height": 900
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ]
+}

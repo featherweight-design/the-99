@@ -133,11 +133,62 @@ const READ_HEADER = `() => {
     // bare one would end that string and put the rest of this reader outside it.
     //
     // data-deck-title is the deck's name alone, which is what the heading holds
-    // now: the rename control is its SIBLING, outside the clamped text, so
+    // now: the rename control is its SIBLING, outside the title's text, so
     // neither the heading's text content nor its accessible name carries a
     // glyph. Reading the marker rather than the heading keeps that honest if a
     // future change puts anything beside the name again.
     title: h1 ? (h1.querySelector('[data-deck-title]') ?? h1).textContent.trim() : null,
+    // The band reads from the left on the phone. Measured as geometry rather than
+    // as a class: the title's left edge against the block's own, which is the
+    // thing a centred block gets wrong and a property table cannot see.
+    titleOffset: (() => {
+      const block = header.querySelector('[data-wash-label]');
+      if (!h1 || !block) return null;
+      return Math.round(h1.getBoundingClientRect().left - block.getBoundingClientRect().left);
+    })(),
+    // The pencil against the title's LAST LINE, measured rather than declared.
+    // jsdom lays nothing out, so a component test can only assert that the glyph
+    // is an inline sibling of an inline box — it cannot tell whether that box
+    // leaves room for the glyph or pushes it onto a line of its own. The title's
+    // own line boxes come from a Range over its text, and the last rect is the
+    // last line.
+    pencilOnLastLine: (() => {
+      const title = h1 ? h1.querySelector('[data-deck-title]') : null;
+      const pencil = [...header.querySelectorAll('[aria-label^="Rename deck: "]')].find(visible);
+      const block = header.querySelector('[data-wash-label]');
+      if (!title || !pencil || !block) return null;
+      const range = document.createRange();
+      range.selectNodeContents(title);
+      // Filtered to the lines the heading actually SHOWS. While the title was
+      // clamped, a Range reported rects for lines it had hidden, so the last rect
+      // could be an invisible one and the glyph "correct" below the visible text.
+      // Nothing is hidden now, so this filter should never drop a line — which is
+      // why what it drops is reported either way rather than assumed to be zero.
+      const frame = h1.getBoundingClientRect();
+      const all = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      const lines = all.filter((r) => r.bottom <= frame.bottom + 1);
+      if (!lines.length) return null;
+      const last = lines[lines.length - 1];
+      // The GLYPH's edges, not the target's. The button is a 14px box with 15px
+      // of padding and an equal negative margin, so its border box starts 15px
+      // before the glyph — enough to read as sitting before the title's text on a
+      // short name and fail a correct build.
+      const box = pencil.getBoundingClientRect();
+      const glyph = { left: box.left + 15, right: box.right - 15 };
+      const mid = box.top + box.height / 2;
+      return {
+        lines: lines.length,
+        hidden: all.length - lines.length,
+        // The glyph's vertical centre inside the last line's own band, with a
+        // pixel of tolerance for the half-leading either side.
+        onLastLine: mid >= last.top - 1 && mid <= last.bottom + 1,
+        // And after that line's text rather than before it.
+        after: Math.round(glyph.left - last.right),
+        // The drawn 26px plate is centred in a 44px target, so 9px of that
+        // target may overhang; the PLATE is what must stay inside the block.
+        withinBlock: Math.round(block.getBoundingClientRect().right - glyph.right),
+      };
+    })(),
     titleShadow: h1 ? getComputedStyle(h1).textShadow : null,
     titleColor: h1 ? getComputedStyle(h1).color : null,
     barBackground: fill ? getComputedStyle(fill).backgroundColor : null,
@@ -339,7 +390,44 @@ try {
     }
 
     // Items 2/3/4 — the rename flow on the first deck, screenshotted per state.
-    const walk = deckPaths[0];
+    // A deck whose title actually WRAPS, not simply the first one. The glyph's
+    // placement depends on the last line of a wrapped title, and the first deck's
+    // name is one line — so this walk kept reporting "the wrapped case went
+    // unchecked" on the very geometry three attempts got wrong. Each candidate is
+    // loaded and measured; the first that wraps is the one walked, and if none of
+    // them wrap that is said out loud rather than passing quietly.
+    let walk = deckPaths[0];
+    let wrapped = 0;
+    for (const candidate of deckPaths) {
+      await page.goto(`${BASE}${candidate}`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(
+        () => [...document.querySelectorAll("[data-spine-meta]")].some((e) => e.getClientRects().length > 0),
+        null,
+        { timeout: 15_000 },
+      );
+      await page.waitForTimeout(600);
+      const lines = await page.evaluate(
+        `(() => {
+          const vis = (e) => e.getClientRects().length > 0;
+          const text = [...document.querySelectorAll('[data-deck-title]')].find(vis);
+          if (!text) return 0;
+          const range = document.createRange();
+          range.selectNodeContents(text);
+          return [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0).length;
+        })()`,
+      );
+      if (lines >= 2) {
+        walk = candidate;
+        wrapped = lines;
+        break;
+      }
+    }
+    if (wrapped) note(`${vpName}: walking ${walk} — its title wraps to ${wrapped} lines`);
+    // A NOTE, not a failure: an account whose every deck name fits one line is a
+    // data condition, not a defect, and failing the run for it would make the
+    // probe's exit code a fact about the fixture. It is said loudly instead, so a
+    // green run cannot be mistaken for having measured the wrapped case.
+    else note(`  (no deck on this account has a title that wraps — the glyph's wrapped case went unmeasured)`);
     await page.goto(`${BASE}${walk}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const rest = await page.evaluate(`(${READ_HEADER})()`);
@@ -359,8 +447,10 @@ try {
     // hit area made of padding and an equal negative margin, so its 44px box
     // overhangs the 14px the holder occupies in flow. Painting
     // is not the question — whether a tap LANDS on it is, and the band clips what
-    // overhangs it. Four points, because a clipped or overlapped edge is the
-    // failure and the centre would pass through either.
+    // overhangs it. All four edge midpoints plus the centre: a clipped or
+    // overlapped edge is the failure and the centre passes through either. The
+    // TOP was missing, so an element overlapping the control from above — the
+    // band's own art layer, a header that grew — would have passed.
     const reach = await page.evaluate(
       `(() => {
         const el = [...document.querySelectorAll('[aria-label^="Rename deck: "]')]
@@ -374,6 +464,7 @@ try {
         return {
           box: [Math.round(r.width), Math.round(r.height)],
           centre: at(r.left + r.width / 2, r.top + r.height / 2),
+          top: at(r.left + r.width / 2, r.top + 2),
           left: at(r.left + 2, r.top + r.height / 2),
           right: at(r.right - 2, r.top + r.height / 2),
           bottom: at(r.left + r.width / 2, r.bottom - 2),
@@ -383,7 +474,7 @@ try {
     if (!reach) {
       fail(`no rename control laid out to hit-test`);
     } else {
-      note(`${vpName} rename target: ${reach.box.join("×")} — centre ${reach.centre}, left ${reach.left}, right ${reach.right}, bottom ${reach.bottom}`);
+      note(`${vpName} rename target: ${reach.box.join("×")} — centre ${reach.centre}, top ${reach.top}, left ${reach.left}, right ${reach.right}, bottom ${reach.bottom}`);
       if (reach.box[0] < 44 || reach.box[1] < 44) {
         fail(`rename target measures ${reach.box.join("×")}, under the 44px floor`);
       }
@@ -417,6 +508,42 @@ try {
       // Item 4 — the meta row crosses the divider while the field takes the band.
       if (rest.metaInBand === 'no-marker' || editing.metaInBand === 'no-marker') {
         fail(`the deck header draws no [data-spine-meta] — the divider move is unmeasured`);
+      }
+      // Flush left, within a pixel: a centred block put the title tens of pixels
+      // in from its own edge, which is what the drawings were compared against.
+      if (rest.titleOffset === null) {
+        fail(`no title or no [data-wash-label] to measure the title's offset against`);
+      } else if (Math.abs(rest.titleOffset) > 1) {
+        fail(`title sits ${rest.titleOffset}px from the block's left edge, expected flush`);
+      }
+      // The pencil, measured: on the title's last line, after its text, and with
+      // its drawn plate inside the block. A wrapped name is the case that broke
+      // it — the glyph followed the heading's full-width box instead of its
+      // words — and a title long enough to fill the line is the case that pushes
+      // the glyph to a line of its own.
+      const pencil = rest.pencilOnLastLine;
+      if (!pencil) {
+        fail(`no title, pencil or [data-wash-label] to measure the pencil against`);
+      } else {
+        note(`  pencil: title wraps to ${pencil.lines} line(s), glyph ${pencil.after}px after the last`);
+        if (!pencil.onLastLine) fail(`pencil is not on the title's last line`);
+        if (pencil.after < 0) fail(`pencil sits ${-pencil.after}px BEFORE the end of the last line`);
+        // BOUNDED, not merely positive. An atomic inline box takes the whole
+        // available width when its text wraps, so the glyph can sit far to the
+        // right of a short last line and still be "after" it — which is the
+        // defect this check exists to catch, and a `>= 0` test passes it.
+        if (pencil.after > 12) {
+          fail(`pencil sits ${pencil.after}px after the last line's text, expected it to follow the words`);
+        }
+        if (pencil.hidden > 0) {
+          fail(`${pencil.hidden} title line(s) are drawn outside the heading's own box`);
+        }
+        if (pencil.lines < 2) {
+          note(`  (this deck's title is one line — the wrapped case went unchecked here)`);
+        }
+        if (pencil.withinBlock < 0) {
+          fail(`pencil's plate overhangs the block by ${-pencil.withinBlock}px`);
+        }
       }
       if (rest.metaInBand !== true) fail(`meta row not in the band at rest`);
       if (editing.metaInBand !== false) fail(`meta row did not move below the divider`);

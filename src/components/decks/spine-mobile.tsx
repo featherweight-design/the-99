@@ -14,12 +14,17 @@ import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { colorLabel } from "../../lib/decks/format";
+import { IdentityPips } from "../commanders/commander-art";
+import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
+
+/** The rename glyph's drawn size. Named because the measurement below has to
+    keep the glyph inside the block, and the heading reserves the same figure. */
+const GLYPH = 14;
 
 export function SpineMobile({
   deck,
@@ -29,6 +34,20 @@ export function SpineMobile({
   offerFirstCommit,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
+  // No measurement, and no clamp. `-webkit-line-clamp` requires
+  // `display: -webkit-box`, which is an ATOMIC inline box: its width is the
+  // whole available width once its text wraps, so anything following it in flow
+  // lands at that box's right edge rather than after its last word. Measuring
+  // the last line with a Range does not rescue it either — `getClientRects`
+  // reports lines the clamp hides, and the `…` the clamp draws is generated
+  // content that no Range can see, so a glyph placed after the measured text
+  // sits on top of it.
+  //
+  // So the title is not clamped. The heading is `display: inline`, which is
+  // NON-atomic: its text wraps as ordinary inline content and the glyph after it
+  // continues on the heading's last line, at any line count, with no JavaScript
+  // and no fallback state. The cost is the block's height, which is why the ramp
+  // is keyed to a three-line title rather than a two-line one.
   const { commander, partner } = deck;
   const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
@@ -43,6 +62,8 @@ export function SpineMobile({
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while
   // editing, where the field needs the band's whole width. Its ink differs with
   // its ground, which is the only reason the two call sites take an argument.
+  const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
+
   const metaRow = (onWash: boolean) => (
     // `flex-nowrap`, and it is load-bearing. `labelAtPx` measures ONE 22px row,
     // and at 390px a pair's two names plus five 10px pips, the chip and the two
@@ -62,7 +83,7 @@ export function SpineMobile({
       // inside a child — so the probe read null and its two divider assertions
       // failed on every deck instead of measuring the move.
       data-spine-meta
-      className="flex w-full min-w-0 flex-nowrap items-center justify-center"
+      className="flex w-full min-w-0 flex-nowrap items-center justify-start"
       style={{ gap: 8 }}
     >
       {/* The chip leads the row, as the drawings have it: it is the one thing on
@@ -75,6 +96,14 @@ export function SpineMobile({
         // pixel past the ramp keyed to it.
         className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
       />
+      {/* The pips, between the chip and the names — the same adjacency desktop
+          draws (pips then names), with the chip moved to the front of the line.
+          They cost 62px at five colours against this row's 314px, which is about
+          eleven characters of the commander's name, and the name ellipsises
+          either way on a two-faced pair. The colour stays worded beside them:
+          the deck tile's ruling dropped pips in favour of the word because a
+          grid cell cannot afford both, and a page header can. */}
+      <IdentityPips colorIdentity={identity} size={10} />
       {/* Decision 18. The caption is centred inside `left:18 right:18`, so a
           pair of names is already the width of the row at 390 — the identity
           label is dropped rather than wrapped, and a single commander keeps it
@@ -130,9 +159,17 @@ export function SpineMobile({
             </CardDetailTrigger>
           </>
         ) : (
-          <span style={TRUNCATES}>
-            {commander.name} · {colorLabel(commander.colorIdentity)}
-          </span>
+          <>
+            {/* Two spans, not one truncating string. The pips take 62px of this
+                314px line at five colours, and a single `truncate` across both
+                halves ellipsised the COLOUR away — the half that never needs to,
+                since it is three or four characters. The name gives instead,
+                which is the same ordered shrink the pair row above uses. */}
+            <span style={TRUNCATES}>{commander.name}</span>
+            <span style={{ flex: "none", whiteSpace: "nowrap" }}>
+              &nbsp;· {colorLabel(commander.colorIdentity)}
+            </span>
+          </>
         )}
       </span>
     </div>
@@ -151,20 +188,19 @@ export function SpineMobile({
         <ArtWash
           strategy="cover"
           height={288}
-          // The block's MEASURED height in pixels from the foot, at 390px and at
-          // the title's own ceiling: `-webkit-line-clamp: 2` makes two lines hard
-          // rather than an estimate, so 12 bottom inset, a 22px meta row — the
-          // settled chip height, stated on the pill for exactly this reason — a
-          // 6px gap and two 20px title lines at 1.25 for 50 gives 90. The pill
-          // drew 23 from padding over an inherited line box before this round,
-          // which put the block at 91 and the title's first pixels on a rising
-          // ramp.
+          // The block's MEASURED height in pixels from the foot, at a THREE-line
+          // title: 12 bottom inset, a 22px meta row — the settled chip height —
+          // a 6px gap and three 25px title lines at 20/1.25 gives 115.
           //
-          // The handoff's 83 was measured against a three-line title, which this
-          // clamp forbids; its own correction note is the reason the figure is
-          // measured here rather than taken — a `labelAt` derived from a block
-          // other than the one drawn is this round's own failure.
-          labelAtPx={90}
+          // Three, not two, because the title is no longer clamped: clamping
+          // needs `-webkit-box`, an atomic inline box whose width is the whole
+          // available width once its text wraps, which is what put the rename
+          // glyph at the far right of a two-line name. An unclamped inline
+          // heading lets the glyph follow the words at any line count, and the
+          // price is keying this figure to the taller block. It is a ceiling, so
+          // a one- or two-line title simply holds its ramp higher than it needs
+          // — more art, never less protection.
+          labelAtPx={115}
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
@@ -181,18 +217,16 @@ export function SpineMobile({
           // The block the ramp is keyed to, hooked so a probe measures it rather
           // than guessing at it.
           data-wash-label
-          className="absolute flex flex-col items-center"
-          // 40 of padding on BOTH sides, not a right inset: the card-details
-          // control now sits in this band's bottom-right corner, and its 44px
-          // target overlapped the meta row's right end — a title that ran under
-          // it, and a tap that could land on either. Padding both sides keeps the
-          // title centred on the band while clearing the corner; an inset on one
-          // side would move the centre by half of it.
+          className="absolute flex flex-col items-start"
+          // Left-aligned, so the reserved space is on the right ALONE: the
+          // card-details control sits in this band's bottom-right corner and its
+          // 44px target reached into the meta row. A centred block had to pad
+          // both sides to clear that corner without moving its centre; a
+          // left-aligned one pays for it once.
           style={{
             left: 18,
             right: 18,
             bottom: 12,
-            paddingLeft: 40,
             paddingRight: 40,
             gap: renaming ? 8 : 6,
           }}
@@ -209,7 +243,7 @@ export function SpineMobile({
                 // commits.
                 readOnly={rename.isPending}
                 aria-label={renameCopy.fieldAria}
-                className="w-full rounded-[8px] border border-[color:var(--accent)] bg-[color:var(--surface-sunken)] text-center font-display font-[700] focus-visible:outline-none"
+                className="w-full rounded-[8px] border border-[color:var(--accent)] bg-[color:var(--surface-sunken)] text-left font-display font-[700] focus-visible:outline-none"
                 style={{
                   boxSizing: "border-box",
                   padding: "8px 12px",
@@ -271,83 +305,87 @@ export function SpineMobile({
             </>
           ) : (
             <>
-              <div className="flex items-center justify-center" style={{ maxWidth: "100%" }}>
-                {/* The glyph's flow width, opposite it — 20px now: 14 of glyph
-                    plus the 6px that sets it off from the name. The row centres
-                    title and glyph together, so a spacer that does not match
-                    leaves the name off the band's centre by the difference. */}
-                <span aria-hidden="true" className="flex-none" style={{ width: 20 }} />
-                {/* The spacer above is what balances this. The pencil is a 14px
-                    holder in flow — not a zero-width one, which put its whole
-                    44px box past the text where the band clips it — so the row
-                    centres 14px of glyph against 14px of nothing and the title
-                    stays on the band's centre. */}
+              {/* A BLOCK, not a flex row, and that is the whole fix for the
+                  floating pencil. A flex sibling sits after the heading's BOX,
+                  and a heading whose text wraps has a full-width box — so on a
+                  one-line name the glyph landed right after the words and on a
+                  two-line name it landed at the far right of the band, which
+                  read as arbitrary. In normal inline flow it shares the
+                  heading's LAST LINE BOX instead, which is where the drawings
+                  put it.
+
+                  No spacer either: it existed only to balance the glyph's flow
+                  width so a centred title stayed centred, and this block reads
+                  from the left. */}
+              <div className="w-full" style={{ maxWidth: "100%", textAlign: "left" }}>
                 <h1
-                  // The clamp lives on the SPAN inside, not on the heading: a
-                  // clamped box needs `overflow: hidden`, and anything beside the
-                  // text inside it gets clipped when the heading shrink-wraps a
-                  // short name. The heading holds the clamped text alone, and the
-                  // glyph is its sibling in the row.
-                  className="flex min-w-0 items-end justify-center font-display font-[700]"
+                  // `display: inline`, and NOT clamped — which is the mechanism.
+                  // A clamp needs `-webkit-box`, an ATOMIC inline box whose width
+                  // is the whole available width once its text wraps, so the glyph
+                  // after it lands at that box's right edge rather than after its
+                  // last word. A plain inline heading wraps as ordinary text and
+                  // the glyph continues on its last line at any line count.
+                  //
+                  // The ramp's figure is keyed to three lines as a ceiling. A name
+                  // long enough to take a fourth holds its ramp below its own
+                  // block, and the browser probe's block-versus-hold check fails
+                  // by name if one ever appears — reported rather than hidden.
+                  className="m-0 min-w-0 font-display font-[700]"
                   style={{
+                    // `inline`, and NON-atomic — which is the whole mechanism.
+                    // Its text wraps as ordinary inline content, so the glyph
+                    // after it continues on the heading's last line however many
+                    // lines that is. An atomic box (`-webkit-box`,
+                    // `inline-block`, a flex item) takes the full available
+                    // width when it wraps and puts the glyph at the far right.
+                    display: "inline",
+                    // An unbroken name cannot be held by `min-w-0` on an inline
+                    // element, so it would run past the block rather than wrap.
+                    // `anywhere` breaks it mid-word instead — the one case where
+                    // a broken word beats content outside the viewport, which is
+                    // the bug this branch also fixes.
+                    overflowWrap: "anywhere",
                     fontSize: 20,
                     lineHeight: 1.25,
-                    textAlign: "center",
+                    textAlign: "left",
                     color: "var(--fg)",
                     textShadow: COVER_INK_SHADOW,
                   }}
                 >
                   {/* `data-deck-title` marks the deck's name for anything that
                       needs it apart from the heading's own layout — the browser
-                      probe compares it to the rename control's accessible name.
-                      The clamp lives here rather than on the heading so the
-                      heading can be a flex line: a clamped box clips, and the
-                      glyph beside the title would be clipped with it. */}
-                  <span
-                    data-deck-title
-                    className="min-w-0"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {deck.name}
-                  </span>
+                      probe compares it to the rename control's accessible name. */}
+                  {/* The marker is the deck's name alone — the glyph is outside
+                      this heading, so neither the heading's text content nor its
+                      accessible name carries it. No clamp lives here or on the
+                      heading: the title wraps freely, which is what lets the
+                      glyph follow its last line. */}
+                  <span data-deck-title>{deck.name}</span>
                 </h1>
-                {/* The glyph is a SIBLING of the heading, in the same row, not a
-                    child of it. Inside the heading its `aria-label` joined the
-                    heading's own accessible name, so heading navigation announced
-                    "…Rename deck: …" and then the control announced itself again.
-                    Beside the title it is still the title's control rather than a
-                    corner one, which is the point of the treatment.
+                {/* The glyph is a SIBLING of the heading, not a child. Inside it
+                    its `aria-label` joined the heading's own accessible name, so
+                    heading navigation announced "…Rename deck: …" and then the
+                    control announced itself again. Beside the title it is still
+                    the title's control rather than a corner one.
 
                     14px in flow, not zero: a zero-width holder puts the whole
                     44px border box past the text — 29px beyond the block's right
-                    edge, which the band clips on a phone and the action buttons
-                    cover on desktop, for exactly the long names that fill the
-                    column. Only the 15px of hit padding overhangs now, inside the
-                    block's 18px inset and the desktop row's 18px gap alike.
+                    edge, which the band clips. Only the 15px of hit padding
+                    overhangs now, inside the block's own 18px inset.
 
                     `relative z-[1]` because that overhang reaches 15px BELOW the
-                    title line and the meta row starts a few pixels later: two
-                    positioned elements at auto z-index are ordered by document
-                    position, so the row underneath won the hit test across the
-                    bottom third of this target. The same defect #534 fixed one
-                    control over. */}
-                {/* `self-center`, because the row's own `items-center` is what
-                    the glyph should follow and the `items-end` on the heading
-                    aligns only the heading's own child. Centred across the title
-                    row: against a two-line name a bottom-aligned glyph reads as a
-                    footnote to the second line rather than as the title's
-                    control. */}
+                    title's last line and the meta row starts a few pixels later:
+                    two positioned elements at auto z-index are ordered by
+                    document position, so the row underneath won the hit test
+                    across the bottom third of this target. The same defect #534
+                    fixed one control over. */}
+                {/* In flow, straight after the heading, so it shares the
+                    heading's last line — `\u00a0` first so a line break never
+                    falls between the name and its control. */}
+                {"\u00a0"}
                 <span
-                  // Centred and set off from the name, as on desktop: against a
-                  // two-line title a bottom-aligned glyph reads as a footnote to
-                  // the second line.
-                  className="relative z-[1] inline-flex flex-none self-center"
-                  style={{ width: 14, marginLeft: 6 }}
+                  className="relative z-[1] inline-flex"
+                  style={{ width: GLYPH, verticalAlign: "baseline" }}
                 >
                   <button
                     type="button"

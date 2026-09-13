@@ -66,7 +66,7 @@ const STATED_BANDS: readonly {
 }[] = [
   { surface: "home hero", labelAtPx: 71, band: 288, strategy: "cover" },
   { surface: "commander detail mobile", labelAtPx: 96, band: 288, strategy: "cover" },
-  { surface: "deck spine, phone", labelAtPx: 90, band: 288, strategy: "cover" },
+  { surface: "deck spine, phone", labelAtPx: 115, band: 288, strategy: "cover" },
   { surface: "deck tile", labelAtPx: 46, band: 248, strategy: "cover" },
   // The two rows differ: one wash under two breakpoint subtrees on each, and the
   // desktop block is the taller — discovery's is its rank column, the owned

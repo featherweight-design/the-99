@@ -263,7 +263,7 @@ const READ_STATED_BANDS = `() => {
       // Same definition the row reader uses: the vertical ramp is the gradient
       // that names no angle at all, because the browser drops the default 180deg.
       const verticals = scrims.filter((s) =>
-        /^linear-gradient\((?!\s*[\d.-]+deg)/.test(getComputedStyle(s).backgroundImage),
+        /^linear-gradient\\((?!\\s*[\\d.-]+deg)/.test(getComputedStyle(s).backgroundImage),
       ).length;
       const image = s ? getComputedStyle(s).backgroundImage : '';
       const stops = parseStops(image);
@@ -1222,7 +1222,7 @@ try {
     const deckHrefs = await page.evaluate(
       `[...document.querySelectorAll('a[href^="/decks/"]')]
         .map((a) => a.getAttribute('href'))
-        .filter((href) => /^\\/decks\\/[^/]+$/.test(href) && href !== '/decks/new')`,
+        .filter((href) => /^\\/decks\\/[0-9a-f-]{36}$/.test(href))`,
     );
     let walkedADeck = false;
     // Kept for the reduced-transparency comparison below, which needs a real
@@ -1233,9 +1233,27 @@ try {
     // Every link, not the first five: a run whose earliest decks all have
     // crop-less commanders would have concluded that no deck page draws the
     // control, which is a false failure about the fixture rather than the build.
+    // Every deck at the PHONE width, where the overflow happened and where a
+    // long name has the least room; the first qualifying deck at every width, for
+    // the chrome and geometry checks. Walking all of them at all three widths
+    // loaded ninety deck pages and took the dev server down with it, which is a
+    // measurement nobody gets. The cap is reported rather than silent.
+    let walkedCount = 0;
     for (const deckHref of deckHrefs) {
-      await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
-      await page.waitForTimeout(800);
+      // Every deck at the PHONE width, where the overflow happened and a long
+      // name has least room. At the other widths the walk stops once one deck has
+      // taken the chrome and geometry checks: ninety deck pages took the dev
+      // server down, which is a measurement nobody gets. What was skipped is
+      // reported after the loop rather than left silent.
+      if (layout !== "phone" && walkedADeck) break;
+      walkedCount += 1;
+      // `domcontentloaded` plus a settle rather than `networkidle`. Every deck is
+      // walked now, and a deck page keeps fetching — prices, availability — well
+      // past the point its layout has settled, so waiting for the network to go
+      // quiet on thirty of them times out on a dev server without measuring
+      // anything more. Width is a layout question, and the settle covers it.
+      await page.goto(`${BASE}${deckHref}`, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(1200);
       // EVERY deck, before the crop-less skip and regardless of whether the
       // geometry checks below have already run: a commander with no crop draws
       // no control by ruling but mounts the same spine, and the long two-faced
@@ -1290,6 +1308,11 @@ try {
       // No `break`: the chrome and geometry checks want one deck, and the
       // overflow check wants all of them. The flag above is what stops the
       // former from repeating.
+    }
+    if (walkedCount < deckHrefs.length) {
+      note(
+        `  (${deckHrefs.length - walkedCount} deck(s) not walked at ${vpName} — every deck is walked at the phone width, the rest stop once one has taken the geometry checks)`,
+      );
     }
     if (!walkedADeck) {
       note(`  FAIL no deck page drew a card-details control — the deck header's chrome goes unchecked`);
