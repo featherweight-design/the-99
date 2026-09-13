@@ -1,5 +1,12 @@
 # STATES — deck folders
 
+> **Corrections in force:** C1 (the compact `…` is absent on `All decks` as well as `Unfiled`), C4
+> (the pinned shelf is removed from the remainder; `Unfiled` is omitted with no folders), M1 (the
+> deck menu is two rows on a brew, and `Move` goes between `Rename` and `Delete` either way), R2
+> (no blur commit), N3 (`All decks` is the route out), and §8 (the compact sheet carries its own
+> live region). See `README.md` § Errata — that table is the authority where it and this file
+> disagree.
+
 Every state of the level, both widths. The wide form is ≥1000px (`CHASSIS_WIDE_MIN_PX`); compact is
 below it. "The line" is the shelf line; "the chassis" is the shipped `FilterChassis`, unchanged
 except for the denominator it is handed.

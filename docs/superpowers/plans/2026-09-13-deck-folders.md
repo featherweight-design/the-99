@@ -47,8 +47,9 @@ chassis's `/decks` slice is still open, that sentence goes to it now — not thi
    Tailwind stop. `deck-filter-sheet.tsx` already fixed that trap with `max-[999px]:flex`.
 6. **The line's counts are never filter-dependent.** Named shelves from `listFolders.deckCount`,
    All decks and Unfiled from the loaded list.
-7. **No motion on the shelf line.** Selection changes instantly; the compact sheet reuses the
-   existing entry animation. No reduced-motion state, because there is nothing to reduce.
+7. **No motion, anywhere in this round.** Selection changes instantly, and the sheet mounts with no
+   transition — matching `deck-filter-sheet.tsx:181-194`, which has none to reuse (errata E12). No
+   reduced-motion state, because there is nothing to reduce.
 8. **Copy is `folderCopy`**, ported verbatim from `design/design_handoff_the99_deck_folders/`'s copy
    file into `src/lib/copy/folders.ts`. `refreshCopy.decks.menu.*`, `refreshCopy.filters.*`,
    `refreshCopy.zero.*` and `deckChassisCopy.result` are **reused, never restated**.
@@ -75,8 +76,8 @@ working.
 | PR | What lands | Why this cut |
 |---|---|---|
 | **1 — the shelf, server to state** | `renameFolder`, four server actions, `listFolders` on the page, `folderCopy`, the `shelf` field, `?folder=`, shelf-first narrowing, the result-line denominator | Everything with a test that is not a rendered pixel. The route behaves correctly with the URL typed by hand before any control exists to type it |
-| **2 — the level, and making one** | The shelf line (wide), the 44px trigger and sheet (compact), S2 and S3, **and create** | The drawing. Create ships here because the line and the sheet both draw a `New folder` control, and a control with no handler is not a mergeable state — PR 1 has already landed the action it calls |
-| **3 — the acts on what exists** | Move mode in the deck menu, rename, delete | Every act on a folder that is already there, each inside a panel the app already ships. Splits from PR 2 so a review of the line is not also a review of three dialogs |
+| **2 — the level, making one, and filing into it** | The shelf line (wide), the 44px trigger and sheet (compact), S2 and S3, **create**, and **move** in the deck menu | The drawing, plus every affordance it names. Create ships here because the line and the sheet both draw `New folder`; move ships here because S2's body sends the reader to the deck's own `…` menu, and a state that names a control which does not exist is not a mergeable state. **PR 2 draws no `…` on a shelf segment** — that control opens rename and delete, which are PR 3 |
+| **3 — renaming and unmaking** | The shelf's own `…`, rename, delete | The two acts on a folder that already holds decks, and the only two that need a confirmation between them. Splits from PR 2 so a review of the level is not also a review of a destructive dialog |
 
 ---
 
@@ -132,7 +133,9 @@ to the copy file's one refusal string.
 `decks-view.tsx` and `src/lib/decks/folder-view.ts` (new, pure, unit-tested):
 
 - `shelfFromParams(params, folders)` → `string | null | "none"`, falling back to All decks on an
-  unknown id.
+  unknown id **and on `none` when the player has no folders** — decision 13 draws no `Unfiled`
+  segment in that state, so a bookmarked `?folder=none` would otherwise select a shelf that no
+  control can show as selected (errata E11).
 - `shelfToParam(shelf)` → the value or absence.
 - `narrowToShelf(decks, shelf)` → the list before `filterDecks`.
 - `shelfCounts(decks, folders)` → the figures the line prints, so the line and the result line
@@ -143,14 +146,17 @@ list.
 
 ### Task 1.7 — the result-line denominator
 
-`decks-view.tsx:340`: `deckChassisCopy.result(shown.length, narrowed.length)`. One argument.
+`decks-view.tsx:340`: `deckChassisCopy.result(shown.length, shelfTotal(counts, state.shelf))`. One
+argument, and it reads out of the **same map the segment prints from** (constraint 3) rather than
+off `narrowed.length` — those are equal today and would drift the moment either side is adjusted
+optimistically after a move.
 
 **Tests:** `folder-view.test.ts` over all four helpers, including the unknown-id fallback and
 `none`; `folders.test.ts` extended if the rename validation warrants it; the probe from 1.2.
 
 ---
 
-## PR 2 — the level, and making one
+## PR 2 — the level, making one, and filing into it
 
 ### Task 2.1 — `ShelfLine` (wide)
 
@@ -158,8 +164,9 @@ list.
 `listFolders` order — `All decks`, folders by name, `Unfiled` last — with `New folder` at the
 trailing edge. **`Unfiled` is omitted when no folder exists** (README decision 13, STATES W1, errata
 E3): a bucket equal to the whole list is a distinction without a difference. Selected segment: `--fg` on `--elevated` under a `--border-strong` ring, **no accent**
-(README 3). The selected segment carries a 22px `…`; no other segment does, and `Unfiled` never does
-(STATES W3/W4).
+(README 3). The selected segment carries a 22px `…` **in PR 3** — it opens rename and delete, which land there;
+PR 2 draws the segment without it. No unselected segment ever carries one, and neither `All decks`
+nor `Unfiled` does at any point (STATES W3/W4, errata E7).
 
 Wraps to a second line; past two it scrolls horizontally rather than growing a third (W5).
 
@@ -169,9 +176,9 @@ count via `folderCopy.shelves.aria`.
 ### Task 2.2 — the compact trigger and sheet
 
 Below `CHASSIS_WIDE_MIN_PX`: a 44px trigger printing the shelf name at 15px semibold plus its count
-and `▾`, with a 44px `…` beside it — **present only on a selected named folder**, absent rather than
-disabled on both `All decks` and `Unfiled` (STATES C2, corrected by errata E7: the `…` opens rename
-and delete, which neither of those has). The sheet is
+and `▾`. The 44px `…` beside it arrives with PR 3 and is **present only on a selected named
+folder** — absent rather than disabled on both `All decks` and `Unfiled` (STATES C2, corrected by
+errata E7: it opens rename and delete, which neither of those has). The sheet is
 `aria-modal` with the app's shared focus trap, 48px rows, a **round** single-select mark
 (`filter-panel.tsx:519` — a square tick promises two), counts trailing, `New folder…` last, current
 shelf pinned first with the pin computed once on open (C4, corrected by errata E8: the pinned shelf
@@ -195,7 +202,7 @@ Precedence is a ladder, and the chassis and shelf line stay mounted through all 
 filters emptied a populated shelf → the shipped filtered empty, unchanged (N4).
 
 **Tests:** the ladder as a table-driven render test, both widths; the pinned sheet order; the
-`aria-current` and accessible names; `Unfiled` carrying no `…` at either width.
+`aria-current` and accessible names; and that no segment carries a `…` yet at either width.
 
 ### Task 2.4 — create
 
@@ -204,11 +211,7 @@ inside move mode. Empty **disables** `Create` with no message; duplicate is stat
 is unreachable — `maxLength = FOLDER_NAME_MAX`. On success the action returns the new folder's id,
 the client selects that shelf, and the reader lands on S2 (CR4).
 
----
-
-## PR 3 — the acts on what exists
-
-### Task 3.1 — move, in the menu the deck already has
+### Task 2.5 — move, in the menu the deck already has
 
 `deck-card-overflow.tsx` gains a third mode. `Move · <shelf>` sits between `Rename` and `Delete`
 (and after `Update from a list` where that row renders). Move mode: a `Move to` eyebrow, `Unfiled`,
@@ -218,11 +221,21 @@ folders by name, the current destination carrying a filled round mark, `New fold
 panel returns to its menu with the row now reading the new shelf (README 17): no toast, and on a
 named shelf the tile also leaves the grid. A `false` return reverts the row (M6).
 
-### Task 3.2 — rename
+---
+
+## PR 3 — renaming and unmaking
+
+### Task 3.0 — the shelf's own `…`
+
+The selected named folder's 22px `…` at the wide form and its 44px sibling at the compact one, both
+opening a two-row menu: `Rename` · `Delete`. Never on an unselected segment, never on `All decks`,
+never on `Unfiled` (STATES R1, errata E7).
+
+### Task 3.1 — rename
 
 The selected shelf's `…` only. `RenameForm`'s real contract, per the correction above.
 
-### Task 3.3 — delete
+### Task 3.2 — delete
 
 `Delete "<name>"?` over **`Its 4 decks return to Unfiled. No deck is deleted.`**, or
 `Nothing is filed here.` when empty. Confirm either way — there is no undo. The confirming button

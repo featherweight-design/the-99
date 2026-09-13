@@ -1,5 +1,10 @@
 # READINESS — deck folders (R1)
 
+> **Two figures below are superseded by `README.md` § Errata, which is the authority:** the (a)
+> shortfall is ~76px rather than 108 (E2 — the 132px search floor is not implemented and the shipped
+> gap is 8px), and (a) does not stop the first deck being filed (E1 — the deck menu's Move row does
+> that; what (a) makes unreachable is the shelf itself and its S2 state). The verdict is unchanged.
+
 **Self-assessed: 🟢 green, with one Product call I would like made and one sequencing note that
 matters this week rather than next.**
 
