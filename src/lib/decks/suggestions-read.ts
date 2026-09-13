@@ -5,7 +5,9 @@
 // callback outside the request, so a `requireUserId()` inside would throw. A
 // `userId`-taking export in a `"use server"` module is a callable endpoint that
 // answers for any reader, which is why the split is a move rather than an
-// export. `getDeckSuggestions` stays there as the thin authenticated wrapper.
+// export: the builder page is the only caller, and it has the reader already.
+// `requireDeck` below is the authorization, and it is the same guard the action
+// wrapper this replaced went through.
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards } from "../../db/schema";
@@ -14,7 +16,6 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { getEdhrecData } from "../edhrec/client";
 import { mergeEdhrecData } from "../edhrec/merge";
 import { type PoolCard } from "../recs/score";
-import { loadAvailability } from "./availability-query";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
@@ -212,25 +213,12 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // Combine and truncate to the deck's body — 99, or 98 for a pair.
   const combined = [...ownedSuggestions, ...unownedSuggestions].slice(0, deckBodySize(hasPartner));
 
-  // Scoped to the tiles actually returned, and read from this deck's vantage so
-  // a card the deck already claims does not count against itself. Swallowed:
-  // Consider is a panel of recommendations, and a failed rollup must cost it its
-  // chips, not its tiles. `degraded` is EDHREC's flag and stays untouched — the
-  // availability model has no degraded surface at all (design 5.7).
-  // Owned tiles only. Consider carries unowned staples since #176, and
-  // `loadAvailability` is driven by the collection — an unowned oracle id can
-  // never come back from it, so including it only widens the array parameter.
-  const ownedIds = combined.filter((s) => s.owned).map((s) => s.oracleId);
-  const availability =
-    ownedIds.length > 0
-      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
-          () => null,
-        )
-      : null;
-  const suggestions = combined.map((s) => ({
-    ...s,
-    availability: availability?.get(s.oracleId) ?? null,
-  }));
+  // No availability on these tiles: a claim is point-in-time and another deck
+  // committing changes it, so it belongs to the request rather than to this
+  // payload, which the builder page caches. Its caller reads availability for
+  // the owned tiles and attaches it there — in the same query it already makes
+  // for the top-off candidates, since both want it from this deck's vantage.
+  const suggestions = combined;
 
   // Build shoppingFigures: EDHREC inclusion % for each unowned card in the deck.
   // Uses the same name lookup as buildFillPlan: lowercase, then fall back to the

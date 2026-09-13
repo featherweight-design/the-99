@@ -166,11 +166,21 @@ export default async function DeckBuilderPage({
   // can never come back from it. `excludeDeckId` is the deck being built, so its
   // own claims do not count against its own candidates.
   //
+  // The Consider tiles take their markers from this same read, rather than from
+  // the cached suggestions payload: a claim is point-in-time — another deck of
+  // the reader's own can commit and change it — so it must not be stored, and
+  // the candidates already ask the same question from the same vantage.
+  //
   // Both are swallowed. A failed price read degrades to bare rows and a failed
   // availability read to no markers, rather than taking the builder down — the
   // same treatment search-action.ts gives availability.
-  const ownedCandidateIds = candidateCards.filter((c) => c.owned).map((c) => c.oracleId);
-  const [priced, candidateAvailability] = await Promise.all([
+  const ownedIds = [
+    ...new Set([
+      ...candidateCards.filter((c) => c.owned).map((c) => c.oracleId),
+      ...suggestions.filter((s) => s.owned).map((s) => s.oracleId),
+    ]),
+  ];
+  const [priced, availability] = await Promise.all([
     loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
@@ -178,10 +188,8 @@ export default async function DeckBuilderPage({
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
     ]).catch(() => null),
-    ownedCandidateIds.length > 0
-      ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedCandidateIds }).catch(
-          () => null,
-        )
+    ownedIds.length > 0
+      ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedIds }).catch(() => null)
       : null,
   ]);
 
@@ -193,7 +201,12 @@ export default async function DeckBuilderPage({
     price: priced?.prices.get(card.oracleId) ?? null,
   });
   const cards = detail.cards.map(withPrice);
-  const pricedSuggestions = suggestions.map(withPrice);
+  // Owned tiles only, for the reason the read above is scoped that way: an
+  // unowned oracle id can never come back from the collection.
+  const pricedSuggestions = suggestions.map((s) => ({
+    ...withPrice(s),
+    availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
+  }));
 
   // First-run: user's only deck and it has no cards yet.
   const firstRun = allDecks.length === 1 && detail.built === 0;
@@ -204,7 +217,7 @@ export default async function DeckBuilderPage({
   const candidates: TopOffCandidate[] = candidateCards.map((c) => ({
     ...c,
     price: c.owned ? null : (priced?.prices.get(c.oracleId) ?? null),
-    availability: c.owned ? (candidateAvailability?.get(c.oracleId) ?? null) : null,
+    availability: c.owned ? (availability?.get(c.oracleId) ?? null) : null,
   }));
 
   return (

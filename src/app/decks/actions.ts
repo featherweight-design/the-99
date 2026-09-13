@@ -23,10 +23,7 @@ import {
 import { loadDraftState } from "../../lib/decks/draft-state";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
-import {
-  loadDeckSuggestions, ownedColorLegalPool, unownedStaples,
-  type DeckSuggestionsPayload,
-} from "../../lib/decks/suggestions-read";
+import { ownedColorLegalPool, unownedStaples } from "../../lib/decks/suggestions-read";
 import { requireDeck } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
@@ -287,11 +284,6 @@ export async function createDeck(
   // Outside the try: redirect() signals by throwing, and a catch here would
   // read that throw as a failed fill.
   redirect(`/decks/${deckId}`);
-}
-
-export async function getDeckSuggestions(deckId: string): Promise<DeckSuggestionsPayload> {
-  const userId = await requireUserId();
-  return loadDeckSuggestions(deckId, userId);
 }
 
 
