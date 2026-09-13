@@ -41,7 +41,7 @@
       "steps": [
         {
           "goto": "/decks?folder=none",
-          "wait": "main, [role=main], h1",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
           "settle": 2500
         }
       ]

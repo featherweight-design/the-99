@@ -301,7 +301,17 @@ export function DecksView({
    * is never read. The chassis's own result line is silent while the sheet is
    * open and cannot cover this either.
    */
-  const [shelfSaid, setShelfSaid] = useState("");
+  /**
+   * The sentence AND a sequence. Two moves into the same folder produce the
+   * same words, and a live region whose text does not change is not re-read —
+   * so the second receipt would be silent. The key remounts the region, which
+   * is what makes an identical sentence a new announcement.
+   */
+  const [shelfSaid, setShelfSaid] = useState({ text: "", n: 0 });
+  const say = useCallback(
+    (text: string) => setShelfSaid((prev) => ({ text, n: prev.n + 1 })),
+    [],
+  );
   /**
    * A one-shot: the result line stays quiet through the frame in which the
    * sheet hands its announcement over, so the shelf change is said once rather
@@ -517,9 +527,9 @@ export function DecksView({
       // would pass in silence. Announcing both would say it twice.
       setHandingOff(true);
       const chosen = segments.find((s) => s.shelf === shelf);
-      if (chosen) setShelfSaid(folderCopy.shelves.aria(chosen.label, chosen.count));
+      if (chosen) say(folderCopy.shelves.aria(chosen.label, chosen.count));
     },
-    [apply, state.filters, state.sort, segments],
+    [apply, state.filters, state.sort, segments, say],
   );
 
   // `chipLabels` already knows how to remove one value; the chassis only needs
@@ -746,8 +756,8 @@ export function DecksView({
             }
           />
 
-          <p aria-live="polite" aria-atomic="true" className="sr-only m-0">
-            {shelfSaid}
+          <p key={shelfSaid.n} aria-live="polite" aria-atomic="true" className="sr-only m-0">
+            {shelfSaid.text}
           </p>
 
           {shelfSheet.open && (
@@ -809,7 +819,7 @@ export function DecksView({
                 // Named from the action's own answer: `segments` in this
                 // callback closed over the render before the folder existed. A
                 // new shelf holds nothing.
-                setShelfSaid(folderCopy.shelves.aria(result.folder.name, 0));
+                say(folderCopy.shelves.aria(result.folder.name, 0));
                 refresh();
                 return null;
               }}
@@ -868,7 +878,7 @@ export function DecksView({
                       setCreateFrom("move");
                       setCreating(true);
                     }}
-                    say={setShelfSaid}
+                    say={say}
                     keepsFocus={state.shelf === ALL_DECKS}
                     onMoved={() => {
                       refresh();

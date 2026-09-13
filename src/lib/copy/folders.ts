@@ -145,6 +145,12 @@ export const folderCopy = {
      */
     announceFiled: (shelf: string) => `Filed under ${shelf}.`,
     announceUnfiled: 'Unfiled.',
+    /**
+     * A write that THREW rather than refused. `false` is a conflict the reader
+     * cannot act on — the deck or the folder is gone — and this is a failure
+     * they can: the move did not happen and trying again is the answer.
+     */
+    failed: 'That did not save. Try again.',
   },
 
   // ── Empty states — S2 and S3 only ─────────────────────────────────────
