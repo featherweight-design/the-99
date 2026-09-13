@@ -340,10 +340,16 @@ describe("CommitSheet", () => {
 // losing the emphasis with no type error and nothing that looks broken. The
 // 2026-09-13 em-dash sweep did exactly that and the whole suite stayed green.
 describe("the pull note's emphasis survives a repunctuation", () => {
-  it("splits into a lead clause and a remainder", () => {
-    const [lead, ...rest] = copy.pullNote.split(": ");
-    expect(rest.length).toBeGreaterThan(0);
-    expect(lead).toBe("No action required");
-    expect(rest.join(": ")).toContain("committing is what releases them");
+  // RENDERED, not split in the test. Asserting the split here with the same
+  // delimiter the component uses proves only that the string contains a colon:
+  // it passes whatever separator the component chose, which is the regression
+  // it is supposed to catch. So the sheet is rendered in a state that draws the
+  // note, and the two facts that matter are read off the DOM — the lead is the
+  // bold run, and the paragraph reads as the whole authored sentence.
+  it("draws the lead clause bold and the whole note intact", () => {
+    sheet({ state: { ...STATE_36, removes: [{ oracleId: "c0", from: 3, to: 1 }] } });
+    const lead = screen.getByText("No action required");
+    expect(lead.tagName).toBe("B");
+    expect(lead.closest("p")?.textContent).toBe(copy.pullNote);
   });
 });

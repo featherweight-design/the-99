@@ -312,7 +312,7 @@ export const deckVersioningCopy = {
     // a surface that is only there because something moved.
     question: (n: number) => (n === 0 ? "Discard this draft?" : `Discard ${plural(n, "change")}?`),
     consequence: (version: number, date: string, cards: number, adds: number, removes: number) => {
-      const back = `The deck goes back to v${version} as committed on ${date}, ` +
+      const back = `The deck goes back to v${version} as committed on ${date}: ` +
         `${plural(cards, "card")}. `;
       // A draft can be adds-only, cuts-only, or basics-only, and "the 0 you cut" is
       // a figure nobody moved. Only the halves that exist are named, and the verb
