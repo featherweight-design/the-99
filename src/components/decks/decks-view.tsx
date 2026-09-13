@@ -26,7 +26,16 @@ import {
 import type { StatusPill } from "../../lib/decks/status";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
-import { sortDecks, type DeckSort } from "../../lib/decks/sort";
+import {
+  DECK_SORT_KEY,
+  DEFAULT_DECK_SORT,
+  deckSortFromParams,
+  isDeckSort,
+  sortDecks,
+  type DeckSort,
+} from "../../lib/decks/sort";
+import { useStoredView } from "../ui/use-stored-view";
+import { useLiveQuery } from "../../lib/commanders/live-query";
 import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
 import { ColourPips } from "../ui/colour-pips";
 import { FilterChassis, type FilterChip } from "../ui/filter-chassis";
@@ -87,7 +96,14 @@ const OWNED_PARAMS = ["status", "colour", "played", "q", "sort", FOLDER_PARAM];
  * `Filters` badge and `Clear all filters` unable to move it — by construction
  * rather than by care.
  */
-type ViewState = { filters: DeckFilters; sort: DeckSort; shelf: Shelf };
+/**
+ * `sort` is null when the URL names no order — NOT "the default". The order has
+ * three sources and they rank: the URL, then what this browser last chose, then
+ * `lastPlayed`. Collapsing the first absence into the default would make the
+ * stored preference unreachable, because the default serialises as an absence
+ * and every apply would write one.
+ */
+type ViewState = { filters: DeckFilters; sort: DeckSort | null; shelf: Shelf };
 
 /** One removable chip per active value — a heading with two values has two. */
 function chipLabels(filters: DeckFilters): { key: string; label: string; without: DeckFilters }[] {
@@ -134,10 +150,78 @@ export function DecksView({
   const search = useSearchParams();
   const [state, setState] = useState<ViewState>(() => ({
     ...filtersFromParams(search),
+    // `filtersFromParams` answers with the default where the URL is silent, and
+    // silence is the thing the stored preference needs to see. Read again.
+    sort: deckSortFromParams(search.get("sort")),
     // Read against the folders that exist, so a stale or hand-edited id lands
     // on All decks rather than on an empty grid for a shelf that is not there.
     shelf: shelfFromParams(search, folders),
   }));
+
+  // The order this browser last chose, kept across visits. It sits UNDER the URL
+  // and OVER the default, which is `/collection`'s own rule for its view toggle
+  // and for the same reason: a shared link carrying `?sort=` describes the list
+  // its sender meant, and nothing a reader stored should overwrite that.
+  //
+  // The STORED value is never serialised. Arriving at a bare `/decks` and being
+  // shown your own order leaves the address bar bare, so the URL still means
+  // "somebody chose this here" — while pressing the control does write `?sort=`,
+  // because that press IS a choice made here and it is what makes the list
+  // shareable. Two different acts; only one touches the URL.
+  //
+  // The server snapshot is null, so the first paint is the URL's order or the
+  // default and the stored one lands on the pass after. That is a visible flip
+  // for a reader whose preference is not the default, and it is the honest one:
+  // the server cannot know what this browser stores.
+  const [storedSort, chooseSort] = useStoredView(DECK_SORT_KEY, isDeckSort);
+
+  /**
+   * THE URL IS RE-READ WHEN IT CHANGES, through the repo's own observer.
+   *
+   * The seed above runs once, which was enough while the URL and this state
+   * could only disagree through this view's writes. They disagree the other way
+   * too: the shell's `Decks` link clears the query without unmounting anything,
+   * so a reader who chose `Newest` kept it while the address bar said nothing —
+   * and, now that an absence means "follow what this browser stored", kept it
+   * over their own stored order.
+   *
+   * `useLiveQuery`, not `useSearchParams`. Built for exactly this and already
+   * shipped for the commander lanes: it subscribes to `popstate`, to the
+   * Navigation API where there is one, and to `history.pushState` /
+   * `replaceState` where there is not. `useSearchParams` is not reliably
+   * notified for a same-document navigation, and it does not hear this view's
+   * own `replaceState` at all — which is what made a first attempt at this
+   * reconcile from a stale query and undo the choice just made.
+   *
+   * ALL FIVE parameters, not just the sort. Reconciling one would give this view
+   * two rules for two halves of its own state, and the same navigation leaves a
+   * status filter on with a bare URL.
+   *
+   * `apply` records the query it writes, so this view's own write agrees on the
+   * next render and nothing re-parses. It would be harmless if it did — the
+   * parse of what `apply` just serialised is the state `apply` just set — but a
+   * re-render per filter click for no change is still a re-render.
+   *
+   * During render rather than in an effect: an effect paints the previous list
+   * once and then corrects it, which is the cascading-render pattern this repo's
+   * lint rejects. State rather than a ref, because a ref read during render is
+   * what the lint rejects next, and React documents this shape as adjusting
+   * state on a changed input.
+   */
+  const liveQuery = useLiveQuery(search.toString());
+  const [seenQuery, setSeenQuery] = useState(liveQuery);
+  const reconciling = liveQuery !== seenQuery;
+  if (reconciling) {
+    const live = new URLSearchParams(liveQuery);
+    setSeenQuery(liveQuery);
+    setState({
+      ...filtersFromParams(live),
+      sort: deckSortFromParams(live.get("sort")),
+      shelf: shelfFromParams(live, folders),
+    });
+  }
+
+  const sort = state.sort ?? storedSort ?? DEFAULT_DECK_SORT;
   const [sheet, setSheet] = useState<{
     open: boolean;
     focusSearch: boolean;
@@ -155,7 +239,19 @@ export function DecksView({
 
   const apply = useCallback((next: ViewState) => {
     setState(next);
-    const params = filtersToParams(next.filters, next.sort);
+    // A null sort serialises as an absence, which is what `serializeDeckSort`
+    // already does with the default — so the stored preference stays off the URL
+    // while a filter click rewrites everything else.
+    const params = filtersToParams(next.filters, next.sort ?? DEFAULT_DECK_SORT);
+    // AN EXPLICIT ORDER STAYS ON THE URL EVEN WHEN IT IS THE DEFAULT.
+    // `serializeDeckSort` drops `lastPlayed` because "the default serialises as
+    // an absence, so the clean URL is the clean state" — which was true while
+    // absence and default meant the same thing. They no longer do: an absence
+    // now means "follow what this browser stored". So a reader who arrives at
+    // `?sort=lastPlayed`, or presses `Last played`, and then clicks a filter
+    // would have had that order rewritten away and a stored `name` take over on
+    // the next visit. Present means this order; absent means no opinion here.
+    if (next.sort !== null) params.set("sort", next.sort);
     // The shelf writes itself, beside the filters and never inside them.
     const folderValue = shelfToParam(next.shelf);
     if (folderValue !== null) params.set(FOLDER_PARAM, folderValue);
@@ -166,6 +262,13 @@ export function DecksView({
     for (const key of OWNED_PARAMS) live.delete(key);
     for (const [key, value] of params) live.set(key, value);
     const query = live.toString();
+    // This view's own write is not a navigation to reconcile against, and
+    // `useLiveQuery` DOES hear it — so it is recorded here or the next render
+    // re-parses what was just serialised. An optimisation rather than a
+    // correctness fix: the parse of what `apply` just wrote is the state `apply`
+    // just set, so removing this line costs a render per filter click and
+    // changes nothing on screen. Mutation-checked, and no test fails without it.
+    setSeenQuery(query);
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
   }, []);
 
@@ -174,14 +277,17 @@ export function DecksView({
     [apply, state.sort, state.shelf],
   );
   const onSort = useCallback(
-    (sort: DeckSort) => apply({ filters: state.filters, sort, shelf: state.shelf }),
-    [apply, state.filters, state.shelf],
+    (next: DeckSort) => {
+      apply({ filters: state.filters, sort: next, shelf: state.shelf });
+      chooseSort(next);
+    },
+    [apply, chooseSort, state.filters, state.shelf],
   );
 
   // Derived during render, never in an effect: an effect would paint the
   // previous list once before correcting it.
   const now = useMemo(() => new Date(nowIso), [nowIso]);
-  const sorted = useMemo(() => sortDecks(decks, state.sort), [decks, state.sort]);
+  const sorted = useMemo(() => sortDecks(decks, sort), [decks, sort]);
   // THE SHELF NARROWS FIRST, in the same client-side pass. Everything below —
   // the grid, the result line's denominator and the panels' per-option counts —
   // is measured against the shelf the reader is standing on, which is what
@@ -222,7 +328,13 @@ export function DecksView({
     && (state.shelf === UNFILED
       ? !showsUnfiled(folders)
       : !folders.some((f) => f.id === state.shelf));
-  if (shelfMissing) setState({ ...state, shelf: ALL_DECKS });
+  // Not in the same pass as a reconciliation: both are render-phase updates and
+  // React applies them in order, so this one — built from the state the
+  // reconciliation is replacing — would overwrite the parsed URL wholesale. The
+  // reconciliation's own `shelfFromParams` already refuses an id that is not
+  // there, so the pass it queues needs no correction; a stale shelf that
+  // survives it is caught on the render after.
+  if (!reconciling && shelfMissing) setState({ ...state, shelf: ALL_DECKS });
 
   // Crossing to wide unmounts the sheet but would leave `open` true, so
   // crossing back would remount it already open — a modal the reader never
@@ -408,10 +520,10 @@ export function DecksView({
             // rather than preceding sort in the controls.
             sort={
               wide ? (
-                <DeckSortMenu sort={state.sort} onChange={onSort} />
+                <DeckSortMenu sort={sort} onChange={onSort} />
               ) : (
                 <div className="flex items-center gap-[8px]">
-                  <DeckSortMenu sort={state.sort} onChange={onSort} />
+                  <DeckSortMenu sort={sort} onChange={onSort} />
                 <button
                   type="button"
                   onClick={() => setSheet({ open: true, focusSearch: false })}

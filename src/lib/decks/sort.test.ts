@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DECK_SORT_LABELS,
   DECK_SORT_ORDER,
+  deckSortFromParams,
+  isDeckSort,
   DEFAULT_DECK_SORT,
   parseDeckSort,
   serializeDeckSort,
@@ -37,12 +39,33 @@ describe("deck sort", () => {
   });
 
   it("labels every order in the register the trigger prints", () => {
-    // `Sort · last played` — the trigger lowercases nothing itself.
+    // Sentence case: these were the only menu options in the app not
+    // capitalised. The trigger takes the same string, so it reads
+    // `Sort · Last played`.
     expect(DECK_SORT_LABELS).toEqual({
-      lastPlayed: "last played",
-      name: "name",
-      newest: "newest",
+      lastPlayed: "Last played",
+      name: "Name",
+      newest: "Newest",
     });
+  });
+
+  it("tells an absent order apart from the default", () => {
+    // `parseDeckSort` collapses the two, which is right for a caller that needs
+    // an order and wrong for the view: the stored preference sits between them,
+    // and only an absence reaches it.
+    expect(deckSortFromParams(null)).toBeNull();
+    expect(deckSortFromParams(undefined)).toBeNull();
+    expect(deckSortFromParams("")).toBeNull();
+    expect(deckSortFromParams("popularity")).toBeNull();
+    expect(deckSortFromParams("__proto__")).toBeNull();
+    expect(deckSortFromParams("lastPlayed")).toBe("lastPlayed");
+    expect(deckSortFromParams("name")).toBe("name");
+  });
+
+  it("guards the stored value the same way", () => {
+    expect(isDeckSort("name")).toBe(true);
+    expect(isDeckSort("popularity")).toBe(false);
+    expect(isDeckSort("toString")).toBe(false);
   });
 
   it("renders the sheet's chips default-first", () => {

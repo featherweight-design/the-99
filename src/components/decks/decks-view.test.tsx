@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -397,5 +397,160 @@ describe("DecksView", () => {
     expect(screen.getByText("Unfiled one")).toBeInTheDocument();
     expect(document.querySelector("[data-chassis-row='result']")?.textContent).toContain("4 decks");
   });
+});
 
+// The order has three sources and they rank: the URL, then what this browser
+// last chose, then `lastPlayed`.
+describe("DecksView remembers the order", () => {
+  const sortTrigger = () => screen.getByRole("button", { name: /^Sort · / });
+
+  // The label is not the feature. A regression that kept `Sort · Name` in sync
+  // and handed the default to `sortDecks` would pass every case above.
+  // Read off the list items, not `getAllByRole("heading")`: the tile's `h3` sits
+  // inside an `aria-hidden` block — the overlay link carries the accessible name
+  // — so the heading role is not exposed at all.
+  const namesInOrder = () =>
+    screen.getAllByRole("listitem").map((li) => li.querySelector("h3")?.textContent);
+
+  // Three orders, three different sequences. Two of them agreeing by accident is
+  // how an ordering assertion passes while measuring nothing:
+  //   name        → Atraxa, Míriel, Zur
+  //   newest      → Zur, Míriel, Atraxa
+  //   last played → Zur, Atraxa, Míriel
+  const threeDecks = () => [
+    deckOf({ id: "d1", name: "Míriel", createdAt: new Date("2026-03-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-04T00:00:00Z") }),
+    deckOf({ id: "d2", name: "Atraxa", createdAt: new Date("2026-01-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-05T00:00:00Z") }),
+    deckOf({ id: "d3", name: "Zur", createdAt: new Date("2026-06-01T00:00:00Z"),
+      lastPlayedAt: new Date("2026-09-06T00:00:00Z") }),
+  ];
+
+
+  beforeEach(() => localStorage.clear());
+
+  it("keeps the chosen order for the next visit", () => {
+    const { unmount } = renderWide(view([deckOf()]));
+    fireEvent.click(sortTrigger());
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Name" }));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    // A press IS a choice made here, so it writes the URL as well — that is what
+    // makes the list shareable.
+    expect(window.location.search).toBe("?sort=name");
+
+    unmount();
+    window.history.replaceState(null, "", "/decks");
+    renderWide(view([deckOf()]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    // ...and the STORED value is never serialised. A bare `/decks` showing your
+    // own order leaves the address bar bare, so a URL still means somebody chose
+    // this here.
+    expect(window.location.search).toBe("");
+  });
+
+  it("lets the URL outrank what this browser stored", () => {
+    // Three decks, not one: with a single row every order produces the same
+    // list, so a regression letting storage reach `sortDecks` would pass a test
+    // named for precedence.
+    localStorage.setItem("the99:decks:sort", "name");
+    window.history.replaceState(null, "", "/decks?sort=newest");
+    renderWide(view(threeDecks()));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Newest");
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
+  });
+
+  it("falls back to last played when neither has an opinion", () => {
+    renderWide(view([deckOf()]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+  });
+
+  it("ignores a stored value that is no longer an order", () => {
+    localStorage.setItem("the99:decks:sort", "popularity");
+    renderWide(view([deckOf()]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+  });
+
+  it("puts the decks in the URL's order, not just the label", () => {
+    window.history.replaceState(null, "", "/decks?sort=newest");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
+  });
+
+  it("puts the decks in the stored order when the URL has no opinion", () => {
+    localStorage.setItem("the99:decks:sort", "name");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Atraxa", "Míriel", "Zur"]);
+  });
+
+  it("keeps an explicit `lastPlayed` on the URL through a filter click", () => {
+    // `serializeDeckSort` drops the default because absence and default used to
+    // mean the same thing. They no longer do — absence means "follow storage" —
+    // so a rewritten URL would hand this list to a stored `name` on the next
+    // visit, and the shared link would stop describing what its sender meant.
+    localStorage.setItem("the99:decks:sort", "name");
+    window.history.replaceState(null, "", "/decks?sort=lastPlayed");
+    renderWide(view(threeDecks()));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "r" } });
+    expect(window.location.search).toContain("sort=lastPlayed");
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+  });
+
+  it("re-reads the URL when it changes, not only at mount", () => {
+    // The shell's `Decks` link clears the query without unmounting this view. An
+    // absence now means "follow what this browser stored", so a reader who chose
+    // `Newest` would otherwise have kept it over their own stored order while
+    // the address bar said nothing. `useLiveQuery` wraps `replaceState`, so
+    // moving the URL IS the navigation here.
+    localStorage.setItem("the99:decks:sort", "name");
+    window.history.replaceState(null, "", "/decks?sort=newest");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
+
+    act(() => {
+      window.history.replaceState(null, "", "/decks");
+    });
+    expect(namesInOrder()).toEqual(["Atraxa", "Míriel", "Zur"]);
+  });
+
+  it("reconciles every parameter it owns, not only the sort", () => {
+    // One rule for the whole of this view's URL-owned state: the same navigation
+    // would otherwise leave a status filter on with a bare URL.
+    window.history.replaceState(null, "", "/decks?q=Zur");
+    renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur"]);
+
+    act(() => {
+      window.history.replaceState(null, "", "/decks");
+    });
+    expect(namesInOrder()).toHaveLength(3);
+  });
+
+  it("keeps an order chosen from a bare URL, against a stored one", () => {
+    // The case a first attempt at this reconciliation got wrong: it recorded the
+    // written query against `useSearchParams`, which had NOT heard the write, so
+    // the next render reconciled from the stale query and the choice undid
+    // itself. `useLiveQuery` hears it, so the round trip agrees either way —
+    // `apply`'s own `setSeenQuery` saves a re-render rather than a defect, and
+    // removing it leaves this green.
+    localStorage.setItem("the99:decks:sort", "name");
+    renderWide(view(threeDecks()));
+    fireEvent.click(sortTrigger());
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Newest" }));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Newest");
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
+  });
+
+  it("holds the stored order through a filter click, which writes no sort", () => {
+    // `apply` rewrites every parameter the view owns. Serialising the effective
+    // order there would pin the stored preference onto the URL; serialising the
+    // default would be the same absence. It has to stay an absence.
+    localStorage.setItem("the99:decks:sort", "name");
+    renderWide(view([deckOf(), deckOf({ id: "d2", name: "Zur" })]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Zur" } });
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    expect(window.location.search).not.toContain("sort=");
+  });
 });
