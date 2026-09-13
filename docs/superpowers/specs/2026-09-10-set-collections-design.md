@@ -265,6 +265,31 @@ It is recorded here rather than in its own ticket because it was asked for insid
 handoff and is drawn in this canvas. It carries no dependency on the two new routes, and
 nothing on the new routes depends on it.
 
+### Correction, 2026-09-13 — the track states a COST, not a value beside an identity
+
+As built, §1b drew a mana-value disc followed by the card's **colour identity** pips. The
+premise above is right and the drawing answered it with the wrong two facts. Colour identity
+folds in every symbol a card's *abilities* cost, so `Abzan Monument` — cost `{2}`, ability
+`{1}{W}{B}{G}` — drew a `2` and three coloured pips and read as a four-colour two-drop. And a
+mana value beside identity pips is not the pattern the addendum set out to match: the decklist
+row draws the cost itself, through `CostPips`.
+
+The track now renders `CostPips` on the card's own `manaCost`, at the same 12px and the same
+five-slot cap the decklist row uses, in the 76/90px cell §1b established. Three consequences,
+all deliberate:
+
+- **Colour identity leaves the row.** It was never the thing the addendum asked for, and no
+  other card row in the app states it. It is still a filter, and still the grid tile's wash.
+- **A land draws nothing**, where §1b kept an empty 20px disc so the track would not
+  ragged-edge. The cell's width is fixed by the grid template, so there is nothing to
+  ragged-edge; the disc was holding a column that holds itself.
+- **The row's spoken name carries `spokenManaCost`**, which says `no mana cost` for a land
+  rather than saying nothing. §1b's land branch left silence, and silence is
+  indistinguishable from a missing label.
+
+Ruled by Hugh on 2026-09-13 from a screenshot of the two rows side by side; not a Design
+round-trip.
+
 ## Findings from the readiness audit
 
 Four things the handoff assumes that the shipped code does not currently support. All are

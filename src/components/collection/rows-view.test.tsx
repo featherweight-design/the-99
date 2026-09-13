@@ -87,13 +87,14 @@ describe("RowsView availability marker", () => {
   });
 
   it("gives a free row no availability clause at all", () => {
-    // The string gained ", mana value 4" when §1b put a cost on the row: the track is
+    // The string carries the spoken cost because the pips beside it are
+    // `aria-hidden`: the track is
     // visible and was announced to nobody. What this test protects is unchanged — the
     // availability clause lands LAST and a free card produces none.
     renderRows({ ...card, availability: avail(1, 0) });
     expect(
       screen.getByRole("button", {
-        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, mana value 4",
+        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, mana cost 3 white",
       }),
     ).toBeInTheDocument();
   });
@@ -102,7 +103,7 @@ describe("RowsView availability marker", () => {
     renderRows({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
     expect(
       screen.getByRole("button", {
-        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, mana value 4, no free copies",
+        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, mana cost 3 white, no free copies",
       }),
     ).toBeInTheDocument();
   });
@@ -121,41 +122,6 @@ describe("RowsView availability marker", () => {
     );
     expect(seamed).toHaveLength(1);
     expect((seamed[0] as HTMLElement).style.borderLeft).toBe("1px solid var(--row-bg)");
-  });
-});
-
-// R5 §1: five spaced pips measure 67px against a 40px track, so from four the
-// pips fan instead. A browser run confirmed the five-pip case at both widths;
-// four is the boundary the collection fixture has no card for.
-describe("RowsView colour pips", () => {
-  // Found by what they are, not by where they sit: §1b moved the pips out of the
-  // leading slot into the trailing cost track, and a positional selector would have to
-  // be rewritten every time the row's columns change.
-  const pipsOf = (container: HTMLElement) =>
-    [...container.querySelectorAll<HTMLElement>('span[class*="rounded-full"][class*="w-[11px]"]')];
-
-  it("leaves three pips spaced", () => {
-    const { container } = renderRows({ ...card, colorIdentity: ["W", "U", "B"] });
-    const pips = pipsOf(container);
-    expect(pips).toHaveLength(3);
-    expect(pips.every((p) => p.style.marginLeft === "")).toBe(true);
-    expect(pips.every((p) => p.style.zIndex === "")).toBe(true);
-  });
-
-  it("fans from four, in WUBRG order with the left edge on top", () => {
-    const { container } = renderRows({ ...card, colorIdentity: ["W", "U", "B", "R"] });
-    const pips = pipsOf(container);
-    expect(pips.map((p) => p.style.marginLeft)).toEqual(["", "-5px", "-5px", "-5px"]);
-    expect(pips.map((p) => p.style.zIndex)).toEqual(["4", "3", "2", "1"]);
-  });
-
-  it("rings every pip against the row background, not a pinned colour", () => {
-    const { container } = renderRows({ ...card, colorIdentity: ["W", "U", "B", "R", "G"] });
-    for (const pip of pipsOf(container)) {
-      expect(pip.style.boxShadow).toBe(
-        "0 0 0 1px var(--row-bg), inset 0 0 0 1px rgba(0,0,0,0.35)",
-      );
-    }
   });
 });
 
@@ -185,27 +151,42 @@ describe("RowsView printed name", () => {
   });
 });
 
-describe("RowsView cost track (§1b)", () => {
+describe("RowsView cost track", () => {
   const trackOf = (container: HTMLElement) =>
     container.querySelector<HTMLElement>('span[class*="w-[76px]"]');
+  const pipsOf = (container: HTMLElement) =>
+    [...(trackOf(container)?.querySelectorAll<HTMLElement>("span[style*='width: 12px']") ?? [])];
 
-  it("states the mana value beside the identity pips", () => {
-    const { container } = renderRows({ ...card, typeLine: "Creature — Bear", cmc: 3 });
-    expect(trackOf(container)?.textContent).toContain("3");
+  it("draws the card's own mana cost, one pip per symbol", () => {
+    const { container } = renderRows({ ...card, manaCost: "{3}{W}" });
+    const pips = pipsOf(container);
+    // A coloured pip carries no letter — the colour is the whole signal, and only
+    // a generic or hybrid pip prints a numeral.
+    expect(pips.map((p) => p.textContent)).toEqual(["3", ""]);
+    expect(pips[1].style.background).toBe("var(--w)");
   });
 
-  it("leaves the disc empty for a land rather than printing 0", () => {
-    // Thirty-seven land rows printing a figure where there is an absence would be a
-    // claim about cost that lands do not make.
-    const { container } = renderRows({ ...card, typeLine: "Basic Land — Forest", cmc: 0 });
-    expect(trackOf(container)?.textContent).not.toContain("0");
+  // The bug this row was reported for. `Abzan Monument` costs `{2}`; its ability
+  // costs `{1}{W}{B}{G}`, which colour IDENTITY folds in — so the track drew a 2
+  // and three coloured pips and read as a four-colour two-drop.
+  it("ignores colour identity, which carries the ability's cost too", () => {
+    const { container } = renderRows({
+      ...card,
+      typeLine: "Artifact",
+      manaCost: "{2}",
+      colorIdentity: ["W", "B", "G"],
+    });
+    expect(pipsOf(container).map((p) => p.textContent)).toEqual(["2"]);
   });
 
-  it("keeps the disc's slot on a land so the track never ragged-edges", () => {
-    const { container } = renderRows({ ...card, typeLine: "Basic Land — Forest", cmc: 0 });
-    const disc = trackOf(container)?.firstElementChild as HTMLElement;
-    expect(disc).toBeTruthy();
-    expect(disc.className).toContain("w-[20px]");
+  it("draws nothing at all for a land, which has no cost to state", () => {
+    const { container } = renderRows({
+      ...card,
+      typeLine: "Basic Land — Forest",
+      manaCost: null,
+      cmc: 0,
+    });
+    expect(trackOf(container)?.textContent).toBe("");
   });
 
   it("renders one track, not a phone copy beside a desktop copy", () => {
@@ -215,13 +196,14 @@ describe("RowsView cost track (§1b)", () => {
 });
 
 describe("RowsView cost track accessibility", () => {
-  it("names the mana value, which is otherwise only visible in the track", () => {
-    renderRows({ ...card, typeLine: "Creature — Bear", cmc: 3 });
-    expect(screen.getByRole("button", { name: /mana value 3/ })).toBeInTheDocument();
+  it("speaks every symbol of the cost, which the pips only draw", () => {
+    renderRows({ ...card, manaCost: "{3}{W}" });
+    expect(screen.getByRole("button", { name: /mana cost 3 white/ })).toBeInTheDocument();
   });
 
-  it("says nothing about mana value on a land, matching the empty disc it draws", () => {
-    renderRows({ ...card, typeLine: "Basic Land — Forest", cmc: 0 });
-    expect(screen.queryByRole("button", { name: /mana value/ })).toBeNull();
+  // Silence is indistinguishable from a missing label, so a land says so.
+  it("says a land has no mana cost rather than falling silent", () => {
+    renderRows({ ...card, typeLine: "Basic Land — Forest", manaCost: null, cmc: 0 });
+    expect(screen.getByRole("button", { name: /no mana cost/ })).toBeInTheDocument();
   });
 });

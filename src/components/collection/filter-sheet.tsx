@@ -36,8 +36,13 @@ import type { FilterChangeIntent } from "./filter-bar";
 const copy = collectionChassisCopy.sheet;
 
 /** 44px, not 36. This is the phone's only route to each filter (R3 §2). */
+// `shrink-0` is the height, not tidiness: in the set panel these are direct
+// children of a `flex-1` column holding hundreds of options, and a flex item's
+// default `flex-shrink: 1` compresses it toward min-content the moment the
+// column overflows. `h-[44px]` alone bought 26px rows on a real collection —
+// `min-h-0` constrains the LIST, and nothing was holding the options.
 const CHIP =
-  "flex h-[44px] cursor-pointer items-center gap-[7px] rounded-full border border-solid px-[13px] font-sans text-[13px]";
+  "flex h-[44px] shrink-0 cursor-pointer items-center gap-[7px] rounded-full border border-solid px-[13px] font-sans text-[13px]";
 
 const HEADING =
   "mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] tracking-[0.14em] uppercase text-[color:var(--fg-faint)]";
@@ -75,7 +80,19 @@ function SheetBody({
   total,
 }: Omit<CollectionFilterSheetProps, "open">) {
   const dialog = useRef<HTMLDivElement>(null);
-  const [setQuery, setSetQuery] = useState("");
+  // The set list is a PANEL OF ITS OWN now, above this sheet (#6). Listing
+  // hundreds of sets under a search field made them most of the sheet, and
+  // narrowing the list resized the sheet under the reader's thumb on every
+  // keystroke. Two stacked `aria-modal` surfaces are what `useDialogA11y`
+  // already handles — it ignores a key whose focus is inside another dialog,
+  // and `visibleFocusables` skips anything under an `inert` ancestor, which is
+  // what this sheet becomes while the panel is up.
+  const [setsOpen, setSetsOpen] = useState(false);
+  // Handed to the panel as its return-focus target. The panel cannot find this
+  // control for itself: opening it marks this whole sheet `inert` in the same
+  // render, the browser moves focus out of an inert subtree, and the panel's own
+  // mount effect then captures `body`.
+  const setTrigger = useRef<HTMLButtonElement>(null);
 
   // The sheet is `aria-modal`, so the chassis's result line is outside it and
   // is not a surface assistive tech can be relied on to read. Without a region
@@ -100,43 +117,17 @@ function SheetBody({
   // pressed `Filters` is not what they asked for.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog });
 
-  // The query's matches, on their own. `sets` below prepends the selected
-  // options so they stay reachable, which makes its length useless as a match
-  // count — with LEA selected and `bloom` typed it would say two sets match
-  // when one does.
-  const matching = useMemo(() => rankSetOptions(setOptions, setQuery), [setOptions, setQuery]);
-
-  const sets = useMemo(() => {
-    // `rankSetOptions`, not a `label.includes` of my own: the wide panel ranks
-    // with it and matches the set CODE as well as the name, so a hand-rolled
-    // match here would find nothing for `BLB` while the desktop control found
-    // Bloomburrow — the two forms of one filter disagreeing, which is the
-    // thing this sheet exists to stop.
-    // Selected sets stay visible whatever the query says, or unticking one
-    // means clearing the field first to find it again.
-    const selected = setOptions.filter((o) => filters.setCodes.includes(o.code));
-    const seen = new Set(selected.map((o) => o.code));
-    return [...selected, ...matching.filter((o) => !seen.has(o.code))];
-  }, [matching, setOptions, filters.setCodes]);
-
-  // The set search announces its own match count, on the same region and the
-  // same debounce. `FilterPanel`'s search does this and the sheet's did not, so
-  // a reader typing `zzz` watched the list empty and heard nothing — the result
-  // effect above is keyed on `shown`, which a local query never moves.
-  //
-  // Nothing is said for a blank query — clearing the field is not a result —
-  // and nothing for an empty VOCABULARY, where the list already reads
-  // `No sets to filter by` and "No sets match" would contradict it. Both are
-  // `FilterPanel`'s own rules.
-  useEffect(() => {
-    const query = setQuery.trim();
-    if (query === "" || setOptions.length === 0) return;
-    const timer = setTimeout(
-      () => setAnnouncement(collectionFilterCopy.set.announceMatches(matching.length, query)),
-      300,
-    );
-    return () => clearTimeout(timer);
-  }, [setQuery, matching.length, setOptions.length]);
+  // The chosen set's own name, for the row's text AND for its accessible name —
+  // one source, so the two cannot name different sets. Falls back to the code
+  // where the option list has no row for it, which is what the wide panel does.
+  const oneSetName =
+    setOptions.find((o) => o.code === filters.setCodes[0])?.label ?? filters.setCodes[0];
+  const setAriaDetail =
+    filters.setCodes.length === 0
+      ? ""
+      : filters.setCodes.length === 1
+        ? `, ${oneSetName}`
+        : `, ${filters.setCodes.length} selected`;
 
   const toggle = <T extends string>(list: readonly T[], code: T): T[] =>
     list.includes(code) ? list.filter((c) => c !== code) : [...list, code];
@@ -159,6 +150,10 @@ function SheetBody({
         aria-modal="true"
         aria-label={copy.title}
         tabIndex={-1}
+        // Every control here stays mounted for layout while the set panel is up,
+        // and the focus trap collects buttons by query — so without this, Tab or
+        // a screen reader reaches the covered `Done` underneath the panel.
+        inert={setsOpen}
         className="relative z-10 flex max-h-[86vh] flex-col gap-[14px] overflow-y-auto rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
       >
         <div
@@ -271,44 +266,43 @@ function SheetBody({
         </Group>
 
         {/* Sets are the one dimension a chip row cannot hold — a collection
-            reaches into the hundreds — so this group carries its own field and
-            scrolls. Not a nested `FilterPanel`: that renders a dialog of its
-            own at this width, and two stacked `aria-modal` surfaces trap focus
-            against each other. */}
+            reaches into the hundreds — so the group is a single row that opens
+            a panel of its own. */}
         <Group heading={copy.setHeading}>
-          <SearchField
-            value={setQuery}
-            onChange={(e) => setSetQuery(e.target.value)}
-            placeholder={copy.setSearchPlaceholder}
-            aria-label={copy.setSearchAria}
-            containerClassName="gap-[8px] px-[12px] py-[9px] min-h-[44px]"
-            className="text-[14px]"
-          />
-          <div className="mt-[8px] flex max-h-[188px] flex-col gap-[6px] overflow-y-auto">
-            {sets.length === 0 ? (
-              <p className="m-0 font-sans text-[13px] text-[color:var(--fg-muted)]">
-                {/* An empty VOCABULARY is not a failed search, and the sheet
-                    opens with a blank query — so a collection whose rows all
-                    went unmatched against the catalog would have read
-                    `No sets match ` with nothing after it. */}
-                {setOptions.length === 0 ? copy.setNone : copy.setEmpty(setQuery.trim())}
-              </p>
-            ) : (
-              sets.map((option) => (
-                <Chip
-                  key={option.code}
-                  label={option.label}
-                  count={option.count}
-                  on={filters.setCodes.includes(option.code)}
-                  disabled={option.disabled}
-                  unavailableAria={collectionFilterCopy.set.optionAriaUnavailable(option.label)}
-                  onClick={() =>
-                    onChange({ ...filters, setCodes: toggle(filters.setCodes, option.code) })
-                  }
-                />
-              ))
-            )}
-          </div>
+          <button
+            ref={setTrigger}
+            type="button"
+            onClick={() => setSetsOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={setsOpen}
+            // Composed exactly as `FilterPanel` composes its own
+            // (`ui/filter-panel.tsx`): an `aria-label` REPLACES the button's
+            // text, so a bare "1 selected" throws away the set name the row is
+            // visibly showing — and the word at the end has to track
+            // `aria-expanded` or the label says `collapsed` while the panel is
+            // up. The copy module ships no key for either variant; every key it
+            // has ends `collapsed`.
+            aria-label={
+              setsOpen
+                ? `${collectionFilterCopy.set.panelAriaLabel}${setAriaDetail}, expanded`
+                : filters.setCodes.length === 0
+                  ? collectionFilterCopy.set.triggerAriaCollapsed
+                  : filters.setCodes.length === 1
+                    ? `${collectionFilterCopy.set.panelAriaLabel}, ${oneSetName}, collapsed`
+                    : collectionFilterCopy.set.triggerAriaWithSelection(filters.setCodes.length)
+            }
+            className="flex h-[44px] w-full cursor-pointer items-center justify-between gap-[10px] rounded-lg border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--fg-body)]"
+          >
+            {/* The row says what is CHOSEN, not what the control is — the heading
+                above it already names the dimension, and a row reading `Set`
+                under a heading reading `Set` tells the reader nothing. */}
+            <span className="truncate">
+              {filters.setCodes.length === 0
+                ? copy.setAny
+                : collectionChassisCopy.chip.sets(filters.setCodes.length, oneSetName)}
+            </span>
+            <span aria-hidden className="shrink-0 text-[color:var(--fg-faint)]">›</span>
+          </button>
         </Group>
 
         <button
@@ -322,6 +316,196 @@ function SheetBody({
         {/* `aria-atomic`, like the deck sheet, the rack's sheet and `ResultLine`.
             Without it assistive tech may read only the changed substring — the
             new number alone, with no sentence around it. */}
+        <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {announcement}
+        </span>
+      </div>
+
+      {/* A SIBLING of the sheet, never a child of it: the sheet is `inert` while
+          this is up, and an inert subtree takes its descendants out of the
+          accessibility tree — so a panel nested inside it would be unreachable
+          by the very readers the trap exists for. */}
+      {setsOpen && (
+        <SetPanel
+          onDismiss={() => setSetsOpen(false)}
+          options={setOptions}
+          selected={filters.setCodes}
+          onToggle={(code) =>
+            onChange({ ...filters, setCodes: toggle(filters.setCodes, code) })
+          }
+          shown={shown}
+          total={total}
+          returnFocusTo={setTrigger}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * The set list, as a panel above the filter sheet.
+ *
+ * It holds a FIXED height rather than a cap: the complaint that moved it here
+ * was that narrowing the list resized the surface under the reader's thumb, and
+ * a `max-h` list inside a growing sheet does exactly that. At 86vh with the list
+ * as the only flexible row, typing narrows the list and moves nothing else.
+ *
+ * It carries its own live region because it is `aria-modal`: the sheet's region
+ * is outside it, and a count announced there would be written where nothing can
+ * read it — the same reason the sheet has one at all.
+ */
+function SetPanel({
+  onDismiss,
+  options,
+  selected,
+  onToggle,
+  shown,
+  total,
+  returnFocusTo,
+}: {
+  onDismiss: () => void;
+  options: SetOption[];
+  selected: readonly string[];
+  onToggle: (code: string) => void;
+  /** The result count a set toggle moves — announced HERE, not behind the sheet. */
+  shown: number;
+  total: number;
+  /** The Set row, which is inert by the time this panel's own capture runs. */
+  returnFocusTo: React.RefObject<HTMLButtonElement | null>;
+}) {
+  const dialog = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState("");
+  const [announcement, setAnnouncement] = useState("");
+
+  // The panel takes initial focus rather than the search field, for the reason
+  // the sheet does: raising the keyboard on a reader who pressed a row is not
+  // what they asked for.
+  useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog, returnFocusRef: returnFocusTo });
+
+  // The query's matches, on their own. `sets` below prepends the selected
+  // options so they stay reachable, which makes its length useless as a match
+  // count — with LEA selected and `bloom` typed it would say two sets match
+  // when one does.
+  const matching = useMemo(() => rankSetOptions(options, query), [options, query]);
+
+  const sets = useMemo(() => {
+    // `rankSetOptions`, not a `label.includes` of my own: the wide panel ranks
+    // with it and matches the set CODE as well as the name, so a hand-rolled
+    // match here would find nothing for `BLB` while the desktop control found
+    // Bloomburrow — the two forms of one filter disagreeing, which is the
+    // thing this panel exists to stop.
+    // Selected sets stay visible whatever the query says, or unticking one
+    // means clearing the field first to find it again.
+    const chosen = options.filter((o) => selected.includes(o.code));
+    const seen = new Set(chosen.map((o) => o.code));
+    return [...chosen, ...matching.filter((o) => !seen.has(o.code))];
+  }, [matching, options, selected]);
+
+  // THE RESULT COUNT, from the foreground. The sheet runs the same effect and is
+  // `inert` while this panel is up, so its region is out of the accessibility
+  // tree — a set toggled in here moved the list and said so where nothing could
+  // read it. Same 300ms as every other count in this codebase, so four taps are
+  // one number, and the same first-render skip: opening the panel is not a result.
+  const announcedShown = useRef<number | null>(null);
+  useEffect(() => {
+    if (announcedShown.current === null || announcedShown.current === shown) {
+      announcedShown.current = shown;
+      return;
+    }
+    announcedShown.current = shown;
+    const timer = setTimeout(() => setAnnouncement(copy.match(shown, total)), 300);
+    return () => clearTimeout(timer);
+  }, [shown, total]);
+
+  // Nothing is said for a blank query — clearing the field is not a result —
+  // and nothing for an empty VOCABULARY, where the list already reads
+  // `No sets to filter by` and "No sets match" would contradict it. Both are
+  // `FilterPanel`'s own rules.
+  useEffect(() => {
+    const typed = query.trim();
+    if (typed === "" || options.length === 0) return;
+    const timer = setTimeout(
+      () => setAnnouncement(collectionFilterCopy.set.announceMatches(matching.length, typed)),
+      300,
+    );
+    return () => clearTimeout(timer);
+  }, [query, matching.length, options.length]);
+
+  return (
+    // z-[60]: the sheet is z-50 and the phone tab bar is z-40, and this sits
+    // over both.
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+      <div
+        aria-hidden="true"
+        onClick={onDismiss}
+        className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
+      />
+      <div
+        ref={dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-label={collectionFilterCopy.set.panelAriaLabel}
+        tabIndex={-1}
+        className="relative z-10 flex h-[86vh] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
+      >
+        <div
+          aria-hidden="true"
+          className="h-[4px] w-[38px] shrink-0 self-center rounded-[2px] bg-[color:var(--border-strong)]"
+        />
+        <div className="flex shrink-0 items-baseline gap-[10px]">
+          <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
+            {collectionFilterCopy.set.sheetTitle}
+          </h2>
+          <span className="ml-auto font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {collectionFilterCopy.set.footerSelected(selected.length, options.length)}
+          </span>
+        </div>
+
+        <SearchField
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={copy.setSearchPlaceholder}
+          aria-label={copy.setSearchAria}
+          containerClassName="shrink-0 gap-[8px] px-[12px] py-[9px] min-h-[44px]"
+          className="text-[14px]"
+        />
+
+        {/* THE ONLY FLEXIBLE ROW. `min-h-0` is load-bearing: a flex child's
+            default `min-height:auto` refuses to shrink below its content, so
+            without it the list pushes `Done` off the bottom instead of
+            scrolling. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-[6px] overflow-y-auto">
+          {sets.length === 0 ? (
+            <p className="m-0 font-sans text-[13px] text-[color:var(--fg-muted)]">
+              {/* An empty VOCABULARY is not a failed search, and the panel opens
+                  with a blank query — so a collection whose rows all went
+                  unmatched against the catalog would have read `No sets match `
+                  with nothing after it. */}
+              {options.length === 0 ? copy.setNone : copy.setEmpty(query.trim())}
+            </p>
+          ) : (
+            sets.map((option) => (
+              <Chip
+                key={option.code}
+                label={option.label}
+                count={option.count}
+                on={selected.includes(option.code)}
+                disabled={option.disabled}
+                unavailableAria={collectionFilterCopy.set.optionAriaUnavailable(option.label)}
+                onClick={() => onToggle(option.code)}
+              />
+            ))
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="h-[44px] shrink-0 cursor-pointer rounded-lg border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] font-sans text-[14px] font-medium text-[color:var(--fg)]"
+        >
+          {collectionFilterCopy.set.done}
+        </button>
+
         <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {announcement}
         </span>

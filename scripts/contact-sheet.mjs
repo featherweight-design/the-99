@@ -26,6 +26,7 @@ import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -104,6 +105,18 @@ async function run(page, steps) {
     if (step.clickRole) {
       await page.getByRole(step.clickRole, { name: new RegExp(step.name) }).first().click({ timeout: 15_000 });
     }
+    // A field a surface only reaches its interesting state through typing — the
+    // set panel narrows its list as you type, and an empty field shows every set.
+    //
+    // Scoped through `onPage`, the contract `lib/surface.mjs` states: the shell
+    // renders around `<main>` and carries the same selectors page controls do,
+    // so an unscoped field lookup is a substitution waiting for a shell input.
+    // `click` and `clickRole` above predate that helper and are still unscoped;
+    // sweeping them is a change to every inventory's steps at once and belongs
+    // in its own pass, not in the one that adds a third verb.
+    if (step.fill !== undefined) {
+      await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
+    }
     if (step.wait) await page.waitForSelector(step.wait, { timeout: 15_000 });
     if (step.settle) await page.waitForTimeout(step.settle);
   }
@@ -121,6 +134,17 @@ try {
     const page = await context.newPage();
     await signIn(page);
     for (const row of inventory.rows) {
+      // A surface that only EXISTS at one width says so, and the other width is
+      // not a failed cell. `/collection`'s filter sheet is the case: below 1000px
+      // the route draws a sheet, above it a row of popovers, and clicking
+      // `Filter cards` at 1300 times out because there is no such control — which
+      // is the routes behaving, not a gap. Without this the run reports a failure
+      // and exits 1 on a feature that is entirely correct, and a red cell nobody
+      // can act on is worse than no cell.
+      if (Array.isArray(row.widths) && !row.widths.includes(size.label)) {
+        console.log(`· ${row.id} · ${size.label} — not drawn at this width`);
+        continue;
+      }
       const file = path.join(outDir, `${row.id}-${size.label}.png`);
       let note = "";
       try {

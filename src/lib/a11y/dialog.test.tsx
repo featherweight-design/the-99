@@ -242,3 +242,64 @@ describe("useDialogA11y and inert subtrees", () => {
   });
 
 });
+
+// A dialog opened from a control that the SAME commit marks `inert`.
+describe("useDialogA11y return focus", () => {
+  function mountWith(returnFocusRef?: { current: HTMLElement | null }) {
+    const root = document.createElement("div");
+    root.setAttribute("role", "dialog");
+    document.body.appendChild(root);
+    appended.push(root);
+    return renderHook(() => {
+      const ref = useRef<HTMLElement | null>(root);
+      useDialogA11y(ref, vi.fn(), { returnFocusRef: returnFocusRef as never });
+    });
+  }
+
+  it("returns focus to what was active when nothing else is named", () => {
+    const opener = document.createElement("button");
+    document.body.appendChild(opener);
+    appended.push(opener);
+    opener.focus();
+
+    mountWith().unmount();
+
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("prefers the named target over its own capture", () => {
+    // The capture runs in the dialog's mount effect, which is AFTER the commit
+    // that rendered it — so a dialog opened from a control the same commit
+    // marks `inert` records `body` instead, and closing drops the reader at the
+    // top of the document. `/collection`'s set panel is exactly that shape:
+    // pressing the Set row opens the panel and makes the sheet around the row
+    // inert in one render. jsdom implements no `inert`, so the condition is
+    // reproduced here by focusing something else entirely.
+    const captured = document.createElement("button");
+    const wanted = document.createElement("button");
+    for (const el of [captured, wanted]) {
+      document.body.appendChild(el);
+      appended.push(el);
+    }
+    captured.focus();
+
+    mountWith({ current: wanted }).unmount();
+
+    expect(document.activeElement).toBe(wanted);
+    expect(document.activeElement).not.toBe(captured);
+  });
+
+  it("falls back to the capture when the named target went away", () => {
+    // A return target can unmount with the surface that opened it. Focusing
+    // nothing would leave the reader at the top of the document, which is the
+    // state this whole mechanism exists to prevent.
+    const opener = document.createElement("button");
+    document.body.appendChild(opener);
+    appended.push(opener);
+    opener.focus();
+
+    mountWith({ current: null }).unmount();
+
+    expect(document.activeElement).toBe(opener);
+  });
+});

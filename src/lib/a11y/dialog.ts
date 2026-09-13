@@ -57,10 +57,23 @@ export function useDialogA11y(
      * un-undoable, so closing would only hide it.
      */
     closeOnEscape?: boolean;
+    /**
+     * Where focus goes on close, when the caller knows better than
+     * `document.activeElement` did at mount.
+     *
+     * The capture below reads the active element in the dialog's OWN mount
+     * effect, which is after the commit that rendered it — so a dialog opened
+     * from a control the same commit marks `inert` records `body` instead, and
+     * closing drops the reader at the top of the document. `/collection`'s set
+     * panel is exactly that: pressing the Set row opens the panel and makes the
+     * sheet around the row inert in one render.
+     */
+    returnFocusRef?: RefObject<HTMLElement | null>;
   },
 ) {
   const triggerRef = useRef<HTMLElement | null>(null);
   const initialFocusRef = options?.initialFocusRef;
+  const returnFocusRef = options?.returnFocusRef;
   const lockScroll = options?.lockScroll ?? true;
   const closeOnEscape = options?.closeOnEscape ?? true;
 
@@ -68,9 +81,20 @@ export function useDialogA11y(
   useEffect(() => {
     triggerRef.current = document.activeElement as HTMLElement | null;
     return () => {
-      triggerRef.current?.focus();
+      // An explicit target beats the capture, which may have read `body` — see
+      // `returnFocusRef`. Never both: focusing the capture first and the target
+      // second would move focus twice and announce the wrong control on the way.
+      //
+      // Read AT CLEANUP on purpose, which is what the rule below warns about and
+      // what this needs: the caller's control may have been re-mounted, or may
+      // have arrived after this effect ran. Copying it into a variable inside
+      // the effect — the rule's own suggestion — would pin whatever the ref held
+      // when the dialog opened, which for a control the same commit marks
+      // `inert` is the null this option exists to route around.
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- the value at cleanup is the point
+      (returnFocusRef?.current ?? triggerRef.current)?.focus();
     };
-  }, []);
+  }, [returnFocusRef]);
 
   // Focus initialFocusRef when provided (avoids a visible focus flash on the
   // first DOM-order focusable); otherwise fall back to the first visible child.

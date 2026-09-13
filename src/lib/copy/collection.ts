@@ -90,6 +90,14 @@ export const collectionChassisCopy = {
     typeHeading: "Type",
     setHeading: "Set",
     availabilityHeading: availabilityCopy.collection.filterLabel,
+    /**
+     * The SET group is one row that opens a panel of its own, where the other
+     * three are chips in place. A collection reaches into the hundreds of sets,
+     * and the list under a search field was most of the sheet — and resized it
+     * on every keystroke. This is what the row reads when nothing is chosen;
+     * `chip.sets` names the choice once there is one.
+     */
+    setAny: "Any set",
     /** The set list is long enough to need its own field; the others are not. */
     setSearchPlaceholder: "Search sets",
     setSearchAria: "Search your sets",
