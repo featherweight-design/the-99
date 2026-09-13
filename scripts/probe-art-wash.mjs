@@ -711,6 +711,23 @@ async function checkNoOverflow(page, label, note) {
   if (overflow > 0) {
     note(`  FAIL ${label}: the document is ${overflow}px wider than its viewport — content is outside it`);
   }
+
+  // The document measurement alone is not enough to guard the fix. The row that
+  // overflowed sits inside a band with `overflow: hidden`, so the same revert
+  // that once pushed content past the viewport would now be CLIPPED by the band
+  // instead — invisible to `scrollWidth` on the document and just as broken on
+  // screen. Each nowrap row is therefore measured against its own box: content
+  // wider than the box it is laid out in is the defect, wherever the clipping
+  // happens to land.
+  const clipped = await page.evaluate(
+    `[...document.querySelectorAll('[data-spine-meta]')]
+      .filter((el) => el.getClientRects().length)
+      .map((el) => ({ over: Math.round(el.scrollWidth - el.clientWidth), text: (el.textContent ?? '').trim().slice(0, 60) }))
+      .filter((r) => r.over > 0)`,
+  );
+  for (const row of clipped) {
+    note(`  FAIL ${label}: a meta row's content is ${row.over}px wider than its own box — "${row.text}"`);
+  }
 }
 
 async function checkChrome(page, label, note) {
