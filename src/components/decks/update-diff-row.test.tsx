@@ -6,6 +6,7 @@
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -178,8 +179,14 @@ describe("the review page's mounting", () => {
         })}
       />,
     );
-    const marker = soft.querySelector(".font-mono.flex-none, .flex-none.font-mono");
+    // Anchored on the label the marker itself writes, then walked up to the
+    // marker's own root — three other elements on this row carry `font-mono`
+    // with a px size, so any class-only selector finds one of them and passes
+    // with the marker left untyped.
+    const label = screen.getByText(availabilityCopy.marker.soft(1));
+    const marker = label.closest("span.inline-flex");
     expect(marker).toBeTruthy();
+    expect(marker!.className).toContain("font-mono");
     expect(marker!.className).toMatch(/text-\[[\d.]+px\]/);
     // And the row above it lends nothing, which is why the marker must carry it.
     expect(soft.className).not.toContain("font-mono");
