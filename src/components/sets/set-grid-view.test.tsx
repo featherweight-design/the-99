@@ -2062,14 +2062,13 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
   });
 
   // A reader who asked for no motion gets the two heights and the step between them, with
-  // nothing drawn in between — so the head must arrive at its collapsed form carrying no
-  // inline height and no transition.
+  // nothing drawn in between — so no animation may be started at all.
   //
-  // Both halves are stubbed, and both are load-bearing. `matchMedia` answers every query in
-  // this suite, so it has to tell the motion query from the breakpoint one; and jsdom
-  // computes no styles, so without a transition duration the hook's own "this engine will
-  // not animate" guard returns first and the test passes with the motion check deleted —
-  // which is what the first version of it did.
+  // Asked of the ENGINE rather than of an inline style: the step is `Element.animate`, which
+  // jsdom does not implement, so the hook's own "this engine will not animate" branch
+  // answers first and a test reading `style.height` passes with the motion check deleted —
+  // which is what the first version of this did. Stubbing `animate` is what gives both
+  // halves something to see.
   function stubMotion(reduce: boolean) {
     vi.stubGlobal(
       "matchMedia",
@@ -2079,20 +2078,19 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
         removeEventListener: vi.fn(),
       })),
     );
-    const real = window.getComputedStyle.bind(window);
-    vi.spyOn(window, "getComputedStyle").mockImplementation(((el: Element) => {
-      const style = real(el as HTMLElement);
-      return el instanceof HTMLElement && el.hasAttribute("data-set-head")
-        ? new Proxy(style, {
-          get: (t, k) => (k === "transitionDuration" ? "0.18s" : Reflect.get(t, k)),
-        })
-        : style;
-    }) as typeof window.getComputedStyle);
-  }
-
-  it("writes no transition when the reader asks for reduced motion", () => {
-    stubMotion(true);
-    const { container } = view([p("1"), p("2")], []);
+    // Typed rather than bare: the assertions below read the keyframes and the timing off
+    // the recorded calls, and `vi.fn()` with no signature records them as an empty tuple.
+    const animate = vi.fn((frames: Keyframe[], timing: KeyframeAnimationOptions) => ({
+      frames,
+      timing,
+      cancel: vi.fn(),
+      finish: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    Object.defineProperty(HTMLElement.prototype, "animate", {
+      value: animate, configurable: true, writable: true,
+    });
     // The head has to be measurable, or the hook falls back before it reaches the question.
     const rect = HTMLElement.prototype.getBoundingClientRect;
     HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
@@ -2105,27 +2103,81 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       }
       return rect.call(this);
     };
+    return {
+      animate,
+      restore: () => {
+        HTMLElement.prototype.getBoundingClientRect = rect;
+        delete (HTMLElement.prototype as { animate?: unknown }).animate;
+        vi.unstubAllGlobals();
+      },
+    };
+  }
+
+  it("starts no animation when the reader asks for reduced motion", () => {
+    const motion = stubMotion(true);
     try {
+      const { container } = view([p("1"), p("2")], []);
       scrollTo(400);
-      const el = head(container);
       expect(isShy(container)).toBe(true);
-      expect(el.style.height).toBe("");
-      expect(el.style.transition).toBe("");
+      expect(motion.animate).not.toHaveBeenCalled();
     } finally {
-      HTMLElement.prototype.getBoundingClientRect = rect;
-      // Restored here, not left to the next test: `getComputedStyle` is spied on, and a
-      // second `spyOn` over a live spy wraps itself.
-      vi.restoreAllMocks();
-      vi.unstubAllGlobals();
+      motion.restore();
     }
   });
 
-  // And the other side of the same switch: with motion allowed and an engine that reports a
-  // duration, the step IS animated — the head carries an inline height while it runs. This
-  // is what makes the test above a measurement rather than a restatement of jsdom.
-  it("animates the step when motion is allowed", () => {
-    stubMotion(false);
-    const { container } = view([p("1"), p("2")], []);
+  // The other side of the same switch, and what makes the test above a measurement rather
+  // than a restatement of jsdom: with motion allowed the head and the reserve are animated
+  // TOGETHER, which is what holds the document still across the step.
+  it("animates the head and the reserve as one when motion is allowed", () => {
+    const motion = stubMotion(false);
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(container)).toBe(true);
+      expect(motion.animate).toHaveBeenCalledTimes(2);
+      const [headFrames, headTiming] = motion.animate.mock.calls[0];
+      const [spacerFrames, spacerTiming] = motion.animate.mock.calls[1];
+      expect(headFrames).toEqual([{ height: "200px" }, { height: "52px" }]);
+      // The mirror image: the reserve takes on exactly what the head gives up.
+      expect(spacerFrames).toEqual([{ height: "0px" }, { height: "148px" }]);
+      expect(spacerTiming).toEqual(headTiming);
+    } finally {
+      motion.restore();
+    }
+  });
+
+  // A breakpoint crossing is a re-layout, not a step between two heights. Widening while
+  // the phone bar is drawn turns `shy` off as a side effect, and animating that put the
+  // desktop head's controls inside a 75px clipped box on the way to a height belonging to a
+  // different design. The head must arrive at its desktop form without an animation.
+  it("does not animate a crossing to desktop", () => {
+    const listeners: (() => void)[] = [];
+    let wide = false;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: /prefers-reduced-motion/.test(query) ? false : wide,
+        addEventListener: (_: string, fn: () => void) => listeners.push(fn),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    // The stub records its `finish` handlers, and the test fires them: without a finished
+    // collapse the hook's own cleanup records the head at its DESKTOP height, the crossing
+    // then has nothing to animate BETWEEN, and the test passes with the guard deleted.
+    const finishers: (() => void)[] = [];
+    const animate = vi.fn((frames: Keyframe[], timing: KeyframeAnimationOptions) => ({
+      frames,
+      timing,
+      cancel: vi.fn(),
+      finish: vi.fn(),
+      addEventListener: (type: string, fn: () => void) => {
+        if (type === "finish") finishers.push(fn);
+      },
+      removeEventListener: vi.fn(),
+    }));
+    Object.defineProperty(HTMLElement.prototype, "animate", {
+      value: animate, configurable: true, writable: true,
+    });
     const rect = HTMLElement.prototype.getBoundingClientRect;
     HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
       if (this.hasAttribute("data-set-head")) {
@@ -2138,14 +2190,23 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       return rect.call(this);
     };
     try {
+      const { container } = view([p("1"), p("2")], []);
       scrollTo(400);
-      const el = head(container);
       expect(isShy(container)).toBe(true);
-      expect(el.style.height).toBe("52px");
-      expect(el.style.transition).toMatch(/height/);
+      // The phone's own collapse is animated — the control for what follows.
+      expect(animate).toHaveBeenCalled();
+      // And it finishes, so the head is recorded at the bar's height rather than at the one
+      // it is about to arrive at.
+      act(() => { for (const fn of finishers) fn(); });
+      animate.mockClear();
+      // And now the window widens: same `shy` flip, different reason.
+      wide = true;
+      act(() => { for (const fn of listeners) fn(); });
+      expect(isShy(container)).toBe(false);
+      expect(animate).not.toHaveBeenCalled();
     } finally {
       HTMLElement.prototype.getBoundingClientRect = rect;
-      vi.restoreAllMocks();
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
       vi.unstubAllGlobals();
     }
   });

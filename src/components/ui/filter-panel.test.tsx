@@ -112,6 +112,31 @@ describe("FilterPanel", () => {
     expect(trigger).toBeDisabled();
   });
 
+  // The phone sheet is `aria-modal` over a scrim, so the page behind it has to hold still —
+  // and the desktop popover, which travels with the page like any dropdown, must not take
+  // the same lock. `probe:scroll-lock` proves the gesture in a browser; this is the half a
+  // suite can hold, so a regression in `open && !isDesktop` fails `pnpm test`.
+  it("holds the page while the sheet is up, and lets go when it closes", () => {
+    setViewport(false);
+    const { unmount } = renderPanel();
+    expect(document.body.style.overflow).not.toBe("hidden");
+    openPanel();
+    expect(document.body.style.overflow).toBe("hidden");
+    // Dismissed rather than unmounted: the lock tracks the dialog, not the component.
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(document.body.style.overflow).not.toBe("hidden");
+    unmount();
+  });
+
+  it("does not hold the page for the desktop popover", () => {
+    setViewport(true);
+    const { unmount } = renderPanel();
+    openPanel();
+    expect(screen.getByRole("dialog")).not.toHaveAttribute("aria-modal");
+    expect(document.body.style.overflow).not.toBe("hidden");
+    unmount();
+  });
+
   it("mounts only the desktop popover above the breakpoint", () => {
     setViewport(true);
     renderPanel();

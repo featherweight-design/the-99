@@ -298,160 +298,122 @@ export function useHeadCollapse({
    */
   const animatedShyRef = useRef(shy);
 
+  /** The pair in flight, so a reversal cancels rather than races. */
+  const runningRef = useRef<Animation[]>([]);
+  /** The breakpoint the last run saw. A crossing is a re-layout, never a transition. */
+  const animatedDesktopRef = useRef(isDesktop);
+
+  /**
+   * The step between the two heights, animated — and owned by the engine rather than by this
+   * file.
+   *
+   * This was a CSS transition driven by hand: a `transitionend` listener, a safety timer for
+   * the transition that never starts, an idempotent settle to keep the two from tripping
+   * over each other, and a `requestAnimationFrame` loop to keep the reserve in step. Every
+   * round of review landed in that lifecycle rather than in the effect it produces — a stale
+   * timer landing inside the next transition, a dependency change settling a run nothing
+   * restarted, a breakpoint crossing animated as though it were a restore. `Element.animate`
+   * has the lifecycle already: a returned `Animation` cancels, replaces and reports itself,
+   * so reversal is `cancel()` and cleanup is one handler that cannot run twice.
+   *
+   * The spacer is animated in the SAME call rather than written frame by frame, with the
+   * mirror-image keyframes. Two animations of the same duration and easing move as one, so
+   * the document's height is constant across the step by construction instead of by a loop
+   * racing the paint.
+   */
   useLayoutEffect(() => {
     const el = headRef.current;
+    const spacer = spacerRef.current;
     const changed = animatedShyRef.current !== shy;
+    const crossedBreakpoint = animatedDesktopRef.current !== isDesktop;
     animatedShyRef.current = shy;
+    animatedDesktopRef.current = isDesktop;
 
-    // Nothing to animate: the swap has already happened in this commit, so the only other
-    // move is to hold the reserve right.
-    // Reduced motion still gets the anchoring switch — the leap is not the animation's
-    // doing, it is the height change's — so the suspension is taken before this returns and
-    // released on the next frame, once the new height has been laid out.
-    if (el === null || !changed) {
-      sizeSpacer();
-      return;
-    }
-    if (prefersReducedMotion()) {
-      const still = containerRef.current;
-      if (still !== null) still.style.overflowAnchor = "none";
-      sizeSpacer();
-      requestAnimationFrame(() => {
-        if (still !== null) still.style.overflowAnchor = "";
-      });
-      return;
-    }
-
-    // Where the head is coming from, then where it is going. `from` is the recorded height
-    // and NOT a reading taken here: a layout effect runs after its own commit, so by now the
-    // head is already the height it is meant to arrive at, and measuring would give the same
-    // number twice and animate nothing.
-    // Anchoring off for the length of the change, and on again after it.
-    //
-    // It ignores sticky boxes, so it sees the reserve grow by the head's own shrink and not
-    // the shrink, and compensates for a net change of nothing: an 80px wheel step lands
-    // 293px down at the crossing. Off permanently, the reader would lose their place on a
-    // filter change instead — cards removed above them is the case anchoring exists for — so
-    // it is suspended here and restored on the far side of the transition, or on the next
-    // frame when there is none to run.
-    const container = containerRef.current;
-    if (container !== null) container.style.overflowAnchor = "none";
-    const releaseAnchor = () => {
-      if (container !== null) container.style.overflowAnchor = "";
-    };
+    // Whatever was running is over the moment the target moves. `cancel()` fires the
+    // handler below, which restores the head and re-reads the reserve.
+    for (const running of runningRef.current) running.cancel();
+    runningRef.current = [];
 
     const from = lastHeightRef.current;
-    el.style.transition = "";
-    el.style.height = "";
-    el.style.overflow = "";
-    const to = el.getBoundingClientRect().height;
-    // Recorded HERE when the head is arriving at its open form, because this is the first
-    // moment that form has a height. While the head is collapsed the open subtree is
-    // `display: none` and cannot be measured, so a filter changed through the sheet leaves
-    // the recorded rest height describing a head that no longer exists — and the restore
-    // would then reserve against it for the whole transition and shift the grid on settling.
-    if (!el.hasAttribute("data-set-head-collapsed") && !animatingRef.current) {
-      const delta = el.querySelector("[data-set-delta]");
-      restHeightRef.current = to - (delta === null ? 0 : delta.getBoundingClientRect().height);
-    }
-    if (from === null || Math.abs(to - from) < 1) {
+    const to = el === null ? null : el.getBoundingClientRect().height;
+
+    // Every reason not to animate, and they all end the same way: hold the reserve right.
+    //
+    // A BREAKPOINT crossing is in here deliberately. Widening while the phone bar is drawn
+    // changes `shy` as a side effect of the re-layout, and animating that clipped the
+    // desktop head's controls inside a 75px box on its way to a height that belongs to a
+    // different design.
+    if (el === null || spacer === null || !changed || crossedBreakpoint
+      || prefersReducedMotion() || typeof el.animate !== "function"
+      || from === null || to === null || Math.abs(to - from) < 1) {
       sizeSpacer();
-      requestAnimationFrame(releaseAnchor);
+      if (containerRef.current !== null) {
+        // The anchoring switch still applies: the leap is the height change's doing, not the
+        // animation's, so even an instant swap needs it off for the frame it lands in.
+        const container = containerRef.current;
+        container.style.overflowAnchor = "none";
+        requestAnimationFrame(() => { container.style.overflowAnchor = ""; });
+      }
       return;
     }
 
-    // An engine that will not run the transition must not be left waiting for one. jsdom
-    // computes no styles and fires no `transitionend`, so the measurement gate below would
-    // stay shut for the length of the safety timer and the thresholds would be read off
-    // whatever was recorded before it — which is how this arrived: a unit test that passed
-    // alone and failed in a suite, purely on how long the previous file took.
-    el.style.transition = `height ${COLLAPSE_MS}ms ease`;
-    const duration = Number.parseFloat(getComputedStyle(el).transitionDuration || "0");
-    if (!Number.isFinite(duration) || duration <= 0) {
-      el.style.transition = "";
-      sizeSpacer();
-      requestAnimationFrame(releaseAnchor);
-      return;
-    }
+    const container = containerRef.current;
+    if (container !== null) container.style.overflowAnchor = "none";
 
-    animatingRef.current = true;
-    // Clipped for the length of the transition only. The open head carries controls that
-    // open above and below it, and a head that clipped at rest would cut them off.
+    const rest = restHeightRef.current;
+    const spacerFrom = rest === null ? 0 : Math.max(0, rest - from);
+    const spacerTo = rest === null ? 0 : Math.max(0, rest - to);
+
+    // Clipped for the length of the step only. The open head carries controls that open
+    // above and below it, and a head that clipped at rest would cut them off.
     el.style.overflow = "hidden";
-    el.style.transition = "none";
-    el.style.height = `${from}px`;
-    // Read back, so the browser has a start value to transition FROM. Without it both
-    // heights land in one style recalculation and the head jumps, which is the defect.
-    void el.getBoundingClientRect().height;
-    el.style.transition = `height ${COLLAPSE_MS}ms ease`;
-    el.style.height = `${to}px`;
-    sizeSpacer();
+    animatingRef.current = true;
 
-    let frame = 0;
-    let timer = 0;
-    // Idempotent, and it takes the safety timer down with it. Both paths below call it, and
-    // a reader who reverses direction mid-transition starts a new one while the old timer is
-    // still armed — that timer would then land inside the NEW transition and clear its
-    // inline height, which is the snap this whole block exists to remove.
-    const settle = () => {
+    const timing = { duration: COLLAPSE_MS, easing: "ease" } as const;
+    const headAnim = el.animate(
+      [{ height: `${from}px` }, { height: `${to}px` }],
+      timing,
+    );
+    const spacerAnim = spacer.animate(
+      [{ height: `${spacerFrom}px` }, { height: `${spacerTo}px` }],
+      timing,
+    );
+    runningRef.current = [headAnim, spacerAnim];
+
+    const done = () => {
+      // `cancel()` and `finish` both arrive here, and the guard is what makes the pair
+      // safe: cancelling the head fires this, which cancels the spacer, which fires it
+      // again.
       if (!animatingRef.current) return;
       animatingRef.current = false;
-      clearTimeout(timer);
-      el.style.transition = "";
-      el.style.height = "";
+      // Where the head had reached, before anything is torn down: a reversal carries on
+      // from the pixel the reader can see rather than from the height it was aiming at.
+      lastHeightRef.current = el.getBoundingClientRect().height;
+      for (const running of runningRef.current) running.cancel();
+      runningRef.current = [];
       el.style.overflow = "";
-      // Now, and only now, the head is its own height again — so this is the first read
-      // that may be recorded.
+      if (container !== null) container.style.overflowAnchor = "";
+      // Now that the head is its own height again, the reserve may be re-read — and the
+      // bar's height with it, which is what the threshold below wants. A reader who
+      // scrolled up while this ran was answered on the fallback and may have come to rest
+      // inside the band; nothing else would revisit that until they scrolled again.
       sizeSpacer();
-      releaseAnchor();
-      // And now that the bar's height is finally measurable, ask the threshold question
-      // again. A reader who scrolled up while this was running was answered on the fallback
-      // and may have come to rest inside the band; nothing else would revisit that until
-      // they scrolled again.
       evaluateCollapse();
     };
-    const onEnd = (event: TransitionEvent) => {
-      if (event.target !== el || event.propertyName !== "height") return;
-      settle();
-    };
-    el.addEventListener("transitionend", onEnd);
-    // `transitionend` does not fire for a transition that never starts — a tab hidden
-    // mid-change is the ordinary way to get one — and a head left at a fixed height would
-    // stay that height for the rest of the visit.
-    timer = setTimeout(settle, COLLAPSE_MS + 120) as unknown as number;
-    // The spacer is written from the head's CURRENT height, and the `ResizeObserver` above
-    // is what usually delivers that. It reports the box, which a transitioned height does
-    // move, but it is not promised on every frame — so the reserve is also driven here for
-    // the length of the animation, which is what keeps the document from shifting under the
-    // grid while the head grows.
-    const tick = () => {
-      if (!animatingRef.current) return;
-      sizeSpacer();
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
+    headAnim.addEventListener("finish", done);
+    headAnim.addEventListener("cancel", done);
 
     return () => {
-      el.removeEventListener("transitionend", onEnd);
-      clearTimeout(timer);
-      cancelAnimationFrame(frame);
-      // Only while a transition is actually in flight, and read before it is torn down: the
-      // height the head had REACHED is where the next one carries on from. Recording
-      // unconditionally is what broke the restore — a cleanup runs after its own commit, so
-      // the figure it read was the open head's full height, and the transition that followed
-      // was asked to animate from 288 to 288.
-      if (animatingRef.current) {
-        const reached = el.getBoundingClientRect().height;
-        settle();
-        lastHeightRef.current = reached;
-      }
-      releaseAnchor();
+      headAnim.removeEventListener("finish", done);
+      headAnim.removeEventListener("cancel", done);
+      done();
     };
-    // Keyed, not every render. Without a list this ran after every keystroke in the search
-    // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
-    // for a head whose size had not moved. The `ResizeObserver` covers ordinary size
-    // changes; this covers the transitions it cannot see.
-  }, [shy, deltaFiring, isDesktop, sizeSpacer, evaluateCollapse]);
+    // Keyed on the state the step is BETWEEN, and on nothing else. It used to list
+    // `deltaFiring` and `isDesktop` as well, so a delta arriving mid-step tore the step down
+    // through the cleanup and the setup that followed saw no change to restart — the
+    // smoothing snapped on an ordinary update. Those two move the head's SIZE, which the
+    // `ResizeObserver` already answers.
+  }, [shy, isDesktop, sizeSpacer, evaluateCollapse]);
 
   return { shy, headRef, spacerRef, containerRef, openHead: () => setCollapsed(false) };
 }

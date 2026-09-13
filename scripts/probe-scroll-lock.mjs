@@ -70,6 +70,10 @@ function report(label, ok, detail) {
 /**
  * Every overlay this app draws over a scrim, and the button that opens it.
  *
+ * EVERY trigger goes through `onPage`. The shell wraps `<main>` and its own controls carry
+ * the same roles and, at phone width, the same `aria-haspopup="dialog"` — and it comes first
+ * in document order, so an unscoped lookup measures the shell's lock while naming the page's.
+ *
  * `open` is given a page and returns the trigger it pressed, so a route whose control is
  * named differently on the phone says so in one place. The card modal is in here beside the
  * sheets deliberately: it has always held the page, and a check that only walked the two
@@ -79,12 +83,13 @@ const SURFACES = [
   {
     label: "/collection · Filters sheet",
     path: "/collection",
-    trigger: (page) => page.getByRole("button", { name: /^Filter cards/ }).first(),
+    // By accessible name, which is an `aria-label` here: the visible text is `Filters`.
+    trigger: (page) => onPage(page, 'button[aria-label^="Filter cards"]:visible').first(),
   },
   {
     label: "/collection · Sort panel",
     path: "/collection",
-    trigger: (page) => page.getByRole("button", { name: /^Sort cards/ }).first(),
+    trigger: (page) => onPage(page, 'button[aria-label^="Sort cards"]:visible').first(),
     // Closing returns focus to the trigger, which sits above the list and is off-screen by
     // the time the reader has scrolled — so the browser scrolls it back into view. That is
     // the focus-return contract, not the lock failing, and it is what `FilterPanel`'s own
@@ -98,22 +103,22 @@ const SURFACES = [
     // The row's own accessible name, either number: `*="copy"` missed every card with two
     // or more, because "copies" does not contain "copy", and the run only passed on a
     // fixture whose first row happened to be a singleton.
-    trigger: (page) => page.getByRole("button", { name: /, \d+ (copy|copies)\b/ }).first(),
+    trigger: (page) => onPage(page, 'button[aria-label*="cop"]:visible').first(),
   },
   {
     label: "/commanders · Filters sheet",
     path: "/commanders",
-    trigger: (page) => page.locator("button", { hasText: /^Filters/ }).first(),
+    trigger: (page) => onPage(page, "button:visible").filter({ hasText: /^Filters/ }).first(),
   },
   {
     label: "/discover · Filters sheet",
     path: "/discover",
-    trigger: (page) => page.locator("button", { hasText: /^Filters/ }).first(),
+    trigger: (page) => onPage(page, "button:visible").filter({ hasText: /^Filters/ }).first(),
   },
   {
     label: "/decks · Filter decks sheet",
     path: "/decks",
-    trigger: (page) => page.getByRole("button", { name: /^Filter decks/ }).first(),
+    trigger: (page) => onPage(page, "button:visible").filter({ hasText: /^Filter decks/ }).first(),
   },
 ];
 
