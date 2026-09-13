@@ -531,6 +531,13 @@ async function checkBands(page, label, note) {
   // half the band instead.
   const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
   note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
+  // Zero is a FAIL, not a quiet pass. Every route this runs on draws at least one
+  // wash, so an empty census means the markers vanished while the art stayed —
+  // and with nothing in `stated`, the unstated count is 0 too and every loop
+  // below is skipped, so the run would exit green having checked no band at all.
+  if (!stated.length) {
+    note(`  FAIL ${label}: no stated band laid out — every band check below is vacuous`);
+  }
   // An empty census is not a pass, and zero is exactly what a reverted migration
   // or a vanished render produces. The check is the count of wash layers NOT
   // inside a stated band: no per-route table, and it cannot go quiet.

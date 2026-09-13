@@ -72,14 +72,14 @@ function toBuyCopies(shopping: ShoppingRollup, deckId: string): number | null {
 function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null }) {
   const { partnerName } = deck;
   const count = `${deck.built} / ${deckBodySize(partnerName !== null)}`;
-  // Decision 23. The long form leaves negative room for a name at all — 62px of
-  // pill, 28px of gaps and a 113px count against the 200px this line gets — so
-  // something has to not render, and it is never a partly truncated figure:
-  // `86 / 9…` reads as a different number in a way `Bruse Ta…` does not. A pair
-  // row therefore drops the clause outright. One boolean, no measurement, and
-  // not a new state — a deck with no roll-up entry already draws the count
-  // alone. The figure survives in the row's accessible name.
-  const clause = copies !== null && partnerName === null;
+  // Decision 23, and step 6 cuts the clause OUTRIGHT rather than on pair rows
+  // alone. The long form leaves negative room for a name at all — 62px of pill,
+  // 28px of gaps and a 113px count against the 200px this line gets — and the
+  // one thing that must never be partly truncated is the figure: `86 / 9…` reads
+  // as a different number in a way `3 car…` does not. Dropping the clause on
+  // every row is not a new state either, since a deck with no roll-up entry
+  // already drew the count alone. It survives in the row's accessible name,
+  // which is the one place the pixels are not allowed to drop it.
   return (
     <Link
       href={`/decks/${deck.id}`}
@@ -183,16 +183,25 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
             // identity gradient instead — which says nothing — so hiding the
             // name there would leave a sighted reader with no way to tell which
             // deck this is.
-            deck.commanderArtCropUri === null ? (
-              <span
-                className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]"
-                style={{ textShadow: COVER_INK_SHADOW }}
-              >
-                {deck.commanderName}
-              </span>
-            ) : (
-              <span className="sr-only">{deck.commanderName}</span>
-            )
+            <>
+              {deck.commanderArtCropUri === null ? (
+                <span
+                  className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]"
+                  style={{ textShadow: COVER_INK_SHADOW }}
+                >
+                  {deck.commanderName}
+                </span>
+              ) : (
+                <span className="sr-only">{deck.commanderName}</span>
+              )}
+              {/* The cut clause, spoken. It rides in its own span rather than in
+                  the name's, because whether the NAME is drawn depends on the
+                  crop and whether the FIGURE is spoken does not — sharing one
+                  span meant a no-art row lost the figure entirely. */}
+              {copies !== null && (
+                <span className="sr-only">{partnerCopy.pairRowBuyAria(copies)}</span>
+              )}
+            </>
           ) : (
             <>
               <span
@@ -239,11 +248,6 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
               the `86 / 9` this whole arrangement exists to prevent. */}
           <span className="flex gap-[4px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
             <span className="flex-none whitespace-nowrap">{count}</span>
-            {clause && (
-              <span className="min-w-0 truncate">
-                {`· ${refreshCopy.decks.detailCopies(copies!)}`}
-              </span>
-            )}
           </span>
         </span>
       </span>

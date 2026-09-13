@@ -118,14 +118,19 @@ describe("ResumeDecks", () => {
     expect(metaRow.textContent).toContain("+ Bruse Tarl");
   });
 
-  it("prints the built count and the copies clause together", () => {
-    render(
+  // Step 6 cuts the clause outright — on every row, not pairs alone. 62px of
+  // pill, 28px of gaps and a 113px count leave negative room for a name on this
+  // line, and the figure is the one thing that may never truncate: `86 / 9…`
+  // reads as a different number in a way `3 car…` does not. It survives where
+  // the pixels are not allowed to drop it.
+  it("draws the built count alone and keeps the copies figure spoken", () => {
+    const { container } = render(
       <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} />,
     );
-    // Two elements, not one string: the clause is the only child a narrow row
-    // is allowed to eat into, so it cannot share a span with the figure.
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
-    expect(screen.getByText("· 3 cards")).toBeInTheDocument();
+    expect(screen.queryByText("· 3 cards")).toBeNull();
+    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
+    expect(block.querySelector(".sr-only")?.textContent).toContain("3 copies to buy");
   });
 
   // §ResumeRow — the commander names the row's art. The deck name is the deck's
