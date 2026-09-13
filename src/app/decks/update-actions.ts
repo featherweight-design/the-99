@@ -352,11 +352,23 @@ export async function updateDeckFromList(
     // A card the list names is a card the player chose, so it stops being the
     // app's. This is what makes `Clear all auto` unable to take it afterwards.
     const named = plan.unchanged.map((r) => r.oracleId);
+    let unclaimed = 0;
     if (named.length > 0) {
-      await tx
+      // Narrowed to the rows still marked `auto`, and read back. Reapplying a
+      // list to a deck whose cards the player has already claimed changes
+      // neither the contents nor the provenance, and an unnarrowed UPDATE would
+      // report work done on every row it rewrote to the value it already held —
+      // which is what the stamp below would then claim.
+      const rows = await tx
         .update(deckCards)
         .set({ auto: false })
-        .where(and(eq(deckCards.deckId, input.deckId), inArray(deckCards.oracleId, named)));
+        .where(and(
+          eq(deckCards.deckId, input.deckId),
+          inArray(deckCards.oracleId, named),
+          eq(deckCards.auto, true),
+        ))
+        .returning({ oracleId: deckCards.oracleId });
+      unclaimed = rows.length;
     }
 
     // The quantities the diff reconciled silently. Without this the list does
@@ -406,8 +418,9 @@ export async function updateDeckFromList(
     // retry would apply it twice.
     const versioned = (await newestVersion(input.deckId, tx)) !== null;
 
-    // Every write this transaction could have made, asked of the plan rather
-    // than assumed. A list can reconcile to nothing at all — an empty deck
+    // Every write this transaction could have made — asked of the plan where the
+    // plan decides, and of the statement's own RETURNING where the database
+    // does. A list can reconcile to nothing at all — an empty deck
     // accepting a list naming only its own commander deletes no row, inserts
     // none, requantifies none and clears no line — and stamping that would
     // claim an edit the player did not make. `clearedLines` is read from the
@@ -416,7 +429,7 @@ export async function updateDeckFromList(
     const wrote =
       removing.length > 0 ||
       plan.in.length > 0 ||
-      named.length > 0 ||
+      unclaimed > 0 ||
       byQuantity.size > 0 ||
       clearedLines.length > 0 ||
       plan.unresolved.length > 0;

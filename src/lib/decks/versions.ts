@@ -4,7 +4,7 @@
 // means "which deck is this card already in", so nothing here says "committed
 // cards". A VERSION is a snapshot; the DRAFT is `deck_cards`.
 
-import { and, count, desc, eq, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards, deckCards, deckGames, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
@@ -140,10 +140,20 @@ async function commitVersionIn(
     note,
     commanderOracleId: deck.commanderOracleId,
     partnerOracleId: deck.partnerOracleId,
+    // `clock_timestamp()` rather than the column's `now()` default, and for the
+    // reason `touchDeck` takes it: `now()` is the TRANSACTION's start, read
+    // before this commit waited for the deck row's lock above. A commit that
+    // queued behind an edit would otherwise carry a timestamp from before the
+    // edit it followed, and Home would call the deck `edited` when the commit
+    // came later. The two columns are compared against each other, so they have
+    // to be read off the same clock.
+    committedAt: sql`clock_timestamp()`,
   }).returning();
 
-  // committed_at is defaulted by the database, so the inheritance below reads
-  // it back off the inserted row rather than guessing at a client clock.
+  // Every `since` below flows from this one value, so the whole version — its
+  // commit instant, its commander's tenure and each card's — is stamped at one
+  // instant rather than mixing the statement's clock with the transaction's.
+  // Read back off the inserted row rather than guessing at a client clock.
   const now = inserted.committedAt;
   const commanderSince =
     previous && previous.commanderOracleId === deck.commanderOracleId

@@ -30,6 +30,9 @@ const stub = vi.hoisted(() => {
     ],
     transactions: 0,
     updates: [] as { table: string; values: unknown }[],
+    // What the unclaim's UPDATE ... RETURNING hands back. One row by default:
+    // the success-path list names cards the fill had placed.
+    unclaimRows: [{ oracleId: "o-sol-ring" }] as { oracleId: string }[],
   };
 
   const nameOf = (table: unknown) =>
@@ -56,10 +59,16 @@ const stub = vi.hoisted(() => {
     delete: () => ({
       where: () => Object.assign(Promise.resolve([]), { returning: async () => [] }),
     }),
+    // Thenable and chainable: the deck's stamp awaits the builder, while the
+    // unclaim reads back the rows it changed — a list reapplied to a deck whose
+    // cards are already the player's changes nothing and must not stamp.
     update: (table: unknown) => ({
       set: (values: unknown) => ({
-        where: async () => {
-          state.updates.push({ table: nameOf(table), values });
+        where: () => {
+          const name = nameOf(table);
+          state.updates.push({ table: name, values });
+          const rows = name === "deck_cards" ? state.unclaimRows : [];
+          return Object.assign(Promise.resolve(rows), { returning: async () => rows });
         },
       }),
     }),
@@ -95,6 +104,7 @@ const { updateDeckFromList } = await import("./update-actions");
 beforeEach(() => {
   stub.state.transactions = 0;
   stub.state.updates.length = 0;
+  stub.state.unclaimRows = [{ oracleId: "o-sol-ring" }];
   newest.mockReset();
 });
 
@@ -150,6 +160,17 @@ describe("updateDeckFromList and the deck's version", () => {
     newest.mockResolvedValue(null);
     await updateDeckFromList({ deckId: "deck-1", text: list, source: "paste", keep: [] });
     expect(stamped()).toBe(true);
+  });
+
+  // The finding round 8 raised: a list reapplied to a deck whose cards are
+  // already the player's rewrites nothing. The unclaim's UPDATE is narrowed to
+  // rows still marked `auto`, so it matches none, and an unchanged deck must not
+  // climb Home's list.
+  it("does not stamp when the unclaim matches no row", async () => {
+    newest.mockResolvedValue(null);
+    stub.state.unclaimRows = [];
+    await updateDeckFromList({ deckId: "deck-1", text: list, source: "paste", keep: [] });
+    expect(stamped()).toBe(false);
   });
 
   it("reports a brew as unversioned", async () => {

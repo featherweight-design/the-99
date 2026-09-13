@@ -47,17 +47,19 @@ export type Touch = { at: Date; verb: TouchVerb };
  * never pressed the control. A commit therefore has to be STRICTLY newer than
  * the edit to name the row.
  *
- * `pullCardFromDeck` is the case that argued the other way: it edits and commits
- * in one transaction, so both columns carry that transaction's clock, and it now
- * reads `edited`. That is true as well — a card left the deck — and a verb that
- * is true in the rare case is worth more than one that is false on every deck
- * that predates versioning.
+ * `pullCardFromDeck` is the case that argued the other way: it stamps the edit
+ * and then commits, both with `clock_timestamp()`, so the commit's instant is
+ * the later of the two by microseconds and it reads `committed`. Either verb is
+ * true of it — a card left the deck AND a version was cut — which is why the
+ * migration case decides the rule rather than this one.
  *
  * A game takes its tie against both, which is why it is tested last here.
  * Nothing writes a game together with an edit or a commit in one transaction, so
  * an equal instant against either is two `Date` values colliding at the
  * millisecond — Postgres keeps microseconds and this does not — rather than a
- * fact about which came first. When a tie carries no information, the act that
+ * fact about which came first. The edit and the commit are both written with
+ * `clock_timestamp()`, read after each has waited for the deck row's lock, so a
+ * tie between those two is only ever the migration's. When a tie carries no information, the act that
  * happened to the deck in the world is worth more on the row than a snapshot
  * taken of it.
  */
