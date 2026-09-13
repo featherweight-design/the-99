@@ -490,6 +490,20 @@ try {
       ) && rail.tabs.some((tab) => /\/decks\/[^/?]+$/.test(tab.href ?? "")),
       rail.tabs.map((t) => t.href).join(" · ") || "no row",
     );
+    // The cells' figures come off the route's loader rather than a prop a test
+    // chose, so this is the only place the `gameCount` subquery is proved: the
+    // fixture writes exactly two games and three versions under this deck.
+    const gamesCell = rail.tabs.find((tab) => (tab.href ?? "").endsWith("?tab=games"));
+    check(
+      `${viewport.label} · the Games cell counts the fixture's two games`,
+      /(^|\D)2(\D|$)/.test(gamesCell?.label ?? ""),
+      gamesCell?.label ?? "no Games cell",
+    );
+    check(
+      `${viewport.label} · the Versions cell counts the fixture's three versions`,
+      /(^|\D)3(\D|$)/.test(current[0]?.label ?? ""),
+      current[0]?.label ?? "no current cell",
+    );
     check(`${viewport.label} · no back link above the rail`, rail.back === null, rail.back ?? "");
     check(
       `${viewport.label} · the heading names the document without drawing ink`,

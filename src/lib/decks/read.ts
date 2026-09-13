@@ -361,17 +361,32 @@ export async function getDeckReviewHeader(
     .select({
       name: decks.name,
       partnerOracleId: decks.partnerOracleId,
+      // Every correlated subquery here is aliased and its columns written out
+      // rather than interpolated, and that is load-bearing. A single-table
+      // Drizzle select emits column references UNQUALIFIED, so
+      // `${deckGames.deckId} = ${decks.id}` rendered as
+      // `where "deck_id" = "id"` — inside the subquery both names resolve
+      // against `deck_games`, so it compared a row's deck to its own primary
+      // key and every deck reported 0 games. `deck_unresolved_rows` has an `id`
+      // column too and was silently 0 the same way. `deck_cards` has no `id`,
+      // which is the only reason `built` ever looked right.
       built: sql<number>`coalesce((
-        select sum(${deckCards.quantity}) from ${deckCards}
-        where ${deckCards.deckId} = ${decks.id}
+        select sum(dc.quantity) from ${deckCards} dc
+        where dc.deck_id = ${decks}.id
       ), 0)::int`,
       unresolvedCount: sql<number>`(
-        select count(*) from ${deckUnresolvedRows}
-        where ${deckUnresolvedRows.deckId} = ${decks.id}
+        select count(*) from ${deckUnresolvedRows} dur
+        where dur.deck_id = ${decks}.id
       )::int`,
+      // Scoped to the deck's owner as well as the deck, because `listDeckGames`
+      // — which fills the builder's Games tab this count links to — scopes both.
+      // `deck_games.user_id` is denormalised with no constraint tying it to
+      // `decks.user_id`, so a cross-user row under an owned deck would have the
+      // count announce games the destination never lists.
       gameCount: sql<number>`(
-        select count(*) from ${deckGames}
-        where ${deckGames.deckId} = ${decks.id}
+        select count(*) from ${deckGames} dg
+        where dg.deck_id = ${decks}.id
+          and dg.user_id = ${decks}.user_id
       )::int`,
     })
     .from(decks)

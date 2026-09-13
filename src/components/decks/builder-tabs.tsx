@@ -150,7 +150,12 @@ function LinkCell({ link }: { link: BuilderTabLink }) {
 export function BuilderRouteTabs({ cells }: { cells: readonly BuilderTabLink[] }) {
   return (
     <div
-      className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px] overflow-hidden"
+      // `overflow-x-clip`, not `overflow-hidden`: the row clips rather than
+      // wrapping at phone width, but the global `:focus-visible` outline sits 2px
+      // outside each cell with a 2px offset and the row has no bottom padding, so
+      // hiding both axes cut the bottom off every keyboard indicator here. `clip`
+      // on one axis leaves the other visible, which `hidden` cannot do.
+      className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px] overflow-x-clip"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
       <div className="flex items-baseline gap-[16px] md:gap-[22px]">

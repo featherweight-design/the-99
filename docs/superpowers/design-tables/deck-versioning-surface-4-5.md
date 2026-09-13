@@ -971,3 +971,16 @@ not positions in one flat 1–45 sequence.
 57. **No focus style is specified for anything on either surface.** The one link
     (`Browse the {n} cards →`) inherits the global `a` colour and a hover, and nothing in the
     bundle declares a focus ring — for it, for the rail rows, or for the segmented pair.
+58. **The tab row's own metrics contradict the shipped row this table declares to be shipped
+    chrome.** "Tab row container" above rules `gap: 18px / 26px` with `overflow: hidden` at
+    390px, and "Versions tab — active cell" rules `gap: 6px / 7px` with `padding-bottom:
+    11px / 13px`. `BuilderTabs` — drawn by the deck page, whose own handoff set these — ships
+    `gap: 16px / 22px`, cell `gap: 6px` at both widths, and `padding-bottom: 8px / 10px`.
+    **Resolution (engineering, this table's own governing-value rule): the shipped chrome
+    wins and this table's four rows are errata.** `/decks/[id]/versions` draws the same
+    component instance the deck page draws, so honouring the figures here would make one row
+    of chrome measure differently on two routes a single click apart — the defect the rule
+    exists to prevent. `overflow: hidden` is additionally wrong as stated: it forces both
+    axes, and the global `:focus-visible` outline sits 2px outside each cell with a 2px
+    offset, so it clips every keyboard indicator against the row's bottom rule. The row
+    clips on one axis with `overflow-x-clip`, which leaves the vertical visible.

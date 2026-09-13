@@ -127,6 +127,19 @@ const readReview = (page) =>
     const text = (el) => (el?.textContent ?? "").replace(/\s+/g, " ").trim();
     return {
       url: location.pathname + location.search,
+      // The centred container, found by walking up from the columns rather than
+      // by class, so a restyle does not quietly stop measuring anything. A flex
+      // item with `margin-inline: auto` loses `align-items: stretch` and sizes to
+      // its content: this page drew ~870px of a 1300px desktop until `w-full`
+      // restored the fill, so the ratio is the check that reported the defect.
+      fill: (() => {
+        const main = document.querySelector("main");
+        if (!columns || !main) return null;
+        let box = columns;
+        while (box.parentElement && box.parentElement !== main) box = box.parentElement;
+        const cap = Math.min(1180, main.clientWidth);
+        return box.getBoundingClientRect().width / cap;
+      })(),
       h1: document.querySelector("h1")?.innerText ?? null,
       lede: document.querySelector("header p")?.innerText ?? null,
       ledeVisible: visible(document.querySelector("header p")),
@@ -512,6 +525,14 @@ try {
     console.log(`  h1: ${seen.h1}`);
     console.log(`  lede: ${seen.ledeVisible ? seen.lede : "hidden"}`);
     console.log(`  chips: ${seen.chips[0] ?? "absent"}`);
+    // A ratio near 1 is the whole point: the centred container is a flex item, so
+    // dropping `w-full` returns it to shrink-to-fit and this page draws ~0.67 of
+    // its cap on desktop with every component test still green.
+    console.log(
+      `  container fill: ${
+        seen.fill === null ? "NO CONTAINER FOUND" : `${(seen.fill * 100).toFixed(0)}% of cap`
+      } (expect ~100%)`,
+    );
     for (const h of seen.headings) {
       console.log(`  column heading: "${h.text}" ${h.visible ? "visible" : "HIDDEN"}`);
     }
