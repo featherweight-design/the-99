@@ -129,6 +129,39 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 
+## A correlated subquery in a single-table select must alias and qualify
+
+Drizzle omits table qualification from column references interpolated into a `sql` template in
+the **projection** of a select whose `from` names a **single** table. A correlated subquery
+written the obvious way:
+
+```ts
+sql`select count(*) from ${deckGames} where ${deckGames.deckId} = ${decks.id}`
+```
+
+renders as `select count(*) from "deck_games" where "deck_id" = "id"`. Both bare names resolve
+against `deck_games`, so it compares each row's foreign key to its own primary key — always
+false, count always 0, no error. Alias the inner table and write both sides out:
+
+```ts
+sql<number>`(
+  select count(*) from ${deckGames} dg
+  where dg.deck_id = ${decks}.id
+)::int`
+```
+
+- **The collision is what bites, not the missing prefix.** Unqualified names are harmless when
+  the inner table has no column of that name, because Postgres then falls through to the outer
+  query. `id` collides constantly; `built` in `getDeckReviewHeader` survived for months purely
+  because `deck_cards` has no `id` column.
+- **A join saves you, a `where` saves you, the projection does not.** With two tables in the
+  `from`, or with the same `sql` in `.where()`, Drizzle qualifies correctly. Confirmed by
+  rendering all three through `PgDialect.sqlToQuery`.
+- **No unit test can catch this.** Component tests receive the figure as a prop and stay green.
+  The proof is a probe that calls the real loader against a real Postgres and asserts against a
+  fixture whose true count is known — `probe:versions` asserts both tab-row figures for exactly
+  this reason. When a count reads 0 and should not, print `.toSQL()` and read the emitted SQL.
+
 ## Caching a list a reader flips between
 
 When a control re-fetches the same list under different parameters — a sort order, an
