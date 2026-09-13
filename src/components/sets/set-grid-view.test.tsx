@@ -1,5 +1,6 @@
+import { cloneElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
 
@@ -42,7 +43,10 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
   const holdings = ownedNumbers.map((n) => ({
     oracleId: `o-${n}`, collectorNumber: n, finish: "nonfoil" as const,
   }));
-  return render(
+  // A re-render of the SAME tree is returned as a FUNCTION, not as the element: React bails
+  // out of a subtree re-rendered with an identical element reference, so passing the stored
+  // element back to `rerender` silently does nothing and any assertion after it is vacuous.
+  const el = (
     <SetGridView
       code="dsk"
       name={name}
@@ -55,8 +59,9 @@ function view(printings: SetPrinting[], ownedNumbers: string[] = [], name = "Dus
       newestAsOf={null}
       baseSetSize={printings.filter((x) => x.booster === true).length || null}
       staleAsOf={null}
-    />,
+    />
   );
+  return Object.assign(render(el), { again: () => cloneElement(el) });
 }
 
 /**
@@ -689,13 +694,13 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   it("offers Clear all filters past one active control", () => {
     search = "m=1&c=W";
     view([p("1"), p("2")], []);
-    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Clear all filters/ })).toBeInTheDocument();
   });
 
   it("clears every dimension from that one control", () => {
     search = "m=1&c=W";
     view([p("1"), p("2")], []);
-    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters/ }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 
@@ -853,19 +858,19 @@ describe("SetGridView — a stale filter a complete set does not apply", () => {
   it("keeps Clear on the chip line with m=1 on a completed set", () => {
     search = "m=1";
     view([p("1")], ["1"]);
-    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Clear all filters/ })).toBeInTheDocument();
   });
 
   it("removes the parameter when it is used", () => {
     search = "m=1";
     view([p("1")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters/ }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 
   it("still shows no Clear when nothing at all is on", () => {
     view([p("1")], ["1"]);
-    expect(screen.queryByRole("button", { name: "Clear all filters" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Clear all filters/ })).toBeNull();
   });
 });
 
@@ -878,7 +883,7 @@ describe("SetGridView — Clear is not inside the scrolling strip", () => {
     const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
     const row = container.querySelector("[data-set-chips]") as HTMLElement;
     const scroller = row.querySelector(".overflow-x-auto") as HTMLElement;
-    const clear = screen.getByRole("button", { name: "Clear all filters" });
+    const clear = screen.getByRole("button", { name: /^Clear all filters/ });
     expect(scroller).not.toBeNull();
     expect(scroller.querySelectorAll("span > button").length).toBe(3);
     expect(scroller.contains(clear)).toBe(false);
@@ -893,13 +898,13 @@ describe("SetGridView — the last route out of a stale m=1", () => {
   it("keeps Clear beside a chip when m=1 is still set on a completed set", () => {
     search = "m=1&c=W";
     view([p("1")], ["1"]);
-    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Clear all filters/ })).toBeInTheDocument();
   });
 
   it("removes both from it", () => {
     search = "m=1&c=W";
     view([p("1")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: "Clear all filters" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters/ }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
   });
 
@@ -908,7 +913,7 @@ describe("SetGridView — the last route out of a stale m=1", () => {
   it("names the control with the words it shows", () => {
     search = "m=1&c=W";
     view([p("1")], ["1"]);
-    const clear = screen.getByRole("button", { name: "Clear all filters" });
+    const clear = screen.getByRole("button", { name: /^Clear all filters/ });
     expect(clear.textContent).toContain("Clear all filters");
   });
 });
@@ -945,6 +950,264 @@ describe("SetGridView — row 3's box is unconditional", () => {
     expect(row.className).toMatch(/mt-\[8px\] min-h-\[32px\] md:min-h-\[16px\]/);
     const line = screen.getAllByRole("status")[0];
     expect(line.className).not.toMatch(/mt-\[8px\]/);
+  });
+});
+
+// Addendum R2 §29 — the name search is the chassis's field slot, and it leads.
+describe("SetGridView — the name search", () => {
+  const field = () => screen.getByRole("searchbox", { name: "Search cards in Duskmourn" });
+
+  it("leads the control row and names the set it searches", () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    expect(field()).toBeInTheDocument();
+    // The set is in the accessible name and not in the placeholder: the index's own field
+    // says "Find any set" in the same skin one tap away.
+    expect(field()).toHaveAttribute("placeholder", "Find a card in this set");
+  });
+
+  it("is the only child of the row that shrinks", () => {
+    const { container } = view([p("1"), p("2")], []);
+    const row = field().closest("[class*='flex-nowrap']") as HTMLElement;
+    expect(row).not.toBeNull();
+    const growing = [...row.children].filter((c) => !/shrink-0/.test(c.className));
+    expect(growing).toHaveLength(1);
+    expect(growing[0].contains(field())).toBe(true);
+    // And it does not shrink past the chassis's floor. `min-w-0` alone let it reach zero on
+    // a narrower phone, which the row's 173px-at-390 arithmetic assumes it cannot.
+    expect(growing[0].className).toMatch(/min-w-\[132px\]/);
+    expect(container).toBeTruthy();
+  });
+
+  it("filters the grid without reaching the server", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "plains" } });
+      act(() => void vi.advanceTimersByTime(150));
+      expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=plains");
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // §29: 150ms, the shipped card-search window. Applying per keystroke recomputed both
+  // sections, the rarity counts, the cost strip and the live result line once per
+  // character — and re-announced the line each time.
+  it("waits 150ms before applying, and keeps the box responsive meanwhile", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "pla" } });
+      // The text is in the box immediately…
+      expect((field() as HTMLInputElement).value).toBe("pla");
+      // …and nothing has been applied yet.
+      act(() => void vi.advanceTimersByTime(149));
+      expect(replaceState).not.toHaveBeenCalled();
+      expect(screen.getAllByRole("button", { name: /Mountain/ }).length).toBeGreaterThan(0);
+      act(() => void vi.advanceTimersByTime(1));
+      expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=pla");
+      expect(screen.queryByRole("button", { name: /Mountain/ })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("applies once for a burst of keystrokes, not once per character", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      for (const v of ["p", "pl", "pla", "plai", "plain", "plains"]) {
+        fireEvent.change(field(), { target: { value: v } });
+        act(() => void vi.advanceTimersByTime(40));
+      }
+      expect(replaceState).not.toHaveBeenCalled();
+      act(() => void vi.advanceTimersByTime(150));
+      expect(replaceState).toHaveBeenCalledTimes(1);
+      expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?q=plains");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // A pending keystroke landing after the clear would put the query straight back.
+  it("drops a pending keystroke when the field is cleared", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "plains" } });
+      act(() => void vi.advanceTimersByTime(50));
+      fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
+      act(() => void vi.advanceTimersByTime(300));
+      expect((field() as HTMLInputElement).value).toBe("");
+      expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // The × belongs to the text in the box. Reading the APPLIED query left it hidden for the
+  // 150ms after the first character.
+  it("shows the field's clear as soon as a character is typed", () => {
+    vi.useFakeTimers();
+    try {
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "p" } });
+      const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+      expect(clear).toBeVisible();
+      expect(clear).toHaveAttribute("tabindex", "0");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // `Clear all filters` clears the query too, so the box has to follow — otherwise the text
+  // stays visible over an unfiltered grid.
+  it("empties the box when Clear all clears the query", () => {
+    search = "q=plains&c=W";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect((field() as HTMLInputElement).value).toBe("plains");
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters/ }));
+    expect((field() as HTMLInputElement).value).toBe("");
+  });
+
+  // Back/Forward gives a new URL and the render-time sync puts its query in the box — but a
+  // timer armed before the navigation would write the OLD value 150ms later, undoing the
+  // state the reader just navigated to.
+  it("drops a pending keystroke when the URL changes underneath it", () => {
+    vi.useFakeTimers();
+    try {
+      const r = view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+      fireEvent.change(field(), { target: { value: "plains" } });
+      act(() => void vi.advanceTimersByTime(50));
+      // A navigation: a different query arrives through the URL.
+      search = "q=mountain";
+      r.rerender(r.again());
+      act(() => void vi.advanceTimersByTime(300));
+      expect((field() as HTMLInputElement).value).toBe("mountain");
+      // The stale keystroke never reaches the URL. Asserted on the ARGUMENT rather than the
+      // call count: the page legitimately rewrites the URL on a navigation.
+      expect(replaceState).not.toHaveBeenCalledWith(
+        null, "", "/collection/sets/dsk?q=plains",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // A `q` the parse throws away is still in the address bar, and nothing else removes it:
+  // the grid is unfiltered, so `Clear all filters` does not render and the field's × is
+  // inert. Without this it survives a reload and a share as a dead parameter.
+  it("strips a query that folds to nothing from the URL", () => {
+    search = "q=%20%20";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("leaves the URL alone when the query is real", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  it("and when there is no query at all", () => {
+    search = "c=W";
+    view([p("1", { name: "Plains", colorIdentity: ["W"] })], []);
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  // The phone slot is 173px, and the long placeholder truncates in it. The accessible name
+  // carries the set at both widths and does not change.
+  it("shortens the placeholder on the phone and keeps the full name", () => {
+    stubDesktop(false);
+    view([p("1"), p("2")], []);
+    expect(field()).toHaveAttribute("placeholder", "Find a card");
+    expect(field()).toHaveAccessibleName("Search cards in Duskmourn");
+  });
+
+  it("uses the long placeholder on the desktop", () => {
+    stubDesktop(true);
+    view([p("1"), p("2")], []);
+    expect(field()).toHaveAttribute("placeholder", "Find a card in this set");
+  });
+
+  // The badge counts dimensions. The field is visible on the row beside it, so counting it
+  // would state the same fact twice — the same rule missing-only is held to.
+  it("is not counted by the phone badge", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" })], []);
+    expect(screen.queryByRole("button", { name: /filter(s)? on/ })).toBeNull();
+  });
+
+  // A second field behind `Filters` is two controls with one accessible name.
+  it("never appears in the phone sheet", () => {
+    view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getAllByRole("searchbox", { name: "Search cards in Duskmourn" }))
+      .toHaveLength(1);
+  });
+
+  it("is cleared by Clear all filters, which the chassis excludes only sort from", () => {
+    search = "q=plains&c=W";
+    view([p("1", { name: "Plains" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters and the search$/ }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("re-scopes the money, because the filters are the selector", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    // One missing cell matches, so the button offers one and not two — and the link it
+    // builds carries that one card, not the whole set.
+    expect(screen.getByText("Send 1 to ManaPool")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /1 missing card,/ })).toBeInTheDocument();
+  });
+
+  describe("zero with a query", () => {
+    it("names the query and offers the narrowest correction first", () => {
+      search = "q=zzz";
+      view([p("1", { name: "Plains" })], []);
+      expect(screen.getByText("Nothing in Duskmourn matches “zzz”")).toBeInTheDocument();
+      const empty = screen.getByText(/Nothing in Duskmourn matches/)
+        .closest("section") as HTMLElement;
+      expect([...empty.querySelectorAll("button")][0])
+        .toHaveAccessibleName("Clear the search");
+    });
+
+    // `q=plains&c=U` returns nothing in a set that plainly contains Plains: the name is
+    // present and a filter removed it. Claiming it is absent, and calling it a spelling,
+    // would be false — so that case takes the ordinary filtered-empty heading.
+    it("does not claim the name is absent when a filter is what removed it", () => {
+      search = "q=plains&c=U";
+      view([p("1", { name: "Plains", colorIdentity: ["W"] })], []);
+      expect(screen.queryByText(/Nothing in Duskmourn matches/)).toBeNull();
+      expect(screen.queryByText(/spelling rather than a gap/)).toBeNull();
+      expect(screen.getByText(/No cards matching “plains” in this set/)).toBeInTheDocument();
+    });
+
+    it("still offers the search's own correction first there", () => {
+      search = "q=plains&c=U";
+      view([p("1", { name: "Plains", colorIdentity: ["W"] })], []);
+      // Scoped to the empty state: the rack above it carries a `Clear every filter and the
+      // search`, and the field carries its own `Clear the search`, both higher in the
+      // document. The order under test is the one inside this block.
+      const empty = screen.getByText(/No cards matching/).closest("section") as HTMLElement;
+      const buttons = [...empty.querySelectorAll("button")];
+      expect(buttons[0]).toHaveAccessibleName("Clear the search");
+      expect(buttons[1]).toHaveAccessibleName("Clear all filters and the search");
+    });
+
+    // With missing-only on and every match already owned, the shipped good-news branch
+    // carries it — which is why `what` was a parameter in the first place.
+    it("keeps the good news when missing-only matched only cards you own", () => {
+      search = "q=plains&m=1";
+      // Two printings so the set is not complete: at 100% missing-only is dropped from
+      // what is applied, and the page would not be at zero at all.
+      view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], ["1"]);
+      expect(screen.getByText(/You are not missing any cards matching “plains”/))
+        .toBeInTheDocument();
+    });
   });
 });
 
@@ -1295,5 +1558,216 @@ describe("SetGridView — the off-state stop survives a filter change", () => {
       .filter((r) => r.getAttribute("tabindex") === "0");
     expect(stops).toHaveLength(1);
     expect(stops[0]).not.toHaveAttribute("aria-disabled", "true");
+  });
+});
+
+// The badge counts dimensions; the result LINE describes the page, and a query narrows the
+// page. Reading one off the other made a query-only search state the whole set's figures
+// over a grid showing a handful.
+describe("SetGridView — the result line under a query", () => {
+  it("states the filtered form for a query with no other filter on", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    const status = screen.getAllByRole("status").find((el) => /cells/.test(el.textContent ?? ""));
+    expect(status?.textContent).toMatch(/1 of 2 cells/);
+  });
+
+  it("states the rest form when nothing is narrowing", () => {
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], ["1"]);
+    const status = screen.getAllByRole("status").find((el) => /cells/.test(el.textContent ?? ""));
+    expect(status?.textContent).toMatch(/2 cells/);
+    expect(status?.textContent).not.toMatch(/of 2 cells/);
+  });
+});
+
+// The field's own scoped clear. The chip line deliberately draws no chip for a query, and
+// at one active control there is no `Clear all filters` either — so without this the only
+// way out of a search was to select the text and delete it.
+describe("SetGridView — the search field clears itself", () => {
+  const field = () => screen.getByRole("searchbox", { name: "Search cards in Duskmourn" });
+
+  it("offers a clear once something is typed", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    const clear = screen.getByRole("button", { name: "Clear the search" });
+    expect(clear).toBeVisible();
+    fireEvent.click(clear);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  // Present but hidden, not unmounted: its 22px would otherwise reflow the input as the
+  // last character goes.
+  it("holds the control's box while the field is empty", () => {
+    view([p("1"), p("2")], []);
+    const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+    expect(clear).not.toBeVisible();
+    expect(clear).toHaveAttribute("tabindex", "-1");
+    expect(field()).toBeInTheDocument();
+  });
+});
+
+// Clearing hides the field's own × — `visibility`, and out of the tab order with it — and
+// unmounts the empty state's buttons. Every control that clears the query therefore has to
+// put focus back in the field, or using one strands the keyboard on a control that is gone.
+describe("SetGridView — focus survives clearing the search", () => {
+  const field = () => screen.getByRole("searchbox", { name: "Search cards in Duskmourn" });
+
+  it("returns focus to the field from the field's own ×", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
+    expect(document.activeElement).toBe(field());
+  });
+
+  it("returns focus to the field from the empty state's correction", () => {
+    search = "q=zzz";
+    view([p("1", { name: "Plains" })], []);
+    const empty = screen.getByText(/Nothing in Duskmourn matches/)
+      .closest("section") as HTMLElement;
+    fireEvent.click([...empty.querySelectorAll("button")][0]);
+    expect(document.activeElement).toBe(field());
+  });
+});
+
+// `staleFilter` exists for a filter that is set, applied to nothing, and has no visible
+// control — which the query is not: it has a field with its own × two rows up.
+describe("SetGridView — a query is not a stale filter", () => {
+  it("shows no Clear all filters for a query on its own", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(screen.queryByRole("button", { name: /^Clear all filters/ })).toBeNull();
+  });
+
+  it("still shows one for a stale m=1 on a completed set", () => {
+    search = "m=1";
+    view([p("1")], ["1"]);
+    expect(screen.getByRole("button", { name: /^Clear all filters/ })).toBeInTheDocument();
+  });
+
+  it("and for a query beside a real filter", () => {
+    search = "q=plains&c=W";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(screen.getByRole("button", { name: /^Clear all filters/ })).toBeInTheDocument();
+  });
+});
+
+// Every other reading of the query trims: serialisation, matching, the result line. The
+// clear did not, so typing only spaces left the grid unfiltered under an enabled,
+// focusable control for a query that filtered nothing.
+describe("SetGridView — a blank query has one inactive state", () => {
+  it("keeps the clear inert for whitespace", () => {
+    search = "q=%20%20";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+    expect(clear).not.toBeVisible();
+    expect(clear).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("and live for a real one", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    const clear = screen.getByLabelText("Clear the search", { selector: "button" });
+    expect(clear).toBeVisible();
+    expect(clear).toHaveAttribute("tabindex", "0");
+  });
+});
+
+// `Clear all filters` clears the query too, so it owes the same focus return the field's
+// own × does — it unmounts itself in the process, and focus was falling to the body.
+describe("SetGridView — Clear all returns focus to the field", () => {
+  const field = () => screen.getByRole("searchbox", { name: "Search cards in Duskmourn" });
+
+  it("from the chip line", () => {
+    search = "q=plains&c=W";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Clear all filters and the search$/ }));
+    expect(document.activeElement).toBe(field());
+  });
+
+  it("from the empty state's wider correction", () => {
+    search = "q=zzz&c=W";
+    view([p("1", { name: "Plains", colorIdentity: ["W"] })], []);
+    const empty = screen.getByText(/No cards matching/).closest("section") as HTMLElement;
+    const buttons = [...empty.querySelectorAll("button")];
+    fireEvent.click(buttons[1]);
+    expect(document.activeElement).toBe(field());
+  });
+});
+
+// EVERY control that clears the query names it. Three exist — the chip line's, the sheet's,
+// and the empty state's — and they were fixed one round apart each, which is what a class
+// swept by instance looks like.
+describe("SetGridView — every Clear-all names the search too", () => {
+  it("carries the same search-aware name the chip line does", () => {
+    search = "q=plains&c=W";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const sheet = screen.getByRole("dialog");
+    const clear = [...sheet.querySelectorAll("button")]
+      .find((b) => /Clear all filters/.test(b.textContent ?? ""));
+    expect(clear).toHaveAttribute("aria-label", "Clear all filters and the search");
+  });
+
+  it("names it on the chip line", () => {
+    search = "q=plains&c=W";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(screen.getByRole("button", { name: "Clear all filters and the search" }))
+      .toBeInTheDocument();
+  });
+
+  it("and in the empty state", () => {
+    search = "q=zzz&c=W";
+    view([p("1", { name: "Plains", colorIdentity: ["W"] })], []);
+    const empty = screen.getByText(/No cards matching/).closest("section") as HTMLElement;
+    const buttons = [...empty.querySelectorAll("button")];
+    expect(buttons[1]).toHaveAccessibleName("Clear all filters and the search");
+  });
+});
+
+// Row 2 at rest says `No filters on`, which is a contradiction when a query is narrowing:
+// the field IS on, the result line says so, and the chip line has no chip for it only
+// because the field is visible on the row above.
+describe("SetGridView — row 2 under a query alone", () => {
+  it("says no OTHER filters are on", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(screen.getByText("No other filters on")).toBeInTheDocument();
+    expect(screen.queryByText("No filters on")).toBeNull();
+  });
+
+  it("and says none are on when none are", () => {
+    view([p("1"), p("2")], []);
+    expect(screen.getByText("No filters on")).toBeInTheDocument();
+  });
+
+  // The only escape when the search is the sole active control, so it clears 24px.
+  it("gives the field's clear a 24px target", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" })], []);
+    const clear = screen.getByRole("button", { name: "Clear the search" });
+    expect(clear.style.width).toBe("24px");
+    expect(clear.style.height).toBe("24px");
+  });
+});
+
+
+// The rarity panel's per-row counts are a fourth reader of the same computation, and could
+// have gone on showing whole-set figures while the grid, the result line and the cost strip
+// all showed the query subset.
+describe("SetGridView — a query narrows the rarity panel's counts too", () => {
+  it("counts only what the query matches", () => {
+    stubDesktop(true);
+    search = "q=plains";
+    view([
+      p("1", { name: "Plains", rarity: "common" }),
+      p("2", { name: "Mountain", rarity: "common" }),
+      p("3", { name: "Island", rarity: "rare" }),
+    ], []);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
+    // One Plains, not the two commons the set holds.
+    expect(screen.getByRole("option", { name: /^common, 1 cell/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /^common, 2 cells/ })).toBeNull();
+    // And a rarity the query empties is offered as unavailable rather than as one card.
+    expect(screen.getByRole("option", { name: /^rare, no cells/ })).toBeInTheDocument();
   });
 });
