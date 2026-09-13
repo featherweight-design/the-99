@@ -139,8 +139,18 @@ async function openCard(page, name) {
   const pattern = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
   await page.getByRole("button", { name: pattern }).first().click();
   await page.waitForSelector('[role="dialog"]', { timeout: 15_000 });
-  // The card is fetched on click, and the price rides that fetch.
-  await page.waitForTimeout(1_500);
+  // The card is fetched on click and the price rides that fetch, so the modal opens
+  // before it has either. Waited for, not slept through: a fixed delay turns a slow
+  // Neon response into a false failure, and the art box is the right thing to wait
+  // on because it arrives with the card whether or not the card has a price —
+  // waiting for the tag itself would hang on every silent state.
+  await page
+    .waitForFunction(
+      () => [...document.querySelectorAll('[data-testid^="modal-art-"]')]
+        .some((n) => n.getBoundingClientRect().width > 0),
+      null,
+      { timeout: 15_000 },
+    );
 }
 
 const browser = await chromium.launch();
@@ -189,7 +199,18 @@ try {
   const phoneTrigger = phonePage.locator('button[aria-label*="printings owned"]').first();
   if (await phoneTrigger.count()) {
     await phoneTrigger.click();
-    await phonePage.waitForTimeout(800);
+    // Same reason as the open above: waited for, not slept through. The compact
+    // header is the state being measured, so the wait is for the thumb collapsing.
+    await phonePage
+      .waitForFunction(
+        () => {
+          const art = document.querySelector('[data-testid="modal-art-mobile"]');
+          return art !== null && art.getBoundingClientRect().width < 100;
+        },
+        null,
+        { timeout: 10_000 },
+      )
+      .catch(() => {});
     const compact = await readPrice(phonePage);
     console.log("\n── phone · printing region open (compact header past 12 entries) ──");
     console.log(JSON.stringify(compact, null, 2));
