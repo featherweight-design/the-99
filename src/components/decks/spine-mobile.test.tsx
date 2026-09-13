@@ -346,10 +346,20 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect(holder.previousElementSibling).toBe(heading);
     expect(holder.parentElement!.className).not.toContain("flex");
     expect(holder.style.verticalAlign).toBe("baseline");
+    // The heading reserves the glyph's flow width — 14 plus its 6px margin —
+    // because a title long enough to need the whole line otherwise pushed the
+    // glyph onto a line of its own, where baseline alignment cannot reach back
+    // up to the clamped last line.
+    expect(heading.style.maxWidth).toBe("calc(100% - 20px)");
     // The heading stays the clamped inline box, and its accessible name is the
     // deck's name alone.
     expect(heading.style.display).toBe("-webkit-inline-box");
     expect(heading.textContent).toBe("HD Tune — A Very Long Deck Name That Keeps Going");
     expect(heading.querySelector("button")).toBeNull();
+    // What jsdom CANNOT answer is whether that reserved width is enough, or
+    // whether the glyph lands on the last line rather than beside the first:
+    // there is no layout here. `probe-deck-header.mjs` measures it in a browser
+    // — the title's own line boxes via a Range, the glyph's rect against the
+    // last of them, and its plate against the block's right edge.
   });
 });

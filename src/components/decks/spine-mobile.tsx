@@ -306,7 +306,13 @@ export function SpineMobile({
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
-                    maxWidth: "100%",
+                    // The holder's own flow width is RESERVED: 14 of glyph plus
+                    // its 6px margin. At `100%` a title long enough to need the
+                    // whole line left nothing for the glyph, which pushed it to a
+                    // line of its own — baseline alignment cannot reach back up
+                    // to the clamped last line, and the extra line breaks the
+                    // 90px figure the ramp is keyed to.
+                    maxWidth: "calc(100% - 20px)",
                     fontSize: 20,
                     lineHeight: 1.25,
                     textAlign: "left",
@@ -327,26 +333,23 @@ export function SpineMobile({
                       follows. */}
                   <span data-deck-title>{deck.name}</span>
                 </h1>
-                {/* The glyph is a SIBLING of the heading, in the same row, not a
-                    child of it. Inside the heading its `aria-label` joined the
-                    heading's own accessible name, so heading navigation announced
-                    "…Rename deck: …" and then the control announced itself again.
-                    Beside the title it is still the title's control rather than a
-                    corner one, which is the point of the treatment.
+                {/* The glyph is a SIBLING of the heading, not a child. Inside it
+                    its `aria-label` joined the heading's own accessible name, so
+                    heading navigation announced "…Rename deck: …" and then the
+                    control announced itself again. Beside the title it is still
+                    the title's control rather than a corner one.
 
                     14px in flow, not zero: a zero-width holder puts the whole
                     44px border box past the text — 29px beyond the block's right
-                    edge, which the band clips on a phone and the action buttons
-                    cover on desktop, for exactly the long names that fill the
-                    column. Only the 15px of hit padding overhangs now, inside the
-                    block's 18px inset and the desktop row's 18px gap alike.
+                    edge, which the band clips. Only the 15px of hit padding
+                    overhangs now, inside the block's own 18px inset.
 
                     `relative z-[1]` because that overhang reaches 15px BELOW the
-                    title line and the meta row starts a few pixels later: two
-                    positioned elements at auto z-index are ordered by document
-                    position, so the row underneath won the hit test across the
-                    bottom third of this target. The same defect #534 fixed one
-                    control over. */}
+                    title's last line and the meta row starts a few pixels later:
+                    two positioned elements at auto z-index are ordered by
+                    document position, so the row underneath won the hit test
+                    across the bottom third of this target. The same defect #534
+                    fixed one control over. */}
                 {/* `vertical-align: baseline` against an inline box whose
                     overflow is hidden: that box's baseline IS its bottom edge, so
                     the glyph sits beside the title's last line on a wrapped name

@@ -146,6 +146,36 @@ const READ_HEADER = `() => {
       if (!h1 || !block) return null;
       return Math.round(h1.getBoundingClientRect().left - block.getBoundingClientRect().left);
     })(),
+    // The pencil against the title's LAST LINE, measured rather than declared.
+    // jsdom lays nothing out, so a component test can only assert that the glyph
+    // is an inline sibling of an inline box — it cannot tell whether that box
+    // leaves room for the glyph or pushes it onto a line of its own. The title's
+    // own line boxes come from a Range over its text, and the last rect is the
+    // last line.
+    pencilOnLastLine: (() => {
+      const title = h1 ? h1.querySelector('[data-deck-title]') : null;
+      const pencil = [...header.querySelectorAll('[aria-label^="Rename deck: "]')].find(visible);
+      const block = header.querySelector('[data-wash-label]');
+      if (!title || !pencil || !block) return null;
+      const range = document.createRange();
+      range.selectNodeContents(title);
+      const lines = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      if (!lines.length) return null;
+      const last = lines[lines.length - 1];
+      const box = pencil.getBoundingClientRect();
+      const mid = box.top + box.height / 2;
+      return {
+        lines: lines.length,
+        // The glyph's vertical centre inside the last line's own band, with a
+        // pixel of tolerance for the half-leading either side.
+        onLastLine: mid >= last.top - 1 && mid <= last.bottom + 1,
+        // And after that line's text rather than before it.
+        after: Math.round(box.left - last.right),
+        // The drawn 26px plate is centred in a 44px target, so 9px of that
+        // target may overhang; the PLATE is what must stay inside the block.
+        withinBlock: Math.round(block.getBoundingClientRect().right - (box.right - 9)),
+      };
+    })(),
     titleShadow: h1 ? getComputedStyle(h1).textShadow : null,
     titleColor: h1 ? getComputedStyle(h1).color : null,
     barBackground: fill ? getComputedStyle(fill).backgroundColor : null,
@@ -432,6 +462,22 @@ try {
         fail(`no title or no [data-wash-label] to measure the title's offset against`);
       } else if (rest.titleOffset > 1) {
         fail(`title sits ${rest.titleOffset}px in from the block's left edge, expected flush`);
+      }
+      // The pencil, measured: on the title's last line, after its text, and with
+      // its drawn plate inside the block. A wrapped name is the case that broke
+      // it — the glyph followed the heading's full-width box instead of its
+      // words — and a title long enough to fill the line is the case that pushes
+      // the glyph to a line of its own.
+      const pencil = rest.pencilOnLastLine;
+      if (!pencil) {
+        fail(`no title, pencil or [data-wash-label] to measure the pencil against`);
+      } else {
+        note(`  pencil: title wraps to ${pencil.lines} line(s), glyph ${pencil.after}px after the last`);
+        if (!pencil.onLastLine) fail(`pencil is not on the title's last line`);
+        if (pencil.after < 0) fail(`pencil sits ${-pencil.after}px BEFORE the end of the last line`);
+        if (pencil.withinBlock < 0) {
+          fail(`pencil's plate overhangs the block by ${-pencil.withinBlock}px`);
+        }
       }
       if (rest.metaInBand !== true) fail(`meta row not in the band at rest`);
       if (editing.metaInBand !== false) fail(`meta row did not move below the divider`);
