@@ -251,6 +251,26 @@ describe("DeckCard", () => {
   // The identity joins it, because the block draws it and the overlay link's
   // explicit label means its descendants are never read: without it the tile
   // shows a commander and a colour a screen reader is never told.
+  // One accessible representation, not two. The overlay link has no descendants,
+  // so its `aria-label` is the tile's name — and the presentation it covers has
+  // to be hidden or a screen reader is told the deck's identity twice, once from
+  // the block and again from the link.
+  it("hides the presentation the link's own name already states", () => {
+    const { container } = render(
+      <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+    );
+    const block = container.querySelector("[data-wash-label]")!;
+    const footer = container.querySelector(".deck-card-footer")!;
+    expect(block).toHaveAttribute("aria-hidden", "true");
+    expect(footer).toHaveAttribute("aria-hidden", "true");
+    // Safe only because neither holds anything focusable. The overflow control
+    // sits outside both and stays exposed, as does the link.
+    expect(block.querySelector("a, button, input, [tabindex]")).toBeNull();
+    expect(footer.querySelector("a, button, input, [tabindex]")).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
+
   it("names the whole tile for a screen reader, in the order the tile reads", () => {
     render(
       <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,

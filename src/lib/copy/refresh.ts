@@ -112,9 +112,10 @@ export const refreshCopy = {
     // Card label for screen readers: name, identity, status, count, and the
     // detail figure — the same five things the tile shows, in the same order.
     // `identity` is the commander (both, on a pair) and the deck's colour,
-    // which the tile's block now draws under the name. The overlay link carries an explicit label, so
-    // its descendants are NOT read: without this the visual tile presents an
-    // identity a screen reader is never told.
+    // which the tile's block now draws under the name. This label is the tile's
+    // ONE accessible representation: the link it sits on has no descendants, and
+    // the presentation it covers is `aria-hidden`, so nothing is announced
+    // twice and no part of the visible identity goes unannounced.
     cardAria: (
       name: string,
       identity: string,

@@ -248,6 +248,12 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
           // so its own box is the measurement — unlike the row bands, whose
           // breakpoint wrappers span the whole band.
           data-wash-label
+          // Presentation. The overlay link's own `aria-label` states these words
+          // in order, so leaving them exposed announced the tile's identity
+          // twice — once from this block and again from the link. Nothing here
+          // is focusable, which is what makes hiding it safe; the overflow
+          // control sits outside this block and stays exposed.
+          aria-hidden="true"
           className="absolute inset-x-0 bottom-0 min-w-0 pb-[10px] pr-[56px] pl-[13px] sm:pr-[48px]"
         >
           <h3
@@ -300,6 +306,10 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
         // Building tile, every Complete one and every To buy deck with no
         // roll-up entry — which is most of them, and taller tiles for an empty
         // area is the opposite of what this round is for.
+        // Presentation, for the same reason as the block above: the status, the
+        // count and the detail figure are all in the link's name. No focusable
+        // element lives in this row.
+        aria-hidden="true"
         className={`deck-card-footer grid items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] sm:gap-y-[9px] ${
           detail === null && !hasLastPlayed
             ? "[grid-template-areas:'chip_bar_count']"
@@ -371,8 +381,9 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
       </div>
 
       {/* The whole tile is the target. Last in the DOM so it overlays the body,
-          and named with the same four things the tile shows, in the same
-          order. */}
+          and named with the same five things the tile shows, in the same order.
+          It has no descendants of its own, so the presentation it covers is
+          marked `aria-hidden` rather than left to be announced a second time. */}
       <Link
         href={`/decks/${deck.id}`}
         className="absolute inset-0"
