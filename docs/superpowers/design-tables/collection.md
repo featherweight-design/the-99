@@ -550,7 +550,7 @@ The rest state's leading half is the chassis's own `No filters on`, not this rou
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | display | grid | grid |
-| grid-template-columns | 38px 40px 1fr auto | 52px 54px 1fr 150px 92px 18px |
+| grid-template-columns | ~~38px 40px 1fr auto~~ → **38px 1fr 76px auto** | ~~52px 54px 1fr 150px 92px 18px~~ → **52px 1fr 90px 150px 92px 18px** |
 | align-items | center | center |
 | gap | 10px | 16px |
 | padding | 10px 12px | 12px 18px |
@@ -573,20 +573,24 @@ The rest state's leading half is the chassis's own `No filters on`, not this rou
 | font-weight | 500 | 500 |
 | color | #C9A24B | #C9A24B |
 
-### Row: Color Pip Container
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| gap | 3px | 4px |
+### ~~Row: Color Pip Container~~ · ~~Row: Color Pip~~ — RETIRED
 
-### Row: Color Pip
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 11px | 13px |
-| height | 11px | 13px |
-| border-radius | 999px | 999px |
-| display | block | block |
-| box-shadow | inset 0 0 0 1px rgba(0,0,0,0.35) | inset 0 0 0 1px rgba(0,0,0,0.35) |
+**Neither component exists on this row any more.** They drew the card's colour
+IDENTITY in the leading slot; the §1b addendum moved that slot to the trailing
+cost track, and its 2026-09-13 correction replaced what it draws with the card's
+own **mana cost**, through the shared `CostPips` — because identity folds in
+every symbol a card's abilities cost, and `Abzan Monument` (cost `{2}`, ability
+`{1}{W}{B}{G}`) read as a four-colour two-drop.
+
+The cost track's properties are `CostPips`' own — `COST_PIP_SIZE` 12px, the
+five-slot cap, and the shingle arithmetic in `src/components/ui/cost-pips.tsx`,
+which every card row in the app shares. They are deliberately not restated here:
+a second copy is what drifts, and this component now draws whatever that one
+draws. A land has no cost and the cell is simply empty; the grid template fixes
+its width, so nothing ragged-edges.
+
+Colour identity is still a filter and still the grid tile's art wash. It is not
+on this row.
 
 ### Row: Name Column Container
 | Property | Mobile | Desktop |
