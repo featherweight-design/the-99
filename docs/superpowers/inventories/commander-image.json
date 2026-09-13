@@ -72,7 +72,7 @@
           "wait": "ul a[href^=\"/decks/\"]"
         },
         {
-          "click": "ul a[href^=\"/decks/\"]",
+          "click": "ul a[href^=\"/decks/\"]:not([href$=\"/new\"]):not([href$=\"/import\"])",
           "wait": "h1",
           "settle": 3500
         }
