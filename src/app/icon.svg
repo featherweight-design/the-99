@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<!-- The 99's identity mark: the crown over the numeral, the same lockup
+     `Crowned99 variant="rail-62"` draws in src/components/marks.tsx, on the
+     default theme's ground. The numeral is outlined rather than set, because a
+     favicon loads no webfont and Cinzel arrives through next/font/google — the
+     paths below are Cinzel at wght 900, the weight that variant asks for.
+     Geometry is checked against the components by src/app/icon.test.ts. -->
+<rect width="64" height="64" fill="#14110E"/>
+<rect x="12.007" y="11.703" width="7.381" height="7.381" transform="rotate(45 15.697 15.393)" fill="#CF8745"/>
+<rect x="26.772" y="10.165" width="10.456" height="10.456" transform="rotate(45 32.000 15.393)" fill="#CF8745"/>
+<rect x="44.612" y="11.703" width="7.381" height="7.381" transform="rotate(45 48.303 15.393)" fill="#CF8745"/>
+<path transform="translate(12.903 49.849) scale(0.028293 -0.028293)" fill="#EDE6D8" d="M116 -38 112 -31Q219 2 279.5 43.0Q340 84 368.0 136.0Q396 188 403.0 253.5Q410 319 410 402Q410 485 406.0 540.5Q402 596 386.5 623.5Q371 651 334 651Q297 651 278.0 626.5Q259 602 252.0 563.0Q245 524 245 478Q245 421 251.5 389.0Q258 357 269.5 341.5Q281 326 295 320Q318 311 337.5 317.0Q357 323 370 331L377 323Q363 292 333.0 272.0Q303 252 264.0 246.0Q225 240 185.0 249.5Q145 259 111.5 285.5Q78 312 58.0 357.0Q38 402 40 467Q42 534 73.0 589.0Q104 644 168.0 677.0Q232 710 331 711Q478 713 556.5 633.0Q635 553 635 381Q635 274 603.0 189.5Q571 105 506.0 49.0Q441 -7 344.0 -30.5Q247 -54 116 -38Z"/>
+<path transform="translate(32.000 49.849) scale(0.028293 -0.028293)" fill="#EDE6D8" d="M116 -38 112 -31Q219 2 279.5 43.0Q340 84 368.0 136.0Q396 188 403.0 253.5Q410 319 410 402Q410 485 406.0 540.5Q402 596 386.5 623.5Q371 651 334 651Q297 651 278.0 626.5Q259 602 252.0 563.0Q245 524 245 478Q245 421 251.5 389.0Q258 357 269.5 341.5Q281 326 295 320Q318 311 337.5 317.0Q357 323 370 331L377 323Q363 292 333.0 272.0Q303 252 264.0 246.0Q225 240 185.0 249.5Q145 259 111.5 285.5Q78 312 58.0 357.0Q38 402 40 467Q42 534 73.0 589.0Q104 644 168.0 677.0Q232 710 331 711Q478 713 556.5 633.0Q635 553 635 381Q635 274 603.0 189.5Q571 105 506.0 49.0Q441 -7 344.0 -30.5Q247 -54 116 -38Z"/>
+</svg>
