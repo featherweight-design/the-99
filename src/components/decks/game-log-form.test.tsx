@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { GameLogForm } from "./game-log-form";
 import { gameLogCopy, axisCopy } from "../../lib/copy/game-log";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 const logGame = vi.fn<(deckId: string, input: unknown) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
@@ -244,5 +245,99 @@ describe("GameLogForm", () => {
     expect(screen.getByRole("radio", { name: gameLogCopy.form.won })).not.toBeChecked();
     expect(screen.getByRole("radio", { name: "4" })).toBeChecked();
     expect(save()).toBeDisabled();
+  });
+
+  // ── The note (#10's Surface 1, S1 states 1–8) ──────────────────────────────
+  //
+  // Optional, never required, and never mined for axes — the checkboxes are the
+  // structured answer and this is the unstructured one.
+  describe("the note", () => {
+    const field = () => screen.getByLabelText(deckTuningCopy.note.label);
+    const counter = (n: number) =>
+      screen.queryByText(
+        deckTuningCopy.note.counter(String(n), String(deckTuningCopy.note.maxLength)),
+      );
+
+    // S1 state 1. A counter on an untouched field is a cap nobody asked about.
+    it("hides the counter until the field is touched", () => {
+      mount();
+      open();
+      expect(field()).toBeInTheDocument();
+      expect(counter(0)).toBeNull();
+    });
+
+    // S1 state 2.
+    it("shows a zero counter once the field has focus", () => {
+      mount();
+      open();
+      fireEvent.focus(field());
+      expect(counter(0)).toBeInTheDocument();
+    });
+
+    // S1 states 3 → 4. The warning has to arrive before the stop, or the first
+    // the player knows of the cap is the keyboard going dead.
+    it("warns as the cap comes up, and not before", () => {
+      mount();
+      open();
+      fireEvent.change(field(), { target: { value: "x".repeat(deckTuningCopy.note.warnAt - 1) } });
+      expect(counter(deckTuningCopy.note.warnAt - 1)).not.toHaveClass("text-warning");
+      fireEvent.change(field(), { target: { value: "x".repeat(deckTuningCopy.note.warnAt) } });
+      expect(counter(deckTuningCopy.note.warnAt)).toHaveClass("text-warning");
+    });
+
+    // S1 state 5. A hard stop and no error: a cap you cannot exceed does not
+    // need one, and a red field for typing too much reads as a mistake.
+    it("stops at the cap without erroring", () => {
+      mount();
+      open();
+      expect(field()).toHaveAttribute("maxlength", String(deckTuningCopy.note.maxLength));
+      fireEvent.change(field(), { target: { value: "x".repeat(deckTuningCopy.note.maxLength) } });
+      expect(counter(deckTuningCopy.note.maxLength)).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("never requires a note, not even on a loss", () => {
+      mount();
+      open();
+      fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.lost }));
+      expect(save()).toBeEnabled();
+      expect(field()).not.toBeRequired();
+    });
+
+    it("sends what was typed", async () => {
+      mount();
+      open();
+      fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+      fireEvent.change(field(), { target: { value: "  Flooded out on turn six.  " } });
+      fireEvent.click(save());
+      await waitFor(() => expect(logGame).toHaveBeenCalled());
+      // Verbatim. The trim belongs to the action, which is the boundary that
+      // has to defend the column's cap against any caller, not just this form.
+      expect(logGame.mock.calls.at(-1)?.[1]).toMatchObject({ note: "  Flooded out on turn six.  " });
+    });
+
+    // S1 state 8. A note is about one game, so the next game starts blank —
+    // and the counter goes with it.
+    it("reopens blank after a save", async () => {
+      mount();
+      open();
+      fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+      fireEvent.change(field(), { target: { value: "Flooded out." } });
+      fireEvent.click(save());
+      await waitFor(() => expect(screen.queryByLabelText(deckTuningCopy.note.label)).toBeNull());
+
+      open();
+      expect(field()).toHaveValue("");
+      expect(counter(0)).toBeNull();
+    });
+
+    // The line above the buttons said "marks are optional". There are two
+    // optional things now.
+    it("says both the marks and the note are optional", () => {
+      mount();
+      open();
+      expect(screen.getByText(deckTuningCopy.note.optionalNote)).toBeInTheDocument();
+      expect(screen.queryByText(gameLogCopy.form.optionalNote)).toBeNull();
+    });
   });
 });

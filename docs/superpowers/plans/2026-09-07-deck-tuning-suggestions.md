@@ -37,7 +37,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 **Data and schema.**
 
-- **`deck_games.note`, its length check, and the History row's note line already shipped** — 2026-09-13, ahead of the rest of this plan, because the product owner wanted somewhere to record a game now. Migration `0029_slow_whiplash`. What remains here is the note *field* on the log form, its counter, and the note reaching the model. Do not add the column again.
+- **The whole game-note path shipped 2026-09-13**, ahead of the rest of this plan: the column and its check (migration `0029_slow_whiplash`), the read, the History row line, and the form's field and counter. Tasks 1, 3 and 4 are struck accordingly. What remains of the note here is only the note reaching the model (Task 7's evidence pack). Do not add the column, the field or the line again.
 - The new game column is **`note`, singular** — `deck_games.note`. `decks.notes` (plural) already exists at `src/db/schema.ts:170` and is a different thing.
 - **Note ≤ 140 characters. Intent ≤ 120 characters.** The app-seeded intent string must itself fit inside 120.
 - **Five failure classes, not four:** `upstream_busy`, `timeout`, `malformed`, `ungrounded`, `interrupted`. `interrupted` is written by the reaper, never by the run itself.
@@ -320,8 +320,12 @@ git commit -m "feat(tuning): schema for game notes, deck intent, and suggestion 
 
 ### Task 2: Copy module
 
+> **Partly shipped 2026-09-13.** `src/lib/copy/deck-tuning.ts` exists and holds
+> the `note` section only — the rest of the sections below arrive with the
+> surfaces that draw them, so a copy pass never reads a string nothing renders.
+
 **Files:**
-- Create: `src/lib/copy/deck-tuning.ts`
+- Modify: `src/lib/copy/deck-tuning.ts`
 - Test: `src/lib/copy/deck-tuning.test.ts`
 
 **Interfaces:**
@@ -455,10 +459,9 @@ git commit -m "feat(tuning): copy module for the tuning panel, cards, note, and 
 
 ### Task 3: The game note — read and write path
 
-> **Read path shipped 2026-09-13.** `DeckGame.note` exists and `listDeckGames`
-> already projects it. What is left here is the WRITE path: `logGame` accepting
-> a `note` form field, and the cap enforced where the form posts rather than
-> only by the column's check.
+> **Shipped 2026-09-13.** `DeckGame.note` is read by `listDeckGames`, and
+> `logGame` accepts a `note`: trimmed, blank stored as null, and refused rather
+> than truncated past the cap. Nothing is left in this task.
 
 **Files:**
 - ~~Modify: `src/lib/decks/games.ts`~~ — shipped.
@@ -559,8 +562,9 @@ git commit -m "feat(tuning): carry a per-game note and the deck intent through t
 
 ### Task 4: The note field and the history row
 
-> **The history row shipped 2026-09-13** to S2's rows, measured by
-> `scripts/probe-game-note.mjs`. Only the FORM's note field is left.
+> **Shipped 2026-09-13**, both halves — the History row to S2's rows and the
+> form's note field to S1 states 1–8, measured by `scripts/probe-game-note.mjs`.
+> One errata on the explanatory line; see the design table.
 
 **Files:**
 - Modify: `src/components/decks/game-log-form.tsx`

@@ -1,4 +1,5 @@
-// The History row's note line on a real Games tab, at 390x844 and 1300x900.
+// The game note on a real Games tab, at 390x844 and 1300x900 — the form's field
+// and the History row's line.
 //
 // Its properties come from `docs/superpowers/design-tables/deck-tuning.md`
 // §Note line and §Note quote rule, and a browser is the only thing that can
@@ -74,6 +75,62 @@ for (const vp of VIEWPORTS) {
   await page.click(`[role="tab"][aria-label="${tabs.find((t) => t?.startsWith("Games"))}"]`);
   await page.waitForSelector("li:has(button[aria-label='Delete this game'])", { timeout: 15_000 });
 
+  // The field, before the row. Opening the form is what draws it, and its two
+  // browser-only properties are the tap-target floor (48px phone, 46px desktop,
+  // which no unit test can measure) and the counter that is absent until the
+  // field is touched.
+  const field = await page.evaluate(() => {
+    const open = [...document.querySelectorAll("button")].find((b) =>
+      /log a game|log another/i.test(b.textContent ?? ""),
+    );
+    if (!open) return { failed: "No button opens the log form." };
+    open.click();
+    return null;
+  });
+  if (!field?.failed) {
+    await page.waitForSelector("input[maxlength='140']", { timeout: 10_000 });
+  }
+  // Read before a single keystroke: the counter is absent until the field has
+  // focus or content, and after typing that is unanswerable.
+  const counterAtRest = field?.failed
+    ? null
+    : await page.evaluate(() => {
+        const input = document.querySelector("input[maxlength='140']");
+        return document.querySelector(`#${CSS.escape(input.id)}-count`) !== null;
+      });
+  // Typing is a React state change, so the counter cannot be read in the same
+  // evaluate that causes it — the DOM it would measure has not been written yet.
+  let form = field?.failed ? field : null;
+  if (form === null) {
+    await page.evaluate(() => {
+      const input = document.querySelector("input[maxlength='140']");
+      input.focus();
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      ).set;
+      setter.call(input, "x".repeat(130));
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await page.waitForSelector("input[maxlength='140'] ~ *, [id$='-count']", { timeout: 5_000 });
+    form = await page.evaluate((COUNTER_AT_REST) => {
+      const input = document.querySelector("input[maxlength='140']");
+      const section = input.closest("div");
+      const counter = document.querySelector(`#${CSS.escape(input.id)}-count`);
+      const explainer = section.querySelector("p");
+      return {
+        element: input.tagName,
+        height: Math.round(input.getBoundingClientRect().height),
+        rule: getComputedStyle(section).borderTopColor,
+        counterBeforeTouch: COUNTER_AT_REST,
+        counterInk: counter ? getComputedStyle(counter).color : null,
+        describedBy: input.getAttribute("aria-describedby")?.split(" ").length ?? 0,
+        explainer: explainer ? getComputedStyle(explainer).display : null,
+        overflowsX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    }, counterAtRest);
+  }
+
   report[vp.label] = await page.evaluate(() => {
     const rows = [...document.querySelectorAll("li")].filter((li) =>
       li.querySelector("button[aria-label='Delete this game']"),
@@ -140,6 +197,7 @@ for (const vp of VIEWPORTS) {
       overflowsX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     };
   });
+  report[vp.label].form = form;
   await context.close();
 }
 await browser.close();
@@ -151,10 +209,12 @@ console.log(JSON.stringify(report, null, 2));
 // probe exists to prevent. `--fg-muted` is read from the theme rather than
 // written here for the same reason the icon test reads its tokens back.
 const EXPECTED = {
-  "iPhone 13 · 390x844": { indent: "0px", gap: "10px", marginTop: "8px", lines: 3 },
-  "desktop · 1300x900": { indent: "40px", gap: "11px", marginTop: "7px", lines: 1 },
+  "iPhone 13 · 390x844": { indent: "0px", gap: "10px", marginTop: "8px", lines: 3, fieldHeight: 48 },
+  "desktop · 1300x900": { indent: "40px", gap: "11px", marginTop: "7px", lines: 1, fieldHeight: 46 },
 };
 const FG_MUTED = "rgb(165, 156, 137)";
+const ACCENT = "rgb(207, 135, 69)";
+const WARNING = "rgb(222, 170, 41)";
 
 const failures = [];
 for (const [label, r] of Object.entries(report)) {
@@ -164,6 +224,7 @@ for (const [label, r] of Object.entries(report)) {
   }
   const want = EXPECTED[label];
   const n = r.note;
+  const f = r.form;
   const check = (name, got, expected) => {
     if (got !== expected) failures.push(`${label} · ${name}: ${got} (table says ${expected})`);
   };
@@ -187,11 +248,31 @@ for (const [label, r] of Object.entries(report)) {
   check("horizontal overflow", r.overflowsX, false);
   // A row without a note is exactly #9's row — 64px phone, 52px desktop.
   check("row without a note", r.rowWithoutNote.minHeight, label.startsWith("iPhone") ? "64px" : "52px");
+
+  // The form's field.
+  if (f.failed) {
+    failures.push(`${label} · form: ${f.failed}`);
+  } else {
+    // An input, never a textarea: one line is the whole promise.
+    check("note field element", f.element, "INPUT");
+    // The floor no unit test can measure — 48 on the phone, 46 on the desktop.
+    check("note field height", f.height, want.fieldHeight);
+    check("section rule", f.rule, ACCENT);
+    // Absent until focus or content, and the whole reason the field has two
+    // facts about it rather than one.
+    check("counter before the field is touched", f.counterBeforeTouch, false);
+    // At warnAt the counter turns, and it turns before the field stops.
+    check("counter ink at 130", f.counterInk, WARNING);
+    // The description and the counter both, once there is a counter to name.
+    check("aria-describedby ids", f.describedBy, 2);
+    check("explanatory line", f.explainer, label.startsWith("iPhone") ? "none" : "block");
+    check("form overflows sideways", f.overflowsX, false);
+  }
 }
 
 if (failures.length > 0) {
-  console.error("\nAgainst deck-tuning.md §Note line / §Note quote rule:");
+  console.error("\nAgainst deck-tuning.md §Note Field / §Note line / §Note quote rule:");
   for (const failure of failures) console.error(`  ✗ ${failure}`);
   process.exit(1);
 }
-console.error("\nEvery property matches deck-tuning.md §Note line / §Note quote rule.");
+console.error("\nEvery property matches deck-tuning.md §Note Field, §Note line and §Note quote rule.");

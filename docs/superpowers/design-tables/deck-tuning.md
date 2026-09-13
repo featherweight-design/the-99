@@ -27,11 +27,21 @@
 | `--warning` | `#E0913C` |
 | `--danger` | `#C6533F` |
 
-Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mono` (mono). Breakpoint 640px / `sm:`; desktop frames drawn at 900px, phone frames at 390px content width.
+Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mono` (mono). **Breakpoint 768px / `md:`** — amended 2026-09-13 from the 640px / `sm:` this table was drafted with, because `game-log.md` declares `md:` and #9's form and History row, which #10 amends rather than replaces, are built to it. Switching only #10's additions at 640px would have put them in a desktop arrangement the surfaces around them do not adopt until 768px. Desktop frames drawn at 900px, phone frames at 390px content width.
 
 ---
 
 ## Component: Game Log Form — Note Field (Surface 1, CHANGE)
+
+> **Shipped 2026-09-13.** Measured by `scripts/probe-game-note.mjs`. One
+> divergence, below.
+>
+> **Errata · the explanatory line.** The canvas draws *"Read back to you in the
+> history, and read by the tuning panel — quoted, never paraphrased"*. The
+> tuning panel does not exist, so the clause naming it is held back and the line
+> ships as *"Read back to you in the history — quoted, never paraphrased"*. The
+> full sentence is in `deckTuningCopy.note.readBack`'s comment; restore it with
+> the panel. Shipping it now would promise a surface nobody can open.
 
 ### Container / section rule
 
@@ -228,13 +238,8 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 > entered by hand against the database — the form's Note Field above is still
 > unbuilt, so nothing in the app writes one yet.
 >
-> **Errata · the breakpoint.** This table declares `sm:` / 640px at the top;
-> `game-log.md` declares `md:` / 768px, and #9's History row — every slot of
-> which this line sits under — is built to it. The line therefore follows `md:`.
-> Switching only the note at 640px would indent it 40px to a "mark column" that
-> the row above it does not adopt until 768px, which is the one arrangement
-> neither table draws. **For Design to ratify or overturn**, ideally by settling
-> one breakpoint for both surfaces rather than for this line alone.
+> **The breakpoint** is `md:` / 768px, settled 2026-09-13 for this whole table —
+> see the amendment at the top.
 
 ### Row container (unchanged from #9)
 

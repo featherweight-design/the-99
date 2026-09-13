@@ -822,6 +822,44 @@ describe("logGame", () => {
     expect(stub.state.insertCalls.filter((c) => c.table === "deck_game_axes")).toHaveLength(0);
   });
 
+  // The note. A form's `maxlength` is a courtesy; the action is the boundary,
+  // because a server action is a public endpoint and the column's check would
+  // otherwise turn a long note into a generic failure with no explanation.
+  it("stores a note as it was written, minus the edges", async () => {
+    await logGame("deck_1", {
+      result: "loss", podSize: 4, worked: [], hurt: [],
+      note: "  Kept a two-lander and never found the third.  ",
+    });
+    const [game] = stub.state.insertCalls.filter((c) => c.table === "deck_games");
+    expect(game.values).toMatchObject({ note: "Kept a two-lander and never found the third." });
+  });
+
+  // Blank is null, never an empty string, so "has a note" is one predicate
+  // everywhere rather than two that can disagree.
+  it.each(["", "   ", undefined])("stores %o as no note at all", async (note) => {
+    await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], note });
+    const [game] = stub.state.insertCalls.filter((c) => c.table === "deck_games");
+    expect(game.values).toMatchObject({ note: null });
+  });
+
+  // Refused rather than truncated: silently storing less than somebody typed
+  // is the one outcome worse than saying no.
+  it("refuses a note past the cap instead of cutting it down", async () => {
+    const result = await logGame("deck_1", {
+      result: "win", podSize: 4, worked: [], hurt: [], note: "x".repeat(141),
+    });
+    expect(result.ok).toBe(false);
+    expect(stub.state.insertCalls.filter((c) => c.table === "deck_games")).toHaveLength(0);
+  });
+
+  it("refuses a note that is not a string", async () => {
+    const result = await logGame("deck_1", {
+      result: "win", podSize: 4, worked: [], hurt: [],
+      note: { toString: () => "x" } as unknown as string,
+    });
+    expect(result.ok).toBe(false);
+  });
+
   // A crafted duplicate would otherwise collide with the (game_id, axis)
   // primary key and surface as a 500 rather than a refusal.
   it("deduplicates a repeated key within one list", async () => {
