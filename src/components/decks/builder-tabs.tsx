@@ -1,12 +1,13 @@
 "use client";
-// BuilderTabs — the decklist, Consider and Games as peers, per design table §1.
+// BuilderTabs — the decklist, Consider, Games and Versions as peers, per design
+// table §1. Every cell is a tab over a panel in this document: Versions used to
+// be a link to a route of its own, which made it the one cell that took the deck
+// off screen.
 //
 // Sits in the main column, not a rail: the whole point of the overhaul is that
 // discovery is a room you walk into rather than a drawer beside the deck. The
 // counts live in the accessible names as well as the text, because "99" beside
 // "Consider" is only a number until you know what it counts.
-
-import Link from "next/link";
 
 // Declared outside this module so a server route can read the URL parameter that
 // names a tab without importing a client module to do it.
@@ -21,29 +22,10 @@ export interface BuilderTabSpec {
   accessibleName: string;
 }
 
-/** A cell in the tab row that is a ROUTE rather than a panel — #389's version
- *  history. It reads as a peer of the three tabs and behaves as a link, which is
- *  why it renders outside the tablist: the roving tabindex and `aria-controls`
- *  are contracts about panels in this document, and a fourth `role="tab"`
- *  pointing at another page would make both of them lie. */
-export interface BuilderTabLink {
-  href: string;
-  label: string;
-  /** Omitted when there is nothing to count, exactly as a tab's is. */
-  count?: number;
-  accessibleName: string;
-  /** The cell for the page being read. Only `BuilderRouteTabs` sets it: on the
-   *  builder itself no link cell is ever the current page. */
-  current?: boolean;
-}
-
 interface BuilderTabsProps {
   tabs: readonly BuilderTabSpec[];
   view: BuilderView;
   onViewChange: (view: BuilderView) => void;
-  /** Empty or absent draws nothing — a cell offering a route to a page with
-   *  nothing on it is the defect `ClearAutoButton` documents at its own zero. */
-  links?: readonly BuilderTabLink[];
   /** The desktop toolbar rides the same row, pushed right. Mobile draws it below. */
   children?: React.ReactNode;
 }
@@ -104,70 +86,7 @@ function Tab({
   );
 }
 
-function LinkCell({ link }: { link: BuilderTabLink }) {
-  return (
-    <Link
-      href={link.href}
-      aria-label={link.accessibleName}
-      aria-current={link.current ? "page" : undefined}
-      // The same transparent idle border the tabs carry, so the cell sits on
-      // the same baseline as them rather than 2px below it.
-      className={`flex items-baseline gap-[6px] min-h-[44px] pb-[8px] md:pb-[10px] no-underline border-0 border-b-2 border-solid ${
-        link.current ? "border-b-[color:var(--accent)]" : "border-b-transparent"
-      }`}
-    >
-      <span
-        className={`text-[13.5px] md:text-[14px] ${
-          link.current
-            ? "font-semibold text-[color:var(--fg)]"
-            : "font-medium text-[color:var(--fg-faint)]"
-        }`}
-      >
-        {link.label}
-      </span>
-      {typeof link.count === "number" && (
-        <span
-          aria-hidden
-          className={`font-mono text-[11px] md:text-[12px] tabular-nums ${
-            // A zero count is never accent, on a link cell for the same reason it
-            // is never accent on the active tab.
-            link.current && link.count > 0
-              ? "text-[color:var(--accent)]"
-              : "text-[color:var(--fg-faint)]"
-          }`}
-        >
-          {link.count}
-        </span>
-      )}
-    </Link>
-  );
-}
-
-/** The same row, drawn on a route that is not the builder — every cell a link,
- *  one of them the page being read. There is no tablist and no roving tabindex,
- *  because nothing here controls a panel in this document: the cells are four
- *  links, and the browser's own tab order is the right one for links. */
-export function BuilderRouteTabs({ cells }: { cells: readonly BuilderTabLink[] }) {
-  return (
-    <div
-      // `overflow-x-clip`, not `overflow-hidden`: the row clips rather than
-      // wrapping at phone width, but the global `:focus-visible` outline sits 2px
-      // outside each cell with a 2px offset and the row has no bottom padding, so
-      // hiding both axes cut the bottom off every keyboard indicator here. `clip`
-      // on one axis leaves the other visible, which `hidden` cannot do.
-      className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px] overflow-x-clip"
-      style={{ borderBottom: "1px solid var(--border)" }}
-    >
-      <div className="flex items-baseline gap-[16px] md:gap-[22px]">
-        {cells.map((cell) => (
-          <LinkCell key={cell.href} link={cell} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function BuilderTabs({ tabs, view, onViewChange, links, children }: BuilderTabsProps) {
+export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsProps) {
   return (
     <div
       className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px]"
@@ -220,9 +139,6 @@ export function BuilderTabs({ tabs, view, onViewChange, links, children }: Build
             />
           ))}
         </div>
-        {links?.map((link) => (
-          <LinkCell key={link.href} link={link} />
-        ))}
         {/* Desktop only: the toolbar shares the tab row, pushed right. At phone
             width it draws as its own row inside the panel body instead. */}
         {children && <div className="hidden md:flex ml-auto items-center gap-[12px] pb-[8px]">{children}</div>}

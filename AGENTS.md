@@ -114,11 +114,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a
   scratch branch, **never production**.
 - `pnpm probe:versions` walks the version rail and the game-log stamp in a real browser at
-  390x844 and 1300x900, because four of their rulings are only answerable there: that
-  `/decks/[id]/versions` refuses a deck the reader does not own — the not-found page, and no rail;
-  the response itself is a 200 because the route streams behind `versions/loading.tsx`, so the
-  status is flushed before the guard throws — that a row's diff is fetched
-  when the row opens rather than shipped with the page, that nothing on either surface carries a
+  390x844 and 1300x900, because five of their rulings are only answerable there: that the rail is
+  reached by pressing the deck's `Versions` tab and draws below the deck's own head rather than in
+  place of it — geometry, so a rail nested anywhere inside the shell cannot buy a green; that the
+  retired `/decks/[id]/versions` forwards to that tab; that the deck page refuses a deck the reader
+  does not own — the not-found page, and no rail; the response itself is a 200 because the page
+  streams behind `decks/[id]/loading.tsx`, so the status is flushed before the guard throws — that
+  a row's diff is fetched when the row opens rather than shipped with the page, that nothing on
+  either surface carries a
   transition or animation (READINESS 19 forbids motion outright, and a count of 0 is the only way
   to show it), and the stamp slot's width and ink. It signs in through Clerk's dev instance —
   see the local-auth note in memory — writes its own deck, three versions and two games under the

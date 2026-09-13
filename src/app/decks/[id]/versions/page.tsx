@@ -1,39 +1,21 @@
-// /decks/[id]/versions — §Surfaces 4, the version rail. Every version this deck
-// has committed, and what each one changed.
+// /decks/[id]/versions — the rail used to live here. It is the deck's own
+// `Versions` tab now, so this route only forwards: Versions was the one tab that
+// navigated away from the deck, and a page with no art, no commander line and no
+// pending banner is what that cost.
+//
+// Kept rather than deleted because the route shipped, so links to it exist.
 import { notFound, redirect } from "next/navigation";
-import { requireUserId } from "../../../../lib/auth";
-import { getDeckReviewHeader } from "../../../../lib/decks/read";
-import { listVersions } from "../../../../lib/decks/versions";
-import { VersionHistory } from "../../../../components/decks/version-history";
+import { TAB_PARAM } from "../../../../lib/decks/builder-view";
 import { isUuid } from "../../../../lib/uuid";
 
 export default async function VersionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // The segment is whatever was typed, and `decks.id` is a uuid column: Postgres
-  // rejects a malformed uuid with an error of its own, which reaches the reader
-  // as a 500 where this route means to answer not-found. Every page under
-  // `/decks/[id]` carries this line, and `uuid-guard.test.ts` holds them to it.
+  // The deck page this forwards to carries the same guard, but a malformed
+  // segment is answered here rather than passed on: a redirect to a page that
+  // will only answer not-found is a round trip to spend on nothing.
   if (!isUuid(id)) notFound();
-  const userId = await requireUserId();
-
-  // `listVersions` takes no `userId` — it reads by deck id alone, so this guard
-  // is the only thing standing between a signed-in account and another player's
-  // version history. The review page's own header loader, which answers the two
-  // counts the tab row draws without reading a whole deck to do it.
-  const detail = await getDeckReviewHeader(id, userId);
-  if (!detail) notFound();
-
-  const versions = await listVersions(id);
-  // A brew has no history, and an empty rail reads as a bug — the same reasoning
-  // as the review page's redirect, and why the Versions tab is absent at zero.
-  if (versions.length === 0) redirect(`/decks/${id}`);
-
-  return (
-    <VersionHistory
-      deckId={id}
-      versions={versions}
-      built={detail.built}
-      gameCount={detail.gameCount}
-    />
-  );
+  // The ownership guard and the empty-rail case both belong to the deck page:
+  // it refuses a deck this reader does not own, and it draws no `Versions` tab —
+  // and lands on `Your deck` — for a deck with no versions.
+  redirect(`/decks/${id}?${TAB_PARAM}=versions`);
 }
