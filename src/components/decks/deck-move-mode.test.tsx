@@ -20,7 +20,12 @@ const folders = [
 beforeEach(() => {
   stub.result = true;
   stub.calls = [];
+  say.mockClear();
+  onCreate.mockClear();
 });
+
+const say = vi.fn();
+const onCreate = vi.fn();
 
 const mode = (currentId: string | null, onMoved = vi.fn()) =>
   render(
@@ -30,6 +35,8 @@ const mode = (currentId: string | null, onMoved = vi.fn()) =>
       folders={folders}
       currentId={currentId}
       onMoved={onMoved}
+      onCreate={onCreate}
+      say={say}
     />,
   );
 
@@ -41,14 +48,27 @@ describe("MoveMode", () => {
       "Unfiled",
       "Commander night",
       "Cube night",
+      "New folder…",
     ]);
   });
 
   it("offers Unfiled alone when no folder exists", () => {
     render(
-      <MoveMode deckId="d1" deckName="Atraxa" folders={[]} currentId={null} onMoved={vi.fn()} />,
+      <MoveMode
+        deckId="d1"
+        deckName="Atraxa"
+        folders={[]}
+        currentId={null}
+        onMoved={vi.fn()}
+        onCreate={onCreate}
+        say={say}
+      />,
     );
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    // `Unfiled` and `New folder…`, which is STATES M4 exactly.
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([
+      "Unfiled",
+      "New folder…",
+    ]);
   });
 
   it("marks the current destination and says so in its name", () => {
@@ -79,33 +99,36 @@ describe("MoveMode", () => {
     expect(stub.calls).toEqual([]);
   });
 
-  it("announces a move through its own region", async () => {
-    const { container } = mode(null);
+  it("announces a move through a region that outlives this mode", async () => {
+    // Hoisted deliberately: the panel returns to its menu on success, and a
+    // region unmounted in the same commit as its text is never read.
+    mode(null);
     fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
-    await waitFor(() =>
-      expect(container.querySelector("[aria-live='polite']")?.textContent).toBe(
-        "Filed under Commander night.",
-      ),
-    );
+    await waitFor(() => expect(say).toHaveBeenCalledWith("Filed under Commander night."));
   });
 
   it("announces an unfiling in its own words", async () => {
     // "Unfiled under Unfiled" is not a sentence, which is why there are two.
-    const { container } = mode("f1");
+    mode("f1");
     fireEvent.click(screen.getByRole("button", { name: "Unfiled" }));
-    await waitFor(() =>
-      expect(container.querySelector("[aria-live='polite']")?.textContent).toBe("Unfiled."),
-    );
+    await waitFor(() => expect(say).toHaveBeenCalledWith("Unfiled."));
   });
 
   it("reverts, announces nothing and reports nothing when the move is refused", async () => {
     // `false` means "not yours, or gone" — not a crash, and not a success.
     stub.result = false;
     const onMoved = vi.fn();
-    const { container } = mode(null, onMoved);
+    mode(null, onMoved);
     fireEvent.click(screen.getByRole("button", { name: "Cube night" }));
     await waitFor(() => expect(stub.calls).toHaveLength(1));
     expect(onMoved).not.toHaveBeenCalled();
-    expect(container.querySelector("[aria-live='polite']")?.textContent).toBe("");
+    expect(say).not.toHaveBeenCalled();
+  });
+
+  it("offers New folder… as the last destination", () => {
+    mode(null);
+    fireEvent.click(screen.getByRole("button", { name: /New folder/ }));
+    expect(onCreate).toHaveBeenCalled();
+    expect(stub.calls).toEqual([]);
   });
 });

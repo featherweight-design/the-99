@@ -30,6 +30,10 @@ interface DeckCardOverflowProps {
    * shelf is the whole confirmation — no toast, and no new pattern.
    */
   folderName: string | null;
+  /** Opens the route's create dialog — `New folder…` is the move list's last row. */
+  onCreateFolder: () => void;
+  /** The route's own live region, which outlives this panel's mode switch. */
+  say: (announcement: string) => void;
 }
 
 /**
@@ -45,6 +49,8 @@ export function DeckCardOverflow({
   folders,
   folderId,
   folderName,
+  onCreateFolder,
+  say,
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
@@ -212,6 +218,8 @@ export function DeckCardOverflow({
               deckName={deckName}
               folders={folders}
               currentId={shelf.id}
+              onCreate={onCreateFolder}
+              say={say}
               onMoved={(next) => {
                 setMovedTo(next);
                 // Back to the menu, not closed: the row now reads the new shelf,

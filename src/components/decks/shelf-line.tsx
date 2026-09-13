@@ -83,7 +83,13 @@ export function ShelfLine({
     <div
       data-shelf-line
       aria-label={folderCopy.shelves.sheetTitle}
-      className="flex flex-wrap items-center gap-[6px] bg-[color:var(--bg)] px-[22px] py-[10px]"
+      // WRAPS TO TWO ROWS AND THEN SCROLLS (STATES W5). The chassis below may
+      // never wrap, because it promises a fixed height while a reader filters;
+      // this line moves the list only when the reader changes shelf, which moves
+      // it anyway. Past two rows it scrolls rather than growing a third: the
+      // ceiling is `max-h` at two 34px rows plus their gap, and `overflow-x`
+      // carries the overflow sideways.
+      className="flex max-h-[74px] flex-wrap items-center gap-[6px] overflow-x-auto overflow-y-hidden bg-[color:var(--bg)] px-[22px] py-[10px]"
     >
       {shelfSegments(folders, counts).map((segment) => {
         const selected = segment.shelf === shelf;

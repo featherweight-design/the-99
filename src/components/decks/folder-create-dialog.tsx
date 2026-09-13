@@ -46,13 +46,22 @@ export function FolderCreateDialog({
   async function submit() {
     if (!canCreate) return;
     setPending(true);
-    const refusal = await onCreate(trimmed);
-    setPending(false);
-    // The typed value survives a refusal — R3's rule, and the same reason
-    // applies here: a reader who typed a near-miss needs to see it.
-    if (refusal === "duplicate") setError(folderCopy.create.duplicate(trimmed));
-    else if (refusal === "invalid") setError(folderCopy.create.duplicate(trimmed));
-    else onDismiss();
+    try {
+      const refusal = await onCreate(trimmed);
+      // The typed value survives a refusal — R3's rule, and the same reason
+      // applies here: a reader who typed a near-miss needs to see it. The two
+      // refusals say different things: one names the folder that already has
+      // the name, the other cannot.
+      if (refusal === "duplicate") setError(folderCopy.create.duplicate(trimmed));
+      else if (refusal) setError(folderCopy.create.refused);
+      else onDismiss();
+    } catch {
+      // A thrown action — an outage, a timeout — must not leave the field
+      // read-only with a dead button. The reader can try again.
+      setError(folderCopy.create.refused);
+    } finally {
+      setPending(false);
+    }
   }
 
   return (

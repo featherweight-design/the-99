@@ -77,6 +77,14 @@ export const folderCopy = {
      * the name is quoted because the reader may have typed a near-miss.
      */
     duplicate: (name: string) => `A folder named “${name}” already exists.`,
+    /**
+     * ENGINEERING ADDITION, for a state the handoff rules unreachable. Decision
+     * 22 names two reachable refusals and the field enforces both, so this is
+     * what a caller that is not the field gets — a rejected write with no other
+     * sentence to show. Without it the dialog either lies (a duplicate message
+     * for a name that is not one) or fails silently.
+     */
+    refused: 'That name cannot be used.',
   },
 
   // ── Rename (query to be added: `renameFolder`) ────────────────────────

@@ -85,7 +85,10 @@ export function ShelfSheet({
         aria-modal="true"
         aria-label={folderCopy.shelves.sheetTitle}
         tabIndex={-1}
-        className="relative z-10 flex flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] pb-[16px]"
+        // Bounded, and the ROWS are what scrolls: a player with a dozen shelves
+        // would otherwise push `New folder…` and `Done` off the bottom of a
+        // sheet that has no scroll of its own.
+        className="relative z-10 flex max-h-[80vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] pb-[16px]"
       >
         <div
           aria-hidden="true"
@@ -106,6 +109,7 @@ export function ShelfSheet({
           </button>
         </div>
 
+        <div className="flex min-h-0 flex-auto flex-col overflow-y-auto">
         {rows.map((row) => {
           const selected = row.shelf === shelf;
           return (
@@ -148,6 +152,17 @@ export function ShelfSheet({
             +
           </span>
           <span className="text-[14.5px]">{folderCopy.create.actionFromMove}</span>
+        </button>
+        </div>
+
+        {/* `Done` dismisses; it does not apply. Selection already happened as
+            the reader tapped, which is the same contract the filter sheet has. */}
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="mx-[16px] mt-[12px] flex h-[44px] cursor-pointer items-center justify-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent font-sans text-[13.5px] text-[color:var(--fg)]"
+        >
+          {folderCopy.shelves.sheetDismiss}
         </button>
 
         <p

@@ -12,7 +12,7 @@
 // it is not a success: the row reverts to the shelf it named, and nothing is
 // announced.
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { moveDeckAction } from "../../app/decks/folder-actions";
 import { folderCopy } from "../../lib/copy/folders";
 
@@ -27,21 +27,30 @@ export function MoveMode({
   folders,
   currentId,
   onMoved,
+  onCreate,
+  say,
 }: {
   deckId: string;
   deckName: string;
   folders: readonly { id: string; name: string }[];
   currentId: string | null;
   onMoved: (next: { id: string | null; name: string | null }) => void;
+  /** `New folder…`, the last row: the destination can be made from the act. */
+  onCreate: () => void;
+  /**
+   * The announcement goes to a region that OUTLIVES this mode — the panel
+   * switches back to its menu on a successful move, and a region unmounted in
+   * the same commit as its text is never read.
+   */
+  say: (announcement: string) => void;
 }) {
   const [pending, startTransition] = useTransition();
-  const [announcement, setAnnouncement] = useState("");
 
   function move(id: string | null, name: string | null) {
     startTransition(async () => {
       const ok = await moveDeckAction(deckId, id);
       if (!ok) return;
-      setAnnouncement(name ? folderCopy.move.announceFiled(name) : folderCopy.move.announceUnfiled);
+      say(name ? folderCopy.move.announceFiled(name) : folderCopy.move.announceUnfiled);
       onMoved({ id, name });
     });
   }
@@ -89,12 +98,21 @@ export function MoveMode({
         );
       })}
 
-      {/* The deck menu's own region. The shelf line's announcement is a
-          different surface, and this one has to speak from inside the panel the
-          reader is standing in. */}
-      <p aria-live="polite" aria-atomic="true" className="sr-only m-0">
-        {announcement}
-      </p>
+      {/* The destination can be made from the act (STATES M3/M4): with no
+          folders at all this and `Unfiled` are the whole list. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onCreate();
+        }}
+        className={ROW}
+      >
+        <span aria-hidden className="h-[12px] w-[12px] flex-none" />
+        <span>{folderCopy.create.actionFromMove}</span>
+      </button>
+
       <span className="sr-only">{deckName}</span>
     </div>
   );

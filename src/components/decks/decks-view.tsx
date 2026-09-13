@@ -9,7 +9,8 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
@@ -245,6 +246,24 @@ export function DecksView({
 
   const [shelfSheet, setShelfSheet] = useState(false);
   const [creating, setCreating] = useState(false);
+  const router = useRouter();
+  const [, startRefresh] = useTransition();
+
+  /**
+   * A folder write revalidates `/decks` on the server, and this component is a
+   * client component holding the payload it was rendered with — so without a
+   * refresh a folder created here is invisible until the reader navigates. The
+   * refresh runs in a transition so the list does not blank while it lands.
+   */
+  const refresh = useCallback(() => startRefresh(() => router.refresh()), [router]);
+
+  /**
+   * The shelf announcement lives HERE, not in the sheet, because the sheet
+   * unmounts on selection and a region removed in the same commit as its text
+   * is never read. The chassis's own result line is silent while the sheet is
+   * open and cannot cover this either.
+   */
+  const [shelfSaid, setShelfSaid] = useState("");
 
   const apply = useCallback((next: ViewState) => {
     setState(next);
@@ -357,6 +376,10 @@ export function DecksView({
   if (wasWide !== wide) {
     setWasWide(wide);
     if (wide && sheet.open) setSheet({ open: false, focusSearch: false, handOffFocus: true });
+    // The shelf sheet is the compact form's alone (STATES C3): crossing to wide
+    // unmounts its trigger, so leaving it open would remount a modal on the way
+    // back that the reader never asked for.
+    if (wide && shelfSheet) setShelfSheet(false);
     // Consumed on the way back. Left set, a later compact → wide resize would
     // autofocus the search field again without the reader ever opening the
     // sheet.
@@ -404,8 +427,10 @@ export function DecksView({
     (shelf: Shelf) => {
       apply({ filters: state.filters, sort: state.sort, shelf });
       setShelfSheet(false);
+      const chosen = segments.find((s) => s.shelf === shelf);
+      if (chosen) setShelfSaid(folderCopy.shelves.aria(chosen.label, chosen.count));
     },
-    [apply, state.filters, state.sort],
+    [apply, state.filters, state.sort, segments],
   );
 
   // `chipLabels` already knows how to remove one value; the chassis only needs
@@ -626,6 +651,10 @@ export function DecksView({
             }
           />
 
+          <p aria-live="polite" aria-atomic="true" className="sr-only m-0">
+            {shelfSaid}
+          </p>
+
           {shelfSheet && (
             <ShelfSheet
               segments={segments}
@@ -649,6 +678,10 @@ export function DecksView({
                 // create, land on the empty shelf, and the state says how to
                 // fill it.
                 onShelf(result.folder.id);
+                // The new shelf is not in `folders` until the server payload
+                // arrives; without this the reader lands on a segment that is
+                // not drawn yet.
+                refresh();
                 return null;
               }}
             />
@@ -702,6 +735,8 @@ export function DecksView({
                     shopping={shopping.byDeck.get(deck.id)}
                     now={now}
                     folders={folders}
+                    onCreateFolder={() => setCreating(true)}
+                    say={setShelfSaid}
                   />
                 </li>
               ))}

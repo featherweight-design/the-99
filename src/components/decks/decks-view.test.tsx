@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+
+const routerStub = vi.hoisted(() => ({ refresh: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
+  // The view refreshes the route after a folder write: the server revalidates
+  // `/decks`, and this client component is holding the payload it rendered with.
+  useRouter: () => routerStub,
 }));
 
 import { DecksView } from "./decks-view";
@@ -453,6 +458,38 @@ describe("DecksView", () => {
     expect(window.location.search).toBe(`?folder=${FOLDER_B}`);
     expect(screen.getByText("Other shelf")).toBeInTheDocument();
     expect(screen.queryByText("Filed one")).toBeNull();
+  });
+
+  it("closes the shelf sheet when the reader crosses to the wide form", () => {
+    // The trigger that opened it is the compact form's alone, so leaving the
+    // sheet open would remount a modal on the way back that nobody asked for.
+    const { rerender } = render(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /^Shelf: / }));
+    expect(screen.getByRole("dialog", { name: "Shelves" })).toBeInTheDocument();
+
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: true, media: query, onchange: null,
+        addEventListener: () => {}, removeEventListener: () => {},
+        addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+      }),
+    });
+    rerender(view(shelvedDecks(), twoFolders));
+    expect(screen.queryByRole("dialog", { name: "Shelves" })).toBeNull();
+  });
+
+  it("announces the shelf from a region that outlives the sheet", async () => {
+    // The sheet unmounts on selection, so its own region cannot carry this —
+    // and the chassis's is silent behind an aria-modal.
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /^Shelf: / }));
+    fireEvent.click(screen.getByRole("button", { name: "Cube night, 2 decks" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Shelves" })).toBeNull());
+    const regions = [...container.querySelectorAll("[aria-live='polite']")]
+      .map((r) => r.textContent);
+    expect(regions).toContain("Cube night, 2 decks");
   });
 
   it("ignores a hand-edited folder id", () => {

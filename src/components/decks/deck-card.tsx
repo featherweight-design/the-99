@@ -119,6 +119,9 @@ interface DeckCardProps {
    * list offers `Unfiled` and `New folder…` alone (STATES M4).
    */
   folders: readonly { id: string; name: string }[];
+  /** Passed through to the menu's move mode — see `DeckCardOverflow`. */
+  onCreateFolder: () => void;
+  say: (announcement: string) => void;
 }
 
 /**
@@ -144,7 +147,7 @@ interface DeckCardProps {
  * set of nodes; two subtrees would read the label twice to a screen reader and
  * pass a property check on both columns while being wrong.
  */
-export function DeckCard({ deck, shopping, now, folders }: DeckCardProps) {
+export function DeckCard({ deck, shopping, now, folders, onCreateFolder, say }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
   const bodySize = deckBodySize(deck.partnerName !== null);
@@ -268,6 +271,8 @@ export function DeckCard({ deck, shopping, now, folders }: DeckCardProps) {
           folders={folders}
           folderId={deck.folderId}
           folderName={deck.folderName}
+          onCreateFolder={onCreateFolder}
+          say={say}
         />
         {/* The block at the foot, carrying identity alone: the deck's name, its
             commander and its colour. The chip and the bar are both statements
