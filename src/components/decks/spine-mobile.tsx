@@ -255,11 +255,11 @@ export function SpineMobile({
                     together, so without this the name sits half a glyph left of
                     the band's centre. */}
                 <span aria-hidden="true" className="flex-none" style={{ width: 14 }} />
-                {/* No spacer opposite the pencil any more. It existed because the
-                    pencil was a 44px flex sibling that pushed the title half a
-                    control left of centre; the glyph sits inside the title's own
-                    text run now, in a zero-width container, so it steals no width
-                    and there is nothing to balance. */}
+                {/* The spacer above is what balances this. The pencil is a 14px
+                    holder in flow — not a zero-width one, which put its whole
+                    44px box past the text where the band clips it — so the row
+                    centres 14px of glyph against 14px of nothing and the title
+                    stays on the band's centre. */}
                 <h1
                   // The clamp lives on the SPAN inside, not on the heading: a
                   // clamped box needs `overflow: hidden`, and anything beside the
@@ -314,7 +314,11 @@ export function SpineMobile({
                     position, so the row underneath won the hit test across the
                     bottom third of this target. The same defect #534 fixed one
                     control over. */}
-                <span className="relative z-[1] inline-flex flex-none" style={{ width: 14 }}>
+                {/* `self-end`, because the row is `items-center` and the
+                    `items-end` on the heading only aligns the heading's own
+                    child: without this the glyph centres across a two-line name
+                    instead of sitting on its last line. */}
+                <span className="relative z-[1] inline-flex flex-none self-end" style={{ width: 14 }}>
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}

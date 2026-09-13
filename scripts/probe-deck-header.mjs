@@ -327,8 +327,9 @@ try {
       .getByRole("button", { name: /^Rename deck: / })
       .locator("visible=true");
 
-    // The pencil is a glyph inside the title's text run with its hit area made of
-    // padding, so its 44px box overhangs the 14px it occupies in flow. Painting
+    // The pencil is a button inside a 14px holder beside the heading, with its
+    // hit area made of padding and an equal negative margin, so its 44px box
+    // overhangs the 14px the holder occupies in flow. Painting
     // is not the question — whether a tap LANDS on it is, and the band clips what
     // overhangs it. Four points, because a clipped or overlapped edge is the
     // failure and the centre would pass through either.

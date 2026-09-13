@@ -151,8 +151,9 @@ describe("SpineMobile", () => {
   // protects the label block and plates protect what sits above it, and this
   // glyph is INSIDE the block on ground held at 73%. Its hit area is padding and
   // a negative margin rather than a box, so it clears the 44px floor without
-  // shifting the title's baseline — and its container is zero-width, so it takes
-  // no width from the name and moves with the title when that wraps.
+  // shifting the title's baseline — and its holder is 14px in flow, balanced by
+  // a 14px spacer opposite, because a zero-width holder put the whole 44px box
+  // past the text where the band clips it.
   it("draws the rename trigger inline, unplated, at a 44px hit area", () => {
     renderSpine(<SpineMobile {...props} />);
     const trigger = screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) });
@@ -188,14 +189,15 @@ describe("SpineMobile", () => {
     expect(holder.className).toContain("z-[1]");
   });
 
-  // The spacer existed only to balance a 44px flex sibling. With the glyph
-  // inside the text run there is nothing to balance, and a spacer would push the
-  // centred title off centre in the other direction.
-  it("draws no spacer opposite the pencil", () => {
+  // A 14px spacer, not the 44px one the old plated control needed: the row
+  // centres title and glyph together, so the balance has to match the glyph's
+  // own width. A 44px spacer would push the centred title off centre in the
+  // other direction.
+  it("balances the pencil with a spacer its own width, not the old 44px one", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
-    const spacers = Array.from(container.querySelectorAll<HTMLElement>('span[aria-hidden="true"]'))
-      .filter((el) => el.style.width === "44px");
-    expect(spacers).toHaveLength(0);
+    const spacers = Array.from(container.querySelectorAll<HTMLElement>('span[aria-hidden="true"]'));
+    expect(spacers.filter((el) => el.style.width === "44px")).toHaveLength(0);
+    expect(spacers.filter((el) => el.style.width === "14px").length).toBeGreaterThan(0);
   });
 });
 

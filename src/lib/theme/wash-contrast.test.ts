@@ -334,10 +334,11 @@ describe("art wash contrast floor", () => {
     }
 
     // The deck spine's desktop band is the one `left-portrait` surface whose ink
-    // never touches the crop: its type starts at a 254px inset and the band's
-    // horizontal scrim reaches opaque `--bg` at 240px. Asserting the inset is
-    // past the flat stop is the real invariant — a contrast figure there would
+    // never touches the crop: its type starts past the band's own flat stop,
+    // where the horizontal scrim has reached opaque `--bg`. Asserting the inset
+    // is past that stop is the real invariant — a contrast figure there would
     // only be measuring `--fg` against `--bg`.
+    //
     // The 288 band's two geometries, both of them: a 560px portrait at a 592px
     // inset above ~1200px of row, and a 340px portrait at a 364px inset below it.
     // The narrow one is why the table is keyed by width rather than by band — one

@@ -272,7 +272,11 @@ export function SpineDesktop({
                     position, so that row — which carries the partner printing
                     control — won the hit test across the bottom of this target.
                     The same defect #534 fixed one control over. */}
-                <span className="relative z-[1] inline-flex flex-none" style={{ width: 14 }}>
+                {/* `self-end`, because the row is `items-center` and the
+                    `items-end` on the heading only aligns the heading's own
+                    child: without this the glyph centres across a two-line name
+                    instead of sitting on its last line. */}
+                <span className="relative z-[1] inline-flex flex-none self-end" style={{ width: 14 }}>
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}

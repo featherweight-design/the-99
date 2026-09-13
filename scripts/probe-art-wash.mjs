@@ -387,10 +387,14 @@ const THUMB_RING_RE = /rgba\(0,\s*0,\s*0,\s*0\.4\)/;
     viewport minus the 62px rail. 1440 gives a ~1378px row and only ever exercises
     the wide geometry, so the fallback — the one surface in the round with two of
     them — went undrawn in every run. 1160 gives a ~1098px row. */
+// The third entry carries a LAYOUT, not just a name. Every responsive assertion
+// below branches on `phone`, because `vpName === "desktop"` skipped all of them
+// at 1160 — a width that is a desktop layout in every sense the app cares about,
+// so a regression specific to the narrow fallback would have passed unchecked.
 const VIEWPORTS = [
-  ["mobile", 375, 812],
-  ["narrow-desktop", 1160, 900],
-  ["desktop", 1440, 900],
+  ["mobile", 375, 812, "phone"],
+  ["narrow-desktop", 1160, 900, "desktop"],
+  ["desktop", 1440, 900, "desktop"],
 ];
 
 /** Which portrait the desktop deck header must draw at each width, and the inset
@@ -753,7 +757,7 @@ await clerkSetup();
 
 const browser = await chromium.launch();
 try {
-  for (const [vpName, width, height] of VIEWPORTS) {
+  for (const [vpName, width, height, layout] of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width, height } });
     const page = await context.newPage();
     await signIn(page);
@@ -877,10 +881,10 @@ try {
       // Desktop draws no bottom-labelled band at all — the treatment is the
       // phone's — so an empty list is the desktop answer, not a silent pass.
       note(`${vpName} ${slug}: ${bottoms.length} bottom-labelled cover bands`);
-      if (vpName === "mobile" && bottoms.length !== 1) {
+      if (layout === "phone" && bottoms.length !== 1) {
         note(`  FAIL expected exactly one bottom-labelled band on the phone`);
       }
-      if (vpName === "desktop" && bottoms.length !== 0) {
+      if (layout === "desktop" && bottoms.length !== 0) {
         note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
       }
       await checkChrome(page, `${vpName} ${slug}`, note);
@@ -922,7 +926,7 @@ try {
     const CREATE_SURFACES = [
       ["the picker's candidate rows", "/decks/new", ["44×62"]],
       ...(commanderOracleId
-        ? [["the pre-filled door", commanderOracleId, vpName === "mobile" ? ["64×89"] : []]]
+        ? [["the pre-filled door", commanderOracleId, layout === "phone" ? ["64×89"] : []]]
         : []),
     ];
     for (const [what, path, required] of CREATE_SURFACES) {
@@ -1031,10 +1035,10 @@ try {
       // it is DESKTOP's: the summary lives in a `hidden md:block` sidebar and the
       // phone's dock is text-only, so requiring it at both widths would fail
       // every mobile run for drawing exactly what it should.
-      if (vpName === "desktop" && !boxes.has("64×89")) {
+      if (layout === "desktop" && !boxes.has("64×89")) {
         note(`  FAIL the picker's selected summary draws no 64×89 thumb`);
       }
-      if (vpName === "mobile" && boxes.has("64×89")) {
+      if (layout === "phone" && boxes.has("64×89")) {
         note(`  FAIL a summary thumb drew on the phone, whose dock is text-only`);
       }
       await checkChrome(page, `${vpName} the picker, picked`, note);
