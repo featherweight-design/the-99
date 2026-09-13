@@ -20,6 +20,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -149,7 +150,11 @@ async function run() {
     const surfaces = code === null ? SURFACES : [...SURFACES, {
       label: `/collection/sets/${code} · Filters sheet`,
       path: `/collection/sets/${code}`,
-      trigger: (p) => p.locator('button[aria-haspopup="dialog"]').first(),
+      // Scoped to `<main>`: the shell's account control carries the same
+      // `aria-haspopup="dialog"` at phone width and comes first in document order, so an
+      // unscoped query opens the account sheet and measures the shell's lock instead of
+      // this page's. `scripts/lib/surface.mjs` exists for exactly this substitution.
+      trigger: (p) => onPage(p, 'button[aria-haspopup="dialog"]:visible').first(),
     }];
 
     for (const surface of surfaces) {
@@ -173,7 +178,10 @@ async function run() {
         failures += !report(surface.label, false, "its trigger was not on the page — nothing measured");
         continue;
       }
-      await page.waitForSelector('[role="dialog"]', { timeout: 8_000 }).catch(() => null);
+      await onPage(page, '[role="dialog"]')
+        .first()
+        .waitFor({ state: "visible", timeout: 8_000 })
+        .catch(() => null);
       await page.waitForTimeout(400);
 
       const held = await page.evaluate(() => ({
@@ -186,7 +194,8 @@ async function run() {
       const after = await page.evaluate(() => ({
         y: Math.round(window.scrollY),
         overflow: document.body.style.overflow,
-        dialogs: document.querySelectorAll('[role="dialog"]').length,
+        // Counted inside `<main>`, for the same reason the trigger is scoped there.
+        dialogs: document.querySelectorAll('main [role="dialog"]').length,
       }));
       failures += !report(
         surface.label,
