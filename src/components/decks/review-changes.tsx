@@ -15,7 +15,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useId, useOptimistic, useState, useTransition } from "react";
+import { useCallback, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { pullCandidate, releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
@@ -74,12 +74,6 @@ type ReviewChangesProps = {
  * word to be the alternative to, and "free" on a row drawn as nothing would be
  * the description of an element that is not there.
  */
-/** Stable, so `useOptimistic`'s base identity never changes between renders. */
-const EMPTY_RESTORED: string[] = [];
-
-/** The `Coming in` column's error map, which is always empty. */
-const EMPTY_ERRORS: Record<string, string> = {};
-
 /** The id a group heading takes focus by, scoped to its column: both columns can
  *  hold an `Artifacts` group, and two elements with one id is a focus target
  *  that lands on whichever came first. */
@@ -96,6 +90,12 @@ function bucketWord(bucket: DraftRow["bucket"]): string | null {
 /** A row whose copy count moved rather than a card arriving or leaving whole.
  *  `draftDiff` files a change only when the counts differ, so the only pair this
  *  excludes is one where a side is zero — which the column heading has said. */
+/** Stable, so `useOptimistic`'s base identity never changes between renders. */
+const EMPTY_RESTORED: string[] = [];
+
+/** The `Coming in` column's error map, which is always empty. */
+const EMPTY_ERRORS: Record<string, string> = {};
+
 function isQuantityMove(row: DraftRow): boolean {
   return row.from > 0 && row.to > 0;
 }
@@ -472,6 +472,12 @@ export function ReviewChanges({
   // has already hidden — and the restore then lands as a fresh draft on the
   // other side of the navigation. The two doors are shut for the round trip.
   const [restoring, startRestore] = useTransition();
+  // Rows already in the air. `PutBackControl` stays enabled by design — R3 rules
+  // a disabled state out — so nothing stops a second click on the SAME row
+  // before the transition re-renders, and a duplicate id would have every
+  // projection counting that card twice. A ref rather than state: it has to be
+  // true for the next click in the same tick, before any render.
+  const inFlight = useRef<Set<string>>(new Set());
   // The same hook the banner's control uses, so the question asked from either
   // door is one construct with one set of answers.
   const discard = useDiscardConfirm(state);
@@ -564,6 +570,9 @@ export function ReviewChanges({
   // is the helper a claim write owes every other deck's availability.
   const restore = useCallback(
     (card: { oracleId: string; name: string }) => {
+      // Different rows may go at once; the same row may not go twice.
+      if (inFlight.current.has(card.oracleId)) return;
+      inFlight.current.add(card.oracleId);
       setRestoreErrors((current) => {
         if (!(card.oracleId in current)) return current;
         const next = { ...current };
@@ -588,6 +597,7 @@ export function ReviewChanges({
         try {
           result = await addCardToDeck(deckId, card.oracleId);
         } catch {
+          inFlight.current.delete(card.oracleId);
           // A throw is a transport or database failure, not a refusal: nothing
           // was decided and trying again is the whole remedy. React drops the
           // optimistic id when this transition settles, so the row returns and
@@ -601,6 +611,7 @@ export function ReviewChanges({
           router.refresh();
           return;
         }
+        inFlight.current.delete(card.oracleId);
         if (!result.ok) {
           // `addCardToDeck` can still refuse on its own vocabulary — an
           // off-identity card, say, if the catalogue moved under a committed
@@ -611,15 +622,19 @@ export function ReviewChanges({
         }
         // Announced into the region that outlives this row, because the row is
         // removed by its own success. Which sentence depends on what is left.
-        // The last change of any kind: the draft is gone and the route goes with
-        // it.
-        // `basicsMoved`, not `basicsChanged`: the narrower flag is set only on a
-        // draft where nothing else moved, so on a mixed draft it reads false and
-        // this would announce a dissolution that did not happen — and skip the
-        // focus handoff on a page that is still there.
-        const dissolving = alone && outAfter === 0 && inCount === 0 && !state.basicsMoved;
+        //
+        // Two different questions, and they were one flag by mistake.
+        //
+        // The ROUTE leaves whenever no named row is left: `admitsReview` admits
+        // a basics-only draft only as `?commit=1`, so a normal visit redirects
+        // whether or not a basic moved.
+        const redirecting = alone && outAfter === 0 && inCount === 0;
+        // The DECK matches its version again only if nothing else moved, and a
+        // basic that moved is something else. "Matches v1" over a draft that
+        // still changes the mana base is a claim about the deck, not the page.
+        const matchesVersion = redirecting && !state.basicsMoved;
         draftAnnouncer().textContent =
-          dissolving
+          matchesVersion
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
             : outAfter === 0
               ? restoreCopy.announcedLastOut(card.name, cardsAfter)
@@ -633,7 +648,7 @@ export function ReviewChanges({
         // navigation is a no-op that reads like a promise kept. The
         // announcement above is the receipt for that case, and a landing hash
         // like the commit and discard receipts is a separate piece of work.
-        if (!dissolving) {
+        if (!redirecting) {
           // The row's own group first. It may have gone with the row — a group
           // of one empties when its row leaves — in which case any other
           // heading still in the column is the nearest true answer, and only

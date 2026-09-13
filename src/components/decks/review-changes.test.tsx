@@ -805,12 +805,17 @@ describe("ReviewChanges", () => {
      *  finish. A promise left unsettled keeps its transition pending for the
      *  rest of the file, and every test after it stops re-rendering. */
     function hold() {
-      let answer: (r: { ok: boolean }) => void = () => {};
+      // Every resolver, not the last one: the concurrent-restore test starts two
+      // writes, and releasing only the second would leave the first pending and
+      // its transition open for the rest of the file.
+      const answers: Array<(r: { ok: boolean }) => void> = [];
       addCardToDeck.mockImplementation(
-        () => new Promise((resolve) => { answer = resolve; }),
+        () => new Promise((resolve) => { answers.push(resolve); }),
       );
       return {
-        release: () => act(async () => { answer({ ok: true }); }),
+        release: () => act(async () => {
+          for (const answer of answers) answer({ ok: true });
+        }),
       };
     }
 
@@ -819,6 +824,9 @@ describe("ReviewChanges", () => {
     beforeEach(() => {
       addCardToDeck.mockReset();
       addCardToDeck.mockResolvedValue({ ok: true });
+      // Or an assertion that the catch re-reads the route passes on the refresh
+      // a previous test's success already made.
+      refresh.mockClear();
     });
 
     function mount(rows: { in: Row[]; out: Row[] }) {
@@ -972,6 +980,9 @@ describe("ReviewChanges", () => {
         screen.queryByRole("button", { name: deckVersioningCopy.review.groupOut(1) }),
       ).toBeNull();
       expect(screen.getByText("Sol Ring")).toBeInTheDocument();
+      // And the restored card is in NEITHER list: appending it to `Coming in`
+      // would satisfy the assertion above while breaking the contract.
+      expect(screen.queryByText("Mox Diamond")).toBeNull();
       await held.release();
     });
 
@@ -1009,10 +1020,19 @@ describe("ReviewChanges", () => {
       });
       expect(commit).toBeEnabled();
 
+      const discard = screen.getByRole("button", {
+        name: deckVersioningCopy.pending.discardCta,
+      });
+      expect(discard).toBeEnabled();
+
       await act(async () => {
         fireEvent.click(putBack());
       });
       expect(commit).toBeDisabled();
+      // Both doors, not one: the discard guard could otherwise be deleted with
+      // this test still green, and the race it exists for is the destructive
+      // half.
+      expect(discard).toBeDisabled();
 
       await held.release();
       expect(
@@ -1066,6 +1086,62 @@ describe("ReviewChanges", () => {
       await held.release();
       const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
       expect(spoken).not.toContain("matches v");
+    });
+
+    // The shape strip describes the DRAFT, so a restored card belongs in it.
+    // With an empty shape the projection could be deleted and every other test
+    // here would stay green.
+    it("puts the restored card back into the shape the strip draws", async () => {
+      const held = hold();
+      const shape = {
+        before: [{ role: "ramp" as const, quantity: 1, typeLine: "Artifact", cmc: 1 }],
+        after: [] as typeof SHAPE.after,
+      };
+      render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] }}
+          {...shape} state={STATE} cardCount={CARD_COUNT}
+        />,
+      );
+      // The draft holds none of that type before the restore, and one after.
+      const ramp = () => document.body.textContent?.match(/Ramp\s*(\d+)→(\d+)/)?.[2];
+      expect(ramp()).toBe("0");
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      expect(ramp()).toBe("1");
+      await held.release();
+    });
+
+    // The column goes with its last row, so the heading cannot receive focus —
+    // and the page heading carries no tabindex of its own. Without a case that
+    // empties the column, that whole branch could be deleted.
+    it("puts focus on the page heading when the column itself goes", async () => {
+      mount({ in: [row()], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      expect(document.activeElement?.tagName).toBe("H1");
+    });
+
+    // The controls stay enabled by design, so nothing stops a second click on
+    // the SAME row before the transition re-renders — and a duplicate id would
+    // have every projection counting that card twice.
+    it("files one restore per row, however many times it is pressed", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      const control = putBack();
+      await act(async () => {
+        fireEvent.click(control);
+        fireEvent.click(control);
+      });
+      // One write, and the deck grew by one card rather than two.
+      expect(addCardToDeck).toHaveBeenCalledTimes(1);
+      expect(document.body.textContent).toContain(`${CARD_COUNT + 1} cards`);
+      await held.release();
     });
 
     // The whole row is a button that opens the card. Without `stopPropagation`
