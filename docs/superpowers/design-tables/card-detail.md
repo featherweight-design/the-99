@@ -42,7 +42,7 @@ was verified in the tree and is what the build implements.
 | 1.11 | Not interactive | Not a link, no hover state, no target, not focusable | canvas §7 |
 | 1.12 | Accessible form | Read as part of the card's description, one string from copy; a bare figure is never spoken alone | canvas §7 a11y |
 | 1.13 | Absent in the DOM | The absent state is absent to assistive tech too — no `aria-hidden` placeholder, no empty node | canvas §7 a11y |
-| 1.14 | Height cost | Absent → priced on a pick adds 30px desktop / 29px phone at the column's end. Nothing above moves; the modal does not resize; **do not animate it**. The desktop art derives its width from the room the stack leaves (E19), so a pick can narrow the art on a short window — which is the one thing that moves, and it moves rather than the stack being clipped | STATES §1, E19 |
+| 1.14 | Height cost | Absent → priced on a pick adds **27px desktop** (a 6px gap and the tag's 21px box) / **35px phone** (an 8px gap and the plated row's 27px) at the column's end. Nothing above moves; the modal does not resize; **do not animate it**. The desktop art derives its width from the room the stack leaves (E19), so a pick can narrow the art on a short window — which is the one thing that moves, and it moves rather than the stack being clipped | STATES §1, E19 |
 | 1.15 | Ownership is independent | The twelve cells of STATES §1 all ship: priced/foil-only/sold-out/absent × owned-1 / owned-2+ / unowned | STATES §1 |
 | 1.16 | Never joins | The pinned bottom row, the meta grid, the printing region | README §1, Amendment 4 |
 

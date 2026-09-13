@@ -821,21 +821,12 @@ export function CardModal({
           transform: flipped ? "rotateY(180deg)" : undefined,
         }}
       >
-        {/* Each face carries the seam, as the zoom's do: they paint over the
-            parent's inset ring, so without it the card loses its edge on exactly
-            the cards that have two of them. */}
-        <div
-          className={`absolute inset-0 ${radius}`}
-          style={{ ...frontStyle, backfaceVisibility: "hidden", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }}
-        />
-        <div
-          className={`absolute inset-0 ${radius}`}
-          style={{
-            ...backStyle,
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)",
-          }}
+        <CardFaces
+          front={frontStyle}
+          back={backStyle}
+          radius={radius}
+          seam="inset 0 0 0 1px rgba(0,0,0,0.3)"
+          testIdPrefix="modal-art"
         />
       </div>
     ) : null;
@@ -1411,37 +1402,16 @@ export function CardModal({
                   and the reader watches one object move rather than one picture being
                   replaced by another. */}
               {twoFaced && (
-                <>
-                  <div
-                    aria-hidden
-                    data-testid="card-zoom-face-front"
-                    className="absolute inset-0 rounded-[13px] md:rounded-[14px]"
-                    style={{
-                      ...frontStyle,
-                      backfaceVisibility: "hidden",
-                      // Each face carries the seam: they paint over the parent's inset
-                      // ring, so without it the zoomed card loses its edge on exactly
-                      // the cards that have two of them.
-                      boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-                    }}
-                  />
-                  <div
-                    aria-hidden
-                    data-testid="card-zoom-face-back"
-                    className="absolute inset-0 rounded-[13px] md:rounded-[14px]"
-                    style={{
-                      ...backStyle,
-                      backfaceVisibility: "hidden",
-                      transform: "rotateY(180deg)",
-                      boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-                    }}
-                  />
-                  {/* The press must not reach the layer, which dismisses on click:
-                      the card, the scrim and the ✕ are the three doors out, and a
-                      control that turns the card is not one of them. Without this,
-                      turning the card put it away. */}
-
-                </>
+                <CardFaces
+                  front={frontStyle}
+                  back={backStyle}
+                  radius="rounded-[13px] md:rounded-[14px]"
+                  // A shade darker than the art column's, because the shadow it
+                  // paints over is darker: `0 24px 60px rgba(0,0,0,.6)` against the
+                  // column's `.55`/`.5`.
+                  seam="inset 0 0 0 1px rgba(0,0,0,0.35)"
+                  testIdPrefix="card-zoom"
+                />
               )}
             </div>
             {/* OUTSIDE the box that turns. Inside it, the control rode the rotation:
@@ -1500,6 +1470,57 @@ export function CardModal({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * TWO FACES ON ONE PIECE OF CARD STOCK — both drawn, each hiding its own back —
+ * for whichever box above is doing the turning.
+ *
+ * One component rather than two copies. The modal's art and the zoom turn the
+ * same object by the same rule, and the rule is four properties that have to
+ * agree: both faces absolutely filling the box, `backface-visibility: hidden` on
+ * each, the back pre-rotated 180°, and each face carrying the seam itself —
+ * they paint over the parent's inset ring, so without it the card loses its edge
+ * on exactly the cards that have two of them.
+ *
+ * Only the radius and the seam's darkness differ per surface, because the shadow
+ * each face paints over differs, so both are props. Everything else is the
+ * construction, and a second copy of it is where the two would drift.
+ */
+function CardFaces({
+  front,
+  back,
+  radius,
+  seam,
+  testIdPrefix,
+}: {
+  front: React.CSSProperties;
+  back: React.CSSProperties;
+  radius: string;
+  seam: string;
+  testIdPrefix: string;
+}) {
+  return (
+    <>
+      <div
+        aria-hidden
+        data-testid={`${testIdPrefix}-face-front`}
+        className={`absolute inset-0 ${radius}`}
+        style={{ ...front, backfaceVisibility: "hidden", boxShadow: seam }}
+      />
+      <div
+        aria-hidden
+        data-testid={`${testIdPrefix}-face-back`}
+        className={`absolute inset-0 ${radius}`}
+        style={{
+          ...back,
+          backfaceVisibility: "hidden",
+          transform: "rotateY(180deg)",
+          boxShadow: seam,
+        }}
+      />
+    </>
   );
 }
 

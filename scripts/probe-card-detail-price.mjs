@@ -431,7 +431,8 @@ try {
   //
   // The dialog is `min(620px, 85vh)` and `overflow-hidden`, and the column
   // centres the art — so the room under the art is half the slack, and at 600px
-  // it was 42px against a two-faced stack wanting 87. The turn control and the
+  // it was 42px against a two-faced stack wanting 90 — 10 + 15 + 6 + 32 + 6 + 21.
+  // The turn control and the
   // tag were cut off and unreachable, which is invisible at 900px. E19.
   const shortCtx = await browser.newContext({ viewport: { width: 1300, height: 600 } });
   const shortPage = await shortCtx.newPage();
