@@ -533,12 +533,23 @@ async function checkBands(page, label, note) {
   // half the band instead.
   const stated = await page.evaluate(`(${READ_STATED_BANDS})()`);
   note(`  stated bands: ${stated.length}${stated.length ? ` at ${[...new Set(stated.map((b) => b.declared))].join(", ")}` : ""}`);
-  // Zero is a FAIL, not a quiet pass. Every route this runs on draws at least one
-  // wash, so an empty census means the markers vanished while the art stayed —
-  // and with nothing in `stated`, the unstated count is 0 too and every loop
-  // below is skipped, so the run would exit green having checked no band at all.
+  // Zero stated bands is a FAIL only where a wash is actually drawn. With
+  // nothing in `stated` the unstated count is 0 too and every loop below is
+  // skipped, so a page whose markers vanished while its art stayed would exit
+  // green having checked no band at all — but a page legitimately drawing no
+  // wash is not that page. The commander detail hero is `sm:hidden`, so the
+  // desktop layout of that route has no band by design, and an unconditional
+  // failure here would have failed a correct run at every desktop viewport.
+  const washLayers = await page.evaluate(
+    `[...document.querySelectorAll('.art-wash-art, .art-wash-scrim')]
+      .filter((el) => el.getClientRects().length).length`,
+  );
   if (!stated.length) {
-    note(`  FAIL ${label}: no stated band laid out — every band check below is vacuous`);
+    note(
+      washLayers
+        ? `  FAIL ${label}: ${washLayers} wash layer(s) drawn and no stated band — every band check below is vacuous`
+        : `  ${label}: no wash on this page at this width`,
+    );
   }
   // An empty census is not a pass, and zero is exactly what a reverted migration
   // or a vanished render produces. The check is the count of wash layers NOT
@@ -1218,7 +1229,12 @@ try {
       ["home's cover bands", "/"],
       ["deck tiles", "/decks"],
       ["the owned lane", "/discover"],
-      ...(commanderDetailHref ? [["the detail hero", commanderDetailHref]] : []),
+      // Phone only: the detail hero's band is `sm:hidden` and the desktop
+      // layout draws a card face instead, so including it at desktop width
+      // reported a route with no wash as a surface that lost one.
+      ...(commanderDetailHref && layout === "phone"
+        ? [["the detail hero", commanderDetailHref]]
+        : []),
       ...(walkedDeckHref ? [["the deck header", walkedDeckHref]] : []),
     ]) {
       await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
