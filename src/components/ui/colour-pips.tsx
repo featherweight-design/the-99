@@ -18,9 +18,14 @@ import { chassisCopy, PIP_ORDER, type PipCode } from "../../lib/copy/filter-chas
  * Scryfall's own symbols, committed under `public/mana/`. They are finished
  * multi-colour illustrations — a filled `<circle>` ground with the symbol pathed
  * over it, and the hybrids carry two differently-coloured halves — so they are
- * drawn as images and never masked, tinted or given an opacity (decision 7).
- * Masking would flatten a hybrid to one colour, which is the thing the decision
- * exists to prevent; an opacity is what the shipped controls did wrong.
+ * drawn as images and never masked or tinted (decision 7). Masking would
+ * flatten a hybrid to one colour, which is the thing the decision exists to
+ * prevent; dimming an available pip is what the shipped controls did wrong.
+ *
+ * The single exception is the UNAVAILABLE state, which takes the design
+ * system's own `.42` disabled dimming — reasoned about at the `aria-disabled`
+ * line below. Decision 7 rules on how an available filter is drawn; a filter
+ * with nothing to match is not one.
  */
 const PIP_SRC: Record<PipCode, string> = {
   W: "/mana/W.svg", U: "/mana/U.svg", B: "/mana/B.svg", R: "/mana/R.svg", G: "/mana/G.svg",
@@ -106,21 +111,21 @@ export function ColourPips({ value, onToggle, form, unavailable }: ColourPipsPro
                   )
             }
             onClick={() => { if (!dead) onToggle(code); }}
-            // The ring is the entire lit treatment. No opacity on either state:
-            // an unlit pip is the symbol at full strength, which is what makes it
-            // legible on every ground in every theme.
+            // The ring is the entire lit treatment. No opacity separates lit
+            // from unlit: an unlit pip is the symbol at full strength, which is
+            // what makes it legible on every ground in every theme. The one
+            // opacity here says UNAVAILABLE, which is a different question.
             className={[
               // `shrink-0` is load-bearing, not tidiness: these are flex items
               // in the chassis's control row, which is deliberately allowed to
               // compress. Without it a narrow row would shrink the inline width
               // below the 44px the phone form promises as a touch target.
-              // No opacity on a dead pip either (decision 7): the measured
-              // reason unlit pips draw at full strength holds whatever the
-              // reason for not drawing them lit. The name carries the state,
-              // and a visual affordance for it is a Design question.
               // No transition on the ring. READINESS 19 forbids motion on this
               // surface outright, and the selected state changes instantly.
               "shrink-0 rounded-full border-0 p-0",
+              // `.42` is the system's disabled dimming, reasoned about on the
+              // `aria-disabled` line above — the one opacity on this control,
+              // and not the one decision 7 rules out.
               dead ? "cursor-default opacity-[0.42]" : "cursor-pointer",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
             ].join(" ")}
