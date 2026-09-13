@@ -1189,10 +1189,16 @@ describe("SetGridView — the sheet's rarity group honours the radio pattern", (
     expect(screen.getByRole("radio", { name: "Common" })).toHaveAttribute("tabindex", "0");
   });
 
+  // All four rarities present, so nothing is disabled and the walk is plain.
+  const allFour = () => [
+    p("1", { rarity: "common" }), p("2", { rarity: "uncommon" }),
+    p("3", { rarity: "rare" }), p("4", { rarity: "mythic" }),
+  ];
+
   it("moves focus and the selection on arrow keys", () => {
     stubDesktop(false);
     search = "r=common";
-    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    view(allFour(), []);
     openSheet();
     fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowRight" });
     expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=uncommon");
@@ -1202,10 +1208,32 @@ describe("SetGridView — the sheet's rarity group honours the radio pattern", (
   it("wraps at the ends", () => {
     stubDesktop(false);
     search = "r=common";
-    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    view(allFour(), []);
     openSheet();
     fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowLeft" });
     expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=mythic");
+  });
+
+  // The desktop panel refuses a zero-count rarity; the sheet has to refuse it too, or the
+  // same filters offer different choices at the two widths and the sheet can land the
+  // reader on an empty grid the other width would not have let them reach.
+  it("disables a rarity the set has none of", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Uncommon" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "Common" })).not.toBeDisabled();
+  });
+
+  it("arrows past the disabled ones rather than selecting them", () => {
+    stubDesktop(false);
+    search = "r=common";
+    view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
+    openSheet();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowRight" });
+    // Uncommon is empty, so the walk lands on Rare.
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=rare");
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Rare" }));
   });
 
   // Round 28: clearing the checked value moves the group's only tab stop to the first

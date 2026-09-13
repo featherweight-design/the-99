@@ -280,7 +280,14 @@ export function SetGridView(props: SetGridViewProps) {
   // keyboard contract and then does not honour it.
   const rarityRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const stepRarity = (from: number, dir: 1 | -1) => {
-    const next = (from + dir + RARITIES.length) % RARITIES.length;
+    // Walks the ENABLED values only. Arrowing onto a zero-count rarity would select a
+    // value the desktop panel refuses and land the reader on an empty grid.
+    if (rarityEnabled.length === 0) return;
+    let next = from;
+    for (let i = 0; i < RARITIES.length; i++) {
+      next = (next + dir + RARITIES.length) % RARITIES.length;
+      if (!rarityOptions[next].disabled) break;
+    }
     rarityRefs.current[next]?.focus();
     setFilters({ ...filters, rarities: [RARITIES[next]] });
   };
@@ -387,6 +394,25 @@ export function SetGridView(props: SetGridViewProps) {
     }
     return counts;
   })();
+
+  /**
+   * ONE options list, read by both mounts. The desktop panel derives a count and a
+   * disabled state from `rarityCounts`; the phone sheet used to offer every value
+   * regardless — so the same colour filter exposed different rarity choices at the two
+   * widths, and the sheet could send a reader to a zero-result state for a value the
+   * desktop panel declares unavailable. Two mounts re-deriving one rule is the same shape
+   * as the chip markup this PR stopped copying.
+   */
+  const rarityOptions = RARITIES.map((r) => {
+    const count = rarityCounts.get(r) ?? 0;
+    return {
+      code: r,
+      count,
+      // A lit value is never disabled, or it could not be turned off.
+      disabled: count === 0 && !filters.rarities.includes(r),
+    };
+  });
+  const rarityEnabled = rarityOptions.filter((o) => !o.disabled).map((o) => o.code);
 
   return (
     <div>
@@ -587,8 +613,8 @@ export function SetGridView(props: SetGridViewProps) {
               // reason. ADDENDUM-STATES §4 states it too.
               desktopRowMinPx={44}
               footerStatus
-              options={RARITIES.map((r) => ({
-                code: r,
+              options={rarityOptions.map((o) => ({
+                code: o.code,
                 // LOWERCASE, because `FilterPanel` composes the trigger's accessible name
                 // from this label while `triggerOne` only styles the visible text — so
                 // lowercasing in the copy alone announced `Uncommon` under a button reading
@@ -596,9 +622,9 @@ export function SetGridView(props: SetGridViewProps) {
                 // page just fixed on Clear. The sheet's chip group keeps Title Case from
                 // `rarity.options`, per §28's amendment 3: a chip is a control, and the
                 // trigger's value is a caption in the register of `042 · uncommon`.
-                label: setFilterCopy.rarity.options[r].toLowerCase(),
-                count: rarityCounts.get(r) ?? 0,
-                disabled: (rarityCounts.get(r) ?? 0) === 0 && !filters.rarities.includes(r),
+                label: setFilterCopy.rarity.options[o.code].toLowerCase(),
+                count: o.count,
+                disabled: o.disabled,
               }))}
               selected={filters.rarities}
               onToggle={(code) =>
@@ -706,7 +732,7 @@ export function SetGridView(props: SetGridViewProps) {
               aria-label={setFilterCopy.rarity.label}
               className="mb-[16px] flex flex-wrap gap-[8px]"
             >
-              {RARITIES.map((r, i) => {
+              {rarityOptions.map(({ code: r, disabled }, i) => {
                 const on = filters.rarities.includes(r);
                 return (
                   <button
@@ -715,11 +741,18 @@ export function SetGridView(props: SetGridViewProps) {
                     type="button"
                     role="radio"
                     aria-checked={on}
+                    // The same zero-count rule the desktop panel applies. Without it the
+                    // sheet offered values that panel refuses, and picking one landed the
+                    // reader on an empty grid the other width would not have let them reach.
+                    aria-disabled={disabled || undefined}
+                    disabled={disabled}
                     aria-label={setFilterCopy.rarity.options[r]}
                     // Roving: the checked value is the group's single tab stop, and with
                     // none checked the first is — `all` is a state this group can be in,
                     // and a group with no tab stop cannot be reached by keyboard at all.
-                    tabIndex={on || (filters.rarities.length === 0 && i === 0) ? 0 : -1}
+                    tabIndex={
+                      on || (filters.rarities.length === 0 && r === rarityEnabled[0]) ? 0 : -1
+                    }
                     onClick={() => {
                       const next = pickRarity(filters.rarities, r);
                       setFilters({ ...filters, rarities: next });
@@ -741,9 +774,11 @@ export function SetGridView(props: SetGridViewProps) {
                     }}
                     className={[
                       "min-h-[44px] rounded-[8px] px-[14px] text-[13px] border",
-                      on
-                        ? "text-[color:var(--accent)] border-[color:var(--accent)]"
-                        : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
+                      disabled
+                        ? "opacity-[0.42] text-[color:var(--fg-locked)] border-[color:var(--border)]"
+                        : on
+                          ? "text-[color:var(--accent)] border-[color:var(--accent)]"
+                          : "text-[color:var(--fg-muted)] border-[color:var(--border)]",
                     ].join(" ")}
                   >
                     {setFilterCopy.rarity.options[r]}
