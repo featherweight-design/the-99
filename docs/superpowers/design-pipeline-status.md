@@ -468,12 +468,22 @@ table of shipped figures is the record:
   75px collapsed head, and 288px reserved in the document through both**, with the grid's
   track count identical at scroll 0 and 2000.
 
-**Two follow-ups, both pre-existing on `main` and neither owned by this feature:**
+**One follow-up, not owned by this feature:** `set-grid-view.tsx` is a 1500-line component
+whose head has no boundary between the parts the collapse keeps and the parts it drops.
+That is the honest reason finding 6 took twelve review rounds.
 
-- The filter sheet's panel **overflows the fold** at 390 — `main` puts it at 658-1154
-  against an 844px viewport. The fix is a portal on `FilterSheet`, which touches every route
-  that mounts it. `pnpm probe:sets` reports the figure so the work starts from a measured
-  before.
-- **`set-grid-view.tsx` is a 1500-line component** whose head has no boundary between the
-  parts the collapse keeps and the parts it drops. That is the honest reason finding 6 took
-  twelve review rounds.
+**A second follow-up was recorded here and is WITHDRAWN** — "the filter sheet's panel
+overflows the fold at 390, `main` puts it at 658-1154 against an 844px viewport". No part of
+that is true, and the instrument failed twice in two different ways:
+
+- The measurement targeted `button[aria-haspopup="dialog"]`, which matches the **app shell's
+  account-menu trigger** before any page's own sheet. It was never looking at the filter
+  sheet.
+- The account menu is `anim-sheet-up`, so a measurement taken before it settles reads as
+  hanging below the fold. Both of the figures above are that animation caught mid-slide.
+
+Measured properly — the set page's `Filters` button by name, after the sheet settles — the
+filter sheet is **595-844 against an 844px fold, zero overflow, all eleven controls
+visible**. The account menu, given 400ms, is 349-844 with every item reachable. Hugh called
+both of these wrong from looking at the running app, twice, before the instrument was
+re-checked.

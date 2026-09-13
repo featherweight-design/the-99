@@ -180,6 +180,28 @@ The **bar** is exactly the 52px §31 draws. The rest height is above 148 for the
 above, and the reserve holds through both states — measured at scroll 0, 400 and 2000, and
 on the single frame the collapse lands.
 
+## A withdrawn finding, and how the instrument failed
+
+Review raised, and this document briefly carried, a claim that the phone filter sheet is
+trapped in the sticky head's stacking context and that its panel overflows the fold. **It is
+withdrawn. The sheet is fine**, and the two measurements behind the claim failed in two
+different ways that are worth recording because neither shows up in a code read:
+
+- **Wrong element.** The probe selected `button[aria-haspopup="dialog"]`, which matches the
+  app shell's **account-menu** trigger before the set page's `Filters`. Every figure
+  attributed to "the sheet" was the account menu.
+- **Wrong moment.** That menu is `anim-sheet-up`. Sampled before it settles it reads as
+  hanging hundreds of pixels below the fold; given 400ms it sits at 349-844 with every
+  control reachable.
+
+Targeted by name and sampled after it settles, the filter sheet is **595-844 against an
+844px fold — zero overflow, all eleven controls visible.**
+
+The lesson is not "sample later". It is that a check must be confirmed to be looking at the
+thing it names before any number it produces is worth writing down: three separate findings
+in this run were recorded from a probe that was pointed at the wrong element, and a reader
+of the running app spotted all three.
+
 ## The route's own geometry, and the 62px nobody counted
 
 The addendum derives its columns from a 1100px canvas box. The route's content box is its
