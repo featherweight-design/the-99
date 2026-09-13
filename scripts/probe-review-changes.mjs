@@ -28,6 +28,12 @@
 //      back to the trigger on a cancel, and the answers swap order under 768px.
 //      None of that is reachable where nothing has a box. The discard itself runs
 //      once, last: it overwrites the only copy of the draft with the version.
+//   7. THE AVAILABILITY MARKER'S TYPE IS INHERITED. At row density the marker
+//      sets no size and no family of its own — it rides the meta line it sits on
+//      — and a diff row has no meta line, so the label painted in the page's
+//      16px sans, above the card name beside it. What it inherits is a fact
+//      about laid-out type, so only a browser can read it. The run fails when
+//      the label is not mono or is larger than the name in its own row.
 //
 // THE FIXTURE IS THIS SCRIPT'S OWN. The probe account is not the account that owns
 // local-dev's decks, and a deck page the signed-in player does not own is a 404 —
@@ -35,8 +41,12 @@
 // working feature look dead. The script copies a 99-row template into TWO decks
 // owned by the account it signs in as, commits both as v1, finds a card the account
 // already owns exactly one copy of, sleeves it into the second deck and adds it to
-// the first. Both decks go in a `finally`; no collection row is written, because a
-// copy inserted on top of one already owned leaves a spare and buckets the add free.
+// the first. A THIRD deck, a brew with no version, holds a second singly-owned card
+// that is also added to the first: a brew claims softly, so that add keeps its free
+// bucket, draws no buy tag, and is the only row on this page that reaches the
+// availability marker. All three decks go in a `finally`; no collection row is
+// written, because a copy inserted on top of one already owned leaves a spare and
+// buckets the add free.
 //
 // Point it at `local-dev` or a scratch Neon branch — NEVER production. It writes.
 //
@@ -75,6 +85,15 @@ const crushedHeadings = [];
  *  strip's six figures are the deck against its recommendations, and a phone
  *  drawing three of them measures the deck against a shorter list than desktop. */
 const hiddenCells = [];
+
+/** Availability markers on a diff row whose type is not the row's. The marker
+ *  sets no font size and no family of its own — row density rides the meta line
+ *  it sits on — and a diff row has no meta line, so an untyped marker inherits
+ *  the page's sans base and paints half again the `buy` tag that alternates with
+ *  it in the same slot. Only a browser can answer it: jsdom applies no media
+ *  query and resolves no Tailwind, so a component test can assert the class list
+ *  and never the laid-out pair. */
+const mistypedMarkers = [];
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
@@ -294,6 +313,30 @@ const readReview = (page) =>
           : null;
         return { cells, missing, expected: labels.length, moves };
       })(),
+      // The availability marker on a diff row. It sets no size and no family of
+      // its own by design — row density rides the meta line it sits on — and
+      // these rows have no meta line, so whatever it inherits is what the reader
+      // gets. Read the computed pair, and the name beside it in the same row:
+      // the label belongs a step BELOW the card name, and what shipped was the
+      // page's sans base, above it.
+      markers: [...(columns?.querySelectorAll("span.inline-flex") ?? [])]
+        // `span.inline-flex` alone is not the marker: the group headings' counts
+        // and the `Pull it` button match it too. The label is the only thing that
+        // identifies one.
+        .filter((s) => /^(none free|short \d+|\d+ in a brew)/.test(text(s)))
+        .map((s) => {
+          const style = getComputedStyle(s);
+          // The row is the marker's own parent: `DiffRowName` and the
+          // availability slot are siblings inside `ROW_SHELL`, and the name is
+          // the row's first button.
+          const name = s.parentElement?.querySelector("button");
+          return {
+            label: text(s),
+            family: style.fontFamily,
+            size: Number.parseFloat(style.fontSize),
+            nameSize: name ? Number.parseFloat(getComputedStyle(name).fontSize) : null,
+          };
+        }),
       discardTriggers: buttons
         .filter((b) => b.innerText.trim() === "Discard")
         .map((b) => ({
@@ -443,6 +486,74 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
   return { oracleId, name, ...supply.rows[0] };
 }
 
+/**
+ * A card the player owns one copy of, held by a BREWING deck, so that adding it
+ * to the deck under review draws the availability marker rather than a buy tag.
+ *
+ * This is the only fixture shape that reaches the marker on this page. An `in`
+ * row passes `selfClaimed={false}` and buys by default, so any add that is
+ * unowned, hard-claimed or short short-circuits to a buy tag. An `out` row
+ * passes `selfClaimed`, which turns `free === 0` into silence, so a cut can
+ * only speak when it is over or softly claimed. What is left is an add whose
+ * lone copy is claimed *softly*: a brew — a deck with no committed version —
+ * claims soft rather than hard, so `free` stays at 1, the add buckets free, no
+ * buy tag is drawn, and `soft > 0` renders `1 in a brew`. That string is the
+ * one Hugh photographed.
+ *
+ * Returns null rather than throwing when the collection holds no suitable card:
+ * the report then says the marker checks measured nothing, which is the honest
+ * reading and not a pass.
+ */
+async function brewClaim(userId, excludeOracleIds, reviewDeckId, holderDeckId, commanderOracleId) {
+  const { rows } = await pool.query(
+    // Same exclusion set as `claimOneCopy` — not a basic, not already in either
+    // fixture deck, not sleeved in any of this user's versions (a committed
+    // claim is hard and would buy instead), not anybody's commander (a hard
+    // claim the deck_cards exclusions cannot see), and not the card that
+    // fixture already took.
+    `select ci.oracle_id, c.name
+       from collection_items ci
+       join cards c on c.oracle_id = ci.oracle_id
+      where ci.user_id = $1
+        and c.type_line not like 'Basic Land%'
+        and ci.oracle_id <> all ($4::uuid[])
+        and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $2)
+        and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $3)
+        and not exists (
+          select 1 from deck_version_cards vc
+            join deck_versions v on v.id = vc.version_id
+            join decks d on d.id = v.deck_id
+           where d.user_id = $1 and vc.oracle_id = ci.oracle_id
+        )
+        and not exists (
+          select 1 from decks d
+           where d.user_id = $1
+             and ci.oracle_id in (d.commander_oracle_id, d.partner_oracle_id)
+        )
+      group by ci.oracle_id, c.name
+     having sum(ci.quantity) = 1
+      limit 1`,
+    [userId, reviewDeckId, holderDeckId, excludeOracleIds],
+  );
+  if (rows.length === 0) return null;
+  const { oracle_id: oracleId, name } = rows[0];
+  // No `deck_versions` row, deliberately: that absence is what makes the claim
+  // soft. Committing this deck would turn the marker into a buy tag.
+  // decks.commander_oracle_id is NOT NULL, so the brew borrows the fixture's
+  // commander. That adds a claim on the commander card and none on this one.
+  const deck = await pool.query(
+    `insert into decks (user_id, name, commander_oracle_id, filled)
+       values ($1, 'Probe · brew', $2, false) returning id`,
+    [userId, commanderOracleId],
+  );
+  const deckId = deck.rows[0].id;
+  await pool.query(
+    `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)`,
+    [deckId, oracleId],
+  );
+  return { oracleId, name, deckId };
+}
+
 /** n changes on the deck under review: adds, cuts, or the committed list back. */
 async function stage(deckId, versionId, addOracleIds, cuts) {
   await pool.query(`delete from deck_cards where deck_id = $1`, [deckId]);
@@ -528,6 +639,7 @@ const browser = await chromium.launch();
 let underReview = null;
 let holder = null;
 let claimed = null;
+let brewed = null;
 let userId = null;
 try {
   const context = await browser.newContext({ viewport: VIEWPORTS[0] });
@@ -543,11 +655,25 @@ try {
   underReview = await buildDeck(userId, "Probe · under review", template);
   holder = await buildDeck(userId, "Probe · holder", template);
   claimed = await claimOneCopy(userId, holder.deckId, holder.versionId, underReview.deckId);
+  brewed = await brewClaim(
+    userId,
+    [claimed.oracleId],
+    underReview.deckId,
+    holder.deckId,
+    template.commander_oracle_id,
+  );
   console.log(`signed in as ${userId}`);
   console.log(`deck under review ${underReview.deckId} · holder ${holder.deckId}`);
   console.log(
     `claimed card: ${claimed.name} (${claimed.oracleId}) · owned ${claimed.owned} · ` +
       `sleeved in ${claimed.sleeved_in} deck(s)`,
+  );
+  console.log(
+    `softly claimed add: ${
+      brewed
+        ? `${brewed.name} (owned 1, in the brew ${brewed.deckId})`
+        : "NONE — the marker checks measure nothing this run"
+    }`,
   );
   await context.close();
 
@@ -588,14 +714,21 @@ try {
       console.log(`  h1: ${basics.h1} (expect the mana base, not a change count)`);
     }
 
-    // 2. Both columns, the claimed add among them.
-    await stage(underReview.deckId, underReview.versionId, [claimed.oracleId], 3);
+    // 2. Both columns, the hard-claimed add and the softly claimed one among
+    // them: the first draws `Pull it`, the second draws the availability marker,
+    // and the two states cannot be carried by one row.
+    await stage(
+      underReview.deckId,
+      underReview.versionId,
+      [claimed.oracleId, ...(brewed ? [brewed.oracleId] : [])],
+      3,
+    );
     await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
       waitUntil: "networkidle",
     });
     await vpPage.waitForTimeout(900);
     let seen = await readReview(vpPage);
-    console.log(`\n########## ${label} · 1 add / 3 cuts`);
+    console.log(`\n########## ${label} · ${brewed ? 2 : 1} add(s) / 3 cuts`);
     console.log(`  h1: ${seen.h1}`);
     console.log(`  lede: ${seen.ledeVisible ? seen.lede : "hidden"}`);
     console.log(`  chips: ${seen.chips[0] ?? "absent"}`);
@@ -694,6 +827,28 @@ try {
         `    ${move.group}: ${move.pair} ${move.delta} · pair ${move.pairColor} · ` +
           `after ${move.afterColor} · bar ${move.barVisible ? "drawn" : "hidden"}`,
       );
+    }
+
+    // 2b-ii. The availability marker's own type. A marker larger than the card
+    // name beside it is the defect Hugh reported; a marker in the page's sans is
+    // the same defect read a second way, because every other host of this marker
+    // supplies mono.
+    console.log(`  markers: ${seen.markers.length} on this page`);
+    for (const marker of seen.markers) {
+      console.log(
+        `    "${marker.label}" ${marker.size}px in ${marker.family.split(",")[0]}` +
+          ` · name ${marker.nameSize ?? "not found"}px`,
+      );
+      if (!/mono/i.test(marker.family)) {
+        mistypedMarkers.push(`${label} · "${marker.label}" is not mono (${marker.family})`);
+      }
+      if (marker.nameSize === null) {
+        mistypedMarkers.push(`${label} · "${marker.label}" has no name beside it to measure`);
+      } else if (marker.size > marker.nameSize) {
+        mistypedMarkers.push(
+          `${label} · "${marker.label}" is ${marker.size}px, above the ${marker.nameSize}px name`,
+        );
+      }
     }
 
     // 2c. Discard, raised from the apply bar. The question replaces the bar's own
@@ -801,6 +956,12 @@ try {
   // version for good, so every reading above would change under it. What is being
   // proved is the write and the refresh together — the row the reader is standing
   // on stops asking for a purchase, and the page repaints without a navigation.
+  //
+  // Back to the one add first. The marker fixture's second add is a row in the
+  // same column, and with it in place the click lands on a card name instead of
+  // the control — a fixture artefact, not a defect, and the pull is about the
+  // write rather than about how a five-change list stacks.
+  await stage(underReview.deckId, underReview.versionId, [claimed.oracleId], 3);
   const pullContext = await browser.newContext({ viewport: VIEWPORTS[1] });
   const pullPage = await pullContext.newPage();
   await signIn(pullPage);
@@ -902,10 +1063,10 @@ try {
   );
   await discardContext.close();
 } finally {
-  // The two decks, and nothing else: versions and cards go with them by cascade,
-  // and the run writes no collection row to take back — the claimed card was one
-  // the account already owned.
-  for (const deck of [underReview, holder]) {
+  // The three decks, and nothing else: versions and cards go with them by
+  // cascade, and the run writes no collection row to take back — both fixture
+  // cards were ones the account already owned.
+  for (const deck of [underReview, holder, brewed]) {
     if (deck) await pool.query(`delete from decks where id = $1`, [deck.deckId]);
   }
   await pool.end();
@@ -921,5 +1082,11 @@ if (crushedHeadings.length > 0) {
 if (hiddenCells.length > 0) {
   console.log(`\n########## FAIL · the mix strip is not the six cells it owes`);
   for (const line of hiddenCells) console.log(`  ${line}`);
+  process.exitCode = 1;
+}
+
+if (mistypedMarkers.length > 0) {
+  console.log(`\n########## FAIL · an availability marker carries the wrong type`);
+  for (const line of mistypedMarkers) console.log(`  ${line}`);
   process.exitCode = 1;
 }
