@@ -10,6 +10,7 @@ import {
   cards, deckCards, deckGames, deckUnresolvedRows, deckVersionCards, deckVersions, decks,
 } from "../../db/schema";
 import { type CardQty, draftDiff } from "./draft-diff";
+import { touchDeck } from "./touch";
 import { averageManaValue } from "./mana-value";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -256,6 +257,12 @@ export async function restoreDraftFromVersion(
         })),
       );
     }
+    // A discard rewrites `deck_cards` wholesale, so the draft's contents have
+    // changed even though the deck now matches a version rather than diverging
+    // from one. `commitVersionIn` above deliberately does NOT stamp: a commit
+    // has its own column, and folding it into this one would leave every deck
+    // reading `edited` forever.
+    await touchDeck(tx, deckId);
     return "restored";
   });
 }

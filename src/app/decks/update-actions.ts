@@ -11,6 +11,7 @@ import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
+import { touchDeck } from "../../lib/decks/touch";
 import { newestVersion } from "../../lib/decks/versions";
 import {
   deckImportMaxBytes,
@@ -402,6 +403,12 @@ export async function updateDeckFromList(
     // already applied the list — the caller would draw the refusal state and a
     // retry would apply it twice.
     const versioned = (await newestVersion(input.deckId, tx)) !== null;
+
+    // The list IS the deck now — rows deleted, inserted, requantified and
+    // unclaimed from the app. Unconditional: this path is reached only for a
+    // list that parsed, and a list that reconciled to no change at all still
+    // replaced the unresolved rows above.
+    await touchDeck(tx, input.deckId);
 
     return { plan, removing, kept, versioned };
   });

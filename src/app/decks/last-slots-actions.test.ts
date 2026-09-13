@@ -305,6 +305,14 @@ function uuid(n: number): string {
   return `00000000-0000-4000-8000-${tail}`;
 }
 
+/** The writes to the deck's CARDS, which is what these tests are about. */
+const cardUpdates = () => stub.state.updateCalls.filter((c) => c.table === "deck_cards");
+
+/** Whether the act stamped `decks.last_edited_at` — Home's resume block's input.
+    Separated from `cardUpdates` because the two answer different questions and
+    a test that counted them together would pass a stamp for a card write. */
+const stamped = () => stub.state.updateCalls.some((c) => c.table === "decks");
+
 beforeEach(() => {
   stub.reset();
   ranked.value = [];
@@ -514,11 +522,13 @@ describe("undoFillPass", () => {
     const { undoFillPass } = await import("./actions");
     expect((await undoFillPass("deck-1", passId)).removed).toBe(2);
     expect(stub.state.deleteCalls).toHaveLength(0);
-    expect(stub.state.updateCalls).toEqual([{ table: "deck_cards", set: expect.anything() }]);
+    expect(cardUpdates()).toEqual([{ table: "deck_cards", set: expect.anything() }]);
+    // And the deck is stamped, because copies really did come out of it.
+    expect(stamped()).toBe(true);
     // The copies left behind are the player's, so the same write clears the
     // marker — otherwise the pass would go on claiming them and a second undo
     // would take cards it never placed.
-    expect(stub.state.updateCalls[0].set).toMatchObject({ auto: false });
+    expect(cardUpdates()[0].set).toMatchObject({ auto: false });
   });
 
   // Following the decrement above: the row is the player's now, so the pass has
@@ -529,8 +539,10 @@ describe("undoFillPass", () => {
     stub.state.deckCards = [{ oracleId: uuid(1), quantity: 3, auto: false }];
     const { undoFillPass } = await import("./actions");
     expect((await undoFillPass("deck-1", passId)).removed).toBe(0);
-    expect(stub.state.updateCalls).toHaveLength(0);
+    expect(cardUpdates()).toHaveLength(0);
     expect(stub.state.deleteCalls).toHaveLength(0);
+    // An undo that removed nothing wrote nothing, so the deck was not edited.
+    expect(stamped()).toBe(false);
   });
 
   // `keepAutoCard` clears the flag without taking the deck lock, so a keep can
@@ -557,8 +569,9 @@ describe("undoFillPass", () => {
     stub.state.concurrentShrink = 2;
     const { undoFillPass } = await import("./actions");
     expect((await undoFillPass("deck-1", passId)).removed).toBe(2);
-    expect(stub.state.updateCalls).toHaveLength(1);
+    expect(cardUpdates()).toHaveLength(1);
     expect(stub.state.deleteCalls).toEqual([{ table: "deck_cards" }]);
+    expect(stamped()).toBe(true);
   });
 
   // The mirrored race: a row the read said held exactly what the pass placed has
@@ -571,7 +584,8 @@ describe("undoFillPass", () => {
     stub.state.concurrentGrowth = true;
     const { undoFillPass } = await import("./actions");
     expect((await undoFillPass("deck-1", passId)).removed).toBe(0);
-    expect(stub.state.updateCalls).toHaveLength(0);
+    expect(cardUpdates()).toHaveLength(0);
+    expect(stamped()).toBe(false);
   });
 
   it("refuses a pass belonging to another deck", async () => {

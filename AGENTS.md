@@ -113,6 +113,19 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   it replaced matched nothing and then deleted the freshly restored row. Same fixture discipline as
   `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed at `local-dev` or a
   scratch branch, **never production**.
+- `pnpm probe:touched` proves the deck touch stamp against a real Postgres — the column
+  Home's resume block orders on. Two things live there that no unit test here can reach.
+  The FIGURE: `lastCommittedSql` is a correlated subquery, and one written the obvious way
+  returns null for every row with no error, so the `committed` verb would simply never print;
+  `src/lib/decks/last-committed.test.ts` renders the SQL and this proves the answer against a
+  fixture whose true value is known. The RULE: a commit must NOT move `last_edited_at` or that
+  verb becomes unreachable, while a discard back to a version MUST move it — both are facts
+  about what a transaction wrote. It also pins the migration's backfill, since a deck whose
+  `last_edited_at` was stated must read back that instant rather than the default `now()`.
+  The fixture's game is logged with the database's clock rather than a stated date, because
+  commits are stamped by that same clock and the order is the one thing that needs them
+  comparable. Same discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`,
+  pointed at `local-dev` or a scratch branch, **never production**.
 - `pnpm probe:versions` walks the version rail and the game-log stamp in a real browser at
   390x844 and 1300x900, because five of their rulings are only answerable there: that the rail is
   reached by pressing the deck's `Versions` tab and draws below the deck's own head rather than in

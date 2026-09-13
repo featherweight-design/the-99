@@ -31,6 +31,7 @@ import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { deckBodySize } from "../../lib/decks/deck-size";
+import { touchDeck } from "../../lib/decks/touch";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import {
@@ -619,6 +620,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
     } else {
       await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
     }
+    await touchDeck(tx, deckId);
     return null;
   });
   if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
@@ -650,6 +652,10 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
     const where = and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
     if (row.quantity > 1) await tx.update(deckCards).set({ quantity: row.quantity - 1 }).where(where);
     else await tx.delete(deckCards).where(where);
+    // Inside the `if (!row)` guard's shadow deliberately: a removal that found
+    // nothing wrote nothing, and a stamp for a write that did not happen is the
+    // one lie this column can tell.
+    await touchDeck(tx, deckId);
   });
   revalidateClaims(deckId, userId);
 }
@@ -706,6 +712,10 @@ export async function fillDeck(deckId: string): Promise<void> {
         deckId, kind: "seed", openSlots: deckBodySize(hasPartner),
         rows: plan.rows.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
       });
+      // Only where the plan landed rows. A fill that found nothing to add still
+      // sets `filled` below — that column answers "was this ever filled" — but
+      // it left the list exactly as it was, and the stamp describes the list.
+      await touchDeck(tx, deckId);
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });
@@ -753,7 +763,12 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   const trimmed = validateDeckName(name);
-  await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
+  // The one site that stamps `last_edited_at` without `touchDeck`: it is already
+  // an UPDATE of this row, so folding the column in is atomic by construction
+  // and a transaction wrapped around two statements would buy nothing. The rule
+  // for what counts as an edit still lives in `touch.ts`.
+  await db.update(decks).set({ name: trimmed, lastEditedAt: sql`now()` })
+    .where(eq(decks.id, deckId));
   // A rename moves no card, so no claim changes — and it still reaches every
   // surface a claim does, because those surfaces print the deck's NAME. A card's
   // availability marker says `none free — in <deck>` on /collection, /commanders
@@ -781,9 +796,17 @@ export type SweptRow = { oracleId: string; quantity: number };
 export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
-  const removed = await db.delete(deckCards)
-    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
-    .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
+  // The transaction is the stamp's, not the sweep's: the delete still takes no
+  // lock of its own and still relies on Postgres re-evaluating its WHERE after
+  // a concurrent keep, exactly as above. It buys one thing — the sweep and the
+  // stamp that describes it commit together.
+  const removed = await db.transaction(async (tx) => {
+    const rows = await tx.delete(deckCards)
+      .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
+      .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
+    if (rows.length > 0) await touchDeck(tx, deckId);
+    return rows;
+  });
   revalidateClaims(deckId, userId);
   return removed;
 }
@@ -857,6 +880,9 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing();
+    // `count`, not `byId.size`: a restore whose every row was re-added by hand
+    // put nothing back, and the conflict clause is what decided that.
+    if (count > 0) await touchDeck(tx, deckId);
     return count;
   });
   // AFTER the commit, never inside it. An invalidation from inside the callback
@@ -938,6 +964,9 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       deckId, kind: "top_off", openSlots: bodySize - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
+    // Same test the pass itself uses: a top-off every one of whose cards was
+    // already there placed nothing.
+    if (landed.length > 0) await touchDeck(tx, deckId);
     return { passId, landed, total: built + landed.length, userId };
   });
 
@@ -1161,6 +1190,11 @@ export async function undoFillPass(
       .select({ copies: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
       .from(deckCards)
       .where(eq(deckCards.deckId, deckId));
+
+    // An undo that found every row already claimed or already gone removed no
+    // card, and `removedCards` is the figure the toast reports for exactly that
+    // reason — the stamp uses the same one rather than a second test.
+    if (removedCards > 0) await touchDeck(tx, deckId);
 
     return { removed: removedCards, built: built?.copies ?? 0 };
   });
@@ -1800,6 +1834,11 @@ export async function pullCardFromDeck(
       await tx.delete(deckCards)
         .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
     }
+    // The source deck's list really did change, so the column stays truthful —
+    // even though the commit on the next line moves `committed_at` to the same
+    // instant and `touchedBy` resolves that tie to `committed`. The verb the row
+    // prints is a presentation rule; this column is a fact.
+    await touchDeck(tx, sourceDeckId);
     await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
     return { ok: true };
   });

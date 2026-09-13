@@ -8,6 +8,7 @@ import {
   deckFolders,
   deckGames,
   deckUnresolvedRows,
+  deckVersions,
   decks,
 } from "../../db/schema";
 import {
@@ -446,6 +447,14 @@ export type DeckListItem = {
    */
   lastPlayedAt: Date | null;
   /**
+   * When this deck's contents last changed — see `src/lib/decks/touch.ts` for
+   * what counts. Never null: the column is NOT NULL and defaults to the deck's
+   * own creation, so a deck nobody has edited reads as edited when it was made.
+   */
+  lastEditedAt: Date;
+  /** When this deck was last committed, or null for a brew that never has been. */
+  lastCommittedAt: Date | null;
+  /**
    * How many of this deck's owned cards a *different* finished deck has
    * sleeved. Zero when the availability read fails, which is the same thing the
    * tile draws when nothing is spoken for — a clause is not worth a 500.
@@ -469,10 +478,32 @@ function toDate(value: Date | string | null): Date | null {
   if (value === null) return null;
   const parsed = value instanceof Date ? value : new Date(toUtcInstant(value));
   if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`deck_games.played_at is not a readable timestamp: ${String(value)}`);
+    throw new Error(`a deck timestamp is not readable: ${String(value)}`);
   }
   return parsed;
 }
+
+/**
+ * A deck's newest commit, as a correlated subquery.
+ *
+ * Module-level and exported so `read.test.ts` can render it: the trap it is
+ * written around is invisible in a component test and silent at runtime.
+ *
+ * Aliased, with both sides written out, for the reason AGENTS.md gives — in the
+ * PROJECTION of a select whose `from` names one table, Drizzle emits column
+ * references bare, so the obvious `where ${deckVersions.deckId} = ${decks.id}`
+ * renders as `where "deck_id" = "id"`: each version row's own foreign key
+ * against its own primary key, matching nothing, for ever, with no error. The
+ * stamp would simply never say `committed` and nothing would fail.
+ *
+ * Typed as `Date | string` because that is what drivers return for a `timestamp`
+ * reached through raw SQL; `toDate` resolves it at the row map.
+ */
+export const lastCommittedSql = sql<Date | string | null>`(
+  select max(dv.committed_at)
+  from ${deckVersions} dv
+  where dv.deck_id = ${decks}.id
+)`;
 
 /**
  * `sort` is required rather than defaulted: a default here would silently
@@ -563,6 +594,8 @@ export async function listDecksWithStats(
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
       lastPlayedAt: lastPlayedSql,
+      lastEditedAt: decks.lastEditedAt,
+      lastCommittedAt: lastCommittedSql,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
@@ -588,6 +621,7 @@ export async function listDecksWithStats(
       decks.id,
       decks.name,
       decks.createdAt,
+      decks.lastEditedAt,
       cards.name,
       cards.colorIdentity,
       cards.imageUri,
@@ -680,6 +714,10 @@ export async function listDecksWithStats(
       // would then date to a different day in Denver than in CI, and `2 days
       // ago` is exactly the kind of figure that shifts.
       lastPlayedAt: toDate(row.lastPlayedAt),
+      // A mapped column, so the driver already hands back a Date — unlike the
+      // two raw-SQL timestamps either side of it.
+      lastEditedAt: row.lastEditedAt,
+      lastCommittedAt: toDate(row.lastCommittedAt),
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
     };

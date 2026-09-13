@@ -13,6 +13,7 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
+import { touchDeck } from "../../lib/decks/touch";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,
@@ -342,6 +343,10 @@ export async function resolveUnresolvedRow(
         await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
       }
     }
+    // The line is answered either way — a resolve naming one of the commanders
+    // adds no `deck_cards` row but still clears the row from the banner, and the
+    // deck the player is left looking at is not the one they had.
+    await touchDeck(tx, deckId);
   });
 
   revalidateClaims(deckId, userId);
