@@ -38,7 +38,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 export const deckVersioningCopy = {
   /* ---- §Surfaces 1 · pending state on the deck page ---- */
   pending: {
-    label: "Pending changes — not yet a version",
+    label: "Pending changes: not yet a version",
     counts: (adds: number, removes: number) =>
       [adds > 0 ? `+${adds}` : null, removes > 0 ? `−${removes}` : null]
         .filter(Boolean)
@@ -120,14 +120,14 @@ export const deckVersioningCopy = {
 
     // A versionless deck at a full body. Design's call, not the spec's — see READINESS.
     firstCommitCta: "Commit as v1",
-    firstCommitNote: "locks this list as v1 — nothing about the deck changes",
+    firstCommitNote: "locks this list as v1: nothing about the deck changes",
   },
 
   /* ---- §Surfaces 2 · review changes ---- */
   review: {
     heading: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
     lede: (version: number) =>
-      "Nothing here is a decision except the pulls. The deck page already shows this list — " +
+      "Nothing here is a decision except the pulls. The deck page already shows this list: " +
       `this is what it costs to lock in as v${version}.`,
 
     // A versionless deck reaches this page to cut v1, and neither line above can
@@ -234,9 +234,9 @@ export const deckVersioningCopy = {
       return `${head} ${rest.charAt(0).toUpperCase()}${rest.slice(1)}.`;
     },
 
-    noteLabel: "Why this version exists — optional",
+    noteLabel: "Why this version exists: optional",
     // Offered at commit time precisely because it is unrecoverable afterwards (§Surfaces 3).
-    noteWarning: "you cannot add this later — the version is not editable once committed",
+    noteWarning: "you cannot add this later: the version is not editable once committed",
 
     // The sheet carries the TOTAL, not the rows: the review page is directly above it
     // and already lists them. A confirmation that re-lists what you just read is a
@@ -257,7 +257,7 @@ export const deckVersioningCopy = {
     // beneath it at 24px rather than inside the label (§Surfaces 3, desktop).
     pullHeadingPlain: "Back in the pool",
     pullNote:
-      "No action required — committing is what releases them. Take them out of the box " +
+      "No action required: committing is what releases them. Take them out of the box " +
       "whenever you next open it.",
 
     cta: (version: number) => `Commit v${version}`,
@@ -312,7 +312,7 @@ export const deckVersioningCopy = {
     // a surface that is only there because something moved.
     question: (n: number) => (n === 0 ? "Discard this draft?" : `Discard ${plural(n, "change")}?`),
     consequence: (version: number, date: string, cards: number, adds: number, removes: number) => {
-      const back = `The deck goes back to v${version} as committed on ${date} — ` +
+      const back = `The deck goes back to v${version} as committed on ${date}: ` +
         `${plural(cards, "card")}. `;
       // A draft can be adds-only, cuts-only, or basics-only, and "the 0 you cut" is
       // a figure nobody moved. Only the halves that exist are named, and the verb
@@ -391,7 +391,7 @@ export const deckVersioningCopy = {
     // A read that was refused or failed. Never `noChange`: saying no cards moved
     // when the answer never arrived is a claim about the version, and the app does
     // not know it. Closing the row and opening it again is the retry.
-    diffUnavailable: "we couldn't read what this version changed — open the row again to retry",
+    diffUnavailable: "we couldn't read what this version changed. Open the row again to retry",
 
     initialHeading: "Initial",
     initialBody: "the first list, with nothing before it to compare against.",

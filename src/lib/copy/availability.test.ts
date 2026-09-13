@@ -10,9 +10,9 @@ describe("availabilityCopy", () => {
   });
 
   it("names the claiming deck only in the singular form", () => {
-    expect(availabilityCopy.marker.hardIn("Atraxa")).toBe("none free — in Atraxa");
+    expect(availabilityCopy.marker.hardIn("Atraxa")).toBe("none free, in Atraxa");
     expect(availabilityCopy.marker.hardMulti(3)).toBe(
-      "none free — across 3 decks",
+      "none free, across 3 decks",
     );
   });
 
@@ -22,7 +22,7 @@ describe("availabilityCopy", () => {
   it("never names a deck in the over state", () => {
     expect(availabilityCopy.marker.over(2)).not.toMatch(/in |across /);
     expect(availabilityCopy.marker.overWithDemand(2, 3)).toBe(
-      "short 2 — also in 3 decks",
+      "short 2, also in 3 decks",
     );
     expect(availabilityCopy.marker.overWithDemand(2, 3)).not.toMatch(
       /in (?!\d)/,
@@ -35,7 +35,7 @@ describe("availabilityCopy", () => {
     expect(availabilityCopy.marker.tileOver(1)).toBe("also in 1 deck");
     expect(availabilityCopy.marker.tileOver(2)).toBe("also in 2 decks");
     expect(availabilityCopy.marker.overAlsoIn(1, "Atraxa")).toBe(
-      "short 1 — also in Atraxa",
+      "short 1, also in Atraxa",
     );
   });
 
@@ -96,7 +96,7 @@ describe("availabilityCopy", () => {
   it("reads correctly when exactly one deck is the whole demand", () => {
     expect(availabilityCopy.marker.tileOver(1)).toBe("also in 1 deck");
     expect(availabilityCopy.marker.overWithDemand(5, 1)).toBe(
-      "short 5 — also in 1 deck",
+      "short 5, also in 1 deck",
     );
     expect(availabilityCopy.marker.overAria(5, 1)).toBe(
       "1 of your finished lists includes this card and you own 5 too few",

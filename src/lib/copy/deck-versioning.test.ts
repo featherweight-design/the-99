@@ -11,7 +11,7 @@ describe("deckVersioningCopy", () => {
   // contained, so a regression to the long form would stay green.
   it("states the shortened strings in full", () => {
     expect(copy.review.lede(2)).toBe(
-      "Nothing here is a decision except the pulls. The deck page already shows this list — " +
+      "Nothing here is a decision except the pulls. The deck page already shows this list: " +
         "this is what it costs to lock in as v2.",
     );
     expect(copy.review.outNote(3)).toBe("all 3 go back in the pool when you commit.");

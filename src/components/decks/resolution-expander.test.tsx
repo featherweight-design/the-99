@@ -432,7 +432,7 @@ describe("the resolution row's availability marker", () => {
     await mount(result({ name: "Rhystic Study", availability: claimed(["Atraxa"]) }));
 
     // Both widths are drawn, so the marker is in the DOM twice.
-    expect(screen.getAllByText(/none free — in/)).toHaveLength(2);
+    expect(screen.getAllByText(/none free, in/)).toHaveLength(2);
   });
 
   it("stays silent on a duplicate line for a card this deck already runs", async () => {

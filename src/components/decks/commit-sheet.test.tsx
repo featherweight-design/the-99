@@ -333,3 +333,23 @@ describe("CommitSheet", () => {
     expect(screen.getByRole("status").textContent).toBe("");
   });
 });
+
+// `pullNote` is split on its own punctuation to draw the opening clause in the
+// reading ink. That makes the separator a contract between the copy module and
+// this component: repunctuate the string and the split collapses to one run,
+// losing the emphasis with no type error and nothing that looks broken. The
+// 2026-09-13 em-dash sweep did exactly that and the whole suite stayed green.
+describe("the pull note's emphasis survives a repunctuation", () => {
+  // RENDERED, not split in the test. Asserting the split here with the same
+  // delimiter the component uses proves only that the string contains a colon:
+  // it passes whatever separator the component chose, which is the regression
+  // it is supposed to catch. So the sheet is rendered in a state that draws the
+  // note, and the two facts that matter are read off the DOM — the lead is the
+  // bold run, and the paragraph reads as the whole authored sentence.
+  it("draws the lead clause bold and the whole note intact", () => {
+    sheet({ state: { ...STATE_36, removes: [{ oracleId: "c0", from: 3, to: 1 }] } });
+    const lead = screen.getByText("No action required");
+    expect(lead.tagName).toBe("B");
+    expect(lead.closest("p")?.textContent).toBe(copy.pullNote);
+  });
+});

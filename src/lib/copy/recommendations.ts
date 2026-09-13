@@ -166,7 +166,7 @@ export const recommendationsCopy = {
     // Undo's refusal. The sweep already succeeded, so the deck is *not*
     // unchanged — saying so would send the player looking for cards that are
     // genuinely gone. The receipt stays up, so the line points back at it.
-    restoreFailed: 'We couldn’t put those back. They are still out of the deck — try Undo again.',
+    restoreFailed: 'We couldn’t put those back. They are still out of the deck. Try Undo again.',
     // `useDeckMutation` needs a message for a rejected keep. An empty one leaves
     // the refusal silent and the card still counted as the fill's.
     keepFailed: 'We couldn’t keep that one. It is still marked auto.',
@@ -263,7 +263,7 @@ export const recommendationsCopy = {
     // "can’t cover" rather than "does not have": the collection does have these
     // cards. What it cannot do is cover two lists with one copy.
     introSplit: (n: string, missing: string, spokenFor: string) =>
-      `${n} cards this deck wants that your collection can’t cover — ${missing} you don’t own, and ${
+      `${n} cards this deck wants that your collection can’t cover: ${missing} you don’t own, and ${
         spokenFor === '1' ? '1 you own but can’t spare' : `${spokenFor} you own but can’t spare`
       }.`,
     // Nothing unowned, something contested. A sentence of its own rather than
@@ -271,8 +271,8 @@ export const recommendationsCopy = {
     // nothing.
     introOnlySpokenFor: (n: string) =>
       n === '1'
-        ? 'One card here is already yours — and already sleeved into a finished list. A second copy is the only way to have both.'
-        : `${n} cards here are already yours — and already sleeved into finished lists. A second copy of each is the only way to have both.`,
+        ? 'One card here is already yours, and already sleeved into a finished list. A second copy is the only way to have both.'
+        : `${n} cards here are already yours, and already sleeved into finished lists. A second copy of each is the only way to have both.`,
 
     // The leading figure stops being "cards to buy" the moment the list holds
     // two kinds of purchase, so it becomes the plain size of the list.
@@ -305,7 +305,7 @@ export const recommendationsCopy = {
   sweptEmpty: {
     heading: 'Back to just the commander',
     body: (name: string) =>
-      `${name} and 99 empty slots. Everything we suggested is in Consider if you want any of it back — or start typing and build it your way.`,
+      `${name} and 99 empty slots. Everything we suggested is in Consider if you want any of it back, or start typing and build it your way.`,
     cta: 'See what we suggested',
   },
 } as const;

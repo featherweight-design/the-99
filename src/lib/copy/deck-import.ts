@@ -59,10 +59,10 @@ export const deckImportCopy = {
     submitPasteCount: (n: number) =>
       n === 0 ? "Import deck →" : n === 1 ? "Import 1 card" : `Import ${n} cards`,
 
-    footnoteMobile: "We'll leave the sideboard behind — Commander doesn't have one.",
+    footnoteMobile: "We'll leave the sideboard behind: Commander doesn't have one.",
     aboutWhatComesHeading: "What comes over",
     aboutWhatComes:
-      "The commander and the 99. Sideboard and maybeboard stay behind — Commander doesn't have either.",
+      "The commander and the 99. Sideboard and maybeboard stay behind: Commander doesn't have either.",
     aboutFailureHeading: "If a line won't match",
     aboutFailure:
       "The deck still gets made. We'll flag the line inside it and you can sort it out there.",
@@ -110,7 +110,7 @@ export const deckImportCopy = {
     noneMatched: {
       heading: "We couldn't find any of these cards",
       bodyMobile: (lines: number) =>
-        `All ${lines} lines read fine — none of them matched a card we know.`,
+        `All ${lines} lines read fine: none of them matched a card we know.`,
       body: (lines: number) =>
         `All ${lines} lines read fine, and not one of them matched a card we know. Check you copied the decklist itself and not the page around it.`,
       action: "Clear and start over",
@@ -119,9 +119,9 @@ export const deckImportCopy = {
     // A success that produced nothing, so the copy does not apologise.
     empty: {
       heading: "That deck is empty",
-      bodyMobile: "It read fine — there just aren't any cards in it yet.",
+      bodyMobile: "It read fine: there just aren't any cards in it yet.",
       body:
-        "It read fine — there just aren’t any cards in it yet. Add some where you built it and bring it back.",
+        "It read fine: there just aren’t any cards in it yet. Add some where you built it and bring it back.",
       action: "Try a different deck",
       retry: false,
     },
@@ -148,8 +148,8 @@ export const deckImportCopy = {
           : "Something went wrong on our end. Your list is still here.",
       body: (detail: string | null) =>
         detail
-          ? `${detail}. Your list is still here — trim it and try again.`
-          : "Something went wrong on our end and the deck wasn't made. Your list is still here — try it again.",
+          ? `${detail}. Your list is still here. Trim it and try again.`
+          : "Something went wrong on our end and the deck wasn't made. Your list is still here. Try it again.",
       // Not "Try again": the button dismisses the banner and hands the list back
       // for editing, and on the size cap an immediate retry cannot succeed. The
       // CTA names what it does. Ratification owed.
@@ -165,12 +165,12 @@ export const deckImportCopy = {
     heading: "Which one's the commander?",
     subMobile: "The list doesn't say, so you tell us.",
     sub:
-      "This list doesn't say. Pick the one you're building around — it sets the colours and anchors everything we suggest.",
+      "This list doesn't say. Pick the one you're building around: it sets the colours and anchors everything we suggest.",
     // A list with exactly one unmarked legendary still opens the picker — only a
     // list with none is the dead end — so the singular is reachable, not
     // theoretical.
     introMobile: (n: number) =>
-      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you're building around — it sets the colours and anchors everything we suggest.`,
+      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you're building around: it sets the colours and anchors everything we suggest.`,
     count: (n: number) =>
       n === 1
         ? "1 legendary creature in this import"
@@ -181,10 +181,10 @@ export const deckImportCopy = {
       `${identity} · line ${line} · not in your collection`,
     selectedLabel: "Selected",
     nameLabel: "Deck name",
-    nameLabelFromSource: "Deck name — from your list",
+    nameLabelFromSource: "Deck name: from your list",
     submit: "Make the deck →",
     footnote:
-      "Only legendary creatures from this import are listed. If the one you want isn't here, it didn't come over — make the deck and add it from the builder.",
+      "Only legendary creatures from this import are listed. If the one you want isn't here, it didn't come over. Make the deck and add it from the builder.",
 
     // The dead end. No deck is created.
     noneHeading: "There's no commander in here",
@@ -334,8 +334,8 @@ export const deckImportCopy = {
       n === 1 ? "1 card we couldn't name" : `${n} cards we couldn't name`,
     footnote: (n: number) =>
       n === 1
-        ? "That line is still in the deck's total of 99 — it's a card the deck wants. It just isn't a card we can name yet, so it doesn't count as built or owned, and it stays out of the shopping list."
-        : `All ${n} lines are still in the deck's total of 99 — they're cards the deck wants. They just aren't cards we can name yet, so they don't count as built or owned, and they stay out of the shopping list.`,
+        ? "That line is still in the deck's total of 99. It's a card the deck wants. It just isn't a card we can name yet, so it doesn't count as built or owned, and it stays out of the shopping list."
+        : `All ${n} lines are still in the deck's total of 99. They're cards the deck wants. They just aren't cards we can name yet, so they don't count as built or owned, and they stay out of the shopping list.`,
   },
 
   // ---- Resolution ----------------------------------------------------------
@@ -350,9 +350,9 @@ export const deckImportCopy = {
     // The count and the caption are separate strings now: the count sits beside
     // the scoped owned toggle, the caption sits under both.
     resultsCount: (n: number) => `${n} result${n === 1 ? "" : "s"}`,
-    filterCaptionMobile: "every card, owned or not — you're naming a line, not shopping",
+    filterCaptionMobile: "every card, owned or not: you're naming a line, not shopping",
     filterCaption:
-      "every card, owned or not, in every colour — you're naming a line that's already in the deck, not shopping for a new one",
+      "every card, owned or not, in every colour: you're naming a line that's already in the deck, not shopping for a new one",
     ownedToggleLabel: "Owned only",
     keyboardHint: "↑↓ to move · ↵ to use the top match · Esc to collapse",
     // Right slot of the active row. The bar says '↵ add'; here it never adds.
@@ -363,12 +363,12 @@ export const deckImportCopy = {
     rawLine: (quantity: number, raw: string) => `${quantity} ${raw}`,
     rawLineNumber: (n: number) => `line ${n} of the import`,
     delete: "Delete this line",
-    deleteNote: "Deleting drops it from the deck’s total too — 100 becomes 99.",
+    deleteNote: "Deleting drops it from the deck’s total too: 100 becomes 99.",
     dismiss: "Leave it for now",
 
     noResultsHeading: "Nothing by that name",
     noResultsBody:
-      "Try a shorter piece of it — we match on any part of a card's name. If it isn't a real card, the line can go.",
+      "Try a shorter piece of it: we match on any part of a card's name. If it isn't a real card, the line can go.",
     // NOTE: no 'turn off the owned filter' escape here, unlike quick-add-bar's
     // no-results copy — that filter is already off in this scope, so an empty
     // result really does mean there is no card by that name.
@@ -384,9 +384,9 @@ export const deckImportCopy = {
     resolvedMobile: (name: string, built: string) => `That's ${name}. ${built} built now.`,
     resolvedUnownedMobile: (name: string) => `That's ${name}. It's on the shopping list.`,
     resolved: (name: string, built: string, remaining: number, role?: string) =>
-      `That line was ${name} — it's in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
+      `That line was ${name}. It's in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
     resolvedUnowned: (name: string, built: string, remaining: number, role?: string) =>
-      `That line was ${name} — it's in with the rest now, but you don't own it yet, so it's on the shopping list. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
+      `That line was ${name}. It's in with the rest now, but you don't own it yet, so it's on the shopping list. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
     // roleClause('Removal', 7, 10) → 'Removal is 7 of 10'. Passed into `resolved`
     // only when the resolved card lands in a tracked role — until this moment an
     // unresolved row had no oracle ID and so counted toward no role at all.
@@ -447,7 +447,7 @@ export const deckImportCopy = {
       reassureMobile: "Nothing is saved until you say so on the next screen.",
       aboutHeading: "What we do with it",
       about:
-        "The list becomes the deck. Cards in it that you do not have here get added; cards here that it does not name get removed — and you can keep any of those on the next screen.",
+        "The list becomes the deck. Cards in it that you do not have here get added; cards here that it does not name get removed, and you can keep any of those on the next screen.",
       aboutKeepsHeading: "What stays put",
       aboutKeeps:
         "The deck's name and its commander. A list naming a different commander is a different deck, and we will say so rather than swap it.",
@@ -461,7 +461,7 @@ export const deckImportCopy = {
       // final, which on a versioned deck it is not.
       draftPasteNotice: (version: number) =>
         `This deck is on v${version}. Applying this list changes your pending changes, not the ` +
-        "committed deck — you will still commit it yourself.",
+        "committed deck. You will still commit it yourself.",
       // "lines" not "cards" — one line can carry many copies, the distinction
       // the shipped arrival strip is also careful about.
       provenance: (lines: string, deckName: string, built: string) =>
@@ -499,8 +499,8 @@ export const deckImportCopy = {
         existing === "0"
           ? "They come across as lines you can resolve on the deck, exactly as an import's do."
           : existing === "1"
-            ? "They come across as lines you can resolve on the deck, exactly as an import's do — and they replace the 1 unresolved line this deck is carrying now."
-            : `They come across as lines you can resolve on the deck, exactly as an import's do — and they replace the ${existing} unresolved lines this deck is carrying now.`,
+            ? "They come across as lines you can resolve on the deck, exactly as an import's do, and they replace the 1 unresolved line this deck is carrying now."
+            : `They come across as lines you can resolve on the deck, exactly as an import's do, and they replace the ${existing} unresolved lines this deck is carrying now.`,
 
       // A count that moves is reconciled in silence — the ruling that keeps a
       // basic's 12 → 9 from burying the cards that actually left the deck.
@@ -533,8 +533,8 @@ export const deckImportCopy = {
       // States what it will do, recomputed on every Keep. Never "Apply" and
       // never "Confirm": it is the last thing read before the only
       // irreversible click in the flow.
-      apply: (inN: string, outN: string) => `Update the deck — ${inN} in, ${outN} out`,
-      applyMobile: (inN: string, outN: string) => `Update — ${inN} in, ${outN} out`,
+      apply: (inN: string, outN: string) => `Update the deck: ${inN} in, ${outN} out`,
+      applyMobile: (inN: string, outN: string) => `Update: ${inN} in, ${outN} out`,
       applyAria: (inN: string, outN: string, deckName: string) =>
         `Update ${deckName}: add ${inN} cards, remove ${outN}`,
       cancel: "Cancel",
@@ -550,7 +550,7 @@ export const deckImportCopy = {
         `${kept} kept. This update will add ${inN} and remove ${outN}.`,
 
       wholesaleNote: (inN: string, outN: string) =>
-        `This replaces the whole deck. ${inN} cards in, ${outN} out. If that is not what you meant, the list you pasted is probably a different deck — import it as its own instead.`,
+        `This replaces the whole deck. ${inN} cards in, ${outN} out. If that is not what you meant, the list you pasted is probably a different deck. Import it as its own instead.`,
       importAsNew: "Import as new instead",
     },
 
@@ -583,7 +583,7 @@ export const deckImportCopy = {
     },
     refused: {
       heading: "That did not go through",
-      body: "Your deck is exactly as it was. Your list is still here — try again.",
+      body: "Your deck is exactly as it was. Your list is still here. Try again.",
       action: "Try again",
     },
 
@@ -591,12 +591,12 @@ export const deckImportCopy = {
     // how much arrived; an update's only interesting fact is what moved.
     arrival: {
       updated: (inN: string, outN: string) =>
-        `Updated from your list — ${inN} in, ${outN} out.`,
+        `Updated from your list: ${inN} in, ${outN} out.`,
       updatedWithKept: (inN: string, outN: string, kept: string) =>
         kept === "1"
-          ? `Updated from your list — ${inN} in, ${outN} out, 1 you kept.`
-          : `Updated from your list — ${inN} in, ${outN} out, ${kept} you kept.`,
-      updatedMobile: (inN: string, outN: string) => `Updated — ${inN} in, ${outN} out`,
+          ? `Updated from your list: ${inN} in, ${outN} out, 1 you kept.`
+          : `Updated from your list: ${inN} in, ${outN} out, ${kept} you kept.`,
+      updatedMobile: (inN: string, outN: string) => `Updated: ${inN} in, ${outN} out`,
       // State 20. A `?updated=` value that is not ours still says an update
       // brought the player here, so the strip states the fact and drops the
       // figures rather than printing NaN.

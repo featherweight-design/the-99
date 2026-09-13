@@ -57,9 +57,9 @@ export const availabilityCopy = {
     // quantity you can act on (`54 owned · 8 to buy`, `×3`), and a leading 0
     // beside them reads as one more tally rather than as an absence.
     hard: "none free",
-    hardIn: (deckName: string) => `none free — in ${deckName}`,
+    hardIn: (deckName: string) => `none free, in ${deckName}`,
     hardMulti: (deckCount: number) =>
-      deckCount === 1 ? "none free — in 1 deck" : `none free — across ${deckCount} decks`,
+      deckCount === 1 ? "none free, in 1 deck" : `none free, across ${deckCount} decks`,
     hardAria: (deckName: string) =>
       `no free copies; this one is on your ${deckName} list`,
     hardMultiAria: (deckCount: number) =>
@@ -76,8 +76,8 @@ export const availabilityCopy = {
     over: (shortBy: number) => `short ${shortBy}`,
     overWithDemand: (shortBy: number, deckCount: number) =>
       deckCount === 1
-        ? `short ${shortBy} — also in 1 deck`
-        : `short ${shortBy} — also in ${deckCount} decks`,
+        ? `short ${shortBy}, also in 1 deck`
+        : `short ${shortBy}, also in ${deckCount} decks`,
     overAria: (shortBy: number, deckCount: number) =>
       deckCount === 1
         ? `1 of your finished lists includes this card and you own ${shortBy} too few`
@@ -89,12 +89,12 @@ export const availabilityCopy = {
     // "also in N decks" would count the deck the player is standing in. Name the
     // other claimant instead. Decklist-of-the-holder only.
     overAlsoIn: (shortBy: number, otherDeck: string) =>
-      `short ${shortBy} — also in ${otherDeck}`,
+      `short ${shortBy}, also in ${otherDeck}`,
     overAlsoInAria: (otherDeck: string) =>
       `your ${otherDeck} list also includes this card and you don’t own enough for both`,
 
     // Tile caption line (sits under the type line, not on the art).
-    tileInUse: (deckName: string) => `in use — ${deckName}`,
+    tileInUse: (deckName: string) => `in use: ${deckName}`,
     tileOver: (deckCount: number) =>
       deckCount === 1 ? "also in 1 deck" : `also in ${deckCount} decks`,
   },
@@ -153,15 +153,15 @@ export const availabilityCopy = {
     disclosureAria: (n: number) =>
       n === 1 ? "Show which 1 card is in use" : `Show which ${n} cards are in use`,
     disclosureCollapseAria: "Show all matching cards again",
-    hint: "Tap to see which — and where they went.",
+    hint: "Tap to see which, and where they went.",
     // Expressive-adjacent, but this is the sentence that must not overclaim.
     // It describes LISTS. Never "in a box", "on a shelf", "sleeved up right now".
     expandedFor: (n: number) =>
       n === 1
-        ? "This one is sleeved into a deck you’ve finished. You can still build with it — you’d be taking it out of something."
-        : `These ${n} are sleeved into decks you’ve finished. You can still build with them — you’d be taking them out of something.`,
-    sectionInUse: (n: number) => `In use — ${n}`,
-    sectionFree: (n: number) => `Free to build with — ${n}`,
+        ? "This one is sleeved into a deck you’ve finished. You can still build with it. You’d be taking it out of something."
+        : `These ${n} are sleeved into decks you’ve finished. You can still build with them. You’d be taking them out of something.`,
+    sectionInUse: (n: number) => `In use: ${n}`,
+    sectionFree: (n: number) => `Free to build with: ${n}`,
     filteredHeading: (n: number) => `Showing the ${n} in use`,
     showAll: (n: number) => `show all ${n}`,
     listHeading: "Cards you own that fit",
@@ -180,9 +180,9 @@ export const availabilityCopy = {
   deckSummary: {
     heading: spokenForTwice,
     body: (cardName: string, deckCount: number, ownedQty: number) =>
-      `${cardName} is on ${deckCount === 1 ? "1 finished list" : `${deckCount} finished lists`} and you own ${ownedQty === 1 ? "one" : ownedQty}. Nothing’s broken here — it’s a shopping decision.`,
+      `${cardName} is on ${deckCount === 1 ? "1 finished list" : `${deckCount} finished lists`} and you own ${ownedQty === 1 ? "one" : ownedQty}. Nothing’s broken here. It’s a shopping decision.`,
     bodyMany: (n: number) =>
-      `${n} of these are on more finished lists than you have copies. Nothing’s broken here — it’s a shopping decision.`,
+      `${n} of these are on more finished lists than you have copies. Nothing’s broken here. It’s a shopping decision.`,
     ariaLabel: (n: number) =>
       n === 1
         ? "1 card in this deck is over-committed"
@@ -205,14 +205,14 @@ export const availabilityCopy = {
     body: "Ranking and Fit are unaffected. We just can’t tell which cards are already in a deck, so What’s free is unavailable until this comes back.",
     retry: "Retry now",
     segmentDisabledAria:
-      "What’s free is unavailable — we can’t read your decks right now",
+      "What’s free is unavailable. We can’t read your decks right now",
     // Both reads down: ONE banner, two sentences, one Retry. Never two banners.
     bodyWithSynergy:
       "Synergy data and deck contents are both unavailable. Ranking continues on pool and role coverage, and What’s free is unavailable until they come back.",
     // /collection has no ranking to mislead, so it fails QUIET — markers absent,
     // Availability trigger disabled with this reason. No banner there.
     collectionFilterDisabledAria:
-      "Filtering by availability is unavailable — we can’t read your decks right now",
+      "Filtering by availability is unavailable. We can’t read your decks right now",
   },
 
   // ── /collection (addendum 2) ──────────────────────────────────
@@ -287,7 +287,7 @@ export const availabilityCopy = {
     // finished", which asserts a collection of exactly two and was drawn under a
     // ×17. Nothing here may imply a count the block has not printed.
     detailHardNote:
-      "You can still build with it — you’d be taking it out of something.",
+      "You can still build with it. You’d be taking it out of something.",
     // Count-aware for the same reason `deckRollup.softHeading` is: the number of
     // brewing claimants is the one figure this sentence turns on, and a single
     // form has to lie about one of the two cases.
@@ -304,10 +304,10 @@ export const availabilityCopy = {
     // printed — the same rule the note's own header states.
     detailSoftNote: (brewCount: number) =>
       brewCount === 1
-        ? "Nothing to sort out yet — the list that wants it isn’t finished. Whichever you sleeve first gets it."
-        : "Nothing to sort out yet — the lists that want it aren’t finished. Whichever you sleeve first gets it.",
+        ? "Nothing to sort out yet. The list that wants it isn’t finished. Whichever you sleeve first gets it."
+        : "Nothing to sort out yet. The lists that want it aren’t finished. Whichever you sleeve first gets it.",
     detailOverNote:
-      "More finished lists want it than you own. Nothing’s broken — it’s a shopping decision.",
+      "More finished lists want it than you own. Nothing’s broken. It’s a shopping decision.",
   },
 
   // ── Deck detail roll-up (addendum 2) ─────────────────────────────
@@ -333,9 +333,9 @@ export const availabilityCopy = {
         ? "1 more is in another brew too"
         : `${n} more are in other brews too`,
     softBody:
-      "Nothing to sort out yet — none of those lists is finished either. Whichever you sleeve first gets them.",
+      "Nothing to sort out yet. None of those lists is finished either. Whichever you sleeve first gets them.",
     softBodyShort:
-      "Nothing to sort out yet — none of those lists is finished either.",
+      "Nothing to sort out yet. None of those lists is finished either.",
 
     regionAria: "Card commitments",
   },

@@ -79,11 +79,11 @@ export const planeCopy = {
     // Present only under `Exactly`, in `availabilityCopy.ranking.freeNoteLong`'s slot and
     // register. Says what the mode did, in the same breath as the count it produced.
     exactNote: (matching: number, candidates: number, colors: string[]) =>
-      `exact identity — ${n(matching)} of the ${n(candidates)} you have not built are ${identity(
+      `exact identity: ${n(matching)} of the ${n(candidates)} you have not built are ${identity(
         colors,
       )} and nothing else`,
     exactNoteShort: (matching: number, candidates: number, colors: string[]) =>
-      `exact identity — ${n(matching)} of ${n(candidates)} are ${identity(colors)} and nothing else`,
+      `exact identity: ${n(matching)} of ${n(candidates)} are ${identity(colors)} and nothing else`,
 
     announce: (mode: "contains" | "exactly", count: number, colors: string[]) =>
       mode === "exactly"
@@ -132,7 +132,7 @@ export const planeCopy = {
 
     // 2 · Every match is excluded. The FULL name, because `DiscoveryItem` carries only `name`.
     // The body then opens with "It matches" rather than repeating the name three lines later.
-    heldHeading: (name: string) => `${name} is here — a filter is holding it back`,
+    heldHeading: (name: string) => `${name} is here. A filter is holding it back`,
     heldAside: (matches: number) =>
       matches === 1 ? "1 match, 0 shown" : `${n(matches)} matches, 0 shown`,
 
@@ -140,7 +140,7 @@ export const planeCopy = {
     // and the body then says "It", which would be a claim about one of several — so a set
     // counts instead, and the body names the control the same way the live-list plural does.
     heldHeadingMany: (matches: number) =>
-      `${n(matches)} matches are here — filters are holding them back`,
+      `${n(matches)} matches are here. Filters are holding them back`,
     heldMany: (excluded: number, control: string) =>
       excluded === 1
         ? `1 of them is excluded by ${control}.`
@@ -165,11 +165,11 @@ export const planeCopy = {
     heldColors: (filtered: string[], own: string[]) =>
       `It matches, but the ${identity(
         filtered,
-      )} colour filter excludes it — its identity is ${identity(own)}.`,
+      )} colour filter excludes it: its identity is ${identity(own)}.`,
     heldJoin: (filtered: string[], own: string[]) =>
       `It matches, but Exactly ${identity(
         filtered,
-      )} excludes it — its identity is ${identity(own)}.`,
+      )} excludes it: its identity is ${identity(own)}.`,
     heldScope: "It matches, but you have already built a deck around it.",
     heldFloor: (pct: number, floorPct: number) =>
       `It matches, but Something new only shows commanders you could build, and you own ${pct}% of its support list against the ${floorPct}% floor.`,
@@ -184,11 +184,11 @@ export const planeCopy = {
     colors: (name: string, filtered: string[], own: string[]) =>
       `${name} matches, but the ${identity(
         filtered,
-      )} colour filter excludes it — its identity is ${identity(own)}.`,
+      )} colour filter excludes it: its identity is ${identity(own)}.`,
     colorsAlso: (name: string, filtered: string[], own: string[]) =>
       `${name} also matches, but the ${identity(
         filtered,
-      )} colour filter excludes it — its identity is ${identity(own)}.`,
+      )} colour filter excludes it: its identity is ${identity(own)}.`,
     colorsCta: "Clear the colour filter",
 
     // Named instead of `colors` when the row would survive under `Contains` — the mode is
@@ -196,11 +196,11 @@ export const planeCopy = {
     join: (name: string, filtered: string[], own: string[]) =>
       `${name} matches, but Exactly ${identity(
         filtered,
-      )} excludes it — its identity is ${identity(own)}.`,
+      )} excludes it: its identity is ${identity(own)}.`,
     joinAlso: (name: string, filtered: string[], own: string[]) =>
       `${name} also matches, but Exactly ${identity(
         filtered,
-      )} excludes it — its identity is ${identity(own)}.`,
+      )} excludes it: its identity is ${identity(own)}.`,
     joinCta: "Switch to Contains",
 
     floor: (name: string, pct: number, floorPct: number) =>
@@ -314,7 +314,7 @@ export const planeCopy = {
       freeCards: number,
       clearingAgainstCollection: number,
     ) =>
-      `Something new only shows commanders you could actually build — at least ${floorPct}% of their support list already in your collection. Read against the ${n(
+      `Something new only shows commanders you could actually build: at least ${floorPct}% of their support list already in your collection. Read against the ${n(
         freeCards,
       )} free cards in this pool, ${n(below)} of the ${n(candidates)} fall below that bar and ${n(
         unmeasured,
