@@ -182,6 +182,26 @@ describe("the price under the art", () => {
       .toMatch(/◆ foil \$6\.10 at ManaPool, last checked /);
   });
 
+  it("draws the word in the ink that clears 4.5:1, and the edge in the one that clears 3", () => {
+    // Two floors, two tokens: a 10px word answers to 4.5:1 and a dashed mark to 3:1.
+    // `wash-contrast.test.ts` measures both against every theme; this is the half that
+    // says the component asks for the right ones.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ scryfall_id: "other", collector_number: "999" }),
+        priceRow({ as_of: null, price_cents: null }),
+      ]),
+    }));
+
+    // The visual node is the one carrying the ink; in standalone mode it sits under an
+    // `aria-hidden` wrapper with the sr-only sentence beside it.
+    const style = [...screen.getByTestId("modal-price-desktop").querySelectorAll("span")]
+      .map((n) => n.getAttribute("style") ?? "")
+      .find((s) => s.includes("dashed")) ?? "";
+    expect(style).toContain("var(--fg-muted)");
+    expect(style).toContain("dashed var(--fg-locked)");
+  });
+
   it("says which history `no stock` is, where the visible word cannot", () => {
     mount(card({
       prices: indexPriceRows([

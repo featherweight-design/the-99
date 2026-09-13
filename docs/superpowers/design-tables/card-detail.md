@@ -34,6 +34,7 @@ was verified in the tree and is what the build implements.
 | 1.4 | Foil-only | `◆ foil $6.10` — the diamond **prefixes**, the finish word comes from which column supplied the figure (`foil` / `etched`) | canvas §2, `set-collections.ts:208` |
 | 1.5 | No stock | the word `no stock`, `--fg-locked` on `1px dashed --fg-locked` | canvas §2 |
 | 1.6 | Silence | **Nothing renders.** No dash, no `$0.00`, no greyed box, no reserved slot, no skeleton | canvas §2, STATES §1 |
+| 1.6b | Silence is not rare, and that is accepted | A holding that names no **single** printing is silent — E15 still prices one whose set holds only one version — so a set that prints several versions of a card shows fewer figures than a small set does — the commander page's `PIP` card was walked and reads blank for exactly this reason. Seen, and ruled 2026-09-13: a figure under a card must belong to that card, two versions can differ by a lot, and a floor-price or a picked-version figure is a number the reader's copy may not have | ruled 2026-09-13 |
 | 1.7 | Which state is which | `no stock` = the store answered and the answer was no (sold out **and** never stocked alike). Silence = nothing reached us — the price read failed or was not loaded | READINESS R2 item 2 |
 | 1.8 | Phone plate | The over-art plate behind the tag, because it sits over the wash. **The only difference between the two widths** | README §1 |
 | 1.9 | Re-reads on a pick | Yes. A pick now moves **four** things — art, `Set` field, tile ring, tag | README §1, Amendment 1 |
@@ -68,7 +69,7 @@ was verified in the tree and is what the build implements.
 | 3.5 | Caption with no collector number | Omit the field **and** its separator. Never "no number" | copy strings |
 | 3.6 | Close | The modal's shipped ✕ — 34px desktop / 32px phone, in its shipped slot, gaining an `--elevated` plate to clear the scrim. Its **label** changes, its position does not | canvas §7 |
 | 3.7 | Trigger | The sharp art becomes a `button` with `aria-expanded` and `aria-controls`; visible mark is the zoom glyph on the over-art plate, **bottom-left**, 30px desktop / 28px phone | canvas §7 |
-| 3.8 | Corner rule | Zoom mark bottom-**left** on every card; the turn control sits bottom-**centre** — see E14. A one-faced card simply has no turn control rather than a different layout | canvas §7, amended by E14 |
+| 3.8 | Corner rule | Zoom mark bottom-**left** on every card; the turn control bottom-**centre**. A one-faced card simply has no turn control rather than a different layout | ruled 2026-09-13, E14 |
 | 3.9 | Desktop hint | `tap the art to hold it`, `--fg-locked`, desktop only | copy strings |
 | 3.10 | Dismissal | Three doors, one stage: tap the card, tap the layer, or `Esc`. Focus returns to the art | README §3 |
 | 3.11 | Escape order | Zoom first, dialog second — the printing region's shipped two-stage shape. With the region open as well it is three stages | README §3, gap 4 |
@@ -87,7 +88,7 @@ was verified in the tree and is what the build implements.
 | 4.3 | Duration / easing | `320ms`, `cubic-bezier(.2,.7,.2,1)` | canvas §4 |
 | 4.4 | Face swap | At `160ms`, the midpoint, behind the edge; `backface-visibility: hidden` on both faces | canvas §4 |
 | 4.5 | Re-press mid-turn | Reverses from the current angle. Never queues, never double-turns | canvas §4 |
-| 4.6 | Control | The shipped plate, grown to a **44px** target inside the zoom. No label, no pill. It DID move — bottom-centre rather than bottom-right, at every size, per E14 | canvas §4, amended by E14 |
+| 4.6 | Control | The shipped plate at a **44px** target inside the zoom, bottom-**centre** at every size. No label, no pill | ruled 2026-09-13, E14 |
 | 4.7 | Gate | Renders from the `layout` column only — never from a `//` in the name or type line | canvas §4, STATES §3 |
 | 4.8 | `aria-pressed` | Absent. It is a turn, not a toggle state | canvas §7 a11y |
 | 4.9 | Accessible name | Changes with the face; the settle is announced by the modal's existing live region | canvas §7 a11y |
@@ -98,7 +99,7 @@ was verified in the tree and is what the build implements.
 | # | Property | Motion allowed | `prefers-reduced-motion: reduce` | Source |
 |---|---|---|---|---|
 | 5.1 | Zoom open | 200ms ease-out, opacity 0→1, `scale(.94)→1` | Present at full opacity, 0ms, no scale | MOTION |
-| 5.2 | Zoom close | 160ms ease-in, opacity 1→0 | Gone, 0ms | MOTION |
+| 5.2 | Zoom close | **No exit.** The layer unmounts | Gone, 0ms — unchanged, because it always was | ruled 2026-09-13, E13 |
 | 5.3 | Flip | 320ms `cubic-bezier(.2,.7,.2,1)` | Face replaces face — **the shipped swap**, so the static path is the status quo | MOTION |
 | 5.4 | Scrim | Fades with the layer, same timings; the blur is not animated | MOTION |
 | 5.5 | Not animated | The price tag's appearance, the art column's 30px height change, the un-zoomed flip | MOTION |
@@ -118,8 +119,15 @@ was verified in the tree and is what the build implements.
 
 All six — `amonkhet`, `kamigawa`, `ixalan`, `phyrexia`, `eldraine`, `kaldheim` — for the priced tag,
 the `no stock` tag, the scrim and the flip control. Tag ink is `--accent` on `--bg` (≥4.6:1 in all
-six). `no stock` is `--fg-locked` on `--bg` at 3.2–3.6:1, **the one row to measure in build**, with
-phyrexia the floor; if it fails, the fix belongs to the tag everywhere it renders, not here.
+six) — that is the PRICED figure's ink, and the word below has its own.
+
+**`no stock` was measured in build, and it failed.** `--fg-locked` on `--bg` runs 3.23:1 (phyrexia)
+to 3.49:1 — a pass for the dashed edge, which is a non-text mark answering to 3:1, and a fail for
+the word, which is 10px and answers to 4.5:1. The handoff's suggested `--fg-faint` does not fix it
+either: 4.12 in kamigawa, 4.29 in phyrexia. **The word takes `--fg-muted`** (6.61–7.35 across the
+six) and the edge keeps `--fg-locked`. Ruled 2026-09-13; it changes the set grid's cell as well,
+because that is the same component. Held by `lib/theme/wash-contrast.test.ts`, which measures every
+theme, and by a component case asserting which token is asked for.
 
 ## 8. Amendments this work makes
 
@@ -150,8 +158,9 @@ phyrexia the floor; if it fails, the fix belongs to the tag everywhere it render
 | E9 | "Drawn — canvas §1b, the fifth region" | The R2 canvas has §1–§8; §1 draws two frames and contains no compact state. The ruling is in `STATES` §1b and one row of the §7 spec table | Buildable as specified; the citation is wrong |
 | E10 | "The tag … joins the name block" on the compact header | That block is `aria-hidden` (`card-modal.tsx:565-577`) because the `h3` stays in the DOM as the dialog's accessible name | Render the tag as a visible sibling **outside** the `aria-hidden` subtree, or the figure is invisible to assistive tech |
 | E15 | Row 1.10, read strictly: a holding that names no printing gets silence | **It made the feature invisible on the commonest collection in the app.** 2,733 of this account's 2,733 holdings carry neither a Scryfall id nor a collector number — every Moxfield, Archidekt or pasted import does — so every card in it fell to silence while the catalog knew exactly which printing was meant. Found by the close-out walk, not by 40 rounds of review: `$0.15` was in the database and the panel said nothing | A holding that names a **set** is priced when the catalog holds one printing of that card in that set; a holding that names nothing at all is priced when the card has one printing in existence. Row 1.10 is intact — in both cases there is no sibling to confuse it with — and where more than one printing could be meant it is still silence |
-| E14 | Rows 3.8 and 4.6: the turn control sits in the card's bottom-right corner | Bottom-right is where a creature prints its power and toughness. The control covered them on every creature, at all three sizes — the 44px phone header, the 34px desktop column and the 44px zoom — and the P/T is the one figure a reader most often opens a creature to check | **Bottom-centre, at every size.** Centre is the only edge position the card itself prints nothing in, and it is where other card apps put this control. Ruled by Hugh on 2026-09-13 from a screenshot of *Tovolar, Dire Overlord* with its `4/4` behind the button; explicitly not a Design round-trip. The zoom mark keeps bottom-left, which is now uncontested |
-| E13 | Row 5.2: the zoom leaves over 160ms, `ease-in`, opacity 1→0 | Built, then removed. A layer that is mounted but leaving has to answer Escape without restarting its own timer, ignore a keyboard press `pointer-events-none` does not stop, keep a stale timer from unmounting a zoom the reader reopened, and not take focus back from the stage the next Escape claimed — five review rounds, every finding real, all of them the exit's | **The layer unmounts on close.** The enter animation stays: it is what makes the zoom read as picked up rather than pasted in. A 160ms fade on the way out is one nobody waits for, and it cost more in interaction defects than it bought. Design to ratify or overrule |
+| E14 | Rows 3.8 and 4.6: the turn control sits in the card's bottom-right corner | Bottom-right is where a creature prints its power and toughness. The control covered them on every creature, at all three sizes — the 44px phone header, the 34px desktop column and the 44px zoom — and the P/T is the one figure a reader most often opens a creature to check | **Bottom-centre, at every size**, and rows 3.8 and 4.6 above now say so outright rather than pointing here. Centre is the only edge position the card itself prints nothing in, and it is where other card apps put this control. Ruled by Hugh on 2026-09-13 from a screenshot of *Tovolar, Dire Overlord* with its `4/4` behind the button; explicitly not a Design round-trip. The zoom mark keeps bottom-left, which is now uncontested. **The class was swept and this is the only control it reaches** — see E16 |
+| E16 | Whether any other control in the app sits where a card prints its power and toughness | Swept by grep rather than by eye — `bottom:`+`right:` across `src/components`, unioned with every surface drawing a `63/88` card. Three bottom-right controls exist: `full-card-trigger.tsx`'s `hero` and `deck-mobile` placements, and the commander hero's own label block. **All three sit on an art BAND — a crop, with no printed frame and so no P/T box.** The two surfaces that draw a whole card put their control bottom-left (`commander-desktop`) or bottom-centre (the modal, per E14) | Nothing else to move. Recorded so the sweep is not repeated: E14 reaches exactly one control, and a future control over a *whole card* is the only thing that would reopen this |
+| E13 | Row 5.2 as Design drew it: the zoom leaves over 160ms, `ease-in`, opacity 1→0 | Built, then removed. A layer that is mounted but leaving has to answer Escape without restarting its own timer, ignore a keyboard press `pointer-events-none` does not stop, keep a stale timer from unmounting a zoom the reader reopened, and not take focus back from the stage the next Escape claimed — five review rounds, every finding real, all of them the exit's | **The layer unmounts on close, and row 5.2 above now says so** — Hugh ruled it on 2026-09-13 rather than leaving it for Design to ratify. The enter animation stays: it is what makes the zoom read as picked up rather than pasted in. A 160ms fade on the way out is one nobody waits for, and it cost more in interaction defects than it bought. `MOTION-no-token-set.md` still draws the exit; the handoff is kept as drawn and this table governs |
 | E12 | Compact header, row 2.2: the tag goes "below the name, beside the mana cost" | On a phone in the compact state those two are in **different regions**. The name and type line move into the art header (`card-modal.tsx:694-716`), whose heading is `aria-hidden`; the mana cost stays in the content column's header row, which is the only part of that row still drawn at phone width | The tag follows the mana cost, in the content column's header row, and not the art header's name block. "Below the name" cannot also be honoured: the name is not in that row on a phone |
 | E11 | Themes (price table `price-on-the-buy-tag.md:187`) lists `innistrad` / `duskmourn` | The shipped six are `amonkhet`, `kamigawa`, `ixalan`, `phyrexia`, `eldraine`, `kaldheim` (`globals.css`) | The handoff's list is right; **row 6.4 of the buy-tag table is stale** and is corrected here |
 

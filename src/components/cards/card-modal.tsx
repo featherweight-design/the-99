@@ -503,9 +503,9 @@ export function CardModal({
    * reopened. Every one of those was a real defect, and all of them were the exit's.
    *
    * The enter animation is what makes the zoom feel picked up rather than pasted in;
-   * the exit was a 160ms fade nobody is waiting for. Dropping it is a deviation from
-   * row 5.2, recorded in the property table's errata for Design to ratify rather than
-   * taken quietly.
+   * the exit was a 160ms fade nobody is waiting for. Dropping it was a deviation from
+   * row 5.2 as Design drew it; Hugh ruled it on 2026-09-13 and that row now reads "no
+   * exit, the layer unmounts", with E13 kept as the record of what changed.
    */
   const closeZoom = useCallback(() => {
     setZoomed(false);
