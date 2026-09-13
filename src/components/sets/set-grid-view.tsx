@@ -18,7 +18,7 @@
 // scroll is paid for by the sticky head, the extras jump, and missing-only, which removes
 // the cells the reader is done with rather than shrinking everything.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail } from "../cards/card-detail-provider";
@@ -124,6 +124,175 @@ export function SetGridView(props: SetGridViewProps) {
    * unmounts the empty state's buttons — so without this, using any of them strands the
    * keyboard on a control that is no longer there.
    */
+  /**
+   * R3 finding 6, the collapse. The head has always been `sticky top-0` at every width, so
+   * the whole block follows the reader down all 399 cells — the finding is not "add a
+   * collapse", it is "the collapse this sticky head never got".
+   *
+   * TWO HEIGHTS, ONE THRESHOLD, NEVER INTERPOLATED. Down past 120px of scroll, back at 40:
+   * an 80px hysteresis band, so a thumb resting mid-gesture cannot flutter it. A head that
+   * tracked the scroll offset would be permanently in motion under the thing being read.
+   */
+  const [collapsed, setCollapsed] = useState(false);
+  /**
+   * §31: "if it is firing, the collapse waits". The delta strip is the one member of the
+   * head that is news rather than reference, and it carries the only offer to refresh a
+   * page the reader has just been told is stale.
+   *
+   * Round 7 replaced this gate with "the strip is simply not a member the collapse hides",
+   * which shows the message but is NOT what the ruling says — and it let a variable-height
+   * strip grow the supposedly fixed 52px bar. The gate is back, with the three defects that
+   * made it expensive fixed rather than escaped:
+   *
+   *   - it does not apply while the sheet is open, so a strip that starts firing behind an
+   *     open dialog no longer reopens the head and unmounts the trigger `useDialogA11y`
+   *     saved;
+   *   - the ref `sizeSpacer` reads is written in a LAYOUT EFFECT, not during render, which
+   *     is what `react-hooks/refs` forbids;
+   *   - and the reserve stops recording while it fires, so a delta-inclusive height is
+   *     never the one the spacer is sized from.
+   */
+  /**
+   * A breakpoint crossing reopens the head.
+   *
+   * A reader who collapses on the phone, widens to desktop and comes back is still
+   * `collapsed`, so the head is shy on the first mobile render — and the recorder, which
+   * refuses to measure a collapsed head, leaves the DESKTOP height reserved underneath it.
+   * Clearing the recorded height instead was tried and is worse: the reserve goes to 0
+   * where the desktop figure was accidentally close, so the grid moves further than before.
+   *
+   * Reopening is the answer that produces a correct number: the head measures itself at the
+   * width it is now, and the next scroll event collapses it again. Adjusted DURING RENDER,
+   * which is this file's existing pattern for deriving state from a changed input — the
+   * URL override two blocks up does the same thing for the same reason.
+   */
+  const [seenDesktop, setSeenDesktop] = useState(isDesktop);
+  if (seenDesktop !== isDesktop) {
+    setSeenDesktop(isDesktop);
+    if (collapsed) setCollapsed(false);
+  }
+  const [deltaFiring, setDeltaFiring] = useState(false);
+  const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
+  //
+  // `sheetOpen` is deliberately NOT a term here. It was, and that made this flip in the
+  // very render the sheet opened — so the freeze below captured the value AFTER the change
+  // it exists to prevent. The sheet's job is to hold whatever was true; this expression's
+  // job is to say what would be true without it.
+  const mayCollapse = !isDesktop && !deltaFiring;
+  useEffect(() => {
+    if (!mayCollapse) return;
+    // An open sheet FREEZES the head, in whichever state it is already in. It does not
+    // force it open: opened from the collapsed bar, forcing it open would unmount the
+    // trigger `useDialogA11y` returns focus to — the very defect being avoided, arriving
+    // from the other side. So the listener simply stands down and `collapsed` holds.
+    //
+    // This one term replaces a four-part focus mechanism — a pin, a bar exception, a rescue
+    // ref and a layout effect — that drew findings in five consecutive rounds and grew a
+    // new hole in each. This route deleted a focus rescue once before, for the same reason.
+    //
+    // What that mechanism protected beyond the sheet: focus in the open subtree falls to
+    // the body when it is hidden. For the search field and the chips that is what every
+    // collapsing header on the web does, and the reader got there by scrolling, which needs
+    // no focus at all.
+    if (sheetOpen) return;
+    const onScroll = () => {
+      const y = window.scrollY;
+      // The band read as a function of the CURRENT state, which is what makes it
+      // hysteresis rather than two thresholds: collapsed stays collapsed until 40, open
+      // stays open until 120, and between the two nothing happens.
+      setCollapsed((was) => (was ? y > 40 : y > 120));
+    };
+    // The first read is here, in a passive effect, and a reload at scrollY > 120 therefore
+    // paints the open head for one frame before collapsing. Moving it to a layout effect is
+    // what the shape asks for and `react-hooks/set-state-in-effect` forbids it outright —
+    // a synchronous `setState` in an effect is a hard lint error in this repository. See
+    // the PR body.
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [mayCollapse, sheetOpen]);
+
+  /**
+   * The rest height, held so the DOCUMENT does not change height when the head collapses.
+   * Sticky overlays, so the grid's own layout is untouched at every scroll position — but
+   * the sticky element still occupies its box in flow, and shrinking that box pulls the
+   * grid up under the reader's thumb on the first crossing.
+   *
+   * Measured while open and applied to a wrapper that is not itself sticky, so the reserve
+   * is a plain block of the right height and the head floats inside it.
+   */
+  const headRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  /**
+   * The spacer's height, written to the DOM rather than held in state.
+   *
+   * State would arrive a commit late: on the render where the collapse lands, the head has
+   * already shrunk and a state-held measurement is still the open one, so the spacer paints
+   * at 0 and the document jumps exactly once — the jump the reserve exists to prevent, on
+   * the first crossing, which is the only crossing anyone notices.
+   *
+   * Reads refs only, so the `ResizeObserver` registered once can keep calling it.
+   */
+  const restHeightRef = useRef<number | null>(null);
+  const sizeSpacer = useRef(() => {
+    const el = headRef.current;
+    const spacer = spacerRef.current;
+    if (el === null || spacer === null) return;
+    // Read off the DOM at call time rather than off a `collapsed` closed over anywhere:
+    // `ResizeObserver` delivers at the end of a frame, so the shrink the collapse causes
+    // can arrive BEFORE any cleanup, and the rest height would then record the collapsed
+    // one — the number it must never hold. The probe caught that: 288px reserved at rest
+    // and 140px once collapsed, which was the head's height before the one-row bar landed;
+    // it is 75px now, and the reserve holds 288 through both.
+    //
+    // Refreshed HERE, before sizing, whenever the head is open. While collapsed the open
+    // subtree is `display:none` and cannot resize, so a filter changed through the bar's
+    // sheet leaves the recorded height stale — and the first render that restores would
+    // then size the spacer from a head that no longer exists. `ResizeObserver` corrects it
+    // a frame later, which is a frame too late.
+    // The STEADY-STATE open height: the head as measured, less whatever the delta strip is
+    // occupying. Skipping the measurement entirely while the strip fires was the first
+    // answer and it has a hole — the sheet can still edit the filters behind a firing
+    // strip, so the head's real open height changes and is never recorded, and the collapse
+    // that follows the message clearing uses a stale one. Subtracting is what satisfies
+    // both: a delta-inclusive height is never stored, and a filter-driven change always is.
+    if (!el.hasAttribute("data-set-head-collapsed")) {
+      const delta = el.querySelector("[data-set-delta]");
+      restHeightRef.current = el.getBoundingClientRect().height
+        - (delta === null ? 0 : delta.getBoundingClientRect().height);
+    }
+    const rest = restHeightRef.current;
+    spacer.style.height = rest === null
+      ? "0px"
+      : `${Math.max(0, rest - el.getBoundingClientRect().height)}px`;
+  }).current;
+  useEffect(() => {
+    const el = headRef.current;
+    if (el === null) return;
+    const measure = () => {
+      // `sizeSpacer` records the height as well as writing the spacer, and it is the one
+      // place that decides WHEN a height may be recorded. This callback used to keep its
+      // own copy of that decision and the two drifted the moment a second condition was
+      // added: the delta strip pins the head open, so a height measured while it was
+      // showing was recorded here and never corrected.
+      sizeSpacer();
+    };
+    measure();
+    // Guarded, as `top-off-list.tsx` guards its own measured bar: an unconditional
+    // constructor throws on mount in any engine without the API, taking every set page with
+    // it. The `measure()` above has already run, so the reserve is correct for the head as
+    // it stands — it simply stops tracking later changes.
+    if (typeof ResizeObserver === "undefined") return;
+    // The head's open height is not a constant: a two-line title, the delta strip, and the
+    // cost strip's expanded form all move it, and a reserve measured once would be wrong
+    // for the rest of the visit.
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [sizeSpacer]);
+  // After the DOM has changed and before the browser paints, which is the whole point: the
+  // spacer has to be the right height on the frame the head first shrinks.
+
   const searchRef = useRef<HTMLInputElement>(null);
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
@@ -410,6 +579,15 @@ export function SetGridView(props: SetGridViewProps) {
   // on a page that only has three dimensions to begin with.
   const filtersOn =
     (effective.colors.length > 0 ? 1 : 0) + (effective.rarities.length > 0 ? 1 : 0);
+  // The collapsed bar's own count. Missing-only is excluded from `filtersOn` because the
+  // open row draws that toggle beside the badge, and counting it there would state one
+  // fact twice — but the collapsed bar hides the toggle and the sheet does not carry it,
+  // so there the same exclusion hides a live filter completely.
+  //
+  // The RAW filter, not `effective`. At 100% `effective` forces missing-only off while
+  // `m=1` can still be in the URL — the stale-filter case Clear exists for — and reading
+  // `effective` there left the bar with no badge at all for a parameter that is set.
+  const collapsedFiltersOn = filtersOn + (filters.missingOnly ? 1 : 0);
   // The sheet's Clear reads the RAW filters, not `effective`. At 100% missing-only is
   // dropped from what is applied, but `m=1` can still be in the URL — a reader completes a
   // set with it set — and gating Clear on `effective` left that parameter with no way out
@@ -563,14 +741,151 @@ export function SetGridView(props: SetGridViewProps) {
       : firstEnabledRarity;
 
 
+  // Phone only, and only when there is a measured rest height to reserve. Desktop never
+  // collapses: same container, full form, `md:` sizes untouched.
+  // `collapsed` is the scroll's answer; `shy` is whether it applies. Held apart so a
+  // reader who scrolls, then triggers a delta strip, restores the full head and keeps the
+  // scroll state underneath it — rather than the strip clearing the state and the head
+  // collapsing again the moment it is dismissed.
+  const wantShy = collapsed && mayCollapse;
+  /**
+   * An open sheet FREEZES the head, and the freeze has to hold against the delta strip as
+   * well as against scroll.
+   *
+   * The scroll listener standing down covered one half. The other half is `mayCollapse`
+   * itself moving: a delta that starts while the bar is drawn opens the head, and opening
+   * `Filters` from that head then made `mayCollapse` true again and flipped the bar back —
+   * unmounting the trigger `useDialogA11y` had saved, in the same render that showed the
+   * dialog.
+   *
+   * So the answer the sheet gets is the one that was true when it opened. Adjusted during
+   * render, this file's pattern for deriving state from a changed input.
+   */
+  const [shyAtSheetOpen, setShyAtSheetOpen] = useState<boolean | null>(null);
+  if (sheetOpen && shyAtSheetOpen === null) setShyAtSheetOpen(wantShy);
+  if (!sheetOpen && shyAtSheetOpen !== null) setShyAtSheetOpen(null);
+  const shy = sheetOpen && shyAtSheetOpen !== null ? shyAtSheetOpen : wantShy;
+
+  useLayoutEffect(() => {
+    sizeSpacer();
+    // Keyed, not every render. Without a list this ran after every keystroke in the search
+    // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
+    // for a head whose size had not moved. The `ResizeObserver` is what covers ordinary
+    // size changes; this covers the transitions it cannot see.
+  }, [shy, deltaFiring, isDesktop, sizeSpacer]);
+
   return (
     <div>
       <div
+        ref={headRef}
+        data-set-head-shy={shy ? "" : undefined}
         data-set-head
+        data-set-head-collapsed={shy ? "" : undefined}
         className="sticky top-0 z-[2] pb-[12px] pt-[10px]"
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
-        <div className="flex items-start gap-[12px]">
+        {/* §31's collapsed bar: ONE row at 52px carrying where you are, how far along, and
+            the two ways to change what you are looking at. Not the same nodes hidden — the
+            identity block is a two-line stack and the control row is a third, so hiding
+            members of them reaches 140px and no further. This is its own row.
+
+            The search control is a BUTTON back to the head, never a second field: §29
+            forbids two controls with one accessible name on this page, and the field is
+            forty pixels of scroll away. */}
+        {shy ? (
+          <div
+            data-set-head-bar
+            className="flex h-[52px] items-center gap-[8px]"
+          >
+            <SetIcon
+              uri={iconSvgUri}
+              size={22}
+              desktopSize={22}
+              tone={complete ? "success" : "muted"}
+              ringed={complete}
+            />
+            {/* The completion state is in the NAME, not only in the icon: `SetIcon` is
+                `aria-hidden`, so a bar carrying the bare name told a screen-reader user
+                nothing the open heading tells them. */}
+            {/* An `h1`, not a span. The open block is `display:none` while the bar is
+                drawn, which takes its heading out of the accessibility tree — so heading
+                navigation had no page heading at all for the whole collapsed state. Only
+                ever one of the two is exposed, for the same reason. */}
+            <h1
+              className="min-w-0 flex-1 truncate font-display text-[14px]"
+              style={{ color: complete ? "var(--success)" : "var(--fg)" }}
+            >
+              {complete ? setPageCopy.complete.heading(name) : name}
+            </h1>
+            {/* Every indexed set, the complete one included. A complete base run can still
+                have extras and enough cells to scroll, and §31's bar carries the ratio —
+                dropping it there loses the reader's progress figure exactly where the head
+                has stopped showing it anywhere else. */}
+            {sections.indexed ? (
+              <span
+                className="shrink-0 font-mono text-[11px]"
+                style={{ color: "var(--fg-muted)" }}
+                aria-label={setPageCopy.head.ratioAria(sections.baseOwned, sections.baseTotal)}
+              >
+                {sections.baseOwned} / {sections.baseTotal}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                // Open the head FIRST. The field is inside the `hidden` open-head subtree
+                // while the bar is drawn, and `scrollTo` does not commit the collapse
+                // state — so focusing here focused a hidden input, which does nothing, and
+                // the keyboard reader stayed on a button that was about to unmount.
+                setCollapsed(false);
+                window.scrollTo({ top: 0 });
+                // And on the next frame, once the open head has painted. The control they
+                // asked for is the field this button stands for; landing them anywhere
+                // else is the same as not moving focus at all.
+                requestAnimationFrame(() => searchRef.current?.focus());
+              }}
+              aria-label={setPageCopy.head.backToSearch}
+              className="inline-flex size-[44px] shrink-0 items-center justify-center
+                         rounded-[6px] text-[13px] text-[color:var(--fg-body)]"
+            >
+              <span aria-hidden="true">⌕</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+              // 44px, like the open row's trigger and every other phone action on this
+              // page. The 52px bar has the room, and this is the ONLY path to the filters
+              // while the head is collapsed — the last control to shrink.
+              className="inline-flex min-h-[44px] shrink-0 items-center gap-[6px] rounded-[6px]
+                         border border-[color:var(--border)] px-[10px] text-[12px]
+                         text-[color:var(--fg-body)]"
+            >
+              {setFilterCopy.label}
+              {/* The badge is how the collapsed bar carries the filter state, which is why
+                  it may drop the chip line. At zero filters there is no badge and nothing
+                  to carry. */}
+              {/* The collapsed count INCLUDES missing-only, where the open row's does not.
+                  The open row shows that toggle beside the badge, so counting it there
+                  states the same fact twice — but the collapsed bar hides the toggle and
+                  the sheet does not carry it, so without this an active missing-only is a
+                  filter the reader can neither see nor find. */}
+              {collapsedFiltersOn > 0 ? (
+                <span
+                  aria-label={setFilterCopy.countBadgeAria(collapsedFiltersOn)}
+                  className="inline-flex h-[18px] min-w-[18px] items-center justify-center
+                             rounded-full bg-[color:var(--accent)] px-[5px] font-mono
+                             text-[10px] text-[color:var(--bg)]"
+                >
+                  {collapsedFiltersOn}
+                </span>
+              ) : null}
+            </button>
+          </div>
+        ) : null}
+
+        <div className={`${shy ? "hidden" : "flex"} items-start gap-[12px]`}>
           {/* 30px on a phone, which is the geometry the sticky head is sized around. */}
           <SetIcon
             uri={iconSvgUri}
@@ -671,6 +986,17 @@ export function SetGridView(props: SetGridViewProps) {
 
         {/* Keyed on the fingerprint so a refresh remounts it: without the key the strip
             kept rendering its old message against a grid that had already updated. */}
+        {/* Rendered at BOTH heights, and deliberately not one of the members the collapse
+            hides: §31 rules that the message must not be collapsed away. The head therefore
+            grows by exactly this strip while it is firing, which is a height change under
+            the reader — allowed here and nowhere else on this surface, because a delta is
+            news and the §28 three-row rule is about the filter state. The pin this replaced
+            grew the head by its whole open form instead. */}
+        {/* `flow-root`, so the strip's own `mt-[10px]` is INSIDE this box. Without a
+            formatting context that margin collapses through the wrapper, and the height
+            subtracted from the reserve is 10px short of what the strip actually occupies —
+            leaving the reserve 10px too tall once a delta fires and clears. */}
+        <div data-set-delta className="flow-root">
         <DeltaStrip
           // The set code is in the key: two sets with the same indexed state and the same
           // ownership fingerprint — two you hold nothing from — would otherwise reuse the
@@ -680,9 +1006,14 @@ export function SetGridView(props: SetGridViewProps) {
           fingerprint={ownedFingerprint}
           indexed={sections.indexed}
           recheckKey={`${modalGeneration}:${artGeneration}`}
+          onFiring={onDeltaFiring}
         />
+        </div>
 
-        <div className="mt-[10px]">
+        {/* Hidden as a WHOLE when shy, not just its contents: the wrapper's own 10px
+            margin is real height, and an empty box with a margin is exactly the kind of
+            slack that made the collapsed head 85px rather than 75. */}
+        <div className={shy ? "hidden" : "mt-[10px]"}>
           {complete ? (
             // At 100% the extras are the only thing left, so the count is promoted into
             // the head and the same cost strip re-scopes to them.
@@ -706,6 +1037,11 @@ export function SetGridView(props: SetGridViewProps) {
           {/* Nothing left in the scoped section means the terminal state, not a zero
               figure: a complete set whose extras are all owned would otherwise read
               "over 0 of the 0 you are missing" beside "Nothing left in this set". */}
+          {/* The money is not on the collapsed bar: it is not acted on mid-scroll, and it
+              is the single largest member of the head. HIDDEN with the wrapper above rather
+              than unmounted — unmounting threw away the reader's expanded disclosure and
+              any focus in it, and the head that came back was a different height from the
+              one the reserve was holding. */}
           {(complete
             ? sections.extrasTotal - sections.extrasOwned
             : sections.baseTotal) > 0 ? (
@@ -734,7 +1070,7 @@ export function SetGridView(props: SetGridViewProps) {
             unindexed set has no cells in either section, so there is no count to state and
             no grid beneath the head for a height change to move. The invariant is about the
             rack not moving what the reader is reading, and there is nothing there to move. */}
-        <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
+        <div className={`mt-[10px] flex-nowrap items-center gap-[8px] ${shy ? "hidden" : "flex"}`}>
           {/* The field leads the row and is the ONLY child that shrinks — `min-w-0` on it
               and `shrink-0` on everything else is what keeps the row from wrapping. At
               390px the arithmetic is tight and deliberate: `Filters` with a badge is 93,
@@ -925,9 +1261,13 @@ export function SetGridView(props: SetGridViewProps) {
             unreachable here. At phone the chips scroll horizontally and never wrap, and
             Clear is outside that scroll — so the clipped item is a chip and never the way
             out. */}
+        {/* The chip line is not on the collapsed bar: §31 rules it out, and the `Filters`
+            badge already carries the state from the `filtersOn` count. It is hidden rather
+            than unmounted so the horizontal scroll position and the focus inside it
+            survive a collapse and a restore. */}
         <div
           data-set-chips
-          className="mt-[8px] flex items-center gap-[6px]"
+          className={`mt-[8px] items-center gap-[6px] ${shy ? "hidden" : "flex"}`}
           style={{ minHeight: 22 }}
         >
           {/* Clear sits OUTSIDE the scrolling strip, which is how "the clipped item is a
@@ -978,7 +1318,24 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
         </div>
 
-        {/* The phone sheet. Same URL-backed state as the rack above it, and the same
+        {/* A `sticky z-[2]` head is a stacking context, so this sheet's `z-50` is confined
+            to it and cannot beat the shell's `fixed z-40` tab bar on paper. NOT reproduced
+            once the probe's hit test was corrected: sampled at a point inside both the
+            sheet and the viewport, the sheet is what comes back. An earlier run said the
+            tab bar won, from a coordinate 20px above the panel's own bottom edge — which is
+            off-screen here, so the browser returned null and the check called it a hit.
+
+            And the panel overflows the viewport regardless of where it is mounted —
+            `main` puts it at 658-1154 against an 844px fold, this branch at 747-1243. So
+            the footer the tab bar covers is off-screen either way, and moving the sheet out
+            of the head changes nothing a reader can see. Left where it has always been:
+            a pre-existing surface is not this PR's to rewrite at round 5.
+
+            The real fix is a portal on `FilterSheet` plus a panel that fits, which is a
+            change to every route that mounts it. Both figures are in `probe:sets` so the
+            follow-up starts from measurements rather than from this comment.
+
+            The phone sheet. Same URL-backed state as the rack above it, and the same
             controls at a 44px target. */}
         {sheetOpen && !isDesktop ? (
           <FilterSheet onClose={() => setSheetOpen(false)}>
@@ -1110,7 +1467,17 @@ export function SetGridView(props: SetGridViewProps) {
             and moved the grid under the reader's thumb: the exact motion the fixed-height
             rule exists to prevent, arriving through the row meant to guarantee it. Desktop
             has 1112px and never wraps. */}
-        <div className="mt-[8px] min-h-[32px] md:min-h-[16px]" data-set-result>
+
+        {/* `sr-only` when shy, never `hidden`, and never a second region beside it.
+            `Filters` IS reachable from the collapsed bar, so the result count still
+            changes there — unmounting the only `role="status"` left a screen-reader user
+            filtering into silence. One node held throughout, so the swap is a class change
+            rather than a remount and nothing is re-announced by collapsing itself.
+            `sr-only` takes no layout, so the 52px bar is unaffected. */}
+        <div
+          className={shy ? "sr-only" : "mt-[8px] min-h-[32px] md:min-h-[16px]"}
+          data-set-result
+        >
         {sections.indexed ? (
         <p
           role="status"
@@ -1153,10 +1520,23 @@ export function SetGridView(props: SetGridViewProps) {
                     </span>
                   </>
                 )}
-          {shownExtras.length > 0 ? (
+          {shownExtras.length > 0 && !shy ? (
             <>
               {" · "}
-              <a href="#extras" className="text-[color:var(--accent)] hover:underline">
+              {/* The whole clause goes, separator included: left behind, the live region
+                  announced a dangling "·" after the result count on every filter change.
+
+                  NOT RENDERED while the region is `sr-only`. `tabIndex={-1}` was the first
+                  answer and it only stops FUTURE tabbing: a reader already focused on the
+                  link keeps it as the active element when the collapse clips the region to
+                  a 1px box, which is the same invisible-focus defect one step later.
+                  Unmounted, focus falls to the body like everything else the collapse
+                  hides — the settled behaviour for this whole class. The region stays
+                  sr-only to keep ANNOUNCING; it was never there to keep offering. */}
+              <a
+                href="#extras"
+                className="text-[color:var(--accent)] hover:underline"
+              >
                 {setPageCopy.sections.jump}
               </a>
             </>
@@ -1165,6 +1545,23 @@ export function SetGridView(props: SetGridViewProps) {
         ) : null}
         </div>
       </div>
+
+      {/* The RESERVE, as a SIBLING rather than a wrapper.
+          A sticky element sticks only within its containing block, so wrapping the head in
+          a box the height of the open head made that box the limit: past 288px of scroll
+          the head was pushed out of the viewport instead of staying over the grid, and the
+          whole feature stopped existing exactly where it was supposed to start. The head
+          now sits in the same container as the grid, and the space the collapse gives up
+          is given back by a spacer beside it.
+          `aria-hidden` and no text: it is layout, and a screen reader has nothing to read
+          in it. */}
+      {/* ALWAYS mounted, and 0px while the head is open. Conditioned on `shy` it was
+          removed in the same commit that revealed the open head, so the layout effect had
+          no node left to compensate with if the two heights disagreed — a filter changed
+          through the collapsed bar's sheet can leave the open head a different size from
+          the one the reserve is holding. A zero-height box costs nothing and removes the
+          question. */}
+      <div aria-hidden="true" data-set-head-reserve ref={spacerRef} />
 
       {!sections.indexed ? (
         // The state the spec names and this page did not draw: with no printing classified

@@ -1,4 +1,4 @@
-import { cloneElement } from "react";
+import { cloneElement, useLayoutEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
@@ -12,12 +12,24 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
-// The delta strip polls a server action on focus; it is covered by its own file.
-const deltaProps: { recheckKey?: string } = {};
+// The delta strip polls a server action on focus; it is covered by its own file. The mock
+// still has to be able to FIRE, because §31 rules that the collapse must not hide its
+// message — a mock that could only be silent would make that untestable and any assertion
+// about it vacuous.
+const deltaProps: { recheckKey?: string; firing?: boolean } = {};
 vi.mock("./delta-strip", () => ({
-  DeltaStrip: (props: { recheckKey?: string }) => {
-    deltaProps.recheckKey = props.recheckKey;
-    return null;
+  DeltaStrip: ({ recheckKey, onFiring }: {
+    recheckKey?: string; onFiring?: (f: boolean) => void;
+  }) => {
+    deltaProps.recheckKey = recheckKey;
+    const firing = deltaProps.firing === true;
+    // The CALLBACK, not the whole props object: `props` is a new reference every render, so
+    // depending on it reported false and then true again on every parent update.
+    useLayoutEffect(() => {
+      onFiring?.(firing);
+      return () => onFiring?.(false);
+    }, [firing, onFiring]);
+    return firing ? <div>a card arrived</div> : null;
   },
 }));
 
@@ -1956,5 +1968,363 @@ describe("SetGridView — the phone provenance without a release date", () => {
     );
     expect(container.querySelector("[data-set-provenance-long]")?.textContent)
       .toMatch(/an unrecorded date/);
+  });
+});
+
+// R3 finding 6, the collapse. Two heights, one threshold, an 80px hysteresis band, and a
+// reserve so the document does not change height when the head shrinks.
+//
+// The parts a browser has to answer — that the bar overlays rather than reflowing the grid,
+// and the rest height in pixels — are in `scripts/probe-sets.mjs`. What is here is the
+// state machine: which threshold fires, in which direction, and what the bar stops
+// carrying.
+describe("SetGridView — the phone head collapses past a threshold", () => {
+  const scrollTo = (y: number) => {
+    Object.defineProperty(window, "scrollY", { value: y, configurable: true, writable: true });
+    fireEvent.scroll(window);
+  };
+  const head = (c: HTMLElement) => c.querySelector("[data-set-head]") as HTMLElement;
+  const isShy = (c: HTMLElement) => head(c).hasAttribute("data-set-head-collapsed");
+
+  beforeEach(() => scrollTo(0));
+
+  it("stays open until 120px of scroll", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(119);
+    expect(isShy(container)).toBe(false);
+    scrollTo(121);
+    expect(isShy(container)).toBe(true);
+  });
+
+  // The band is what stops a thumb resting mid-gesture from fluttering the head: once
+  // collapsed it does NOT restore at 119, only at 40.
+  it("restores at 40, not at the same threshold it collapsed on", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(200);
+    expect(isShy(container)).toBe(true);
+    scrollTo(119);
+    expect(isShy(container)).toBe(true);
+    scrollTo(41);
+    expect(isShy(container)).toBe(true);
+    scrollTo(39);
+    expect(isShy(container)).toBe(false);
+  });
+
+  // Hidden, not unmounted. Unmounting threw away the reader's expanded cost disclosure and
+  // any focus in it, and the head that came back was a different height from the one the
+  // reserve had been holding.
+  it("hides the chip line and the cost strip without unmounting them", () => {
+    stubDesktop(false);
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const costBefore = container.querySelector("[data-set-cost]");
+    expect(costBefore).toBeTruthy();
+    scrollTo(200);
+    expect(container.querySelector("[data-set-chips]")?.className).toMatch(/hidden/);
+    expect(container.querySelector("[data-set-cost]")).toBe(costBefore);
+    expect(container.querySelector("[data-set-cost]")?.closest("div.hidden")).toBeTruthy();
+  });
+
+  // `Filters` IS reachable from the collapsed bar, so the result count still changes
+  // there. Unmounting the only `role="status"` left a screen-reader user filtering into
+  // silence — and a SECOND region beside it would announce twice, so it is one node whose
+  // class changes rather than two that swap.
+  it("keeps the result region announcing, unseen, while collapsed", () => {
+    stubDesktop(false);
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    const before = container.querySelector("[data-set-result]");
+    scrollTo(200);
+    const after = container.querySelector("[data-set-result]");
+    expect(after).toBe(before);
+    expect(after?.className).toBe("sr-only");
+    expect(screen.getAllByRole("status").filter((el) => /cell/.test(el.textContent ?? "")))
+      .toHaveLength(1);
+  });
+
+  // The open row draws the Missing toggle beside the badge, so counting it there says one
+  // thing twice. The collapsed bar hides it and the sheet does not carry it, so there the
+  // same exclusion hides a live filter completely.
+  it("counts missing-only on the collapsed badge, unlike the open row", () => {
+    stubDesktop(false);
+    search = "m=1";
+    const { container } = view([p("1"), p("2")], ["1"]);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("[aria-label*='filter']")?.textContent).toBe("1");
+    scrollTo(0);
+    // And the open row still does not count it.
+    expect(screen.getByRole("button", { name: /^Filters/ }).textContent).not.toMatch(/1/);
+  });
+
+  // What the collapsed bar keeps: where you are, how far along, and the two ways to change
+  // what you are looking at.
+  // Where you are, how far along, and the two ways to change what you are looking at.
+  it("keeps the set, the ratio and both controls", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], ["1"]);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.textContent).toMatch(/Duskmourn/);
+    expect(bar.textContent).toMatch(/1 \/ 2/);
+    expect(screen.getByRole("button", { name: /Show the search/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Filters/ }).length).toBeGreaterThan(0);
+  });
+
+  // §31's bar is ONE row, not the full block with members hidden — that reaches 140px and
+  // no further, because the identity block is a two-line stack and the controls are a
+  // third row. Its pixels are in the probe; what is here is that it exists and what it
+  // carries.
+  it("draws its own one-row bar rather than reusing the open block", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], ["1"]);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar).toBeTruthy();
+    expect(bar.className).toMatch(/h-\[52px\]/);
+    expect(bar.textContent).toMatch(/Duskmourn/);
+    expect(bar.textContent).toMatch(/1 \/ 2/);
+  });
+
+  // §29 forbids two controls with one accessible name on this page, so the bar's search
+  // control is a way BACK to the field rather than a second one.
+  it("offers a route back to the search rather than a second field", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("input")).toBeNull();
+    expect(screen.getByRole("button", { name: /Show the search/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("searchbox", { name: /Search cards/ })).toHaveLength(1);
+  });
+
+  // The badge is how the bar carries the filter state, which is what earns it the right to
+  // drop the chip line.
+  it("carries the filter count on the badge", () => {
+    stubDesktop(false);
+    search = "c=W&r=common";
+    const { container } = view([p("1", { rarity: "common" }), p("2")], []);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.textContent).toMatch(/2/);
+    expect(bar.querySelector("[aria-label*='filter']")).toBeTruthy();
+  });
+
+  // §31, verbatim: "if it is firing, the collapse waits". Round 7 replaced this gate with
+  // "the strip is simply not a member the collapse hides", which shows the message but is
+  // not what the ruling says — and let a variable-height strip grow the fixed 52px bar.
+  it("waits for the delta strip rather than collapsing around it", () => {
+    stubDesktop(false);
+    deltaProps.firing = true;
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(container)).toBe(false);
+      expect(container.textContent).toMatch(/a card arrived/);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  it("and collapses once the message clears", () => {
+    stubDesktop(false);
+    deltaProps.firing = true;
+    try {
+      const r = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(r.container)).toBe(false);
+      deltaProps.firing = false;
+      r.rerender(r.again());
+      scrollTo(401);
+      expect(isShy(r.container)).toBe(true);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  // The gate does NOT apply behind an open sheet. A strip that starts firing there would
+  // otherwise reopen the head and unmount the trigger `useDialogA11y` saved — which is the
+  // defect the sheet freeze exists to prevent, arriving through the delta gate.
+  it("does not reopen behind an open sheet when the strip fires", () => {
+    stubDesktop(false);
+    const r = view([p("1"), p("2")], []);
+    scrollTo(400);
+    expect(isShy(r.container)).toBe(true);
+    const bar = r.container.querySelector("[data-set-head-bar]") as HTMLElement;
+    fireEvent.click([...bar.querySelectorAll("button")]
+      .find((b) => /Filters/.test(b.textContent ?? "")) as HTMLElement);
+    deltaProps.firing = true;
+    try {
+      r.rerender(r.again());
+      expect(isShy(r.container)).toBe(true);
+      expect(r.container.querySelector("[data-set-head-bar]")).toBeTruthy();
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  // Opening the sheet from the collapsed bar keeps the bar: the head does not reopen, so
+  // `useDialogA11y` still has the trigger it will return focus to.
+  it("keeps the bar when the sheet opens from it", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    const trigger = [...bar.querySelectorAll("button")]
+      .find((b) => /Filters/.test(b.textContent ?? "")) as HTMLElement;
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(isShy(container)).toBe(true);
+    expect(container.querySelector("[data-set-head-bar]")).toBeTruthy();
+  });
+
+  // The open block is `display:none` while the bar is drawn, which takes its `h1` out of
+  // the accessibility tree — heading navigation had no page heading for the whole collapsed
+  // state.
+  it("keeps a page heading while collapsed", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("h1")?.textContent).toMatch(/Duskmourn/);
+    // Exactly one is exposed at a time: the other is inside the hidden subtree.
+    const shown = [...container.querySelectorAll("h1")]
+      .filter((h) => h.closest("div.hidden") === null);
+    expect(shown).toHaveLength(1);
+  });
+
+  // A delta that starts while the bar is drawn opens the head; opening Filters from that
+  // head then flipped the bar back and unmounted the trigger `useDialogA11y` had saved, in
+  // the same render that showed the dialog.
+  it("holds the head open when the sheet opens during a delta", () => {
+    stubDesktop(false);
+    const r = view([p("1"), p("2")], []);
+    scrollTo(400);
+    expect(isShy(r.container)).toBe(true);
+    deltaProps.firing = true;
+    try {
+      r.rerender(r.again());
+      expect(isShy(r.container)).toBe(false);
+      fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      // The head it was opened from is still the head that is drawn.
+      expect(isShy(r.container)).toBe(false);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  // `effective` forces missing-only off at 100%, but `m=1` can still be in the URL — the
+  // stale-filter case Clear exists for — and the bar showed no badge for it at all.
+  it("badges a stale m=1 on a complete set", () => {
+    stubDesktop(false);
+    search = "m=1";
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: true })], ["1", "2"],
+    );
+    scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("[aria-label*='filter']")?.textContent).toBe("1");
+  });
+
+  // A complete base run can still have extras and enough cells to scroll, and the icon is
+  // `aria-hidden` — a bar carrying the bare name told a screen-reader user nothing.
+  it("keeps the ratio and the completion state when the set is complete", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: false })], ["1"],
+    );
+    scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.textContent).toMatch(/1 \/ 1/);
+    expect(bar.textContent).not.toBe("Duskmourn");
+    expect(bar.textContent).toMatch(/Duskmourn/);
+  });
+
+  // The field is inside the `hidden` open-head subtree while the bar is drawn, so the
+  // button has to OPEN the head before focusing — `scrollTo` does not commit the state,
+  // and focusing a hidden input does nothing at all.
+  it("opens the head and lands focus in the field", async () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    fireEvent.click(screen.getByRole("button", { name: /Show the search/ }));
+    // The STATE, first. JSDOM applies no CSS and will happily focus an input inside a
+    // `hidden` subtree, so asserting focus alone passes whether or not the head opened —
+    // which is the whole defect. Opening is the part a browser would enforce.
+    expect(isShy(container)).toBe(false);
+    await act(async () => {
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+    expect(document.activeElement)
+      .toBe(screen.getByRole("searchbox", { name: /Search cards/ }));
+  });
+
+  // The reserve is a SIBLING, not a wrapper. A sticky element sticks only within its
+  // containing block, so a wrapper the height of the open head pushed the head out of the
+  // viewport past that height — the feature stopped existing where it was meant to start.
+  it("keeps the head out of any box that would bound its stickiness", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    const spacer = container.querySelector("[data-set-head-reserve]");
+    expect(spacer).toBeTruthy();
+    // A sibling of the head, never its parent.
+    expect(spacer?.parentElement).toBe(head(container).parentElement);
+    expect(head(container).parentElement?.contains(
+      container.querySelector("[data-set-grid]"),
+    )).toBe(true);
+  });
+
+  // The four-part focus mechanism this replaced — a pin, a bar exception, a rescue ref and
+  // a layout effect — drew findings in five consecutive rounds and grew a new hole in each.
+  // What is left is one term: the head does not collapse while the SHEET is open, because
+  // that is the case with a real defect behind it. `useDialogA11y` returns focus to the
+  // trigger on close, and a collapse would have removed it.
+  it("does not collapse while the filter sheet is open", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    scrollTo(400);
+    expect(isShy(container)).toBe(false);
+  });
+
+  it("and collapses once the sheet closes", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    scrollTo(400);
+    expect(isShy(container)).toBe(false);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    scrollTo(401);
+    expect(isShy(container)).toBe(true);
+  });
+
+  // The region is `sr-only` to keep ANNOUNCING, not to keep offering: clipped to a 1px box
+  // the jump link is still focusable, so Tab landed on an invisible control.
+  // Unmounted, not merely untabbable. `tabIndex={-1}` only stops FUTURE tabbing: a reader
+  // already focused on the link keeps it as the active element when the collapse clips the
+  // region to a 1px box, which is the same invisible-focus defect one step later.
+  it("unmounts the extras jump link while collapsed", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: false })], [],
+    );
+    const region = () => container.querySelector("[data-set-result]") as HTMLElement;
+    expect(container.querySelector('a[href="#extras"]')).toBeTruthy();
+    scrollTo(400);
+    expect(container.querySelector('a[href="#extras"]')).toBeNull();
+    // The separator goes with it. Left behind, the live region announced a dangling "·"
+    // after the result count on every filter change.
+    expect(region().textContent).not.toMatch(/·\s*$/);
+  });
+
+  it("never collapses at desktop, however far the reader scrolls", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(2000);
+    expect(isShy(container)).toBe(false);
+    expect(container.querySelector("[data-set-cost]")).not.toBeNull();
   });
 });

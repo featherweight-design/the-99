@@ -298,21 +298,30 @@ read against `main`, is 22px stale before this starts. **Re-measure first**, wit
 
 ### PR 5b — the cost line and the collapse
 
-- [ ] **Unit coverage, in `cost-strip.test.tsx`** — the suite already exists, and this is the
+- [x] **Unit coverage, in `cost-strip.test.tsx` and `set-grid-view.test.tsx`** — the
+  disclosure, its caveat branches and the desktop form are in the first; the hysteresis
+  band's two thresholds, the delta gate and the collapsed bar's contents are in the second,
+  because they are the parent's state and not the strip's. — the suite already exists, and this is the
   one PR in the set whose behaviour is a state machine rather than a layout: the collapsed
   and expanded forms, each caveat branch (`unpriced`, `noFigure`, `soldOut`, `stale`), the
   hysteresis band's two thresholds, and the desktop form proving it did not move. The probe
   covers overlay-not-reflow, which is the part only a browser can answer.
-- [ ] **`CostStrip` becomes one 44px row** that expands in place on tap. The caveat count is
+- [x] **`CostStrip` becomes one 44px row** that expands in place on tap. The caveat count is
   the reason truncation is not enough: a strip whose height depends on how many pricing
   facts are true is an unpredictable sticky head — the same class as §28's ghost Clear.
-- [ ] **Two heights, one threshold.** Collapse at 120px of scroll, restore at 40px: an 80px
+- [x] **Two heights, one threshold.** Collapse at 120px of scroll, restore at 40px: an 80px
   hysteresis band so a thumb resting mid-gesture cannot flutter it. **Never interpolated
   with scroll offset.**
-- [ ] **The bar overlays; it does not reflow.** Assert in the probe that the grid's computed
+- [x] **The bar overlays; it does not reflow.** Assert in the probe that the grid's computed
   track count is identical at scroll 0 and scroll 400 — R3 names this test itself.
-- [ ] **Reserve the rest height in the document**, or the page jumps on the first crossing.
-- [ ] **No desktop change**: same container, full form, `md:` sizes untouched.
+- [x] **Reserve the rest height in the document**, or the page jumps on the first crossing.
+- [x] **No desktop change**: same container, full form, `md:` sizes untouched.
+
+**Measured on `local-dev` at 390, after 5b:** rest **288px**, collapsed **75px** — a 52px
+bar plus the container's own padding and border — with **288px reserved in the document at
+both**, and the grid's track count identical at scroll 0 and scroll 400. §31's figures are
+148 and 52 of *content*; the collapsed bar is exactly 52, and the rest height is above 148
+because §28's 44px chip line and 32px result reserve both postdate that arithmetic.
 
 **Watch for:** finding 6 rules that the collapsed bar must not carry the chip line, and
 #549 spent four rounds making that chip line touchable at 44px. The badge carries the state

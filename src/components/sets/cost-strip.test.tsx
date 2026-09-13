@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { CostStrip } from "./cost-strip";
 import type { CostToComplete } from "../../lib/sets/cost";
 
@@ -11,7 +11,10 @@ const cost = (over: Partial<CostToComplete> = {}): CostToComplete => ({
 describe("CostStrip", () => {
   it("states the priced-of-missing gap in the same breath as the total", () => {
     render(<CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" />);
-    expect(screen.getByText("$1,284.40")).toBeInTheDocument();
+    // TWO nodes carry the figure now, and both are in the tree at once: JSDOM applies no
+    // CSS, so the phone's collapsed row and the desktop card are both present and the
+    // breakpoint decides which is drawn.
+    expect(screen.getAllByText("$1,284.40").length).toBeGreaterThan(0);
     expect(screen.getByText("over 193 of the 214 missing")).toBeInTheDocument();
   });
 
@@ -101,6 +104,171 @@ describe("CostStrip when nothing missing can be costed", () => {
       />,
     );
     expect(screen.queryByText("$0.00")).toBeNull();
-    expect(screen.getByText("no price")).toBeInTheDocument();
+    expect(screen.getAllByText("no price").length).toBeGreaterThan(0);
+  });
+});
+
+// R3 finding 6, move 3. The phone form is one 44px row that expands in place. This is the
+// one part of the finding whose behaviour is a state machine rather than a layout, so it
+// is unit-tested here; the probe answers the parts only a browser can — that the bar
+// overlays rather than reflowing the grid, and that the row is 44px on screen.
+//
+// JSDOM applies no CSS, so both forms are always in the tree. What separates them is the
+// `md:hidden` token and the `expanded` state, never a computed style.
+describe("CostStrip — the phone's collapsed row", () => {
+  const toggles = () => screen.getAllByRole("button")
+    .filter((b) => b.hasAttribute("data-set-cost-toggle"));
+  const opener = () => toggles().find((b) => b.getAttribute("aria-expanded") === "false");
+  const closer = () => toggles().find((b) => b.getAttribute("aria-expanded") === "true");
+
+  it("collapses to one row with the figure and what it covers", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    const row = opener();
+    expect(row).toBeDefined();
+    expect(row?.className).toMatch(/h-\[44px\]/);
+    expect(row?.textContent).toMatch(/\$1,284\.40/);
+    expect(row?.textContent).toMatch(/to finish · 193 of 214/);
+  });
+
+  it("expands in place on tap, and the row it replaces is gone", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    fireEvent.click(opener() as HTMLElement);
+    expect(opener()).toBeUndefined();
+    expect(closer()).toBeDefined();
+    expect(screen.getByRole("link", { name: /ManaPool Mass Entry/ })).toBeInTheDocument();
+  });
+
+  it("collapses again from the expanded form", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    fireEvent.click(opener() as HTMLElement);
+    fireEvent.click(closer() as HTMLElement);
+    expect(opener()).toBeDefined();
+  });
+
+  // A row that silently dropped "3 have never been stocked" would be a figure the reader
+  // cannot audit. The count is in the row AND in the accessible name.
+  it("counts the caveats rather than dropping them", () => {
+    render(
+      <CostStrip
+        cost={cost({ absentCount: 2, soldOutCount: 1 })}
+        href="https://manapool.com/x"
+        staleAsOf="2026-09-01T00:00:00Z"
+      />,
+    );
+    expect(opener()).toHaveAttribute("aria-label", expect.stringContaining("3 notes"));
+  });
+
+  // An explicit `aria-label` REPLACES the button's descendant text, so a name stating only
+  // the action removed the very audit information this row exists to keep: the figure and
+  // what it covers were on the screen and absent from the name.
+  it("puts the figure and its coverage in the accessible name", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    const label = opener()?.getAttribute("aria-label") ?? "";
+    expect(label).toMatch(/\$1,284\.40/);
+    expect(label).toMatch(/193 of 214/);
+    expect(label).toMatch(/Show the full cost/);
+  });
+
+  it("says one note, not one notes", () => {
+    render(<CostStrip cost={cost({ absentCount: 2 })} href="https://manapool.com/x" />);
+    expect(opener()).toHaveAttribute("aria-label", expect.stringContaining("1 note"));
+    expect(opener()?.getAttribute("aria-label")).not.toMatch(/1 notes/);
+  });
+
+  it("and offers no count when there is nothing to note", () => {
+    render(<CostStrip cost={cost({ absentCount: 0 })} href="https://manapool.com/x" />);
+    expect(opener()?.getAttribute("aria-label")).not.toMatch(/note/);
+  });
+
+  // Each caveat branch, because the collapsed row's whole justification is that their
+  // number is unpredictable.
+  it.each([
+    ["unpriced", { absentCount: 3 }, /never been stocked/],
+    ["noFigure", { inconclusiveCount: 2 }, /no price in this feed/],
+    ["soldOut", { soldOutCount: 4 }, /sold out/i],
+  ])("shows the %s caveat once expanded", (_name, over, pattern) => {
+    render(<CostStrip cost={cost({ absentCount: 0, ...over })} href="https://manapool.com/x" />);
+    fireEvent.click(opener() as HTMLElement);
+    expect(screen.getByText(pattern)).toBeInTheDocument();
+  });
+
+  it("shows the stale caveat once expanded", () => {
+    render(
+      <CostStrip cost={cost()} href="https://manapool.com/x" staleAsOf="2026-09-01T00:00:00Z" />,
+    );
+    fireEvent.click(opener() as HTMLElement);
+    expect(screen.getByText(/prices as of/)).toBeInTheDocument();
+  });
+
+  // The extras scope keeps its own sentence in the collapsed row too.
+  it("re-scopes the collapsed row to the extras", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" scope="extras" />);
+    expect(opener()?.textContent).toMatch(/to finish the extras/);
+  });
+
+  // The desktop card has never been closable and does not become so: its toggle is
+  // `md:hidden`, and the full form carries no `hidden` token of its own.
+  it("leaves the desktop form open and uncloseable", () => {
+    const { container } = render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    for (const b of toggles()) expect(b.className).toMatch(/md:hidden/);
+    const full = container.querySelector("[data-set-cost] > div") as HTMLElement;
+    expect(full.className).toMatch(/md:flex/);
+  });
+});
+
+// Each toggle unmounts the other, so a reader who is not using a mouse has to be handed
+// to the control that now represents the same disclosure — in BOTH directions. Focus was
+// falling to the body on the way back.
+describe("CostStrip — focus survives the swap", () => {
+  const toggles = () => screen.getAllByRole("button")
+    .filter((b) => b.hasAttribute("data-set-cost-toggle"));
+  const opener = () => toggles().find((b) => b.getAttribute("aria-expanded") === "false");
+  const closer = () => toggles().find((b) => b.getAttribute("aria-expanded") === "true");
+
+  it("lands on the collapse control after expanding", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    fireEvent.click(opener() as HTMLElement);
+    expect(document.activeElement).toBe(closer());
+  });
+
+  it("and back on the expand control after collapsing", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    fireEvent.click(opener() as HTMLElement);
+    fireEvent.click(closer() as HTMLElement);
+    expect(document.activeElement).toBe(opener());
+  });
+
+  // The first render must not steal focus from wherever the reader actually is.
+  it("takes no focus on mount", () => {
+    render(<CostStrip cost={cost()} href="https://manapool.com/x" />);
+    expect(document.activeElement).toBe(document.body);
+  });
+});
+
+// The strip renders without a link when the filters left nothing to buy, and a name
+// promising a send button there announces an action that is not on the page.
+describe("CostStrip — the accessible name with no send link", () => {
+  const opener = () => screen.getAllByRole("button")
+    .find((b) => b.hasAttribute("data-set-cost-toggle")
+      && b.getAttribute("aria-expanded") === "false");
+
+  it("does not promise an action when there is none", () => {
+    render(<CostStrip cost={cost({ absentCount: 0 })} href={null} />);
+    const label = opener()?.getAttribute("aria-label") ?? "";
+    expect(label).toMatch(/Show the full cost/);
+    expect(label).not.toMatch(/ManaPool/);
+  });
+
+  // A LINK, not a button: the expanded action is an `<a>`, and naming a control type the
+  // reader will not find is worse than naming none.
+  it("names it a link when there is, because that is what it is", () => {
+    render(<CostStrip cost={cost({ absentCount: 0 })} href="https://manapool.com/x" />);
+    expect(opener()?.getAttribute("aria-label")).toMatch(/ManaPool link/);
+    expect(opener()?.getAttribute("aria-label")).not.toMatch(/button/);
+  });
+
+  it("keeps the notes clause in both forms", () => {
+    render(<CostStrip cost={cost({ absentCount: 2 })} href={null} />);
+    expect(opener()?.getAttribute("aria-label")).toMatch(/1 note/);
   });
 });

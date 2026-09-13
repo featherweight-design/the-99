@@ -10,6 +10,7 @@
 // ONE COUNT. The result line, this button's label and this sentence's denominator are
 // three readings of the same filtered-cell computation, passed in rather than recomputed.
 
+import { useRef, useState } from "react";
 import { formatCents } from "../../lib/decks/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import type { CostToComplete } from "../../lib/sets/cost";
@@ -38,6 +39,29 @@ export function CostStrip({
   /** Set only when the feed itself trails. Staleness is a page fact, not a cell fact. */
   staleAsOf?: string | null;
 }) {
+  // R3 finding 6, move 3. The phone form is ONE 44px row that expands in place; the
+  // desktop form is the card below, unchanged and always open.
+  //
+  // The caveat count is why truncating was not enough. This strip's height is the number
+  // of pricing facts that happen to be true — up to four lines of them — so a head
+  // containing it has a height nobody can predict, which is the ghost-Clear defect §28
+  // already ruled out on the row below.
+  const [expanded, setExpanded] = useState(false);
+  /**
+   * Which toggle to focus after the swap. Each of the two unmounts the other, so without
+   * this a keyboard reader who opens the strip — or closes it again — is left on the body
+   * rather than on the control that now represents the same disclosure.
+   *
+   * A ref rather than an effect on `expanded`: the very first render must not steal focus
+   * from wherever the reader actually is.
+   */
+  const focusToggle = useRef(false);
+  const takeFocus = (node: HTMLButtonElement | null) => {
+    if (node !== null && focusToggle.current) {
+      focusToggle.current = false;
+      node.focus();
+    }
+  };
 
   // Three cases, and only the middle one is "no price". Nothing missing is a real zero.
   // Missing cards that cannot be costed is unavailable pricing, and $0.00 there would read
@@ -49,12 +73,70 @@ export function CostStrip({
       ? setPageCopy.cost.noneCostable
       : formatCents(cost.totalCents);
 
+  const caveats = [
+    cost.absentCount > 0,
+    cost.inconclusiveCount > 0,
+    cost.soldOutCount > 0,
+    staleAsOf !== null,
+  ].filter(Boolean).length;
+
   return (
     <div
-      className="flex flex-wrap items-center gap-x-[14px] gap-y-[8px] rounded-[10px]
-                 px-[12px] py-[10px]"
+      data-set-cost
+      className="rounded-[10px]"
       style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
     >
+      {/* The phone's collapsed row. `md:hidden` and unmounted above it rather than styled
+          away, because it is a BUTTON: left in the tree at desktop it would be a second
+          control with the same job, reachable by keyboard and invisible. */}
+      {!expanded ? (
+        <button
+          type="button"
+          ref={takeFocus}
+          data-set-cost-toggle
+          onClick={() => {
+            focusToggle.current = true;
+            setExpanded(true);
+          }}
+          aria-expanded={false}
+          aria-label={setPageCopy.cost.expandAria(
+            `${total} ${(scope === "extras"
+              ? setPageCopy.cost.collapsedTailExtras
+              : setPageCopy.cost.collapsedTail)(cost.pricedCount, cost.missingCount)}`,
+            caveats,
+            href !== null,
+          )}
+          className="flex h-[44px] w-full items-center gap-[8px] px-[12px] text-left md:hidden"
+        >
+          <span className="flex min-w-0 flex-1 items-baseline gap-[6px] font-mono text-[12px]">
+            <span className="shrink-0" style={{ color: "var(--accent)" }}>{total}</span>
+            <span className="min-w-0 truncate" style={{ color: "var(--fg-body)" }}>
+              {(scope === "extras"
+                ? setPageCopy.cost.collapsedTailExtras
+                : setPageCopy.cost.collapsedTail)(cost.pricedCount, cost.missingCount)}
+            </span>
+          </span>
+          {/* The caveats are not dropped, they are counted. A row that silently omitted
+              "3 have never been stocked" would be a figure the reader cannot audit. */}
+          {caveats > 0 ? (
+            <span className="shrink-0 font-mono text-[10px]" style={{ color: "var(--fg-muted)" }}>
+              {caveats}
+            </span>
+          ) : null}
+          <span aria-hidden="true" className="shrink-0 font-mono text-[11px]"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            ▾
+          </span>
+        </button>
+      ) : null}
+
+      {/* The full form. Always mounted at desktop; on the phone it replaces the row above
+          on tap, in place. */}
+      <div
+        className={`${expanded ? "flex" : "hidden"} md:flex flex-wrap items-center
+                    gap-x-[14px] gap-y-[8px] px-[12px] py-[10px]`}
+      >
       <span className="flex min-w-0 flex-col">
         <span className="font-mono text-[10px] tracking-[0.08em]" style={{ color: "var(--fg-faint)" }}>
           {scope === "extras" ? setPageCopy.cost.labelExtras : setPageCopy.cost.label}
@@ -113,6 +195,27 @@ export function CostStrip({
         {sendCapped ? setPageCopy.cost.sendCapped(sending) : setPageCopy.cost.send(sending)}
       </a>
       ) : null}
+
+      {/* The way back, phone only — the desktop form has never been closable and does not
+          become so. Rendered inside the expanded block so it leaves with it. */}
+      {expanded ? (
+        <button
+          type="button"
+          ref={takeFocus}
+          data-set-cost-toggle
+          onClick={() => {
+            focusToggle.current = true;
+            setExpanded(false);
+          }}
+          aria-expanded
+          aria-label={setPageCopy.cost.collapseAria}
+          className="flex h-[44px] w-full items-center justify-center font-mono text-[11px]
+                     text-[color:var(--fg-muted)] md:hidden"
+        >
+          <span aria-hidden="true">▴</span>
+        </button>
+      ) : null}
+      </div>
     </div>
   );
 }

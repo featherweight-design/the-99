@@ -785,6 +785,342 @@ async function run() {
       }
     }
 
+    // R3 finding 6, the collapse. Everything here is a browser question: JSDOM has no
+    // scroll, no sticky, and no layout, so the unit tests can prove which threshold fires
+    // and this has to prove what the page does when it does.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const tracksNow = () => page.evaluate(() => {
+      const grid = document.querySelector("[data-set-grid]");
+      return grid === null
+        ? null
+        : getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
+    });
+    const headNow = () => page.evaluate(() => {
+      const el = document.querySelector("[data-set-head]");
+      if (el === null) return null;
+      return {
+        height: Math.round(el.getBoundingClientRect().height),
+        shy: el.hasAttribute("data-set-head-collapsed"),
+        bar: (() => {
+          const b = document.querySelector("[data-set-head-bar]");
+          return b === null ? null : Math.round(b.getBoundingClientRect().height);
+        })(),
+        // The reserve. `offsetParent` is the wrapper the sticky head floats inside, and its
+        // height is what the DOCUMENT is holding — the number that must not change.
+        // WHERE IT IS, not only how tall. The first version of this block measured height
+        // and the collapsed attribute and reported clean while the head was scrolled out of
+        // the viewport entirely — the reserve had been a WRAPPER, which is a containing
+        // block, and a sticky element cannot outlive one.
+        top: Math.round(el.getBoundingClientRect().top),
+        // What the document is holding: the head's own box plus the spacer beside it.
+        reserved: (() => {
+          const spacer = document.querySelector("[data-set-head-reserve]");
+          return Math.round(
+            el.getBoundingClientRect().height
+            + (spacer === null ? 0 : spacer.getBoundingClientRect().height),
+          );
+        })(),
+      };
+    });
+    const scrollTo = async (y) => {
+      await page.evaluate((to) => window.scrollTo(0, to), y);
+      // Two frames: the listener is passive and the class change lands on the next paint.
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    };
+    // The FIRST crossing, sampled on the exact frame the collapse lands.
+    //
+    // The reserve used to be state-held, which arrives a commit late: the head had already
+    // shrunk while the spacer was still 0, and the document jumped once — on the only
+    // crossing anyone notices. A fixed two-frame sample cannot see that, and the first
+    // version of this check passed with the spacer DELETED ENTIRELY, because by the frame
+    // it looked at, the collapse had not applied yet.
+    //
+    // So it watches frame by frame and reports the shift measured on the first frame where
+    // the head is actually marked collapsed — and says so when it never sees one, rather
+    // than returning a 0 that reads like a pass.
+    const firstCrossingShift = async () => {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      return page.evaluate(() => new Promise((resolve) => {
+        const grid = document.querySelector("[data-set-grid]");
+        const head = document.querySelector("[data-set-head]");
+        if (grid === null || head === null) return resolve({ shift: null, saw: false });
+        // Where the grid sits in the DOCUMENT, which is what a reserve protects. Its
+        // VIEWPORT position necessarily changes — that is the scroll itself.
+        const docTop = () => Math.round(grid.getBoundingClientRect().top + window.scrollY);
+        const before = docTop();
+        window.scrollTo(0, 400);
+        let frames = 0;
+        const tick = () => {
+          if (head.hasAttribute("data-set-head-collapsed")) {
+            return resolve({ shift: Math.abs(docTop() - before), saw: true, frames });
+          }
+          if (++frames > 30) return resolve({ shift: null, saw: false, frames });
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }));
+    };
+    const restState = await headNow();
+    const tracksAtRest = await tracksNow();
+    await scrollTo(400);
+    const shyState = await headNow();
+    const tracksScrolled = await tracksNow();
+
+    if (restState === null || shyState === null || tracksAtRest === null || tracksScrolled === null) {
+      failures += !report(
+        "the collapse can be measured", false,
+        "the head or the grid was not on the page — nothing below this was measured",
+      );
+    } else {
+      failures += !report(
+        "the head collapses past the threshold",
+        !restState.shy && shyState.shy,
+        `at rest shy=${restState.shy} ${restState.height}px, at 400 shy=${shyState.shy} ${shyState.height}px`,
+      );
+      failures += !report(
+        "and is actually shorter, not merely marked",
+        shyState.height < restState.height,
+        `${restState.height}px to ${shyState.height}px`,
+      );
+      // §31 rules the collapsed bar at 52px of content. With the container's own 10/12
+      // padding and its border that is 75px, and the number is asserted rather than merely
+      // reported: "shorter" was true at 140px too, which is the same block with members
+      // hidden rather than the one-row bar the ruling draws.
+      // The point of the whole feature. Asserted at BOTH positions, because a head that
+      // sticks at rest and leaves at 400 is the exact bug this PR shipped and the exact one
+      // its first probe could not see.
+      failures += !report(
+        "the head is still at the top of the viewport after scrolling",
+        Math.abs(shyState.top) <= 1,
+        `top ${shyState.top}px at 400 — ${restState.top}px unscrolled, which is the app`
+        + " chrome above it and not this head's doing",
+      );
+      failures += !report(
+        "the collapsed bar is the one-row form, not the full block with members hidden",
+        shyState.bar === 52 && shyState.height <= 80,
+        `bar ${shyState.bar}px, head ${shyState.height}px`,
+      );
+      // R3 names this test itself: the bar overlays, so the grid's own layout is the same
+      // at every scroll position.
+      failures += !report(
+        "the grid's track count is identical at scroll 0 and scroll 400",
+        tracksAtRest === tracksScrolled,
+        `${tracksAtRest} tracks then ${tracksScrolled}`,
+      );
+      // And the reserve, which is the difference between overlaying and not jumping.
+      failures += !report(
+        "the document holds the head's rest height while it is collapsed",
+        restState.reserved !== null
+          && shyState.reserved !== null
+          && Math.abs(restState.reserved - shyState.reserved) <= 1,
+        `reserved ${restState.reserved}px at rest, ${shyState.reserved}px collapsed`,
+      );
+      // Deep, because the bug this replaces only appeared once the scroll passed the
+      // height of the box the head had been wrapped in. A single mid-page sample would
+      // have missed it at 400 too if the reserve had been a little taller.
+      await scrollTo(2000);
+      const deep = await headNow();
+      failures += !report(
+        "and stays there far down the grid",
+        deep !== null && Math.abs(deep.top) <= 1 && deep.shy,
+        deep === null ? "the head could not be measured" : `top ${deep.top}px, shy=${deep.shy}`,
+      );
+
+      // The bar's own controls, measured while it is DRAWN. The page's other 44px check
+      // runs at rest, where the bar does not exist — so the one path to the filters while
+      // the head is collapsed was the only phone action never measured, and it shipped at
+      // 36px.
+      await scrollTo(400);
+      const barTargets = await page.evaluate(() => {
+        const bar = document.querySelector("[data-set-head-bar]");
+        if (bar === null) return null;
+        const buttons = [...bar.querySelectorAll("button")];
+        if (buttons.length === 0) return { count: 0, smallest: null };
+        return {
+          count: buttons.length,
+          smallest: Math.round(Math.min(...buttons.map((b) => b.getBoundingClientRect().height))),
+        };
+      });
+      failures += !report(
+        "every control on the collapsed bar clears the 44px target",
+        barTargets !== null && barTargets.count > 0
+          && barTargets.smallest !== null && barTargets.smallest >= 44,
+        barTargets === null
+          ? "the bar was not drawn — the check measured nothing"
+          : barTargets.count === 0
+            ? "the bar drew no controls — the check measured nothing"
+            : `${barTargets.count} measured, smallest ${barTargets.smallest}px`,
+      );
+
+      // RESTORATION, attempted. The initial scroll read is in a passive effect, because the
+      // layout effect the shape asks for is a hard lint error here, so a first paint at
+      // scrollY > 120 shows the open head for one frame. What that costs the GRID should be
+      // nothing — the head shrinks by its own difference and the spacer grows by the same
+      // amount in the same commit — but this probe cannot demonstrate it either way:
+      // NEITHER a reload NOR a history back restores a scrolled position in this engine, so
+      // the page always comes up at the top and the case is never entered.
+      //
+      // Reported rather than asserted, and reported as NOT REPRODUCED rather than as a
+      // pass. A check that cannot reach its case must say so; a green line here would be a
+      // claim of coverage that does not exist.
+      await page.evaluate(() => window.scrollTo(0, 600));
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.goto(`${BASE}/collection/sets`, { waitUntil: "networkidle" });
+      await page.goBack({ waitUntil: "networkidle" });
+      await waitForCells(page);
+      const restoredY = await page.evaluate(() => Math.round(window.scrollY));
+      if (restoredY > 120) {
+        failures += !report(
+          "a first paint at a restored scroll position keeps the grid still",
+          true,
+          `entered at y=${restoredY}`,
+        );
+      } else {
+        // NOT a `report(..., true, ...)`. That printed `ok` and let the probe exit
+        // successfully while saying "NOT REPRODUCED" in its own detail — a green line for a
+        // case never entered, which is the exact thing this run keeps shipping. Its own
+        // marker, outside the pass/fail tally, so it can neither claim coverage nor fail a
+        // build over an engine behaviour.
+        console.log(
+          `  n/a  a first paint at a restored scroll position — NOT REPRODUCED: came up at`
+          + ` y=${restoredY}. Neither reload nor history back restores a scrolled position`
+          + " here, so the one-frame open head on restoration stays unmeasured.",
+        );
+      }
+
+      // The breakpoint round trip. A reader who collapses on the phone, widens to desktop
+      // and comes back is still `collapsed`, so the recorder refuses on the first mobile
+      // render — and the DESKTOP height stayed reserved under a phone head. Only a real
+      // engine can catch it: JSDOM reports every height as 0, so the unit test written for
+      // this passed with the fix removed.
+      await scrollTo(400);
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const afterTrip = await page.evaluate(() => {
+        const head = document.querySelector("[data-set-head]");
+        const spacer = document.querySelector("[data-set-head-reserve]");
+        if (head === null || spacer === null) return null;
+        return {
+          head: Math.round(head.getBoundingClientRect().height),
+          spacer: Math.round(spacer.getBoundingClientRect().height),
+          shy: head.hasAttribute("data-set-head-collapsed"),
+        };
+      });
+      // The document must still hold the PHONE's own rest height, measured at the top of
+      // this block. A loose bound is not a check here: the desktop figure happened to land
+      // within 3px of the right one on this fixture, so anything short of the exact sum
+      // passes on the bug.
+      failures += !report(
+        "a trip to desktop and back reserves the phone's own rest height",
+        afterTrip !== null
+          && Math.abs(afterTrip.head + afterTrip.spacer - restState.height) <= 1,
+        afterTrip === null
+          ? "the head or spacer was not on the page — the check measured nothing"
+          : `head ${afterTrip.head} + spacer ${afterTrip.spacer} = `
+            + `${afterTrip.head + afterTrip.spacer}px against a phone rest of`
+            + ` ${restState.height}px, shy=${afterTrip.shy}`,
+      );
+
+      const crossing = await firstCrossingShift();
+      failures += !report(
+        "the grid does not move in the document on the first crossing",
+        crossing.saw && crossing.shift !== null && crossing.shift <= 1,
+        !crossing.saw
+          ? "the head never reported itself collapsed — the check measured nothing"
+          : `${crossing.shift}px on the frame it collapsed, ${crossing.frames} frames in`,
+      );
+
+      await scrollTo(20);
+      const restored = await headNow();
+      failures += !report(
+        "and it comes back",
+        restored !== null && !restored.shy,
+        restored === null ? "the head could not be measured" : `shy=${restored.shy} ${restored.height}px`,
+      );
+    }
+    await scrollTo(0);
+
+    // The sheet's stacking context. `position: sticky` with a `z-index` creates one, so
+    // while the sheet was a descendant of the head its `z-50` was confined to the head's
+    // `z-[2]` and the shell's `fixed z-40` tab bar painted over its footer. A z-index is a
+    // number in a class list and proves nothing; the only test is asking the engine what is
+    // actually on top at a point inside the sheet.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const sheetTrigger = await page.$('button[aria-haspopup="dialog"]');
+    if (sheetTrigger === null) {
+      failures += !report("the filter sheet can be opened", false, "no trigger on the page");
+    } else {
+      await sheetTrigger.click();
+      await page.waitForSelector('[role="dialog"]', { timeout: 5_000 });
+      const hit = await page.evaluate(() => {
+        const d = document.querySelector('[role="dialog"]');
+        if (d === null) return null;
+        const r = d.getBoundingClientRect();
+        // 20px above the sheet's bottom edge, which is where the tab bar overlaps.
+        // CLAMPED into the viewport. The panel overflows the fold here, so a point 20px
+        // above its own bottom edge is off-screen and Chromium returns null — which the
+        // first version of this reported as an `ok` with `hit: nothing`, a measurement that
+        // never happened dressed as a pass.
+        const x = Math.round(r.left + r.width / 2);
+        const yWanted = Math.round(r.bottom - 20);
+        const y = Math.min(yWanted, window.innerHeight - 2);
+        const inSheet = y >= r.top && y <= r.bottom;
+        const el = inSheet ? document.elementFromPoint(x, y) : null;
+        return {
+          sampled: inSheet,
+          clamped: y !== yWanted,
+          inside: el !== null && d.contains(el),
+          at: `${x},${y}`,
+          rect: `${Math.round(r.top)}-${Math.round(r.bottom)}`,
+          vh: window.innerHeight,
+          hit: el === null ? "nothing" : `${el.tagName}.${String(el.className).slice(0, 32)}`,
+          insideHead: document.querySelector("[data-set-head]")?.contains(d) ?? false,
+        };
+      });
+      if (hit === null) {
+        failures += !report("the sheet's footer can be hit-tested", false, "no dialog");
+      } else {
+        // REPORTED, not asserted. The sheet is a descendant of a `sticky z-[2]` head, which
+        // is a stacking context, so its `z-50` cannot beat the shell's `fixed z-40` tab bar
+        // — true on `main` today and not introduced here. The line is in the probe so the
+        // fact is measured rather than remembered, and so the follow-up that portals the
+        // sheet has a check waiting for it.
+        if (!hit.sampled) {
+          console.log(
+            "  n/a  what is on top at the sheet's footer — NOT SAMPLED: no point inside"
+            + ` both the sheet (${hit.rect}) and the viewport (${hit.vh}px).`,
+          );
+        } else {
+          report(
+            "what is on top at the sheet's footer",
+            true,
+            (hit.inside
+              ? `the sheet at ${hit.at}`
+              : `${hit.hit} at ${hit.at} — known, pre-existing: the sheet is inside a sticky`
+                + " stacking context")
+            + (hit.clamped ? ", sampled at the fold because the panel overflows it" : ""),
+          );
+        }
+        // Also reported and not asserted, for the same reason: the panel already overflows
+        // the fold on `main` (658-1154 against 844), so a check here would fail on code
+        // this PR does not touch. Recorded so the follow-up that portals the sheet starts
+        // from a measured before rather than from a comment.
+        report(
+          "the sheet panel against the fold",
+          true,
+          `${hit.rect} against ${hit.vh}px — known, pre-existing on main at 658-1154`,
+        );
+      }
+      await page.keyboard.press("Escape");
+    }
+
     // The search field (§29). It is the only child of the control row that shrinks, and the
     // row must not wrap at either width — a control landing on its own line inside a sticky
     // head is the defect the three-row rule exists to prevent, arriving by another route.
