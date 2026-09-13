@@ -279,6 +279,21 @@ export function DecksView({
   const refresh = useCallback(() => startRefresh(() => router.refresh()), [router]);
 
   /**
+   * THE ONE ANSWER TO "WHAT I WAS STANDING ON IS GONE". Three paths can remove
+   * the focused control out from under a keyboard reader — a move that takes the
+   * card off the shelf being viewed, a create from inside a menu on that card,
+   * and the breakpoint closing the sheet — and each of them leaves focus on the
+   * body. The shelf control is the one thing on screen in all three, at either
+   * width, so it is where focus goes rather than three separate rescues.
+   */
+  const focusShelfControl = useCallback(() => {
+    const target =
+      document.querySelector<HTMLElement>("[data-shelf-line] button[aria-current='true']")
+      ?? document.querySelector<HTMLElement>("[data-shelf-trigger] button");
+    target?.focus();
+  }, []);
+
+  /**
    * The shelf announcement lives HERE, not in the sheet, because the sheet
    * unmounts on selection and a region removed in the same commit as its text
    * is never read. The chassis's own result line is silent while the sheet is
@@ -443,10 +458,8 @@ export function DecksView({
 
   useEffect(() => {
     if (!wide || !shelfSheet.handOff) return;
-    document
-      .querySelector<HTMLElement>("[data-shelf-line] button[aria-current='true']")
-      ?.focus();
-  }, [wide, shelfSheet.handOff]);
+    focusShelfControl();
+  }, [wide, shelfSheet.handOff, focusShelfControl]);
 
   // The URL half of that reconciliation, and the one part that belongs in an
   // effect: `replaceState` is a DOM write, not state, so it cannot happen during
@@ -486,15 +499,16 @@ export function DecksView({
   const shelfEmpty = state.shelf !== ALL_DECKS && narrowed.length === 0;
 
   const onShelf = useCallback(
-    (shelf: Shelf, announce = false) => {
+    (shelf: Shelf) => {
       apply({ filters: state.filters, sort: state.sort, shelf });
       setShelfSheet({ open: false });
-      // ANNOUNCED ONLY WHERE THE CHASSIS CANNOT — from inside the sheet, whose
-      // `aria-modal` puts the result line out of reach, and after a create,
-      // which lands the reader somewhere they did not tap. On the wide line the
-      // result line speaks for itself, and announcing here as well would say
-      // the same change twice.
-      if (!announce) return;
+      // THE SHELF'S NAME IS THE ANNOUNCEMENT, at both widths, and the result
+      // line stands down while it is made. Neither half of that is optional:
+      // inside the sheet the result line is behind an `aria-modal` and cannot
+      // be heard at all, and on the wide line two shelves that hold the same
+      // number of decks produce an identical result sentence, which
+      // `ResultLine` deliberately does not repeat — so the change that matters
+      // would pass in silence. Announcing both would say it twice.
       setHandingOff(true);
       const chosen = segments.find((s) => s.shelf === shelf);
       if (chosen) setShelfSaid(folderCopy.shelves.aria(chosen.label, chosen.count));
@@ -702,7 +716,7 @@ export function DecksView({
             // Quiet behind EITHER modal: both put the result line out of the
             // reader's reach and both carry their own announcement, so leaving
             // it live says the same change twice.
-            silentResult={!wide && (sheet.open || shelfSheet.open || handingOff)}
+            silentResult={handingOff || (!wide && (sheet.open || shelfSheet.open))}
             after={
               /* Unmounted when wide, never merely hidden. Resizing from compact
                  to wide with the sheet open would otherwise leave an
@@ -734,7 +748,7 @@ export function DecksView({
             <ShelfSheet
               segments={segments}
               shelf={state.shelf}
-              onSelect={(shelf) => onShelf(shelf, true)}
+              onSelect={onShelf}
               onCreate={() => {
                 setCreateFrom("sheet");
                 setShelfSheet({ open: false });
@@ -756,11 +770,7 @@ export function DecksView({
                 // sheet, and a create from move mode selects a new empty shelf,
                 // which takes the whole card away. The shelf control is the one
                 // thing on screen in either case.
-                if (createFrom !== "line") {
-                  document
-                    .querySelector<HTMLElement>("[data-shelf-trigger] button")
-                    ?.focus();
-                }
+                if (createFrom !== "line") focusShelfControl();
               }}
               onCreate={async (name) => {
                 const result = await createFolderAction(name);
@@ -779,8 +789,11 @@ export function DecksView({
                 // fill it. Announced from the action's own answer rather than
                 // through `segments`, which this callback closed over one render
                 // before the new folder existed in it. A new shelf holds nothing.
-                setShelfSaid(folderCopy.shelves.aria(result.folder.name, 0));
                 onShelf(result.folder.id);
+                // Named from the action's own answer: `segments` in this
+                // callback closed over the render before the folder existed. A
+                // new shelf holds nothing.
+                setShelfSaid(folderCopy.shelves.aria(result.folder.name, 0));
                 refresh();
                 return null;
               }}
@@ -840,7 +853,12 @@ export function DecksView({
                       setCreating(true);
                     }}
                     say={setShelfSaid}
-                    onMoved={refresh}
+                    onMoved={() => {
+                      refresh();
+                      // On a named shelf the moved card leaves the grid, taking
+                      // the menu's receipt — and the focus on it — with it.
+                      if (state.shelf !== ALL_DECKS) focusShelfControl();
+                    }}
                   />
                 </li>
               ))}

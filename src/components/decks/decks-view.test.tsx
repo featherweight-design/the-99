@@ -480,6 +480,16 @@ describe("DecksView", () => {
     expect(screen.queryByRole("dialog", { name: "Shelves" })).toBeNull();
   });
 
+  it("announces a wide shelf change by name, since two shelves can read alike", async () => {
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /Commander night, 1 deck/ }));
+    await waitFor(() => {
+      const said = [...container.querySelectorAll("[aria-live='polite']")]
+        .map((r) => r.textContent);
+      expect(said).toContain("Commander night, 1 deck");
+    });
+  });
+
   it("announces the shelf from a region that outlives the sheet", async () => {
     // The sheet unmounts on selection, so its own region cannot carry this —
     // and the chassis's is silent behind an aria-modal.

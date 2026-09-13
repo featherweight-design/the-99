@@ -62,7 +62,12 @@ export function MoveMode({
 
   function move(id: string | null, name: string | null) {
     startTransition(async () => {
-      const ok = await moveDeckAction(deckId, id);
+      // A THROWN ACTION IS HANDLED HERE, not left to reject. The action layer
+      // lets an unexpected database error travel deliberately, and an
+      // unhandled rejection inside a transition would leave this list open with
+      // nothing said and nothing reverted. It is treated as the refusal it is
+      // from the reader's side: nothing moved.
+      const ok = await moveDeckAction(deckId, id).catch(() => false);
       // `false` is "not yours, or gone" — the action revalidates for exactly
       // that reason, and the list this reader is looking at is the stale one.
       // Refreshed, and nothing announced: nothing moved.
