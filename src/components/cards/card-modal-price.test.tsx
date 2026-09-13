@@ -215,22 +215,17 @@ describe("the price under the art", () => {
 });
 
 describe("a card opened at a printing", () => {
-  it("prices the printing the caller named, even when it hands over no art", () => {
-    // The set grid knows the exact catalog row. An owned holding matching the same
-    // (set, collector number) may carry no id of its own — nullable on
-    // `collection_items`, or dropped because two holdings disagreed — so the
-    // caller's id has to travel whether or not it also overrode the art.
+  it("prices the printing the cell opened, not the one the reader owns", () => {
+    // The set grid's realistic case: the cell hands over its exact id AND its art,
+    // and the reader owns a different printing of the same card. The injected row is
+    // the one drawn, so it is the one priced.
     render(
       <CardModal
         card={card({
-          printings: [printing({ scryfallId: undefined })],
-          // Two catalog rows share this (set, collector number) — `printings` puts no
-          // uniqueness on the pair — so the fallback identity refuses to answer and
-          // ONLY the caller's exact id can price this card. Without that, the key path
-          // would answer and the test would pass with the id dropped.
+          printings: [printing({ scryfallId: "s-owned", collectorNumber: "99", imageUri: "https://img/owned.jpg" })],
           prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-owned", collector_number: "99", price_cents: 100 }),
             priceRow({ scryfall_id: "s-exact", price_cents: 1500 }),
-            priceRow({ scryfall_id: "s-twin", price_cents: 100 }),
           ]),
         })}
         position={1}
@@ -238,7 +233,12 @@ describe("a card opened at a printing", () => {
         onClose={() => {}}
         onPrev={null}
         onNext={null}
-        openAtPrinting={{ setCode: "RVR", collectorNumber: "12", scryfallId: "s-exact", imageUri: null }}
+        openAtPrinting={{
+          setCode: "RVR",
+          collectorNumber: "12",
+          scryfallId: "s-exact",
+          imageUri: "https://img/exact.jpg",
+        }}
       />,
     );
 
@@ -270,6 +270,33 @@ describe("a card opened at a printing", () => {
     );
 
     expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$1.00");
+  });
+
+  it("will not read an id-less holding as the target when the pair names two printings", () => {
+    // The holding names no printing of its own, and the catalog gives this pair to
+    // two. Treating it as the opened printing would put `s-exact`'s figure under a
+    // picture that might be the sibling's; the exact row is injected instead, and
+    // with no art of its own the owned picture stays — so the figure has to go
+    // silent rather than claim either price.
+    render(
+      <CardModal
+        card={card({
+          printings: [printing({ scryfallId: undefined, imageUri: "https://img/owned.jpg" })],
+          prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-exact", price_cents: 1500 }),
+            priceRow({ scryfall_id: "s-twin", price_cents: 100 }),
+          ]),
+        })}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{ setCode: "RVR", collectorNumber: "12", scryfallId: "s-exact", imageUri: null }}
+      />,
+    );
+
+    expect(screen.queryByTestId("modal-price-desktop")).toBeNull();
   });
 });
 

@@ -26,7 +26,7 @@ import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { PriceTag } from "./price-tag";
 import { OVER_ART_PLATE } from "../ui/art-wash";
-import { priceFor } from "../../lib/cards/price-lookup";
+import { priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -374,10 +374,18 @@ export function CardModal({
     // still BE a different printing. Stamping the caller's id onto that row would put
     // one printing's price under another's art — so a row whose own id disagrees does
     // not count as the printing being opened, and the exact one is injected below.
+    // A row that names no id is taken as the printing being opened only where the
+    // pair names ONE catalog printing. Where the catalog gives it to two — which the
+    // price snapshot has already worked out, and is the only place that knows — an
+    // id-less holding could be either sibling, and stamping the caller's id onto it
+    // would put the opened printing's figure under a picture that may be the other
+    // one's. There the exact row is injected instead.
+    const pairAmbiguous = at.scryfallId !== undefined
+      && (card.prices?.ambiguousKeys.includes(priceKeyFor(at)) ?? false);
     const isTarget = (p: BrowsePrinting) =>
       at.scryfallId
         ? p.scryfallId === at.scryfallId
-          || (p.scryfallId === undefined && matchesPreference(p, at))
+          || (!pairAmbiguous && p.scryfallId === undefined && matchesPreference(p, at))
         : matchesPreference(p, at);
     const known = card.printings.some(isTarget);
     const printings = known
