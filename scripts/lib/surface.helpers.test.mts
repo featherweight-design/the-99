@@ -12,6 +12,7 @@ import { PAGE, onPage, openSheet, settled } from "./surface.mjs";
 /** The smallest thing that records what a caller asked of a page. */
 function fakePage({ triggerCount = 1 } = {}) {
   const asked: string[] = [];
+  const settledCalls: string[] = [];
   const locator = (selector: string) => {
     asked.push(selector);
     const self: Record<string, unknown> = {
@@ -19,11 +20,16 @@ function fakePage({ triggerCount = 1 } = {}) {
       count: async () => (selector.includes("haspopup") ? triggerCount : 1),
       click: vi.fn(async () => {}),
       waitFor: vi.fn(async () => {}),
-      evaluate: vi.fn(async () => {}),
+      // Recorded, so a caller that skips `settled()` is visible. Returning the
+      // dialog without it removes the animation wait, and a spy nobody asserts
+      // on would let that through green.
+      evaluate: vi.fn(async () => {
+        settledCalls.push(selector);
+      }),
     };
     return self;
   };
-  return { page: { locator }, asked };
+  return { page: { locator }, asked, settledCalls };
 }
 
 describe("onPage", () => {
@@ -53,6 +59,12 @@ describe("openSheet", () => {
     const { page, asked } = fakePage();
     await openSheet(page);
     expect(asked).toContain(`${PAGE} [role="dialog"]`);
+  });
+
+  it("settles the dialog before returning it", async () => {
+    const { page, settledCalls } = fakePage();
+    await openSheet(page);
+    expect(settledCalls).toEqual([`${PAGE} [role="dialog"]`]);
   });
 
   it("returns null when the page has no trigger", async () => {

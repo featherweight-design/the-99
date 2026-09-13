@@ -59,8 +59,10 @@ export function offendingSelectors(source: string, file = "probe.mjs") {
   const visit = (node: ts.Node) => {
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
       const text = node.text;
-      // Already scoped in the selector itself, e.g. `main button[...]`.
-      const scopedInline = text.includes(`${PAGE} `);
+      // Scoped in the selector itself, e.g. `main button[...]`. ANCHORED: a
+      // substring search exempted `button[aria-label="main filter"][aria-…]`,
+      // which is not scoped at all.
+      const scopedInline = new RegExp(`^\\s*${PAGE}\\b`).test(text);
       const call = enclosingCallName(node);
       if (COLLIDES.test(text) && !scopedInline && !SCOPING_CALLS.has(call ?? "")) {
         found.push({
@@ -98,6 +100,13 @@ describe("the sweep itself", () => {
 
   it("allows a selector that carries the scope itself", () => {
     expect(offendingSelectors(`page.locator('main button[aria-haspopup="dialog"]')`)).toEqual([]);
+  });
+
+  it("does not accept the scope's name appearing elsewhere in the selector", () => {
+    // `main` has to BE the scope, not a word inside another attribute.
+    expect(
+      offendingSelectors(`page.$('button[aria-label="main filter"][aria-haspopup="dialog"]')`),
+    ).toHaveLength(1);
   });
 
   it("is not switched off by a comment, wherever it sits", () => {
