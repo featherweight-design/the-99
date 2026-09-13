@@ -1,34 +1,50 @@
 {
   "feature": "Filter chassis — one control on four routes",
-  "note": "Four routes that the brief says carry the same filter control. `view` names each route's OWN view file, never a wrapper it mounts: naming `rack/filter-rack.tsx` or `collection/filter-bar.tsx` would make `check-shared-imports.mjs` pass and say nothing, since those files are the wrappers. Steps are plain `goto`s because every surface here is a page.",
-  "shares": {
-    "binding": "FilterChassis",
-    "module": "src/components/ui/filter-chassis"
-  },
+  "note": "Four routes the brief says carry the same filter control. Steps are plain `goto`s because every surface here is a page.\n\nNO `shares` BLOCK YET, deliberately. All four routes already render `FilterChassis` — /decks directly, /commanders and /discover through the shared `FilterRack`, /collection through `FilterBar` — and composing a primitive that takes its controls as props behind a route-level assembler is the design working, not a defect. Pointing `shares.module` at the chassis therefore failed three routes for doing the right thing.\n\nWhat is genuinely duplicated is the phone sheet: `DeckFilterSheet`, the rack's `FilterSheet` and `CollectionFilterSheet` are three implementations of one job, where the handoff (STATES §49, §157, §177-180) describes one sheet pattern whose CONTENTS vary by route. The ruling is one sheet component taking its dimensions as props.\n\nWHEN IT LANDS, `view` HAS TO MOVE WITH IT. `check-shared-imports.mjs` reads each row's `view` directly and does not follow composition, so a `shares` block naming the new sheet while these rows still name the route views would reproduce exactly the false failures this inventory just removed — the wrappers will own the sheet import, not the views. The rule is that `view` names the file that IMPORTS AND USES the shared component — the check proves a value import plus a reference, not a render, so `const C = Thing` satisfies it — which for the sheet means `decks/decks-view.tsx` (it imports `DeckFilterSheet` itself), `rack/filter-rack.tsx` and `collection/filter-bar.tsx` — three of the four differ from the route view. The rows carry no `view` today for that reason: the right value depends on which component the block ends up naming.",
   "rows": [
     {
       "id": "decks",
       "label": "/decks",
-      "view": "src/components/decks/decks-view.tsx",
-      "steps": [{ "goto": "/decks", "wait": "main, [role=main], h1", "settle": 3000 }]
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
     },
     {
       "id": "commanders",
       "label": "/commanders",
-      "view": "src/components/commanders/commanders-view.tsx",
-      "steps": [{ "goto": "/commanders", "wait": "main, [role=main], h1", "settle": 12000 }]
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "main, [role=main], h1",
+          "settle": 12000
+        }
+      ]
     },
     {
       "id": "discover",
       "label": "/discover",
-      "view": "src/components/commanders/discovery-view.tsx",
-      "steps": [{ "goto": "/discover", "wait": "main, [role=main], h1", "settle": 12000 }]
+      "steps": [
+        {
+          "goto": "/discover",
+          "wait": "main, [role=main], h1",
+          "settle": 12000
+        }
+      ]
     },
     {
       "id": "collection",
       "label": "/collection",
-      "view": "src/components/collection/browser.tsx",
-      "steps": [{ "goto": "/collection", "wait": "main, [role=main], h1", "settle": 6000 }]
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        }
+      ]
     }
   ]
 }
