@@ -1,0 +1,34 @@
+{
+  "feature": "Collection — the row's cost track",
+  "note": "The claim is that /collection's row and the decklist row state a cost the same way, by rendering the same component. `view` names each route's OWN view file. The collection row used to draw a mana VALUE beside colour IDENTITY, which folds in what a card's abilities cost — so `Abzan Monument`, whose cost is `{2}`, read as a four-colour two-drop.",
+  "shares": {
+    "binding": "CostPips",
+    "module": "src/components/ui/cost-pips"
+  },
+  "rows": [
+    {
+      "id": "collection-rows",
+      "label": "/collection (rows) — the cost track",
+      "view": "src/components/collection/rows-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Abzan",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "decklist-rows",
+      "label": "/decks/[id] — the pattern the collection row now matches",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PROBE_DECK}",
+          "wait": "main",
+          "settle": 8000
+        }
+      ]
+    }
+  ]
+}

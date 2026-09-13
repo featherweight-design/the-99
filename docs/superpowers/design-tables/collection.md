@@ -539,6 +539,13 @@ The rest state's leading half is the chassis's own `No filters on`, not this rou
 
 ## Component: Collection Row (State 1a — Dense Rows)
 
+> **Superseded in two places by the set-collections §1b addendum and its 2026-09-13
+> correction** (`docs/superpowers/specs/2026-09-10-set-collections-design.md`). The pip
+> column moved out of the leading slot and became a trailing 76/90px cost track — so the
+> shipped template is `38px 1fr 76px auto` / `52px 1fr 90px 150px 92px 18px` — and what it
+> draws is the card's own **mana cost**, through the shared `CostPips`, rather than a mana
+> value beside colour identity. Everything else in this component is current.
+
 ### Row Container
 | Property | Mobile | Desktop |
 |----------|--------|---------|

@@ -104,6 +104,11 @@ async function run(page, steps) {
     if (step.clickRole) {
       await page.getByRole(step.clickRole, { name: new RegExp(step.name) }).first().click({ timeout: 15_000 });
     }
+    // A field a surface only reaches its interesting state through — the set
+    // panel narrows its list as you type, and an empty field shows every set.
+    if (step.fill !== undefined) {
+      await page.locator(step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
+    }
     if (step.wait) await page.waitForSelector(step.wait, { timeout: 15_000 });
     if (step.settle) await page.waitForTimeout(step.settle);
   }

@@ -1,12 +1,14 @@
 "use client";
 // Dense rows view per property table §Collection Row (State 1a).
 // Grid columns:
-//   mobile:  38px 1fr 76px auto              (qty · pips · name+type · set)
-//   desktop: 52px 1fr 90px 150px 92px 18px   (qty · pips · name · type · set/rarity · chevron)
+//   mobile:  38px 1fr 76px auto              (qty · name+type · cost · set)
+//   desktop: 52px 1fr 90px 150px 92px 18px   (qty · name · cost · type · set/rarity · chevron)
 // Rarity dot colors per §Rarity Dot Colors.
 
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { printedFaceName, printedNameOf, WUBRG_COLOR } from "../../lib/collection/browse";
+import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
+import { CostPips, COST_PIP_CAP, COST_PIP_SIZE } from "../ui/cost-pips";
+import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
@@ -62,12 +64,12 @@ export function RowsView({
             printedNameOf(c),
             c.typeLine,
             c.quantity,
-            // §1b put a mana value on the row; without it here a screen-reader user gets
-            // the identity pips' information and not the cost beside them. Lands carry no
-            // clause at all, matching the empty disc they draw.
-            `${c.primarySetCode}, ${c.rarity}${
-              c.typeLine.toLowerCase().includes("land") ? "" : `, mana value ${c.cmc}`
-            }`,
+            // The pips are `aria-hidden`, so without this clause a screen-reader user
+            // gets no cost at all. `spokenManaCost` speaks every symbol of the front
+            // face, never capped, and answers `no mana cost` for a land — which is the
+            // honest reading of the empty cell, where the old land branch said nothing
+            // and left silence indistinguishable from a missing label.
+            `${c.primarySetCode}, ${c.rarity}, ${spokenManaCost(c.manaCost)}`,
             // Clause lands LAST, and only when there is one — a free card
             // produces today's exact string, unchanged.
             (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
@@ -130,13 +132,24 @@ export function RowsView({
             </span>
           </span>
 
-          {/* §1b — the cost track. Every other card row in the app states mana cost; the
-              collection row stated colour identity alone.
+          {/* §1b's cost track, now drawn by the app's ONE cost component.
+              §1b said "every other card row in the app states mana cost" and then
+              stated a mana value beside COLOUR IDENTITY instead — and identity
+              folds in every hybrid symbol a card's abilities cost, so `Abzan
+              Monument`, whose cost is `{2}` and whose ability costs `{1}{W}{B}{G}`,
+              drew a 2 followed by three coloured pips and read as a four-colour
+              two-drop. `CostPips` draws the card's own cost and nothing else.
 
-              ONE element with a responsive width, never a desktop copy beside a phone
-              copy: a duplicated subtree doubles the pips in the accessibility tree and
-              reads as correct to a verifier looking at either width alone. */}
-          <CostTrack card={c} className="flex w-[76px] md:w-[90px]" />
+              ONE element with a responsive width, never a desktop copy beside a
+              phone copy: a duplicated subtree doubles the pips in the accessibility
+              tree and reads as correct to a verifier looking at either width alone.
+              A land carries no cost, so the cell is empty — the grid template fixes
+              its width, so nothing ragged-edges and there is no disc to keep. */}
+          <span className="flex w-[76px] md:w-[90px] items-center justify-end">
+            {c.manaCost ? (
+              <CostPips cost={c.manaCost} size={COST_PIP_SIZE} cap={COST_PIP_CAP} />
+            ) : null}
+          </span>
 
           {/* SetRarityColumn: mobile set code + desktop type/set/rarity/chevron columns */}
           <SetRarityColumn card={c} />
@@ -154,81 +167,6 @@ export function RowsView({
         </GhostButton>
       )}
     </div>
-  );
-}
-
-/**
- * §1b — mana value and colour identity in one right-aligned track.
- *
- * A parity fix: every other card row in the app states mana cost, and this one stated
- * colour identity alone. The identity pips leave the leading slot and join a fixed 90px
- * track (76px on the phone's meta line), which is deck-versioning's un-shingled track at
- * the size it already ships. The name column gains the width the pips vacated.
- *
- * A LAND KEEPS AN EMPTY DISC RATHER THAN PRINTING `0`. Thirty-seven land rows printing a
- * figure where there is an absence would be a claim about cost that lands do not make,
- * and dropping the disc entirely would ragged-edge the track.
- */
-function CostTrack({ card, className }: { card: BrowseListCard; className: string }) {
-  const isLand = card.typeLine.toLowerCase().includes("land");
-  return (
-    <span className={`${className} items-center justify-end gap-[8px]`}>
-      <span
-        aria-hidden={isLand}
-        className="inline-flex h-[20px] w-[20px] shrink-0 items-center justify-center
-                   rounded-full font-mono text-[11px]"
-        style={{
-          background: "var(--surface-sunken)",
-          color: isLand ? "transparent" : "var(--fg-muted)",
-        }}
-      >
-        {isLand ? "" : card.cmc}
-      </span>
-      <ColorPips colorIdentity={card.colorIdentity} />
-    </span>
-  );
-}
-
-// R4 item 11 / R5 §1. Five pips measure 67px phone and 81px desktop against a
-// track of 40px and 54px, so from four up they shingle like a fanned hand
-// instead of the track widening: colour identity cannot exceed WUBRG, so five
-// is a hard ceiling and this is solved exactly once. One to three pips are
-// pixel-identical to what shipped.
-//
-// Both shadows are unconditional and neither substitutes for the other. The
-// inset rim defines a pip against the ROW — `--w` is near-white and needs it at
-// every count. The outset ring defines a pip against the pip UNDER it, and it
-// gates itself: painted in the row's own background it is invisible with
-// nothing beneath it, so there is no pip count to branch on.
-//
-// The ring rides `--row-bg`, which the row already swaps on hover for the
-// marker's seam. A pinned `--surface` would look right at rest and show a
-// hairline on hover at four-plus pips.
-const SHINGLE_FROM = 4;
-
-function ColorPips({ colorIdentity }: { colorIdentity: BrowseListCard["colorIdentity"] }) {
-  const shingled = colorIdentity.length >= SHINGLE_FROM;
-  // Colourless draws one grey pip, so it can never shingle.
-  const pips: (string | null)[] = colorIdentity.length === 0 ? [null] : [...colorIdentity];
-
-  return (
-    <span className={shingled ? "flex" : "flex gap-[3px] md:gap-[4px]"}>
-      {pips.map((col, i) => (
-        <span
-          key={col ?? "colorless"}
-          aria-hidden
-          className={`w-[11px] h-[11px] md:w-[13px] md:h-[13px] rounded-full ${shingled ? "relative" : ""}`}
-          style={{
-            background: (col && WUBRG_COLOR[col]) || "var(--fg-faint)",
-            boxShadow: "0 0 0 1px var(--row-bg), inset 0 0 0 1px rgba(0,0,0,0.35)",
-            // WUBRG left to right with z descending, so each pip's left edge
-            // sits above its neighbour and the fan reads in order.
-            ...(shingled && { zIndex: pips.length - i }),
-            ...(shingled && i > 0 && { marginLeft: -5 }),
-          }}
-        />
-      ))}
-    </span>
   );
 }
 

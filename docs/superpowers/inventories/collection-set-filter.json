@@ -1,0 +1,72 @@
+{
+  "feature": "Collection — the set filter on the phone",
+  "note": "No `shares` block: the set panel is this sheet's own surface, and the wide form reaches the same filter through `FilterPanel`'s popover instead. The three rows draw nothing at 1300 for that reason — the desktop cell showing the wide bar rather than a sheet is the correct comparison, not a miss. Steps are Playwright verbs.",
+  "rows": [
+    {
+      "id": "filter-sheet",
+      "label": "/collection — the filter sheet, Set as one row",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter cards",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "set-panel",
+      "label": "/collection — the set panel above the sheet",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter cards",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter by set",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "set-panel-typed",
+      "label": "/collection — the set panel, list narrowed",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter cards",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter by set",
+          "settle": 1000
+        },
+        {
+          "fill": "input[aria-label='Search your sets']",
+          "text": "hobbi",
+          "settle": 900
+        }
+      ]
+    }
+  ]
+}
