@@ -29,7 +29,10 @@
 //   - A commit. `deck_versions.committed_at` is its own term in the sort, so a
 //     commit that also stamped this column would print `edited` forever and the
 //     `committed` verb would never be reached.
-//   - A logged game. Same reason: `deck_games.played_at` is its own term.
+//   - A logged game. Same reason: `deck_games.played_at` is its own term. That
+//     column is player-supplied rather than database-stamped — it records when
+//     the game was PLAYED and may be days old — which is a further reason not to
+//     fold it in here.
 //   - Filing a deck on a shelf. A folder move is where the deck is kept, not
 //     work on the deck.
 //   - Opening one. Never recorded anywhere, deliberately — a sort keyed on
@@ -52,15 +55,23 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * reads as edited at an instant when nothing was written is the one failure this
  * column can produce.
  *
- * `now()` is the DATABASE's clock, not the app server's. Every other timestamp
- * this row is compared against — `deck_versions.committed_at`,
- * `deck_games.played_at` — is defaulted by Postgres, and two clocks that
- * disagree by a second would reorder the block and change the verb.
+ * `clock_timestamp()`, NOT `now()`. `now()` is the transaction's start, which is
+ * read before this statement waits for the deck row's lock — so an edit that
+ * queued behind another edit would stamp a time from before the one it followed,
+ * and Home would order the newer of the two second. `clock_timestamp()` is read
+ * when the statement runs, after the wait.
+ *
+ * It is the DATABASE's clock either way, not the app server's, which is what
+ * makes it comparable to `deck_versions.committed_at` — also Postgres-stamped.
+ * `deck_games.played_at` is the exception and is not a clock at all: it is the
+ * date the game was played, which the log lets the player set. See the note in
+ * `touched.ts`.
  *
  * Ownership is the caller's. Every site that calls this has already resolved the
  * deck against the signed-in player through `requireDeck`; re-checking here
  * would be a second authorisation path that could disagree with the first.
  */
 export async function touchDeck(tx: Tx, deckId: string): Promise<void> {
-  await tx.update(decks).set({ lastEditedAt: sql`now()` }).where(eq(decks.id, deckId));
+  await tx.update(decks).set({ lastEditedAt: sql`clock_timestamp()` })
+    .where(eq(decks.id, deckId));
 }

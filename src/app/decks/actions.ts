@@ -782,7 +782,7 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   // an UPDATE of this row, so folding the column in is atomic by construction
   // and a transaction wrapped around two statements would buy nothing. The rule
   // for what counts as an edit still lives in `touch.ts`.
-  await db.update(decks).set({ name: trimmed, lastEditedAt: sql`now()` })
+  await db.update(decks).set({ name: trimmed, lastEditedAt: sql`clock_timestamp()` })
     .where(eq(decks.id, deckId));
   // A rename moves no card, so no claim changes — and it still reaches every
   // surface a claim does, because those surfaces print the deck's NAME. A card's

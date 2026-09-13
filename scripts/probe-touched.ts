@@ -47,6 +47,7 @@ import { db } from "../src/db";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { touchDeck } from "../src/lib/decks/touch";
 import { byTouched, touchedBy } from "../src/lib/decks/touched";
+import { createFolder, moveDeck } from "../src/lib/decks/folders";
 import { commitVersion, newestVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
 
 neonConfig.webSocketConstructor = ws;
@@ -99,9 +100,11 @@ const addCard = async (deckId: string, oracleId: string) => {
   `);
 };
 
-/** `played_at` defaults to the database's clock, which is what the app's own
-    log path does — a stated date here would have to be ordered against commits
-    the database stamps with `now()`, and the two clocks are not the same one. */
+/** The column is left to its default so THIS FIXTURE's game is database-stamped
+    and therefore orderable against the commits below, which are too. The app's
+    own log path does not do that: `logGame` sends a date, either the player's
+    backdated one or its own `new Date()`, because `played_at` records when the
+    game was played rather than when it was logged. */
 const logGame = async (deckId: string) => {
   await fixture.execute(sql`
     insert into deck_games (deck_id, user_id, result, pod_size)
@@ -247,6 +250,18 @@ async function main() {
     true,
   );
 
+  // ── Filing is not deck work ──────────────────────────────────────────────
+  // The plan's rule, and the one a future broad "stamp every deck write" change
+  // would silently break: moving a deck between shelves must leave the stamp
+  // alone, or tidying up would reorder Home. `moveDeck` takes no auth, so the
+  // real function is called here.
+  const shelf = await createFolder(USER, `${USER} shelf`);
+  const beforeFiling = await editedAt(played);
+  check("the deck files", await moveDeck(played, USER, shelf.id), true);
+  check("filing a deck does not stamp it", await editedAt(played), beforeFiling);
+  check("the deck unfiles", await moveDeck(played, USER, null), true);
+  check("unfiling does not stamp it either", await editedAt(played), beforeFiling);
+
   // ── touchDeck itself ─────────────────────────────────────────────────────
   const stale = await editedAt(edited);
   // The app's own client, not the fixture's: `touchDeck` takes the transaction
@@ -265,6 +280,7 @@ main()
   .finally(async () => {
     // Versions, version cards, deck cards and games all cascade off the deck.
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
+    await fixture.execute(sql`delete from deck_folders where user_id = ${USER}`);
     await pool.end();
     console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
     process.exit(failures === 0 ? 0 : 1);
