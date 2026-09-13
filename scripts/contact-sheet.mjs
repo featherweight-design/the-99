@@ -101,6 +101,15 @@ async function run(page, steps) {
       });
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
     }
+    // A surface that only exists part-way down the page — the set head's collapsed bar,
+    // the foot of a long column — is reached by scrolling to it, which is a step like any
+    // other rather than a reason for a second script.
+    if (typeof step.scroll === "number") {
+      await page.evaluate((y) => window.scrollTo(0, y), step.scroll);
+    }
+    if (step.scroll === "bottom") {
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    }
     if (step.click) await page.locator(step.click).first().click({ timeout: 15_000 });
     // A control one width has and the other does not. `/commanders` draws its
     // colour control inline above 1000px and inside a sheet below it, so one

@@ -2012,6 +2012,51 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(isShy(container)).toBe(false);
   });
 
+  // The reserve is the open head's height held in the document while the 52px bar draws in
+  // its place, so anywhere above `rest - bar` the band under the bar is empty. A fixed 40
+  // left the reader scrolling up into that band and watching the head pop open underneath
+  // them; the threshold is measured so there is no band to see. jsdom lays nothing out, so
+  // the two heights are stubbed — that is the whole input to the rule.
+  it("restores where the reserve would start showing, not at a fixed 40", () => {
+    stubDesktop(false);
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      // The reserve's bottom edge is where the grid starts, and the rule is read off that
+      // rather than off the head's height: the head sits below the phone header, so its own
+      // offset is not 0 and reads 0 again once it is stuck.
+      if (this.hasAttribute("data-set-head-reserve")) {
+        // Viewport-relative, as a real rect is: the grid sits at document 200 whatever the
+        // page is scrolled to.
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      // The first collapse of a visit still runs on the fixed pair: the bar has never been
+      // drawn, so its height has never been measured.
+      scrollTo(121);
+      expect(isShy(container)).toBe(true);
+      // From here both heights are known. It restores the moment the reserve would come
+      // into view — 200 less the bar's 52 — rather than holding until the old 40.
+      scrollTo(160);
+      expect(isShy(container)).toBe(true);
+      scrollTo(147);
+      expect(isShy(container)).toBe(false);
+      // And collapses again a band past that point, not at 120.
+      scrollTo(200);
+      expect(isShy(container)).toBe(false);
+      scrollTo(229);
+      expect(isShy(container)).toBe(true);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+    }
+  });
+
   // Hidden, not unmounted. Unmounting threw away the reader's expanded cost disclosure and
   // any focus in it, and the head that came back was a different height from the one the
   // reserve had been holding.
