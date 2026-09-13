@@ -27,13 +27,15 @@ import { validateFolderName } from "../../lib/decks/folder-name";
 // also carries `user_id` in its own where clause, so a folder that is not this
 // player's fails to match rather than being touched.
 //
-// REVALIDATION IS `/decks` AND HOME, and nothing else. A folder is not a claim:
-// no card changes hands, no deck's contents move, and no availability marker
-// anywhere in the app reads `decks.folder_id`. `deckSurfaces`' wider set would
-// invalidate three routes that cannot tell the difference.
+// REVALIDATION IS `/decks`, AND ONLY `/decks`. A folder is not a claim — no card
+// changes hands, no deck's contents move, and no availability marker anywhere
+// reads `decks.folder_id` — so `deckSurfaces`' wider set would invalidate routes
+// that cannot tell the difference. Home is in that set: it renders decks through
+// `ResumeDecks` and `DeckRail`, neither of which draws a folder, and evicting it
+// would make the next visit pay for its collection, ranking and availability
+// reads to render output that did not change.
 const folderSurfaces = () => {
   revalidatePath("/decks");
-  revalidatePath("/");
 };
 
 /**
@@ -104,7 +106,14 @@ export async function renameFolderAction(
     const folder = await renameFolder(folderId as string, userId, name);
     // Null is a folder that is not this player's or is already gone. It is not
     // an error and it is not a duplicate — there is nothing to rename.
-    if (!folder) return { ok: false, reason: "refused" };
+    //
+    // Revalidated anyway, exactly as the delete's no-op is: if another tab
+    // removed the folder, the payload this caller is looking at still names it,
+    // and that list is the thing that is stale.
+    if (!folder) {
+      folderSurfaces();
+      return { ok: false, reason: "refused" };
+    }
     folderSurfaces();
     return { ok: true, folder: { id: folder.id, name: folder.name } };
   } catch (error) {

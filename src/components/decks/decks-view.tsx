@@ -48,6 +48,7 @@ import {
   shelfFromParams,
   shelfToParam,
   shelfTotal,
+  showsUnfiled,
   type Shelf,
 } from "../../lib/decks/folder-view";
 import { ImportDeckButton } from "./import-deck-button";
@@ -210,10 +211,16 @@ export function DecksView({
   // reconciliation below is: React re-runs this pass before touching the DOM, so
   // nothing paints against the missing shelf. The URL is rewritten too — left
   // alone it would restore the dead shelf on the next mount.
+  //
+  // `Unfiled` is in this too. It has no segment until the first folder exists
+  // (`showsUnfiled`), so deleting the last folder while the reader stands on it
+  // leaves a shelf that nothing on screen can show as selected — the same state
+  // `shelfFromParams` refuses to read from a URL.
   const shelfMissing =
     state.shelf !== null
-    && state.shelf !== UNFILED
-    && !folders.some((f) => f.id === state.shelf);
+    && (state.shelf === UNFILED
+      ? !showsUnfiled(folders)
+      : !folders.some((f) => f.id === state.shelf));
   if (shelfMissing) setState({ ...state, shelf: ALL_DECKS });
 
   // Crossing to wide unmounts the sheet but would leave `open` true, so
@@ -245,8 +252,9 @@ export function DecksView({
   useEffect(() => {
     const live = new URLSearchParams(window.location.search);
     const named = live.get(FOLDER_PARAM);
-    if (!named || named === UNFILED) return;
-    if (folders.some((f) => f.id === named)) return;
+    if (!named) return;
+    // `none` survives only while there is an `Unfiled` segment to select.
+    if (named === UNFILED ? showsUnfiled(folders) : folders.some((f) => f.id === named)) return;
     live.delete(FOLDER_PARAM);
     const query = live.toString();
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);

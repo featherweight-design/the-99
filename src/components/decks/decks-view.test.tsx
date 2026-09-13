@@ -355,6 +355,19 @@ describe("DecksView", () => {
     expect(document.querySelector("[data-chassis-row='result']")?.textContent).toContain("4 decks");
   });
 
+  it("leaves Unfiled when the last folder is deleted under the mounted view", () => {
+    // Unfiled has no segment until a folder exists, so a reader standing on it
+    // when the last one goes is standing somewhere nothing can show.
+    window.history.replaceState(null, "", "/decks?folder=none");
+    const oneFolder = [twoFolders[0]];
+    const { rerender } = renderWide(view(shelvedDecks(), oneFolder));
+    expect(screen.queryByText("Filed one")).toBeNull();
+
+    rerender(view(shelvedDecks(), []));
+    expect(screen.getByText("Filed one")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
   it("ignores a hand-edited folder id", () => {
     window.history.replaceState(null, "", "/decks?folder=nope");
     renderWide(view(shelvedDecks(), twoFolders));
