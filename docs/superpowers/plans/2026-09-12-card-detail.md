@@ -104,8 +104,10 @@ Each merges before the next branches, and each is independently shippable.
 - [ ] **1.5 The tag in the modal, three placements.** Desktop art column and full phone header: last
   child, 10px / 9px under the art, centred (rows 1.1, 1.8 — phone takes the over-art plate, written
   as `color-mix(in oklab, var(--bg) 72%, transparent)`, **never a raw rgba**, erratum E3). Compact
-  header: in the name block, below the name beside the mana cost — and **outside the `aria-hidden`
-  subtree at `card-modal.tsx:565-577`**, or the figure is invisible to assistive tech (erratum E10).
+  header: **beside the mana cost**, in the content column's header row — not in the art header's
+  name block. On a phone in that state the two are in different regions (erratum E12), and the name
+  block's heading is `aria-hidden` because the `h3` carries the dialog's accessible name, so a
+  figure placed there reaches no assistive technology at all (erratum E10).
 - [ ] **1.6 It follows the pick.** The tag reads `resolved` (`card-modal.tsx:329`), the same object the
   art and the `Set` caption already read, so a pick moves four things together (row 1.9).
 - [ ] **1.7 Tests.** The twelve cells of STATES §1 as a table-driven test; the `no stock`/silence
