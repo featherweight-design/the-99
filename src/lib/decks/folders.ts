@@ -93,6 +93,34 @@ export async function createFolder(userId: string, name: string): Promise<DeckFo
 }
 
 /**
+ * Renames a shelf. Same validator as `createFolder`, refused by the same unique
+ * index, scoped to the same `user_id` — so a rename cannot reach another
+ * player's folder and cannot produce a name their own list already holds.
+ *
+ * Null when the folder is not this player's or is already gone, which is the
+ * same shape `moveDeck` and `deleteFolder` use for that case. A rename to the
+ * name the folder already has is a no-op rather than a self-collision: the
+ * unique index does not fire against the row being updated.
+ */
+export async function renameFolder(
+  folderId: string,
+  userId: string,
+  name: string,
+): Promise<DeckFolder | null> {
+  const [row] = await db
+    .update(deckFolders)
+    .set({ name: validateFolderName(name) })
+    .where(and(eq(deckFolders.id, folderId), eq(deckFolders.userId, userId)))
+    .returning({
+      id: deckFolders.id,
+      name: deckFolders.name,
+      createdAt: deckFolders.createdAt,
+    });
+
+  return row ?? null;
+}
+
+/**
  * Files a deck, or unfiles it with `folderId: null`.
  *
  * The folder is confirmed to be this player's BEFORE the update rather than

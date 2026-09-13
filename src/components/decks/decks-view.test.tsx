@@ -7,6 +7,7 @@ vi.mock("next/navigation", () => ({
 
 import { DecksView } from "./decks-view";
 import type { DeckListItem } from "../../lib/decks/read";
+import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 
 const NOW = "2026-09-07T12:00:00.000Z";
@@ -40,9 +41,16 @@ const SHOPPING: ShoppingRollup = {
   total: { copies: 0, cents: 0, pricedCopies: 0 },
 };
 
-function view(decks: DeckListItem[]) {
+function view(decks: DeckListItem[], folders: DeckFolderWithCount[] = []) {
   return (
-    <DecksView decks={decks} shopping={SHOPPING} buildable={9} cards={1284} now={NOW} />
+    <DecksView
+      decks={decks}
+      folders={folders}
+      shopping={SHOPPING}
+      buildable={9}
+      cards={1284}
+      now={NOW}
+    />
   );
 }
 

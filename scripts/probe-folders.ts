@@ -21,6 +21,7 @@ import {
   deleteFolder,
   listFolders,
   moveDeck,
+  renameFolder,
 } from "../src/lib/decks/folders";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { validateFolderName } from "../src/lib/decks/folder-name";
@@ -144,6 +145,36 @@ async function main() {
   check("the deck list carries every deck", gridFiled.length, 2);
   check("a filed deck names its folder", gridFiled[0]?.folderName, "Commander night");
   check("and carries its id", gridFiled[0]?.folderId, shelf.id);
+
+  // Rename, whose refusals are the unique index's and the user scoping's — and
+  // neither is reachable from a unit test.
+  const renamed = await renameFolder(shelf.id, USER, "  Commander evening  ");
+  check("renameFolder trims and returns the new name", renamed?.name, "Commander evening");
+
+  const sameName = await renameFolder(shelf.id, USER, "Commander evening");
+  check("renaming to its own name is a no-op, not a collision", sameName?.name, "Commander evening");
+
+  let renameDuplicateRefused = false;
+  try {
+    await renameFolder(shelf.id, USER, "Empty shelf");
+  } catch {
+    renameDuplicateRefused = true;
+  }
+  check("a rename onto an existing name is refused", renameDuplicateRefused, true);
+
+  check(
+    "another player's folder cannot be renamed",
+    await renameFolder(otherShelf.id, USER, "Mine now"),
+    null,
+  );
+  check(
+    "and that folder keeps its name",
+    (await listFolders(OTHER)).find((f) => f.id === otherShelf.id)?.name,
+    "Someone else's shelf",
+  );
+
+  // Renamed above, so the delete copy's subject is the new name.
+  check("the rename survived the reads", (await listFolders(USER))[0]?.name, "Commander evening");
 
   // THE RULE THIS PROBE EXISTS FOR.
   check("deleteFolder reports the delete", await deleteFolder(shelf.id, USER), true);
