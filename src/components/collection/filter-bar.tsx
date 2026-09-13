@@ -5,6 +5,7 @@
 // on mobile only (desktop keeps the inline pip row), and Sort single-select.
 // Visual chrome matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
+import { useEffect, useRef, useState } from "react";
 import { type BrowseFilters, type SortDirection, type SortKey } from "../../lib/collection/browse";
 import {
   buildSortOptions,
@@ -18,10 +19,11 @@ import {
   type AvailabilityOption,
 } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
-import { collectionFilterCopy } from "../../lib/copy/collection";
+import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { ColourPips } from "../ui/colour-pips";
+import { CollectionFilterSheet } from "./filter-sheet";
 import type { ColorOption } from "../../lib/collection/color-filter";
 import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../ui/filter-chassis";
 import { useMinWidth } from "../ui/use-min-width";
@@ -84,6 +86,8 @@ export function FilterBar({
   typeOptions,
   availabilityOptions,
   colorOptions,
+  shown,
+  total,
   availabilityOk,
   hasCollection,
   chips,
@@ -112,6 +116,11 @@ export function FilterBar({
   colorOptions: ColorOption[];
   /** False when the availability aggregate could not be read (Task 7 / Task 9). */
   availabilityOk: boolean;
+  /** Distinct cards surviving the filters, and distinct cards in the collection —
+   * the sheet states its own count because it is `aria-modal` and the chassis's
+   * result line is outside it. */
+  shown: number;
+  total: number;
   /**
    * Whether the reader has a collection at all — NOT whether the current filters left any
    * sets. `setOptions` is filter-aware, so keying the By set pill on it removed the entry
@@ -148,6 +157,51 @@ export function FilterBar({
   // the thing one shared frame exists to prevent. `isDesktop` still governs
   // what it always did here, like the search placeholder.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Crossing to wide unmounts the sheet, so leaving `open` true would reopen it
+  // on the way back, unasked. The set surface and the deck sheet carry the same
+  // reset for the same reason.
+  //
+  // `handOffFocus` is the other half. `useDialogA11y` returns focus to the
+  // trigger it saved, and on this crossing that trigger unmounts in the very
+  // same commit — so focus would land on `body` and a keyboard reader would be
+  // put outside the controls that just appeared. The wide form's search field
+  // takes it instead, which is `/decks`' answer to the identical problem.
+  const [handOffFocus, setHandOffFocus] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  // Imperative, NOT `autoFocus`. This field sits in the same position in both
+  // branches, so React reuses the one `<input>` across the crossing rather than
+  // mounting a new one — and `autoFocus` is a MOUNT-time prop, so flipping it
+  // true on a surviving element does nothing at all. The handoff looked wired
+  // and left focus on `body`, which is the same trap a `/decks` round caught
+  // once already.
+  //
+  // The flag is cleared on the way BACK to compact, during render, rather than
+  // here — this codebase's lint forbids `setState` inside an effect, and
+  // `/decks` resets its own handoff the same way.
+  useEffect(() => {
+    if (handOffFocus) searchRef.current?.focus();
+  }, [handOffFocus]);
+  const [sheetWasWide, setSheetWasWide] = useState(wide);
+  if (sheetWasWide !== wide) {
+    setSheetWasWide(wide);
+    if (wide && sheetOpen) {
+      setSheetOpen(false);
+      setHandOffFocus(true);
+    } else if (!wide && handOffFocus) {
+      setHandOffFocus(false);
+    }
+  }
+
+  // What the badge counts: DIMENSIONS with something on, never values, and
+  // never search — search is visible beside the trigger, so counting it would
+  // have the badge describe a control the reader can already see.
+  const activeDimensions =
+    (filters.colors.length > 0 ? 1 : 0) +
+    (filters.types.length > 0 ? 1 : 0) +
+    (filters.setCodes.length > 0 ? 1 : 0) +
+    ((filters.availability ?? []).length > 0 ? 1 : 0);
 
   function toggleColor(c: string) {
     const has = filters.colors.includes(c);
@@ -159,17 +213,25 @@ export function FilterBar({
 
   return (
     // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop, border-bottom 1px --border, z-index 2
-    // `md:` is deliberate here and NOT the chassis breakpoint. This is the
-    // bar's stickiness, which is a question about the viewport having room to
-    // spare rather than about which form the chassis takes, and it is the
-    // behaviour the route already shipped. Every CONTROL inside follows `wide`.
-    <div className="md:sticky md:top-0 md:z-[2]" style={{ background: "var(--bg)" }}>
+    //
+    // The chassis's breakpoint, not `md:`. This carried a comment arguing the
+    // opposite — that stickiness asks whether the viewport has room to spare
+    // rather than which form the chassis takes — and that was wrong for a
+    // reason the argument could not see: `z-[2]` opens a STACKING CONTEXT, so
+    // across 768-999 the compact sheet's `z-50` was ranked inside it and the
+    // desktop nav rail, a sibling at `z-30`, painted over an open modal and
+    // stayed clickable. A z-index is only ever relative to its context, and
+    // the context has to end where the compact form begins.
+    <div
+      className="min-[1000px]:sticky min-[1000px]:top-0 min-[1000px]:z-[2]"
+      style={{ background: "var(--bg)" }}
+    >
       <FilterChassis
         form={wide ? "wide" : "compact"}
-        // This route has no compact filter surface, so its controls stay inline
-        // and scroll — which is what it shipped before the chassis. Without it
-        // the pips plus four triggers run off a 390px screen.
-        scrollCompactControls
+        // The sheet is `aria-modal` and carries its own debounced count, so
+        // both regions firing would have a reader hear the number twice. The
+        // deck and rack surfaces hand over the same way.
+        silentResult={!wide && sheetOpen}
         chips={chips}
         onClearAll={onClearAll}
         resultLine={resultLine}
@@ -247,26 +309,35 @@ export function FilterBar({
             wide
               ? "gap-[10px] flex-1 px-[14px] py-[10px]"
               // `min-h-[44px]`, like every other control in the compact row.
-              // The drawn padding gives ~37-41px, so search was the one
-              // undersized target sitting beside pips, triggers, sort and the
-              // view toggle that all enforce it.
+              // The drawn padding gives ~37-41px on its own.
               //
-              // `shrink-0` and a width floor for the same reason the row
-              // scrolls at all. A flex item with neither absorbs the row's
-              // overflow by compressing, and search is the only child that
-              // can — so the pips and four non-wrapping triggers would squeeze
-              // the card-name field down to its icon and padding instead of
-              // letting the row scroll past them. 220px is the phone floor
-              // `decks/quick-add-bar.tsx` already gives the same control.
-              : "gap-[8px] px-[12px] py-[9px] min-h-[44px] min-w-[220px] shrink-0"
+              // `min-w-0 flex-1` rather than the `min-w-[220px] shrink-0` this
+              // carried while the row scrolled: search is the chassis's field
+              // slot and the one child allowed to shrink. The floor and the
+              // `shrink-0` existed to stop four other controls crushing it, and
+              // those controls are in the sheet now.
+              : "gap-[8px] px-[12px] py-[9px] min-h-[44px] min-w-0 flex-1"
           }
           className="text-[14px]"
           value={filters.search}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
           placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
           aria-label="Search your cards"
+          ref={searchRef}
         />
 
+        {/* The pips and the three dimension panels are the WIDE form only. On
+            compact they live in the sheet, behind one trigger — the shelf
+            `/decks` and the commander lanes already use. This route drew them
+            inline instead and let the row scroll, which at 390px filled the row
+            with search and pips and put Type, Set and Availability off-screen
+            with nothing on screen saying they were there.
+
+            Search stays out here at both widths, as it does on the commander
+            lanes: a field a reader can see beats one they must open a dialog to
+            reach, and the badge never counts it for the same reason. */}
+        {wide ? (
+          <>
         {/* One colour control at both widths. It was a desktop pip row plus a
             separate mobile `Color ▾` panel — two drawings and two ARIA roles for
             one filter. The `COLOR` caption went with the row that carried it
@@ -405,8 +476,81 @@ export function FilterBar({
             carriers keep them apart — position, shape (a diamond link, with no
             dropdown affordance) and the words. */}
           </>
+        ) : (
+          <FiltersTrigger
+            active={activeDimensions}
+            expanded={sheetOpen}
+            onClick={() => setSheetOpen((open) => !open)}
+          />
+        )}
+          </>
+        }
+        after={
+          /* Closed, this renders nothing: the sheet is never a hidden duplicate
+             of the controls it replaces. */
+          !wide && (
+            <CollectionFilterSheet
+              open={sheetOpen}
+              onDismiss={() => setSheetOpen(false)}
+              filters={filters}
+              onChange={onFiltersChange}
+              colorOptions={colorOptions}
+              typeOptions={typeOptions}
+              setOptions={setOptions}
+              availabilityOptions={availabilityOptions}
+              availabilityOk={availabilityOk}
+              shown={shown}
+              total={total}
+            />
+          )
         }
       />
     </div>
+  );
+}
+
+/**
+ * The compact form's one filter affordance. Module scope, as everywhere in this
+ * codebase: a component declared inside `FilterBar` would be a new type on every
+ * render and would remount its own subtree.
+ *
+ * The badge counts DIMENSIONS, not values — "3" beside a trigger that opens four
+ * groups reads as three groups on, which is what it is. Zero draws no badge at
+ * all rather than a `0`.
+ */
+function FiltersTrigger({
+  active,
+  expanded,
+  onClick,
+}: {
+  active: number;
+  expanded: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-haspopup="dialog"
+      aria-expanded={expanded}
+      aria-label={collectionChassisCopy.sheet.triggerAria(active)}
+      className={[
+        "inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-[7px] whitespace-nowrap",
+        "rounded-full border border-solid px-[13px] font-sans text-[12.5px] font-medium",
+        active > 0
+          ? "border-[color:var(--accent)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
+          : "border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-[color:var(--fg)]",
+      ].join(" ")}
+    >
+      {collectionChassisCopy.sheet.trigger}
+      {active > 0 && (
+        <span
+          aria-hidden
+          className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--accent)] px-[5px] font-mono text-[10px] text-[color:var(--bg)]"
+        >
+          {active}
+        </span>
+      )}
+    </button>
   );
 }

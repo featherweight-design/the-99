@@ -266,20 +266,18 @@ describe("FilterChassis", () => {
     expect(screen.getByTestId("marker")).toBeTruthy();
   });
 
-  it("scrolls the compact row only when a route asks, and never when wide", () => {
-    // /collection has no compact filter surface, so its five controls stay
-    // inline; without this they run off a 390px screen, because the row cannot
-    // wrap by design.
+  it("never scrolls the control row, in either form", () => {
+    // `/collection` set a `scrollCompactControls` flag for a while so its five
+    // inline controls could scroll at 390px. A scroll affordance is not a
+    // filter surface — the three dimensions past the fold had nothing on screen
+    // saying they were there — and every route now puts its compact dimensions
+    // behind one trigger, so the row fits and the flag is gone.
     const { container, rerender } = render(
-      <FilterChassis {...base} form="compact" scrollCompactControls controls={null} chips={[]} />,
+      <FilterChassis {...base} form="compact" controls={null} chips={[]} />,
     );
     const row = () => container.querySelector("[data-chassis-row='controls']")!.firstElementChild!;
-    expect(row().className).toContain("overflow-x-auto");
-    rerender(
-      <FilterChassis {...base} form="wide" scrollCompactControls controls={null} chips={[]} />,
-    );
     expect(row().className).not.toContain("overflow-x-auto");
-    rerender(<FilterChassis {...base} form="compact" controls={null} chips={[]} />);
+    rerender(<FilterChassis {...base} form="wide" controls={null} chips={[]} />);
     expect(row().className).not.toContain("overflow-x-auto");
   });
 

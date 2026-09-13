@@ -69,6 +69,44 @@ export const collectionChassisCopy = {
     // Through the shared helper, which singularises: a one-card collection
     // reads "1 card shown." where the raw count read "1 cards shown."
     `Filters cleared. ${cards(total)} shown.`,
+  /**
+   * The phone's one filter surface. `/collection` had none: its controls stayed
+   * inline and the row scrolled, so at 390px the pips ate the width and Type,
+   * Set and Availability sat off-screen with nothing saying they existed. The
+   * other three chassis routes all open a sheet, and this is that sheet's copy.
+   *
+   * Search is NOT in here. It stays on the persistent row, as it does on the
+   * commander lanes — a field a reader can see beats one they have to open a
+   * dialog to reach, and the badge never counts it for the same reason.
+   */
+  sheet: {
+    trigger: "Filters",
+    /** Spoken on the trigger; the badge is a number a screen reader would read bare. */
+    triggerAria: (active: number) =>
+      active === 0 ? "Filter cards" : `Filter cards, ${count(active)} on`,
+    title: "Filter cards",
+    match: (shown: number, total: number) => `${count(shown)} of ${count(total)} match`,
+    colourHeading: "Color identity",
+    typeHeading: "Type",
+    setHeading: "Set",
+    availabilityHeading: availabilityCopy.collection.filterLabel,
+    /** The set list is long enough to need its own field; the others are not. */
+    setSearchPlaceholder: "Search sets",
+    setSearchAria: "Search your sets",
+    setEmpty: (query: string) => `No sets match ${query}`,
+    /**
+     * No sets to filter BY, which is not a failed search. A collection whose
+     * rows all went unmatched against the catalog has an empty set vocabulary,
+     * and the sheet opens with a blank query — so the search string would have
+     * rendered as `No sets match ` with nothing after it. `FilterPanel` never
+     * hits this because it only draws its no-results state for a query that
+     * was actually typed.
+     */
+    setNone: "No sets to filter by",
+    done: "Done",
+    close: "Close filters",
+  },
+
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
     search: (q: string) => `"${q}"`,
