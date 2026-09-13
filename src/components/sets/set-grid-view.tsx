@@ -34,7 +34,7 @@ import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { parseAsOf, type PriceFact } from "../../lib/decks/price";
 import {
   applyFilters, EMPTY_FILTERS, parseFilters, RARITIES, serialiseFilters,
-  type SetGridFilters,
+  WUBRG, type SetGridFilters,
 } from "../../lib/sets/filters";
 import { sectionsOf, type Cell } from "../../lib/sets/completion";
 import { costToComplete } from "../../lib/sets/cost";
@@ -256,8 +256,17 @@ export function SetGridView(props: SetGridViewProps) {
     : manapoolAddDeckUrl(sending.map((c) => ({ name: c.name, quantity: 1 })));
 
 
-  const toggleIn = (list: string[], value: string) =>
-    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+  // Canonical WUBRG order, not click order. `serialiseFilters` writes the URL in WUBRG and
+  // the pips draw in WUBRG, so a list kept in click order left the collapsed chip speaking
+  // and drawing "Blue, White" while everything else beside it said "White, Blue" — until a
+  // navigation happened to re-parse the URL and quietly reorder it. `/decks`' own colour
+  // toggle canonicalises for the same reason.
+  const toggleIn = (list: string[], value: string) => {
+    const next = list.includes(value)
+      ? list.filter((v) => v !== value)
+      : [...list, value];
+    return WUBRG.filter((c) => next.includes(c));
+  };
 
   // Rarity is single-select. Two letters lit produced `r=common,mythic`, a union the
   // designed control cannot express and the reader cannot reach twice the same way.
@@ -675,14 +684,25 @@ export function SetGridView(props: SetGridViewProps) {
                 group is for, and a panel behind a panel is two dialogs deep. Wrapping to
                 two rows is allowed HERE and nowhere else — a sheet may change height, the
                 control row inside the sticky head may not. */}
-            <div className="mb-[16px] flex flex-wrap gap-[8px]">
+            {/* A RADIOGROUP, because the control holds one value. As independent
+                `aria-pressed` toggles it told assistive technology four things could be on
+                at once while `pickRarity` silently allowed one — the same mismatch the
+                desktop mount fixed by taking the panel's `single` mode. Re-picking the
+                checked one still clears it, which is how `all` is reached here too, and is
+                why these are not plain radios in a form. */}
+            <div
+              role="radiogroup"
+              aria-label={setFilterCopy.rarity.label}
+              className="mb-[16px] flex flex-wrap gap-[8px]"
+            >
               {RARITIES.map((r) => {
                 const on = filters.rarities.includes(r);
                 return (
                   <button
                     key={r}
                     type="button"
-                    aria-pressed={on}
+                    role="radio"
+                    aria-checked={on}
                     aria-label={setFilterCopy.rarity.options[r]}
                     onClick={() => setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) })}
                     className={[

@@ -9,11 +9,22 @@
 // Hoisted so the chip labels can reach it from inside the same object literal. A chip is a
 // control and takes Title Case; the trigger's value form is lowercase because the caption
 // under it reads `042 · uncommon` in the same register.
+import { chassisCopy } from "./filter-chassis";
+
 const setFilterCopyRarityOptions = {
   common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
 } as const;
 
 /** Hoisted for the same reason: the panel's trigger reads these, it does not restate them. */
+/** Hoisted so the chip label reads the control's own words rather than a second copy. */
+const setFilterCopyMissingOnly = {
+  label: "Missing only",
+  // The phone row has two controls and no room for three words.
+  short: "Missing",
+  ariaOn: "Showing only cards you do not own",
+  ariaOff: "Showing every card in the set",
+} as const;
+
 const setFilterCopyRarity = {
   label: "Rarity",
   all: "Rarity · all",
@@ -29,13 +40,7 @@ export const setFilterCopy = {
   label: "Filters",
   colourLabel: "Colour",
   colourAria: (c: string) => `Filter by ${c}`,
-  missingOnly: {
-    label: "Missing only",
-    // The phone row has two controls and no room for three words.
-    short: "Missing",
-    ariaOn: "Showing only cards you do not own",
-    ariaOff: "Showing every card in the set",
-  },
+  missingOnly: setFilterCopyMissingOnly,
   sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
   // DIMENSIONS only — never missing-only, which sits on the row beside the badge where the
   // reader can already see it. A badge counting a control visible next to it is the same
@@ -43,14 +48,18 @@ export const setFilterCopy = {
   countBadgeAria: (n: number) => (n === 1 ? "1 filter on" : `${n} filters on`),
 
   // The chip line (addendum R2 §28). Dimension order, never click order.
+  // Every field here READS its canonical source rather than restating it. Four routes share
+  // this chip line, and a second copy of a label is what leaves one of them on the old
+  // wording after a change — the same reason the chip's markup and its type are the
+  // chassis's own.
   chip: {
     // One lit pip is named; past one it collapses to a count. Never one chip per hue —
     // five chips for a five-colour filter is a line that says less than the pips do.
     colourOne: (name: string) => name,
-    colour: (n: number) => `${n} colours`,
+    colour: chassisCopy.colour.collapsed,
     rarity: (r: "common" | "uncommon" | "rare" | "mythic") =>
       setFilterCopyRarityOptions[r],
-    missingOnly: "Missing only",
+    missingOnly: setFilterCopyMissingOnly.label,
   },
   // `Clear all filters` and `No filters on` are the chassis's, reused rather than restated:
   // the addendum's own note says to take them from the chassis once it lands, and it has.

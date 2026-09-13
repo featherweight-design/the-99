@@ -793,7 +793,7 @@ describe("SetGridView — the rack's edges", () => {
     view([p("1"), p("2")], []);
     expect(screen.queryByRole("button", { name: /Filter by rarity/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
-    expect(screen.getByRole("button", { name: "Rare" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Rare" })).toBeInTheDocument();
   });
 });
 
@@ -971,7 +971,7 @@ describe("SetGridView — the rarity trigger says what it shows", () => {
     stubDesktop(false);
     view([p("1", { rarity: "rare" }), p("2")], []);
     fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
-    expect(screen.getByRole("button", { name: "Rare" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Rare" })).toBeInTheDocument();
   });
 });
 
@@ -1102,5 +1102,65 @@ describe("SetGridView — the colour pips are wired, not just painted", () => {
     // `URLSearchParams.toString()` percent-encodes the separator, which `parseFilters`
     // reads back through `URLSearchParams` and so never sees.
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?c=W%2CU");
+  });
+});
+
+// Round 24. The sheet's rarity group held one value while telling assistive technology
+// four could be on — independent `aria-pressed` toggles under a caller that allows one.
+describe("SetGridView — the sheet's rarity group is single-select", () => {
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+
+  it("exposes a radiogroup, not four toggles", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radiogroup", { name: "Rarity" })).toBeInTheDocument();
+    expect(screen.getAllByRole("radio")).toHaveLength(4);
+    // Scoped to the group: `MissingOnlyToggle` keeps `aria-pressed`, correctly — its whole
+    // value is on or off, which is what a toggle is and what a radio is not.
+    const group = screen.getByRole("radiogroup", { name: "Rarity" });
+    expect([...group.querySelectorAll("[aria-pressed]")]).toHaveLength(0);
+  });
+
+  it("checks exactly the lit one", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Rare", checked: true })).toBeInTheDocument();
+    expect(screen.getAllByRole("radio", { checked: false })).toHaveLength(3);
+  });
+
+  // Re-picking the checked one clears it, which is how `all` is reached — and why these
+  // are not plain radios in a form.
+  it("clears when the checked one is picked again", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    fireEvent.click(screen.getByRole("radio", { name: "Rare" }));
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+});
+
+// The pips, the URL and the chip must agree on order regardless of click order.
+describe("SetGridView — colour order is canonical, not click order", () => {
+  it("stores WUBRG order when Blue is clicked before White", () => {
+    stubDesktop(true);
+    view([p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "Blue" })[0]);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?c=W%2CU");
+  });
+
+  it("speaks and draws the chip in that same order", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    fireEvent.click(screen.getAllByRole("switch", { name: "Blue" })[0]);
+    fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
+    const row = container.querySelector("[data-set-chips]") as HTMLElement;
+    expect(row.querySelector(".sr-only")?.textContent).toBe("White, Blue");
+    expect([...row.querySelectorAll<HTMLElement>("span.rounded-full")]
+      .map((d) => d.style.background)).toEqual(["var(--w)", "var(--u)"]);
   });
 });
