@@ -26,7 +26,15 @@ import {
 import type { StatusPill } from "../../lib/decks/status";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
-import { sortDecks, type DeckSort } from "../../lib/decks/sort";
+import {
+  DECK_SORT_KEY,
+  DEFAULT_DECK_SORT,
+  deckSortFromParams,
+  isDeckSort,
+  sortDecks,
+  type DeckSort,
+} from "../../lib/decks/sort";
+import { useStoredView } from "../ui/use-stored-view";
 import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
 import { ColourPips } from "../ui/colour-pips";
 import { FilterChassis, type FilterChip } from "../ui/filter-chassis";
@@ -87,7 +95,14 @@ const OWNED_PARAMS = ["status", "colour", "played", "q", "sort", FOLDER_PARAM];
  * `Filters` badge and `Clear all filters` unable to move it — by construction
  * rather than by care.
  */
-type ViewState = { filters: DeckFilters; sort: DeckSort; shelf: Shelf };
+/**
+ * `sort` is null when the URL names no order — NOT "the default". The order has
+ * three sources and they rank: the URL, then what this browser last chose, then
+ * `lastPlayed`. Collapsing the first absence into the default would make the
+ * stored preference unreachable, because the default serialises as an absence
+ * and every apply would write one.
+ */
+type ViewState = { filters: DeckFilters; sort: DeckSort | null; shelf: Shelf };
 
 /** One removable chip per active value — a heading with two values has two. */
 function chipLabels(filters: DeckFilters): { key: string; label: string; without: DeckFilters }[] {
@@ -134,10 +149,31 @@ export function DecksView({
   const search = useSearchParams();
   const [state, setState] = useState<ViewState>(() => ({
     ...filtersFromParams(search),
+    // `filtersFromParams` answers with the default where the URL is silent, and
+    // silence is the thing the stored preference needs to see. Read again.
+    sort: deckSortFromParams(search.get("sort")),
     // Read against the folders that exist, so a stale or hand-edited id lands
     // on All decks rather than on an empty grid for a shelf that is not there.
     shelf: shelfFromParams(search, folders),
   }));
+
+  // The order this browser last chose, kept across visits. It sits UNDER the URL
+  // and OVER the default, which is `/collection`'s own rule for its view toggle
+  // and for the same reason: a shared link carrying `?sort=` describes the list
+  // its sender meant, and nothing a reader stored should overwrite that.
+  //
+  // The STORED value is never serialised. Arriving at a bare `/decks` and being
+  // shown your own order leaves the address bar bare, so the URL still means
+  // "somebody chose this here" — while pressing the control does write `?sort=`,
+  // because that press IS a choice made here and it is what makes the list
+  // shareable. Two different acts; only one touches the URL.
+  //
+  // The server snapshot is null, so the first paint is the URL's order or the
+  // default and the stored one lands on the pass after. That is a visible flip
+  // for a reader whose preference is not the default, and it is the honest one:
+  // the server cannot know what this browser stores.
+  const [storedSort, chooseSort] = useStoredView(DECK_SORT_KEY, isDeckSort);
+  const sort = state.sort ?? storedSort ?? DEFAULT_DECK_SORT;
   const [sheet, setSheet] = useState<{
     open: boolean;
     focusSearch: boolean;
@@ -155,7 +191,10 @@ export function DecksView({
 
   const apply = useCallback((next: ViewState) => {
     setState(next);
-    const params = filtersToParams(next.filters, next.sort);
+    // A null sort serialises as an absence, which is what `serializeDeckSort`
+    // already does with the default — so the stored preference stays off the URL
+    // while a filter click rewrites everything else.
+    const params = filtersToParams(next.filters, next.sort ?? DEFAULT_DECK_SORT);
     // The shelf writes itself, beside the filters and never inside them.
     const folderValue = shelfToParam(next.shelf);
     if (folderValue !== null) params.set(FOLDER_PARAM, folderValue);
@@ -174,14 +213,17 @@ export function DecksView({
     [apply, state.sort, state.shelf],
   );
   const onSort = useCallback(
-    (sort: DeckSort) => apply({ filters: state.filters, sort, shelf: state.shelf }),
-    [apply, state.filters, state.shelf],
+    (next: DeckSort) => {
+      apply({ filters: state.filters, sort: next, shelf: state.shelf });
+      chooseSort(next);
+    },
+    [apply, chooseSort, state.filters, state.shelf],
   );
 
   // Derived during render, never in an effect: an effect would paint the
   // previous list once before correcting it.
   const now = useMemo(() => new Date(nowIso), [nowIso]);
-  const sorted = useMemo(() => sortDecks(decks, state.sort), [decks, state.sort]);
+  const sorted = useMemo(() => sortDecks(decks, sort), [decks, sort]);
   // THE SHELF NARROWS FIRST, in the same client-side pass. Everything below —
   // the grid, the result line's denominator and the panels' per-option counts —
   // is measured against the shelf the reader is standing on, which is what
@@ -408,10 +450,10 @@ export function DecksView({
             // rather than preceding sort in the controls.
             sort={
               wide ? (
-                <DeckSortMenu sort={state.sort} onChange={onSort} />
+                <DeckSortMenu sort={sort} onChange={onSort} />
               ) : (
                 <div className="flex items-center gap-[8px]">
-                  <DeckSortMenu sort={state.sort} onChange={onSort} />
+                  <DeckSortMenu sort={sort} onChange={onSort} />
                 <button
                   type="button"
                   onClick={() => setSheet({ open: true, focusSearch: false })}

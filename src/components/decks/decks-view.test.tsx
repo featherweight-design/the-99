@@ -397,5 +397,61 @@ describe("DecksView", () => {
     expect(screen.getByText("Unfiled one")).toBeInTheDocument();
     expect(document.querySelector("[data-chassis-row='result']")?.textContent).toContain("4 decks");
   });
+});
 
+// The order has three sources and they rank: the URL, then what this browser
+// last chose, then `lastPlayed`.
+describe("DecksView remembers the order", () => {
+  const sortTrigger = () => screen.getByRole("button", { name: /^Sort · / });
+
+  beforeEach(() => localStorage.clear());
+
+  it("keeps the chosen order for the next visit", () => {
+    const { unmount } = renderWide(view([deckOf()]));
+    fireEvent.click(sortTrigger());
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Name" }));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    // A press IS a choice made here, so it writes the URL as well — that is what
+    // makes the list shareable.
+    expect(window.location.search).toBe("?sort=name");
+
+    unmount();
+    window.history.replaceState(null, "", "/decks");
+    renderWide(view([deckOf()]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    // ...and the STORED value is never serialised. A bare `/decks` showing your
+    // own order leaves the address bar bare, so a URL still means somebody chose
+    // this here.
+    expect(window.location.search).toBe("");
+  });
+
+  it("lets the URL outrank what this browser stored", () => {
+    localStorage.setItem("the99:decks:sort", "name");
+    window.history.replaceState(null, "", "/decks?sort=newest");
+    renderWide(view([deckOf()]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Newest");
+  });
+
+  it("falls back to last played when neither has an opinion", () => {
+    renderWide(view([deckOf()]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+  });
+
+  it("ignores a stored value that is no longer an order", () => {
+    localStorage.setItem("the99:decks:sort", "popularity");
+    renderWide(view([deckOf()]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
+  });
+
+  it("holds the stored order through a filter click, which writes no sort", () => {
+    // `apply` rewrites every parameter the view owns. Serialising the effective
+    // order there would pin the stored preference onto the URL; serialising the
+    // default would be the same absence. It has to stay an absence.
+    localStorage.setItem("the99:decks:sort", "name");
+    renderWide(view([deckOf(), deckOf({ id: "d2", name: "Zur" })]));
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Zur" } });
+    expect(sortTrigger()).toHaveAccessibleName("Sort · Name");
+    expect(window.location.search).not.toContain("sort=");
+  });
 });

@@ -219,6 +219,14 @@ does not set are omitted rather than guessed.
 
 ## Component: Colour match (Any / Exactly)
 
+> **The group carries no padding of its own.** The table below specifies the segments'
+> own `0 8px` and the 2px between them, and nothing else — the box's 10px either side
+> belongs to the pip wrapper that contains both halves. The build had added a `pr-[6px]`
+> to the modifier's group on top of that, which put 16px to the right of `Exactly`
+> against 10px to the left of the first pip; measured in Chromium at 1300px it read 11
+> and 17. Removed 2026-09-13 on Hugh's report, restoring what this component always
+> specified. `scripts/probe-chassis-colour.mjs` measures the two gaps on both lanes.
+
 ### Segment
 
 | Property | Mobile | Desktop |

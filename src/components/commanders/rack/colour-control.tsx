@@ -128,7 +128,11 @@ export function ColourControl({
         aria-disabled={live ? undefined : true}
         // No box of its own on the rack: the pip wrapper is already the box, and
         // the hairline to its left is what says the modifier is inside it.
-        className={wide ? "flex items-center gap-[2px] pr-[6px]" : "flex gap-[8px]"}
+        // No `pr` of its own. The wrapper above already pays 10px of padding on
+        // both sides, and 6px more on this side alone put 16px to the right of
+        // `Exactly` against 10px to the left of the first pip — the box read as
+        // lopsided at every width. Reported 2026-09-13.
+        className={wide ? "flex items-center gap-[2px]" : "flex gap-[8px]"}
       >
         {segments.map((s, i) => {
           const selected = s.mode === match;

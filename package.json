@@ -37,7 +37,8 @@
     "probe:pending": "node scripts/probe-pending-banner.mjs",
     "probe:review": "node scripts/probe-review-changes.mjs",
     "probe:versions": "node scripts/probe-version-history.mjs",
-    "probe:games-empty": "node scripts/probe-games-empty.mjs"
+    "probe:games-empty": "node scripts/probe-games-empty.mjs",
+    "probe:colour-box": "node scripts/probe-chassis-colour.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",

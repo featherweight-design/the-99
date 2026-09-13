@@ -6,12 +6,27 @@ export type DeckSort = "lastPlayed" | "name" | "newest";
 
 export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed";
 
-/** The word the `Sort · …` trigger prints. Lowercase, as drawn. */
+/**
+ * The word the `Sort · …` trigger prints, and the menu row beside it.
+ *
+ * Sentence case, not the lowercase this shipped with: these are the only menu
+ * options in the app that were not capitalised, and the row they sit in reads as
+ * a list of choices rather than a sentence. Ruled by Hugh 2026-09-13. The trigger
+ * takes the same string, so it now reads `Sort · Last played`.
+ */
 export const DECK_SORT_LABELS: Record<DeckSort, string> = {
-  lastPlayed: "last played",
-  name: "name",
-  newest: "newest",
+  lastPlayed: "Last played",
+  name: "Name",
+  newest: "Newest",
 };
+
+/** The localStorage key `useStoredView` keeps the chosen order under. */
+export const DECK_SORT_KEY = "the99:decks:sort";
+
+/** A stored value that is no longer one of the orders is absence, not a crash. */
+export function isDeckSort(value: string): value is DeckSort {
+  return Object.hasOwn(DECK_SORT_LABELS, value);
+}
 
 /** Render order for the phone sheet's sort chips. Default first. */
 export const DECK_SORT_ORDER: readonly DeckSort[] = ["lastPlayed", "name", "newest"];
@@ -27,9 +42,22 @@ export const DECK_SORT_ORDER: readonly DeckSort[] = ["lastPlayed", "name", "newe
  * a sort key.
  */
 export function parseDeckSort(raw: string | null | undefined): DeckSort {
-  return raw != null && Object.hasOwn(DECK_SORT_LABELS, raw)
-    ? (raw as DeckSort)
-    : DEFAULT_DECK_SORT;
+  return deckSortFromParams(raw) ?? DEFAULT_DECK_SORT;
+}
+
+/**
+ * The URL's order, or `null` when it names none.
+ *
+ * `parseDeckSort` collapses "the URL said nothing" into "the default", which is
+ * the right answer for a caller that needs an order — and the wrong one for the
+ * view, which has a third source between those two. The stored preference sits
+ * UNDER the URL and OVER the default, exactly as `/collection`'s view choice
+ * does, and only an absence tells them apart.
+ */
+export function deckSortFromParams(raw: string | null | undefined): DeckSort | null {
+  // Own-property lookup rather than a bare `in`: a raw of `"__proto__"` or
+  // `"toString"` reaches the Object prototype and would otherwise be accepted.
+  return raw != null && Object.hasOwn(DECK_SORT_LABELS, raw) ? (raw as DeckSort) : null;
 }
 
 /** The default serialises as an absence, so the clean URL is the clean state. */
