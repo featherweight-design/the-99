@@ -229,10 +229,6 @@ export function SetGridView(props: SetGridViewProps) {
    * Reads refs only, so the `ResizeObserver` registered once can keep calling it.
    */
   const restHeightRef = useRef<number | null>(null);
-  // Written in a layout effect, never during render: `sizeSpacer` is created once and
-  // cannot close over the state, and a ref assigned while rendering is what
-  // `react-hooks/refs` rejects.
-  const deltaFiringRef = useRef(false);
   const sizeSpacer = useRef(() => {
     const el = headRef.current;
     const spacer = spacerRef.current;
@@ -249,12 +245,16 @@ export function SetGridView(props: SetGridViewProps) {
     // sheet leaves the recorded height stale — and the first render that restores would
     // then size the spacer from a head that no longer exists. `ResizeObserver` corrects it
     // a frame later, which is a frame too late.
-    // Not while the strip is firing either: the head is pinned open then, so no reserve is
-    // needed — and recording a delta-inclusive height meant that when the message cleared,
-    // the collapse committed in the same render and the spacer stayed taller than the head
-    // by the strip's own height until the next restore.
-    if (!el.hasAttribute("data-set-head-collapsed") && !deltaFiringRef.current) {
-      restHeightRef.current = el.getBoundingClientRect().height;
+    // The STEADY-STATE open height: the head as measured, less whatever the delta strip is
+    // occupying. Skipping the measurement entirely while the strip fires was the first
+    // answer and it has a hole — the sheet can still edit the filters behind a firing
+    // strip, so the head's real open height changes and is never recorded, and the collapse
+    // that follows the message clearing uses a stale one. Subtracting is what satisfies
+    // both: a delta-inclusive height is never stored, and a filter-driven change always is.
+    if (!el.hasAttribute("data-set-head-collapsed")) {
+      const delta = el.querySelector("[data-set-delta]");
+      restHeightRef.current = el.getBoundingClientRect().height
+        - (delta === null ? 0 : delta.getBoundingClientRect().height);
     }
     const rest = restHeightRef.current;
     spacer.style.height = rest === null
@@ -741,7 +741,6 @@ export function SetGridView(props: SetGridViewProps) {
   const shy = collapsed && mayCollapse;
 
   useLayoutEffect(() => {
-    deltaFiringRef.current = deltaFiring;
     sizeSpacer();
     // Keyed, not every render. Without a list this ran after every keystroke in the search
     // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
@@ -967,6 +966,7 @@ export function SetGridView(props: SetGridViewProps) {
             the reader — allowed here and nowhere else on this surface, because a delta is
             news and the §28 three-row rule is about the filter state. The pin this replaced
             grew the head by its whole open form instead. */}
+        <div data-set-delta>
         <DeltaStrip
           // The set code is in the key: two sets with the same indexed state and the same
           // ownership fingerprint — two you hold nothing from — would otherwise reuse the
@@ -978,6 +978,7 @@ export function SetGridView(props: SetGridViewProps) {
           recheckKey={`${modalGeneration}:${artGeneration}`}
           onFiring={onDeltaFiring}
         />
+        </div>
 
         {/* Hidden as a WHOLE when shy, not just its contents: the wrapper's own 10px
             margin is real height, and an empty box with a margin is exactly the kind of
@@ -1287,11 +1288,12 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
         </div>
 
-        {/* KNOWN, PRE-EXISTING, and not this PR's to fix: `position: sticky` with a
-            `z-index` creates a stacking context, so this sheet's `z-50` is confined to the
-            head's `z-[2]` and the shell's `fixed z-40` tab bar paints over its footer. A
-            hit test 20px above the sheet's bottom edge returns a tab-bar link. That is true
-            on `main` today, from the row this PR does not change.
+        {/* A `sticky z-[2]` head is a stacking context, so this sheet's `z-50` is confined
+            to it and cannot beat the shell's `fixed z-40` tab bar on paper. NOT reproduced
+            once the probe's hit test was corrected: sampled at a point inside both the
+            sheet and the viewport, the sheet is what comes back. An earlier run said the
+            tab bar won, from a coordinate 20px above the panel's own bottom edge — which is
+            off-screen here, so the browser returned null and the check called it a hit.
 
             And the panel overflows the viewport regardless of where it is mounted —
             `main` puts it at 658-1154 against an 844px fold, this branch at 747-1243. So

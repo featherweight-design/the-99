@@ -298,7 +298,10 @@ read against `main`, is 22px stale before this starts. **Re-measure first**, wit
 
 ### PR 5b — the cost line and the collapse
 
-- [x] **Unit coverage, in `cost-strip.test.tsx`** — the suite already exists, and this is the
+- [x] **Unit coverage, in `cost-strip.test.tsx` and `set-grid-view.test.tsx`** — the
+  disclosure, its caveat branches and the desktop form are in the first; the hysteresis
+  band's two thresholds, the delta gate and the collapsed bar's contents are in the second,
+  because they are the parent's state and not the strip's. — the suite already exists, and this is the
   one PR in the set whose behaviour is a state machine rather than a layout: the collapsed
   and expanded forms, each caveat branch (`unpriced`, `noFigure`, `soldOut`, `stale`), the
   hysteresis band's two thresholds, and the desktop form proving it did not move. The probe

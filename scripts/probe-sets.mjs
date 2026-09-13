@@ -1064,12 +1064,20 @@ async function run() {
         if (d === null) return null;
         const r = d.getBoundingClientRect();
         // 20px above the sheet's bottom edge, which is where the tab bar overlaps.
-        const el = document.elementFromPoint(
-          Math.round(r.left + r.width / 2), Math.round(r.bottom - 20),
-        );
+        // CLAMPED into the viewport. The panel overflows the fold here, so a point 20px
+        // above its own bottom edge is off-screen and Chromium returns null — which the
+        // first version of this reported as an `ok` with `hit: nothing`, a measurement that
+        // never happened dressed as a pass.
+        const x = Math.round(r.left + r.width / 2);
+        const yWanted = Math.round(r.bottom - 20);
+        const y = Math.min(yWanted, window.innerHeight - 2);
+        const inSheet = y >= r.top && y <= r.bottom;
+        const el = inSheet ? document.elementFromPoint(x, y) : null;
         return {
+          sampled: inSheet,
+          clamped: y !== yWanted,
           inside: el !== null && d.contains(el),
-          at: `${Math.round(r.left + r.width / 2)},${Math.round(r.bottom - 20)}`,
+          at: `${x},${y}`,
           rect: `${Math.round(r.top)}-${Math.round(r.bottom)}`,
           vh: window.innerHeight,
           hit: el === null ? "nothing" : `${el.tagName}.${String(el.className).slice(0, 32)}`,
@@ -1084,14 +1092,22 @@ async function run() {
         // — true on `main` today and not introduced here. The line is in the probe so the
         // fact is measured rather than remembered, and so the follow-up that portals the
         // sheet has a check waiting for it.
-        report(
-          "what is on top at the sheet's footer",
-          true,
-          hit.inside
-            ? `the sheet (${hit.at})`
-            : `${hit.hit} — known, pre-existing: the sheet is inside a sticky stacking`
-              + ` context. At ${hit.at}, sheet ${hit.rect}`,
-        );
+        if (!hit.sampled) {
+          console.log(
+            "  n/a  what is on top at the sheet's footer — NOT SAMPLED: no point inside"
+            + ` both the sheet (${hit.rect}) and the viewport (${hit.vh}px).`,
+          );
+        } else {
+          report(
+            "what is on top at the sheet's footer",
+            true,
+            (hit.inside
+              ? `the sheet at ${hit.at}`
+              : `${hit.hit} at ${hit.at} — known, pre-existing: the sheet is inside a sticky`
+                + " stacking context")
+            + (hit.clamped ? ", sampled at the fold because the panel overflows it" : ""),
+          );
+        }
         // Also reported and not asserted, for the same reason: the panel already overflows
         // the fold on `main` (658-1154 against 844), so a check here would fail on code
         // this PR does not touch. Recorded so the follow-up that portals the sheet starts
