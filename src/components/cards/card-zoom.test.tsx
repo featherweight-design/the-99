@@ -271,6 +271,21 @@ describe("the zoom", () => {
     expect(screen.queryByTestId("card-zoom")).toBeNull();
   });
 
+  it("leaves focus where another stage has already put it", () => {
+    // The zoom's exit timer lands after Escape has collapsed something else and
+    // focused that stage's own control. Restoring unconditionally would take focus
+    // back off it.
+    mount();
+    openZoom();
+    fireEvent.click(screen.getByRole("button", { name: cardZoomCopy.close }));
+    const elsewhere = screen.getAllByRole("button", { name: "Close card details" })[0];
+    act(() => { elsewhere.focus(); });
+
+    settleClose();
+
+    expect(document.activeElement).toBe(elsewhere);
+  });
+
   it("reports its own state on the trigger", () => {
     mount();
     const trigger = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0];

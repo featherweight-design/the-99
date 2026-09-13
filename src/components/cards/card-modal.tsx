@@ -583,6 +583,13 @@ export function CardModal({
       zoomCloseRef.current?.focus();
       return;
     }
+    // Only when nothing else has claimed focus. Escape during the exit collapses the
+    // printing region and focuses its Set trigger; the zoom's timer lands afterwards,
+    // and restoring unconditionally would take focus off the stage the reader just
+    // moved to. A normal close leaves focus on an unmounted button, so the document
+    // has fallen back to `body` and this runs.
+    const active = document.activeElement;
+    if (active && active !== document.body && dialogRef.current?.contains(active)) return;
     const mounted = zoomTriggerRefs.current.filter((el): el is HTMLButtonElement => el !== null);
     // The visible one where the environment reports layout, and the first mounted one
     // where it does not — jsdom gives every element a zero rect, so a strict
@@ -1189,16 +1196,24 @@ export function CardModal({
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
             <div
               data-testid="card-zoom-card"
-              // Width is the drawn figure until the dialog is too short for it — an
-              // 85vh cap on a landscape laptop can leave less than the 520px card plus
-              // its caption — and then height wins and the width follows the ratio.
-              // The whole card is the promise; a clipped one keeps neither half of it.
-              className="rounded-[13px] md:rounded-[14px] w-[318px] md:w-[372px] max-w-[calc(100%-32px)] max-h-[calc(100%-72px)]"
+              className="rounded-[13px] md:rounded-[14px] w-[var(--zoom-w)] md:w-[var(--zoom-w-md)]"
               style={{
+                // ONE dimension is set and the ratio derives the other, because a
+                // definite width AND a height cap is how an `aspect-ratio` box gets
+                // squashed: once the cap bites, the width does not follow and the card
+                // is drawn out of proportion. So the width is the smallest of the drawn
+                // figure, what the viewport's width allows, and what its height allows
+                // — 63/88 is 0.7159 — and the height is always the ratio's answer.
+                //
+                // The subtracted room is the caption, the ✕'s slot and the layer's own
+                // breathing space; the desktop dialog is `min(620px, 85vh)` tall, which
+                // is what a landscape laptop can make shorter than the card.
+                "--zoom-w": "min(318px, calc(100vw - 32px), calc((100vh - 140px) * 0.7159))",
+                "--zoom-w-md": "min(372px, calc((min(620px, 85vh) - 116px) * 0.7159))",
                 aspectRatio: "63/88",
                 ...artStyle,
                 boxShadow: "0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.35)",
-              }}
+              } as React.CSSProperties}
             />
             {/* One mono line: which printing you are holding. Never the price — a card
                 in your hand has none printed on it, and the tag is one dismissal away. */}
