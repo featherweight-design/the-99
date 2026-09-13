@@ -1,6 +1,6 @@
 # Undo a removal — design
 
-**Issue:** #390 · **Date:** 2026-09-13 · **Status:** design Green (R3), plan below
+**Issue:** none — see below · **Date:** 2026-09-13 · **Status:** design Green (R3), plan below
 
 ## Problem
 
@@ -22,6 +22,13 @@ long as the draft exists. It always succeeds. Nothing else on any surface change
 
 Source of truth: `design/design_handoff_the99_undo_removal/` at R3 — README, `STATES-restore.md`,
 `READINESS.md`, and the copy file. The canvas is `The 99 - Undo Removal (R3) - standalone.html`.
+
+**On the issue number.** The handoff calls this #390 throughout. In this repository #390 is
+"Allocation receipt renders only from the Collections page", closed and unrelated, and no open
+issue covers undo-a-removal. The handoff folder is the reference; nothing has been filed, because
+filing one is the product owner's call rather than this plan's. **#185 is correct** — "Design: no
+undo after removing a card from a deck" — and is the receipt this feature deliberately leaves
+alone.
 
 ## Decisions taken
 

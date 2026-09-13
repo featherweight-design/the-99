@@ -1,6 +1,6 @@
 # Undo a removal — execution plan
 
-**Issue:** #390 · **Spec:** `docs/superpowers/specs/2026-09-13-undo-removal-design.md`
+**Issue:** none — see the spec · **Spec:** `docs/superpowers/specs/2026-09-13-undo-removal-design.md`
 **Handoff:** `design/design_handoff_the99_undo_removal/` (R3, Green)
 
 ## Shape
@@ -56,10 +56,15 @@ outNote: (n: number) =>
   "Put one back and it never left.",
 ```
 
+Add `restore.failed` as well — the transport fallback for a thrown write. It cannot borrow
+`DECK_REMOVE_FALLBACK_MESSAGE`, which says the card is still in the deck: here the card is *out*,
+and the restore is what did not happen.
+
 **Tests:** the singular and plural forms of `outNote`; that no `restore` string carries a
-percentage, the word "net", or an em dash (this module's existing guards); and that `cta` is not
-the same word as #185's `addPanelCopy.undo.action`, because the two-vocabularies seam is
-deliberate and a later "tidy-up" that unified them would be reverting a ratified decision.
+percentage, the word "net", or an em dash (this module's existing guards); that `cta` is not the
+same word as #185's `addPanelCopy.undo.action`, because the two-vocabularies seam is deliberate
+and a later "tidy-up" that unified them would be reverting a ratified decision; and that
+`restore.failed` does not claim the card is still in the deck.
 
 ---
 
@@ -71,34 +76,60 @@ deliberate and a later "tidy-up" that unified them would be reverting a ratified
 export async function restoreRemovedCard(
   deckId: string,
   oracleId: string,
-  toQuantity: number,
 ): Promise<DeckMutationResult>
 ```
 
+**The quantity is NOT a parameter.** It is read server-side from the newest committed version, and
+that is what makes the action safe as well as correct.
+
 **Why it is not `addCardToDeck`** (spec E1): that call adds one copy, and decision 4 restores a
-quantity move whole. Write the row's quantity directly rather than looping.
+quantity move whole. This writes the row's quantity directly rather than looping.
+
+**Why the version is the authority.** `oracleId` is client-controlled, and this action deliberately
+does not re-run `validateCardForDeck` — the card was in the committed list, so it already passed,
+and re-running it would let a catalogue change turn a reversal into a refusal. Those two together
+would be a hole: a crafted call could put *any* catalogue card into the deck at any quantity,
+bypassing the colour-identity and commander-legality gates the add path enforces. **The card is
+therefore looked up in the newest version's own rows, and the write copies that row's quantity.**
+An oracle id absent from the version is refused, which closes the forged call and the stale-page
+call in one rule — a review page open across a commit names a row that is no longer there.
 
 Guards, in the action's existing inline style — it is a public endpoint and the signature is a
 claim:
 
 - `requireUserId()` then `requireDeck(deckId, userId)`, as every deck action does.
-- `toQuantity` must be an integer from 1 to a sane ceiling. Reject anything else; do **not**
-  clamp, because a bad figure is a crafted payload and not a near miss.
-- The card must exist.
+- `newestVersion(deckId)`; no version means a brew, which has nothing to restore *to*. Refuse.
+- The oracle id must be a row in `versionCards(version.id, tx)`. Refuse otherwise.
+- That row's `quantity` must be an integer from 1 to **99** — the same bound `restoreAutoCards`
+  already applies (`actions.ts:818`). A version row outside it is corrupt, not a near miss; refuse
+  rather than clamp.
 - **No claim check and no availability read.** Decision 1: this write cannot be refused on a claim,
   and adding one would make a restore stricter than an add.
-- `validateCardForDeck` is **not** re-run. The card was in the committed list, so it already
-  passed, and re-running it would let a catalogue change turn a reversal into a refusal.
 
-The write is one upsert setting `quantity` to `toQuantity`, inside the deck-row lock the add path
-already takes so a concurrent write cannot interleave. Then `revalidateClaims(deckId, userId)` —
-not `deckSurfaces()`, per the handoff: a restore is a claim write and the wrong helper leaves every
-other deck's availability stale.
+**The lock is on the `deck_cards` row, not the deck row.** A `decks`-row lock does not serialize
+this against the writers that matter: `removeCardFromDeck` takes `for update` on the card row
+(`actions.ts:645`), and `commitVersion` takes it on every draft row with a comment saying the deck
+row's lock does not cover them (`versions.ts:160-167`). Without the same lock, a quantity move
+restored to 9 can be concurrently decremented to 6 and the two writes interleave. Take
+`for update` on `(deckId, oracleId)` inside the transaction, then upsert — the insert has to be
+race-safe for the row that does not exist yet, which is `onConflictDoUpdate` on the same key.
 
-**Tests:** restores a full cut to one copy; restores a quantity move to its `from` figure in one
-write; refuses a non-integer, a zero, and a negative; refuses a deck the caller does not own;
-revalidates through `revalidateClaims`. Mutation-check the quantity assertion — it is the one E1
-exists for.
+`removeCardFromDeck`'s own comment already describes this race from the other side, naming a
+restore by name. It is the protocol to copy, not to invent.
+
+Then `revalidateClaims(deckId, userId)` — not `deckSurfaces()`, per the handoff: a restore is a
+claim write and the wrong helper leaves every other deck's availability stale.
+
+**A thrown write needs its own fallback.** `DECK_REMOVE_FALLBACK_MESSAGE` says the card is still in
+the deck, which on this surface is the opposite of the truth — the card is out and the restore is
+what failed. Task 1 adds `restore.failed`.
+
+**Tests:** restores a full cut to the version's quantity; restores a quantity move to that figure
+in one write; refuses an oracle id absent from the newest version (the forged call) and an id
+whose row the newest version no longer holds (the stale page); refuses a deck the caller does not
+own; refuses a brew; takes the row lock; revalidates through `revalidateClaims`. Mutation-check
+the quantity assertion and the version-membership guard — the first is why E1 exists, the second
+is the security boundary.
 
 ---
 
@@ -137,11 +168,24 @@ row comes back, and the shipped `MutationError` states it (decision 8).
 **Focus** (decision 10): the group heading the row left, never the next row's control. The heading
 needs a tabindex of −1 to receive it.
 
-The `Going out` heading count comes from the optimistic list, so `Going out · 17` reads `· 16` in
-the same paint the row leaves. The card count and the changes count follow the same value.
+**The last row is the case that breaks that.** The `Going out` column mounts only while
+`outCount > 0` (`review-changes.tsx:580`), so restoring the last cut unmounts the heading in the
+same render that would receive focus, and focus falls to the document body. Restoring the last
+change of *any* kind dissolves the draft entirely and the route redirects (matrix state 70), which
+is its own landing. Between them sits the case that needs an answer here: the last `out` row while
+`in` rows remain. Focus goes to the page's own heading, which outlives the column.
 
-**Tests:** the row leaves on tap; the counts move with it; a failed write returns the row and shows
-the error; focus lands on the group heading; `Coming in` never gains a row; no money figure moves.
+**Every figure the restore moves has to move together.** `cardCount`, `released` and the
+`CommitSheet`'s props are server values today, so an optimistic `out` list alone would leave the
+row and the heading updated while the footer — or an open commit sheet — still reads the old
+totals. Project `released` and the draft card count from the same optimistic list and pass those
+to both renderers. **The buy figures are not projected and must not be**: decision 6 says no money
+moves on any restore, and a figure that moved would be a bug rather than a lag.
+
+**Tests:** the row leaves on tap; the heading count, the card count and the released figure all
+move with it; the buy figures do not; a failed write returns the row and shows
+`restore.failed`; focus lands on the group heading, and on the page heading when the last `out` row
+goes; `Coming in` never gains a row.
 
 ---
 
