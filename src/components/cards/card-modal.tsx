@@ -25,7 +25,6 @@ import { clearCardArtPreference, setCardArtPreference } from "../../app/collecti
 import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { PriceTag } from "./price-tag";
-import { OVER_ART_PLATE } from "../ui/art-wash";
 import { priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
@@ -709,10 +708,17 @@ export function CardModal({
               className="relative z-[1] mt-[9px] flex justify-center"
               data-testid="modal-price-mobile"
             >
+              {/* THE PLATE, as the art-wash ratification now defines it: opaque
+                  `--bg` under one `--border-strong` hairline at radius 7. It replaced
+                  a 72% mix of `--bg` over transparency — with the top scrim gone, the
+                  brightest pixel a crop can put behind a control is no longer veiled,
+                  and opacity takes the control out of the contrast problem entirely.
+                  Every control over art draws this box; the tag is no exception. */}
               <span
-                className="inline-flex rounded-[5px] p-[2px]"
+                className="inline-flex rounded-[7px] p-[2px]"
                 style={{
-                  background: `color-mix(in oklab, var(--bg) ${OVER_ART_PLATE}%, transparent)`,
+                  background: "var(--bg)",
+                  border: "1px solid var(--border-strong)",
                 }}
               >
                 {priceTag}
