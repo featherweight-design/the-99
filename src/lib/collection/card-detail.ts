@@ -3,6 +3,7 @@
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
 
 import { cache } from "react";
+import type { PrintingPrices } from "../cards/price-lookup";
 import type { BrowseCard, BrowsePrinting } from "./browse";
 import {
   aggregateCollection,
@@ -57,6 +58,8 @@ export function catalogCard(
       scryfallId: p.scryfallId,
       printing: {
         setCode: p.setCode.toUpperCase(),
+        // This row IS the printing, so its id is never inferred here.
+        scryfallId: p.scryfallId,
         setName: p.setName,
         collectorNumber: p.collectorNumber,
         releasedAt: p.releasedAt,
@@ -145,11 +148,19 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // The import is inside the guard so an unowned card never pays for it, and inside the
     // catch because a module that fails to resolve is as quiet a failure as a query that
     // fails to run — either way the modal omits the block rather than losing the card.
-    const availability = await (async () => {
-      const { loadAvailability } = await import("../decks/availability-query");
-      return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
-    })().catch(() => null);
-    return { ...owned[0], availability };
+    // Started together, not one after the other: the two reads share nothing, and
+    // this whole path runs on a click, so a serial pair would put both round trips
+    // between the reader pressing a card and the modal filling in. Each still
+    // fails on its own — `Promise.all` over two already-caught promises settles
+    // with a null in the failed slot rather than rejecting the pair.
+    const [availability, prices] = await Promise.all([
+      (async () => {
+        const { loadAvailability } = await import("../decks/availability-query");
+        return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
+      })().catch(() => null),
+      pricesFor(oracleId),
+    ]);
+    return { ...owned[0], availability, prices };
   }
 
   const { db } = await import("../../db");
@@ -175,6 +186,11 @@ export const loadCardDetail = cache(async function loadCardDetail(
     .where(eq(cards.oracleId, oracleId));
   if (!card) return null;
 
+  // Started before the printings query is awaited: it depends on the oracle id
+  // alone, and this path serves every unowned card and every deck row, so a serial
+  // pair would add a whole round trip to the commonest open. Kicked off only after
+  // the card is known to exist, so a miss costs no query at all.
+  const prices = pricesFor(oracleId);
   const printingRows = await db
     .select({
       scryfallId: printings.scryfallId,
@@ -189,5 +205,23 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
     .leftJoin(sets, eq(sets.code, printings.setCode))
     .where(eq(printings.oracleId, oracleId));
-  return catalogCard(card, printingRows);
+  return { ...catalogCard(card, printingRows), prices: await prices };
 });
+
+/**
+ * The card's prices, or null. Swallowed for the same reason the availability read
+ * above is: a feed that cannot be reached costs the reader a figure, never the
+ * card.
+ *
+ * Null is NOT the same state as "the feed has never carried this printing", and
+ * the two are drawn differently. Null means nobody asked the store anything, and
+ * the modal draws nothing at all; a successful read with no row for this printing
+ * means the store answered, and the modal draws `no stock`. What neither may ever
+ * become is a price of nothing.
+ */
+async function pricesFor(oracleId: string): Promise<PrintingPrices | null> {
+  return (async () => {
+    const { loadPrintingPrices } = await import("../cards/prices");
+    return loadPrintingPrices(oracleId);
+  })().catch(() => null);
+}

@@ -34,7 +34,7 @@ type CardDetailContextValue = {
   open: (
     oracleId: string,
     siblings?: string[],
-    atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
+    atPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null,
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -365,7 +365,7 @@ export function CardDetailProvider({
     (
       oracleId: string,
       list?: string[],
-      atPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null,
+      atPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null,
     ) => {
       // PENDING, not committed. A second open while the first card is still painted must
       // not take the first card's printing away from it: the read may fail, and `load`

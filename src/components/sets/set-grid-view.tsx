@@ -704,7 +704,7 @@ function Section({
   onOpenCard: (
     oracleId: string,
     siblings?: string[],
-    atPrinting?: { setCode: string; collectorNumber: string; imageUri?: string | null },
+    atPrinting?: { setCode: string; collectorNumber: string; imageUri?: string | null; scryfallId?: string },
   ) => void;
 }) {
   return (
@@ -735,7 +735,14 @@ function Section({
             // The cell IS a printing, so the modal is told which one. Uppercased because
             // BrowsePrinting.setCode is uppercase and the match is exact (browse.ts:398).
             onOpen={(oracleId) => onOpenCard(oracleId, siblings, {
-              setCode, collectorNumber: c.collectorNumber, imageUri: c.imageUri ?? null,
+              setCode,
+              collectorNumber: c.collectorNumber,
+              imageUri: c.imageUri ?? null,
+              // The cell IS this catalog row, so the exact id travels with it. Two
+              // printings can share a (set, collector number) pair — `printings` puts
+              // no uniqueness on it — and without the id the modal's price would have
+              // to refuse an ambiguous pair it was never actually ambiguous about.
+              scryfallId: c.scryfallId,
             })}
           />
         ))}

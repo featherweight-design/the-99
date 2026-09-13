@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
+import type { BrowseCard, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
 import {
   cssUrl,
   printedNameOf,
@@ -24,6 +24,8 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
+import { PriceTag } from "./price-tag";
+import { priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -274,7 +276,7 @@ export function CardModal({
    * and nothing is written by looking. The moment the reader picks something in this modal,
    * their choice takes over.
    */
-  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null;
+  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -365,27 +367,53 @@ export function CardModal({
     // falls back to the set representative when the exact join is missing — so a Moxfield
     // or Archidekt holding can match here and still hold another printing's image. When the
     // caller handed over the exact art, it wins over that fallback.
-    const known = card.printings.some((p) => matchesPreference(p, at));
+    // Identity is the caller's id where it gave one, and the (set, collector number)
+    // pair where it did not. The distinction matters because the pair is not unique:
+    // `printings` puts no constraint on it, so a fetched row can share the pair and
+    // still BE a different printing. Stamping the caller's id onto that row would put
+    // one printing's price under another's art — so a row whose own id disagrees does
+    // not count as the printing being opened, and the exact one is injected below.
+    // A row that names no id is taken as the printing being opened only where the
+    // pair names ONE catalog printing. Where the catalog gives it to two — which the
+    // price snapshot has already worked out, and is the only place that knows — an
+    // id-less holding could be either sibling, and stamping the caller's id onto it
+    // would put the opened printing's figure under a picture that may be the other
+    // one's. There the exact row is injected instead.
+    const pairAmbiguous = card.prices?.ambiguousKeys.includes(priceKeyFor(at)) ?? false;
+    const isTarget = (p: BrowsePrinting) =>
+      at.scryfallId
+        ? p.scryfallId === at.scryfallId
+          || (!pairAmbiguous && p.scryfallId === undefined && matchesPreference(p, at))
+        // With no id from the caller either, an ambiguous pair identifies nothing at
+        // all: rewriting an owned row's art here would leave that row's id — and so
+        // its price — under a picture that may belong to its sibling. The caller's
+        // printing is injected instead, and prices itself or nothing.
+        : !pairAmbiguous && matchesPreference(p, at);
+    const known = card.printings.some(isTarget);
     const printings = known
-      ? (at.imageUri
-          ? card.printings.map((p) =>
-              // The flavour name goes with the art it described — but only when the art
-              // actually changes. `aggregateCollection` fills the name from the set
-              // REPRESENTATIVE when a holding has no `scryfall_id`, and it is that fallback
-              // the exact art replaces; where the two URLs already agree, the row is the
-              // printing and its name is the right one. Clearing unconditionally took the
-              // name off an owned Secret Lair whose art was never in question.
-              matchesPreference(p, at)
-                ? {
-                    ...p,
-                    imageUri: at.imageUri ?? p.imageUri,
-                    flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
-                  }
-                : p)
-          : card.printings)
+      ? card.printings.map((p) => {
+          if (!isTarget(p)) return p;
+          // The caller's id names the printing exactly, and travels whether or not it
+          // also handed over art: the row's own id may be absent, or dropped because
+          // two holdings disagreed about it, and the price is looked up by it.
+          const withId = at.scryfallId ? { ...p, scryfallId: at.scryfallId } : p;
+          if (!at.imageUri) return withId;
+          // The flavour name goes with the art it described — but only when the art
+          // actually changes. `aggregateCollection` fills the name from the set
+          // REPRESENTATIVE when a holding has no `scryfall_id`, and it is that fallback
+          // the exact art replaces; where the two URLs already agree, the row is the
+          // printing and its name is the right one. Clearing unconditionally took the
+          // name off an owned Secret Lair whose art was never in question.
+          return {
+            ...withId,
+            imageUri: at.imageUri,
+            flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
+          };
+        })
       : [...card.printings, {
       setCode: at.setCode,
       setName: at.setCode,
+      scryfallId: at.scryfallId,
       collectorNumber: at.collectorNumber,
       releasedAt: null,
       quantity: 0,
@@ -574,6 +602,17 @@ export function CardModal({
     ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
+  // The figure belongs to the printing on screen, so it is resolved from the same
+  // object the art and the `Set` caption read — a pick moves four things together
+  // or none of them (card-detail R2, §1). `null` means draw nothing at all: either
+  // no price read reached us, or the holding names no printing to ask about.
+  // `{ fact: null }` is the other silence-adjacent state and is NOT silence — the
+  // store answered, and the answer was that it has never carried this printing.
+  const price = priceFor(card.prices, resolved);
+  const priceTag = price ? (
+    <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone />
+  ) : null;
+
   return (
     // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
     // dim tracks the theme; blurred collection behind is decorative and out-of-scope
@@ -638,6 +677,7 @@ export function CardModal({
           {/* §Mobile: Art Image — 180px, aspect 63/88, radius 10px. Past the overflow
               threshold it collapses to a 72px thumbnail and the name comes with it. */}
           <div
+            data-testid="modal-art-mobile"
             className={`relative z-[1] rounded-[10px] ${compactArt ? "flex-none" : "mx-auto"}`}
             style={{
               width: compactArt ? 72 : 180, aspectRatio: "63/88",
@@ -658,19 +698,49 @@ export function CardModal({
               />
             )}
           </div>
+          {/* The figure, 9px under the sharp art and centred on it (card-detail R2,
+              table row 1.1). Last in the column, so the absent state removes it
+              without moving anything above. Over the wash it takes the shipped
+              over-art plate — the token expression, not a raw rgba, or it would
+              not survive the six themes (erratum E3). */}
+          {!compactArt && priceTag && (
+            <div
+              className="relative z-[1] mt-[9px] flex justify-center"
+              data-testid="modal-price-mobile"
+            >
+              {/* THE PLATE, as the art-wash ratification now defines it: opaque
+                  `--bg` under one `--border-strong` hairline at radius 7. It replaced
+                  a 72% mix of `--bg` over transparency — with the top scrim gone, the
+                  brightest pixel a crop can put behind a control is no longer veiled,
+                  and opacity takes the control out of the contrast problem entirely.
+                  Every control over art draws this box; the tag is no exception. */}
+              <span
+                className="inline-flex rounded-[7px] p-[2px]"
+                style={{
+                  background: "var(--bg)",
+                  border: "1px solid var(--border-strong)",
+                }}
+              >
+                {priceTag}
+              </span>
+            </div>
+          )}
           {compactArt && (
-            // The dialog's accessible name still comes from the h3 below, which stays in the
-            // DOM (display:none on phone) — this copy is the visual half of the same heading.
-            <div aria-hidden className="relative z-[1] min-w-0" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-              <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
-                {/* The same source as the h3 below it — these are two halves of one
-                    heading, and reading them off different objects is how the compact
-                    header ended up naming a printing the art is not showing. */}
-                {printedNameOf(preview)}
+            <div className="relative z-[1] min-w-0">
+              {/* The dialog's accessible name still comes from the h3 below, which stays in
+                  the DOM (display:none on phone) — this copy is the visual half of the same
+                  heading. */}
+              <div aria-hidden style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
+                  {/* The same source as the h3 below it — these are two halves of one
+                      heading, and reading them off different objects is how the compact
+                      header ended up naming a printing the art is not showing. */}
+                  {printedNameOf(preview)}
+                </div>
+                <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
+                  {card.typeLine}
+                </p>
               </div>
-              <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
-                {card.typeLine}
-              </p>
             </div>
           )}
         </div>
@@ -681,6 +751,7 @@ export function CardModal({
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
           <div
+            data-testid="modal-art-desktop"
             className="relative w-full rounded-[12px]"
             style={{
               aspectRatio: "63/88",
@@ -694,6 +765,20 @@ export function CardModal({
                 onFlip={onFlip}
                 size={34}
               />
+            )}
+            {/* 10px under the art, centred on the card (table row 1.1). Desktop sits
+                on flat `--bg` and needs no plate — the one difference between the two
+                widths. Hung off the art's own box rather than added to the column,
+                because the column centres its children: a tag joining the stack would
+                lift the art by half its height, and row 1.14 says nothing above the
+                tag moves when a pick makes it appear. */}
+            {priceTag && (
+              <div
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-[10px] whitespace-nowrap"
+                data-testid="modal-price-desktop"
+              >
+                {priceTag}
+              </div>
             )}
           </div>
         </div>
@@ -719,6 +804,15 @@ export function CardModal({
                 Right padding on desktop clears the absolutely-positioned close
                 button, which otherwise sits on top of the mana pips. */}
             <div className="flex items-start justify-between gap-[12px] md:pr-[46px]">
+              {/* The tag survives the collapse and moves out of the art (card-detail R2,
+                  table rows 2.1-2.2): a 72px thumb has no room beneath it. It lands
+                  beside the mana cost, which is the one thing still drawn in this row on
+                  a phone — the name and type line move into the art header, and the
+                  heading there is aria-hidden, so a figure placed inside it would reach
+                  no assistive technology at all (erratum E10). */}
+              {compactArt && priceTag && (
+                <div className="md:hidden" data-testid="modal-price-compact">{priceTag}</div>
+              )}
               <div className={compactArt ? "min-w-0 hidden md:block" : "min-w-0"}>
                 <h3
                   id="card-modal-title"
@@ -758,7 +852,12 @@ export function CardModal({
                   {card.typeLine}
                 </p>
               </div>
-              <ManaCost cost={card.manaCost} />
+              {/* The hook the compact placement's test anchors on: E12 puts the price
+                  tag beside this, and a tag that drifted elsewhere in the column would
+                  otherwise still satisfy a presence check. */}
+              <div data-testid="modal-mana-cost" className="flex-none">
+                <ManaCost cost={card.manaCost} />
+              </div>
             </div>
 
             {/* Oracle text block — §Oracle Text Block: bg --bg, border 1px --border, radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, --fg-body, line-height 1.6/1.65 */}

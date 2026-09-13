@@ -51,6 +51,7 @@ const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 2, oracleText: null,
   keywords: [], rarity: "uncommon", colorIdentity: [],
   layout: "normal", backImageUri: null,
+  scryfallId: null,
   exactImageUri: null, representativeImageUri: null, cardImageUri: null,
   flavorName: null, representativeFlavorName: null,
   ...over,
@@ -117,6 +118,80 @@ describe("aggregateCollection", () => {
     expect(agg.setCodes.sort()).toEqual(["C21", "LEA"]);
     expect(agg.primarySetCode).toBe("C21");
   });
+  // The exact-id price path rests on this: without the holding's own catalog id on
+  // the printing, every owned card falls to the set/number key, and a holding that
+  // carries neither goes silent.
+  it("carries the holding's own scryfall id onto the printing", () => {
+    const [agg] = aggregateCollection([raw({ scryfallId: "s-263" })]);
+
+    expect(agg.printings[0].scryfallId).toBe("s-263");
+  });
+
+  it("leaves the id absent where the holding names none", () => {
+    // A bare `Name,Qty` import. `undefined` rather than null, so the field reads the
+    // same as it does on a fixture that never had one.
+    const [agg] = aggregateCollection([raw({ scryfallId: null })]);
+
+    expect(agg.printings[0].scryfallId).toBeUndefined();
+  });
+
+  it("keeps one id across the two finishes of one printing", () => {
+    // Foil and nonfoil are two collection rows sharing a catalog id, and they
+    // collapse into one entry — so the coalesce can only ever meet the same value,
+    // and must not drop it when the second row arrives.
+    const [agg] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil", quantity: 2 }),
+      raw({ scryfallId: "s-263", finish: "foil", quantity: 1 }),
+    ]);
+
+    expect(agg.printings).toHaveLength(1);
+    expect(agg.printings[0].scryfallId).toBe("s-263");
+    expect(agg.printings[0].quantity).toBe(3);
+  });
+
+  it("drops the id where two rows of one printing disagree about it", () => {
+    // The import path already rules this: rows that share oracle, set, collector
+    // number and finish but name different printings cannot both be right, and null
+    // is the honest answer (`pending.ts:30-33`). Here it matters more, because this
+    // id is what a price is looked up by — the entry falls back to the (set,
+    // collector number) identity the rows do agree on.
+    const [agg] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil" }),
+      raw({ scryfallId: "s-other", finish: "foil" }),
+    ]);
+
+    expect(agg.printings[0].scryfallId).toBeUndefined();
+  });
+
+  it("does not let a later row heal an id that was dropped for disagreeing", () => {
+    const [agg] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil" }),
+      raw({ scryfallId: "s-other", finish: "foil" }),
+      raw({ scryfallId: "s-263", finish: "etched" }),
+    ]);
+
+    expect(agg.printings[0].scryfallId).toBeUndefined();
+  });
+
+  it("drops the id where a known one meets a null one, whichever arrives first", () => {
+    // A null has two histories here and they cannot be told apart: a name-only
+    // import that never named a printing, and a row the import nulled because two
+    // sources contradicted each other (`pending.ts:30-33`). Deferring to the known
+    // id would resurrect the second. The entry still has its (set, collector
+    // number) identity, which names the same printing.
+    const [knownFirst] = aggregateCollection([
+      raw({ scryfallId: "s-263", finish: "nonfoil" }),
+      raw({ scryfallId: null, finish: "foil" }),
+    ]);
+    const [nullFirst] = aggregateCollection([
+      raw({ scryfallId: null, finish: "nonfoil" }),
+      raw({ scryfallId: "s-263", finish: "foil" }),
+    ]);
+
+    expect(knownFirst.printings[0].scryfallId).toBeUndefined();
+    expect(nullFirst.printings[0].scryfallId).toBeUndefined();
+  });
+
   it("keeps oracle metadata from the first row seen", () => {
     const [agg] = aggregateCollection([
       raw({ oracleText: "Tap: Add {C}{C}.", cardImageUri: "img.png" }),

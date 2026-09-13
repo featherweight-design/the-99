@@ -14,8 +14,25 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  * A card owned in four printings has four of these — a single resolved URI on BrowseCard
  * could not represent that, which is why the modal caption reads set + collector number here.
  */
+import type { PrintingPrices } from "../cards/price-lookup";
+
 export type BrowsePrinting = {
   setCode: string;           // uppercased for display; stored lowercase
+  /**
+   * The printing's catalog id, where the holding names one. Optional for the reason
+   * `layout` and `availability` are: fixtures and tests build `BrowsePrinting`
+   * literals that never touch the catalog.
+   *
+   * Absent is a real state, not a gap to paper over: `collection_items.scryfall_id`
+   * is nullable, and a bare `Name,Qty` import carries neither an id nor a collector
+   * number. A reader that needs the printing's own row — the price is the one that
+   * does — asks by this id, falls back to `(setCode, collectorNumber)`, and says
+   * nothing when neither names a printing. It must NOT fall through to the
+   * representative printing the way `resolveImageUri` does: a representative is a
+   * different collector number in the same set, so its price would be another
+   * printing's figure under this printing's art.
+   */
+  scryfallId?: string;
   /** From the `sets` catalog. Null when no row exists — callers fall back to setCode. */
   setName: string | null;
   collectorNumber: string;   // "" for exports that carry no collector number
@@ -84,6 +101,18 @@ export type BrowseCard = {
    * "Absent" and "read failed" both correctly render nothing.
    */
   availability?: Availability | null;
+  /**
+   * What the feed last carried for each of this card's printings, indexed both
+   * ways `BrowsePrinting` can name one. Optional for the same reason
+   * `availability` is: only `loadCardDetail` sets it, because only the modal
+   * draws a figure, and the list payload must never carry prices for 2,472 cards
+   * so one of them can be opened.
+   *
+   * Null means the read failed or never ran — which the modal renders as silence,
+   * not as `no stock`. `no stock` is what the store answered; null is nobody
+   * having asked.
+   */
+  prices?: PrintingPrices | null;
   printings: BrowsePrinting[];
   setCodes: string[];
   primarySetCode: string;
@@ -109,7 +138,7 @@ export type BrowseCard = {
  * a tuple list rather than a record because it serialises smaller, and this
  * type exists to make the payload small.
  */
-export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "backImageUri"> & {
+export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "backImageUri" | "prices"> & {
   setCounts: [string, number][];
 };
 
@@ -117,7 +146,7 @@ export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "back
 export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
   return cards.map((card) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured to drop them from `rest`
-    const { printings, oracleText, backImageUri, ...rest } = card;
+    const { printings, oracleText, backImageUri, prices, ...rest } = card;
     const counts = new Map<string, number>();
     for (const p of printings) {
       // Uppercased here rather than trusted: `buildSetOptions` looks these codes
@@ -221,6 +250,11 @@ export type RawCollectionRow = {
    */
   preferredSetCode: string | null;
   preferredCollectorNumber: string | null;
+  /**
+   * The holding's own `collection_items.scryfall_id`. Null on a name-only import.
+   * Not an image tier — the id of the printing this row IS.
+   */
+  scryfallId: string | null;
   /** Tier 1 — the printing joined on collection_items.scryfall_id. */
   exactImageUri: string | null;
   /** Tier 2 — the representative printing for (oracle_id, set_code). */
@@ -310,10 +344,16 @@ export function comparePrintings(a: BrowsePrinting, b: BrowsePrinting): number {
 export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
   const byOracle = new Map<string, BrowseCard>();
   const printingsByOracle = new Map<string, Map<string, BrowsePrinting>>();
+  // Printing entries whose rows disagreed about which catalog printing they are.
+  // Tracked rather than inferred from the entry, because "id dropped for
+  // disagreeing" and "never had one" look identical on the entry itself and must
+  // not be allowed to heal when a third row arrives carrying an id.
+  const ambiguousIds = new Set<string>();
   for (const r of rows) {
     const setCode = r.setCode.toUpperCase();
     const printing: BrowsePrinting = {
       setCode,
+      scryfallId: r.scryfallId ?? undefined,
       setName: r.setName,
       collectorNumber: r.collectorNumber,
       releasedAt: r.releasedAt,
@@ -368,6 +408,35 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // coalesce a null onto the same value — belt and braces, in the spirit of
       // the image line above.
       seen.flavorName ??= printing.flavorName;
+      // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
+      // share a catalog id, but the import path already records that they can
+      // disagree and rules that null is the honest answer when they do
+      // (`pending.ts:30-33`). The same rule holds here for a stronger reason: this
+      // id is what a price is looked up by, so keeping whichever row was processed
+      // first would put one printing's figure under an entry that is not certainly
+      // that printing. Dropped, the entry falls back to its (set, collector number)
+      // identity, which is the thing the rows DO agree on.
+      // ANY disagreement drops the id, including a known id meeting a null one.
+      //
+      // The tempting rule is that a null row "does not know" and should defer to
+      // the row that does. It cannot, because at this layer a null has two
+      // histories and they are indistinguishable: a name-only import that never
+      // named a printing, and a row `aggregatePendingItems` deliberately nulled
+      // because two imports contradicted each other (`pending.ts:30-33`). Deferring
+      // to the known id would let the second history resurrect an id the import
+      // already ruled unsafe.
+      //
+      // Dropping it costs almost nothing: the entry is keyed by (set code,
+      // collector number) and `priceFor` falls back to exactly that, which names
+      // the same printing. The only case it costs a figure is a holding with no
+      // collector number either — and there the id is the sole identity, which is
+      // the state this rule exists to distrust. A missing figure is a state the
+      // design draws; a figure belonging to another printing is the one thing
+      // row 1.10 forbids outright.
+      if (seen.scryfallId !== printing.scryfallId) {
+        ambiguousIds.add(`${r.oracleId}|${printingKey}`);
+      }
+      if (ambiguousIds.has(`${r.oracleId}|${printingKey}`)) seen.scryfallId = undefined;
     } else {
       printings.set(printingKey, printing);
     }
@@ -606,6 +675,9 @@ export async function selectCollectionRows(
       releasedAt: sets.releasedAt,
       preferredSetCode: cardArtPreferences.setCode,
       preferredCollectorNumber: cardArtPreferences.collectorNumber,
+      // The holding's own printing id, for readers that ask the catalog about this
+      // exact printing rather than about the card. Null on a name-only import.
+      scryfallId: collectionItems.scryfallId,
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,

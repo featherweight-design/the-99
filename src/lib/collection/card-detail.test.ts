@@ -11,6 +11,14 @@ const loadAvailability = vi.fn();
 vi.mock("../decks/availability-query", () => ({
   loadAvailability: (...args: unknown[]) => loadAvailability(...args),
 }));
+// Stood in for the same reason the two reads above are: `loadCardDetail` now asks
+// the feed for this card's printings, and the real one opens a connection the test
+// setup forbids. Its `.catch` would swallow that into a null price and the test
+// would still pass, having proved nothing about the snapshot it attaches.
+const loadPrintingPrices = vi.fn();
+vi.mock("../cards/prices", () => ({
+  loadPrintingPrices: (...args: unknown[]) => loadPrintingPrices(...args),
+}));
 
 import {
   catalogCard,
@@ -153,6 +161,15 @@ describe("loadCardDetail availability", () => {
     exactImageUri: null,
     representativeImageUri: null,
   };
+  const EMPTY_PRICES = { byScryfallId: {}, byPrintingKey: {}, ambiguousKeys: [], catalogIds: [], catalogKeys: [], newestAsOf: null };
+  const PRICES = {
+    byScryfallId: { "s-1": { cents: 241, foilCents: null, etchedCents: null, asOf: new Date("2026-09-08T09:00:00Z") } },
+    byPrintingKey: {},
+    ambiguousKeys: [],
+    catalogIds: ["s-1"],
+    catalogKeys: ["C21|263"],
+    newestAsOf: new Date("2026-09-08T09:00:00Z"),
+  };
   const availability = {
     owned: 2,
     hard: 2,
@@ -164,6 +181,7 @@ describe("loadCardDetail availability", () => {
   it("joins the owned card's availability at the default vantage", async () => {
     selectCollectionRows.mockResolvedValue([row]);
     loadAvailability.mockResolvedValue(new Map([["o-1", availability]]));
+    loadPrintingPrices.mockResolvedValue(EMPTY_PRICES);
     const card = await loadCardDetail("user_1", "o-1");
     expect(card?.availability).toEqual(availability);
     // Row 1.5: card detail is off any deck's own decklist, so no deck is excluded —
@@ -176,8 +194,57 @@ describe("loadCardDetail availability", () => {
   it("keeps the card when the availability read fails", async () => {
     selectCollectionRows.mockResolvedValue([row]);
     loadAvailability.mockRejectedValue(new Error("down"));
+    loadPrintingPrices.mockResolvedValue(EMPTY_PRICES);
     const card = await loadCardDetail("user_1", "o-1");
     expect(card?.name).toBe("Arcane Signet");
     expect(card?.availability).toBeNull();
+  });
+
+  it("attaches the card's price snapshot", async () => {
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    const card = await loadCardDetail("user_1", "o-1");
+    expect(card?.prices).toEqual(PRICES);
+    expect(loadPrintingPrices).toHaveBeenCalledWith("o-1");
+  });
+
+  // The unowned card is the whole point of the feature — it is the case with no
+  // printing region for a figure to sit beside — so its loader path gets its own
+  // case rather than riding the owned one's.
+  it("attaches the snapshot on the unowned path too", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    const rows = [{ oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet" }];
+    vi.doMock("../../db", () => ({
+      db: {
+        select: () => ({
+          from: () => ({
+            where: async () => rows,
+            leftJoin: () => ({ where: async () => [] }),
+          }),
+        }),
+      },
+    }));
+
+    // The db stub above is scoped to this case; the real module is restored after.
+    vi.resetModules();
+    const { loadCardDetail: fresh } = await import("./card-detail");
+    const card = await fresh("user_1", "o-1");
+    vi.doUnmock("../../db");
+
+    expect(card?.prices).toEqual(PRICES);
+  });
+
+  // The figure is the one thing on this card the reader can live without. A feed
+  // that cannot be reached costs them a number, never the card — and null is not
+  // `no stock`: nobody asked the store anything.
+  it("keeps the card when the price read fails, with a null snapshot", async () => {
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrintingPrices.mockRejectedValue(new Error("feed down"));
+    const card = await loadCardDetail("user_1", "o-1");
+    expect(card?.name).toBe("Arcane Signet");
+    expect(card?.prices).toBeNull();
   });
 });
