@@ -258,10 +258,13 @@ NUMERIC correction is arithmetic against the block that ships (the resume row's
 is not a correction at all but a product decision, §6a): a padded row counted on
 one side, a name clamped to two lines rather than three, a rank column that is
 ink like any other, a desktop block taller than the phone's under one shared
-wash. **Nothing in this PR is built** — it is the record, and each figure lands
-with the slice that draws its surface. `wash-contrast.test.ts` is to hold all
-seven, and the browser probe is to compare each against the block it measures on
-the laid-out page; both are build work, scheduled in the plan's steps 1 and 4.
+wash.
+
+*Written before the build: nothing in the verdict's own PR was built, and each
+figure landed with the slice that drew its surface. Both checks ship now —
+`wash-contrast.test.ts` holds every figure in this table, and the browser probe
+compares each against the block it measures on the laid-out page, which is what
+caught two of the figures above being wrong.*
 
 ## §6a Overturned after shipping — §A4, the resume row
 
@@ -270,7 +273,7 @@ would otherwise re-apply a flip that has been reverted once.
 
 | The handoff says | What ships |
 | --- | --- |
-| §A4: "the resume row's whole exception is deleted" — band 72's figures, its `--surface-inset` ground, the 116px type inset and the no-shadow exemption all go | The exception stands. 72px band, 99px portrait column, `--surface-inset` ground, 116px type inset, no text shadow on that row |
+| §A4: "the resume row's whole exception is deleted" — band 72's figures, its `--surface-inset` ground, the 116px type inset and the no-shadow exemption all go | The exception stands. 72px band, 99px portrait column, `--surface-inset` ground, and no text shadow on that row. The type inset is **108px below 1000px of viewport and 116px at or above it** — the gap after the portrait is the part that gives, because at 640px the column leaves the meta line 3px less than its fixed content needs |
 | The aspect rule's one flip: "the resume row leaves `left-portrait`" at 2.3–3.1:1 | It stays `left-portrait`. The rule is unchanged for every other render; this row is its one exception |
 | Render 02 at a 168 `cover` band, `labelAtPx` 53 (verdict §5c) | 72 band, `labelAtPx="flat"` — no vertical ramp at all, because the row's ink sits beside the portrait rather than over it |
 | Every string on that row takes `COVER_INK_SHADOW` | No string on that row takes a shadow. Its type starts at the 116px inset, clear of the art |
