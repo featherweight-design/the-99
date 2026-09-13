@@ -26,7 +26,7 @@ import { useSearchParams } from "next/navigation";
 import { ColourPips } from "../ui/colour-pips";
 import { FilterPanel } from "../ui/filter-panel";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
-import { FilterChipPill } from "../ui/filter-chassis";
+import { FilterChipPill, type FilterChip } from "../ui/filter-chassis";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { GhostButton } from "../ui/button";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
@@ -293,9 +293,10 @@ export function SetGridView(props: SetGridViewProps) {
   // The chip line, in DIMENSION order and never click order — a line that re-orders itself
   // as you use it is a line you have to re-read. Colour collapses past one pip rather than
   // printing one chip per hue.
-  const chips: {
-    key: string; label: string; spoken?: string; dots?: string[]; onRemove: () => void;
-  }[] = [];
+  // The chassis's own type, not a copy of its shape — the same reason the chip itself is
+  // `FilterChipPill` now. A re-declared shape is how this adapter drifts the next time a
+  // chip field is added.
+  const chips: FilterChip[] = [];
   if (effective.colors.length === 1) {
     const only = effective.colors[0];
     chips.push({
