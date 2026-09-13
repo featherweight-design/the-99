@@ -358,6 +358,11 @@ describe("the turn inside the zoom", () => {
   it("does not carry the art's announcement into the zoom", () => {
     mount(twoFaced());
     fireEvent.click(screen.getAllByRole("button", { name: /Turn over to/ })[0]);
+    // The art turns now, so its face is announced on the landing — same rule the
+    // zoom's own turn follows, and jsdom runs no transitions.
+    screen
+      .queryAllByTestId("modal-art-turn")
+      .forEach((box) => fireEvent.transitionEnd(box, { propertyName: "transform" }));
     expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent)
       .toBe("Showing Insectile Aberration");
 
@@ -376,15 +381,17 @@ describe("the turn inside the zoom", () => {
     expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent).toBe("");
   });
 
-  it("keeps the turn off the power and toughness", () => {
-    // Bottom-right is where a creature prints its P/T, and the control covered it on
-    // every creature — the one number a reader most often opens a card to check.
+  it("keeps the turn off the card entirely", () => {
+    // It sat bottom-right, where a creature prints its P/T; then bottom-centre,
+    // still printed across the picture. It is now UNDER the card, which is the
+    // only placement that covers none of it — so the assertion is containment,
+    // not coordinates: a control inside the card's box is on the card however it
+    // is positioned.
     const layer = openTwoFaced();
 
     const control = within(layer).getByRole("button", { name: /Turn over to/ });
-    expect(control.getAttribute("style")).toContain("left: 50%");
-    expect(control.getAttribute("style")).toContain("translateX(-50%)");
-    expect(control.getAttribute("style")).not.toContain("right: 10px");
+    expect(within(layer).getByTestId("card-zoom-card").contains(control)).toBe(false);
+    expect(control.getAttribute("style")).not.toContain("position: absolute");
   });
 
   it("announces at once for a reader who asked for less motion", () => {
@@ -463,5 +470,76 @@ describe("the turn inside the zoom", () => {
 
     expect(document.activeElement)
       .toBe(within(layer).getByRole("button", { name: /Turn over to/ }));
+  });
+});
+
+// #3 and #4 — the ⤢ plate is gone, a line of words says the same thing, and the
+// turn control has come off the art to sit between that line and the price.
+describe("what sits under the card", () => {
+  const twoFaced = () => card({
+    layout: "transform",
+    backImageUri: "https://img/back.jpg",
+    name: "Delver of Secrets // Insectile Aberration",
+  });
+
+  it("names the gesture each width actually has", () => {
+    mount();
+    // Both breakpoint trees mount, one per width, and the word for the gesture is
+    // the one thing a hint like this cannot get wrong.
+    const hints = screen.getAllByTestId("modal-zoom-hint").map((n) => n.textContent);
+    expect(hints).toContain(cardZoomCopy.hintDesktop);
+    expect(hints).toContain(cardZoomCopy.hintPhone);
+  });
+
+  it("draws no ⤢ plate anywhere — the hint replaced it", () => {
+    mount();
+    expect(screen.getByRole("dialog").textContent).not.toContain("⤢");
+  });
+
+  it("orders the stack hint, turn, price", () => {
+    mount(twoFaced());
+    // Source order is the laid-out order in a flex column, so the DOM is the
+    // assertion. A browser proves the geometry; this proves the sequence.
+    const stack = screen.getAllByTestId("modal-under-card")[0];
+    const rows = [...stack.querySelectorAll("[data-testid], button")];
+    const hint = rows.findIndex((n) => n.getAttribute("data-testid") === "modal-zoom-hint");
+    const turn = rows.findIndex((n) => n.getAttribute("aria-label")?.startsWith("Turn over to"));
+    expect(hint).toBeGreaterThanOrEqual(0);
+    expect(turn).toBeGreaterThan(hint);
+  });
+
+  it("keeps the turn OUT of the box that rotates", () => {
+    // Inside it the control rides the rotation and is drawn from behind on the
+    // back face — the bug the zoom's own control was lifted out of the box for.
+    mount(twoFaced());
+    const turning = screen.getAllByTestId("modal-art-turn")[0];
+    expect(turning.querySelector('button[aria-label^="Turn over to"]')).toBeNull();
+    // And so is the zoom trigger, or the card stops opening once turned.
+    expect(turning.querySelector("button")).toBeNull();
+  });
+
+  it("withholds the whole stack on the compact header", () => {
+    // A 72px thumbnail is a locator in a printing-picker state, not the thing
+    // being read; the name and type line sit beside it instead.
+    const many = card({
+      layout: "transform",
+      backImageUri: "https://img/back.jpg",
+      printings: Array.from({ length: 14 }, (_, i) => ({
+        setCode: "RVR",
+        setName: "Ravnica Remastered",
+        collectorNumber: String(i + 1),
+        releasedAt: "2024-01-12",
+        quantity: 1,
+        finishes: { nonfoil: 1 },
+        imageUri: "https://img/front.jpg",
+        flavorName: null,
+      })),
+    });
+    mount(many);
+    fireEvent.click(screen.getAllByRole("button", { name: /printings owned/ })[0]);
+    const phoneStack = screen
+      .queryAllByTestId("modal-under-card")
+      .filter((n) => n.className.includes("relative z-[1]"));
+    expect(phoneStack).toHaveLength(0);
   });
 });
