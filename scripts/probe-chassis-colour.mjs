@@ -17,7 +17,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { PAGE } from "./lib/surface.mjs";
+import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const FIXTURE = EMAIL.includes("+clerk_test");
@@ -81,13 +81,16 @@ async function signIn(page) {
  * coin toss between the control under test and a neighbour with different
  * padding.
  */
-const MATCH_GROUP = `${PAGE} [role="radiogroup"][aria-label="Colour match"]`;
+const MATCH_GROUP = '[role="radiogroup"][aria-label="Colour match"]:visible';
+
+/** The control, reached the way every browser script here reaches page content. */
+const matchGroup = (page) => onPage(page, MATCH_GROUP).first();
 
 async function readBox(page) {
-  return page.evaluate((selector) => {
-    const group = [...document.querySelectorAll(selector)]
-      .find((n) => n.getBoundingClientRect().width > 0);
-    if (!group) return null;
+  // Evaluated THROUGH the locator rather than against a hand-built selector
+  // string: `onPage` owns what "the page" means, and a raw `main …` of my own
+  // would keep working right up until that definition moved.
+  return matchGroup(page).evaluate((group) => {
     let box = group.parentElement;
     while (box && getComputedStyle(box).borderRightWidth === "0px") box = box.parentElement;
     if (!box) return null;
@@ -100,7 +103,7 @@ async function readBox(page) {
       right: Math.round(b.right - segments[segments.length - 1].getBoundingClientRect().right),
       segments: segments.map((s) => s.textContent?.trim()),
     };
-  }, MATCH_GROUP);
+  });
 }
 
 const browser = await chromium.launch();
@@ -116,14 +119,12 @@ try {
     await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" });
     // Waited for, not slept through: both lanes stream, and a rect read before
     // the rack paints measures nothing.
-    await page
-      .waitForFunction(
-        (selector) => [...document.querySelectorAll(selector)]
-          .some((n) => n.getBoundingClientRect().width > 0),
-        MATCH_GROUP,
-        { timeout: 30_000 },
-      );
-    const box = await readBox(page);
+    const box = await matchGroup(page)
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => readBox(page))
+      // A lane that drew no control is this probe's own failure to report, not a
+      // crash — the check below says so in words.
+      .catch(() => null);
     console.log(`\n── ${route} · the colour control's box ──`);
     console.log(JSON.stringify(box, null, 2));
     if (!box) {
