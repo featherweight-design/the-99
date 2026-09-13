@@ -34,8 +34,8 @@ const setFilterCopyRarity = {
 
 export const setFilterCopy = {
   // The colour filter's own strings ship with the component it is mounted from
-  // (components/collection/color-filter-row.tsx) and are deliberately not redeclared
-  // here — a second copy of a label is a second thing to keep in step.
+  // (components/ui/colour-pips.tsx) and are deliberately not redeclared here — a
+  // second copy of a label is a second thing to keep in step.
   rarity: setFilterCopyRarity,
   label: "Filters",
   // The name search (addendum R2 §29). The SET is in the accessible name and not in the
