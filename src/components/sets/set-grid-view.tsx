@@ -413,11 +413,13 @@ export function SetGridView(props: SetGridViewProps) {
     };
   });
   const rarityEnabled = rarityOptions.filter((o) => !o.disabled).map((o) => o.code);
-  // The group's tab stop when nothing is checked. The first ENABLED one, not index 0: a
-  // set with no commons disables that button, and a tab stop nobody can reach is no tab
-  // stop. Nothing else depends on it now — `aria-disabled` keeps every radio focusable, so
-  // clearing a value never strands focus and there is no rescue to aim.
-  const firstEnabledRarity = rarityOptions.findIndex((o) => !o.disabled);
+  // The group's tab stop when nothing is checked: the first ENABLED value, or — when a
+  // colour combination leaves NO rarity with cards — the first radio regardless. A group
+  // with no tab stop is unreachable by keyboard, and "unreachable" is a worse answer than
+  // "reachable and every option announced unavailable", which is a state the reader can
+  // understand and back out of. `aria-disabled` is what makes that safe: every radio stays
+  // focusable, so this only decides where Tab lands, never whether focus can survive.
+  const firstEnabledRarity = Math.max(0, rarityOptions.findIndex((o) => !o.disabled));
 
   return (
     <div>

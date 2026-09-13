@@ -1242,3 +1242,20 @@ describe("SetGridView — the sheet's rarity group honours the radio pattern", (
     expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Rare" }));
   });
 });
+
+// A colour combination can leave no rarity with any cards. The group must still have a tab
+// stop then: unreachable is worse than reachable-and-all-unavailable, which the reader can
+// understand and back out of.
+describe("SetGridView — the rarity group is reachable when nothing matches", () => {
+  it("keeps a tab stop when every rarity is empty", () => {
+    stubDesktop(false);
+    search = "c=G";
+    view([p("1", { rarity: "common", colorIdentity: ["W"] }),
+          p("2", { rarity: "rare", colorIdentity: ["W"] })], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const radios = screen.getAllByRole("radio");
+    expect(radios.every((r) => r.getAttribute("aria-disabled") === "true")).toBe(true);
+    expect(radios.filter((r) => r.getAttribute("tabindex") === "0")).toHaveLength(1);
+    expect(radios[0]).toHaveAttribute("tabindex", "0");
+  });
+});
