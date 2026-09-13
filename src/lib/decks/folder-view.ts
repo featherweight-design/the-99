@@ -47,7 +47,20 @@ export function shelfFromParams(
   const raw = params.get(FOLDER_PARAM);
   if (!raw) return ALL_DECKS;
   if (raw === UNFILED) return showsUnfiled(folders) ? UNFILED : ALL_DECKS;
-  return folders.some((f) => f.id === raw) ? raw : ALL_DECKS;
+  // Case-insensitively, and the CANONICAL id is what comes back — `isUuid`
+  // accepts either case (`src/lib/uuid.ts`), so a link someone upper-cased on
+  // the way past still names a real shelf, and everything downstream compares
+  // against the id the server gave us rather than the one that was typed.
+  return matchFolder(folders, raw)?.id ?? ALL_DECKS;
+}
+
+/** The folder a URL value names, whatever case it arrived in. */
+export function matchFolder<T extends FolderLike>(
+  folders: readonly T[],
+  raw: string,
+): T | undefined {
+  const wanted = raw.toLowerCase();
+  return folders.find((f) => f.id.toLowerCase() === wanted);
 }
 
 /**

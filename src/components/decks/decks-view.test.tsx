@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -365,6 +365,29 @@ describe("DecksView", () => {
 
     rerender(view(shelvedDecks(), []));
     expect(screen.getByText("Filed one")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
+  it("gives the compact sheet the shelf's denominator too", () => {
+    // The sheet prints and announces its own `shown of total`; the chassis's
+    // result line is a different element, so asserting that one proves nothing
+    // about this one.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    render(view(shelvedDecks(), twoFolders));
+    openFilters();
+    // Scoped to the sheet: the chassis prints the same sentence, so an unscoped
+    // query passes whatever the sheet was handed.
+    // `N of M match` in the sheet's own header, where M is the shelf and not
+    // the library. Scoped to the dialog because the chassis states the same
+    // figure elsewhere, so an unscoped query passes whatever the sheet was
+    // handed.
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByText("2 of 2 match")).toBeInTheDocument();
+  });
+
+  it("strips a bare `?folder=` from the URL", () => {
+    window.history.replaceState(null, "", "/decks?folder=");
+    renderWide(view(shelvedDecks(), twoFolders));
     expect(window.location.search).toBe("");
   });
 

@@ -47,6 +47,12 @@ describe("shelfFromParams", () => {
     expect(shelfFromParams(params(`${FOLDER_PARAM}=none`), [{ id: "f1" }])).toBe(UNFILED);
   });
 
+  it("reads an id whatever case it arrived in, and returns the canonical one", () => {
+    const upper = [{ id: "AAAAAAAA-1111-4111-8111-111111111111" }];
+    expect(shelfFromParams(params(`${FOLDER_PARAM}=aaaaaaaa-1111-4111-8111-111111111111`), upper))
+      .toBe("AAAAAAAA-1111-4111-8111-111111111111");
+  });
+
   it("treats an empty value as absent", () => {
     expect(shelfFromParams(params(`${FOLDER_PARAM}=`), folders)).toBe(ALL_DECKS);
   });

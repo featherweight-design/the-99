@@ -135,7 +135,10 @@ export async function moveDeckAction(deckId: unknown, folderId: unknown): Promis
   const userId = await requireUserId();
 
   const moved = await moveDeck(deckId as string, userId, (folderId as string | null) ?? null);
-  if (moved) folderSurfaces();
+  // Revalidated either way, as the other two no-ops are: `false` means the deck
+  // or the folder went while this caller was looking at a list that still shows
+  // both. A wire-invalid argument returned above and never reaches this.
+  folderSurfaces();
   return moved;
 }
 

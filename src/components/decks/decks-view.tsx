@@ -49,6 +49,7 @@ import {
   shelfToParam,
   shelfTotal,
   showsUnfiled,
+  matchFolder,
   type Shelf,
 } from "../../lib/decks/folder-view";
 import { ImportDeckButton } from "./import-deck-button";
@@ -252,9 +253,16 @@ export function DecksView({
   useEffect(() => {
     const live = new URLSearchParams(window.location.search);
     const named = live.get(FOLDER_PARAM);
-    if (!named) return;
-    // `none` survives only while there is an `Unfiled` segment to select.
-    if (named === UNFILED ? showsUnfiled(folders) : folders.some((f) => f.id === named)) return;
+    // `null` rather than falsy: a bare `?folder=` is All decks to the parser and
+    // has to leave the URL too, or a bookmark keeps a parameter that means the
+    // absence of one.
+    if (named === null) return;
+    // `none` survives only while there is an `Unfiled` segment to select, and a
+    // folder id matches whatever case it arrived in — the same rule the parser
+    // reads it by.
+    if (named === UNFILED ? showsUnfiled(folders) : matchFolder(folders, named) !== undefined) {
+      return;
+    }
     live.delete(FOLDER_PARAM);
     const query = live.toString();
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
