@@ -720,7 +720,17 @@ export function SetGridView(props: SetGridViewProps) {
                     // none checked the first is — `all` is a state this group can be in,
                     // and a group with no tab stop cannot be reached by keyboard at all.
                     tabIndex={on || (filters.rarities.length === 0 && i === 0) ? 0 : -1}
-                    onClick={() => setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) })}
+                    onClick={() => {
+                      const next = pickRarity(filters.rarities, r);
+                      setFilters({ ...filters, rarities: next });
+                      // Clearing the checked value moves the group's only tab stop to the
+                      // first radio, and this button keeps DOM focus while losing it — so
+                      // focus would sit on an element outside the group's tab order and
+                      // the next Tab would leave the group entirely. Follow the stop.
+                      if (next.length === 0 && r !== RARITIES[0]) {
+                        rarityRefs.current[0]?.focus();
+                      }
+                    }}
                     onKeyDown={(e) => {
                       const dir = e.key === "ArrowRight" || e.key === "ArrowDown"
                         ? 1

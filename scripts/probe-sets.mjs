@@ -519,7 +519,7 @@ async function run() {
           .filter(Boolean)
           .reduce((sum, el) => sum + el.getBoundingClientRect().height, 0);
         return {
-          head: Math.round(rackHeight),
+          rack: Math.round(rackHeight),
           chips: chipRow.querySelectorAll("span > button").length,
           pipOpacities: [...document.querySelectorAll('[role="switch"]')]
             .filter((el) => el.getClientRects().length > 0)
@@ -575,8 +575,8 @@ async function run() {
     } else {
       failures += !report(
         "the rack's three rows do not move with the filter state",
-        rest.head === one.head && one.head === three.head,
-        `rest ${rest.head}px, one ${one.head}px, three ${three.head}px`,
+        rest.rack === one.rack && one.rack === three.rack,
+        `rest ${rest.rack}px, one ${one.rack}px, three ${three.rack}px`,
       );
       failures += !report(
         "no unlit pip is dimmed — the shipped control's 1.38:1 is what this replaces",
@@ -602,8 +602,8 @@ async function run() {
     if (phoneRest !== null) {
       failures += !report(
         "the phone rack's three rows do not move either",
-        phoneRest.head === phoneMissing2.head && phoneMissing2.head === phoneThree.head,
-        `rest ${phoneRest.head}px, missing-only ${phoneMissing2.head}px, three ${phoneThree.head}px`,
+        phoneRest.rack === phoneMissing2.rack && phoneMissing2.rack === phoneThree.rack,
+        `rest ${phoneRest.rack}px, missing-only ${phoneMissing2.rack}px, three ${phoneThree.rack}px`,
       );
     }
 

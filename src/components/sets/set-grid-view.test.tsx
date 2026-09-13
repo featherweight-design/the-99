@@ -1207,4 +1207,28 @@ describe("SetGridView — the sheet's rarity group honours the radio pattern", (
     fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowLeft" });
     expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=mythic");
   });
+
+  // Round 28: clearing the checked value moves the group's only tab stop to the first
+  // radio, and the clicked button keeps DOM focus while losing it — so focus sat outside
+  // the group's tab order and the next Tab left the group entirely.
+  it("follows the tab stop when the checked value is cleared", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    fireEvent.click(screen.getByRole("radio", { name: "Rare" }));
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Common" }));
+    expect(screen.getByRole("radio", { name: "Common" })).toHaveAttribute("tabindex", "0");
+  });
+
+  it("leaves focus alone when the first radio is the one cleared", () => {
+    stubDesktop(false);
+    search = "r=common";
+    view([p("1", { rarity: "common" }), p("2")], []);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const common = screen.getByRole("radio", { name: "Common" });
+    common.focus();
+    fireEvent.click(common);
+    expect(document.activeElement).toBe(common);
+  });
 });
