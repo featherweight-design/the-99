@@ -53,6 +53,14 @@ function mount(c: BrowseCard) {
 
 const wash = () => screen.getByTestId("mobile-art-wash");
 const flipTo = (face: string) => screen.queryAllByLabelText(twoFacedCopy.flipToAria(face));
+// The art in the modal TURNS now rather than swapping, so the face is announced
+// when the card lands — the rule the zoom has always followed. jsdom runs no
+// transitions, so the landing is fired by hand. Both breakpoint trees mount a
+// turning box; in a browser only the one with layout transitions.
+const settle = () =>
+  screen
+    .queryAllByTestId("modal-art-turn")
+    .forEach((box) => fireEvent.transitionEnd(box, { propertyName: "transform" }));
 
 describe("TwoFacedMark", () => {
   it("draws the mark and its spoken sibling for a two-sided layout", () => {
@@ -85,10 +93,12 @@ describe("CardModal flip control", () => {
 
     fireEvent.click(flipTo("Insectile Aberration")[0]);
     expect(wash().style.backgroundImage).toContain(BACK);
+    settle();
     expect(screen.getByText(twoFacedCopy.flippedAria("Insectile Aberration"))).toBeTruthy();
 
     fireEvent.click(flipTo("Delver of Secrets")[0]);
     expect(wash().style.backgroundImage).toContain(FRONT);
+    settle();
     expect(screen.getByText(twoFacedCopy.flippedAria("Delver of Secrets"))).toBeTruthy();
   });
 
@@ -99,6 +109,7 @@ describe("CardModal flip control", () => {
     mount({ ...delver, printedName: "Battle of Olympus // Aftermath" });
     expect(flipTo("Aftermath").length).toBeGreaterThan(0);
     fireEvent.click(flipTo("Aftermath")[0]);
+    settle();
     expect(screen.getByText(twoFacedCopy.flippedAria("Aftermath"))).toBeTruthy();
   });
 

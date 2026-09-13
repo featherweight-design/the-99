@@ -114,20 +114,72 @@ async function readPrice(page) {
 }
 
 /**
- * The gap between the art's bottom edge and the tag's top, which is the placement
- * ruling itself. One pixel of tolerance for sub-pixel layout; anything more is the
- * tag having left the art.
+ * What sits UNDER the card, and in what order (#3, #4): the zoom hint, then the
+ * turn control, then the price. The stack's own top is the placement ruling now
+ * — 10px under the art at desktop, 9px at phone — because the price is its last
+ * row rather than its only one, and measuring the price against the art would
+ * turn every change of line-height above it into a failing figure.
+ *
+ * Order is measured rather than read off the markup: all three are laid out by a
+ * flex column, and a column whose `flex-direction` or source order slipped would
+ * still carry every element the DOM check looks for.
  */
-function assertGap(where, placement, expected) {
-  if (!placement) {
-    console.log(`\nFAIL: ${where} drew no price tag at all.`);
+async function readUnderCard(page) {
+  return page.evaluate(() => {
+    const visible = (sel, root = document) =>
+      [...root.querySelectorAll(sel)].find((n) => n.getBoundingClientRect().width > 0) ?? null;
+    const stack = visible('[data-testid="modal-under-card"]');
+    if (!stack) return null;
+    const art = ["modal-art-desktop", "modal-art-mobile"]
+      .flatMap((t) => [...document.querySelectorAll(`[data-testid="${t}"]`)])
+      .find((n) => n.getBoundingClientRect().width > 0);
+    const top = (n) => (n ? Math.round(n.getBoundingClientRect().top) : null);
+    const hint = stack.querySelector('[data-testid="modal-zoom-hint"]');
+    const turn = stack.querySelector('button[aria-label^="Turn over to"]');
+    const price = stack.querySelector('[data-testid^="modal-price-"]');
+    return {
+      gapFromArt: art
+        ? Math.round(stack.getBoundingClientRect().top - art.getBoundingClientRect().bottom)
+        : null,
+      hint: hint?.textContent?.trim() ?? null,
+      order: { hint: top(hint), turn: top(turn), price: top(price) },
+      hasTurn: Boolean(turn),
+      hasPrice: Boolean(price),
+      // The ⤢ plate the hint replaced. It has no test id of its own, so the check
+      // is the glyph: if it is anywhere in the dialog, the mark came back.
+      zoomGlyphStillDrawn: (document.querySelector('[role="dialog"]')?.textContent ?? "")
+        .includes("\u2922"),
+    };
+  });
+}
+
+function assertUnderCard(where, stack, expectedGap, expectedHint) {
+  if (!stack) {
+    console.log(`\nFAIL: ${where} drew nothing under the card at all.`);
     process.exitCode = 1;
     return;
   }
-  if (placement.gapFromArt === null || Math.abs(placement.gapFromArt - expected) > 1) {
+  if (stack.gapFromArt === null || Math.abs(stack.gapFromArt - expectedGap) > 1) {
     console.log(
-      `\nFAIL: ${where} tag sits ${placement.gapFromArt}px under the art, expected ${expected}px.`,
+      `\nFAIL: ${where} stack sits ${stack.gapFromArt}px under the art, expected ${expectedGap}px.`,
     );
+    process.exitCode = 1;
+  }
+  if (stack.hint !== expectedHint) {
+    console.log(`\nFAIL: ${where} hint reads ${JSON.stringify(stack.hint)}, expected ${JSON.stringify(expectedHint)}.`);
+    process.exitCode = 1;
+  }
+  // Hint above turn above price, with whichever rows this card has.
+  const rows = [stack.order.hint, stack.order.turn, stack.order.price].filter((t) => t !== null);
+  if (rows.some((t, i) => i > 0 && t <= rows[i - 1])) {
+    console.log(
+      `\nFAIL: ${where} stack is out of order — hint, turn, price top to bottom, got`
+        + ` ${JSON.stringify(stack.order)}.`,
+    );
+    process.exitCode = 1;
+  }
+  if (stack.zoomGlyphStillDrawn) {
+    console.log(`\nFAIL: ${where} still draws the \u2922 plate the hint replaced.`);
     process.exitCode = 1;
   }
 }
@@ -140,8 +192,20 @@ async function openCard(page, name) {
   // a card name carrying a quote, a bracket or a backslash would make that selector
   // invalid or change what it means, and the probe would fail before opening anything.
   const pattern = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
-  await page.getByRole("button", { name: pattern }).first().click();
-  await page.waitForSelector('[role="dialog"]', { timeout: 15_000 });
+  // Pressed up to three times. The row paints before React has hydrated it, so a
+  // first click on a cold dev server lands on markup with no handler attached and
+  // nothing happens — there is no state to wait for, only the absence of a
+  // dialog, so the retry IS the wait.
+  const row = page.getByRole("button", { name: pattern }).first();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await row.click();
+    const opened = await page
+      .waitForSelector('[role="dialog"]', { timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (opened) break;
+    if (attempt === 2) throw new Error(`the modal never opened for ${name}`);
+  }
   // The card is fetched on click and the price rides that fetch, so the modal opens
   // before it has either. Waited for, not slept through: a fixed delay turns a slow
   // Neon response into a false failure, and the art box is the right thing to wait
@@ -197,9 +261,9 @@ try {
   const desktop = await readPrice(page);
   console.log(`\n── desktop · ${CARD} ──`);
   console.log(JSON.stringify(desktop, null, 2));
-  // The placement is the ruling; a price node that has drifted away from the art
+  // The placement is the ruling; a stack that has drifted away from the art
   // satisfies nothing. Table row 1.1: 10px under the art at desktop, 9px at phone.
-  assertGap("desktop", desktop.desktop, 10);
+  assertUnderCard("desktop", await readUnderCard(page), 10, "Click to zoom");
 
   // WHAT THIS PROBE DELIBERATELY DOES NOT DO: pick a different printing.
   //
@@ -242,8 +306,18 @@ try {
     console.log("\nFAIL: the zoom must be a region inside the one dialog, sized to it.");
     process.exitCode = 1;
   }
-  if (!zoom?.card || Math.abs(zoom.card.width - 372) > 2 || Math.abs(zoom.card.height - 520) > 3) {
-    console.log(`\nFAIL: zoomed card is ${JSON.stringify(zoom?.card)}, expected about 372x520.`);
+  // 372x520 is the drawn figure for a one-faced card. A two-faced one gives back
+  // 56px of column — the 44px turn control now sits UNDER the card rather than on
+  // it, plus the 12px above it — and the ratio takes the width down with it.
+  const twoFacedHere = Boolean(await page.locator('[data-testid="card-zoom"] button[aria-label^="Turn over to"]').count());
+  const expectZoom = twoFacedHere ? { width: 352, height: 492 } : { width: 372, height: 520 };
+  if (!zoom?.card
+    || Math.abs(zoom.card.width - expectZoom.width) > 2
+    || Math.abs(zoom.card.height - expectZoom.height) > 3) {
+    console.log(
+      `\nFAIL: zoomed card is ${JSON.stringify(zoom?.card)}, expected about`
+        + ` ${expectZoom.width}x${expectZoom.height}.`,
+    );
     process.exitCode = 1;
   }
   // The turn, where a browser is the only witness: jsdom has no transforms, so a
@@ -258,21 +332,20 @@ try {
     const after = await page.locator('[data-testid="card-zoom-card"]').evaluate(
       (n) => getComputedStyle(n).transform,
     );
-    // Where the control actually sits, which only a browser can say: the wrapper that
-    // stops the click must contribute no box of its own, or the 44px control is
-    // pushed below the card instead of sitting in its bottom-right corner.
+    // Where the control actually sits, which only a browser can say. It is UNDER
+    // the card now (#4) — bottom-right covered a creature's power and toughness,
+    // and bottom-centre still printed a button across the picture — so the check
+    // is that it clears the card's bottom edge and stays centred on it.
     const placement = await page.evaluate(() => {
       const card = document.querySelector('[data-testid="card-zoom-card"]');
       const control = document.querySelector('[data-testid="card-zoom"] button[aria-label^="Turn over to"]');
       if (!card || !control) return null;
       const c = card.getBoundingClientRect();
       const b = control.getBoundingClientRect();
-      // Centred, not cornered: bottom-right is where a creature prints its power and
-      // toughness, so the control that used to sit there covered it.
       const centreOffset = Math.round((b.left + b.right) / 2 - (c.left + c.right) / 2);
       return {
-        insideCard: b.bottom <= c.bottom + 1 && b.right <= c.right + 1 && b.top >= c.top,
-        fromBottom: Math.round(c.bottom - b.bottom),
+        belowCard: b.top >= c.bottom - 1,
+        gapUnderCard: Math.round(b.top - c.bottom),
         centreOffset,
         centred: Math.abs(centreOffset) <= 2,
       };
@@ -280,14 +353,22 @@ try {
     const stillOpen = await page.locator('[data-testid="card-zoom"]').count();
     console.log("\n── desktop · the turn ──");
     console.log(JSON.stringify({ before, after, stillOpen: Boolean(stillOpen), placement }, null, 2));
-    if (!placement?.insideCard) {
-      console.log("\nFAIL: the turn control is not on the card — check the wrapper's own box.");
+    if (!placement?.belowCard) {
+      console.log("\nFAIL: the turn control still sits ON the zoomed card; it belongs under it.");
       process.exitCode = 1;
     }
     if (!placement?.centred) {
       console.log(
-        `\nFAIL: the turn control is ${placement?.centreOffset}px off centre — bottom-right`
-          + " covers a creature's power and toughness (erratum E14).",
+        `\nFAIL: the turn control is ${placement?.centreOffset}px off centre under the card.`,
+      );
+      process.exitCode = 1;
+    }
+    // 12px is the spacing, not just "somewhere below": the figure is part of the
+    // geometry E17 records, and a margin change that kept the control outside the
+    // card would otherwise pass every check here.
+    if (placement && Math.abs(placement.gapUnderCard - 12) > 1) {
+      console.log(
+        `\nFAIL: the turn sits ${placement.gapUnderCard}px under the zoomed card, expected 12px.`,
       );
       process.exitCode = 1;
     }
@@ -315,7 +396,110 @@ try {
     console.log("\nFAIL: the first Escape closed the dialog as well as the zoom.");
     process.exitCode = 1;
   }
+
+  // THE TURN IN THE MODAL ITSELF (#2), which the zoom's own check cannot stand in
+  // for: this art used to swap one background for another with no motion, so a
+  // `data-face` attribute flipping is exactly what the broken version also did.
+  // Only a computed transform separates them, and only a browser has one.
+  // `:visible`, not `.first()`: both breakpoint trees are mounted and the phone's
+  // is the one that comes first in document order, so an unscoped locator waits
+  // thirty seconds to click something `display:none`.
+  const artTurn = page.locator('[data-testid="modal-under-card"] button[aria-label^="Turn over to"]:visible');
+  if (await artTurn.count()) {
+    const box = page.locator('[data-testid="modal-art-turn"]:visible');
+    const before = await box.evaluate((n) => getComputedStyle(n).transform);
+    await artTurn.click();
+    await page.waitForTimeout(500);
+    const after = await box.evaluate((n) => getComputedStyle(n).transform);
+    // The zoom trigger is stretched over the art and must NOT ride the rotation:
+    // on the back face it would be facing away, and the card would stop opening.
+    const stillOpens = await page
+      .getByRole("button", { name: /^Look at / })
+      .first()
+      .evaluate((n) => {
+        const r = n.getBoundingClientRect();
+        return document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2) === n;
+      });
+    console.log("\n── desktop · the turn, in the modal ──");
+    console.log(JSON.stringify({ before, after, stillOpens }, null, 2));
+    if (before === after) {
+      console.log("\nFAIL: the art in the modal did not turn — the transform is unchanged.");
+      process.exitCode = 1;
+    }
+    if (!stillOpens) {
+      console.log("\nFAIL: the zoom trigger is not hit-testable on the back face.");
+      process.exitCode = 1;
+    }
+  } else if (process.env.PROBE_TWO_FACED === "1") {
+    console.log("\nFAIL: PROBE_TWO_FACED is set but the modal draws no turn control under the art.");
+    process.exitCode = 1;
+  }
   await context.close();
+
+  // ── a SHORT desktop window, where the stack has to fit ───────────────────
+  //
+  // The dialog is `min(620px, 85vh)` and `overflow-hidden`, and the column
+  // centres the art — so the room under the art is half the slack, and at 600px
+  // it was 42px against a two-faced stack wanting 90 — 10 + 15 + 6 + 32 + 6 + 21.
+  // The turn control and the
+  // tag were cut off and unreachable, which is invisible at 900px. E19.
+  const shortCtx = await browser.newContext({ viewport: { width: 1300, height: 600 } });
+  const shortPage = await shortCtx.newPage();
+  await signIn(shortPage);
+  await openCard(shortPage, CARD);
+  const short = await shortPage.evaluate(() => {
+    const vis = (sel) =>
+      [...document.querySelectorAll(sel)].find((n) => n.getBoundingClientRect().width > 0) ?? null;
+    const dialog = document.querySelector('[role="dialog"]');
+    const stack = vis('[data-testid="modal-under-card"]');
+    const art = vis('[data-testid="modal-art-desktop"]');
+    if (!dialog || !stack || !art) return null;
+    const d = dialog.getBoundingClientRect();
+    const s = stack.getBoundingClientRect();
+    const a = art.getBoundingClientRect();
+    // The stack that is on screen is not the worst case: a price can appear on a
+    // pick at any time and row 1.14 forbids anything above it moving, so the art
+    // reserves the tag's row whether or not this card has a figure. The invariant
+    // is therefore about the ROOM under the art, not about today's stack.
+    //
+    // The stack's height is MEASURED and the tag's row is added only when it is
+    // not already there. The figures this file used to repeat from the component
+    // were a second copy of an arithmetic the component had already got wrong —
+    // 18px for a tag whose box is 21 — so a probe agreeing with them proved they
+    // agreed, not that either was right.
+    const priced = stack.querySelector('[data-testid^="modal-price-"]');
+    const TAG_ROW = 6 + 21; // the 6px gap and the tag's own measured box
+    const needed = Math.ceil(s.height) + 10 + (priced ? 0 : TAG_ROW);
+    return {
+      dialogHeight: Math.round(d.height),
+      artWidth: Math.round(a.width),
+      stackHeight: Math.round(s.height),
+      priced: Boolean(priced),
+      needed,
+      roomUnderArt: Math.round(d.bottom - a.bottom),
+      overflowPx: Math.round(s.bottom - d.bottom),
+      // Clipped is not the same as absent: the node is laid out either way, so
+      // the question is whether a press would land on it.
+      lastRowReachable: (() => {
+        const rows = [...stack.children];
+        const last = rows[rows.length - 1];
+        if (!last) return false;
+        const r = last.getBoundingClientRect();
+        const at = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+        return at !== null && (last.contains(at) || at.contains(last));
+      })(),
+    };
+  });
+  console.log("\n── desktop 1300x600 · the stack still fits ──");
+  console.log(JSON.stringify(short, null, 2));
+  if (!short || short.overflowPx > 0 || short.roomUnderArt < short.needed || !short.lastRowReachable) {
+    console.log(
+      "\nFAIL: the under-card stack is clipped by the dialog on a short window (E19)."
+        + " The art has to give back the height the stack needs.",
+    );
+    process.exitCode = 1;
+  }
+  await shortCtx.close();
 
   // ── phone, including the compact header ──────────────────────────────────
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -325,7 +509,7 @@ try {
   const phoneRead = await readPrice(phonePage);
   console.log(`\n── phone · ${CARD} ──`);
   console.log(JSON.stringify(phoneRead, null, 2));
-  assertGap("phone", phoneRead.mobile, 9);
+  assertUnderCard("phone", await readUnderCard(phonePage), 9, "Tap to zoom");
 
   // The phone zoom is a different pair of numbers (318x444) drawn by CSS alone, so
   // it is measured rather than assumed from the desktop pass.
@@ -350,6 +534,8 @@ try {
     console.log("\nFAIL: the phone zoom must be a region inside the one dialog, sized to it.");
     process.exitCode = 1;
   }
+  // 318 is the phone's drawn width, and it survives the turn control moving under
+  // the card: at 844px tall the height arm of the min() is nowhere near binding.
   if (!phoneZoom?.card
     || Math.abs(phoneZoom.card.width - 318) > 2
     || Math.abs(phoneZoom.card.height - 444) > 3) {

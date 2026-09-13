@@ -63,9 +63,17 @@ export function PriceTag({
   // role and is discarded outright, and `role="img"` only rescued it by announcing
   // a run of text as a picture. The visual node goes `aria-hidden` and an `sr-only`
   // sibling carries the whole claim, qualifier and provenance together.
+  //
+  // The visual wrapper is a FLEX BOX rather than a bare span, and that is
+  // geometry rather than tidiness. As an inline wrapper it generated a line box
+  // of its own, whose strut came from the inherited 24px body line-height —
+  // 4px of it above the 21px tag, measured, with nothing below. Inside the card
+  // modal's 2px plate that read as 7px of padding on top against 3px underneath,
+  // which is exactly the uneven chip #1 reports. A flex container has no strut,
+  // so the tag's own box is the whole height.
   const speak = (sentence: string, visual: React.ReactNode) => (
     <>
-      <span aria-hidden="true">{visual}</span>
+      <span aria-hidden="true" className="flex">{visual}</span>
       <span className="sr-only">{sentence}</span>
     </>
   );

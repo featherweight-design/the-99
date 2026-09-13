@@ -176,12 +176,15 @@ export const cardZoomCopy = {
   close: "Close the large view",
 
   /**
-   * The quiet hint under the desktop art. Desktop only — the phone has the mark
-   * and a thumb.
+   * The quiet hint under the art, at BOTH widths. It replaces the ⤢ plate that
+   * sat on the art: a glyph in a corner had to be decoded, and the line under
+   * the card says the same thing in words for the same pixels.
    *
-   * REJECTED: "Tap to zoom" (zoom is a verb about a viewer, and this is not one)
-   * and "View full card" (the phrase the full-card round retired for lying about
-   * its destination; it must not come back pointing somewhere else).
+   * Two strings because the gesture is two gestures, and the word for it is the
+   * one thing a hint like this cannot get wrong. This overrules the earlier
+   * rejection of "Tap to zoom" on the grounds that zoom is a verb about a
+   * viewer — a later instruction, and the plainer phrase.
    */
-  hint: "tap the art to hold it",
+  hintDesktop: "Click to zoom",
+  hintPhone: "Tap to zoom",
 } as const;

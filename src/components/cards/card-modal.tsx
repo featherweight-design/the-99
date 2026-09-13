@@ -294,6 +294,13 @@ export function CardModal({
   // The layer turns its own copy. `flipped` belongs to the art behind it, which the
   // reader may have turned for their own reasons.
   const [zoomFlipped, setZoomFlipped] = useState(false);
+  /**
+   * A face the art landed on while the zoom covered it, waiting for the zoom to
+   * close. A ref rather than state: nothing renders from it, and holding it in
+   * state would re-render the whole modal to record a sentence nobody can hear
+   * yet.
+   */
+  const heldArtFace = useRef<string | null>(null);
   // The two shipped ✕ buttons, one per breakpoint tree.
   const closeRefs = useRef<(HTMLButtonElement | null)[]>([]);
   /**
@@ -512,7 +519,14 @@ export function CardModal({
     // The layer's own announcements go with it. Reopening shows the front, and a live
     // region still reading "Showing <back face>" would describe a card that is no
     // longer there.
-    setAnnouncement("");
+    //
+    // Unless the ART landed on a face while the layer covered it — that face is
+    // what the reader is now looking at, and it has not been said yet. It REPLACES
+    // the clear rather than preceding it: two `setAnnouncement` calls in one
+    // handler are one render, and the last one wins.
+    const held = heldArtFace.current;
+    heldArtFace.current = null;
+    setAnnouncement(held ?? "");
   }, []);
   const openZoom = useCallback(() => {
     // A zoom is a look, not a setting (table row 4.10): it always opens on the front,
@@ -706,9 +720,32 @@ export function CardModal({
   function onFlip() {
     const next = !flipped;
     setFlipped(next);
-    // The swap is silent by design — no motion, no caption change — so the live
-    // region is the only thing that reports it.
-    setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+    // Same rule as the zoom's turn, for the same reason, now that the art in the
+    // modal turns rather than swapping: announced when the card has LANDED. The
+    // reduced-motion path has no transition to wait for, so the press is the
+    // landing there.
+    const reduced = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+  }
+
+  function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
+    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
+    const face = twoFacedCopy.flippedAria(flipped ? faces.back : faces.front);
+    // NOT while the zoom is up. A reader who turns the art and opens the zoom
+    // inside the 320ms turn leaves this transition still running underneath a
+    // layer that deliberately opens on the FRONT — and `openZoom` clears the
+    // region for exactly that reason. Announcing here would write the art's back
+    // face into it while the front is on screen.
+    //
+    // HELD, not dropped: when the zoom closes, that back face is what the reader
+    // is looking at, and a turn nobody ever announced is a face they were never
+    // told about. `closeZoom` flushes this.
+    if (zoomed) {
+      heldArtFace.current = face;
+      return;
+    }
+    setAnnouncement(face);
   }
 
   // Art follows the resolved printing, not the card-level image: they are the same value
@@ -755,6 +792,121 @@ export function CardModal({
   const priceTag = price ? (
     <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone />
   ) : null;
+
+  /**
+   * The art in the modal ITSELF turns now (#2). It used to swap one background
+   * for another with no motion, so the only place a two-faced card behaved like
+   * one object was inside the zoom — two treatments for one act, and the quieter
+   * one was the surface the reader meets first.
+   *
+   * Both faces are drawn, both hide their own back, and this box rotates: the
+   * zoom's own construction, moved to a helper so the two cannot drift. It is an
+   * INNER box rather than the art element itself, because the zoom trigger is
+   * stretched over the art and must not ride the rotation — on the back face it
+   * would be mirrored and pointing the wrong way, which is the bug the zoom's
+   * own flip control was lifted out of the turning box to avoid.
+   *
+   * `perspective` belongs to the art element that contains this, not here.
+   */
+  const turningArt = (radius: string) =>
+    twoFaced ? (
+      <div
+        aria-hidden
+        data-testid="modal-art-turn"
+        data-face={flipped ? "back" : "front"}
+        className={`absolute inset-0 ${radius} anim-card-turn`}
+        onTransitionEnd={onArtTurnSettled}
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : undefined,
+        }}
+      >
+        <CardFaces
+          front={frontStyle}
+          back={backStyle}
+          radius={radius}
+          seam="inset 0 0 0 1px rgba(0,0,0,0.3)"
+          testIdPrefix="modal-art"
+        />
+      </div>
+    ) : null;
+
+  /**
+   * What sits under the card, in one order at both widths (#3, #4): the zoom
+   * hint, then the turn control, then the price.
+   *
+   * The ⤢ plate that used to sit in the art's bottom-left corner is gone, and
+   * the turn control has come off the art with it. A glyph on the picture had to
+   * be decoded; a line of words under it does not, and the two controls no
+   * longer sit on top of the thing they are about.
+   *
+   * The hint is `aria-hidden` rather than spoken: the art's own button is
+   * already named "Look at {card} up close", and a second voice saying "Click to
+   * zoom" beside it would be the same instruction twice.
+   */
+  /**
+   * How much room the stack under the art needs, in px, at DESKTOP — the width
+   * whose column has a fixed height to fit inside. 10px clears the art, the hint
+   * is a 15px line, and each further row is a 6px gap plus its own height: 32 for
+   * the turn control, and **21** for the tag.
+   *
+   * 21, not 18: the tag is 10px text at the inherited 1.5 line-height, 2px of
+   * padding each side and a 1px border — measured in Chromium, and the same 21px
+   * the plate fix in `price-tag.tsx` was measured against. An 18px guess put the
+   * reservation 3px short, which is a clipped row on a short window and nothing at
+   * all on a tall one.
+   *
+   * A number rather than a measurement: it feeds a CSS `calc` that sizes the art,
+   * and measuring the stack to size the box the stack is positioned against is a
+   * loop. These are the same figures the markup below sets.
+   *
+   * THE TAG'S ROW IS RESERVED WHETHER OR NOT THERE IS A TAG. Row 1.14: a pick that
+   * turns an absent figure into a priced one must move nothing above it — and if
+   * the reservation followed `priceTag`, the art would change width under the
+   * reader at the moment the tag appeared, which is the same defect one level up.
+   */
+  const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 27;
+
+  const underCard = (phone: boolean) => (
+    <>
+      <p
+        aria-hidden
+        data-testid="modal-zoom-hint"
+        className="m-0 whitespace-nowrap font-mono text-[10px]"
+        style={{ color: "var(--fg-locked)" }}
+      >
+        {phone ? cardZoomCopy.hintPhone : cardZoomCopy.hintDesktop}
+      </p>
+      {twoFaced && (
+        <FlipControl
+          otherFaceName={flipped ? faces.front : faces.back}
+          onFlip={onFlip}
+          // A real 44px target on the phone. 32 on the desktop, where the column
+          // below the art is 97px tall at the drawn dialog height and this stack
+          // has to fit three rows inside it.
+          size={phone ? 44 : 32}
+        />
+      )}
+      {priceTag && (
+        <div data-testid={phone ? "modal-price-mobile" : "modal-price-desktop"}>
+          {phone ? (
+            // THE PLATE, as the art-wash ratification defines it: opaque `--bg`
+            // under one `--border-strong` hairline at radius 7. The phone's stack
+            // sits over the blurred wash; the desktop's sits on flat `--bg` and
+            // needs none, which is the one difference between the two widths.
+            <span
+              className="inline-flex rounded-[7px] p-[2px]"
+              style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
+            >
+              {priceTag}
+            </span>
+          ) : (
+            priceTag
+          )}
+        </div>
+      )}
+    </>
+  );
 
   return (
     // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
@@ -836,17 +988,21 @@ export function CardModal({
             style={{
               width: compactArt ? 72 : 180, aspectRatio: "63/88",
               marginTop: compactArt ? 0 : 6,
-              ...artStyle,
-              boxShadow: "0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
+              perspective: "1400px",
+              // A two-faced card paints its faces inside; this box only holds
+              // them, turns them, and keeps the drop shadow. The inset seam moves
+              // onto each face, or the turn would show the ring and not the card.
+              ...(twoFaced ? null : artStyle),
+              boxShadow: twoFaced
+                ? "0 20px 40px rgba(0,0,0,0.5)"
+                : "0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
           >
+            {turningArt("rounded-[10px]")}
             {/* The art is the trigger — the silent affordance the builder spine and the
                 commander column already use. A stretched button rather than the art
-                element itself, so the flip control stays a sibling: a control inside a
-                button is not a control. In the compact state the MARK is withheld at
-                the same threshold the flip control is — a 28px plate on a 72px thumb is
-                most of the picture — while the gesture stays on the whole thumb, so the
-                shipped focus ring is the only evidence it is pressable (rows 2.3-2.5). */}
+                element itself, so it sits OUTSIDE the box that turns: riding the
+                rotation it would face away from the reader on the back. */}
             <button
               type="button"
               ref={(el) => { zoomTriggerRefs.current[0] = el; }}
@@ -856,44 +1012,20 @@ export function CardModal({
               aria-controls={zoomed ? ZOOM_REGION : undefined}
               className="absolute inset-0 rounded-[10px] cursor-pointer bg-transparent border-0 p-0"
             />
-            {!compactArt && <ZoomMark size={28} />}
-            {/* Absent on the 72px thumbnail: a 44px target on a 72px image is
-                most of the art, and the collapsed header is a printing-picker
-                state where the art is a locator rather than the thing read. The
-                control returns with the full-size art. */}
-            {twoFaced && !compactArt && (
-              <FlipControl
-                otherFaceName={flipped ? faces.front : faces.back}
-                onFlip={onFlip}
-                size={44}
-              />
-            )}
           </div>
-          {/* The figure, 9px under the sharp art and centred on it (card-detail R2,
-              table row 1.1). Last in the column, so the absent state removes it
-              without moving anything above. Over the wash it takes the shipped
-              over-art plate — the token expression, not a raw rgba, or it would
-              not survive the six themes (erratum E3). */}
-          {!compactArt && priceTag && (
+          {/* Hint, turn, price — 9px under the sharp art and centred on it. Last in
+              the column, so an absent price removes its row without moving anything
+              above it (table row 1.14).
+
+              Withheld entirely on the 72px thumbnail: the collapsed header is a
+              printing-picker state where the art is a locator rather than the thing
+              being read, and it has the name and type line beside it instead. */}
+          {!compactArt && (
             <div
-              className="relative z-[1] mt-[9px] flex justify-center"
-              data-testid="modal-price-mobile"
+              data-testid="modal-under-card"
+              className="relative z-[1] mt-[9px] flex flex-col items-center gap-[8px]"
             >
-              {/* THE PLATE, as the art-wash ratification now defines it: opaque
-                  `--bg` under one `--border-strong` hairline at radius 7. It replaced
-                  a 72% mix of `--bg` over transparency — with the top scrim gone, the
-                  brightest pixel a crop can put behind a control is no longer veiled,
-                  and opacity takes the control out of the contrast problem entirely.
-                  Every control over art draws this box; the tag is no exception. */}
-              <span
-                className="inline-flex rounded-[7px] p-[2px]"
-                style={{
-                  background: "var(--bg)",
-                  border: "1px solid var(--border-strong)",
-                }}
-              >
-                {priceTag}
-              </span>
+              {underCard(true)}
             </div>
           )}
           {compactArt && (
@@ -924,16 +1056,43 @@ export function CardModal({
         >
           <div
             data-testid="modal-art-desktop"
-            className="relative w-full rounded-[12px]"
+            className="relative rounded-[12px]"
             style={{
+              // THE ART GIVES BACK WHAT THE STACK NEEDS, rather than the stack
+              // hanging off a fixed-size box and being clipped by the dialog's
+              // `overflow-hidden`.
+              //
+              // The column CENTRES the art, so the room under it is half the
+              // column's slack plus the column's own 28px of bottom padding:
+              //
+              //   room = (H - artH) / 2 + 28,  H = min(620px, 85vh) - 56px
+              //
+              // Setting `room >= stack` and solving for the height gives
+              // `artH <= min(620px, 85vh) - 2 * stack`, which is why the figure
+              // below is doubled — halving the slack is the whole point, and a
+              // formula that subtracted the stack once looked right and still
+              // clipped.
+              //
+              // ONE dimension is set and the ratio derives the other, the zoom's
+              // own rule: a definite width AND a height cap is how an
+              // `aspect-ratio` box gets squashed. 63/88 is 0.7159, so the art is
+              // 264px wherever there is room and narrower only where there is not
+              // — at 900px tall it is 264 in every state.
+              // The extra 2px is the dialog's own 1px border, top and bottom: the
+              // box-sizing is border-box, so `h-[620px]` is 618px of padding box —
+              // the height the column actually stretches to.
+              width: `min(264px, calc((min(620px, 85vh) - 2px - ${2 * underCardHeight}px) * 0.7159))`,
               aspectRatio: "63/88",
-              ...artStyle,
-              boxShadow: "0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3)",
+              perspective: "1400px",
+              ...(twoFaced ? null : artStyle),
+              boxShadow: twoFaced
+                ? "0 24px 50px rgba(0,0,0,0.55)"
+                : "0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
           >
-            {/* Same trigger at this width, stretched over the art so the flip control
-                stays a sibling. The mark is 30px here against the phone's 28 — the
-                art is 264px against 180. */}
+            {turningArt("rounded-[12px]")}
+            {/* Same trigger at this width, stretched over the art and outside the box
+                that turns — on the back face it would otherwise be facing away. */}
             <button
               type="button"
               ref={(el) => { zoomTriggerRefs.current[1] = el; }}
@@ -943,37 +1102,21 @@ export function CardModal({
               aria-controls={zoomed ? ZOOM_REGION : undefined}
               className="absolute inset-0 rounded-[12px] cursor-pointer bg-transparent border-0 p-0"
             />
-            <ZoomMark size={30} />
-            {twoFaced && (
-              <FlipControl
-                otherFaceName={flipped ? faces.front : faces.back}
-                onFlip={onFlip}
-                size={34}
-              />
-            )}
-            {/* 10px under the art, centred on the card (table row 1.1). Desktop sits
-                on flat `--bg` and needs no plate — the one difference between the two
-                widths. Hung off the art's own box rather than added to the column,
-                because the column centres its children: a tag joining the stack would
-                lift the art by half its height, and row 1.14 says nothing above the
-                tag moves when a pick makes it appear. */}
-            {priceTag && (
-              <div
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-[10px] whitespace-nowrap"
-                data-testid="modal-price-desktop"
-              >
-                {priceTag}
-              </div>
-            )}
-            {/* Desktop only — the phone has the mark and a thumb. `--fg-locked`, below
-                whatever the tag left, and deliberately not a verb about a viewer. */}
-            <p
-              className="absolute top-full left-1/2 -translate-x-1/2 m-0 whitespace-nowrap font-mono text-[10px]"
-              style={{ marginTop: priceTag ? 38 : 12, color: "var(--fg-locked)" }}
-              data-testid="modal-zoom-hint"
+            {/* Hint, turn, price — 10px under the art and centred on the card (table
+                row 1.1). Hung off the art's own box rather than added to the column,
+                because the column centres its children: a stack joining it would lift
+                the art by half its height, and row 1.14 says nothing above the tag
+                moves when a pick makes it appear.
+
+                The gap is 6px rather than the phone's 8: the column leaves ~97px under
+                a 264px card at the drawn dialog height, and three rows plus the turn
+                control have to live inside it. */}
+            <div
+              data-testid="modal-under-card"
+              className="absolute top-full left-1/2 mt-[10px] flex -translate-x-1/2 flex-col items-center gap-[6px] whitespace-nowrap"
             >
-              {cardZoomCopy.hint}
-            </p>
+              {underCard(false)}
+            </div>
           </div>
         </div>
 
@@ -1218,7 +1361,7 @@ export function CardModal({
           >
             {/* The whole card, at the largest 63/88 the rect allows — 372x520 desktop,
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
-            <div className="relative" data-testid="card-zoom-stage">
+            <div className="relative flex flex-col items-center" data-testid="card-zoom-stage">
             <div
               data-testid="card-zoom-card"
               className={`relative rounded-[13px] md:rounded-[14px] w-[var(--zoom-w)] md:w-[var(--zoom-w-md)] ${
@@ -1237,8 +1380,14 @@ export function CardModal({
                 // The subtracted room is the caption, the ✕'s slot and the layer's own
                 // breathing space; the desktop dialog is `min(620px, 85vh)` tall, which
                 // is what a landscape laptop can make shorter than the card.
-                "--zoom-w": "min(318px, calc(100vw - 32px), calc((100vh - 140px) * 0.7159))",
-                "--zoom-w-md": "min(372px, calc((min(620px, 85vh) - 72px) * 0.7159))",
+                // The turn control sits UNDER the card now rather than on it, so a
+                // two-faced card has to give back its 44px and the 12px above it.
+                "--zoom-w": twoFaced
+                  ? "min(318px, calc(100vw - 32px), calc((100vh - 196px) * 0.7159))"
+                  : "min(318px, calc(100vw - 32px), calc((100vh - 140px) * 0.7159))",
+                "--zoom-w-md": twoFaced
+                  ? "min(372px, calc((min(620px, 85vh) - 128px) * 0.7159))"
+                  : "min(372px, calc((min(620px, 85vh) - 72px) * 0.7159))",
                 aspectRatio: "63/88",
                 // A one-faced card is its own picture; a two-faced one draws both faces
                 // inside and this box only turns them.
@@ -1253,46 +1402,32 @@ export function CardModal({
                   and the reader watches one object move rather than one picture being
                   replaced by another. */}
               {twoFaced && (
-                <>
-                  <div
-                    aria-hidden
-                    data-testid="card-zoom-face-front"
-                    className="absolute inset-0 rounded-[13px] md:rounded-[14px]"
-                    style={{
-                      ...frontStyle,
-                      backfaceVisibility: "hidden",
-                      // Each face carries the seam: they paint over the parent's inset
-                      // ring, so without it the zoomed card loses its edge on exactly
-                      // the cards that have two of them.
-                      boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-                    }}
-                  />
-                  <div
-                    aria-hidden
-                    data-testid="card-zoom-face-back"
-                    className="absolute inset-0 rounded-[13px] md:rounded-[14px]"
-                    style={{
-                      ...backStyle,
-                      backfaceVisibility: "hidden",
-                      transform: "rotateY(180deg)",
-                      boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-                    }}
-                  />
-                  {/* The press must not reach the layer, which dismisses on click:
-                      the card, the scrim and the ✕ are the three doors out, and a
-                      control that turns the card is not one of them. Without this,
-                      turning the card put it away. */}
-
-                </>
+                <CardFaces
+                  front={frontStyle}
+                  back={backStyle}
+                  radius="rounded-[13px] md:rounded-[14px]"
+                  // A shade darker than the art column's, because the shadow it
+                  // paints over is darker: `0 24px 60px rgba(0,0,0,.6)` against the
+                  // column's `.55`/`.5`.
+                  seam="inset 0 0 0 1px rgba(0,0,0,0.35)"
+                  testIdPrefix="card-zoom"
+                />
               )}
             </div>
             {/* OUTSIDE the box that turns. Inside it, the control rode the rotation:
                 on the back face its corner became the opposite one and its glyph was
                 drawn from behind, mirrored. It belongs to the zoom, not to either
                 face. The press stops here too — the layer dismisses on click, and a
-                control that turns the card is not one of the three doors out. */}
+                control that turns the card is not one of the three doors out.
+
+                UNDER the card rather than on it, matching the modal behind it: one
+                placement for one control, and a card at hand size should not have a
+                button printed across its bottom edge. */}
             {twoFaced && (
-              <span onClick={(e) => e.stopPropagation()} style={{ display: "contents" }}>
+              <span
+                onClick={(e) => e.stopPropagation()}
+                className="mt-[12px] flex justify-center"
+              >
                 <FlipControl
                   controlRef={zoomFlipRef}
                   otherFaceName={zoomFlipped ? faces.front : faces.back}
@@ -1339,42 +1474,68 @@ export function CardModal({
 }
 
 /**
- * The mark on the art. Bottom-LEFT on every card, and it stays there now that the
- * turn control has moved to bottom-centre: left is the corner the card itself
- * prints nothing in, and a fixed corner means a one-faced card looks like a
- * two-faced one minus a control rather than a different layout (table row 3.8).
+ * TWO FACES ON ONE PIECE OF CARD STOCK — both drawn, each hiding its own back —
+ * for whichever box above is doing the turning.
  *
- * It draws THE PLATE the art-wash ratification defines: opaque `--bg` under one
- * `--border-strong` hairline at radius 7, which is what every control over art
- * draws now that the top scrim is gone.
+ * One component rather than two copies. The modal's art and the zoom turn the
+ * same object by the same rule, and the rule is four properties that have to
+ * agree: both faces absolutely filling the box, `backface-visibility: hidden` on
+ * each, the back pre-rotated 180°, and each face carrying the seam itself —
+ * they paint over the parent's inset ring, so without it the card loses its edge
+ * on exactly the cards that have two of them.
+ *
+ * Only the radius and the seam's darkness differ per surface, because the shadow
+ * each face paints over differs, so both are props. Everything else is the
+ * construction, and a second copy of it is where the two would drift.
  */
-function ZoomMark({ size }: { size: number }) {
+function CardFaces({
+  front,
+  back,
+  radius,
+  seam,
+  testIdPrefix,
+}: {
+  front: React.CSSProperties;
+  back: React.CSSProperties;
+  radius: string;
+  seam: string;
+  testIdPrefix: string;
+}) {
   return (
-    <span
-      aria-hidden="true"
-      className="absolute flex items-center justify-center pointer-events-none"
-      style={{
-        left: 10,
-        bottom: 10,
-        width: size,
-        height: size,
-        borderRadius: 7,
-        background: "var(--bg)",
-        border: "1px solid var(--border-strong)",
-        color: "var(--fg)",
-        fontSize: Math.round(size * 0.52),
-        lineHeight: 1,
-      }}
-    >
-      ⤢
-    </span>
+    <>
+      <div
+        aria-hidden
+        data-testid={`${testIdPrefix}-face-front`}
+        className={`absolute inset-0 ${radius}`}
+        style={{ ...front, backfaceVisibility: "hidden", boxShadow: seam }}
+      />
+      <div
+        aria-hidden
+        data-testid={`${testIdPrefix}-face-back`}
+        className={`absolute inset-0 ${radius}`}
+        style={{
+          ...back,
+          backfaceVisibility: "hidden",
+          transform: "rotateY(180deg)",
+          boxShadow: seam,
+        }}
+      />
+    </>
   );
 }
 
 /**
- * The modal's turn-over control (#363). It sits ON the art, bottom-right, rather
- * than in the modal's chrome, so it cannot read as a sibling of Prev/Next: those
- * page between cards, this turns one card over.
+ * The modal's turn-over control (#363). It sits UNDER the card at every width and
+ * on every surface — the modal's art column, the phone's art header, and the zoom
+ * — between the zoom hint above it and the price below (#4).
+ *
+ * It used to sit ON the art, bottom-centre, which put a button across the bottom
+ * edge of the picture the modal exists to show. Under the card it is still
+ * unmistakably about the card and covers none of it, and one placement across
+ * three mounts is what stops the modal and its zoom drawing the same control two
+ * ways. It still cannot read as a sibling of Prev/Next: those page between cards
+ * and live in the content column's footer, this turns one card over and lives
+ * under the card.
  *
  * Its accessible name is the face it turns TO, never "flip" — the act is the
  * part the reader can already see, and the other face's name is the fact they
@@ -1392,7 +1553,7 @@ function FlipControl({
 }: {
   otherFaceName: string;
   onFlip: () => void;
-  /** 44 on the phone's art header, 34 in the desktop art column, 44 inside the zoom. */
+  /** 44 on the phone's art header and inside the zoom, 32 in the desktop art column. */
   size: number;
   /** The zoom passes one so it can hand focus to the turn on open. */
   controlRef?: React.Ref<HTMLButtonElement>;
@@ -1405,20 +1566,12 @@ function FlipControl({
       aria-label={twoFacedCopy.flipToAria(otherFaceName)}
       // The ground is a scrim rather than a solid: the control has to stay
       // legible over whatever art is under it without hiding a square of the card.
-      className="absolute flex items-center justify-center cursor-pointer bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] border border-[color:var(--border-strong)] text-[color:var(--fg)]"
-      // BOTTOM-CENTRE, not the bottom-right corner it shipped in. That corner is
-      // where a creature prints its power and toughness, and the control covered them
-      // on every card that has them — the one number a reader most often opens a
-      // creature to check. Centre is the corner nothing is printed in, and it is where
-      // other card apps put the same control.
-      style={{
-        left: "50%",
-        transform: "translateX(-50%)",
-        bottom: 10,
-        width: size,
-        height: size,
-        borderRadius: 7,
-      }}
+      // In normal flow now that it is under the card; the stack around it centres
+      // it. The ground stays the scrim it drew over art — the phone's stack sits on
+      // the blurred wash, so a transparent control would still have to survive
+      // whatever crop is behind it.
+      className="flex flex-none items-center justify-center cursor-pointer bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] border border-[color:var(--border-strong)] text-[color:var(--fg)]"
+      style={{ width: size, height: size, borderRadius: 7 }}
     >
       <TurnOverIcon size={Math.round(size * 0.5)} />
     </button>
