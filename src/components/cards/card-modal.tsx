@@ -512,8 +512,9 @@ export function CardModal({
   const closeZoom = useCallback(() => setZoomed(false), []);
   const openZoom = useCallback(() => setZoomed(true), []);
 
-  // Escape collapses the region first and returns focus to the Set field; a second Escape
-  // closes the dialog exactly as it does today.
+  // Three rungs: the zoom, then the printing region (returning focus to the Set
+  // field), then the dialog. The region's shipped two-stage shape with one added on
+  // top rather than a new shape to learn.
   const onEscape = useCallback(() => {
     // Zoom first, then the region, then the dialog — the printing region's shipped
     // two-stage shape with one rung added rather than a new shape to learn (§3.11).
@@ -1181,7 +1182,7 @@ export function CardModal({
                 // breathing space; the desktop dialog is `min(620px, 85vh)` tall, which
                 // is what a landscape laptop can make shorter than the card.
                 "--zoom-w": "min(318px, calc(100vw - 32px), calc((100vh - 140px) * 0.7159))",
-                "--zoom-w-md": "min(372px, calc((min(620px, 85vh) - 116px) * 0.7159))",
+                "--zoom-w-md": "min(372px, calc((min(620px, 85vh) - 72px) * 0.7159))",
                 aspectRatio: "63/88",
                 ...artStyle,
                 boxShadow: "0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.35)",
