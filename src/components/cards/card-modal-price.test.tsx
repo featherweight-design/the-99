@@ -96,12 +96,20 @@ describe("the price under the art", () => {
       ]),
     }));
 
+
     expect(screen.getByTestId("modal-price-desktop"))
       .toHaveTextContent(setPageCopy.cell.noStock);
   });
 
   it("says `no stock` for a printing the feed has never carried", () => {
-    mount(card({ prices: indexPriceRows([priceRow({ scryfall_id: "other", collector_number: "999" })]) }));
+    // The query returns every printing of the card, so this one arrives with no
+    // price row rather than not arriving at all — which is the store answering.
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ scryfall_id: "other", collector_number: "999" }),
+        priceRow({ as_of: null, price_cents: null }),
+      ]),
+    }));
 
     expect(screen.getByTestId("modal-price-desktop"))
       .toHaveTextContent(setPageCopy.cell.noStock);
@@ -130,7 +138,10 @@ describe("the price under the art", () => {
   it("never shows a sibling printing's figure under this printing's art", () => {
     mount(card({
       printings: [printing({ scryfallId: "s-unpriced", collectorNumber: "777" })],
-      prices: indexPriceRows([priceRow({ price_cents: 9999 })]),
+      prices: indexPriceRows([
+        priceRow({ price_cents: 9999 }),
+        priceRow({ scryfall_id: "s-unpriced", collector_number: "777", as_of: null, price_cents: null }),
+      ]),
     }));
 
     expect(screen.getByTestId("modal-price-desktop")).not.toHaveTextContent("$99.99");
@@ -159,7 +170,12 @@ describe("the price under the art", () => {
   });
 
   it("says which history `no stock` is, where the visible word cannot", () => {
-    mount(card({ prices: indexPriceRows([priceRow({ scryfall_id: "other", collector_number: "999" })]) }));
+    mount(card({
+      prices: indexPriceRows([
+        priceRow({ scryfall_id: "other", collector_number: "999" }),
+        priceRow({ as_of: null, price_cents: null }),
+      ]),
+    }));
 
     expect(screen.getByTestId("modal-price-desktop").querySelector(".sr-only")?.textContent)
       .toBe(setPageCopy.cellPrice.neverStocked);

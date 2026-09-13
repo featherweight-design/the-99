@@ -62,6 +62,16 @@ export type PrintingPrices = {
    * know falls through to the (set, collector number) identity instead.
    */
   catalogIds: string[];
+  /**
+   * Every `(set code, collector number)` key the catalog holds for this card.
+   *
+   * The counterpart of `catalogIds`, for the same reason: a miss in
+   * `byPrintingKey` means "the feed never carried this printing" only when the
+   * catalog has that printing to carry. Where it does not — an unseeded catalog, a
+   * holding whose pair names no catalog row — nothing was asked, and `no stock`
+   * would be a claim about a shop that was never consulted.
+   */
+  catalogKeys: string[];
   /** The newest `as_of` in the WHOLE table, which is what liveness is measured against. */
   newestAsOf: Date | null;
 };
@@ -72,10 +82,12 @@ export function priceKeyFor(p: { setCode: string; collectorNumber: string }): st
 }
 
 /**
- * The pure half: rows in, two indexes out. A row with no price columns at all is
- * dropped rather than stored as a zeroed fact — absence is what the caller reads
- * as "the feed has never carried this printing", and a fact of nulls would be
- * indistinguishable from a live row with no non-foil stock.
+ * The pure half: rows in, indexes out. A row with no `as_of` carried no price row
+ * at all — the `left join` produced it — and is indexed as a catalog printing but
+ * not as a fact, which is how the caller tells "the feed has never carried this
+ * printing" from a figure. A row WITH an `as_of` and all three price columns null
+ * is kept as a fact on purpose: that is a live row stocked in neither finish, and
+ * `priceState` has a different answer for it.
  */
 export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
   const byScryfallId: Record<string, PriceFact> = {};
@@ -85,6 +97,7 @@ export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
   // still a key that names two printings.
   const idsPerKey = new Map<string, Set<string>>();
   const catalogIds = new Set<string>();
+  const catalogKeys = new Set<string>();
   let newestAsOf: Date | null = null;
 
   for (const r of rows) {
@@ -97,6 +110,7 @@ export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
       const ids = idsPerKey.get(key) ?? new Set<string>();
       ids.add(r.scryfall_id);
       idsPerKey.set(key, ids);
+      catalogKeys.add(key);
     }
     if (r.as_of === null) continue;
     const fact: PriceFact = {
@@ -124,6 +138,7 @@ export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
     newestAsOf,
     ambiguousKeys,
     catalogIds: [...catalogIds],
+    catalogKeys: [...catalogKeys],
   };
 }
 
@@ -170,5 +185,10 @@ export function priceFor(
   // this printing, the player still owns this printing, and its price is still
   // the true one — the stand-in art is a documented approximation of the picture,
   // never a change of which printing is in hand.
-  return { fact: prices.byPrintingKey[priceKeyFor(printing)] ?? null };
+  const key = priceKeyFor(printing);
+  // A key the catalog does not hold was never asked about, so the answer is
+  // silence rather than `no stock` — the same distinction `catalogIds` draws one
+  // identity up.
+  if (!prices.catalogKeys.includes(key)) return null;
+  return { fact: prices.byPrintingKey[key] ?? null };
 }

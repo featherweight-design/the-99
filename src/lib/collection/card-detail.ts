@@ -186,6 +186,11 @@ export const loadCardDetail = cache(async function loadCardDetail(
     .where(eq(cards.oracleId, oracleId));
   if (!card) return null;
 
+  // Started before the printings query is awaited: it depends on the oracle id
+  // alone, and this path serves every unowned card and every deck row, so a serial
+  // pair would add a whole round trip to the commonest open. Kicked off only after
+  // the card is known to exist, so a miss costs no query at all.
+  const prices = pricesFor(oracleId);
   const printingRows = await db
     .select({
       scryfallId: printings.scryfallId,
@@ -200,7 +205,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
     .leftJoin(sets, eq(sets.code, printings.setCode))
     .where(eq(printings.oracleId, oracleId));
-  return { ...catalogCard(card, printingRows), prices: await pricesFor(oracleId) };
+  return { ...catalogCard(card, printingRows), prices: await prices };
 });
 
 /**

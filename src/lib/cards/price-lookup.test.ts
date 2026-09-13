@@ -83,8 +83,16 @@ describe("priceFor", () => {
       .toEqual({ fact: expect.objectContaining({ cents: 241 }) });
   });
 
-  it("says the store answered no when the read succeeded and this printing is not in it", () => {
-    expect(priceFor(prices, { scryfallId: "s-absent", setCode: "C21", collectorNumber: "999" }))
+  it("says the store answered no for a catalog printing with no price row", () => {
+    // `loadPrintingPrices` returns EVERY printing of the oracle card, priced or not,
+    // so a printing the catalog holds and the feed skipped arrives with a null
+    // `as_of`. That is the store answering: it has never carried this one.
+    const withUnpriced = indexPriceRows([
+      row(),
+      row({ scryfall_id: "s-absent", collector_number: "999", as_of: null, price_cents: null }),
+    ]);
+
+    expect(priceFor(withUnpriced, { scryfallId: "s-absent", setCode: "C21", collectorNumber: "999" }))
       .toEqual({ fact: null });
   });
 
@@ -118,6 +126,15 @@ describe("priceFor", () => {
       .toEqual({ fact: null });
   });
 
+  it("stays silent for a pair the catalog does not hold", () => {
+    // A miss in the key index means "never carried" only where the catalog has the
+    // printing to carry. An unseeded catalog, or a holding whose pair names no
+    // catalog row, was never asked about at all.
+    const prices = indexPriceRows([row()]);
+
+    expect(priceFor(prices, { setCode: "ELD", collectorNumber: "77" })).toBeNull();
+  });
+
   it("refuses a fallback key the catalog gives to two printings", () => {
     // `printings` puts no uniqueness on (set_code, collector_number), so two
     // variants can share one. A single-valued index would keep whichever row came
@@ -148,8 +165,12 @@ describe("priceFor", () => {
 
   it("never falls back to another printing of the same card", () => {
     // The figure sits under this printing's art. A sibling's price there would be
-    // a number no copy of this card has.
-    const only = indexPriceRows([row({ scryfall_id: "s-9", collector_number: "900" })]);
+    // a number no copy of this card has. Both printings are in the catalog; only
+    // the sibling is priced.
+    const only = indexPriceRows([
+      row({ scryfall_id: "s-9", collector_number: "900" }),
+      row({ as_of: null, price_cents: null }),
+    ]);
 
     expect(priceFor(only, { scryfallId: "s-1", setCode: "C21", collectorNumber: "263" }))
       .toEqual({ fact: null });
