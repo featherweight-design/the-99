@@ -82,6 +82,10 @@ export function ShelfLine({
   return (
     <div
       data-shelf-line
+      // A named GROUP: an `aria-label` on a bare div names nothing in the
+      // accessibility tree, so the level had no identity at all. `role="group"`
+      // is what `import-entry.tsx` already uses for a set of related controls.
+      role="group"
       aria-label={folderCopy.shelves.sheetTitle}
       // WRAPS TO TWO ROWS AND THEN SCROLLS (STATES W5). The chassis below may
       // never wrap, because it promises a fixed height while a reader filters;
@@ -97,7 +101,11 @@ export function ShelfLine({
       // where it would stack the second under the first. Recorded for Design
       // rather than guessed at; a player with fifteen shelves is the reader
       // READINESS itself says this round is not drawn for.
-      className="flex max-h-[74px] flex-wrap items-center gap-[6px] overflow-y-auto bg-[color:var(--bg)] px-[22px] py-[10px]"
+      // 94px, not 74: two 34px rows and their 6px gap are 74 on their own, and
+      // the container's own 20px of padding is inside the box under this app's
+      // border-box reset — at 74 the second row was already in the scroll area
+      // rather than on screen, which is the opposite of a two-row ceiling.
+      className="flex max-h-[94px] flex-wrap items-center gap-[6px] overflow-y-auto bg-[color:var(--bg)] px-[22px] py-[10px]"
     >
       {shelfSegments(folders, counts).map((segment) => {
         const selected = segment.shelf === shelf;

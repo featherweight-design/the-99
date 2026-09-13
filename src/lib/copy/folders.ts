@@ -78,7 +78,7 @@ export const folderCopy = {
      */
     duplicate: (name: string) => `A folder named “${name}” already exists.`,
     /**
-     * ENGINEERING ADDITION, for a state the handoff rules unreachable. Decision
+     * ENGINEERING ADDITION, for a state the handoff rules to be unreachable. Decision
      * 22 names two reachable refusals and the field enforces both, so this is
      * what a caller that is not the field gets — a rejected write with no other
      * sentence to show. Without it the dialog either lies (a duplicate message

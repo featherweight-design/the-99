@@ -151,7 +151,10 @@ export function ShelfSheet({
           <span aria-hidden className="font-mono text-[14px]">
             +
           </span>
-          <span className="text-[14.5px]">{folderCopy.create.actionFromMove}</span>
+          {/* The line and the sheet share one label; `actionFromMove` is the
+              move panel's, where the row makes a destination you are about to
+              file into. */}
+          <span className="text-[14.5px]">{folderCopy.create.action}</span>
         </button>
         </div>
 
