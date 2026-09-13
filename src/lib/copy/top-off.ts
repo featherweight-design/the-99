@@ -276,9 +276,9 @@ export const topOffCopy = {
 
     /** The seed's sentence — the shipped provenance wording, recast as a line. */
     seedLine: (n: string, buy: string) =>
-      `${plural(n, 'card', 'cards')}, the roles and the mana base, ${buy} to buy.`,
+      `${plural(n, 'card', 'cards')}: the roles and the mana base, ${buy} to buy.`,
     seedLineNoBuy: (n: string) =>
-      `${plural(n, 'card', 'cards')}, the roles and the mana base.`,
+      `${plural(n, 'card', 'cards')}: the roles and the mana base.`,
     /** The seed NAMES its reversal rather than growing a button for it: that
      *  control is a rule and a row away in the toolbar, and duplicating it here
      *  would put two destructive controls in one box.

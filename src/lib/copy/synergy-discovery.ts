@@ -154,7 +154,7 @@ export const synergyCopy = {
     // surface could say. Stopping short is `topOffCopy.strip.doorNoteAgain`,
     // which is neutral.
     //
-    // The clause after the dash is lifted verbatim from
+    // The clause after the separator is lifted verbatim from
     // recommendationsCopy.fill.provenanceShort, which already says this about
     // the 68-card fill. Expressive moment: it is the one line here that is
     // allowed a voice, and it earns it by being honest about a shortfall.
