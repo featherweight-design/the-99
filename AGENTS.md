@@ -126,20 +126,6 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   cascade. Point it at `local-dev`, **never production**. What it measured on the phone: the two
   stamps do not share a vertical, because the meta cell to their left sizes to its date text below
   `md:` — the game log's existing behaviour, not this surface's.
-- `node scripts/contact-sheet.mjs` loads every route the filter chassis claims at 390px and
-  1300px and writes one picture per cell plus a `contact-sheet.html` that tiles them. It asserts
-  nothing and has no baseline, which is the point: a probe is written by whoever wrote the code,
-  so it checks what that author already believed. `probe-decks-chassis.mjs` absorbed nine review
-  findings and only ever loaded `/decks`, and the chassis shipped with two routes still drawing
-  the old colour control and `/collection`'s phone form hiding three of its five dimensions
-  off-screen. Neither gap is visible in a diff — one is an absence and the other is two
-  individually plausible halves. Needs a dev server; `PROBE_BASE` points it at one.
-- `node scripts/check-shared-controls.mjs` asks whether every route that claims a shared control
-  actually imports it, transitively. The check it replaces — *does this route mount the chassis* —
-  returned yes on all four routes while two of them drew their own pips, because `FilterRack`
-  honestly wraps `FilterChassis`. Import equality is the only cheap check that catches a
-  reimplementation wearing the shared component's name. It also reports which replaced controls
-  are still reachable from live code, so a migration still owed is told apart from dead code.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 
