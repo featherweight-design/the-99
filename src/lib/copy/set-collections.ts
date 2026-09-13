@@ -298,7 +298,9 @@ export const setPageCopy = {
     // buy, and a name promising a send button there announces an action that is not there.
     expandAria: (figure: string, caveats: number, hasSend: boolean) =>
       `${figure}. Show the full cost`
-      + (hasSend ? ", with the send button" : "")
+      // "link", not "button": the expanded action is an `<a>` to ManaPool, and naming a
+      // control type the reader will not find is worse than naming none.
+      + (hasSend ? ", with the ManaPool link" : "")
       + (caveats === 0 ? "" : caveats === 1 ? " and 1 note" : ` and ${caveats} notes`),
     collapseAria: "Hide the full cost",
     // R3: at 100% the same strip re-scopes to the extras rather than being

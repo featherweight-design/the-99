@@ -252,16 +252,19 @@ describe("CostStrip — the accessible name with no send link", () => {
     .find((b) => b.hasAttribute("data-set-cost-toggle")
       && b.getAttribute("aria-expanded") === "false");
 
-  it("does not promise a send button when there is none", () => {
+  it("does not promise an action when there is none", () => {
     render(<CostStrip cost={cost({ absentCount: 0 })} href={null} />);
     const label = opener()?.getAttribute("aria-label") ?? "";
     expect(label).toMatch(/Show the full cost/);
-    expect(label).not.toMatch(/send button/);
+    expect(label).not.toMatch(/ManaPool/);
   });
 
-  it("and still promises one when there is", () => {
+  // A LINK, not a button: the expanded action is an `<a>`, and naming a control type the
+  // reader will not find is worse than naming none.
+  it("names it a link when there is, because that is what it is", () => {
     render(<CostStrip cost={cost({ absentCount: 0 })} href="https://manapool.com/x" />);
-    expect(opener()?.getAttribute("aria-label")).toMatch(/send button/);
+    expect(opener()?.getAttribute("aria-label")).toMatch(/ManaPool link/);
+    expect(opener()?.getAttribute("aria-label")).not.toMatch(/button/);
   });
 
   it("keeps the notes clause in both forms", () => {

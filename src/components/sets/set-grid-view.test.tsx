@@ -2112,35 +2112,18 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(bar.querySelector("[aria-label*='filter']")).toBeTruthy();
   });
 
-  // The one member of the head that is news rather than reference. While it is showing,
-  // the head stays open — collapsing it away would hide the only offer to refresh.
-  it("stays open while the delta strip is firing", () => {
+  // §31 says the collapse must not hide the delta strip's message. It is not a GATE any
+  // more — the strip is simply not one of the members the collapse hides, so the message is
+  // visible at both heights. The pin it replaces reopened the head under an open dialog and
+  // lagged the child's first firing commit by a render.
+  it("keeps the delta strip's message visible while collapsed", () => {
     stubDesktop(false);
     deltaProps.firing = true;
     try {
       const { container } = view([p("1"), p("2")], []);
       scrollTo(400);
-      expect(isShy(container)).toBe(false);
+      expect(isShy(container)).toBe(true);
       expect(container.textContent).toMatch(/a card arrived/);
-    } finally {
-      deltaProps.firing = false;
-    }
-  });
-
-  // The TRANSITION, not just the quiet case. The previous version of this only repeated
-  // the ordinary scroll-collapse and would have passed with the parent ignoring the
-  // callback's clear entirely.
-  it("and collapses once it stops", () => {
-    stubDesktop(false);
-    deltaProps.firing = true;
-    try {
-      const r = view([p("1"), p("2")], []);
-      scrollTo(400);
-      expect(isShy(r.container)).toBe(false);
-      deltaProps.firing = false;
-      r.rerender(r.again());
-      scrollTo(401);
-      expect(isShy(r.container)).toBe(true);
     } finally {
       deltaProps.firing = false;
     }
@@ -2252,15 +2235,17 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
 
   // The region is `sr-only` to keep ANNOUNCING, not to keep offering: clipped to a 1px box
   // the jump link is still focusable, so Tab landed on an invisible control.
-  it("takes the extras jump link out of the tab order while collapsed", () => {
+  // Unmounted, not merely untabbable. `tabIndex={-1}` only stops FUTURE tabbing: a reader
+  // already focused on the link keeps it as the active element when the collapse clips the
+  // region to a 1px box, which is the same invisible-focus defect one step later.
+  it("unmounts the extras jump link while collapsed", () => {
     stubDesktop(false);
     const { container } = view(
       [p("1", { booster: true }), p("2", { booster: false })], [],
     );
+    expect(container.querySelector('a[href="#extras"]')).toBeTruthy();
     scrollTo(400);
-    const jump = container.querySelector('a[href="#extras"]');
-    expect(jump).toBeTruthy();
-    expect(jump).toHaveAttribute("tabindex", "-1");
+    expect(container.querySelector('a[href="#extras"]')).toBeNull();
   });
 
   it("never collapses at desktop, however far the reader scrolls", () => {

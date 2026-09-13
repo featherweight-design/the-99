@@ -929,6 +929,32 @@ async function run() {
         deep === null ? "the head could not be measured" : `top ${deep.top}px, shy=${deep.shy}`,
       );
 
+      // The bar's own controls, measured while it is DRAWN. The page's other 44px check
+      // runs at rest, where the bar does not exist — so the one path to the filters while
+      // the head is collapsed was the only phone action never measured, and it shipped at
+      // 36px.
+      await scrollTo(400);
+      const barTargets = await page.evaluate(() => {
+        const bar = document.querySelector("[data-set-head-bar]");
+        if (bar === null) return null;
+        const buttons = [...bar.querySelectorAll("button")];
+        if (buttons.length === 0) return { count: 0, smallest: null };
+        return {
+          count: buttons.length,
+          smallest: Math.round(Math.min(...buttons.map((b) => b.getBoundingClientRect().height))),
+        };
+      });
+      failures += !report(
+        "every control on the collapsed bar clears the 44px target",
+        barTargets !== null && barTargets.count > 0
+          && barTargets.smallest !== null && barTargets.smallest >= 44,
+        barTargets === null
+          ? "the bar was not drawn — the check measured nothing"
+          : barTargets.count === 0
+            ? "the bar drew no controls — the check measured nothing"
+            : `${barTargets.count} measured, smallest ${barTargets.smallest}px`,
+      );
+
       const crossing = await firstCrossingShift();
       failures += !report(
         "the grid does not move in the document on the first crossing",
