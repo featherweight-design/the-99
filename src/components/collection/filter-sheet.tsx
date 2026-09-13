@@ -83,6 +83,11 @@ function SheetBody({
   // and `visibleFocusables` skips anything under an `inert` ancestor, which is
   // what this sheet becomes while the panel is up.
   const [setsOpen, setSetsOpen] = useState(false);
+  // Handed to the panel as its return-focus target. The panel cannot find this
+  // control for itself: opening it marks this whole sheet `inert` in the same
+  // render, the browser moves focus out of an inert subtree, and the panel's own
+  // mount effect then captures `body`.
+  const setTrigger = useRef<HTMLButtonElement>(null);
 
   // The sheet is `aria-modal`, so the chassis's result line is outside it and
   // is not a surface assistive tech can be relied on to read. Without a region
@@ -260,6 +265,7 @@ function SheetBody({
             a panel of its own. */}
         <Group heading={copy.setHeading}>
           <button
+            ref={setTrigger}
             type="button"
             onClick={() => setSetsOpen(true)}
             aria-haspopup="dialog"
@@ -324,6 +330,7 @@ function SheetBody({
           }
           shown={shown}
           total={total}
+          returnFocusTo={setTrigger}
         />
       )}
     </div>
@@ -349,6 +356,7 @@ function SetPanel({
   onToggle,
   shown,
   total,
+  returnFocusTo,
 }: {
   onDismiss: () => void;
   options: SetOption[];
@@ -357,6 +365,8 @@ function SetPanel({
   /** The result count a set toggle moves — announced HERE, not behind the sheet. */
   shown: number;
   total: number;
+  /** The Set row, which is inert by the time this panel's own capture runs. */
+  returnFocusTo: React.RefObject<HTMLButtonElement | null>;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -365,7 +375,7 @@ function SetPanel({
   // The panel takes initial focus rather than the search field, for the reason
   // the sheet does: raising the keyboard on a reader who pressed a row is not
   // what they asked for.
-  useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog });
+  useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog, returnFocusRef: returnFocusTo });
 
   // The query's matches, on their own. `sets` below prepends the selected
   // options so they stay reachable, which makes its length useless as a match
