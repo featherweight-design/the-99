@@ -77,6 +77,20 @@ export const folderCopy = {
      * the name is quoted because the reader may have typed a near-miss.
      */
     duplicate: (name: string) => `A folder named “${name}” already exists.`,
+    /**
+     * ENGINEERING ADDITION, for a state the handoff rules to be unreachable. Decision
+     * 22 names two reachable refusals and the field enforces both, so this is
+     * what a caller that is not the field gets — a rejected write with no other
+     * sentence to show. Without it the dialog either lies (a duplicate message
+     * for a name that is not one) or fails silently.
+     */
+    refused: 'That name cannot be used.',
+    /**
+     * A write that threw rather than refused — a timeout, an outage. It is a
+     * different sentence because it asks for a different thing: the name was
+     * fine, and trying again is the answer.
+     */
+     failed: 'That did not save. Try again.',
   },
 
   // ── Rename (query to be added: `renameFolder`) ────────────────────────
@@ -131,6 +145,12 @@ export const folderCopy = {
      */
     announceFiled: (shelf: string) => `Filed under ${shelf}.`,
     announceUnfiled: 'Unfiled.',
+    /**
+     * A write that THREW rather than refused. `false` is a conflict the reader
+     * cannot act on — the deck or the folder is gone — and this is a failure
+     * they can: the move did not happen and trying again is the answer.
+     */
+    failed: 'That did not save. Try again.',
   },
 
   // ── Empty states — S2 and S3 only ─────────────────────────────────────

@@ -9,7 +9,8 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
@@ -47,6 +48,12 @@ import { PLAYED_LABEL, SearchField, STATUS_COPY_KEY, toggleIn } from "./deck-fil
 import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
+import { ShelfLine, ShelfTrigger, shelfSegments } from "./shelf-line";
+import { ShelfSheet } from "./shelf-sheet";
+import { ShelfEmpty, UnfiledEmpty } from "./shelf-empty";
+import { FolderCreateDialog } from "./folder-create-dialog";
+import { createFolderAction, moveDeckAction } from "../../app/decks/folder-actions";
+import { folderCopy } from "../../lib/copy/folders";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import {
   ALL_DECKS,
@@ -137,7 +144,7 @@ function chipLabels(filters: DeckFilters): { key: string; label: string; without
 
 export function DecksView({
   decks,
-  folders,
+  folders: serverFolders,
   shopping,
   buildable,
   cards,
@@ -155,7 +162,9 @@ export function DecksView({
     sort: deckSortFromParams(search.get("sort")),
     // Read against the folders that exist, so a stale or hand-edited id lands
     // on All decks rather than on an empty grid for a shelf that is not there.
-    shelf: shelfFromParams(search, folders),
+    // The SERVER's folders: this runs once, at mount, before anything local
+    // exists to merge in.
+    shelf: shelfFromParams(search, serverFolders),
   }));
 
   // The order this browser last chose, kept across visits. It sits UNDER the URL
@@ -217,7 +226,10 @@ export function DecksView({
     setState({
       ...filtersFromParams(live),
       sort: deckSortFromParams(live.get("sort")),
-      shelf: shelfFromParams(live, folders),
+      // The SERVER's folders: this reconciliation can run before the merged
+      // list below exists, and a folder made a moment ago is on the URL only if
+      // this view put it there.
+      shelf: shelfFromParams(live, serverFolders),
     });
   }
 
@@ -236,6 +248,89 @@ export function DecksView({
     open: false,
     focusSearch: false,
   });
+
+  /**
+   * `handOff` mirrors the filter sheet's own flag: crossing to wide unmounts the
+   * trigger `useDialogA11y` would return focus to, so focus would land on the
+   * body. It is set where the sheet is closed and cleared on the way back, in
+   * the same render-time reconciliation — never in the effect that consumes it.
+   */
+  const [shelfSheet, setShelfSheet] = useState<{ open: boolean; handOff?: boolean }>({
+    open: false,
+  });
+  /**
+   * The deck whose move panel opened the create dialog. `New folder…` is on that
+   * list so the destination can be made FROM THE ACT (handoff decision 16) — so
+   * the deck is filed into the folder it just made, rather than being left
+   * unfiled while the page walks off to the new empty shelf.
+   */
+  const [creatingFor, setCreatingFor] = useState<string | null>(null);
+
+  const [creating, setCreating] = useState(false);
+  const router = useRouter();
+  /**
+   * The folder this reader just made, held until the refreshed payload carries
+   * it. Without it the create flow eats itself: `onShelf` selects an id that is
+   * not in `folders` yet, and the missing-shelf reconciliation below reads that
+   * as a deleted folder and drops the reader back on All decks — instead of the
+   * empty shelf CR4 requires them to land on.
+   */
+  const [justMade, setJustMade] = useState<
+    (DeckFolderWithCount & { against: readonly DeckFolderWithCount[] }) | null
+  >(null);
+  const [, startRefresh] = useTransition();
+
+  /**
+   * A folder write revalidates `/decks` on the server, and this component is a
+   * client component holding the payload it was rendered with — so without a
+   * refresh a folder created here is invisible until the reader navigates. The
+   * refresh runs in a transition so the list does not blank while it lands.
+   */
+  const refresh = useCallback(() => startRefresh(() => router.refresh()), [router]);
+
+  /**
+   * THE ONE ANSWER TO "WHAT I WAS STANDING ON IS GONE". Three paths can remove
+   * the focused control out from under a keyboard reader — a move that takes the
+   * card off the shelf being viewed, a create from inside a menu on that card,
+   * and the breakpoint closing the sheet — and each of them leaves focus on the
+   * body. The shelf control is the one thing on screen in all three, at either
+   * width, so it is where focus goes rather than three separate rescues.
+   */
+  const focusShelfControl = useCallback(() => {
+    const target =
+      document.querySelector<HTMLElement>("[data-shelf-line] button[aria-current='true']")
+      ?? document.querySelector<HTMLElement>("[data-shelf-trigger] button");
+    target?.focus();
+  }, []);
+
+  /**
+   * The shelf announcement lives HERE, not in the sheet, because the sheet
+   * unmounts on selection and a region removed in the same commit as its text
+   * is never read. The chassis's own result line is silent while the sheet is
+   * open and cannot cover this either.
+   */
+  /**
+   * The sentence AND a sequence. Two moves into the same folder produce the
+   * same words, and a live region whose text does not change is not re-read —
+   * so the second receipt would be silent. The key remounts the region, which
+   * is what makes an identical sentence a new announcement.
+   */
+  const [shelfSaid, setShelfSaid] = useState({ text: "", n: 0 });
+  const say = useCallback(
+    (text: string) => setShelfSaid((prev) => ({ text, n: prev.n + 1 })),
+    [],
+  );
+  /**
+   * A one-shot: the result line stays quiet through the frame in which the
+   * sheet hands its announcement over, so the shelf change is said once rather
+   * than twice — the shelf's name here and the result sentence there.
+   */
+  const [handingOff, setHandingOff] = useState(false);
+  useEffect(() => {
+    if (!handingOff) return;
+    const t = setTimeout(() => setHandingOff(false), 400);
+    return () => clearTimeout(t);
+  }, [handingOff]);
 
   const apply = useCallback((next: ViewState) => {
     setState(next);
@@ -299,7 +394,7 @@ export function DecksView({
   );
   // One map, feeding both the shelf line's segments and the result line's
   // denominator, so the two figures cannot drift apart. See `shelfCounts`.
-  const counts = useMemo(() => shelfCounts(decks, folders), [decks, folders]);
+  const counts = useMemo(() => shelfCounts(decks, serverFolders), [decks, serverFolders]);
 
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
@@ -307,6 +402,26 @@ export function DecksView({
   // The chassis switches form on its own breakpoint, not Tailwind's — 1000px,
   // because `/collection`'s seven controls need 987 and the row must never wrap.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+
+  // Cleared the moment the server's list carries it — during render, so no
+  // pass sees both. Left standing, a folder later deleted in another tab would
+  // be re-added by this merge and the missing-shelf fallback below could never
+  // fire on it.
+  // Cleared by the FIRST payload after the create, whether or not it carries the
+  // id: a folder deleted in another tab before that response would otherwise be
+  // re-added by the merge below on every render, and the missing-shelf fallback
+  // could never fire on it.
+  if (justMade && serverFolders !== justMade.against) setJustMade(null);
+
+  // The server's list, plus a folder made a moment ago that it has not returned
+  // yet.
+  const folders = useMemo(
+    () =>
+      justMade && !serverFolders.some((f) => f.id === justMade.id)
+        ? [...serverFolders, justMade].sort((a, b) => a.name.localeCompare(b.name))
+        : serverFolders,
+    [serverFolders, justMade],
+  );
 
   // THE SELECTED SHELF CAN STOP EXISTING UNDER THE READER. A folder action
   // revalidates `/decks`, and the App Router can hand this client component new
@@ -348,11 +463,27 @@ export function DecksView({
   if (wasWide !== wide) {
     setWasWide(wide);
     if (wide && sheet.open) setSheet({ open: false, focusSearch: false, handOffFocus: true });
+    // The shelf sheet is the compact form's alone (STATES C3): crossing to wide
+    // unmounts its trigger, so leaving it open would remount a modal on the way
+    // back that the reader never asked for.
+    if (wide && shelfSheet.open) {
+      setShelfSheet({ open: false, handOff: true });
+      // The trigger the hook would return focus to is unmounted by this same
+      // render, so focus would land on the body. The wide line's selected
+      // segment is the nearest equivalent — the same handoff the filter sheet
+      // makes to the search field.
+    }
+    else if (!wide && shelfSheet.handOff) setShelfSheet({ ...shelfSheet, handOff: false });
     // Consumed on the way back. Left set, a later compact → wide resize would
     // autofocus the search field again without the reader ever opening the
     // sheet.
     else if (!wide && sheet.handOffFocus) setSheet({ ...sheet, handOffFocus: false });
   }
+
+  useEffect(() => {
+    if (!wide || !shelfSheet.handOff) return;
+    focusShelfControl();
+  }, [wide, shelfSheet.handOff, focusShelfControl]);
 
   // The URL half of that reconciliation, and the one part that belongs in an
   // effect: `replaceState` is a DOM write, not state, so it cannot happen during
@@ -379,6 +510,35 @@ export function DecksView({
     const query = live.toString();
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
   }, [folders]);
+
+  const segments = useMemo(() => shelfSegments(folders, counts), [folders, counts]);
+  const selectedShelf = useMemo(
+    () =>
+      segments.find((s) => s.shelf === state.shelf)
+      ?? { shelf: ALL_DECKS as Shelf, label: folderCopy.shelves.all, count: counts.all },
+    [segments, state.shelf, counts.all],
+  );
+  // An empty SHELF rather than an emptied one: no filter is on, so the state
+  // that draws must not offer to clear one (STATES N2/N3 versus N4).
+  const shelfEmpty = state.shelf !== ALL_DECKS && narrowed.length === 0;
+
+  const onShelf = useCallback(
+    (shelf: Shelf) => {
+      apply({ filters: state.filters, sort: state.sort, shelf });
+      setShelfSheet({ open: false });
+      // THE SHELF'S NAME IS THE ANNOUNCEMENT, at both widths, and the result
+      // line stands down while it is made. Neither half of that is optional:
+      // inside the sheet the result line is behind an `aria-modal` and cannot
+      // be heard at all, and on the wide line two shelves that hold the same
+      // number of decks produce an identical result sentence, which
+      // `ResultLine` deliberately does not repeat — so the change that matters
+      // would pass in silence. Announcing both would say it twice.
+      setHandingOff(true);
+      const chosen = segments.find((s) => s.shelf === shelf);
+      if (chosen) say(folderCopy.shelves.aria(chosen.label, chosen.count));
+    },
+    [apply, state.filters, state.sort, segments, say],
+  );
 
   // `chipLabels` already knows how to remove one value; the chassis only needs
   // the label and the callback, so this is a shape change rather than a second
@@ -440,6 +600,28 @@ export function DecksView({
         <DecksZero buildable={buildable} cards={cards} />
       ) : (
         <div className="flex min-h-0 flex-auto flex-col">
+          {/* THE LEVEL, above the chassis and on its own ground. It draws only
+              when there is at least one deck: a shelf for nothing is furniture
+              (STATES W6/C5), and `zero` above has already taken that case. */}
+          {wide ? (
+            <ShelfLine
+              folders={folders}
+              counts={counts}
+              shelf={state.shelf}
+              onSelect={onShelf}
+              onCreate={() => {
+                setCreating(true);
+              }}
+            />
+          ) : (
+            <ShelfTrigger
+              label={selectedShelf.label}
+              count={selectedShelf.count}
+              open={shelfSheet.open}
+              onOpen={() => setShelfSheet({ open: true })}
+            />
+          )}
+
           <FilterChassis
             form={wide ? "wide" : "compact"}
             controls={
@@ -554,7 +736,10 @@ export function DecksView({
             // The sheet is aria-modal and now carries its own region, so the
             // chassis's goes quiet while it is open rather than announcing the
             // same count from behind the modal.
-            silentResult={!wide && sheet.open}
+            // Quiet behind EITHER modal: both put the result line out of the
+            // reader's reach and both carry their own announcement, so leaving
+            // it live says the same change twice.
+            silentResult={handingOff || (!wide && (sheet.open || shelfSheet.open))}
             after={
               /* Unmounted when wide, never merely hidden. Resizing from compact
                  to wide with the sheet open would otherwise leave an
@@ -578,7 +763,103 @@ export function DecksView({
             }
           />
 
-          {shown.length === 0 ? (
+          <p key={shelfSaid.n} aria-live="polite" aria-atomic="true" className="sr-only m-0">
+            {shelfSaid.text}
+          </p>
+
+          {shelfSheet.open && (
+            <ShelfSheet
+              segments={segments}
+              shelf={state.shelf}
+              onSelect={onShelf}
+              onCreate={() => {
+                setShelfSheet({ open: false });
+                setCreating(true);
+              }}
+              onDismiss={() => setShelfSheet({ open: false })}
+            />
+          )}
+
+          {creating && (
+            <FolderCreateDialog
+              onDismiss={() => {
+                setCreating(false);
+                setCreatingFor(null);
+                // The control that opened this is gone when it was the sheet's
+                // row, so the hook has nothing to return focus to. The trigger
+                // that opens the sheet is the nearest equivalent, and it is the
+                // same handoff the filter sheet makes at its own breakpoint.
+                // Both origins can vanish: the sheet's row unmounts with the
+                // sheet, and a create from move mode selects a new empty shelf,
+                // which takes the whole card away. The shelf control is the one
+                // thing on screen in either case.
+                // Whatever opened it may be gone: the sheet's row unmounts with
+                // the sheet, a create from move takes the whole card away, and
+                // even the wide line's own button goes if the width crossed
+                // while the dialog was open. The hook focuses a surviving
+                // trigger itself; this catches the case where there is none.
+                requestAnimationFrame(() => {
+                  if (document.activeElement === document.body) focusShelfControl();
+                });
+              }}
+              onCreate={async (name) => {
+                const result = await createFolderAction(name);
+                if (!result.ok) return result.reason === "duplicate" ? "duplicate" : "invalid";
+                // Held locally first, THEN selected: the reconciliation below
+                // would otherwise read an id the server has not returned yet as
+                // a folder that was deleted.
+                setJustMade({
+                  id: result.folder.id,
+                  name: result.folder.name,
+                  createdAt: new Date(),
+                  deckCount: 0,
+                  // The payload it was made against. Any other payload is the
+                  // refresh arriving, and this entry has done its job.
+                  against: serverFolders,
+                });
+                // CR4: the new shelf is selected, which lands the reader on S2 —
+                // create, land on the empty shelf, and the state says how to
+                // fill it. Announced from the action's own answer rather than
+                // through `segments`, which this callback closed over one render
+                // before the new folder existed in it. A new shelf holds nothing.
+                // Made from the act: the deck whose panel asked for this folder
+                // is filed into it, and only then does the page follow. Without
+                // this the new shelf is selected, the card leaves the grid with
+                // its move panel, and the deck the reader was filing is left
+                // exactly where it was.
+                //
+                // THE MOVE'S OWN ANSWER IS READ. The folder is made either way —
+                // it is persisted before this runs — but the deck is only on it
+                // if the move said so, and announcing a count that assumes it
+                // did is a claim about someone else's shelf.
+                const filed = creatingFor
+                  ? await moveDeckAction(creatingFor, result.folder.id).catch(() => false)
+                  : false;
+                onShelf(result.folder.id);
+                // Named from the action's own answer: `segments` in this
+                // callback closed over the render before the folder existed. A
+                // new shelf holds nothing.
+                say(folderCopy.shelves.aria(result.folder.name, filed ? 1 : 0));
+                refresh();
+                return null;
+              }}
+            />
+          )}
+
+          {shown.length === 0 && shelfEmpty ? (
+            // S2 and S3 — an empty SHELF, which no filter caused. The filtered
+            // empty below is a different state with a different way out, and
+            // offering the wrong one is what makes an empty grid read as broken.
+            state.shelf === UNFILED ? (
+              <UnfiledEmpty
+                decks={counts.all}
+                folders={folders.length}
+                onAllDecks={() => onShelf(ALL_DECKS)}
+              />
+            ) : (
+              <ShelfEmpty name={selectedShelf.label} onAllDecks={() => onShelf(ALL_DECKS)} />
+            )
+          ) : shown.length === 0 ? (
             // No mark and no body copy: the zero state offers two routes in,
             // and this one offers the single route out of a filter the reader
             // set themselves. Conflating them makes an empty grid read as a
@@ -608,7 +889,26 @@ export function DecksView({
             <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
               {shown.map((deck) => (
                 <li key={deck.id} className="flex-none">
-                  <DeckCard deck={deck} shopping={shopping.byDeck.get(deck.id)} now={now} />
+                  <DeckCard
+                    deck={deck}
+                    shopping={shopping.byDeck.get(deck.id)}
+                    now={now}
+                    folders={folders}
+                    onCreateFolder={() => {
+                      setCreatingFor(deck.id);
+                      setCreating(true);
+                    }}
+                    say={say}
+                    keepsFocus={state.shelf === ALL_DECKS}
+                    onMoved={({ refused }) => {
+                      refresh();
+                      // Focus goes to the shelf whenever this card may not
+                      // survive: on a named shelf a successful move takes it off
+                      // the grid, and a REFUSAL can mean the deck itself is gone
+                      // (M6) — which removes the card on All decks too.
+                      if (refused || state.shelf !== ALL_DECKS) focusShelfControl();
+                    }}
+                  />
                 </li>
               ))}
             </ul>

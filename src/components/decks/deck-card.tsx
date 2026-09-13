@@ -113,6 +113,17 @@ interface DeckCardProps {
    * component, it reads the clock once, and every tile on it must agree.
    */
   now: Date;
+  /**
+   * Every shelf the reader can file this deck onto — the destinations in the
+   * overflow menu's move mode. Empty is a real state: with no folders the move
+   * list offers `Unfiled` and `New folder…` alone (STATES M4).
+   */
+  folders: readonly { id: string; name: string }[];
+  /** Passed through to the menu's move mode — see `DeckCardOverflow`. */
+  onCreateFolder: () => void;
+  say: (announcement: string) => void;
+  onMoved: (result: { refused: boolean }) => void;
+  keepsFocus: boolean;
 }
 
 /**
@@ -138,7 +149,9 @@ interface DeckCardProps {
  * set of nodes; two subtrees would read the label twice to a screen reader and
  * pass a property check on both columns while being wrong.
  */
-export function DeckCard({ deck, shopping, now }: DeckCardProps) {
+export function DeckCard({
+  deck, shopping, now, folders, onCreateFolder, say, onMoved, keepsFocus,
+}: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
   const bodySize = deckBodySize(deck.partnerName !== null);
@@ -255,7 +268,18 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
             colorIdentity={deck.commanderColorIdentity}
           />
         </div>
-        <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={deck.built} />
+        <DeckCardOverflow
+          deckId={deck.id}
+          deckName={deck.name}
+          built={deck.built}
+          folders={folders}
+          folderId={deck.folderId}
+          folderName={deck.folderName}
+          onCreateFolder={onCreateFolder}
+          say={say}
+          onMoved={onMoved}
+          keepsFocus={keepsFocus}
+        />
         {/* The block at the foot, carrying identity alone: the deck's name, its
             commander and its colour. The chip and the bar are both statements
             about progress and they now sit together below the divider, which is

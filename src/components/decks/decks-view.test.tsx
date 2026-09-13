@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+
+const routerStub = vi.hoisted(() => ({ refresh: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
+  // The view refreshes the route after a folder write: the server revalidates
+  // `/decks`, and this client component is holding the payload it rendered with.
+  useRouter: () => routerStub,
 }));
 
 import { DecksView } from "./decks-view";
@@ -389,6 +394,112 @@ describe("DecksView", () => {
     window.history.replaceState(null, "", "/decks?folder=");
     renderWide(view(shelvedDecks(), twoFolders));
     expect(window.location.search).toBe("");
+  });
+
+  it("draws the shelf line above the chassis on the wide form", () => {
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    const line = container.querySelector("[data-shelf-line]");
+    const chassis = container.querySelector("[data-chassis-row='controls']");
+    expect(line).toBeTruthy();
+    // Above, and on its own ground — two different surfaces, not one strip.
+    expect(line!.compareDocumentPosition(chassis!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("draws a trigger rather than a line on the compact form", () => {
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    expect(container.querySelector("[data-shelf-line]")).toBeNull();
+    expect(container.querySelector("[data-shelf-trigger]")).toBeTruthy();
+  });
+
+  it("draws S2 on an empty named shelf, and offers no Clear filters", () => {
+    const empty: DeckFolderWithCount[] = [
+      { id: FOLDER_A, name: "Draft pile", createdAt: new Date("2026-09-01"), deckCount: 0 },
+    ];
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = renderWide(view([deckOf({ id: "u1", name: "Unfiled one" })], empty));
+    expect(screen.getByText("Nothing filed here")).toBeInTheDocument();
+    expect(screen.getByText("Draft pile · 0 decks")).toBeInTheDocument();
+    // No filter caused this, so the filtered empty's way out would be the wrong
+    // one — and the chassis stays mounted above it either way.
+    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+    expect(container.querySelector("[data-chassis-row='controls']")).toBeTruthy();
+  });
+
+  it("draws S3 with a count and no body copy when everything is filed", () => {
+    const filed = [
+      deckOf({ id: "a1", name: "Filed one", folderId: FOLDER_A, folderName: "Cube night" }),
+      deckOf({ id: "b1", name: "Other", folderId: FOLDER_B, folderName: "Commander night" }),
+    ];
+    window.history.replaceState(null, "", "/decks?folder=none");
+    renderWide(view(filed, twoFolders));
+    expect(screen.getByText("Nothing unfiled")).toBeInTheDocument();
+    expect(screen.getByText("2 decks across 2 folders")).toBeInTheDocument();
+    expect(screen.queryByText(/from its own/)).toBeNull();
+  });
+
+  it("keeps the filtered empty state when a filter emptied a populated shelf", () => {
+    // N4, not N2: the shelf has decks and a filter took them, so the way out is
+    // to clear the filter rather than to leave the shelf.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}&q=zzzz`);
+    renderWide(view(shelvedDecks(), twoFolders));
+    expect(screen.getByRole("button", { name: "Clear filters" })).toBeInTheDocument();
+    expect(screen.queryByText("Nothing filed here")).toBeNull();
+  });
+
+  it("draws no shelf line at all when the player has no decks", () => {
+    const { container } = renderWide(view([], twoFolders));
+    expect(container.querySelector("[data-shelf-line]")).toBeNull();
+    expect(container.querySelector("[data-shelf-trigger]")).toBeNull();
+  });
+
+  it("selects a shelf from the line and writes it to the URL", () => {
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /Commander night, 1 deck/ }));
+    expect(window.location.search).toBe(`?folder=${FOLDER_B}`);
+    expect(screen.getByText("Other shelf")).toBeInTheDocument();
+    expect(screen.queryByText("Filed one")).toBeNull();
+  });
+
+  it("closes the shelf sheet when the reader crosses to the wide form", () => {
+    // The trigger that opened it is the compact form's alone, so leaving the
+    // sheet open would remount a modal on the way back that nobody asked for.
+    const { rerender } = render(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /^Shelf: / }));
+    expect(screen.getByRole("dialog", { name: "Shelves" })).toBeInTheDocument();
+
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: true, media: query, onchange: null,
+        addEventListener: () => {}, removeEventListener: () => {},
+        addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+      }),
+    });
+    rerender(view(shelvedDecks(), twoFolders));
+    expect(screen.queryByRole("dialog", { name: "Shelves" })).toBeNull();
+  });
+
+  it("announces a wide shelf change by name, since two shelves can read alike", async () => {
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /Commander night, 1 deck/ }));
+    await waitFor(() => {
+      const said = [...container.querySelectorAll("[aria-live='polite']")]
+        .map((r) => r.textContent);
+      expect(said).toContain("Commander night, 1 deck");
+    });
+  });
+
+  it("announces the shelf from a region that outlives the sheet", async () => {
+    // The sheet unmounts on selection, so its own region cannot carry this —
+    // and the chassis's is silent behind an aria-modal.
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /^Shelf: / }));
+    fireEvent.click(screen.getByRole("button", { name: "Cube night, 2 decks" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Shelves" })).toBeNull());
+    const regions = [...container.querySelectorAll("[aria-live='polite']")]
+      .map((r) => r.textContent);
+    expect(regions).toContain("Cube night, 2 decks");
   });
 
   it("ignores a hand-edited folder id", () => {

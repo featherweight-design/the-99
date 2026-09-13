@@ -16,16 +16,54 @@ const trigger = (deckName = "Atraxa") =>
   screen.getByRole("button", { name: `Actions for ${deckName}` });
 
 describe("DeckCardOverflow", () => {
+  it("names the deck's current shelf on the Move row", () => {
+    render(
+      <DeckCardOverflow
+        deckId="d1"
+        deckName="Atraxa"
+        built={99}
+        folders={[{ id: "f1", name: "Cube night" }]}
+        folderId="f1"
+        folderName="Cube night"
+        onCreateFolder={() => {}}
+        say={() => {}}
+        onMoved={() => {}} keepsFocus
+      />,
+    );
+    fireEvent.click(trigger());
+    expect(screen.getByRole("button", { name: /Currently filed under Cube night/ }))
+      .toHaveTextContent("Move · Cube night");
+  });
+
+  it("says Unfiled when the deck is on no shelf", () => {
+    render(
+      <DeckCardOverflow
+        deckId="d1"
+        deckName="Atraxa"
+        built={99}
+        folders={[]}
+        folderId={null}
+        folderName={null}
+        onCreateFolder={() => {}}
+        say={() => {}}
+        onMoved={() => {}} keepsFocus
+      />,
+    );
+    fireEvent.click(trigger());
+    expect(screen.getByRole("button", { name: /Currently filed under Unfiled/ }))
+      .toBeInTheDocument();
+  });
+
   // ARIA defines aria-haspopup="true" as equivalent to "menu", and every other
   // value names a pattern this panel does not implement either. Its rename mode
   // is a form, not a list of actions, so no value is honest here.
   it("claims no popup pattern it does not implement", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus />);
     expect(trigger()).not.toHaveAttribute("aria-haspopup");
   });
 
   it("points aria-controls at the panel only while it is open", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus />);
     expect(trigger()).toHaveAttribute("aria-expanded", "false");
     expect(trigger()).not.toHaveAttribute("aria-controls");
 
@@ -40,8 +78,8 @@ describe("DeckCardOverflow", () => {
   it("gives each instance its own panel id", () => {
     render(
       <>
-        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />
-        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} />
+        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus />
+        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus />
       </>,
     );
     fireEvent.click(trigger("Atraxa"));
@@ -60,7 +98,7 @@ describe("DeckCardOverflow — THE PLATE on phone", () => {
   // the crop beneath it. That scrim is gone from this tile, so the glyph would be
   // `var(--fg)` on an unmodified crop.
   it("draws the 26px plate inside the 44px target, at both widths", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus />);
     const button = screen.getByRole("button");
     // Target unchanged: 44 on a phone, 26 from `sm:` up, where the plate fills it.
     expect(button.className).toContain("h-[44px]");

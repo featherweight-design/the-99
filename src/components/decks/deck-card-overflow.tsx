@@ -1,11 +1,13 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { deleteDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { RenameForm } from "./rename-form";
+import { MoveMode } from "./deck-move-mode";
+import { folderCopy } from "../../lib/copy/folders";
 
 /** One menu row. The same geometry `DeckSortMenu` draws, which is the only
  *  menu the Decks frames specify. */
@@ -18,6 +20,31 @@ interface DeckCardOverflowProps {
   /** Cards in the deck. At zero there is nothing to diff, so the update entry
    *  is absent rather than disabled — #277 state 3. */
   built: number;
+  /** Every shelf this deck can be filed on, in the line's own order. */
+  folders: readonly { id: string; name: string }[];
+  /** The folder it is on now, or null for unfiled. */
+  folderId: string | null;
+  /**
+   * THE LABEL IS THE RECEIPT (handoff decision 17). On All decks a move changes
+   * nothing else on screen, so the row returning to the menu reading its new
+   * shelf is the whole confirmation — no toast, and no new pattern.
+   */
+  folderName: string | null;
+  /** Opens the route's create dialog — `New folder…` is the move list's last row. */
+  onCreateFolder: () => void;
+  /** The route's own live region, which outlives this panel's mode switch. */
+  say: (announcement: string) => void;
+  /**
+   * Refreshes the route after a move — the grid and every count are the view's —
+   * and says whether the move was refused, because a refusal can mean the deck
+   * is gone and this card with it.
+   */
+  onMoved: (result: { refused: boolean }) => void;
+  /**
+   * Whether this card stays on screen after a move — true on All decks, false on
+   * a named shelf, where the deck leaves the grid and the view takes focus.
+   */
+  keepsFocus: boolean;
 }
 
 /**
@@ -26,9 +53,20 @@ interface DeckCardOverflowProps {
  * Rendered as a `relative z-10` sibling to the absolute-inset Link overlay
  * so clicks here do NOT navigate.
  */
-export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowProps) {
+export function DeckCardOverflow({
+  deckId,
+  deckName,
+  built,
+  folders,
+  folderId,
+  folderName,
+  onCreateFolder,
+  say,
+  onMoved,
+  keepsFocus,
+}: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"menu" | "rename">("menu");
+  const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
   const [isPending, startTransition] = useTransition();
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Every deck card renders one of these, so the id has to be per-instance.
@@ -39,6 +77,12 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
     e.stopPropagation();
     setOpen((o) => !o);
     setMode("menu");
+  }
+
+  function handleMove(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setMode("move");
   }
 
   function handleRename(e: React.MouseEvent) {
@@ -55,6 +99,33 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
       await deleteDeck(deckId);
     });
   }
+
+  // Optimistic, because the tile's own menu is the only place the fact is
+  // stated: the server revalidates `/decks` behind this, and re-reading before
+  // painting would leave the row naming the old shelf for a round trip.
+  const [movedTo, setMovedTo] = useState<
+    { id: string | null; name: string | null; from: string | null } | null
+  >(null);
+  // A ref, not state: this is a one-shot instruction to the DOM after a commit,
+  // and holding it in state would mean setting state inside the effect that
+  // consumes it — the cascading render this repo's lint rejects.
+  const wantsMoveRowFocus = useRef(false);
+  const moveRow = useRef<HTMLButtonElement>(null);
+  // The optimistic receipt EXPIRES ON THE FIRST CHANGED SERVER PROP, whether it
+  // agrees or not. Clearing only on agreement left it standing forever when the
+  // destination was deleted or the deck moved elsewhere before the refresh
+  // landed: the id never matched, and the menu went on printing a shelf that
+  // was no longer true. `from` is what the server said when the override was
+  // made, so any change to that is the answer arriving.
+  if (movedTo && movedTo.from !== folderId) setMovedTo(null);
+  const shelf = movedTo ?? { id: folderId, name: folderName };
+  const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
+
+  useEffect(() => {
+    if (mode !== "menu" || !wantsMoveRowFocus.current) return;
+    wantsMoveRowFocus.current = false;
+    moveRow.current?.focus();
+  }, [mode]);
 
   function handleClose() {
     setOpen(false);
@@ -151,6 +222,23 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
               >
                 {refreshCopy.decks.menu.rename}
               </button>
+              {/* Between Rename and Delete, whether or not the Update row above
+                  rendered — it is gated on `built > 0`, so the shipped menu is
+                  two rows on a brew (errata E9). */}
+              <button
+                ref={moveRow}
+                type="button"
+                onClick={handleMove}
+                aria-label={folderCopy.move.rowAria(deckName, shelfLabel)}
+                // ITEM without its `transition-colors`: this round draws no
+                // motion, and an easing hover is motion. The shipped rows keep
+                // theirs — changing those is a different round's decision.
+                className={`${ITEM.replace(" transition-colors", "")} cursor-pointer bg-transparent text-[color:var(--fg)]`}
+              >
+                <span className="truncate" title={shelfLabel}>
+                  {folderCopy.move.row(shelfLabel)}
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={handleDelete}
@@ -161,6 +249,40 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
                 {isPending ? "Deleting…" : refreshCopy.decks.menu.delete}
               </button>
             </div>
+          ) : mode === "move" ? (
+            <MoveMode
+              deckId={deckId}
+              deckName={deckName}
+              folders={folders}
+              currentId={shelf.id}
+              onCreate={onCreateFolder}
+              say={say}
+              onRefused={() => {
+                // M6: the row reverts to the shelf it named, which means the
+                // menu — not a destination list whose focused button is about
+                // to be refreshed away.
+                setMovedTo(null);
+                wantsMoveRowFocus.current = true;
+                setMode("menu");
+                onMoved({ refused: false });
+              }}
+              onMoved={(next) => {
+                setMovedTo({ ...next, from: folderId });
+                // The menu's Move row is the receipt, so it is also where focus
+                // belongs — but only when this card SURVIVES the refresh. On a
+                // named shelf the moved deck leaves the grid, and the view
+                // focuses the shelf control instead; asking for the row here
+                // would put focus on a node about to be removed.
+                if (keepsFocus) wantsMoveRowFocus.current = true;
+                // The list, its counts and both denominators live in the view;
+                // without this a deck moved off the shelf being viewed stays in
+                // the grid and every figure above it is stale.
+                onMoved({ refused: false });
+                // Back to the menu, not closed: the row now reads the new shelf,
+                // and that is the receipt.
+                setMode("menu");
+              }}
+            />
           ) : (
             <div className="p-[12px]">
               <RenameForm

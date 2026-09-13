@@ -1,0 +1,136 @@
+{
+  "feature": "Deck folders — the shelf line, the sheet, and the acts",
+  "note": "One route, and that is the point: folders are a level INSIDE /decks rather than a surface spread across routes (brief §6, handoff decision 5). The rows are the level's states, reached by URL where a URL reaches them and by clicks where it does not. Two rows name a `widths` — the shelf sheet is the compact form's alone, and the wide line's `New folder` sits inside that sheet on the phone, so photographing either at the other width would put a hole in the sheet about something that was never there. `DECK_FOLDER_ID` and `EMPTY_FOLDER_ID` come from the environment, so no account's ids live here. No `shares` block: nothing else in the app mounts the shelf line, so an import-equality check would assert a sameness the feature does not claim. It gains one the day Home groups by folder.",
+  "rows": [
+    {
+      "id": "all-decks",
+      "label": "/decks — All decks, the level at rest",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "shelf-selected",
+      "label": "/decks — a named shelf selected",
+      "steps": [
+        {
+          "goto": "/decks?folder=${DECK_FOLDER_ID}",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "shelf-empty",
+      "label": "/decks — S2, a shelf holding nothing",
+      "steps": [
+        {
+          "goto": "/decks?folder=${EMPTY_FOLDER_ID}",
+          "wait": "[data-shelf-empty]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "unfiled",
+      "label": "/decks — Unfiled",
+      "steps": [
+        {
+          "goto": "/decks?folder=none",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "shelf-sheet",
+      "label": "/decks — the shelf sheet",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-shelf-trigger]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shelf: ",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "create-wide",
+      "label": "/decks — New folder, from the line",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-shelf-line]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "New folder",
+          "wait": "[role=dialog]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "create-compact",
+      "label": "/decks — New folder, from the sheet",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-shelf-trigger]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shelf: ",
+          "wait": "[role=dialog]",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "New folder",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "move",
+      "label": "/decks — a deck's move mode",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Actions for ",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Move ",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}
