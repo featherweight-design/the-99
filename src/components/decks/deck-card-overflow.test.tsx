@@ -16,6 +16,44 @@ const trigger = (deckName = "Atraxa") =>
   screen.getByRole("button", { name: `Actions for ${deckName}` });
 
 describe("DeckCardOverflow", () => {
+  it("names the deck's current shelf on the Move row", () => {
+    render(
+      <DeckCardOverflow
+        deckId="d1"
+        deckName="Atraxa"
+        built={99}
+        folders={[{ id: "f1", name: "Cube night" }]}
+        folderId="f1"
+        folderName="Cube night"
+        onCreateFolder={() => {}}
+        say={() => {}}
+        onMoved={() => {}}
+      />,
+    );
+    fireEvent.click(trigger());
+    expect(screen.getByRole("button", { name: /Currently filed under Cube night/ }))
+      .toHaveTextContent("Move · Cube night");
+  });
+
+  it("says Unfiled when the deck is on no shelf", () => {
+    render(
+      <DeckCardOverflow
+        deckId="d1"
+        deckName="Atraxa"
+        built={99}
+        folders={[]}
+        folderId={null}
+        folderName={null}
+        onCreateFolder={() => {}}
+        say={() => {}}
+        onMoved={() => {}}
+      />,
+    );
+    fireEvent.click(trigger());
+    expect(screen.getByRole("button", { name: /Currently filed under Unfiled/ }))
+      .toBeInTheDocument();
+  });
+
   // ARIA defines aria-haspopup="true" as equivalent to "menu", and every other
   // value names a pattern this panel does not implement either. Its rename mode
   // is a form, not a list of actions, so no value is honest here.

@@ -9,7 +9,7 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -246,9 +246,18 @@ export function DecksView({
     focusSearch: false,
   });
 
-  const [shelfSheet, setShelfSheet] = useState(false);
+  /**
+   * `handOff` mirrors the filter sheet's own flag: crossing to wide unmounts the
+   * trigger `useDialogA11y` would return focus to, so focus would land on the
+   * body. It is set where the sheet is closed and cleared on the way back, in
+   * the same render-time reconciliation — never in the effect that consumes it.
+   */
+  const [shelfSheet, setShelfSheet] = useState<{ open: boolean; handOff?: boolean }>({
+    open: false,
+  });
   /** Where the create dialog was opened from, so focus can be returned there. */
   const [createFrom, setCreateFrom] = useState<"line" | "sheet" | "move">("line");
+
   const [creating, setCreating] = useState(false);
   const router = useRouter();
   /**
@@ -276,6 +285,17 @@ export function DecksView({
    * open and cannot cover this either.
    */
   const [shelfSaid, setShelfSaid] = useState("");
+  /**
+   * A one-shot: the result line stays quiet through the frame in which the
+   * sheet hands its announcement over, so the shelf change is said once rather
+   * than twice — the shelf's name here and the result sentence there.
+   */
+  const [handingOff, setHandingOff] = useState(false);
+  useEffect(() => {
+    if (!handingOff) return;
+    const t = setTimeout(() => setHandingOff(false), 400);
+    return () => clearTimeout(t);
+  }, [handingOff]);
 
   const apply = useCallback((next: ViewState) => {
     setState(next);
@@ -348,8 +368,14 @@ export function DecksView({
   // because `/collection`'s seven controls need 987 and the row must never wrap.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
+  // Cleared the moment the server's list carries it — during render, so no
+  // pass sees both. Left standing, a folder later deleted in another tab would
+  // be re-added by this merge and the missing-shelf fallback below could never
+  // fire on it.
+  if (justMade && serverFolders.some((f) => f.id === justMade.id)) setJustMade(null);
+
   // The server's list, plus a folder made a moment ago that it has not returned
-  // yet. It drops out of its own accord once the payload includes that id.
+  // yet.
   const folders = useMemo(
     () =>
       justMade && !serverFolders.some((f) => f.id === justMade.id)
@@ -401,12 +427,26 @@ export function DecksView({
     // The shelf sheet is the compact form's alone (STATES C3): crossing to wide
     // unmounts its trigger, so leaving it open would remount a modal on the way
     // back that the reader never asked for.
-    if (wide && shelfSheet) setShelfSheet(false);
+    if (wide && shelfSheet.open) {
+      setShelfSheet({ open: false, handOff: true });
+      // The trigger the hook would return focus to is unmounted by this same
+      // render, so focus would land on the body. The wide line's selected
+      // segment is the nearest equivalent — the same handoff the filter sheet
+      // makes to the search field.
+    }
+    else if (!wide && shelfSheet.handOff) setShelfSheet({ ...shelfSheet, handOff: false });
     // Consumed on the way back. Left set, a later compact → wide resize would
     // autofocus the search field again without the reader ever opening the
     // sheet.
     else if (!wide && sheet.handOffFocus) setSheet({ ...sheet, handOffFocus: false });
   }
+
+  useEffect(() => {
+    if (!wide || !shelfSheet.handOff) return;
+    document
+      .querySelector<HTMLElement>("[data-shelf-line] button[aria-current='true']")
+      ?.focus();
+  }, [wide, shelfSheet.handOff]);
 
   // The URL half of that reconciliation, and the one part that belongs in an
   // effect: `replaceState` is a DOM write, not state, so it cannot happen during
@@ -448,13 +488,14 @@ export function DecksView({
   const onShelf = useCallback(
     (shelf: Shelf, announce = false) => {
       apply({ filters: state.filters, sort: state.sort, shelf });
-      setShelfSheet(false);
+      setShelfSheet({ open: false });
       // ANNOUNCED ONLY WHERE THE CHASSIS CANNOT — from inside the sheet, whose
       // `aria-modal` puts the result line out of reach, and after a create,
       // which lands the reader somewhere they did not tap. On the wide line the
       // result line speaks for itself, and announcing here as well would say
       // the same change twice.
       if (!announce) return;
+      setHandingOff(true);
       const chosen = segments.find((s) => s.shelf === shelf);
       if (chosen) setShelfSaid(folderCopy.shelves.aria(chosen.label, chosen.count));
     },
@@ -539,8 +580,8 @@ export function DecksView({
             <ShelfTrigger
               label={selectedShelf.label}
               count={selectedShelf.count}
-              open={shelfSheet}
-              onOpen={() => setShelfSheet(true)}
+              open={shelfSheet.open}
+              onOpen={() => setShelfSheet({ open: true })}
             />
           )}
 
@@ -661,7 +702,7 @@ export function DecksView({
             // Quiet behind EITHER modal: both put the result line out of the
             // reader's reach and both carry their own announcement, so leaving
             // it live says the same change twice.
-            silentResult={!wide && (sheet.open || shelfSheet)}
+            silentResult={!wide && (sheet.open || shelfSheet.open || handingOff)}
             after={
               /* Unmounted when wide, never merely hidden. Resizing from compact
                  to wide with the sheet open would otherwise leave an
@@ -689,17 +730,17 @@ export function DecksView({
             {shelfSaid}
           </p>
 
-          {shelfSheet && (
+          {shelfSheet.open && (
             <ShelfSheet
               segments={segments}
               shelf={state.shelf}
               onSelect={(shelf) => onShelf(shelf, true)}
               onCreate={() => {
                 setCreateFrom("sheet");
-                setShelfSheet(false);
+                setShelfSheet({ open: false });
                 setCreating(true);
               }}
-              onDismiss={() => setShelfSheet(false)}
+              onDismiss={() => setShelfSheet({ open: false })}
             />
           )}
 
@@ -735,8 +776,11 @@ export function DecksView({
                 });
                 // CR4: the new shelf is selected, which lands the reader on S2 —
                 // create, land on the empty shelf, and the state says how to
-                // fill it. Announced, because they did not tap that shelf.
-                onShelf(result.folder.id, true);
+                // fill it. Announced from the action's own answer rather than
+                // through `segments`, which this callback closed over one render
+                // before the new folder existed in it. A new shelf holds nothing.
+                setShelfSaid(folderCopy.shelves.aria(result.folder.name, 0));
+                onShelf(result.folder.id);
                 refresh();
                 return null;
               }}

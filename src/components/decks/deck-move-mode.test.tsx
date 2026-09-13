@@ -132,6 +132,16 @@ describe("MoveMode", () => {
     expect(onRefused).toHaveBeenCalled();
   });
 
+  it("reports nothing until the action has answered", async () => {
+    // The receipt belongs to the menu above, and it may not claim a move the
+    // server has not confirmed.
+    const onMoved = vi.fn();
+    mode(null, onMoved);
+    fireEvent.click(screen.getByRole("button", { name: "Cube night" }));
+    expect(onMoved).not.toHaveBeenCalled();
+    await waitFor(() => expect(onMoved).toHaveBeenCalled());
+  });
+
   it("focuses the current destination on entering the mode", () => {
     mode("f1");
     expect(screen.getByRole("button", { name: "Commander night, current" })).toHaveFocus();

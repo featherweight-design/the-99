@@ -99,6 +99,11 @@ export function DeckCardOverflow({
   // consumes it — the cascading render this repo's lint rejects.
   const wantsMoveRowFocus = useRef(false);
   const moveRow = useRef<HTMLButtonElement>(null);
+  // The optimistic receipt EXPIRES: once the refreshed props agree with it, or
+  // disagree because something else moved this deck, the server's answer is the
+  // one on screen. Left standing it would outlive its own truth — a folder
+  // renamed or deleted in another tab would keep printing the old shelf here.
+  if (movedTo && movedTo.id === folderId) setMovedTo(null);
   const shelf = movedTo ?? { id: folderId, name: folderName };
   const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
 
@@ -238,7 +243,15 @@ export function DeckCardOverflow({
               currentId={shelf.id}
               onCreate={onCreateFolder}
               say={say}
-              onRefused={onMoved}
+              onRefused={() => {
+                // M6: the row reverts to the shelf it named, which means the
+                // menu — not a destination list whose focused button is about
+                // to be refreshed away.
+                setMovedTo(null);
+                wantsMoveRowFocus.current = true;
+                setMode("menu");
+                onMoved();
+              }}
               onMoved={(next) => {
                 setMovedTo(next);
                 // The menu's Move row is the receipt, so it is also where focus
