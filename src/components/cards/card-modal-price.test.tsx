@@ -213,11 +213,20 @@ describe("the compact art header", () => {
     );
   }
 
-  it("moves the tag into the name block rather than dropping it", () => {
+  it("moves the tag beside the mana cost rather than dropping it", () => {
     openPicker(card({ printings: many, prices: indexPriceRows([priceRow({ scryfall_id: "s-0", collector_number: "0" })]) }));
 
-    expect(screen.getByTestId("modal-price-compact")).toHaveTextContent("$2.41");
+    const tag = screen.getByTestId("modal-price-compact");
+    expect(tag).toHaveTextContent("$2.41");
     expect(screen.queryByTestId("modal-price-mobile")).toBeNull();
+    // E12 makes the relationship part of the contract: on a phone in this state the
+    // name is in the art header and the mana cost is here, so "beside the mana cost"
+    // is the half of the drawing that can be honoured — and a tag that drifted
+    // elsewhere in the content column would otherwise still pass.
+    // Siblings, not merely both somewhere in the column: a `querySelector` from the
+    // tag's parent would find the mana cost anywhere below it and pass for a tag that
+    // had drifted to the bottom of the content column.
+    expect(screen.getByTestId("modal-mana-cost").parentElement).toBe(tag.parentElement);
   });
 
   it("keeps the figure out of the aria-hidden heading", () => {

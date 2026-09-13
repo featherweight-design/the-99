@@ -332,7 +332,7 @@ describe("SetGridView — the cell is the target", () => {
     view([p("1"), p("2")], []);
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
     expect(openCard).toHaveBeenCalledWith(
-      "o-1", ["o-1", "o-2"], { setCode: "DSK", collectorNumber: "1", imageUri: null },
+      "o-1", ["o-1", "o-2"], { setCode: "DSK", collectorNumber: "1", imageUri: null, scryfallId: "s-1" },
     );
   });
 
@@ -342,7 +342,7 @@ describe("SetGridView — the cell is the target", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /not in your collection/ })[0]);
     // #2 is owned and hidden by missing-only, so it is not a sibling to page to.
     expect(openCard).toHaveBeenCalledWith(
-      "o-1", ["o-1", "o-3"], { setCode: "DSK", collectorNumber: "1", imageUri: null },
+      "o-1", ["o-1", "o-3"], { setCode: "DSK", collectorNumber: "1", imageUri: null, scryfallId: "s-1" },
     );
   });
 });
@@ -556,7 +556,7 @@ describe("SetGridView — a cell opens its own printing", () => {
     expect(openCard).toHaveBeenCalledWith(
       "o-239",
       ["o-239"],
-      { setCode: "DSK", collectorNumber: "239", imageUri: null },
+      { setCode: "DSK", collectorNumber: "239", imageUri: null, scryfallId: "s-239" },
     );
   });
 
@@ -583,6 +583,9 @@ describe("SetGridView — the cell forwards its full-size art", () => {
         setCode: "DSK",
         collectorNumber: "1",
         imageUri: "https://cards.scryfall.io/normal/dsk-1.jpg",
+        // The cell IS this catalog row, so its exact id travels with the open —
+        // two printings can share a (set, collector number) pair.
+        scryfallId: "s-1",
       },
     );
   });

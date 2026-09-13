@@ -277,7 +277,7 @@ export function CardModal({
    * and nothing is written by looking. The moment the reader picks something in this modal,
    * their choice takes over.
    */
-  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null }) | null;
+  openAtPrinting?: (PreferredPrinting & { imageUri?: string | null; scryfallId?: string }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
@@ -383,12 +383,16 @@ export function CardModal({
                     ...p,
                     imageUri: at.imageUri ?? p.imageUri,
                     flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
+                    // The caller's id names the printing exactly; the row's own may be
+                    // absent, or dropped because two holdings disagreed about it.
+                    scryfallId: at.scryfallId ?? p.scryfallId,
                   }
                 : p)
           : card.printings)
       : [...card.printings, {
       setCode: at.setCode,
       setName: at.setCode,
+      scryfallId: at.scryfallId,
       collectorNumber: at.collectorNumber,
       releasedAt: null,
       quantity: 0,
@@ -820,7 +824,12 @@ export function CardModal({
                   {card.typeLine}
                 </p>
               </div>
-              <ManaCost cost={card.manaCost} />
+              {/* The hook the compact placement's test anchors on: E12 puts the price
+                  tag beside this, and a tag that drifted elsewhere in the column would
+                  otherwise still satisfy a presence check. */}
+              <div data-testid="modal-mana-cost" className="flex-none">
+                <ManaCost cost={card.manaCost} />
+              </div>
             </div>
 
             {/* Oracle text block — §Oracle Text Block: bg --bg, border 1px --border, radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, --fg-body, line-height 1.6/1.65 */}

@@ -1,11 +1,14 @@
 // The price under the art in the card modal (card-detail R2, table §1 and §2).
 //
-// Counting the node proves it painted; it does not prove the figure belongs to the
-// printing on screen. So this probe PICKS — it opens the printing region, clicks a
-// different printing, and reads the tag again — which is the only way to see the
-// four-things-move-together rule hold or fail. It also forces the compact header,
-// the one state R1 did not draw, and checks the figure is not sealed inside the
-// aria-hidden heading there.
+// What a browser proves and a test cannot: that the tag paints at all, WHERE it sits
+// relative to the art it belongs to (10px under at desktop, 9px at phone), and that
+// the compact header — the one state R1 did not draw — moves the figure out of the
+// art without sealing it inside the aria-hidden heading.
+//
+// It makes no writes. It used to pick a different printing to prove the figure
+// follows the art; that is proved by `card-modal-price.test.tsx` instead, and picking
+// persists an art preference on the account being probed. See the note at the pick
+// site below.
 //
 // Run by hand with the dev server up:
 //   PROBE_CARD="<card name>" node scripts/probe-card-detail-price.mjs
