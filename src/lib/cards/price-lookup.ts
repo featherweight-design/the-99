@@ -50,6 +50,18 @@ export type PrintingPrices = {
    * from a coin toss between siblings. These keys answer nothing instead.
    */
   ambiguousKeys: string[];
+  /**
+   * Every printing id the catalog holds for this card, priced or not.
+   *
+   * A holding's `collection_items.scryfall_id` is not always a PRINTING id: the
+   * import falls back to the oracle catalog's own `cards.scryfall_id` when
+   * `printings` has not been seeded (`match.ts:59-63`), and that id can be absent
+   * from `printings` entirely. Treating such an id as a printing that the feed
+   * simply never carried would print `no stock` — a claim about a shop, made
+   * about an id the shop was never asked about. So an id the catalog does not
+   * know falls through to the (set, collector number) identity instead.
+   */
+  catalogIds: string[];
   /** The newest `as_of` in the WHOLE table, which is what liveness is measured against. */
   newestAsOf: Date | null;
 };
@@ -72,12 +84,14 @@ export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
   // only the priced ones: a key naming two printings of which one is priced is
   // still a key that names two printings.
   const idsPerKey = new Map<string, Set<string>>();
+  const catalogIds = new Set<string>();
   let newestAsOf: Date | null = null;
 
   for (const r of rows) {
     if (newestAsOf === null && r.newest_as_of !== null) {
       newestAsOf = parseAsOf(r.newest_as_of);
     }
+    if (r.scryfall_id !== null) catalogIds.add(r.scryfall_id);
     if (r.set_code !== null && r.collector_number !== null && r.scryfall_id !== null) {
       const key = priceKeyFor({ setCode: r.set_code, collectorNumber: r.collector_number });
       const ids = idsPerKey.get(key) ?? new Set<string>();
@@ -104,7 +118,13 @@ export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
   // a figure that cannot be attributed to one printing.
   for (const key of ambiguousKeys) delete byPrintingKey[key];
 
-  return { byScryfallId, byPrintingKey, newestAsOf, ambiguousKeys };
+  return {
+    byScryfallId,
+    byPrintingKey,
+    newestAsOf,
+    ambiguousKeys,
+    catalogIds: [...catalogIds],
+  };
 }
 
 /**
@@ -128,7 +148,11 @@ export function priceFor(
   printing: { scryfallId?: string; setCode: string; collectorNumber: string } | undefined,
 ): { fact: PriceFact | null } | null {
   if (!prices || !printing) return null;
-  if (printing.scryfallId) {
+  // An id the catalog knows is the exact question, and a miss against it is a real
+  // answer: the feed has never carried this printing. An id the catalog does NOT
+  // know is not a printing id at all — see `catalogIds` — so it asks nothing, and
+  // the (set, collector number) identity below is asked instead.
+  if (printing.scryfallId && prices.catalogIds.includes(printing.scryfallId)) {
     return { fact: prices.byScryfallId[printing.scryfallId] ?? null };
   }
   // A holding with no catalog id — a bare `Name,Qty` import — is still nameable

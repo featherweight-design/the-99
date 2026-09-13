@@ -97,6 +97,27 @@ describe("priceFor", () => {
     expect(priceFor(null, { scryfallId: "s-1", setCode: "C21", collectorNumber: "263" })).toBeNull();
   });
 
+  it("falls through to set and number when the holding's id is not a printing id", () => {
+    // `collection_items.scryfall_id` is not always a printing: the import falls back
+    // to the oracle catalog's own id when `printings` has not been seeded
+    // (`match.ts:59-63`). Treating that as a printing the feed never carried would
+    // print `no stock` about an id the shop was never asked about.
+    const prices = indexPriceRows([row()]);
+
+    expect(priceFor(prices, { scryfallId: "oracle-level-id", setCode: "C21", collectorNumber: "263" }))
+      .toEqual({ fact: expect.objectContaining({ cents: 241 }) });
+  });
+
+  it("still answers `the store said no` for an id the catalog does know", () => {
+    const prices = indexPriceRows([
+      row(),
+      row({ scryfall_id: "s-unpriced", collector_number: "264", as_of: null, price_cents: null }),
+    ]);
+
+    expect(priceFor(prices, { scryfallId: "s-unpriced", setCode: "C21", collectorNumber: "264" }))
+      .toEqual({ fact: null });
+  });
+
   it("refuses a fallback key the catalog gives to two printings", () => {
     // `printings` puts no uniqueness on (set_code, collector_number), so two
     // variants can share one. A single-valued index would keep whichever row came
