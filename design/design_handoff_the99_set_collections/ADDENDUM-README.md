@@ -282,6 +282,15 @@ do not own. Against 672 the shipped head is **325px, or 48%** — one row of cel
    `head.metaShort(code, year)` → `HOB · 2026`, on the title line’s trailing edge. **The full string is
    unchanged at desktop**; the counts it carried are now the two figures in move 1, which is the only
    reason dropping them costs nothing.
+
+   > **Ratified with Hugh 2026-09-13 — the anchor is the RATIO line, not the title line.** Built as
+   > specified and measured at 390, the title line costs +15px instead of saving 15: the `h1` is
+   > `line-clamp-2`, and a set name is what gives width when the code sits beside it, so *Avatar: The
+   > Last Airbender* went from one clamped line to two (30px → 60px) and the line this move removes is
+   > paid back by the title growing. On the ratio line — mono 11px, the shortest in the block — it
+   > lands for free: `168 / 358 base · 0 / 36 extras · TLA · 2025`. The move's intent, one fewer line
+   > of provenance on the phone, is unchanged; only the anchor row is. Desktop is untouched. See
+   > `docs/superpowers/readiness-set-collections-addendum.md`.
 3. **The cost card becomes a cost line. −137px.** `CostStrip` is a wrapping flex row whose label,
    figure, denominator, **up to four caveat lines** (`unpriced`, `noFigure`, `soldOut`, `stale`) and
    44px button stack to ~137px on a phone — the worst case is worse than the screenshot, which fires
