@@ -178,9 +178,14 @@ async function run() {
     // Pick a set from the reader's own index rather than hardcoding one, so the probe
     // works against any fixture.
     await page.goto(`${BASE}/collection/sets`, { waitUntil: "networkidle" });
+    // Prefer an INCOMPLETE set: a complete one drops missing-only from what it applies, so
+    // the phone fixed-row check below cannot see the wrapping missing-only line and would
+    // skip. Picking the first link regardless is how that check went untested.
     const code = SET ?? await page.evaluate(() => {
-      const link = document.querySelector('a[href^="/collection/sets/"]');
-      return link ? link.getAttribute('href').split('/').pop() : null;
+      const rows = [...document.querySelectorAll('a[href^="/collection/sets/"]')];
+      const incomplete = rows.find((a) => !/,\s*complete/i.test(a.getAttribute("aria-label") ?? ""));
+      const link = incomplete ?? rows[0];
+      return link ? link.getAttribute("href").split("/").pop() : null;
     });
     if (!code) throw new Error("No set to probe: the index listed none and PROBE_SET was unset.");
 
@@ -606,8 +611,15 @@ async function run() {
       // fail on the fixture it ran against has measured nothing, and reporting it green
       // is the failure mode this whole file exists to avoid.
       if (setIsComplete) {
-        console.log("  skip this set's base run is complete, so `?m=1` is not applied — "
-          + "the phone missing-only wrap is UNTESTED. Probe an incomplete set to cover it.");
+        // A PREREQUISITE the probe could not meet, not a passing check. It selects an
+        // incomplete set when one exists, so reaching here means the fixture has none —
+        // which the run has to say, or the phone height invariant silently goes untested.
+        failures += !report(
+          "an incomplete set was available to test the phone missing-only wrap",
+          false,
+          "every set in this collection is complete — `?m=1` is never applied, so the "
+            + "wrapping result line cannot be measured. Probe a collection with one.",
+        );
       } else {
         failures += !report(
           "the phone rack's three rows do not move either",
@@ -630,8 +642,11 @@ async function run() {
       return {
         filtersTrigger: byName(/^Filters$/).length,
         barePips: pips.length,
-        smallestTarget: Math.min(99, ...byName(/Showing (only|every)/)
-          .map((b) => Math.round(b.getBoundingClientRect().height))),
+        // The Filters trigger counts too: on a complete set the missing-only button is
+        // intentionally absent, and `Math.min(99, ...[])` then returned the sentinel and
+        // passed the 44px check having measured nothing at all.
+        targets: [...byName(/Showing (only|every)/), ...byName(/^Filters/)]
+          .map((b) => Math.round(b.getBoundingClientRect().height)),
       };
     });
     failures += !report(
@@ -640,9 +655,11 @@ async function run() {
       `Filters triggers ${phoneControls.filtersTrigger}, exposed pips ${phoneControls.barePips}`,
     );
     failures += !report(
-      "the phone's visible filter control clears the 44px target",
-      phoneControls.smallestTarget >= 44,
-      `smallest ${phoneControls.smallestTarget}px`,
+      "the phone's visible filter controls clear the 44px target",
+      phoneControls.targets.length > 0 && Math.min(...phoneControls.targets) >= 44,
+      phoneControls.targets.length === 0
+        ? "no phone filter control found to measure — the check would have passed empty"
+        : `${phoneControls.targets.length} measured, smallest ${Math.min(...phoneControls.targets)}px`,
     );
 
     console.log(failures === 0 ? "\nAll checks passed.\n" : `\n${failures} check(s) failed.\n`);

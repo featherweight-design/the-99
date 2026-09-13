@@ -279,6 +279,9 @@ export function SetGridView(props: SetGridViewProps) {
   // `role="radio"` without this is worse than the toggles it replaced — it promises a
   // keyboard contract and then does not honour it.
   const rarityRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  // Which radio cleared the selection, so the off state's tab stop stays under the reader's
+  // finger rather than jumping to the first. Cleared whenever a value is chosen again.
+  const [offStopRarity, setOffStopRarity] = useState<number | null>(null);
   const stepRarity = (from: number, dir: 1 | -1) => {
     // Walks the ENABLED values only. Arrowing onto a zero-count rarity would select a
     // value the desktop panel refuses and land the reader on an empty grid.
@@ -403,6 +406,19 @@ export function SetGridView(props: SetGridViewProps) {
    * desktop panel declares unavailable. Two mounts re-deriving one rule is the same shape
    * as the chip markup this PR stopped copying.
    */
+  // Hues with no surviving cards under the OTHER filters — the shared pip component's own
+  // contract, which `/collection` also passes. Without it a rarity or missing-only filter
+  // left dead hues clickable while the rarity control correctly greyed its own zero values:
+  // the same rule applied at one control and not the one beside it. A LIT hue is never
+  // unavailable, or it could not be turned off.
+  const unavailableColours = WUBRG.filter((c) => {
+    if (effective.colors.includes(c)) return false;
+    return !applyFilters(
+      [...sections.base, ...sections.extras],
+      { ...effective, colors: [c] },
+    ).length;
+  });
+
   const rarityOptions = RARITIES.map((r) => {
     const count = rarityCounts.get(r) ?? 0;
     return {
@@ -579,6 +595,7 @@ export function SetGridView(props: SetGridViewProps) {
           <div className="hidden shrink-0 md:flex">
             <ColourPips
               value={filters.colors}
+              unavailable={unavailableColours}
               form="wide"
               onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
             />
@@ -716,6 +733,7 @@ export function SetGridView(props: SetGridViewProps) {
             <div className="mb-[16px]">
               <ColourPips
                 value={filters.colors}
+                unavailable={unavailableColours}
                 form="sheet"
                 onToggle={(c) => setFilters({ ...filters, colors: toggleIn(filters.colors, c) })}
               />
@@ -760,7 +778,12 @@ export function SetGridView(props: SetGridViewProps) {
                     // Roving: the checked value is the group's single tab stop, and with
                     // none checked the first is — `all` is a state this group can be in,
                     // and a group with no tab stop cannot be reached by keyboard at all.
-                    tabIndex={on || (filters.rarities.length === 0 && i === firstEnabledRarity)
+                    // The off state's tab stop is whichever radio the reader last used to
+                    // reach it — moving it to the first radio while focus sits on another
+                    // makes the next Tab skip the group entirely.
+                    tabIndex={on
+                      || (filters.rarities.length === 0
+                        && i === (offStopRarity ?? firstEnabledRarity))
                       ? 0
                       : -1}
                     onClick={() => {
@@ -768,7 +791,9 @@ export function SetGridView(props: SetGridViewProps) {
                       // guard `FilterPanel.toggle` applies. No focus move afterwards:
                       // nothing here becomes unfocusable, so nothing strands.
                       if (disabled) return;
-                      setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) });
+                      const next = pickRarity(filters.rarities, r);
+                      setOffStopRarity(next.length === 0 ? i : null);
+                      setFilters({ ...filters, rarities: next });
                     }}
                     onKeyDown={(e) => {
                       const dir = e.key === "ArrowRight" || e.key === "ArrowDown"

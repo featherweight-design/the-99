@@ -745,7 +745,13 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   // ——— The pips ———
   it("mounts the chassis pips rather than a dimmed token square", () => {
     stubDesktop(true);
-    const { container } = view([p("1"), p("2")], []);
+    // One card of every hue, so no pip is UNAVAILABLE: the chassis dims those at .42 by
+    // its own contract, and this test is about the old unlit-but-available dimming that
+    // measured 1.49:1.
+    const { container } = view(
+      ["W", "U", "B", "R", "G"].map((c, i) => p(String(i + 1), { colorIdentity: [c] })),
+      [],
+    );
     const pips = [...container.querySelectorAll<HTMLElement>('[role="switch"]')];
     expect(pips.length).toBeGreaterThanOrEqual(5);
     // An unlit pip carries no opacity, no tint and no rim — the dimming is exactly what
@@ -1159,7 +1165,10 @@ describe("SetGridView — colour order is canonical, not click order", () => {
 
   it("speaks and draws the chip in that same order", () => {
     stubDesktop(true);
-    const { container } = view([p("1"), p("2")], []);
+    const { container } = view(
+      [p("1", { colorIdentity: ["W"] }), p("2", { colorIdentity: ["U"] })],
+      [],
+    );
     fireEvent.click(screen.getAllByRole("switch", { name: "Blue" })[0]);
     fireEvent.click(screen.getAllByRole("switch", { name: "White" })[0]);
     const row = container.querySelector("[data-set-chips]") as HTMLElement;

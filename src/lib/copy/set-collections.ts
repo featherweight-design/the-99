@@ -99,8 +99,10 @@ export const setFilterCopy = {
     groupDefault: "All rarities",
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+    // Through the same `en-US` formatter the rest of the filter-panel copy uses: the
+    // visible count renders `1,234` while a bare interpolation announced `1234 cells`.
     optionAria: (name: string, count: number) =>
-      `${name}, ${count === 1 ? "1 cell" : `${count} cells`}`,
+      `${name}, ${count === 1 ? "1 cell" : `${count.toLocaleString("en-US")} cells`}`,
     optionAriaUnavailable: (name: string) => `${name}, no cells match your other filters`,
     // Numbers since the chassis's own change: `FilterPanelCopy` formats them itself now.
     footerTotal: (total: number) => `${total} rarities`,
