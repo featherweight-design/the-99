@@ -2196,6 +2196,19 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
 
   // The region is `sr-only` to keep ANNOUNCING, not to keep offering: clipped to a 1px box
   // the jump link is still focusable, so Tab landed on an invisible control.
+  // The bar is inside the head element too, so a guard on the whole head meant tabbing to
+  // the bar's own Filters button reopened the head and unmounted that button under the
+  // reader's focus — the same strand, from the other direction.
+  it("does not reopen when focus lands on the collapsed bar itself", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    expect(isShy(container)).toBe(true);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    fireEvent.focus(bar.querySelector("button") as HTMLElement);
+    expect(isShy(container)).toBe(true);
+  });
+
   it("takes the extras jump link out of the tab order while collapsed", () => {
     stubDesktop(false);
     const { container } = view(

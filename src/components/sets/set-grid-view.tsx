@@ -185,7 +185,7 @@ export function SetGridView(props: SetGridViewProps) {
    */
   const headRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
-  const [restHeight, setRestHeight] = useState<number | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
   /**
    * The spacer's height, written to the DOM rather than held in state.
    *
@@ -218,7 +218,6 @@ export function SetGridView(props: SetGridViewProps) {
       if (!el.hasAttribute("data-set-head-collapsed")) {
         const h = el.getBoundingClientRect().height;
         restHeightRef.current = h;
-        setRestHeight(h);
       }
       sizeSpacer();
     };
@@ -690,13 +689,23 @@ export function SetGridView(props: SetGridViewProps) {
     <div>
       <div
         ref={headRef}
-        onFocus={() => setFocusInHead(true)}
+        // The OPEN subtree only. The collapsed bar is inside this element too, and pinning
+        // on focus anywhere in it meant tabbing to the bar's own `Filters` button reopened
+        // the head and unmounted the button under the reader's focus — the exact strand
+        // this guard exists to prevent, arriving from the other direction.
+        onFocus={(e) => {
+          if (!barRef.current?.contains(e.target)) setFocusInHead(true);
+        }}
         // `onBlur` is React's delegated `focusout`, so it fires with the NEW target in
-        // `relatedTarget` — which is how leaving the head is told apart from moving inside
-        // it. A plain `onBlur` that always cleared would re-enable the collapse on every
-        // tab between two controls in this block.
+        // `relatedTarget` — which is how leaving the open block is told apart from moving
+        // inside it. A plain `onBlur` that always cleared would re-enable the collapse on
+        // every tab between two controls in it.
         onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusInHead(false);
+          const next = e.relatedTarget as Node | null;
+          const stillOpen = next !== null
+            && e.currentTarget.contains(next)
+            && barRef.current?.contains(next) !== true;
+          if (!stillOpen) setFocusInHead(false);
         }}
         data-set-head
         data-set-head-collapsed={shy ? "" : undefined}
@@ -712,7 +721,7 @@ export function SetGridView(props: SetGridViewProps) {
             forbids two controls with one accessible name on this page, and the field is
             forty pixels of scroll away. */}
         {shy ? (
-          <div data-set-head-bar className="flex h-[52px] items-center gap-[8px]">
+          <div ref={barRef} data-set-head-bar className="flex h-[52px] items-center gap-[8px]">
             <SetIcon
               uri={iconSvgUri}
               size={22}
@@ -1421,9 +1430,13 @@ export function SetGridView(props: SetGridViewProps) {
           is given back by a spacer beside it.
           `aria-hidden` and no text: it is layout, and a screen reader has nothing to read
           in it. */}
-      {shy && restHeight !== null ? (
-        <div aria-hidden="true" data-set-head-reserve ref={spacerRef} />
-      ) : null}
+      {/* ALWAYS mounted, and 0px while the head is open. Conditioned on `shy` it was
+          removed in the same commit that revealed the open head, so the layout effect had
+          no node left to compensate with if the two heights disagreed — a filter changed
+          through the collapsed bar's sheet can leave the open head a different size from
+          the one the reserve is holding. A zero-height box costs nothing and removes the
+          question. */}
+      <div aria-hidden="true" data-set-head-reserve ref={spacerRef} />
 
       {!sections.indexed ? (
         // The state the spec names and this page did not draw: with no printing classified
