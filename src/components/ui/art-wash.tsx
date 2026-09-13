@@ -7,13 +7,17 @@ const tint = (token: string, pct: number) =>
 
 export type ScrimStops = readonly (readonly [number, number])[];
 
-/** The bands a commander's image is drawn at. Four plain numbers chosen per
-    class, rather than an aspect ratio that made a band's height a function of
-    the column it landed in: a page header is 288, a grid cell telling you which
-    deck is which is 248, a full-width result row you scan down is 208, and a
+/** The bands a commander's image is drawn at. Plain numbers chosen per class,
+    rather than an aspect ratio that made a band's height a function of the
+    column it landed in: a page header is 288, a grid cell telling you which deck
+    is which is 248, a full-width result row you scan down is 208, and a
     secondary cell on a page about something else is 168. What governs which is
-    what the box is for, never the viewport. */
-export type BandHeight = 168 | 208 | 248 | 288;
+    what the box is for, never the viewport.
+
+    72 is the resume row's, and it is the one band that is not a class: that row
+    draws its portrait as a COLUMN beside its type rather than under it, which is
+    the treatment it has always shipped. */
+export type BandHeight = 72 | 168 | 208 | 248 | 288;
 
 /** The ramp under a label block, in `[alphaPercent, positionPercent]` pairs:
     clear above the block, climbing into it, then holding one value to the band's
@@ -112,8 +116,12 @@ const reducible = (opacity: number, art: boolean): CSSProperties =>
     header picks the portrait's shape first and lets the band follow, because 288
     is what keeps that crop from scaling past ~42%.
 
-    The four a stated band may draw. */
-export type PortraitWidth = 560 | 340 | 285 | 230;
+    99 joins them as the resume row's portrait column — not derived from that
+    row's 72px band but the width it has always drawn, with its own mask, ground
+    and clear stop in the table below.
+
+    The five a stated band may draw. */
+export type PortraitWidth = 560 | 340 | 285 | 230 | 99;
 
 /** Keyed to the portrait's **width**, not to the band's height. Every column here
     is a function of the width — `clearTo` is `maskEnd%` of it by derivation, the
@@ -139,6 +147,10 @@ export const PORTRAITS: Record<
     ground: string;
     sharpOpacity: number;
     sharpAlpha: number;
+    /** Where the horizontal scrim's clear run ends. Derived from `maskEnd` and
+        the width for every row that agrees with that rule; stated only by the
+        one shipped row that does not. */
+    clearTo?: number;
     /** Where the horizontal scrim has closed to opaque ground, so any type at or
         past it stands on `--bg` rather than on the crop. It does NOT derive from
         the width: each value was drawn against its own surface, chosen so the
@@ -152,6 +164,28 @@ export const PORTRAITS: Record<
   340: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 356 },
   285: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 300 },
   230: { maskEnd: 58, ground: "--bg", sharpOpacity: 0.92, sharpAlpha: 78, flatStop: 240 },
+  // The resume row's portrait column, restored with the row it belongs to. Its
+  // numbers are the ones that shipped before this round, not new ones: a 62%
+  // mask rather than 58, the row's own `--surface-inset` ground, and a flat stop
+  // at 138. 99px of portrait plus a 17px gap is where that row's 116px type
+  // inset comes from — BESIDE the art, which is why the band draws no vertical
+  // ramp. The inset is 22px short of the flat stop, not past it, so that ink
+  // stands on a horizontal scrim still climbing: `flat` suppresses the vertical
+  // ramp and says nothing about the horizontal ground.
+  // The resume row's portrait column, restored with the row it belongs to, and
+  // restored to what SHIPPED rather than to the rule: 0.95 is the lift it took
+  // when the ambient layer under it was deleted, and its clear stop is an
+  // explicit 58 where the rule would derive 61. Three pixels, and they are the
+  // fade this row has always drawn — a "restoration" that changed them would be
+  // a new geometry wearing the old one's numbers.
+  99: {
+    maskEnd: 62,
+    ground: "--surface-inset",
+    sharpOpacity: 0.95,
+    sharpAlpha: 80,
+    clearTo: 58,
+    flatStop: 138,
+  },
 };
 
 const portrait = (
@@ -160,7 +194,7 @@ const portrait = (
   band: number,
 ) => {
   const b = PORTRAITS[width];
-  const clearTo = Math.round((b.maskEnd / 100) * width);
+  const clearTo = b.clearTo ?? Math.round((b.maskEnd / 100) * width);
   // Which dimension the crop is scaled by, derived rather than declared. A
   // portrait no wider than `band × 1.37` is filled by scaling the crop to the
   // band's height — `auto 100%` — which is what every derived width does, and
@@ -179,8 +213,8 @@ const portrait = (
   // is meant to leave alone.
   const stops = `${tint(b.ground, 0)} 0px, ${tint(b.ground, 0)} ${clearTo}px, ${tint(b.ground, b.sharpAlpha)} ${width}px, var(${b.ground}) ${b.flatStop}px`;
   // Layer D: a band that prints type over the portrait needs damping down the
-  // band as well as across. A band whose ink starts past the flat stop is `flat`
-  // — a vertical ramp there would darken the row for nothing.
+  // band as well as across. A band whose ink sits BESIDE the portrait is `flat`
+  // — a vertical ramp there would darken the row to protect nothing.
   const vertical: ScrimStops | null =
     labelAtPx === "flat" ? null : bottomScrimStops(labelAtPx, band, PORTRAIT_HOLD);
   return {
@@ -227,8 +261,20 @@ export type ArtWashProps = ArtProps &
         /** Chosen, not derived: one band draws two portraits on the one surface
             whose shape was picked before its height. */
         portrait: PortraitWidth;
-        /** `flat` where the band's ink starts past the portrait's flat stop and
-            stands on the row's own ground. */
+        /** `flat` means NO VERTICAL RAMP — the band draws its horizontal scrim
+            and nothing else.
+
+            Two kinds of row ask for it, and neither is about the flat stop. The
+            deck header's ink starts past its portrait's flat stop, on fully
+            opaque ground. The resume row's starts at its 116px inset — clear of
+            the 99px portrait, but 22px SHORT of that row's 138px flat stop, so
+            its ink stands on a horizontal scrim still climbing, which is the
+            thinnest ground anything on that row gets and is asserted at exactly
+            that inset in `wash-contrast.test.ts`.
+
+            What both share is that their ink is BESIDE the art rather than over
+            it, so a vertical ramp would darken the band top to bottom to protect
+            nothing. That is the contract this value states. */
         labelAtPx: number | "flat";
       }
   );

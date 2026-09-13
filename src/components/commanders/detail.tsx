@@ -245,24 +245,22 @@ export function CommanderDetail({
         <ArtWash
           strategy="cover"
           height={288}
-          // The block's MEASURED height at 390px, in pixels from the foot, keyed
-          // to the worst case exactly as the percentage was: a 25px name wrapping
-          // to two lines. Adding it up — 15 bottom inset, a 12.5px type line at
-          // 1.2 for 15, a 4px gap, two 25px name lines at 1.15 for 58, another
-          // 4px gap and an 11px rank line at 1.2 for 13 — gives 109. Every line
-          // box in the block states its own leading for exactly this reason: an
-          // inherited 1.5 would make this figure a function of the app's body
-          // leading, and the round's own failure is a `labelAt` that describes a
+          // The block's MEASURED height, counted line by line at its ceiling:
+          // a 15px bottom inset, a 15px type line at 12.5/1.2, its 4px margin,
+          // two clamped name lines at 19/1.15 for 44, another 4px margin and a
+          // 14px rank line at 11/1.2 — 96. Measured, never intended: the same
+          // block was 110 while the name was 25px, which is the 109 that
+          // shipped, and the round's own failure is a `labelAt` that describes a
           // block other than the one drawn.
           //
           // NOT the handoff's 57, which is the one figure in that package that
           // cannot be reconciled with the block it describes: a single 25px name
-          // line is 29px on its own, and this block carries a rank line and a type
-          // line besides. The rule is the handoff's — measure the block, key the
-          // ramp to its wrapped height — and only its arithmetic is wrong, which
-          // its own open item 2 predicted by asking for this to be measured
-          // rather than trusted.
-          labelAtPx={109}
+          // line was 29px on its own, and this block carries a rank line and a
+          // type line besides. The rule is the handoff's — measure the block, key
+          // the ramp to its wrapped height — and only its arithmetic was wrong,
+          // which its own open item 2 predicted by asking for this to be
+          // measured rather than trusted.
+          labelAtPx={96}
           artCropUri={c.artCropUri}
           colorIdentity={c.colorIdentity}
         />
@@ -320,13 +318,18 @@ export function CommanderDetail({
             <h1
               className="font-display font-[700] m-0 min-w-0"
               style={{
-                fontSize: 25,
+                // 19, not 25. At 25 a two-word commander already filled the
+                // phone's width and anything longer took both clamped lines,
+                // which pushed the pips off the visible row and made the block
+                // the tallest thing on the band. This is the home hero's own
+                // size, and the two surfaces draw the same thing.
+                fontSize: 19,
                 color: "var(--fg)",
                 lineHeight: 1.15,
                 textShadow: COVER_INK_SHADOW,
                 // Two lines is a CEILING, not an estimate — which is what makes
                 // `labelAtPx` a measurement rather than a hope. Without the
-                // clamp a long name on a narrow phone grows the block past 109
+                // clamp a long name on a narrow phone grows the block past 95
                 // and the hold starts below its top edge, printing the first line
                 // on a rising ramp: the round's own failure, from the other
                 // direction.

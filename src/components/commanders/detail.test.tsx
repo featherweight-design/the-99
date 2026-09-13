@@ -351,12 +351,18 @@ describe("commander detail — the art header band", () => {
     // the handoff's 57 without failing — 57 is a percentage read of a px block,
     // which is the round's own bug. Only an assertion on the figure itself
     // catches the drift.
-    expect(band!.firstElementChild).toHaveAttribute("data-art-wash-label-at", "109");
+    expect(band!.firstElementChild).toHaveAttribute("data-art-wash-label-at", "96");
+    // And the size the figure was measured against. At 25px a two-word commander
+    // filled the phone's width and anything longer took both clamped lines,
+    // pushing the pips off the row — so restoring 25 while leaving 96 in place is
+    // exactly the regression this pins.
+    const heading = band!.querySelector<HTMLElement>("h1")!;
+    expect(heading.style.fontSize).toBe("19px");
   });
 
-  // The 109px figure is only true while the name is two lines at most, and the
+  // The 96px figure is only true while the name is two lines at most, and the
   // clamp is what makes the ceiling a ceiling. A long name has to keep it: a
-  // third line grows the block past 109 and prints the first line on a ramp
+  // third line grows the block past 96 and prints the first line on a ramp
   // still climbing, which is this round's own failure from the other direction.
   it("clamps even a very long name to two lines, so the block keeps its height", () => {
     const { container } = render(
@@ -375,7 +381,7 @@ describe("commander detail — the art header band", () => {
     expect(heading.style.webkitLineClamp).toBe("2");
     expect(heading.style.overflow).toBe("hidden");
     // And the figure the ramp is keyed to has not moved for the long name.
-    expect(band.firstElementChild).toHaveAttribute("data-art-wash-label-at", "109");
+    expect(band.firstElementChild).toHaveAttribute("data-art-wash-label-at", "96");
   });
 
   // The pips leave the band's top edge for the block. Five plated swatches in a

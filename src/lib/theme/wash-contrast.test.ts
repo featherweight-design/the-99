@@ -51,7 +51,10 @@ const alphaAt = (stops: ScrimStops, position: number): number => {
     block ends rather than where it starts. */
 const STATED_BANDS: readonly {
   surface: string;
-  labelAtPx: number;
+  /** The block the ramp is keyed to, in pixels from the band's foot — or `null`
+      for a band that draws no vertical ramp at all, because its ink sits beside
+      the portrait rather than over it. */
+  labelAtPx: number | null;
   band: number;
   /** The strategy, because the ground and the hold both follow from it: a
       `cover` band fades its art to 0.8 and holds at 73, and a `left-portrait`'s
@@ -61,9 +64,8 @@ const STATED_BANDS: readonly {
   /** The portrait a `left-portrait` row draws, for composing its own ground. */
   portrait?: keyof typeof PORTRAITS;
 }[] = [
-
-  { surface: "home hero", labelAtPx: 46, band: 288, strategy: "cover" },
-  { surface: "commander detail mobile", labelAtPx: 109, band: 288, strategy: "cover" },
+  { surface: "home hero", labelAtPx: 71, band: 288, strategy: "cover" },
+  { surface: "commander detail mobile", labelAtPx: 96, band: 288, strategy: "cover" },
   { surface: "deck spine, phone", labelAtPx: 90, band: 288, strategy: "cover" },
   { surface: "deck tile", labelAtPx: 46, band: 248, strategy: "cover" },
   // The two rows differ: one wash under two breakpoint subtrees on each, and the
@@ -71,7 +73,12 @@ const STATED_BANDS: readonly {
   // lane's its identity column with a type line under the name.
   { surface: "discovery row", labelAtPx: 56, band: 208, strategy: "left-portrait", portrait: 285 },
   { surface: "owned-lane row", labelAtPx: 63, band: 208, strategy: "left-portrait", portrait: 285 },
-  { surface: "resume row", labelAtPx: 53, band: 168, strategy: "cover" },
+  // Flat in the VERTICAL direction only: the row's type starts at its 116px
+  // inset, beside the 99px portrait rather than over it, so the band draws no
+  // vertical ramp for a block to be keyed to. Horizontally that inset is 22px
+  // short of the row's 138px flat stop, so the scrim is still fading through it
+  // — which is the ground `PORTRAIT_INK` samples below.
+  { surface: "resume row", labelAtPx: null, band: 72, strategy: "left-portrait", portrait: 99 },
 ];
 
 const over = (fg: string, bg: string, alpha: number): string => {
@@ -101,7 +108,11 @@ const horizontalStops = (width: keyof typeof PORTRAITS): ScrimStops => {
   const b = PORTRAITS[width];
   return [
     [0, 0],
-    [0, Math.round((b.maskEnd / 100) * width)],
+    // `clearTo ?? derived`, exactly as the component does: the resume row's 99px
+    // portrait states 58 where the rule gives 61, and deriving it here evaluated
+    // every resume contrast case against a gradient three pixels from the one
+    // that ships.
+    [0, b.clearTo ?? Math.round((b.maskEnd / 100) * width)],
     [b.sharpAlpha, width],
     [100, b.flatStop],
   ];
@@ -155,8 +166,9 @@ const PORTRAIT_INK: readonly {
   /** The band the surface draws that portrait on, which the vertical ramp is a
       percentage of. */
   band: number;
-  /** The block this row's ramp is keyed to, or null where its ink starts past the
-      portrait's flat stop and stands on the row's own ground. */
+  /** The block this row's ramp is keyed to, in pixels from the band's foot — or
+      `null` for a band that draws no vertical ramp at all, because its ink sits
+      beside the portrait rather than over it. */
   labelAtPx: number | null;
   x: number;
   /** Percent down the band, for the vertical ramp. */
@@ -179,6 +191,17 @@ const PORTRAIT_INK: readonly {
   // 56, the rank column's measured figure — the same one `STATED_BANDS` and the
   // component carry. 46 was the handoff's number for a block that does not ship.
   { surface: "discovery's block top", portrait: 285, band: 208, labelAtPx: 56, x: 165, y: 78 },
+  // The resume row's type, at the 116px inset it starts from. That inset is past
+  // the 99px portrait but SHORT of the row's 138px flat stop, so this ink stands
+  // on the thinnest ground anything on that row gets — the horizontal scrim
+  // still climbing towards opaque. Sampling the inset itself is what proves the
+  // row's restored geometry is legible rather than merely unchanged.
+  // BOTH insets. The row's type starts at 108 below 1000px and 116 above, and
+  // the horizontal scrim is still climbing between the 99px portrait and the
+  // 138px flat stop — so the narrow layout stands on thinner ground, and
+  // sampling only 116 would let a regression at 108 pass.
+  { surface: "resume row, narrow", portrait: 99, band: 72, labelAtPx: null, x: 108, y: 0 },
+  { surface: "resume row", portrait: 99, band: 72, labelAtPx: null, x: 116, y: 0 },
   // The deck spine's `⛶ Card details` control: 16px in, 14px off the foot, and
   // the one thing on that band whose ink sits over the crop. THE PLATE is opaque
   // now, so `plate: 1` is not a shortcut — it is the whole argument for deleting
@@ -192,8 +215,8 @@ const PORTRAIT_INK: readonly {
 
 /** The vertical ramp a `left-portrait` band draws, from the same function the
     `cover` bands use — one ramp for both strategies, which is what retired the
-    hand-written column this used to read. A band whose ink starts past the flat
-    stop passes `null` and draws none. */
+    hand-written column this used to read. A band whose ink sits beside the
+    portrait passes `null` and draws none. */
 const verticalAlphaAt = (labelAtPx: number | null, band: number, y: number): number =>
   labelAtPx === null ? 0 : alphaAt(bottomScrimStops(labelAtPx, band, PORTRAIT_HOLD), y);
 
@@ -215,6 +238,11 @@ describe("art wash contrast floor", () => {
     // band where the drawing puts it at 81% — the scrim landing where the round
     // removes it, which is worse than not moving it at all.
     for (const { surface, labelAtPx, band, strategy, portrait: width } of STATED_BANDS) {
+      // A flat band draws no ramp, so there is no hold to measure ink against.
+      // Its ink sits beside the portrait, and `PORTRAIT_INK` samples the ground
+      // it actually stands on at the inset it starts from — which for the resume
+      // row is 22px short of that row's flat stop, on a scrim still climbing.
+      if (labelAtPx === null) continue;
       const stops = bottomScrimStops(labelAtPx, band, strategy === "cover" ? undefined : PORTRAIT_HOLD);
       for (const [edge, y] of [
         ["top", Math.round(((band - labelAtPx) / band) * 100)],
@@ -230,7 +258,8 @@ describe("art wash contrast floor", () => {
               : portraitGround(
                   theme,
                   width,
-                  Math.round((PORTRAITS[width].maskEnd / 100) * width),
+                  PORTRAITS[width].clearTo ??
+                    Math.round((PORTRAITS[width].maskEnd / 100) * width),
                   alphaAt(stops, y),
                 );
           expect(contrast(token(theme, "fg"), ground)).toBeGreaterThanOrEqual(4.5);

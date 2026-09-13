@@ -87,7 +87,7 @@ export function SpineDesktop({
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
-  const { built, ownedCount, toBuyCount } = counts;
+  const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
   const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
   const over = built > bodySize;
@@ -120,6 +120,11 @@ export function SpineDesktop({
 
   return (
     <header
+      // The marker a browser probe reads to tell this band from every other one
+      // that draws the same control: this is the single placement allowed to keep
+      // the control's words, and the check that enforces that everywhere else
+      // needs to know which band it is looking at.
+      data-deck-spine-desktop
       // `@container`, because the switch below is about the ROW's width and not
       // the viewport's: this header is the flex sibling of a 62px desktop rail, so
       // a 1200px viewport is a ~1138px row and a viewport query would have picked
@@ -192,12 +197,16 @@ export function SpineDesktop({
         // it — and `h-full` against an indefinite parent resolves to `auto`, so
         // `items-center` would centre this row in its own content height and
         // leave it sitting near the band's top edge.
-        className="relative flex min-h-[288px] items-center pl-[364px] @min-[1200px]:pl-[592px]"
+        // `items-end`: the drawings put both columns at the band's foot — the
+        // identity block reads up from the bottom edge and the actions sit in the
+        // bottom-right corner. `items-center` floated both in the middle of a
+        // 288px band with the art's subject behind them.
+        className="relative flex min-h-[288px] items-end pl-[364px] @min-[1200px]:pl-[592px]"
         // `paddingRight` alone: a `padding` shorthand here would set
         // `padding-left` too, and an inline declaration outranks the `pl-`
         // classes above — the inset would silently stay at 24px and the title
         // would print over the portrait.
-        style={{ paddingRight: 24, gap: 18 }}
+        style={{ paddingRight: 24, paddingBottom: 18, gap: 18 }}
       >
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center">
@@ -276,11 +285,21 @@ export function SpineDesktop({
                     position, so that row — which carries the partner printing
                     control — won the hit test across the bottom of this target.
                     The same defect #534 fixed one control over. */}
-                {/* `self-end`, because the row is `items-center` and the
-                    `items-end` on the heading only aligns the heading's own
-                    child: without this the glyph centres across a two-line name
-                    instead of sitting on its last line. */}
-                <span className="relative z-[1] inline-flex flex-none self-end" style={{ width: 14 }}>
+                {/* `self-center`, because the row's own `items-center` is what
+                    the glyph should follow and the `items-end` on the heading
+                    aligns only the heading's own child. Centred across the title
+                    row: against a two-line name a bottom-aligned glyph reads as a
+                    footnote to the second line rather than as the title's
+                    control. */}
+                <span
+                  // Centred across the title row, not bottom-aligned: against a
+                  // two-line name a bottom-aligned glyph reads as a footnote to
+                  // the second line.
+                  // `marginLeft` rather than the row's gap, because the gap also
+                  // sets the distance between the name and everything else.
+                  className="relative z-[1] inline-flex flex-none self-center"
+                  style={{ width: 14, marginLeft: 6 }}
+                >
                   <button
                     type="button"
                     onClick={() => setRenaming(true)}
@@ -309,6 +328,8 @@ export function SpineDesktop({
           </div>
 
           <div
+            // Same marker as the phone's row, for the same probe.
+            data-spine-meta
             className="flex flex-wrap items-center"
             style={{ gap: 10, marginTop: 3, minWidth: 0 }}
           >
@@ -374,54 +395,66 @@ export function SpineDesktop({
             />
           </div>
 
-          <div className="flex items-baseline" style={{ gap: 4, marginTop: 5 }}>
-            <span
-              className="font-mono font-semibold"
-              style={{ fontSize: 20, color: over ? overInk : "var(--fg)" }}
+          {/* The bar and its figure on ONE row, the figure to the bar's right:
+              the count is what the bar is a picture of, and stacking them made
+              the reader hold a number in mind while their eye travelled down to
+              the thing it describes. The `x owned · y to buy` split under it is
+              cut — the bar's fill and the figure carry it between them. */}
+          <div className="flex items-center" style={{ gap: 10, marginTop: 7 }}>
+            <div
+              // A shrinking item with a 170px ceiling, not a fixed 170: at the
+              // first desktop breakpoint the 364px portrait inset, the right
+              // padding and the `flex-none` action slot can leave this column
+              // narrower than the track, and a fixed width would push the count
+              // under the actions rather than giving way.
+              className="min-w-0 flex-1"
+              style={{
+                maxWidth: 170,
+                height: 6,
+                borderRadius: 999,
+                background: "var(--elevated)",
+                boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
+                overflow: "hidden",
+              }}
             >
-              {built}
-            </span>
-            <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
-              {overCopy.figure.denominator(bodySize)}
-            </span>
-            {over && (
+              <div
+                data-testid="spine-bar-fill"
+                className="h-full"
+                style={statusBarStyle(status, built, bodySize)}
+              />
+            </div>
+            <div
+              // The marker the deck-header probe reads the over-99 inks off. It used to
+              // find this group as the bar track's previous sibling; the two share a row
+              // now, so a positional lookup returned null and the check went quiet.
+              data-spine-count
+              className="flex flex-none items-baseline" style={{ gap: 4 }}>
               <span
                 className="font-mono font-semibold"
-                style={{ fontSize: 13, marginLeft: 6, color: overInk }}
+                style={{ fontSize: 15, color: over ? overInk : "var(--fg)" }}
               >
-                {overCopy.figure.delta(String(toCut))}
+                {built}
               </span>
-            )}
+              {/* Marked for the deck-header probe: this is the one ink in the
+                  row that is not the state's own, and it is 98 on a pair deck —
+                  so it cannot be identified by matching `/ 99`. */}
+              <span
+                data-spine-denominator
+                className="font-mono"
+                style={{ fontSize: 13, color: "var(--fg-faint)" }}
+              >
+                {overCopy.figure.denominator(bodySize)}
+              </span>
+              {over && (
+                <span
+                  className="font-mono font-semibold"
+                  style={{ fontSize: 13, marginLeft: 6, color: overInk }}
+                >
+                  {overCopy.figure.delta(String(toCut))}
+                </span>
+              )}
+            </div>
           </div>
-
-          <div
-            style={{
-              width: 170,
-              height: 6,
-              borderRadius: 999,
-              background: "var(--elevated)",
-              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
-              overflow: "hidden",
-              marginTop: 6,
-            }}
-          >
-            <div
-              data-testid="spine-bar-fill"
-              className="h-full"
-              style={statusBarStyle(status, built, bodySize)}
-            />
-          </div>
-
-          {/* The split of the figure above, so before the first card there is
-              nothing to split. */}
-          {built > 0 && (
-            <p
-              className="font-mono"
-              style={{ fontSize: 11, color: "var(--fg-faint)", marginTop: 6 }}
-            >
-              {ownedCount} owned · {toBuyCount} to buy
-            </p>
-          )}
 
           {over && (
             <p

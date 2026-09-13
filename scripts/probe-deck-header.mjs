@@ -146,15 +146,29 @@ const READ_HEADER = `() => {
       : null,
     status: pill ? pill.textContent.trim() : null,
     // R6 ruling 3 — the inks that read the over-99 state out, so the walk can
-    // check that one state is not painted in two alarm colours. The figure row
-    // is the bar track's previous sibling, which holds at both breakpoints; the
-    // type sizes do not.
+    // check that one state is not painted in two alarm colours. Found by its own
+    // marker: the figure used to sit in the row above the bar and was reachable
+    // as the track's previous sibling, and now the two share a row — a positional
+    // lookup returns null there, and this check would have filtered an empty list
+    // and reported success with the invariant unmeasured.
     overInks: (() => {
-      const row = fill?.parentElement?.previousElementSibling;
-      if (!row) return null;
+      const row = header.querySelector('[data-spine-count]');
+      // false, not null (and no backticks in this comment: it lives inside a
+      // template literal). The caller treats null as "nothing to check" and
+      // reports success, so a dropped marker would silently retire this
+      // invariant instead of failing it.
+      if (!row) return false;
       return [...row.children]
         .filter(visible)
-        .map((s) => ({ text: s.textContent.trim(), color: getComputedStyle(s).color }));
+        .map((s) => ({
+          text: s.textContent.trim(),
+          color: getComputedStyle(s).color,
+          // Marked rather than matched. The denominator is the one ink in this
+          // row that is not the state's own, and it is 98 on a pair deck — a
+          // pattern written against the literal 99 reported a pair's faint
+          // denominator as a stray alarm colour.
+          denominator: s.hasAttribute('data-spine-denominator'),
+        }));
     })(),
     // R7 ruling 3a — the trim line is the remedy, not the readout, so its bold
     // lead is emphasis at the paragraph's own colour rather than the status
@@ -174,10 +188,15 @@ const READ_HEADER = `() => {
     // which side of the divider it is on without reading class names.
     metaInBand: (() => {
       const band = art ? art.parentElement?.parentElement : null;
-      const meta = [...header.querySelectorAll('p')].find(
-        (p) => visible(p) && p.textContent.includes('·') && !/owned/.test(p.textContent),
-      );
-      if (!band || !meta) return null;
+      // By marker, not by shape: this row is a div whose separator sits in a
+      // child, so a search for a paragraph containing a middot found nothing and
+      // both divider assertions failed on every deck rather than measuring the
+      // move. A sentinel string where the marker is missing, so a dropped hook
+      // fails the check instead of quietly retiring it. (No backticks in this
+      // comment: it travels to the browser inside a template literal.)
+      const meta = [...header.querySelectorAll('[data-spine-meta]')].find(visible);
+      if (!band) return null;
+      if (!meta) return 'no-marker';
       return meta.getBoundingClientRect().bottom <= band.getBoundingClientRect().bottom + 1;
     })(),
   };
@@ -290,8 +309,11 @@ try {
     if (over) {
       // R6 ruling 3. The denominator is the one ink in the row that is not the
       // state's own — it reads the same faint token at every status.
-      const strays = (over.overInks ?? []).filter(
-        (i) => !/^\/\s*99$/.test(i.text) && i.color !== over.barBackground,
+      if (over.overInks === false) {
+        fail("the deck header draws no [data-spine-count] — the over-99 ink check measures nothing");
+      }
+      const strays = (over.overInks || []).filter(
+        (i) => !i.denominator && i.color !== over.barBackground,
       );
       if (strays.length) {
         fail(
@@ -393,6 +415,9 @@ try {
       }
     } else {
       // Item 4 — the meta row crosses the divider while the field takes the band.
+      if (rest.metaInBand === 'no-marker' || editing.metaInBand === 'no-marker') {
+        fail(`the deck header draws no [data-spine-meta] — the divider move is unmeasured`);
+      }
       if (rest.metaInBand !== true) fail(`meta row not in the band at rest`);
       if (editing.metaInBand !== false) fail(`meta row did not move below the divider`);
       else note(`  mobile meta row moves below the divider while editing`);

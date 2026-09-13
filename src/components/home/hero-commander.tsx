@@ -40,33 +40,44 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
         <ArtWash
           strategy="cover"
           height={288}
-          // The block's MEASURED box, which is the padded row itself: 12px of
-          // padding above and below a 22px chip — the tallest thing in the row —
-          // is 46 at `sm`, and 44 on a phone at 11px. Keyed to the taller, as
-          // every shared wash in this round is.
+          // The block's MEASURED box — its own height, which is what the ramp
+          // has to clear, so BOTH insets count. Keyed to the taller (desktop)
+          // arm as every shared wash in this round is: 12 of padding above, a
+          // 21px name line at 1.15, a 4px gap, a 22px row 2 (the fit chip is the
+          // tallest thing in it) and 12 of padding below gives 71.
           //
-          // NOT the handoff's 38. That figure counts the chip and one inset and
-          // forgets the row has padding on both sides, so the hold would land 8px
-          // BELOW the block's own top edge — ink on a rising ramp, which is the
-          // failure this round exists to remove. The rule is the handoff's;
-          // this is its arithmetic corrected against the box that ships.
-          labelAtPx={46}
+          // The single-row block this replaced measured 46 for the same reason —
+          // padding on both sides of one 22px row — and a name truncated to
+          // `Preston Garvey, Minutema…` is what split it in two.
+          labelAtPx={71}
           artCropUri={item.artCropUri}
           colorIdentity={item.colorIdentity}
         />
 
-        {/* §ReadyCard — the block, at the foot and in ONE row: name, pips, type
-            line, fit chip. Three of these were pinned separately — the name at
-            the top, the pips bottom-left, the chip bottom-right — and condensing
-            them is decision 7's answer for this surface: nothing is cut, the
-            band just stops carrying three separate anchors. */}
+        {/* §ReadyCard — the block, at the foot and in TWO rows: name and pips,
+            then the type line with the fit chip at its right. Three of these
+            were pinned separately — the name at the top, the pips bottom-left,
+            the chip bottom-right — and condensing them is decision 7's answer for
+            this surface: nothing is cut, the band just stops carrying three
+            separate anchors.
+
+            Two rows rather than the one it first condensed to, because one row
+            truncated the name to `Preston Garvey, Minutema…` at 390px and a
+            half-truncated name reads as a different commander. */}
         <div
           data-wash-label
-          className="absolute inset-x-0 bottom-0 flex items-center gap-[8px] p-[11px] sm:p-[12px]"
+          // No right reservation here, and the distinction is worth writing down:
+          // the `hero` placement of the card-details control belongs to the
+          // commander DETAIL page's phone band, not to this card — Home's
+          // ready-to-build hero renders no trigger at all. Reserving 46px for it
+          // narrowed both rows and brought back the truncation this split fixed.
+          className="absolute inset-x-0 bottom-0 flex flex-col gap-[4px] p-[11px] sm:p-[12px]"
         >
-          {/* A div, not a span: this wraps two paragraphs, and phrasing content
-              cannot hold flow content. */}
-          <div className="flex min-w-0 flex-auto items-center gap-[8px]">
+          {/* Row 1 — the name and its pips. Two rows, not one: at 390px a
+              condensed single row truncated the name to `Preston Garvey,
+              Minutema…`, and a half-truncated name reads as a different
+              commander. `min-w-0` on the row so the name is what shrinks. */}
+          <div className="flex min-w-0 items-center gap-[8px]">
             <p
               className="m-0 min-w-0 truncate font-display text-[17px] font-semibold text-[color:var(--fg)] sm:text-[18px]"
               style={{ lineHeight: 1.15, textShadow: INK_SHADOW }}
@@ -84,38 +95,34 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
                 />
               ))}
             </span>
-            {/* Drawn at BOTH widths. STATES has this block as one row of name ·
-                pips · type · fit chip, and hiding the type line on a phone would
-                have been a cut dressed as a condense — decision 7 condenses this
-                surface and cuts nothing from it.
-                
-                It is the child that gives, at a shrink factor the resume row
-                already uses for the same problem: the name keeps its characters
-                and the type line is what a narrow row eats into, because a
-                half-truncated name reads as a different commander while a
-                half-truncated type line still reads as a type line. */}
+          </div>
+
+          {/* Row 2 — the type line, with the fit chip at its right. Drawn at
+              BOTH widths: hiding the type line on a phone would be a cut dressed
+              as a condense. The type line is the child that gives, because a
+              half-truncated type line still reads as a type line. */}
+          <div className="flex min-w-0 items-center gap-[8px]">
             <p
               className="m-0 min-w-0 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]"
               style={{ lineHeight: 1.25, textShadow: INK_SHADOW, flexShrink: 1000 }}
             >
               {item.typeLine}
             </p>
-          </div>
-
-          {/* §ReadyCard — fit badge. Decision 3: a chip over art takes an opaque
+            {/* §ReadyCard — fit badge. Decision 3: a chip over art takes an opaque
               plate and a hairline, exactly as the status pill does — and it is
               already THE PLATE's own treatment, which is why it needs no change
               beyond joining the row. */}
-          <div
-            className="hero-fit-chip flex h-[22px] flex-none items-center rounded-[7px] px-[8px] font-mono text-[10.5px]"
-            style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
-          >
-            <span className="text-[color:var(--fg)]">{score}</span>
-            {denominator !== null && (
-              <span className="tracking-[0.1em] text-[color:var(--fg-faint)]">
-                &nbsp;{denominator}
-              </span>
-            )}
+            <div
+              className="hero-fit-chip ml-auto flex h-[22px] flex-none items-center rounded-[7px] px-[8px] font-mono text-[10.5px]"
+              style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
+            >
+              <span className="text-[color:var(--fg)]">{score}</span>
+              {denominator !== null && (
+                <span className="tracking-[0.1em] text-[color:var(--fg-faint)]">
+                  &nbsp;{denominator}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -154,7 +161,11 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
         <div className="mt-[11px] flex gap-[8px] sm:mt-[12px]">
           <PrimaryButton
             href={`/commanders/${item.slug}`}
-            className="flex h-[44px] flex-auto items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
+            // Full width at both widths: it is the card's only action, and a
+            // button sized to its words left the footer reading as a row that had
+            // lost its second control — which is what happened when
+            // `Start this deck` was cut.
+            className="flex h-[44px] w-full items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:rounded-[8px] sm:text-[12.5px]"
           >
             {c.seePool}
           </PrimaryButton>

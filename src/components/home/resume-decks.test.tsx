@@ -14,14 +14,14 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderArtCropUri: null,
   partnerName: null,
   partnerColorIdentity: null,
-  folderId: null,
-  folderName: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,
   unresolvedCount: 0,
   lastPlayedAt: new Date("2026-09-05T00:00:00Z"),
   inUseElsewhere: 0,
+  folderId: null,
+  folderName: null,
   statusPill: "To buy",
   ...o,
 });
@@ -77,130 +77,46 @@ describe("resumeDecks", () => {
 });
 
 describe("ResumeDecks", () => {
-  // A4, the round's largest single reversal: a 72px band with a 99px portrait
-  // beside it becomes a 168px `cover` band with the text ON the wash. The whole
-  // exception goes together — the portrait column, the 116px inset that column
-  // bought, and the no-shadow exemption that inset justified.
-  it("takes the resume band and puts its text on the wash", () => {
+  it("gives the art its own column and starts type clear of it", () => {
     const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
     const row = container.querySelector("a");
-    // Stated, not a floor: the wash is a hard 168px, so a row that could grow
-    // past it would show an unwashed strip.
-    expect(row?.className).toContain("h-[168px]");
-    expect(row?.className).not.toMatch(/min-h-\[/);
-    expect(row?.firstElementChild).toHaveAttribute("data-art-wash-band", "168");
-
-    const text = row?.querySelector<HTMLElement>("[data-resume-text]");
-    expect(text?.className).not.toContain("pl-[116px]");
-    expect(text?.className).toContain("pb-[12px]");
-    // The block the ramp is keyed to.
-    expect(text).toHaveAttribute("data-wash-label");
+    // Stated, not a floor — the wash beside it is a hard 72px, so a row that
+    // could grow past it would show an unwashed strip.
+    expect(row?.className).toContain("h-[72px]");
+    expect(row?.className).not.toContain("min-h-[72px]");
+    const text = row?.querySelector("[data-resume-text]");
+    expect(text?.className).toContain("pl-[116px]");
   });
 
-  // Decision 3, with its exception deleted: ink over art carries a shadow at
-  // full opacity. The exemption was the 116px inset, and the inset is gone — for
-  // EVERY string on the row, not just the name, which is why the shadow sits on
-  // the meta row rather than on each child.
-  it("shadows every string, now that they all stand on art", () => {
-    const { container } = render(
-      <ResumeDecks
-        decks={[deck({ commanderName: "Ishai", partnerName: "Bruse Tarl, Boorish Herder" })]}
-        shopping={rollup({ d1: 3 })}
-      />,
-    );
-    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
-    const name = block.firstElementChild as HTMLElement;
-    expect(name.style.textShadow).not.toBe("");
-    // The row carrying the pair line and the count, so both inherit it. The
-    // status pill inside is opaque and needs none.
-    const metaRow = block.children[1] as HTMLElement;
-    expect(metaRow.style.textShadow).not.toBe("");
-    expect(metaRow.textContent).toContain("+ Bruse Tarl");
+  it("needs no text shadow, because type never sits on art", () => {
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    // A shadow VALUE, not the property: `statusPillStyle` declares
+    // `text-shadow: none` on every pill in the app, which is the refusal of a
+    // shadow rather than one.
+    expect(container.innerHTML).not.toMatch(/text-shadow:(?!\s*none)/);
   });
 
-  // Step 6 cuts the clause outright — on every row, not pairs alone. 62px of
-  // pill, 28px of gaps and a 113px count leave negative room for a name on this
-  // line, and the figure is the one thing that may never truncate: `86 / 9…`
-  // reads as a different number in a way `3 car…` does not. It survives where
-  // the pixels are not allowed to drop it.
-  it("draws the built count alone and keeps the copies figure spoken", () => {
-    const { container } = render(
+  it("prints the built count and the copies clause together", () => {
+    render(
       <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} />,
     );
+    // Two elements, not one string: the clause is the only child a narrow row
+    // is allowed to eat into, so it cannot share a span with the figure.
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
-    expect(screen.queryByText("· 3 cards")).toBeNull();
-    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
-    expect(block.querySelector(".sr-only")?.textContent).toContain("3 copies to buy");
+    expect(screen.getByText("· 3 cards")).toBeInTheDocument();
   });
 
   // §ResumeRow — the commander names the row's art. The deck name is the deck's
   // own, so without this line the portrait is unattributed.
-  // The commander's name is cut on a single-commander row: the band is 168px of
-  // that commander's art, so the name repeats what the picture says. The row's
-  // accessible name still carries it.
-  it("drops the commander's name on a single-commander row", () => {
-    const { container } = render(
+  it("names the commander under the deck name", () => {
+    render(
       <ResumeDecks
-        decks={[
-          deck({
-            name: "Four colours, one plan",
-            commanderName: "Atraxa, Praetors' Voice",
-            // With art, because the art is what earns the cut.
-            commanderArtCropUri: "https://example.test/atraxa.jpg",
-          }),
-        ]}
+        decks={[deck({ name: "Four colours, one plan", commanderName: "Atraxa, Praetors' Voice" })]}
         shopping={rollup()}
       />,
     );
     expect(screen.getByText("Four colours, one plan")).toBeInTheDocument();
-    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
-    // Cut from the DRAWING, not from the accessible name: the band that makes
-    // the visible string redundant is `aria-hidden` art, so the name survives in
-    // an `sr-only` span — a picture cannot say a commander's name to a screen
-    // reader.
-    const visible = Array.from(block.querySelectorAll<HTMLElement>("span")).filter(
-      (el) => !el.className.includes("sr-only"),
-    );
-    expect(visible.some((el) => el.textContent === "Atraxa, Praetors' Voice")).toBe(false);
-    expect(block.querySelector(".sr-only")?.textContent).toBe("Atraxa, Praetors' Voice");
-  });
-
-  // And the cut is earned by the picture, so it does not apply without one: a
-  // commander with no crop draws the identity gradient, which says nothing, and
-  // hiding the name there would leave a sighted reader no way to tell which deck
-  // this is.
-  it("keeps the commander's name visible when there is no art to say it", () => {
-    const { container } = render(
-      <ResumeDecks
-        decks={[
-          deck({
-            name: "Four colours, one plan",
-            commanderName: "Atraxa, Praetors' Voice",
-            commanderArtCropUri: null,
-          }),
-        ]}
-        shopping={rollup()}
-      />,
-    );
-    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
-    const visible = Array.from(block.querySelectorAll<HTMLElement>("span")).filter(
-      (el) => !el.className.includes("sr-only"),
-    );
-    expect(visible.some((el) => el.textContent === "Atraxa, Praetors' Voice")).toBe(true);
-  });
-
-  // Kept on a pair row, and for the same reason it is cut on a single one: a
-  // pair's band shows ONE of two commanders, so the art cannot say it there.
-  it("keeps the shortened pair line on a pair row", () => {
-    const { container } = render(
-      <ResumeDecks
-        decks={[deck({ commanderName: "Ishai, Ojutai Dragonspeaker", partnerName: "Bruse Tarl, Boorish Herder" })]}
-        shopping={rollup()}
-      />,
-    );
-    const block = container.querySelector<HTMLElement>("[data-resume-text]")!;
-    expect(block.textContent).toContain("Ishai");
-    expect(block.textContent).toContain("+ Bruse Tarl");
+    expect(screen.getByText("Atraxa, Praetors' Voice")).toBeInTheDocument();
   });
 
   it("prints the count alone when there is nothing to buy", () => {
@@ -293,5 +209,30 @@ describe("ResumeDecks", () => {
   it("renders nothing when there are no decks", () => {
     const { container } = render(<ResumeDecks decks={[]} shopping={rollup()} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  // The row's fixed content has to fit the narrowest column it is drawn in. At
+  // 640px the dashboard's left column is 252px, and a 116px inset with 18px of
+  // right padding left 118 for a meta line needing 121 — the count was clipped
+  // by the row's own `overflow-hidden`. The inset's gap and the right padding
+  // are the parts that give, and only below 1000px.
+  it("tightens its inset and padding below the width it was drawn for", () => {
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    const text = container.querySelector<HTMLElement>("[data-resume-text]")!;
+    expect(text.className).toContain("pl-[108px]");
+    expect(text.className).toContain("min-[1000px]:pl-[116px]");
+    const row = container.querySelector<HTMLElement>('a[href^="/decks/"]')!;
+    expect(row.className).toContain("pr-[10px]");
+    expect(row.className).toContain("min-[1000px]:pr-[18px]");
+  });
+
+  // Two-up only where two rows clear their own fixed content.
+  it("stacks the rows until the column can hold two of them", () => {
+    const { container } = render(
+      <ResumeDecks decks={[deck(), deck({ id: "d2" })]} shopping={rollup()} />,
+    );
+    const rows = container.querySelector<HTMLElement>('a[href^="/decks/"]')!.parentElement!;
+    expect(rows.className).toContain("flex-col");
+    expect(rows.className).toContain("min-[1000px]:flex-row");
   });
 });

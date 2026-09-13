@@ -113,10 +113,10 @@ const READ_WASHES = `() => {
 // — a band-wide second scaling of the crop behind the portrait, which read as a
 // double image. Either value computing again is that layer returning.
 //
-// 0.95 goes with the resume row's 72px band: it was the one portrait drawn at
-// that opacity, that row is a `cover` band now, and leaving the value in the set
-// would have let the retired arm return without the census noticing.
-const LIFTED_OPACITIES = [1, 0.8, 0.92];
+// 0.95 is the resume row's portrait, and the row is back: it is the lift that
+// layer took when the ambient copy under it was deleted, so dropping the value
+// while the row still draws it would fail every Home load.
+const LIFTED_OPACITIES = [1, 0.8, 0.92, 0.95];
 
 /** Every band on the page, with how many art layers inside it resolved a crop
     URL. A `left-portrait` band draws exactly one: the masked portrait. Two is
@@ -316,6 +316,10 @@ const READ_PLATES = `() => {
         alpha: alpha * composited,
         border: p ? p.borderTopWidth : '',
         text: (b.textContent ?? '').replace('⛶', '').trim(),
+        // Which band this control sits on, so the one placement that keeps its
+        // words can be told from every placement that must not. Read off the
+        // nearest surface marker rather than a prop the browser cannot see.
+        onDeckDesktop: Boolean(b.closest('[data-deck-spine-desktop]')),
       };
     });
 }`;
@@ -369,9 +373,9 @@ const ROUTES = [
   ["discover", "/discover"],
 ];
 
-/** The four bands this round settles. A stated band outside the set is either a
+/** The bands this round settles, plus the 72 the resume row kept. A stated band outside the set is either a
     fifth number nobody decided or an aspect ratio that survived the migration. */
-const SETTLED_BANDS = [168, 208, 248, 288];
+const SETTLED_BANDS = [72, 168, 208, 248, 288];
 
 /** The two thumb boxes. A third is a render that kept its own geometry. */
 const THUMB_BOXES = ["44×62", "64×89"];
@@ -685,6 +689,47 @@ async function checkBands(page, label, note) {
     draft ran these inside the list loop alone, where the control list is always
     empty and every assertion under it passes without executing. A check that
     cannot fail is worse than no check. */
+/** Nothing may push the document wider than its own viewport. This is the one
+    class of bug a property table cannot catch and jsdom cannot see: a
+    `flex-nowrap` row without a zero minimum of its own takes its content's
+    min-content width as a floor, so a long two-faced commander name drew the
+    deck header outside the viewport on both sides.
+
+    Its own routine, not part of `checkChrome`, because it has nothing to do with
+    the card-details control and must run on pages that draw none — a crop-less
+    commander still mounts the same spine and can carry the same long name.
+
+    Measured against the scrolling element's own `clientWidth` rather than
+    `window.innerWidth`: the two differ by the vertical scrollbar, which is
+    exactly the width a marginal overflow hides behind. `probe-price-ui.mjs`
+    already measures it this way, and any surplus at all is the failure — these
+    are integer widths. */
+async function checkNoOverflow(page, label, note) {
+  const overflow = await page.evaluate(
+    `(() => { const d = document.scrollingElement; return Math.round(d.scrollWidth - d.clientWidth); })()`,
+  );
+  if (overflow > 0) {
+    note(`  FAIL ${label}: the document is ${overflow}px wider than its viewport — content is outside it`);
+  }
+
+  // The document measurement alone is not enough to guard the fix. The row that
+  // overflowed sits inside a band with `overflow: hidden`, so the same revert
+  // that once pushed content past the viewport would now be CLIPPED by the band
+  // instead — invisible to `scrollWidth` on the document and just as broken on
+  // screen. Each nowrap row is therefore measured against its own box: content
+  // wider than the box it is laid out in is the defect, wherever the clipping
+  // happens to land.
+  const clipped = await page.evaluate(
+    `[...document.querySelectorAll('[data-spine-meta]')]
+      .filter((el) => el.getClientRects().length)
+      .map((el) => ({ over: Math.round(el.scrollWidth - el.clientWidth), text: (el.textContent ?? '').trim().slice(0, 60) }))
+      .filter((r) => r.over > 0)`,
+  );
+  for (const row of clipped) {
+    note(`  FAIL ${label}: a meta row's content is ${row.over}px wider than its own box — "${row.text}"`);
+  }
+}
+
 async function checkChrome(page, label, note) {
   const plates = await page.evaluate(`(${READ_PLATES})()`);
   if (plates.length) {
@@ -694,8 +739,19 @@ async function checkChrome(page, label, note) {
     if (plate.target[0] < 44 || plate.target[1] < 44) {
       note(`  FAIL control target ${plate.target.join("×")} under the 44px floor`);
     }
-    if (!plate.drawn || plate.drawn[0] !== 26 || plate.drawn[1] !== 26) {
-      note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26×26`);
+    // 26 TALL always; 26 wide unless the control carries its words. The desktop
+    // deck header is the one placement that keeps them — it sits in a wide empty
+    // corner with nothing to compete with — so its plate is a pill, and asserting
+    // a square there would fail the label rather than the geometry.
+    // Exactly 26×26 everywhere, and 26 TALL by any width at the one placement
+    // that carries words. Allowing "at least 26 wide" everywhere would have let
+    // an icon-only control regress to a 44px panel — which is the thing the
+    // target/plate split exists to prevent — and the check would have passed it.
+    const wide = plate.drawn && plate.drawn[0] > 26;
+    if (!plate.drawn || plate.drawn[1] !== 26 || (wide && !plate.onDeckDesktop) || plate.drawn[0] < 26) {
+      note(
+        `  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected ${plate.onDeckDesktop ? "26 tall and at least 26 wide" : "26×26"}`,
+      );
     }
     // Opaque is the whole argument for deleting the top scrim: a translucent plate
     // passes the brightest pixel of an unscrimmed crop through to the glyph. A
@@ -703,7 +759,16 @@ async function checkChrome(page, label, note) {
     // where a parent's own opacity is what composites it.
     if (plate.alpha < 0.999) note(`  FAIL plate is translucent: ${plate.fill} at ${plate.alpha}`);
     if (Number.parseFloat(plate.border) < 1) note(`  FAIL plate draws no hairline: ${plate.border}`);
-    if (plate.text) note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
+    // Words at ONE placement: the desktop deck header, where the control sits in
+    // a wide empty corner with nothing to compete with. Everywhere else the words
+    // were doing the job THE PLATE now does, and a phone's centred title had them
+    // flanking it.
+    if (plate.text && !plate.onDeckDesktop) {
+      note(`  FAIL control still prints words: ${JSON.stringify(plate.text)}`);
+    }
+    if (!plate.text && plate.onDeckDesktop) {
+      note(`  FAIL the desktop deck header's control lost its words`);
+    }
   }
 
   const hits = await page.evaluate(`(${READ_PLATE_HIT})()`);
@@ -864,6 +929,7 @@ try {
 
       await checkBands(page, `${vpName} ${routeName}`, note);
 
+      await checkNoOverflow(page, `${vpName} ${routeName}`, note);
       await checkChrome(page, `${vpName} ${routeName}`, note);
     }
 
@@ -924,6 +990,7 @@ try {
       if (layout === "desktop" && bottoms.length !== 0) {
         note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
       }
+      await checkNoOverflow(page, `${vpName} ${slug}`, note);
       await checkChrome(page, `${vpName} ${slug}`, note);
       // The 288 detail band, which no list route draws.
       await checkBands(page, `${vpName} ${slug}`, note);
@@ -995,6 +1062,7 @@ try {
       for (const box of required) {
         if (!boxes.has(box)) note(`  FAIL ${what} draws no ${box} thumb`);
       }
+      await checkNoOverflow(page, `${vpName} ${what}`, note);
       await checkChrome(page, `${vpName} ${what}`, note);
     }
 
@@ -1070,6 +1138,7 @@ try {
         } else if (slotThumb.join("×") !== "44×62") {
           note(`  FAIL the filled partner slot's thumb is ${slotThumb.join("×")}, expected 44×62`);
         }
+        await checkNoOverflow(page, `${vpName} the picker, paired`, note);
         await checkChrome(page, `${vpName} the picker, paired`, note);
         pairing = true;
         break;
@@ -1094,6 +1163,7 @@ try {
       if (layout === "phone" && boxes.has("64×89")) {
         note(`  FAIL a summary thumb drew on the phone, whose dock is text-only`);
       }
+      await checkNoOverflow(page, `${vpName} the picker, picked`, note);
       await checkChrome(page, `${vpName} the picker, picked`, note);
     }
     if (!commanderBuildHref) {
@@ -1137,6 +1207,9 @@ try {
     } else {
       note(`  ${vpName} small cell: ${smallCell.cell}px column draws the 168 band`);
     }
+    // At this width too, while it is the one laid out: the 900px arm is a real
+    // layout the app ships and nothing else measures it.
+    await checkNoOverflow(page, `${vpName} /decks at 900`, note);
     await page.setViewportSize({ width, height });
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
@@ -1163,6 +1236,13 @@ try {
     for (const deckHref of deckHrefs) {
       await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
+      // EVERY deck, before the crop-less skip and regardless of whether the
+      // geometry checks below have already run: a commander with no crop draws
+      // no control by ruling but mounts the same spine, and the long two-faced
+      // name that caused this bug belongs to one particular deck — which the
+      // first-qualifying-deck break would walk straight past.
+      await checkNoOverflow(page, `${vpName} ${deckHref}`, note);
+      if (walkedADeck) continue;
       const deckPlates = await page.evaluate(`(${READ_PLATES})()`);
       if (!deckPlates.length) {
         note(`${vpName} ${deckHref}: no card-details control — this commander has no crop`);
@@ -1207,7 +1287,9 @@ try {
       }
       walkedADeck = true;
       walkedDeckHref = deckHref;
-      break;
+      // No `break`: the chrome and geometry checks want one deck, and the
+      // overflow check wants all of them. The flag above is what stops the
+      // former from repeating.
     }
     if (!walkedADeck) {
       note(`  FAIL no deck page drew a card-details control — the deck header's chrome goes unchecked`);
