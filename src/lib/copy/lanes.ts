@@ -5,7 +5,7 @@
 // Follows the shape of src/lib/copy/shell.ts.
 
 // The locale is pinned, as in commanders-plane.ts: an unpinned toLocaleString() renders "3.301"
-// or "3 301" for a reader whose machine is not on en-US, and these strings ship verbatim.
+// or "3 301" for a reader whose machine is not on en-US, and the FIGURE ships as written.
 const n = (v: number) => v.toLocaleString("en-US");
 
 export const filterCopy = {

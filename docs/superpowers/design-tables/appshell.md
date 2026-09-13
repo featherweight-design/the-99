@@ -1555,7 +1555,7 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | margin | `12px 0 0` | `12px 0 0` |
 | max-width | — | `420px` |
 | content (mobile) | `Pick a commander and we'll assemble the 99 from cards you already own.` | — |
-| content (desktop) | — | `Pick a commander and we'll assemble the 99 from cards you already own — then track what's missing.` |
+| content (desktop) | — | `Pick a commander and we'll assemble the 99 from cards you already own — then track what's missing.`<br>**⚠ Drift, pre-dating the 2026-09-13 punctuation sweep:** the shipped string reads "Pick a commander and we assemble the 99 from cards you already own, then track what is missing." — `we`/`what is`, not `we'll`/`what's`. Diverged in wording before the sweep, so the sweep left it. Needs a Design ruling. |
 
 ### "Browse commanders" CTA
 

@@ -1,6 +1,8 @@
-// Shell copy — transcribed verbatim from
+// Shell copy — wording transcribed from
 // design/design_handoff_the99_richness/The 99 - App Shell v2.dc.html.
-// Voice: Kitchen Table. Do not paraphrase; the wink is load-bearing.
+// Voice: Kitchen Table. Do not paraphrase; the wink is load-bearing. Punctuation
+// diverges from the handoff as of 2026-09-13 — rule 4 applies here and the handoff
+// has not been reissued.
 
 export type LoadingCopy = { heading: string; status: string };
 

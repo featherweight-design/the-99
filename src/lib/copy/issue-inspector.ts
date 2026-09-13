@@ -1,4 +1,4 @@
-// Issue Inspector copy — ported verbatim from
+// Issue Inspector copy — wording ported from
 // design/design_handoff_the99_issue_inspector/Issue Inspector - copy strings.js
 // Voice: terse; mono for structured data; no reassurance fluff; no exclamation marks.
 

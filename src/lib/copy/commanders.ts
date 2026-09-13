@@ -1,4 +1,4 @@
-// Commanders copy — transcribed verbatim from
+// Commanders copy — wording transcribed from
 // design/design_handoff_the99_richness/The 99 - Surfaces v2.dc.html §Commanders.
 // The degraded/EDHREC-offline banner is deliberately absent: the handoff ships
 // it as the counter-example showing where character is NOT allowed. Its copy
