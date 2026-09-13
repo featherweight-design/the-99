@@ -133,7 +133,7 @@ const READ_HEADER = `() => {
     // bare one would end that string and put the rest of this reader outside it.
     //
     // data-deck-title is the deck's name alone, which is what the heading holds
-    // now: the rename control is its SIBLING, outside the clamped text, so
+    // now: the rename control is its SIBLING, outside the title's text, so
     // neither the heading's text content nor its accessible name carries a
     // glyph. Reading the marker rather than the heading keeps that honest if a
     // future change puts anything beside the name again.
@@ -159,11 +159,11 @@ const READ_HEADER = `() => {
       if (!title || !pencil || !block) return null;
       const range = document.createRange();
       range.selectNodeContents(title);
-      // Filtered to the lines the heading actually SHOWS. A clamped heading
-      // reported rects for lines it had hidden, so the last rect could be an
-      // invisible one and the glyph "correct" below the visible text. The title
-      // is unclamped now and nothing is hidden, so this filter should never drop
-      // a line — which is why the count is reported either way.
+      // Filtered to the lines the heading actually SHOWS. While the title was
+      // clamped, a Range reported rects for lines it had hidden, so the last rect
+      // could be an invisible one and the glyph "correct" below the visible text.
+      // Nothing is hidden now, so this filter should never drop a line — which is
+      // why what it drops is reported either way rather than assumed to be zero.
       const frame = h1.getBoundingClientRect();
       const all = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
       const lines = all.filter((r) => r.bottom <= frame.bottom + 1);

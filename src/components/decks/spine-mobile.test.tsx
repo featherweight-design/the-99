@@ -160,9 +160,10 @@ describe("SpineMobile", () => {
   // protects the label block and plates protect what sits above it, and this
   // glyph is INSIDE the block on ground held at 73%. Its hit area is padding and
   // a negative margin rather than a box, so it clears the 44px floor without
-  // shifting the title's baseline — and its holder is 14px in flow, balanced by
-  // a 14px spacer opposite, because a zero-width holder put the whole 44px box
-  // past the text where the band clips it.
+  // shifting the title's baseline. Its holder is 14px in flow — a zero-width one
+  // put the whole 44px box past the text, where the band clips it — and it needs
+  // no spacer opposite, because the block reads from the left rather than being
+  // centred.
   it("draws the rename trigger inline, unplated, at a 44px hit area", () => {
     renderSpine(<SpineMobile {...props} />);
     const trigger = screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) });
@@ -205,9 +206,9 @@ describe("SpineMobile", () => {
     expect(holder.className).toContain("z-[1]");
   });
 
-  // No spacer at all. It existed only to balance the pencil's flow width so a
-  // CENTRED title stayed on the band's centre; the block is left-aligned now, and
-  // a leading spacer would push the title off the block's own edge for nothing.
+  // No spacer. It existed only to balance the pencil's flow width so a CENTRED
+  // title stayed on the band's centre; the block reads from the left now, and a
+  // leading spacer would push the title off the block's own edge for nothing.
   it("draws no spacer opposite the pencil, because the title is left-aligned", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
@@ -243,7 +244,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   // The band and the figure keyed to it, at this call site. The contrast table
   // and the primitive's own tests both stay green if this component drifts back
   // to the old geometry — the figures are only a contract where they are passed.
-  it("states the 288 band and the 90px block it measured", () => {
+  it("states the 288 band and the 115px three-line block it measured", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const wash = container.querySelector("[data-art-wash-band]")!;
     expect(wash).toHaveAttribute("data-art-wash-band", "288");
@@ -251,7 +252,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect((wash as HTMLElement).style.height).toBe("288px");
   });
 
-  // The row measured for that 90px block is ONE row. At 390px a pair's two
+  // The meta row inside that block is ONE row. At 390px a pair's two
   // names, five 10px pips, the chip and two 8px gaps are wider than the caption,
   // so a wrapping row puts the chip on a second line and grows the block to
   // about 145px while the ramp still holds at 115 — the title's first line on a
@@ -314,7 +315,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
 
     const heading = container.querySelector<HTMLElement>("h1")!;
     expect(heading.style.textAlign).toBe("left");
-    // `inline`, and NOT clamped. Clamping needs an atomic box, whose width is the
+    // `inline`, and unclamped. A clamp needs an atomic box, whose width is the
     // whole available width once its text wraps — which is what put the glyph at
     // the far right of a two-line name. An inline heading wraps as ordinary text
     // and the glyph follows its last line at any line count.
@@ -338,8 +339,8 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   // two-line name pushed the glyph to the far right of the band while a
   // one-line name kept it beside the words. jsdom lays nothing out, so the
   // declaration is what is assertable, and the declaration is the whole fix:
-  // an inline-level clamped heading, a baseline-aligned inline holder after it,
-  // and no flex row between them.
+  // an unclamped inline heading, an inline holder after it in flow, and no flex
+  // row between them.
   it("keeps the glyph on the title's last line at any line count", () => {
     const { container } = renderSpine(
       <SpineMobile
