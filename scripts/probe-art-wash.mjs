@@ -715,8 +715,15 @@ async function checkChrome(page, label, note) {
     // deck header is the one placement that keeps them — it sits in a wide empty
     // corner with nothing to compete with — so its plate is a pill, and asserting
     // a square there would fail the label rather than the geometry.
-    if (!plate.drawn || plate.drawn[1] !== 26 || plate.drawn[0] < 26) {
-      note(`  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected 26 tall and at least 26 wide`);
+    // Exactly 26×26 everywhere, and 26 TALL by any width at the one placement
+    // that carries words. Allowing "at least 26 wide" everywhere would have let
+    // an icon-only control regress to a 44px panel — which is the thing the
+    // target/plate split exists to prevent — and the check would have passed it.
+    const wide = plate.drawn && plate.drawn[0] > 26;
+    if (!plate.drawn || plate.drawn[1] !== 26 || (wide && !plate.onDeckDesktop) || plate.drawn[0] < 26) {
+      note(
+        `  FAIL drawn plate ${plate.drawn?.join("×") ?? "absent"}, expected ${plate.onDeckDesktop ? "26 tall and at least 26 wide" : "26×26"}`,
+      );
     }
     // Opaque is the whole argument for deleting the top scrim: a translucent plate
     // passes the brightest pixel of an unscrimmed crop through to the glyph. A

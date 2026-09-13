@@ -430,7 +430,14 @@ export function SpineDesktop({
               >
                 {built}
               </span>
-              <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
+              {/* Marked for the deck-header probe: this is the one ink in the
+                  row that is not the state's own, and it is 98 on a pair deck —
+                  so it cannot be identified by matching `/ 99`. */}
+              <span
+                data-spine-denominator
+                className="font-mono"
+                style={{ fontSize: 13, color: "var(--fg-faint)" }}
+              >
                 {overCopy.figure.denominator(bodySize)}
               </span>
               {over && (

@@ -153,10 +153,22 @@ const READ_HEADER = `() => {
     // and reported success with the invariant unmeasured.
     overInks: (() => {
       const row = header.querySelector('[data-spine-count]');
-      if (!row) return null;
+      // false, not null (and no backticks in this comment: it lives inside a
+      // template literal). The caller treats null as "nothing to check" and
+      // reports success, so a dropped marker would silently retire this
+      // invariant instead of failing it.
+      if (!row) return false;
       return [...row.children]
         .filter(visible)
-        .map((s) => ({ text: s.textContent.trim(), color: getComputedStyle(s).color }));
+        .map((s) => ({
+          text: s.textContent.trim(),
+          color: getComputedStyle(s).color,
+          // Marked rather than matched. The denominator is the one ink in this
+          // row that is not the state's own, and it is 98 on a pair deck — a
+          // pattern written against the literal 99 reported a pair's faint
+          // denominator as a stray alarm colour.
+          denominator: s.hasAttribute('data-spine-denominator'),
+        }));
     })(),
     // R7 ruling 3a — the trim line is the remedy, not the readout, so its bold
     // lead is emphasis at the paragraph's own colour rather than the status
@@ -292,8 +304,11 @@ try {
     if (over) {
       // R6 ruling 3. The denominator is the one ink in the row that is not the
       // state's own — it reads the same faint token at every status.
-      const strays = (over.overInks ?? []).filter(
-        (i) => !/^\/\s*99$/.test(i.text) && i.color !== over.barBackground,
+      if (over.overInks === false) {
+        fail("the deck header draws no [data-spine-count] — the over-99 ink check measures nothing");
+      }
+      const strays = (over.overInks || []).filter(
+        (i) => !i.denominator && i.color !== over.barBackground,
       );
       if (strays.length) {
         fail(

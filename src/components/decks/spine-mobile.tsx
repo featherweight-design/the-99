@@ -415,7 +415,13 @@ export function SpineMobile({
             >
               {built}
             </span>
-            <span className="font-mono" style={{ fontSize: 14, color: "var(--fg-faint)" }}>
+            {/* Marked for the deck-header probe: the one ink here that is not
+                the state's own, and 98 on a pair deck. */}
+            <span
+              data-spine-denominator
+              className="font-mono"
+              style={{ fontSize: 14, color: "var(--fg-faint)" }}
+            >
               {overCopy.figure.denominator(bodySize)}
             </span>
             {over && (
