@@ -94,6 +94,15 @@ export const collectionChassisCopy = {
     setSearchPlaceholder: "Search sets",
     setSearchAria: "Search your sets",
     setEmpty: (query: string) => `No sets match ${query}`,
+    /**
+     * No sets to filter BY, which is not a failed search. A collection whose
+     * rows all went unmatched against the catalog has an empty set vocabulary,
+     * and the sheet opens with a blank query — so the search string would have
+     * rendered as `No sets match ` with nothing after it. `FilterPanel` never
+     * hits this because it only draws its no-results state for a query that
+     * was actually typed.
+     */
+    setNone: "No sets to filter by",
     done: "Done",
     close: "Close filters",
   },

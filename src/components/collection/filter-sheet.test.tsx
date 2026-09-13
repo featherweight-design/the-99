@@ -116,6 +116,15 @@ describe("CollectionFilterSheet", () => {
     expect(screen.getByRole("switch", { name: /Limited Edition Alpha/ })).toBeTruthy();
   });
 
+  it("tells an empty set vocabulary apart from a failed search", () => {
+    // A collection whose rows all went unmatched has no sets to filter by, and
+    // the sheet opens with a blank query — so the search string rendered as
+    // "No sets match " with nothing after it.
+    render(sheet({ setOptions: [] }));
+    expect(screen.getByText("No sets to filter by")).toBeTruthy();
+    expect(screen.queryByText(/No sets match\s*$/)).toBeNull();
+  });
+
   it("says so when a set query matches nothing", () => {
     render(sheet());
     fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "zzz" } });

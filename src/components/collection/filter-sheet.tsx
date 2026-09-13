@@ -233,7 +233,11 @@ function SheetBody({
           <div className="mt-[8px] flex max-h-[188px] flex-col gap-[6px] overflow-y-auto">
             {sets.length === 0 ? (
               <p className="m-0 font-sans text-[13px] text-[color:var(--fg-muted)]">
-                {copy.setEmpty(setQuery.trim())}
+                {/* An empty VOCABULARY is not a failed search, and the sheet
+                    opens with a blank query — so a collection whose rows all
+                    went unmatched against the catalog would have read
+                    `No sets match ` with nothing after it. */}
+                {setOptions.length === 0 ? copy.setNone : copy.setEmpty(setQuery.trim())}
               </p>
             ) : (
               sets.map((option) => (
