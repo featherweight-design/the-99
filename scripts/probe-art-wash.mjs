@@ -216,9 +216,11 @@ const READ_COVER_STOPS = `() => {
   // \`sm:hidden\`, so at desktop width it is still in the DOM and still matches the
   // selector while drawing nothing — counting it would report a phone-only
   // treatment as shipping on both widths.
-  // One class. A migrated band carries `.art-wash-scrim-cover` and names no
-  // edge, so a reader asking for `-bottom` found nothing on the very surface this
-  // slice migrates — and then failed it for drawing no cover band at all.
+  // One class, and no backticks in this comment: it lives inside a template
+  // literal, where a bare one ends the string. A migrated band carries the base
+  // cover class and names no edge, so a reader asking for the -bottom class
+  // found nothing on the very surface a slice migrates — and then failed it for
+  // drawing no cover band at all.
   return [...document.querySelectorAll('.art-wash-scrim-cover')]
     .filter((s) => s.getClientRects().length)
     .map((s) => {
@@ -248,9 +250,10 @@ const READ_STATED_BANDS = `() => {
       const scrims = [...root.querySelectorAll('.art-wash-scrim')]
         .filter((s) => getComputedStyle(s).display !== 'none');
       const s = scrims.at(-1);
-      // Counted, not just read: reading `.at(-1)` alone passes a band that has
-      // grown a SECOND vertical ramp under a valid last one, and two ramps over
-      // one band is twice the darkening the round settled.
+      // Counted, not just read: taking the last scrim alone passes a band that
+      // has grown a SECOND vertical ramp under a valid last one, and two ramps
+      // over one band is twice the darkening the round settled. (No backticks:
+      // this comment travels to the browser inside a template literal.)
       // Same definition the row reader uses: the vertical ramp is the gradient
       // that names no angle at all, because the browser drops the default 180deg.
       const verticals = scrims.filter((s) =>
@@ -1112,10 +1115,11 @@ try {
       }
       await page.screenshot({ path: `/tmp/art-wash-${vpName}-deck.png`, fullPage: false });
       await checkChrome(page, `${vpName} ${deckHref}`, note);
-      // The full band checks, not a count. This route's washes are legacy until
-      // the spines migrate, so what it reports today is the unmigrated-band
-      // countdown — and the moment they do migrate, every declared-versus-laid
-      // height and every hold on this page is checked without another edit here.
+      // The full band checks, not a count. The spines are migrated, so this is
+      // the stated 288 header being checked here: its declared height against
+      // the laid-out one, its ramp's stops, and the hold against the block its
+      // own labelAtPx implies — the same checks every other migrated route gets,
+      // with no per-route table to keep in step.
       await checkBands(page, `${vpName} ${deckHref}`, note);
 
       // The two geometries, each at the width that draws it. Both wash layers are
