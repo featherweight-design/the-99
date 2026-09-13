@@ -1701,7 +1701,7 @@ No percentages, at any N. `net` is never rendered.
 |---|---|
 | 1 | `Nothing to read into yet — it is on the record. Two more and this turns into something you can act on.` |
 | 2 | `Two games. Both of them, which is worth noticing and not yet worth calling a pattern.` |
-| 3+ | `Marked in 3 of 3 games — every one you have logged. Record 2–1 across 3 games.` |
+| 3+ | `Marked in 3 of 3 games: every one you have logged. Record 2–1 across 3 games.` |
 
 ### Dial 3 — ink, which is earned at three
 

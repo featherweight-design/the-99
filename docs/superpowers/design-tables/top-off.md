@@ -1089,9 +1089,9 @@ The cost is spoken from the **shipped** `manaCopy.costAria`, read **before** the
 | `commit.cancel` | `Cancel` |
 | `commit.consequence(total)` | `{total} of 99 when added` |
 | `commit.toBuy(b, money)` | `{b} to buy · {money}` |
-| `commit.slotsStayOpen(n)` | `{n} slots stay open — you can come back to them` |
-| `commit.nothingTicked` | `nothing ticked — the list arrives with what you own already ticked` |
-| `commit.nothingTickedUnowned(cand)` | `nothing ticked — you own none of these {cand}, so every tick is one to buy` |
+| `commit.slotsStayOpen(n)` | `{n} slots stay open: you can come back to them` |
+| `commit.nothingTicked` | `nothing ticked: the list arrives with what you own already ticked` |
+| `commit.nothingTickedUnowned(cand)` | `nothing ticked: you own none of these {cand}, so every tick is one to buy` |
 | `commit.inFlight(ticked)` | `Sleeving {ticked} cards…` — **UNCHANGED**, `recommendationsCopy.fill.fillingRows` |
 | `commit.refused` | `We couldn’t add those. The deck is unchanged.` — **UNCHANGED**, `synergyCopy.lastSlots.topUpFailed` (note the curly apostrophe `’`) |
 
@@ -1104,8 +1104,8 @@ The cost is spoken from the **shipped** `manaCopy.costAria`, read **before** the
 | `ledger.headerMetaOne(buy)` | `one pass · {buy} to buy` |
 | `ledger.seedLabel` | `the seed` |
 | `ledger.passLabel(i)` | `top-off {i}` |
-| `ledger.seedLine(n, buy)` | `{n} cards — the roles and the mana base, {buy} to buy.` |
-| `ledger.seedLineNoBuy(n)` | `{n} cards — the roles and the mana base.` |
+| `ledger.seedLine(n, buy)` | `{n} cards : the roles and the mana base, {buy} to buy.` |
+| `ledger.seedLineNoBuy(n)` | `{n} cards : the roles and the mana base.` |
 | `ledger.seedReversal` | `the sweep reverses it` |
 | `ledger.passLine(n, slots, buy)` | `{n} cards you chose from the last {slots}, {buy} of them to buy.` |
 | `ledger.passLineNoBuy(n, slots)` | `{n} cards you chose from the last {slots}.` |

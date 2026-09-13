@@ -5,6 +5,9 @@
 //
 // Richness pass (Surfaces v2 §Commanders): "a mark joins the XCIX crumb row,
 // copy: '1,418 cards read. 24 can lead. I ranked them — you're welcome.'"
+// That quotation is the SPEC's, kept as written. The shipped line takes a
+// period where the spec has the dash — rule 4 applies to this project as of
+// 2026-09-13, and the spec has not been reissued.
 // The mark itself was retired by the theme handoff (decision 8) — the banner's
 // 3px accent left border is the whole of its identity now.
 // That line *replaces* the v1 body copy rather than joining it — the v1 body

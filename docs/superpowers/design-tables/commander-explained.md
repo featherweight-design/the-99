@@ -621,7 +621,7 @@ Section-level, one value for four panels, local state, not URL-mirrored.
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
 | Most played (default) | initial mount | selected; order is the incoming order (inclusion desc, nulls last, then name — `score.ts:144`); sub-line "Highest EDHREC inclusion first. The order that ships." | — |
-| Most played, no figures | `showFigures === false` on the commander | same selection, sub-line swaps to "No EDHREC figures on this commander — the list is in collection order."; **not disabled** | `showFigures` |
+| Most played, no figures | `showFigures === false` on the commander | same selection, sub-line swaps to "No EDHREC figures on this commander. The list is in collection order."; **not disabled** | `showFigures` |
 | Availability, selectable | slice B has landed | option present; order is free-before-committed then the incoming order; sub-line "Free to use first, then the ones already in a deck." | `committed` per card |
 | Availability, absent | before slice B | option **absent**, not disabled — which is why the whole control ships with slice B | — |
 | Sorted | an option is chosen | chip/row order inside each of the four panels changes; which cards fall inside `COVERAGE_CAP` (12 desktop / 6 phone) changes; expanded list re-orders; one live-region message | sort value |

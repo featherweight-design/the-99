@@ -561,7 +561,7 @@ Same 7px dot/ring as desktop.
 
 **Selection fills 99 (clamp case)**
 
-- `synergyCopy.select.promiseFull(picked)` — "Your {picked} fill the 99 on their own — we'll leave the rest to you."
+- `synergyCopy.select.promiseFull(picked)` — "Your {picked} fill the 99 on their own. We'll leave the rest to you."
 
 ### Promise line (mobile — in sticky bar)
 

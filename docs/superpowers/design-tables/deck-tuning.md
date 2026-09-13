@@ -74,11 +74,11 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 | text-transform | uppercase | uppercase |
 | color | `var(--accent)` `#C9A24B` | `var(--accent)` `#C9A24B` |
 
-### Gloss — "optional — one line, in your words"
+### Gloss — "optional: one line, in your words"
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| text | `optional` (shortened) | `optional — one line, in your words` |
+| text | `optional` (shortened) | `optional: one line, in your words` |
 | font-family | `IBM Plex Mono` | `IBM Plex Mono` |
 | font-size | 9.5 | 10 |
 | color | `var(--fg-locked)` `#6A6152` | `var(--fg-locked)` `#6A6152` |
@@ -134,7 +134,7 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| text | (not drawn in phone frame) | `marks and the note are optional — a result on its own is a game` |
+| text | (not drawn in phone frame) | `marks and the note are optional: a result on its own is a game` |
 | font-family | — | `IBM Plex Mono` |
 | font-size | — | 11 |
 | color | — | `var(--fg-faint)` `#8E8269` |
