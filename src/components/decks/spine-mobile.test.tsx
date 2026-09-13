@@ -304,6 +304,27 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect(meta.textContent).toContain("Non-red");
   });
 
+  // The UNION, not the primary's identity. A pair deck's pips have to include a
+  // colour only its partner brings, and the single-commander fixture above
+  // cannot tell `deckIdentity(primary, partner)` from `primary` alone.
+  it("draws a pair's pips from both commanders' colours", () => {
+    const { container } = renderSpine(
+      <SpineMobile
+        {...props}
+        deck={{
+          ...pairDeck,
+          commander: { ...pairDeck.commander, colorIdentity: ["W"] },
+          partner: { ...pairDeck.partner!, colorIdentity: ["R"] },
+        }}
+      />,
+    );
+    const meta = container.querySelector<HTMLElement>("[data-spine-meta]")!;
+    const pips = meta.querySelectorAll('span[aria-hidden="true"] > span.rounded-\\[2px\\]');
+    // Two swatches: one for each commander's colour. The primary alone would
+    // draw one.
+    expect(pips).toHaveLength(2);
+  });
+
   // The band reads from the left: title, then the chip and the commander under
   // it. It was centred, which is what the mocks were compared against and what
   // this pins so it cannot drift back.

@@ -447,8 +447,10 @@ try {
     // hit area made of padding and an equal negative margin, so its 44px box
     // overhangs the 14px the holder occupies in flow. Painting
     // is not the question — whether a tap LANDS on it is, and the band clips what
-    // overhangs it. Four points, because a clipped or overlapped edge is the
-    // failure and the centre would pass through either.
+    // overhangs it. All four edge midpoints plus the centre: a clipped or
+    // overlapped edge is the failure and the centre passes through either. The
+    // TOP was missing, so an element overlapping the control from above — the
+    // band's own art layer, a header that grew — would have passed.
     const reach = await page.evaluate(
       `(() => {
         const el = [...document.querySelectorAll('[aria-label^="Rename deck: "]')]
@@ -462,6 +464,7 @@ try {
         return {
           box: [Math.round(r.width), Math.round(r.height)],
           centre: at(r.left + r.width / 2, r.top + r.height / 2),
+          top: at(r.left + r.width / 2, r.top + 2),
           left: at(r.left + 2, r.top + r.height / 2),
           right: at(r.right - 2, r.top + r.height / 2),
           bottom: at(r.left + r.width / 2, r.bottom - 2),
@@ -471,7 +474,7 @@ try {
     if (!reach) {
       fail(`no rename control laid out to hit-test`);
     } else {
-      note(`${vpName} rename target: ${reach.box.join("×")} — centre ${reach.centre}, left ${reach.left}, right ${reach.right}, bottom ${reach.bottom}`);
+      note(`${vpName} rename target: ${reach.box.join("×")} — centre ${reach.centre}, top ${reach.top}, left ${reach.left}, right ${reach.right}, bottom ${reach.bottom}`);
       if (reach.box[0] < 44 || reach.box[1] < 44) {
         fail(`rename target measures ${reach.box.join("×")}, under the 44px floor`);
       }

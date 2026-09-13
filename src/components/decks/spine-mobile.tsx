@@ -354,20 +354,13 @@ export function SpineMobile({
                 >
                   {/* `data-deck-title` marks the deck's name for anything that
                       needs it apart from the heading's own layout — the browser
-                      probe compares it to the rename control's accessible name.
-                      The clamp lives here rather than on the heading so the
-                      heading can be a flex line: a clamped box clips, and the
-                      glyph beside the title would be clipped with it. */}
+                      probe compares it to the rename control's accessible name. */}
                   {/* The marker is the deck's name alone — the glyph is outside
                       this heading, so neither the heading's text content nor its
                       accessible name carries it. No clamp lives here or on the
                       heading: the title wraps freely, which is what lets the
                       glyph follow its last line. */}
-                  {/* `min-w-0`: this span is a flex item of the inline box, and
-                      an unbroken 120-character name would otherwise force its
-                      min-content width past the reserved width and push the glyph
-                      off the phone instead of clamping. */}
-                  <span data-deck-title className="min-w-0">{deck.name}</span>
+                  <span data-deck-title>{deck.name}</span>
                 </h1>
                 {/* The glyph is a SIBLING of the heading, not a child. Inside it
                     its `aria-label` joined the heading's own accessible name, so
