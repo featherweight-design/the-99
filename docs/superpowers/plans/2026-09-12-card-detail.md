@@ -180,6 +180,22 @@ Each merges before the next branches, and each is independently shippable.
 
 ---
 
+## The route inventory
+
+Every surface the modal opens on, walked against the running app at close-out rather
+than against a diff. Machine-readable at `docs/superpowers/inventories/card-detail.json`;
+`node scripts/contact-sheet.mjs <that file>` photographs every row at both widths.
+
+| Route | 390px | 1300px | Notes |
+|---|---|---|---|
+| `/collection` (rows) | ✅ | ✅ | price, zoom mark, hint |
+| `/collection` (rows) — zoom open | ✅ | ✅ | whole card, caption, plated ✕ |
+| `/collection` (grid) | ✅ | ✅ | |
+| `/collection/sets/[code]` | ✅ | ✅ | cell opens the same modal |
+| `/decks/[id]` | ✅ | ✅ | decklist row |
+| `/commanders/[slug]` | ✅ | ⬜ | phone walked; desktop's `⛶` trigger was not reached by the harness — the surface is the same component, proven at the other width |
+| two-faced card — the turn, in the zoom | ✅ | ✅ | control bottom-centre, clear of the P/T |
+
 ## Self-review
 
 - **The riskiest change is `scryfallId` on the owned path**, because the aggregation collapses many

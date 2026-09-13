@@ -96,9 +96,15 @@ describe("priceFor", () => {
       .toEqual({ fact: null });
   });
 
-  it("draws nothing when the printing names neither an id nor a collector number", () => {
-    // Nothing was asked about, so `no stock` would be a claim we never made.
-    expect(priceFor(prices, { setCode: "C21", collectorNumber: "" })).toBeNull();
+  it("draws nothing when nothing narrows the holding to one printing", () => {
+    // Two printings of this card, and a holding that names neither one: `no stock`
+    // would be a claim about a printing nobody identified.
+    const two = indexPriceRows([
+      row(),
+      row({ scryfall_id: "s-2", set_code: "ELD", collector_number: "77" }),
+    ]);
+
+    expect(priceFor(two, { setCode: "", collectorNumber: "" })).toBeNull();
   });
 
   it("draws nothing when no read reached us", () => {
@@ -133,6 +139,46 @@ describe("priceFor", () => {
     const prices = indexPriceRows([row()]);
 
     expect(priceFor(prices, { setCode: "ELD", collectorNumber: "77" })).toBeNull();
+  });
+
+  it("prices a holding that names a set but no number, where the set holds one printing", () => {
+    // The commonest import in the app: Moxfield, Archidekt and paste carry neither an
+    // id nor a collector number. The catalog still knows which printing is meant when
+    // the set holds only one of the card.
+    const prices = indexPriceRows([row()]);
+
+    expect(priceFor(prices, { setCode: "C21", collectorNumber: "" }))
+      .toEqual({ fact: expect.objectContaining({ cents: 241 }) });
+  });
+
+  it("stays silent where one key in the set names two printings", () => {
+    // One KEY is not always one printing: two variants can share a collector number,
+    // and the set then holds two of the card behind a single key.
+    const prices = indexPriceRows([
+      row({ scryfall_id: "s-a" }),
+      row({ scryfall_id: "s-b", price_cents: 9999 }),
+    ]);
+
+    expect(prices.catalogKeys).toEqual(["C21|263"]);
+    expect(priceFor(prices, { setCode: "C21", collectorNumber: "" })).toBeNull();
+  });
+
+  it("stays silent where the set holds two printings of the card", () => {
+    // A set with a variant: the holding names the set and nothing else, and either
+    // could be the copy in hand. Row 1.10 forbids picking one.
+    const prices = indexPriceRows([
+      row({ scryfall_id: "s-a", collector_number: "263" }),
+      row({ scryfall_id: "s-b", collector_number: "400", price_cents: 9999 }),
+    ]);
+
+    expect(priceFor(prices, { setCode: "C21", collectorNumber: "" })).toBeNull();
+  });
+
+  it("prices a holding with neither set nor number when the card has one printing", () => {
+    const prices = indexPriceRows([row()]);
+
+    expect(priceFor(prices, { setCode: "", collectorNumber: "" }))
+      .toEqual({ fact: expect.objectContaining({ cents: 241 }) });
   });
 
   it("refuses a fallback key the catalog gives to two printings", () => {

@@ -1,0 +1,143 @@
+{
+  "feature": "Card detail \u2014 price, zoom, flip",
+  "rows": [
+    {
+      "id": "collection-rows",
+      "label": "/collection (rows) \u2014 modal",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Gravelgill",
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "click": "button[aria-label^=\"Gravelgill Scoundrel,\"]",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "collection-rows-zoom",
+      "label": "/collection \u2014 the zoom",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Gravelgill",
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "click": "button[aria-label^=\"Gravelgill Scoundrel,\"]",
+          "wait": "[role=dialog]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Look at ",
+          "wait": "[data-testid=card-zoom]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "collection-grid",
+      "label": "/collection (grid) \u2014 modal",
+      "steps": [
+        {
+          "goto": "/collection?view=grid&q=Safewright",
+          "settle": 7000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "click": "text=Safewright Cavalry",
+          "wait": "[role=dialog]",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "sets-cell",
+      "label": "/collection/sets/tla \u2014 a cell opens the modal",
+      "steps": [
+        {
+          "goto": "/collection/sets/tla",
+          "settle": 6000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "clickRole": "button",
+          "name": "in your collection",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "deck-row",
+      "label": "/decks/[id] \u2014 decklist row",
+      "steps": [
+        {
+          "goto": "/decks/${PROBE_DECK}",
+          "wait": "main",
+          "settle": 7000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "commander-detail",
+      "label": "/commanders/[slug] \u2014 Card details opens the modal",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "settle": 20000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "clickRole": "link",
+          "name": "view commander details|^View ",
+          "settle": 14000
+        },
+        {
+          "clickRole": "button",
+          "name": "View card details",
+          "wait": "[role=dialog]",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "two-faced-zoom",
+      "label": "two-faced card \u2014 the turn, in the zoom",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Toralf",
+          "settle": 6000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Toralf",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Look at ",
+          "wait": "[data-testid=card-zoom]",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid=card-zoom] button[aria-label^='Turn over to']",
+          "settle": 1200
+        }
+      ]
+    }
+  ],
+  "note": "Steps are Playwright verbs. Every `goto` carries a `wait` for something the finished page has, because `settle` is a delay rather than a readiness check. No account's ids are committed: the deck row takes PROBE_DECK from the environment \u2014 any deck the signed-in account owns, e.g. `PROBE_DECK=<uuid> node scripts/contact-sheet.mjs ...`."
+}
