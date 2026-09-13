@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { VersionHistory } from "./version-history";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { gameLogCopy } from "../../lib/copy/game-log";
 import type { VersionSummary } from "../../lib/decks/versions";
 
 // The rail never fetches. Only an opened row does, and the diff's own suite
@@ -38,8 +39,10 @@ function version(over: Partial<VersionSummary> = {}): VersionSummary {
   };
 }
 
-function mount(versions: VersionSummary[]) {
-  return render(<VersionHistory deckId="deck_1" versions={versions} built={99} gameCount={5} />);
+function mount(versions: VersionSummary[], gameCount = 5) {
+  return render(
+    <VersionHistory deckId="deck_1" versions={versions} built={99} gameCount={gameCount} />,
+  );
 }
 
 // Newest first, as `listVersions` returns them.
@@ -154,6 +157,22 @@ describe("VersionHistory", () => {
     );
     const current = screen.getByRole("link", { current: "page" });
     expect(current.textContent).toContain(copy.tab);
+  });
+
+  // The Games cell is the one whose figure this route has to load, so a broken
+  // count reads as a deck with no games rather than as an error.
+  it("draws the games it was given beside the Games cell", () => {
+    mount(THREE);
+    const games = screen.getByRole("link", { name: gameLogCopy.tab.aria("5") });
+    expect(games.textContent).toContain("5");
+  });
+
+  // At zero the count is absent, never the cell: a tab reading `Games · 0`
+  // advertises its own emptiness, so the figure goes and the name says it in words.
+  it("draws no figure on the Games cell for a deck with no games", () => {
+    mount(THREE, 0);
+    const games = screen.getByRole("link", { name: gameLogCopy.tab.ariaNone });
+    expect(games.textContent).toBe(gameLogCopy.tab.label);
   });
 
   // The heading names the document without drawing ink the canvas does not have.
