@@ -153,10 +153,22 @@ export function FilterBar({
   // Crossing to wide unmounts the sheet, so leaving `open` true would reopen it
   // on the way back, unasked. The set surface and the deck sheet carry the same
   // reset for the same reason.
+  //
+  // `handOffFocus` is the other half. `useDialogA11y` returns focus to the
+  // trigger it saved, and on this crossing that trigger unmounts in the very
+  // same commit — so focus would land on `body` and a keyboard reader would be
+  // put outside the controls that just appeared. The wide form's search field
+  // takes it instead, which is `/decks`' answer to the identical problem.
+  const [handOffFocus, setHandOffFocus] = useState(false);
   const [sheetWasWide, setSheetWasWide] = useState(wide);
   if (sheetWasWide !== wide) {
     setSheetWasWide(wide);
-    if (sheetOpen) setSheetOpen(false);
+    if (wide && sheetOpen) {
+      setSheetOpen(false);
+      setHandOffFocus(true);
+    } else if (!wide && handOffFocus) {
+      setHandOffFocus(false);
+    }
   }
 
   // What the badge counts: DIMENSIONS with something on, never values, and
@@ -178,13 +190,25 @@ export function FilterBar({
 
   return (
     // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop, border-bottom 1px --border, z-index 2
-    // `md:` is deliberate here and NOT the chassis breakpoint. This is the
-    // bar's stickiness, which is a question about the viewport having room to
-    // spare rather than about which form the chassis takes, and it is the
-    // behaviour the route already shipped. Every CONTROL inside follows `wide`.
-    <div className="md:sticky md:top-0 md:z-[2]" style={{ background: "var(--bg)" }}>
+    //
+    // The chassis's breakpoint, not `md:`. This carried a comment arguing the
+    // opposite — that stickiness asks whether the viewport has room to spare
+    // rather than which form the chassis takes — and that was wrong for a
+    // reason the argument could not see: `z-[2]` opens a STACKING CONTEXT, so
+    // across 768-999 the compact sheet's `z-50` was ranked inside it and the
+    // desktop nav rail, a sibling at `z-30`, painted over an open modal and
+    // stayed clickable. A z-index is only ever relative to its context, and
+    // the context has to end where the compact form begins.
+    <div
+      className="min-[1000px]:sticky min-[1000px]:top-0 min-[1000px]:z-[2]"
+      style={{ background: "var(--bg)" }}
+    >
       <FilterChassis
         form={wide ? "wide" : "compact"}
+        // The sheet is `aria-modal` and carries its own debounced count, so
+        // both regions firing would have a reader hear the number twice. The
+        // deck and rack surfaces hand over the same way.
+        silentResult={!wide && sheetOpen}
         chips={chips}
         onClearAll={onClearAll}
         resultLine={resultLine}
@@ -276,6 +300,9 @@ export function FilterBar({
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
           placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
           aria-label="Search your cards"
+          // Takes the focus the closing sheet could not return to its own
+          // trigger, which unmounts in the same commit.
+          autoFocus={handOffFocus}
         />
 
         {/* The pips and the three dimension panels are the WIDE form only. On

@@ -21,10 +21,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { collectionChassisCopy } from "../../lib/copy/collection";
+import { toggleAvailability } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
 import type { BrowseFilters } from "../../lib/collection/browse";
 import type { ColorOption } from "../../lib/collection/color-filter";
-import type { SetOption } from "../../lib/collection/set-filter";
+import { rankSetOptions, type SetOption } from "../../lib/collection/set-filter";
 import type { TypeOption } from "../../lib/collection/type-filter";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { ColourPips } from "../ui/colour-pips";
@@ -99,8 +100,12 @@ function SheetBody({
   useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog });
 
   const sets = useMemo(() => {
-    const q = setQuery.trim().toLowerCase();
-    const matching = q === "" ? setOptions : setOptions.filter((o) => o.label.toLowerCase().includes(q));
+    // `rankSetOptions`, not a `label.includes` of my own: the wide panel ranks
+    // with it and matches the set CODE as well as the name, so a hand-rolled
+    // match here would find nothing for `BLB` while the desktop control found
+    // Bloomburrow — the two forms of one filter disagreeing, which is the
+    // thing this sheet exists to stop.
+    const matching = rankSetOptions(setOptions, setQuery);
     // Selected sets stay visible whatever the query says, or unticking one
     // means clearing the field first to find it again.
     const selected = setOptions.filter((o) => filters.setCodes.includes(o.code));
@@ -172,16 +177,20 @@ function SheetBody({
         </Group>
 
         <Group heading={copy.availabilityHeading}>
-          <div
-            className={`flex flex-wrap gap-[8px] ${availabilityOk ? "" : "pointer-events-none opacity-[0.42]"}`}
-            aria-disabled={availabilityOk ? undefined : true}
-          >
+          {/* `pointer-events-none` stops a mouse and nothing else, so the
+              degraded state is carried on each chip rather than on the box —
+              a keyboard could still activate a chip inside a box that only
+              refused clicks. */}
+          <div className={`flex flex-wrap gap-[8px] ${availabilityOk ? "" : "opacity-[0.42]"}`}>
             {availabilityOptions.map((option) => (
               <Chip
                 key={option.code}
                 label={option.label}
                 count={option.count}
                 on={(filters.availability ?? []).includes(option.code)}
+                // The wide panel disables a zero-count state; the sheet cannot
+                // be the one surface where a dead value is tappable.
+                disabled={option.count === 0 || !availabilityOk}
                 // `free` is the markerless state in the rows, so it is
                 // markerless here too.
                 glyph={
@@ -192,7 +201,11 @@ function SheetBody({
                 onClick={() =>
                   onChange({
                     ...filters,
-                    availability: toggle(
+                    // `toggleAvailability`, not the generic toggle: it returns
+                    // the selection in `AVAILABILITY_STATES` order, which is
+                    // what the wide form writes. Click order would round-trip
+                    // through the URL and come back reordered.
+                    availability: toggleAvailability(
                       (filters.availability ?? []) as AvailabilityState[],
                       option.code,
                     ),

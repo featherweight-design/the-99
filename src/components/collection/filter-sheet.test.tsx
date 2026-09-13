@@ -135,9 +135,38 @@ describe("CollectionFilterSheet", () => {
     expect(region()?.textContent).toBe("3 of 40 match");
   });
 
-  it("greys availability whole when the aggregate could not be read", () => {
-    render(sheet({ availabilityOk: false }));
+  it("refuses every availability chip when the aggregate could not be read", () => {
+    // On the chip, not on a wrapper: `pointer-events-none` refuses a mouse and
+    // lets a keyboard straight through.
+    const onChange = vi.fn();
+    render(sheet({ availabilityOk: false, onChange }));
     const free = screen.getByRole("switch", { name: /Free/ });
-    expect(free.parentElement).toHaveAttribute("aria-disabled", "true");
+    expect(free).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(free);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("disables an availability state no card is in, as the wide panel does", () => {
+    const onChange = vi.fn();
+    render(sheet({ availabilityOptions: [{ code: "soft", label: "In a draft", count: 0 }], onChange }));
+    fireEvent.click(screen.getByRole("switch", { name: /In a draft/ }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("normalises availability to the canonical order, as the wide form does", () => {
+    // Click order would round-trip through the URL and come back reordered.
+    const onChange = vi.fn();
+    render(sheet({ filters: { ...FILTERS, availability: ["over"] }, onChange }));
+    fireEvent.click(screen.getByRole("switch", { name: /In a draft/ }));
+    expect(onChange).toHaveBeenCalledWith({ ...FILTERS, availability: ["soft", "over"] });
+  });
+
+  it("finds a set by its code, not only its name", () => {
+    // The wide panel ranks with `rankSetOptions`, which matches the code. A
+    // hand-rolled label match found nothing for `BLB` while desktop found
+    // Bloomburrow.
+    render(sheet());
+    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "BLB" } });
+    expect(screen.getByRole("switch", { name: /Bloomburrow/ })).toBeTruthy();
   });
 });
