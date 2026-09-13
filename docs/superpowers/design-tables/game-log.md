@@ -1869,7 +1869,11 @@ be a second line, and every slot that was its child moves into an inner row with
 the same classes. A game with no note renders the same single line at the same
 `min-height`, which is the handoff's own requirement.
 
-**What is NOT here, and is still #10's:** the note *field* on the log form, the
-140-character counter, and the note being quoted to the model. The column's
-check constraint is the only thing enforcing the cap, because the note is
-entered by hand against the database.
+**The field followed the same day.** `deckTuningCopy.note` and the log form's
+note input and counter shipped 2026-09-13 to `deck-tuning.md` §Game Log Form —
+Note Field, so the form writes notes and `logGame` enforces the cap in code
+points. What is still #10's is the note being quoted to the model.
+
+**A game already logged has no edit path** — §4 ships no edit action, and the
+row's only control is delete. A note added to an old game is written by hand
+against the database, and there the column's check is all there is.

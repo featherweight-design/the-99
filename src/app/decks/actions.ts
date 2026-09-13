@@ -44,6 +44,7 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1180,9 +1181,14 @@ export type LogGameInput = {
   playedAt?: Date;
   worked: string[];
   hurt: string[];
+  /** One line in the player's own words, capped at 140. Optional — never
+   *  required, not even on a loss. Blank stores null, so "has a note" is one
+   *  predicate everywhere rather than two. */
+  note?: string;
 };
 
 const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
+const NOTE_MAX_LENGTH = deckTuningCopy.note.maxLength;
 
 /** How far ahead of the server a player's clock may run before a log is refused. */
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -1242,6 +1248,19 @@ export async function logGame(
   const hurt = [...new Set(input.hurt)] as GameAxisKey[];
   if (worked.some((key) => hurt.includes(key))) return refuse;
 
+  // A server action is a public endpoint, so the field's `maxlength` is a
+  // courtesy and this is the rule. Over the cap is refused rather than
+  // truncated: silently storing less than somebody typed is the one outcome
+  // worse than saying no. The column's check would refuse it anyway, and that
+  // refusal would arrive as a generic failure with no explanation.
+  if (input.note !== undefined && typeof input.note !== "string") return refuse;
+  const note = input.note?.trim() ?? "";
+  // Code points, not `.length`. JavaScript counts UTF-16 code units, so an
+  // emoji is two and the column's `char_length` is one — counting the JS way
+  // would refuse 71 emoji as 142 characters while the database was happy to
+  // store them. One definition of "character", and it is the column's.
+  if (countCharacters(note) > NOTE_MAX_LENGTH) return refuse;
+
   // The version live when the game was PLAYED, not when it was logged: a game
   // can be backdated, and stamping it with today's list would credit a night's
   // result to a deck that did not exist that night. Null for a brew, and null
@@ -1256,6 +1275,9 @@ export async function logGame(
         .values({
           deckId, userId, result: input.result, podSize: input.podSize, playedAt,
           versionId: version?.id ?? null,
+          // Blank is null, never an empty string, so the row renders and the
+          // reader queries one absence rather than two.
+          note: note.length > 0 ? note : null,
         })
         .returning({ id: deckGames.id });
 

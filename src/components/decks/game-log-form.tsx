@@ -5,10 +5,11 @@
 // because the only rule the form enforces is that the two mark columns stay
 // disjoint, and that rule is one function.
 
-import { useEffect, useRef, useState, useTransition, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, useTransition, type KeyboardEvent } from "react";
 import { logGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
+import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { MutationError } from "./mutation-error";
 import { PRIMARY } from "../ui/button";
 
@@ -99,6 +100,28 @@ export function GameLogForm({
   const [worked, setWorked] = useState<GameAxisKey[]>([]);
   const [hurt, setHurt] = useState<GameAxisKey[]>([]);
   const [moved, setMoved] = useState<{ key: GameAxisKey; to: "worked" | "hurt" } | null>(null);
+  // The note, and whether its counter has earned its place. The counter is
+  // absent until the field has focus or content (S1 state 1), so "has it been
+  // touched" is a second fact the value alone cannot answer — an emptied field
+  // that still has focus keeps its `0 / 140`.
+  const [note, setNote] = useState("");
+  // Touched, not focused. The counter appears on focus or content and must
+  // then STAY — S1 states 6 and 7 freeze it through a save and preserve it
+  // through a refusal, and clicking Save blurs the field first. Keyed on focus
+  // alone, an empty note's counter vanished on the way into the mutation it was
+  // supposed to be frozen during. Cleared only by `collapse()`.
+  const [noteTouched, setNoteTouched] = useState(false);
+  // What the counter counts, and what the action checks: code points, the way
+  // the column does. The input's own `maxLength` counts UTF-16 units and cannot
+  // be told otherwise, so the browser stops a note of astral characters
+  // slightly early — a client stricter than the server, which is the safe way
+  // for the two to disagree.
+  const noteLength = countCharacters(note);
+  // Two forms can be on one page — the panel's and the empty state's — so the
+  // label's `for` and the field's `aria-describedby` cannot be literals.
+  const noteId = useId();
+  const counterId = `${noteId}-count`;
+  const describedById = `${noteId}-desc`;
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const openButton = useRef<HTMLButtonElement>(null);
@@ -145,6 +168,10 @@ export function GameLogForm({
     setHurt([]);
     setMoved(null);
     setError(null);
+    // S1 state 8: reopening is a blank field and no counter. The form never
+    // pre-fills from history — a note is about one game.
+    setNote("");
+    setNoteTouched(false);
   }
 
   // State 6. Ticking an axis in one column removes it from the other, so the
@@ -207,6 +234,7 @@ export function GameLogForm({
         playedAt: playedAt === todayKey ? new Date() : new Date(`${playedAt}T12:00:00`),
         worked,
         hurt,
+        note,
       });
       if (!outcome.ok) {
         // State 12: nothing is cleared. There is no edit action, so a wiped
@@ -387,6 +415,73 @@ export function GameLogForm({
         />
       </div>
 
+      {/* The note — deck-tuning.md §Game Log Form — Note Field. Below both mark
+          columns, above the buttons, under its own accent rule. Nothing above
+          it moves. */}
+      <div className="block mt-[16px] md:mt-[18px] pt-[14px] md:pt-[16px] border-t border-[color:var(--accent)]">
+        <div className="flex items-baseline gap-[8px] mb-[8px] md:mb-[9px]">
+          <label
+            htmlFor={noteId}
+            className="font-mono text-[9.5px] md:text-[10px] tracking-[0.14em] uppercase text-[color:var(--accent)]"
+          >
+            {deckTuningCopy.note.label}
+          </label>
+          {/* The full gloss would push the counter onto a second line at 390px,
+              so the phone takes the short form. Both are drawn, and the
+              breakpoint hides one — a single element swapping its text would
+              read as a layout shift to anything watching the DOM. */}
+          <span className="font-mono text-[9.5px] md:text-[10px] text-fg-locked">
+            <span className="md:hidden">{deckTuningCopy.note.hintShort}</span>
+            <span className="hidden md:inline">{deckTuningCopy.note.hint}</span>
+          </span>
+          {/* S1 states 1–5. Absent until focus or content; `--warning` from
+              `warnAt`, and at the cap it says so rather than erroring — a limit
+              the field will not let you pass needs no error. */}
+          {noteTouched && (
+            <span
+              id={counterId}
+              className={`ml-auto font-mono text-[9.5px] md:text-[10px] md:tabular-nums ${
+                noteLength >= deckTuningCopy.note.warnAt ? "text-warning" : "text-fg-locked"
+              }`}
+            >
+              {deckTuningCopy.note.counter(
+                String(noteLength),
+                String(deckTuningCopy.note.maxLength),
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* An input, never a textarea: one line is the whole promise, and a
+            textarea invites a paragraph the cap would then cut off. */}
+        <input
+          id={noteId}
+          type="text"
+          value={note}
+          maxLength={deckTuningCopy.note.maxLength}
+          disabled={isPending}
+          onChange={(e) => {
+            setNote(e.target.value);
+            setNoteTouched(true);
+          }}
+          onFocus={() => setNoteTouched(true)}
+          aria-describedby={noteTouched ? `${describedById} ${counterId}` : describedById}
+          className="block md:flex md:items-center w-full min-h-[48px] md:min-h-[46px] px-[13px] md:px-[14px] py-[11px] md:py-[12px] rounded-[8px] bg-surface-sunken border border-border-strong focus:border-[color:var(--accent)] text-[13.5px] leading-[1.45] md:leading-normal text-fg disabled:cursor-not-allowed disabled:opacity-50"
+        />
+        <span id={describedById} className="sr-only">
+          {deckTuningCopy.note.ariaDescription}
+        </span>
+
+        {/* Desktop only. The handoff's sentence also promises the tuning panel
+            reads the note; that panel is unbuilt, so the clause naming it is
+            held back rather than shipped as a claim about a surface nobody can
+            open. See §Errata in the design table. */}
+        <p className="hidden md:block mt-[8px] font-mono text-[10px] leading-[1.5] text-fg-faint">
+          {deckTuningCopy.note.readBack}{" "}
+          <em className="not-italic text-fg-body">{deckTuningCopy.note.readBackEmphasis}</em>
+        </p>
+      </div>
+
       <div className="flex flex-col md:flex-row md:flex-wrap md:items-center items-stretch gap-[9px] md:gap-[16px] mt-[18px] md:mt-[20px] pt-[16px] md:pt-[18px] border-t border-border">
         <button
           type="button"
@@ -407,8 +502,11 @@ export function GameLogForm({
         >
           {gameLogCopy.form.cancel}
         </button>
+        {/* Amended by #10: the line said "marks are optional" and there is now
+            a second optional thing above it. Three words longer, still one
+            line at desktop width. */}
         <p className="hidden md:block font-mono text-[11px] text-fg-faint">
-          {gameLogCopy.form.optionalNote}
+          {deckTuningCopy.note.optionalNote}
         </p>
       </div>
 

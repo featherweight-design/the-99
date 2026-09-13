@@ -20,9 +20,10 @@ export type DeckGame = {
   versionNumber: number | null;
   /**
    * What happened, in the player's own words, or null when there was nothing
-   * worth writing down — which is most games. Nothing in the app writes it:
-   * the log form has no field, and the note is entered against the database by
-   * hand. The row draws whatever is there, to #10's handoff.
+   * worth writing down — which is most games. The log form writes it; a game
+   * already logged has no edit path, so a note added to one afterwards is
+   * written by hand against the database. The row draws whatever is there, to
+   * #10's handoff.
    */
   note: string | null;
   worked: GameAxisKey[];
