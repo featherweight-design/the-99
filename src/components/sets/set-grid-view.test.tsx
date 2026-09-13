@@ -2127,11 +2127,53 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     }
   });
 
+  // The TRANSITION, not just the quiet case. The previous version of this only repeated
+  // the ordinary scroll-collapse and would have passed with the parent ignoring the
+  // callback's clear entirely.
   it("and collapses once it stops", () => {
+    stubDesktop(false);
+    deltaProps.firing = true;
+    try {
+      const r = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(r.container)).toBe(false);
+      deltaProps.firing = false;
+      r.rerender(r.again());
+      scrollTo(401);
+      expect(isShy(r.container)).toBe(true);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  // Opening the sheet from the collapsed bar must not reopen the head: the dialog is a
+  // child of the head element and not of the bar, so its first focused control bubbled
+  // through the guard and unmounted the trigger `useDialogA11y` returns focus to.
+  it("stays collapsed when the sheet opens from the bar", () => {
     stubDesktop(false);
     const { container } = view([p("1"), p("2")], []);
     scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    const trigger = [...bar.querySelectorAll("button")]
+      .find((b) => /Filters/.test(b.textContent ?? "")) as HTMLElement;
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.focus(screen.getByRole("dialog").querySelector("button") as HTMLElement);
     expect(isShy(container)).toBe(true);
+  });
+
+  // A complete base run can still have extras and enough cells to scroll, and the icon is
+  // `aria-hidden` — a bar carrying the bare name told a screen-reader user nothing.
+  it("keeps the ratio and the completion state when the set is complete", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { booster: true }), p("2", { booster: false })], ["1"],
+    );
+    scrollTo(400);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.textContent).toMatch(/1 \/ 1/);
+    expect(bar.textContent).not.toBe("Duskmourn");
+    expect(bar.textContent).toMatch(/Duskmourn/);
   });
 
   // The field is inside the `hidden` open-head subtree while the bar is drawn, so the

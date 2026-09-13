@@ -156,6 +156,16 @@ export function SetGridView(props: SetGridViewProps) {
    * what they asked for; the collapse resumes the moment they leave.
    */
   const [focusInHead, setFocusInHead] = useState(false);
+  /**
+   * The head can reopen for a reason that is not the reader: the delta strip fires on a
+   * window focus event and pins it open. If focus was on one of the bar's two buttons, that
+   * button is unmounted underneath it and the keyboard is left on a detached node.
+   *
+   * Bounded on purpose — two controls, one destination. The bar's `Filters` and the open
+   * row's `Filters` are the same control at two sizes, so that is where focus goes.
+   */
+  const openFiltersRef = useRef<HTMLButtonElement>(null);
+  const rescueFromBar = useRef(false);
   // The two states that forbid a collapse are read during render rather than pushed into
   // `collapsed` by an effect: an effect that calls `setState` synchronously cascades a
   // render, and the answer here is derivable — desktop never collapses, and neither does a
@@ -201,6 +211,14 @@ export function SetGridView(props: SetGridViewProps) {
     const el = headRef.current;
     const spacer = spacerRef.current;
     if (el === null || spacer === null) return;
+    // Refreshed HERE, before sizing, whenever the head is open. While collapsed the open
+    // subtree is `display:none` and cannot resize, so a filter changed through the bar's
+    // sheet leaves the recorded height stale — and the first render that restores would
+    // then size the spacer from a head that no longer exists. `ResizeObserver` corrects it
+    // a frame later, which is a frame too late.
+    if (!el.hasAttribute("data-set-head-collapsed")) {
+      restHeightRef.current = el.getBoundingClientRect().height;
+    }
     const rest = restHeightRef.current;
     spacer.style.height = rest === null
       ? "0px"
@@ -685,16 +703,27 @@ export function SetGridView(props: SetGridViewProps) {
   // collapsing again the moment it is dismissed.
   const shy = collapsed && mayCollapse;
 
+  // The head can reopen for a reason that is not the reader — the delta strip fires on a
+  // window focus event — and that unmounts the bar under whatever had focus in it. Declared
+  // here because it reads `shy`, which is derived below the state it depends on.
+  useLayoutEffect(() => {
+    if (shy || !rescueFromBar.current) return;
+    rescueFromBar.current = false;
+    openFiltersRef.current?.focus();
+  }, [shy]);
+
   return (
     <div>
       <div
         ref={headRef}
-        // The OPEN subtree only. The collapsed bar is inside this element too, and pinning
-        // on focus anywhere in it meant tabbing to the bar's own `Filters` button reopened
-        // the head and unmounted the button under the reader's focus — the exact strand
-        // this guard exists to prevent, arriving from the other direction.
-        onFocus={(e) => {
-          if (!barRef.current?.contains(e.target)) setFocusInHead(true);
+        // Only while the head is OPEN. Anything focused once it is collapsed — the bar's
+        // own buttons, and the filter sheet, which is a child of this element and not of
+        // the bar — would otherwise reopen the head and unmount the control the reader had
+        // just reached. `useDialogA11y` then returns focus to a trigger that is gone.
+        //
+        // Read as "focus pins an open head", never "focus opens a closed one".
+        onFocus={() => {
+          if (!shy) setFocusInHead(true);
         }}
         // `onBlur` is React's delegated `focusout`, so it fires with the NEW target in
         // `relatedTarget` — which is how leaving the open block is told apart from moving
@@ -707,6 +736,7 @@ export function SetGridView(props: SetGridViewProps) {
             && barRef.current?.contains(next) !== true;
           if (!stillOpen) setFocusInHead(false);
         }}
+        data-set-head-shy={shy ? "" : undefined}
         data-set-head
         data-set-head-collapsed={shy ? "" : undefined}
         className="sticky top-0 z-[2] pb-[12px] pt-[10px]"
@@ -721,7 +751,17 @@ export function SetGridView(props: SetGridViewProps) {
             forbids two controls with one accessible name on this page, and the field is
             forty pixels of scroll away. */}
         {shy ? (
-          <div ref={barRef} data-set-head-bar className="flex h-[52px] items-center gap-[8px]">
+          <div
+            ref={barRef}
+            data-set-head-bar
+            className="flex h-[52px] items-center gap-[8px]"
+            onFocus={() => { rescueFromBar.current = true; }}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                rescueFromBar.current = false;
+              }
+            }}
+          >
             <SetIcon
               uri={iconSvgUri}
               size={22}
@@ -729,13 +769,20 @@ export function SetGridView(props: SetGridViewProps) {
               tone={complete ? "success" : "muted"}
               ringed={complete}
             />
+            {/* The completion state is in the NAME, not only in the icon: `SetIcon` is
+                `aria-hidden`, so a bar carrying the bare name told a screen-reader user
+                nothing the open heading tells them. */}
             <span
               className="min-w-0 flex-1 truncate font-display text-[14px]"
               style={{ color: complete ? "var(--success)" : "var(--fg)" }}
             >
-              {name}
+              {complete ? setPageCopy.complete.heading(name) : name}
             </span>
-            {sections.indexed && !complete ? (
+            {/* Every indexed set, the complete one included. A complete base run can still
+                have extras and enough cells to scroll, and §31's bar carries the ratio —
+                dropping it there loses the reader's progress figure exactly where the head
+                has stopped showing it anywhere else. */}
+            {sections.indexed ? (
               <span
                 className="shrink-0 font-mono text-[11px]"
                 style={{ color: "var(--fg-muted)" }}
@@ -1044,6 +1091,7 @@ export function SetGridView(props: SetGridViewProps) {
 
           <button
             type="button"
+            ref={openFiltersRef}
             onClick={() => setSheetOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
