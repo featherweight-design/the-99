@@ -31,6 +31,7 @@ import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { deckBodySize } from "../../lib/decks/deck-size";
+import { touchDeck } from "../../lib/decks/touch";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import {
@@ -616,8 +617,17 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
         target: [deckCards.deckId, deckCards.oracleId],
         set: { quantity: sql`${deckCards.quantity} + 1` },
       });
+      // The upsert always writes: either a new row or one more copy.
+      await touchDeck(tx, deckId);
     } else {
-      await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
+      // The conflict clause is what decides here, so the stamp reads its
+      // result rather than assuming the statement wrote. A repeat add of a
+      // singleton the deck already holds is a no-op, and a deck nothing was
+      // added to was not edited.
+      const inserted = await tx.insert(deckCards).values({ deckId, oracleId })
+        .onConflictDoNothing()
+        .returning({ oracleId: deckCards.oracleId });
+      if (inserted.length > 0) await touchDeck(tx, deckId);
     }
     return null;
   });
@@ -642,6 +652,13 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   // first turns that case into the right answer instead: the row this removal
   // named is gone, so there is nothing to remove.
   await db.transaction(async (tx) => {
+    // The DECK row first, then the card row. Every other deck write takes them
+    // in that order — `addCardToDeck`, the fill, the top-off,
+    // `restoreDraftFromVersion` — and this path now ends in a stamp on `decks`,
+    // so taking the child first would leave a removal holding the card while it
+    // waits for the deck, against a restore holding the deck while it waits for
+    // the card. One order everywhere is what makes that pair impossible.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     const [row] = await tx.select({ quantity: deckCards.quantity })
       .from(deckCards)
       .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)))
@@ -650,6 +667,10 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
     const where = and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
     if (row.quantity > 1) await tx.update(deckCards).set({ quantity: row.quantity - 1 }).where(where);
     else await tx.delete(deckCards).where(where);
+    // Inside the `if (!row)` guard's shadow deliberately: a removal that found
+    // nothing wrote nothing, and a stamp for a write that did not happen is the
+    // one lie this column can tell.
+    await touchDeck(tx, deckId);
   });
   revalidateClaims(deckId, userId);
 }
@@ -706,6 +727,10 @@ export async function fillDeck(deckId: string): Promise<void> {
         deckId, kind: "seed", openSlots: deckBodySize(hasPartner),
         rows: plan.rows.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
       });
+      // Only where the plan landed rows. A fill that found nothing to add still
+      // sets `filled` below — that column answers "was this ever filled" — but
+      // it left the list exactly as it was, and the stamp describes the list.
+      await touchDeck(tx, deckId);
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });
@@ -753,7 +778,12 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   const trimmed = validateDeckName(name);
-  await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
+  // The one site that stamps `last_edited_at` without `touchDeck`: it is already
+  // an UPDATE of this row, so folding the column in is atomic by construction
+  // and a transaction wrapped around two statements would buy nothing. The rule
+  // for what counts as an edit still lives in `touch.ts`.
+  await db.update(decks).set({ name: trimmed, lastEditedAt: sql`clock_timestamp()` })
+    .where(eq(decks.id, deckId));
   // A rename moves no card, so no claim changes — and it still reaches every
   // surface a claim does, because those surfaces print the deck's NAME. A card's
   // availability marker says `none free — in <deck>` on /collection, /commanders
@@ -781,9 +811,22 @@ export type SweptRow = { oracleId: string; quantity: number };
 export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
-  const removed = await db.delete(deckCards)
-    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
-    .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
+  // The transaction is the stamp's, not the sweep's: the delete still takes no
+  // lock of its own and still relies on Postgres re-evaluating its WHERE after
+  // a concurrent keep, exactly as above. It buys one thing — the sweep and the
+  // stamp that describes it commit together.
+  const removed = await db.transaction(async (tx) => {
+    // The deck row first, for the ordering reason above. It does NOT change what
+    // the delete does: the statement still takes no lock of its own on the rows
+    // it sweeps, and still relies on Postgres re-evaluating its WHERE after a
+    // concurrent keep, so a card kept mid-sweep is still passed by.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    const rows = await tx.delete(deckCards)
+      .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
+      .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
+    if (rows.length > 0) await touchDeck(tx, deckId);
+    return rows;
+  });
   revalidateClaims(deckId, userId);
   return removed;
 }
@@ -854,9 +897,19 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     const count = [...byId]
       .filter(([oracleId]) => !here.has(oracleId))
       .reduce((n, [, quantity]) => n + quantity, 0);
-    await tx.insert(deckCards)
+    const restoredRows = await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ oracleId: deckCards.oracleId });
+    // The INSERT's own result, not `count`. `count` is what the read above
+    // predicted, and the two can still disagree: the writers that take the deck
+    // row's lock — the add, the removal, the sweep, the top-off, the list
+    // update, the restore — are serialised against each other by it, but
+    // `keepAutoCard` and `keepAllAutoCards` reach `deck_cards` without it, and
+    // the conflict clause is what decides each row either way. The toast keeps
+    // reporting `count`, which is the figure it has always reported; the stamp
+    // follows what was actually written.
+    if (restoredRows.length > 0) await touchDeck(tx, deckId);
     return count;
   });
   // AFTER the commit, never inside it. An invalidation from inside the callback
@@ -929,15 +982,24 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       if (rejection) throw new Error(rejection);
     }
 
-    await tx.insert(deckCards)
+    const insertedRows = await tx.insert(deckCards)
       .values(ids.map((oracleId) => ({ deckId, oracleId, quantity: 1, auto: true })))
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ oracleId: deckCards.oracleId });
     // Only the rows that landed. A pass claiming a card it did not place would
     // offer to undo one the player put there themselves.
     const passId = await recordFillPass(tx, {
       deckId, kind: "top_off", openSlots: bodySize - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
+    // The INSERT's own result, not `landed`. `landed` is computed from the read
+    // above, and `removeCardFromDeck` reaches `deck_cards` under the deck lock
+    // this transaction holds only now that the line above takes it — a removal
+    // that committed between this transaction's read and its insert leaves a
+    // card genuinely placed while `landed` says it was already there. The fill
+    // pass still records `landed`, which is a pre-existing question about what
+    // the undo may take back and not this column's to answer.
+    if (insertedRows.length > 0) await touchDeck(tx, deckId);
     return { passId, landed, total: built + landed.length, userId };
   });
 
@@ -1161,6 +1223,11 @@ export async function undoFillPass(
       .select({ copies: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
       .from(deckCards)
       .where(eq(deckCards.deckId, deckId));
+
+    // An undo that found every row already claimed or already gone removed no
+    // card, and `removedCards` is the figure the toast reports for exactly that
+    // reason — the stamp uses the same one rather than a second test.
+    if (removedCards > 0) await touchDeck(tx, deckId);
 
     return { removed: removedCards, built: built?.copies ?? 0 };
   });
@@ -1800,6 +1867,12 @@ export async function pullCardFromDeck(
       await tx.delete(deckCards)
         .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
     }
+    // The source deck's list really did change, so the column stays truthful.
+    // Both stamps are `clock_timestamp()`, so the commit on the next line is
+    // microseconds later — which a `Date` may or may not be able to represent,
+    // leaving Home to read this row as `committed` or `edited`. Both are true of
+    // a pull, so neither is worth engineering for; see the note in `touched.ts`.
+    await touchDeck(tx, sourceDeckId);
     await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
     return { ok: true };
   });

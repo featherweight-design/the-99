@@ -1,0 +1,1 @@
+CREATE INDEX "deck_versions_deck_committed_idx" ON "deck_versions" USING btree ("deck_id","committed_at");

@@ -28,6 +28,8 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   unresolvedCount: 0,
   statusPill: "To buy",
   lastPlayedAt: daysBefore(2),
+  lastEditedAt: new Date("2026-09-01T00:00:00Z"),
+  lastCommittedAt: null,
   inUseElsewhere: 0,
   ...over,
 });

@@ -36,6 +36,8 @@ function deckOf(over: Partial<DeckListItem> = {}): DeckListItem {
     unresolvedCount: 0,
     createdAt: new Date("2026-01-01T00:00:00Z"),
     lastPlayedAt: new Date("2026-09-02T00:00:00Z"),
+    lastEditedAt: new Date("2026-09-01T00:00:00Z"),
+    lastCommittedAt: null,
     inUseElsewhere: 0,
     ...over,
   };

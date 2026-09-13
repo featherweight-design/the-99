@@ -13,6 +13,7 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
+import { touchDeck } from "../../lib/decks/touch";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,
@@ -342,6 +343,10 @@ export async function resolveUnresolvedRow(
         await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
       }
     }
+    // The line is answered either way — a resolve naming one of the commanders
+    // adds no `deck_cards` row but still clears the row from the banner, and the
+    // deck the player is left looking at is not the one they had.
+    await touchDeck(tx, deckId);
   });
 
   revalidateClaims(deckId, userId);
@@ -355,10 +360,14 @@ export async function deleteUnresolvedRow(deckId: string, rowId: string): Promis
   const userId = await requireUserId();
 
   await db.transaction(async (tx) => {
+    // `for update`, as the resolve path takes it. The two now write the same two
+    // tables — the unresolved row and the deck's stamp — and a pair that took
+    // them in opposite orders could deadlock with each other.
     const [deck] = await tx
       .select({ id: decks.id })
       .from(decks)
-      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+      .for("update");
     if (!deck) throw new Error("deck not found");
 
     const deleted = await tx
@@ -366,6 +375,11 @@ export async function deleteUnresolvedRow(deckId: string, rowId: string): Promis
       .where(and(eq(deckUnresolvedRows.id, rowId), eq(deckUnresolvedRows.deckId, deckId)))
       .returning({ id: deckUnresolvedRows.id });
     if (deleted.length === 0) throw new Error("unresolved row not found");
+    // The symmetric half of `resolveUnresolvedRow`'s stamp. Dropping a line
+    // changes what the deck is — its total falls — so the deck the player is
+    // left looking at is not the one they had, whether they answered the line
+    // or struck it out.
+    await touchDeck(tx, deckId);
   });
 
   // Dropping a line changes the deck's totals but claims nothing, so the

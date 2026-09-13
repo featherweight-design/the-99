@@ -258,6 +258,24 @@ export const decks = pgTable("decks", {
    */
   folderId: uuid("folder_id").references(() => deckFolders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  /**
+   * When this deck's contents last changed — a card added or removed, basics
+   * set, a fill or a sweep run, a rename, a commander swapped. Home's resume
+   * block sorts on it, and the row's stamp names it: `edited 2h ago`.
+   *
+   * NOT NULL with a default, so no reader branches on null and no backfill can
+   * be forgotten, and the migration seeds it from `created_at` rather than
+   * `now()` — stamping every existing deck with the deploy instant would order
+   * the whole list by an event that never happened.
+   *
+   * Three things deliberately do not write it. A commit has its own column
+   * (`deck_versions.committed_at`) and a game has its own row, so touching here
+   * would fold both into "edited" and the other two verbs would never print.
+   * Filing a deck on a shelf is not work on the deck. And an open is not
+   * recorded at all — a sort keyed on glances fills the block with whatever was
+   * looked at rather than what was done.
+   */
+  lastEditedAt: timestamp("last_edited_at").notNull().defaultNow(),
   // True once a fill has run against this deck — including a fill that found
   // nothing to add, because a collection thin enough to plan zero rows still
   // answers the question this column exists to answer. Never reset by a sweep:
@@ -332,6 +350,11 @@ export const deckVersions = pgTable("deck_versions", {
 }, (t) => [
   unique("deck_versions_deck_number_key").on(t.deckId, t.number),
   index("deck_versions_deck_number_idx").on(t.deckId, t.number),
+  // `max(committed_at)` per deck, which Home's resume block asks for once per
+  // deck on every load. The index above is ordered by `number` and cannot answer
+  // it, so without this the read walks every version of every deck as histories
+  // grow. `deck_games_deck_played_idx` is the same shape for the same reason.
+  index("deck_versions_deck_committed_idx").on(t.deckId, t.committedAt),
 ]);
 
 export const deckVersionCards = pgTable("deck_version_cards", {

@@ -29,7 +29,14 @@ const stub = vi.hoisted(() => {
       },
     ],
     transactions: 0,
+    updates: [] as { table: string; values: unknown }[],
+    // What the unclaim's UPDATE ... RETURNING hands back. One row by default:
+    // the success-path list names cards the fill had placed.
+    unclaimRows: [{ oracleId: "o-sol-ring" }] as { oracleId: string }[],
   };
+
+  const nameOf = (table: unknown) =>
+    (table as { [k: symbol]: string })[Symbol.for("drizzle:Name")] ?? "unknown";
 
   // Two shapes: the deck read is select().from().where(), the cards read adds an
   // innerJoin between them.
@@ -46,8 +53,25 @@ const stub = vi.hoisted(() => {
   const tx = {
     execute: async () => undefined,
     select,
-    delete: () => ({ where: async () => undefined }),
-    update: () => ({ set: () => ({ where: async () => undefined }) }),
+    // Thenable and chainable: the unresolved-row delete reads back what it
+    // cleared, because a deck with no lines to clear was not edited by the
+    // statement running.
+    delete: () => ({
+      where: () => Object.assign(Promise.resolve([]), { returning: async () => [] }),
+    }),
+    // Thenable and chainable: the deck's stamp awaits the builder, while the
+    // unclaim reads back the rows it changed — a list reapplied to a deck whose
+    // cards are already the player's changes nothing and must not stamp.
+    update: (table: unknown) => ({
+      set: (values: unknown) => ({
+        where: () => {
+          const name = nameOf(table);
+          state.updates.push({ table: name, values });
+          const rows = name === "deck_cards" ? state.unclaimRows : [];
+          return Object.assign(Promise.resolve(rows), { returning: async () => rows });
+        },
+      }),
+    }),
   };
 
   const db = {
@@ -79,8 +103,13 @@ const { updateDeckFromList } = await import("./update-actions");
 
 beforeEach(() => {
   stub.state.transactions = 0;
+  stub.state.updates.length = 0;
+  stub.state.unclaimRows = [{ oracleId: "o-sol-ring" }];
   newest.mockReset();
 });
+
+/** Whether the apply stamped `decks.last_edited_at` — Home's resume order. */
+const stamped = () => stub.state.updates.some((u) => u.table === "decks");
 
 describe("updateDeckFromList input guards", () => {
   // Without this the plan is "everything comes out", and an empty `keep` deletes
@@ -119,6 +148,29 @@ describe("updateDeckFromList and the deck's version", () => {
       deckId: "deck-1", text: list, source: "paste", keep: [],
     });
     expect(result.versioned).toBe(true);
+  });
+
+  // The stamp follows the writes, not the act of applying. The deck here already
+  // holds exactly what the list names, so nothing is deleted, inserted or
+  // requantified and it has no unresolved lines to clear — an apply that changed
+  // nothing must not tell Home the deck was edited. The `auto: false` sweep over
+  // the named cards is the one write that does happen, and it is a real change
+  // to the rows, so it stamps.
+  it("stamps the deck when the apply unclaims the cards the list names", async () => {
+    newest.mockResolvedValue(null);
+    await updateDeckFromList({ deckId: "deck-1", text: list, source: "paste", keep: [] });
+    expect(stamped()).toBe(true);
+  });
+
+  // The finding round 8 raised: a list reapplied to a deck whose cards are
+  // already the player's rewrites nothing. The unclaim's UPDATE is narrowed to
+  // rows still marked `auto`, so it matches none, and an unchanged deck must not
+  // climb Home's list.
+  it("does not stamp when the unclaim matches no row", async () => {
+    newest.mockResolvedValue(null);
+    stub.state.unclaimRows = [];
+    await updateDeckFromList({ deckId: "deck-1", text: list, source: "paste", keep: [] });
+    expect(stamped()).toBe(false);
   });
 
   it("reports a brew as unversioned", async () => {

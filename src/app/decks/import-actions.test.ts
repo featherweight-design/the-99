@@ -15,6 +15,7 @@ const stub = vi.hoisted(() => {
     cards: [] as Record<string, unknown>[],
     inserts: [] as { values: Record<string, unknown>; mode: "update" | "nothing" }[],
     deletedFrom: [] as string[],
+    updates: [] as { table: string; values: Record<string, unknown> }[],
     revalidated: [] as string[],
     updatedTags: [] as string[],
     // Every WHERE the actions build, kept so the tests can prove the ownership
@@ -67,6 +68,17 @@ const stub = vi.hoisted(() => {
           onConflictDoNothing: async () => record("nothing"),
         };
       },
+    }),
+    // `touchDeck` stamps the deck at the end of a resolve. Recorded rather than
+    // swallowed: the rule that answering a line counts as editing the deck is
+    // asserted below.
+    update: (table: unknown) => ({
+      set: (values: Record<string, unknown>) => ({
+        where: async (condition: unknown) => {
+          state.updates.push({ table: nameOf(table), values });
+          state.wheres.push({ table: nameOf(table), condition });
+        },
+      }),
     }),
     delete: (table: unknown) => ({
       // Drizzle's builder is a thenable that also offers .returning(), and both
@@ -318,6 +330,11 @@ describe("resolveUnresolvedRow", () => {
       { values: { deckId: DECK, oracleId: ORACLE }, mode: "nothing" },
     ]);
     expect(stub.state.deletedFrom).toEqual(["deck_unresolved_rows"]);
+    // Answering a line is an edit: the deck the player is left looking at is
+    // not the one they had, so Home's resume block must be able to say so.
+    expect(stub.state.updates).toEqual([
+      { table: "decks", values: { lastEditedAt: expect.anything() } },
+    ]);
     // Resolving a row puts a card in the deck, which is a claim — so the
     // surfaces that draw availability off deck rows are invalidated with it,
     // and the commander detail route with them: its rank is counted over a

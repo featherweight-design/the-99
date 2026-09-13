@@ -8,6 +8,7 @@ import {
   deckFolders,
   deckGames,
   deckUnresolvedRows,
+  deckVersions,
   decks,
 } from "../../db/schema";
 import {
@@ -446,6 +447,14 @@ export type DeckListItem = {
    */
   lastPlayedAt: Date | null;
   /**
+   * When this deck's contents last changed — see `src/lib/decks/touch.ts` for
+   * what counts. Never null: the column is NOT NULL and defaults to the deck's
+   * own creation, so a deck nobody has edited reads as edited when it was made.
+   */
+  lastEditedAt: Date;
+  /** When this deck was last committed, or null for a brew that never has been. */
+  lastCommittedAt: Date | null;
+  /**
    * How many of this deck's owned cards a *different* finished deck has
    * sleeved. Zero when the availability read fails, which is the same thing the
    * tile draws when nothing is spoken for — a clause is not worth a 500.
@@ -465,14 +474,38 @@ export type DeckListItem = {
  * `lastPlayedAt`, and surfaces as a rendered `Invalid Date` far from its cause.
  * `parseAsOf` guards the same shape for `printing_prices.as_of`.
  */
-function toDate(value: Date | string | null): Date | null {
+function toDate(value: Date | string | null, column: string): Date | null {
   if (value === null) return null;
   const parsed = value instanceof Date ? value : new Date(toUtcInstant(value));
   if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`deck_games.played_at is not a readable timestamp: ${String(value)}`);
+    // Named, because two columns now come through here and they fail
+    // independently — a production failure has to say which one is malformed.
+    throw new Error(`${column} is not a readable timestamp: ${String(value)}`);
   }
   return parsed;
 }
+
+/**
+ * A deck's newest commit, as a correlated subquery.
+ *
+ * Module-level and exported so `last-committed.test.ts` can render it: the trap
+ * it is written around is invisible in a component test and silent at runtime.
+ *
+ * Aliased, with both sides written out, for the reason AGENTS.md gives — in the
+ * PROJECTION of a select whose `from` names one table, Drizzle emits column
+ * references bare, so the obvious `where ${deckVersions.deckId} = ${decks.id}`
+ * renders as `where "deck_id" = "id"`: each version row's own foreign key
+ * against its own primary key, matching nothing, for ever, with no error. The
+ * stamp would simply never say `committed` and nothing would fail.
+ *
+ * Typed as `Date | string` because that is what drivers return for a `timestamp`
+ * reached through raw SQL; `toDate` resolves it at the row map.
+ */
+export const lastCommittedSql = sql<Date | string | null>`(
+  select max(dv.committed_at)
+  from ${deckVersions} dv
+  where dv.deck_id = ${decks}.id
+)`;
 
 /**
  * `sort` is required rather than defaulted: a default here would silently
@@ -563,6 +596,15 @@ export async function listDecksWithStats(
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
       lastPlayedAt: lastPlayedSql,
+      // Raw, and normalised through `toDate` below, rather than taken as a
+      // mapped column. `last_edited_at` is `timestamp` WITHOUT time zone holding
+      // a UTC instant, and the driver parses a mapped one in the RUNTIME's zone
+      // — so on a server west of UTC this column would arrive hours adrift of
+      // `lastPlayedAt` and `lastCommittedAt`, which arrive as strings and are
+      // read as UTC. `touchedBy` compares all three, and a mixed pair of
+      // parsings picks the wrong verb and the wrong order by exactly the offset.
+      lastEditedAt: sql<Date | string>`${decks.lastEditedAt}`,
+      lastCommittedAt: lastCommittedSql,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
@@ -588,6 +630,7 @@ export async function listDecksWithStats(
       decks.id,
       decks.name,
       decks.createdAt,
+      decks.lastEditedAt,
       cards.name,
       cards.colorIdentity,
       cards.imageUri,
@@ -679,7 +722,11 @@ export async function listDecksWithStats(
       // `new Date`, which would read it in the runtime's own zone — the same row
       // would then date to a different day in Denver than in CI, and `2 days
       // ago` is exactly the kind of figure that shifts.
-      lastPlayedAt: toDate(row.lastPlayedAt),
+      lastPlayedAt: toDate(row.lastPlayedAt, "deck_games.played_at"),
+      // Never null: the column is NOT NULL, so `toDate` cannot return null here
+      // — the assertion is the type's, and an unreadable value throws instead.
+      lastEditedAt: toDate(row.lastEditedAt, "decks.last_edited_at")!,
+      lastCommittedAt: toDate(row.lastCommittedAt, "deck_versions.committed_at"),
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
     };

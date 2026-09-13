@@ -11,6 +11,7 @@ import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
+import { touchDeck } from "../../lib/decks/touch";
 import { newestVersion } from "../../lib/decks/versions";
 import {
   deckImportMaxBytes,
@@ -351,11 +352,23 @@ export async function updateDeckFromList(
     // A card the list names is a card the player chose, so it stops being the
     // app's. This is what makes `Clear all auto` unable to take it afterwards.
     const named = plan.unchanged.map((r) => r.oracleId);
+    let unclaimed = 0;
     if (named.length > 0) {
-      await tx
+      // Narrowed to the rows still marked `auto`, and read back. Reapplying a
+      // list to a deck whose cards the player has already claimed changes
+      // neither the contents nor the provenance, and an unnarrowed UPDATE would
+      // report work done on every row it rewrote to the value it already held —
+      // which is what the stamp below would then claim.
+      const rows = await tx
         .update(deckCards)
         .set({ auto: false })
-        .where(and(eq(deckCards.deckId, input.deckId), inArray(deckCards.oracleId, named)));
+        .where(and(
+          eq(deckCards.deckId, input.deckId),
+          inArray(deckCards.oracleId, named),
+          eq(deckCards.auto, true),
+        ))
+        .returning({ oracleId: deckCards.oracleId });
+      unclaimed = rows.length;
     }
 
     // The quantities the diff reconciled silently. Without this the list does
@@ -380,7 +393,9 @@ export async function updateDeckFromList(
 
     // Replaced wholesale rather than merged: the list is the deck now, so a line
     // the new list does not carry is not a line the deck is still missing.
-    await tx.delete(deckUnresolvedRows).where(eq(deckUnresolvedRows.deckId, input.deckId));
+    const clearedLines = await tx.delete(deckUnresolvedRows)
+      .where(eq(deckUnresolvedRows.deckId, input.deckId))
+      .returning({ id: deckUnresolvedRows.id });
     for (let i = 0; i < plan.unresolved.length; i += INSERT_BATCH) {
       await tx.insert(deckUnresolvedRows).values(
         plan.unresolved.slice(i, i + INSERT_BATCH).map((r) => ({
@@ -402,6 +417,23 @@ export async function updateDeckFromList(
     // already applied the list — the caller would draw the refusal state and a
     // retry would apply it twice.
     const versioned = (await newestVersion(input.deckId, tx)) !== null;
+
+    // Every write this transaction could have made — asked of the plan where the
+    // plan decides, and of the statement's own RETURNING where the database
+    // does. A list can reconcile to nothing at all — an empty deck
+    // accepting a list naming only its own commander deletes no row, inserts
+    // none, requantifies none and clears no line — and stamping that would
+    // claim an edit the player did not make. `clearedLines` is read from the
+    // delete's own RETURNING for the same reason: the statement runs
+    // unconditionally, but on a deck with no unresolved lines it writes nothing.
+    const wrote =
+      removing.length > 0 ||
+      plan.in.length > 0 ||
+      unclaimed > 0 ||
+      byQuantity.size > 0 ||
+      clearedLines.length > 0 ||
+      plan.unresolved.length > 0;
+    if (wrote) await touchDeck(tx, input.deckId);
 
     return { plan, removing, kept, versioned };
   });

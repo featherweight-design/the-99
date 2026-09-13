@@ -19,6 +19,8 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   toBuyCount: 3,
   unresolvedCount: 0,
   lastPlayedAt: new Date("2026-09-05T00:00:00Z"),
+  lastEditedAt: new Date("2026-09-01T00:00:00Z"),
+  lastCommittedAt: null,
   inUseElsewhere: 0,
   folderId: null,
   folderName: null,
