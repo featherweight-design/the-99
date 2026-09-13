@@ -57,14 +57,43 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
+/** The band a wash sits in. NOT its parent, and not a fixed number of hops up:
+    a surface that picks its band with a container query wraps each wash in a
+    breakpoint div, so counting `parentElement.parentElement` lands on that
+    wrapper — which is 0px tall, holds no label, and reported the deck bands as
+    having no height at all.
+
+    Height is the bound. An ancestor the same height as the wash IS the band
+    however many wrappers deep it sits, and the first one that is taller is the
+    surface around it, whose foot is not this band's foot. Shared as a string
+    because every reader in this file travels to the browser as one. */
+const BAND_OF = `
+  const bandOf = (root) => {
+    const rootHeight = root.getBoundingClientRect().height;
+    let band = root.parentElement;
+    while (
+      band &&
+      !band.querySelector('[data-wash-label]') &&
+      band.parentElement &&
+      Math.abs(band.parentElement.getBoundingClientRect().height - rootHeight) <= 1
+    ) {
+      band = band.parentElement;
+    }
+    return band;
+  };
+`;
+
 // Every wash on the page, with the URL each art layer resolved, the opacity the
 // browser actually computed, and the height of the band the wash sits in. The
 // URL is the whole readability claim: `art_crop` is frame-free, `normal` is not.
 const READ_WASHES = `() => {
+  ${BAND_OF}
   const layers = [...document.querySelectorAll('.art-wash-art')];
   return layers.filter((l) => l.getClientRects().length).map((l) => {
     const s = getComputedStyle(l);
-    const band = l.parentElement?.parentElement;
+    // The art layer is positioned inside the wash root, so the root is the box
+    // with the stated height and the climb starts there.
+    const band = l.parentElement ? bandOf(l.parentElement) : null;
     const image = s.backgroundImage;
     return {
       url: /url\\(/.test(image) ? image.replace(/^.*?url\\(["']?/, '').replace(/["']?\\).*$/, '') : null,
@@ -375,10 +404,11 @@ const VIEWPORTS = [
     art it did not need to; a hold below the block is the defect. */
 const READ_BLOCK_VS_HOLD = `() => {
   ${PARSE_STOPS}
+  ${BAND_OF}
   return [...document.querySelectorAll('[data-art-wash-band]')]
     .filter((root) => root.getClientRects().length)
     .map((root) => {
-      const band = root.parentElement;
+      const band = bandOf(root);
       const bandBox = band.getBoundingClientRect();
       const labels = [...band.querySelectorAll('[data-wash-label]')]
         .filter((el) => el.getClientRects().length)
@@ -1005,6 +1035,42 @@ try {
     // written down, so no deck id is hard-coded.
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
+
+    // The tile's small-cell band, at the one width that lays it out. Neither
+    // 375 nor 1440 does: the phone is one column and 1440 gives a 456px cell,
+    // both above the ~330px floor, so the 248 arm is the only one measured at
+    // either. Three columns with the grid's 72px of padding and gaps put a 900px
+    // viewport at a 276px cell, which is the arm this tile added — and a
+    // container query is invisible to jsdom, so this is the only check of it.
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.waitForTimeout(400);
+    const smallCell = await page.evaluate(
+      `(() => {
+        const art = document.querySelector('[data-deck-art]');
+        if (!art) return null;
+        const shown = [...art.querySelectorAll('[data-art-wash-band]')]
+          .filter((w) => w.getClientRects().length)
+          .map((w) => w.getAttribute('data-art-wash-band'));
+        return { cell: Math.round(art.getBoundingClientRect().width), band: Math.round(art.getBoundingClientRect().height), shown };
+      })()`,
+    );
+    if (!smallCell) {
+      note(`  FAIL no deck tile on /decks to measure the small-cell band on`);
+    } else if (smallCell.cell >= 330) {
+      note(
+        `  ${vpName} small-cell check skipped: the 900px viewport gave a ${smallCell.cell}px cell, at or above the floor`,
+      );
+    } else if (smallCell.band !== 168 || smallCell.shown.join() !== "168") {
+      note(
+        `  FAIL a ${smallCell.cell}px cell drew a ${smallCell.band}px band with [${smallCell.shown}] laid out, expected 168 alone`,
+      );
+    } else {
+      note(`  ${vpName} small cell: ${smallCell.cell}px column draws the 168 band`);
+    }
+    await page.setViewportSize({ width, height });
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(600);
+
     // Every deck link, not the first one. `/decks/new` is a link on this page too
     // and would take the probe to the creation picker; and a deck whose commander
     // has no crop draws no control AT ALL by ruling, so the first real deck can

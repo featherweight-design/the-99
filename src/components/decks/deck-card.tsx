@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { colorLabel } from "../../lib/decks/format";
+import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { formatCents } from "../../lib/decks/price";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { DeckShopping } from "../../lib/decks/shopping-rollup";
@@ -33,7 +32,12 @@ function detailFor(
   // about the deck the reader opened the tile for — the narrower reading of the
   // table's "in place of the ordinary detail figure", and the one that never
   // hides a warning. Flagged for Design to ratify.
-  if (statusDetail === null && deck.inUseElsewhere > 0) {
+  // `Building` only, which is the scope the state table gives the clause. Before
+  // this round `Complete` had a figure of its own (`all owned`) and could not
+  // reach here; cutting that figure opened the fallback to it, and a finished
+  // deck reading `3 in use elsewhere` is a state nobody drew. Building is also
+  // the status the clause answers a question for — what is holding this deck up.
+  if (statusDetail === null && deck.statusPill === "Building" && deck.inUseElsewhere > 0) {
     return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent)" };
   }
   return statusDetail === null
@@ -82,7 +86,11 @@ function statusDetailFor(
         : c.detailToBuyNoPrice(shopping.copies);
     }
     case "Complete":
-      return c.detailComplete;
+      // No figure. `all owned` was a third way of saying finished, beside a full
+      // green bar and `99 / 99` — and the bar and the count carry it between
+      // them. More art means less room for chrome, and this was the chrome that
+      // repeated itself.
+      return null;
   }
 }
 
@@ -108,8 +116,16 @@ interface DeckCardProps {
 }
 
 /**
- * A deck tile: commander art with the status pill and the name over it, then a
- * meta row, a 3px progress bar and — on desktop — a detail row.
+ * A deck tile: a 248px band of commander art with the deck's identity at its
+ * foot — name, commander, colour — then one row that reads `[chip] [bar]
+ * [count]` as a sentence about progress, and a detail row only where there is a
+ * figure or a real last-played date to put in it.
+ *
+ * The status pill is NOT on the art. It was pinned to the band's bottom-left and
+ * moved to the bar's row: the chip is a status and the bar is a status, so
+ * together they leave the block above carrying identity alone — which is what
+ * drops the band's `labelAt` from 78 to 46 and turns 32px of darkness back into
+ * art.
  *
  * **No call to action.** The whole tile is the link, so an "Open builder"
  * button would be a second way to do the one thing the tile already does. The
@@ -127,83 +143,226 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
   const bodySize = deckBodySize(deck.partnerName !== null);
   const count = `${deck.built} / ${bodySize}`;
-  const lastPlayed = deck.lastPlayedAt
-    ? formatWhen(deck.lastPlayedAt, now)
-    : refreshCopy.decks.lastPlayedNever;
+  // `never played` is cut with no replacement: it filled a slot rather than
+  // answering a question, and if last-played matters it belongs in the overflow
+  // menu or on the deck's own page. A deck that has never been played draws
+  // nothing here now.
+  const lastPlayed = deck.lastPlayedAt ? formatWhen(deck.lastPlayedAt, now) : null;
+  // ONE figure for whether the desktop row has a right-hand cell, because the
+  // grid template and the render have to agree. A Draft never draws last played —
+  // its detail row carries `created today` alone — and a Draft CAN have a logged
+  // game, since the Games panel offers the form on an empty deck. Two separate
+  // conditions would have given that deck an empty second row at `sm`.
+  const hasLastPlayed = lastPlayed !== null && deck.statusPill !== "Draft";
 
+  // The UNION, as `spine-desktop.tsx` already draws it: a pair's colour is both
+  // commanders' identities together, and reading the primary's alone announces
+  // and prints the wrong colour for any partner that adds one. Computed once and
+  // used for the visible line and the accessible name, so the two cannot drift.
+  const colour = colorLabel(deckIdentity(deck.commanderColorIdentity, deck.partnerColorIdentity));
+  // The same identity the block draws, in the same order, and a PAIR states both
+  // commanders: the visible line shortens them to fit and the accessible name
+  // never does — truncation is a layout compromise, not an information one.
+  const identity = `${deck.partnerName === null ? deck.commanderName : `${deck.commanderName} and ${deck.partnerName}`}, ${colour}`;
   const ariaLabel =
     detail === null
-      ? refreshCopy.decks.cardAriaNoDetail(deck.name, deck.statusPill, count)
-      : refreshCopy.decks.cardAria(deck.name, deck.statusPill, count, detail.text);
+      ? refreshCopy.decks.cardAriaNoDetail(
+          deck.name,
+          identity,
+          deck.statusPill,
+          count,
+          hasLastPlayed ? lastPlayed : undefined,
+        )
+      : refreshCopy.decks.cardAria(
+          deck.name,
+          identity,
+          deck.statusPill,
+          count,
+          detail.text,
+          hasLastPlayed ? lastPlayed : undefined,
+        );
 
   return (
     <article
-      className="relative min-w-0 flex-none overflow-hidden rounded-[14px]"
+      // `@container` so the band below can answer its own CELL rather than the
+      // viewport: this tile's width is the grid's column, and the grid's column
+      // is not a function of the viewport alone — a 262px filter column sits
+      // beside it.
+      className="@container relative min-w-0 flex-none overflow-hidden rounded-[14px]"
       style={{ background: "var(--surface-inset)", border: "1px solid var(--border)" }}
     >
       {/* 1 · Art header. Always present: `decks.commander_oracle_id` is NOT
           NULL, so every deck has a commander and every tile has art — Draft
-          included. A column runs 189px wide at 640 and 435px at 1440, so a pure
-          2.2:1 band would be 86px at the narrow end: too short for the name and
-          the chip. Hence the floor, and no ceiling — only a wider band regresses. */}
-      <div data-deck-art className="relative aspect-[2.2/1] min-h-[104px] overflow-hidden">
-        <ArtWash
-          strategy="cover"
-          labelEdge="top"
-          artCropUri={deck.commanderArtCropUri}
-          colorIdentity={deck.commanderColorIdentity}
-        />
-        {/* §4 — the status chip sits bottom-left. The scrim's fourth stop (.86
-            at 100%) is what lets it do that without a plate of its own. */}
-        <StatusPillBadge status={deck.statusPill} />
+          included.
+
+          The cell band, stated at 248px. The 2.2:1 ratio plus a 104px floor made
+          this band a function of the column it landed in — 86px at a 189px
+          two-up and 198px at a 435px three-up, one of them clamped by the floor
+          — and the reader was told which deck this is by whichever of those the
+          viewport handed them. A grid cell's job is telling you which deck it is,
+          so it takes the cell band and the crop gets the room.
+
+          The cell band has a FLOOR, and the handoff states it: never in a column
+          under ~330px. `sm:grid-cols-3` runs from 640px up, and the grid's own
+          22px padding and two 14px gaps take 72px, so a cell is 189px at 640 and
+          456px at 1440 — the floor arrives at about 1062px of viewport. A single
+          248px band would therefore draw a 0.76:1 portrait sliver from 640 to
+          1062, which is the handoff's own measured figure for this tile.
+
+          So the tile is a container and the band answers its own cell: 248 where
+          the column can hold it, and the resume band below, which at a 230px cell
+          is within a hair of the crop's own 1.37:1. The remaining problem at the
+          narrow end is the grid's — three columns at 640px is a 102px card
+          whatever it draws — and `decks-view.tsx` belongs to another round. */}
+      <div
+        data-deck-art
+        className="relative h-[168px] overflow-hidden @min-[330px]:h-[248px]"
+      >
+        {/* Two bands, one shown by the tile's own container query, because the
+            cell band has a FLOOR the handoff states — never in a column under
+            ~330px — and three columns do not give it one until about 1062px of
+            viewport: the grid's 22px padding and two 14px gaps take 72px, so a
+            cell is 189px at 640 and 456px at 1440. A single 248px band would
+            draw a 0.76:1 portrait sliver across that whole range.
+
+            Below the floor the resume band takes over, which at a 230px cell is
+            within a hair of the crop's own 1.37:1. The remaining problem at the
+            narrow end is the grid's — three columns at 640px is a 102px card
+            whatever it draws — and `decks-view.tsx` belongs to another round.
+
+            `labelAtPx` is the same either way: the block is the block whatever
+            the band, which is exactly what a px figure means. */}
+        <div className="@min-[330px]:hidden">
+          <ArtWash
+            strategy="cover"
+            height={168}
+            labelAtPx={46}
+            artCropUri={deck.commanderArtCropUri}
+            colorIdentity={deck.commanderColorIdentity}
+          />
+        </div>
+        <div className="hidden @min-[330px]:block">
+          <ArtWash
+            strategy="cover"
+            height={248}
+            // The block's measured height in pixels from the foot: 10px bottom
+            // inset, a 10.5px meta line at 13, a 4px gap and a 17px name at 1.15
+            // for 20. The chip is NOT in this block — it moved to the progress
+            // row, which is what drops this figure from 78 and turns 32px of
+            // darkness back into art.
+            labelAtPx={46}
+            artCropUri={deck.commanderArtCropUri}
+            colorIdentity={deck.commanderColorIdentity}
+          />
+        </div>
         <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={deck.built} />
-        {/* Labels top-anchored, which is what decision 6's `center top` focal is
-            derived from: the art's recognisable features land at 43–71% of the
-            band, below the type rather than behind it. The right padding clears
-            the overflow button, which positions itself in the same corner. */}
-        <div className="absolute inset-x-0 top-0 min-w-0 pt-[10px] pr-[56px] pl-[13px] sm:pr-[48px]">
+        {/* The block at the foot, carrying identity alone: the deck's name, its
+            commander and its colour. The chip and the bar are both statements
+            about progress and they now sit together below the divider, which is
+            what leaves this block with one job. The right padding clears the
+            overflow control's 44px target in the same corner. */}
+        <div
+          // The hook a probe measures the ramp against. This block IS the ink,
+          // so its own box is the measurement — unlike the row bands, whose
+          // breakpoint wrappers span the whole band.
+          data-wash-label
+          // Presentation. The overlay link's own `aria-label` states these words
+          // in order, so leaving them exposed announced the tile's identity
+          // twice — once from this block and again from the link. Nothing here
+          // is focusable, which is what makes hiding it safe; the overflow
+          // control sits outside this block and stays exposed.
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 min-w-0 pb-[10px] pr-[56px] pl-[13px] sm:pr-[48px]"
+        >
           <h3
             className="truncate font-display text-[17px] font-semibold sm:text-[15px]"
             style={{ color: "var(--fg)", lineHeight: 1.15, textShadow: INK_SHADOW }}
           >
             {deck.name}
           </h3>
-          <p
-            className="mt-[4px] truncate font-mono text-[10.5px]"
-            style={{ color: "var(--fg-body)", textShadow: INK_SHADOW }}
+          {/* Two spans, not one truncating string. The colour is the half that
+              survives at a 189px column — it is what the pips came off FOR — and
+              one `truncate` across both clips it away for any ordinary commander
+              name, which would have removed the pips and put nothing in their
+              place. The name gives; the colour does not.
+
+              Stated leading on the row, like the name above it: `labelAtPx` is
+              this block's measured height, and a line box inheriting the app's
+              1.5 would make that figure move whenever the body leading did. */}
+          <span
+            className="mt-[4px] flex min-w-0 gap-[4px] font-mono text-[10.5px]"
+            style={{ lineHeight: 1.25, color: "var(--fg-body)", textShadow: INK_SHADOW }}
           >
-            {deck.commanderName}
-          </p>
+            {/* Both commanders, with the `+` the spines use. The accessible
+                name already named the pair, so printing one of them left a
+                sighted reader with a different deck identity than a screen
+                reader got — on a pair deck, the wrong one. */}
+            {deck.partnerName ? (
+              // Two spans with the joiner between them, never one string: a
+              // single `truncate` ellipsises the END of the primary name, so a
+              // narrow cell printed `Ishai, Ojutai…` and lost both the `+` and
+              // the partner — the two things that say *pair*. The partner takes
+              // the larger shrink factor, so it is the half that gives, which is
+              // the same ordered shrink the resume row and the spines use.
+              <span className="flex min-w-0 gap-[4px]">
+                <span className="min-w-0 truncate">{deck.commanderName}</span>
+                <span className="flex-none">+</span>
+                <span className="min-w-0 truncate" style={{ flexShrink: 1000 }}>
+                  {deck.partnerName}
+                </span>
+              </span>
+            ) : (
+              <span className="min-w-0 truncate">{deck.commanderName}</span>
+            )}
+            <span className="flex-none whitespace-nowrap">· {colour}</span>
+          </span>
         </div>
       </div>
 
-      {/* 2 · Body. Phone: `pips detail count` over the bar. Desktop: the colour
-          label takes the middle slot, and the detail drops below the bar beside
-          last played. */}
+      {/* 2 · Body, and it is one sentence about progress read left to right:
+          `[chip] [bar] [count]`. The chip is a status and the bar is a status, so
+          they belong on one row — and moving the chip off the art is what leaves
+          the block above carrying identity alone.
+
+          The pips are gone. The worded colour survives and moved into the block:
+          `Green` beside a green square is the same redundancy one layer down, and
+          at a 189px column the word is what stays legible. An earlier round had
+          this backwards.
+
+          The detail figure keeps its own row, because a warning is not part of
+          that sentence — `4 over` and `3 lines unresolved` are facts about the
+          deck the reader opened the tile for. */}
       <div
-        className="deck-card-footer grid items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] [grid-template-areas:'pips_detail_count''bar_bar_bar'] sm:gap-y-[9px] sm:[grid-template-areas:'pips_label_count''bar_bar_bar''detail_._played']"
+        // The second row exists only when something goes in it. Declared
+        // unconditionally it costs a blank strip plus the row gap on every
+        // Building tile, every Complete one and every To buy deck with no
+        // roll-up entry — which is most of them, and taller tiles for an empty
+        // area is the opposite of what this round is for.
+        // Presentation, for the same reason as the block above: the status, the
+        // count and the detail figure are all in the link's name. No focusable
+        // element lives in this row.
+        aria-hidden="true"
+        className={`deck-card-footer grid items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] sm:gap-y-[9px] ${
+          detail === null && !hasLastPlayed
+            ? "[grid-template-areas:'chip_bar_count']"
+            : detail === null
+              ? "[grid-template-areas:'chip_bar_count'] sm:[grid-template-areas:'chip_bar_count''._._played']"
+              : hasLastPlayed
+                ? "[grid-template-areas:'chip_bar_count''detail_detail_detail'] sm:[grid-template-areas:'chip_bar_count''detail_._played']"
+                // No date to sit in the third column, so the figure takes the
+                // whole row at both widths. `auto 1fr auto` would otherwise put
+                // `3 to buy · $18.40` in the narrow first column and truncate it
+                // while the other two stood empty.
+                : "[grid-template-areas:'chip_bar_count''detail_detail_detail']"
+        }`}
         style={{ gridTemplateColumns: "auto 1fr auto", borderTop: "1px solid var(--border)" }}
       >
-        <span className="flex gap-[3px]" style={{ gridArea: "pips" }} aria-hidden>
-          {deck.commanderColorIdentity.map((color) => (
-            <span
-              key={color}
-              className="h-[9px] w-[9px] rounded-[2px]"
-              style={{
-                background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
-                // Every pip carries a hairline so `--b` survives a light ground.
-                border: "1px solid var(--border-strong)",
-              }}
-            />
-          ))}
-        </span>
-
-        <span
-          className="hidden truncate font-mono text-[10.5px] sm:inline"
-          style={{ gridArea: "label", color: "var(--fg-faint)" }}
-        >
-          {colorLabel(deck.commanderColorIdentity)}
-        </span>
+        {/* In flow rather than pinned to art, so the box is a prop and the fill
+            and the label stay written once. */}
+        <StatusPillBadge
+          status={deck.statusPill}
+          className="[grid-area:chip] flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+        />
 
         {detail !== null && (
           <span
@@ -241,8 +400,9 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
         </div>
 
         {/* 4 · Last played, desktop only. A Draft tile has none: its detail row
-            carries `created today` alone. */}
-        {deck.statusPill !== "Draft" && (
+            carries `created today` alone. Nor does a deck that has never been
+            played — that clause is cut. */}
+        {hasLastPlayed && (
           <span
             className="hidden text-right font-mono text-[10.5px] sm:inline"
             style={{ gridArea: "played", color: "var(--fg-faint)" }}
@@ -253,8 +413,9 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
       </div>
 
       {/* The whole tile is the target. Last in the DOM so it overlays the body,
-          and named with the same four things the tile shows, in the same
-          order. */}
+          and named with the same five things the tile shows, in the same order.
+          It has no descendants of its own, so the presentation it covers is
+          marked `aria-hidden` rather than left to be announced a second time. */}
       <Link
         href={`/decks/${deck.id}`}
         className="absolute inset-0"
