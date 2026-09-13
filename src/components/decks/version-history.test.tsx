@@ -1,8 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { VersionHistory } from "./version-history";
+import { VersionRail } from "./version-history";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { gameLogCopy } from "../../lib/copy/game-log";
 import type { VersionSummary } from "../../lib/decks/versions";
 
 // The rail never fetches. Only an opened row does, and the diff's own suite
@@ -39,10 +38,8 @@ function version(over: Partial<VersionSummary> = {}): VersionSummary {
   };
 }
 
-function mount(versions: VersionSummary[], gameCount = 5) {
-  return render(
-    <VersionHistory deckId="deck_1" versions={versions} built={99} gameCount={gameCount} />,
-  );
+function mount(versions: VersionSummary[]) {
+  return render(<VersionRail deckId="deck_1" versions={versions} />);
 }
 
 // Newest first, as `listVersions` returns them.
@@ -52,7 +49,7 @@ const THREE = [
   version({ number: 1, committedAt: new Date("2026-08-01T00:00:00Z"), gamesHeld: 9 }),
 ];
 
-describe("VersionHistory", () => {
+describe("VersionRail", () => {
   it("draws one row per version, newest first", () => {
     mount(THREE);
     const rows = screen.getAllByRole("button", { expanded: false });
@@ -138,47 +135,20 @@ describe("VersionHistory", () => {
     expect(container.textContent).not.toMatch(/pending|draft/i);
   });
 
-  // §Surfaces 4 draws the deck's own tab row at the head of this route at both
-  // widths, `Versions` current — and no back link and no drawn heading. The row
-  // is the way back, and each cell has to land on the tab it names.
-  it("heads the route with the deck's tab row, Versions current", () => {
+  // The rail is a tab panel now, so the tab row that heads it belongs to the
+  // builder. Owning a second one here would draw two rows, and the links it used
+  // to own were what took the deck's head off screen.
+  it("draws no tab row and no navigation of its own", () => {
     mount(THREE);
-    expect(screen.getByRole("link", { name: /Your deck/ })).toHaveAttribute(
-      "href",
-      "/decks/deck_1",
-    );
-    expect(screen.getByRole("link", { name: /consider/i })).toHaveAttribute(
-      "href",
-      "/decks/deck_1?tab=consider",
-    );
-    expect(screen.getByRole("link", { name: /Games/ })).toHaveAttribute(
-      "href",
-      "/decks/deck_1?tab=games",
-    );
-    const current = screen.getByRole("link", { current: "page" });
-    expect(current.textContent).toContain(copy.tab);
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 
-  // The Games cell is the one whose figure this route has to load, so a broken
-  // count reads as a deck with no games rather than as an error.
-  it("draws the games it was given beside the Games cell", () => {
+  // The heading names the panel without drawing ink the canvas does not have,
+  // and at level 2 because the deck's own name is the h1 above it.
+  it("names the panel without drawing a heading", () => {
     mount(THREE);
-    const games = screen.getByRole("link", { name: gameLogCopy.tab.aria("5") });
-    expect(games.textContent).toContain("5");
-  });
-
-  // At zero the count is absent, never the cell: a tab reading `Games · 0`
-  // advertises its own emptiness, so the figure goes and the name says it in words.
-  it("draws no figure on the Games cell for a deck with no games", () => {
-    mount(THREE, 0);
-    const games = screen.getByRole("link", { name: gameLogCopy.tab.ariaNone });
-    expect(games.textContent).toBe(gameLogCopy.tab.label);
-  });
-
-  // The heading names the document without drawing ink the canvas does not have.
-  it("names the document without drawing a heading", () => {
-    mount(THREE);
-    const heading = screen.getByRole("heading", { level: 1 });
+    const heading = screen.getByRole("heading", { level: 2 });
     expect(heading.textContent).toBe(copy.heading(3));
     expect(heading.className).toContain("sr-only");
   });

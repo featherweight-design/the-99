@@ -13,6 +13,29 @@ lines 595–619, annotation card lines 621–632), §Surfaces 5 (the 760px card 
 annotation card lines 654–662), the Contract frame (lines 795–826) and the global `<style>`
 link rule (lines 19–20).
 
+## Ruling of 2026-09-13 — the rail is a tab panel, not a route
+
+Hugh: *"Deck details > Versions: This is the only tab in the Deck details view that routes to a
+new page and removes the commander details. We need to fix this."* The rail now draws inside the
+deck page's own `Versions` tab panel, so the deck's head — art, commander line, progress, the
+pending banner — stays on screen while history is read. `/decks/[id]/versions` survives only as a
+redirect to `/decks/[id]?tab=versions`, because links to it shipped.
+
+This supersedes every row below that specifies a route, a link or a heading level for the tab and
+the rail, namely:
+
+- **The Versions tab** is a `role="tab"` button in the deck's tablist, selected by
+  `aria-selected`, controlling `#panel-versions`. It is **not** a link and carries no `href` or
+  `aria-current`. Its count comes from the deck page's own `listVersions` read.
+- **The rail owns no tab row.** §Surfaces 4 drew the deck's four-cell row at the head of the
+  route; the builder owns that row now, and a second one would draw twice.
+- **`history.heading(n)` names the panel as an `sr-only` `h2`**, not an `h1`: the deck's name is
+  the page's `h1`. Still never drawn — the resolution under Discrepancy 28 otherwise holds.
+- **State 37b** (no versions) is unchanged in effect: the tab is absent entirely, so a URL naming
+  `?tab=versions` on a deck with none lands on `Your deck`.
+
+Everything about the rail's rows, the opened diff, the v1 panel and the game stamp is untouched.
+
 Scope: exactly five components, across the two surfaces.
 
 1. **The Versions tab** — the fourth tab in the deck page's own tab row, with its count.

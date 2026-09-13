@@ -20,6 +20,7 @@ import { listDeckGames, summarizeGames } from "../../../lib/decks/games";
 import { readFillPasses } from "../../../lib/decks/fill-passes";
 import { deckBodySize } from "../../../lib/decks/deck-size";
 import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks/draft-state";
+import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
@@ -55,8 +56,15 @@ export default async function DeckBuilderPage({
     ]),
   ];
 
-  const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games, fillPasses, draft] =
-    await Promise.all([
+  const [
+    { suggestions, degraded, shoppingFigures },
+    allDecks,
+    ranked,
+    games,
+    fillPasses,
+    draft,
+    versions,
+  ] = await Promise.all([
       getDeckSuggestions(id),
       // The move-card picker lists every other deck by name, as it always has.
       listDecksWithStats(userId, "name"),
@@ -82,6 +90,11 @@ export default async function DeckBuilderPage({
       // failed read would take the banner away, and a deck with pending changes
       // and no banner offers no route to a commit at all.
       loadDraftState(id, userId),
+      // The rail rides the deck's own `Versions` tab, so its rows are part of
+      // this page. `getDeckDetail` above already refused a deck this reader does
+      // not own; `listVersions` reads by deck id alone and has no guard of its
+      // own.
+      listVersions(id),
     ]);
 
   // The figures the version held, for the `was n` line in the mix cells. Read
@@ -187,6 +200,7 @@ export default async function DeckBuilderPage({
       versionCards={versionCards}
       games={games}
       gameSummary={gameSummary}
+      versions={versions}
       // Left in the URL rather than swept with a router.replace. Stripping it
       // would clear `arrivedFromImport` on the very next render, taking the
       // arrival strip away in the same frame it appeared. The costs of leaving

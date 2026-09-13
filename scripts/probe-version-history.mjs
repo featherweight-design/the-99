@@ -4,9 +4,11 @@
 //
 // What a component test cannot settle here:
 //
-//   1. THE ROUTE EXISTS AND IS GUARDED. `/decks/<id>/versions` renders one row per
-//      committed version for the owner and 404s for anybody else. That is a server
-//      read, and jsdom never sees it.
+//   1. THE TAB IS THE WAY IN, AND THE DECK STAYS ON SCREEN. The rail is the deck
+//      page's fourth tab: pressing it draws one row per committed version below the
+//      deck's own head, the retired `/decks/<id>/versions` forwards there, and a
+//      deck the reader does not own is refused. Server reads and laid out geometry,
+//      neither of which jsdom sees.
 //   2. THE DIFF IS FETCHED ON OPEN. A closed rail fires no read; clicking one row
 //      resolves that row's card lists. Two facts about a server action over the
 //      wire.
@@ -118,7 +120,17 @@ const readRail = (page) =>
   page.evaluate(({ selector, text }) => {
     const rows = [...document.querySelectorAll(selector)]
       .filter((b) => new RegExp(text).test(b.innerText));
-    const moving = [...document.querySelectorAll("main *")].filter((el) => {
+    const panel = document.getElementById("panel-versions");
+    // The DRAWN heading, not the first one in the document. The deck head ships
+    // a phone spine and a desktop spine, each with its own `h1` and one of them
+    // hidden at any width, so `querySelector("h1")` returned the desktop
+    // heading's collapsed box on the phone and read the deck's name as absent.
+    const headings = [...document.querySelectorAll("h1")];
+    const h1 = headings.find((h) => h.getBoundingClientRect().width > 1) ?? headings[0] ?? null;
+    // Scoped to the panel rather than `main`: READINESS 19 forbids motion on
+    // THIS surface, and the deck page's own chrome around it carries five
+    // transitioned elements that were never this ruling's to answer for.
+    const moving = [...(panel?.querySelectorAll("*") ?? [])].filter((el) => {
       const s = getComputedStyle(el);
       return (
         (s.transitionDuration !== "0s" && s.transitionProperty !== "none") ||
@@ -126,48 +138,53 @@ const readRail = (page) =>
       );
     });
     return {
-      url: location.pathname,
-      h1: document.querySelector("h1")?.textContent ?? null,
-      // The canvas draws no heading here, so the `h1` names the document
-      // without ink. `innerText` reads as empty on an `sr-only` element,
-      // which is the point — `textContent` is the only way to see it.
-      h1Visible: (() => {
-        const h = document.querySelector("h1");
+      url: location.pathname + location.search,
+      // The deck's own head, which is the entire reason the rail moved into a
+      // tab: the deck's name is the page's drawn `h1`, and every other tab
+      // keeps it on screen. The old route drew no head at all.
+      deckName: h1?.textContent ?? null,
+      deckNameDrawn: h1 ? h1.getBoundingClientRect().width > 1 : false,
+      // The rail's own heading names the panel without ink. `innerText` reads
+      // as empty on an `sr-only` element, which is the point — `textContent` is
+      // the only way to see it.
+      railHeading: panel?.querySelector("h2")?.textContent ?? null,
+      railHeadingDrawn: (() => {
+        const h = panel?.querySelector("h2");
         return h ? h.getBoundingClientRect().width > 1 : false;
       })(),
-      back: document.querySelector("header a")?.innerText ?? null,
-      // §Surfaces 4 heads this route with the deck's own tab row, `Versions`
-      // current. The active cell's treatment is drawn nowhere else in the
-      // product, so a row that goes missing takes a whole design state with it.
-      tabs: [...document.querySelectorAll("a")]
-        .filter((a) => /\/decks\/[^/]+(\?tab=|\/versions)?$/.test(a.getAttribute("href") ?? ""))
-        .map((a) => ({
-          href: a.getAttribute("href"),
-          label: a.innerText.replace(/\n/g, " "),
-          current: a.getAttribute("aria-current") === "page",
-        })),
-      // Gap A: `mx-auto` inside the shell's flex column loses `align-items:
-      // stretch`, and the rail drew at its content width at every viewport.
-      // A ratio, not a pixel count, because the cap is 1180 and the phone is
-      // narrower than that.
-      // The centred container, not a row: the rows sit inside its gutters, and
-      // it is the box that collapsed. Found by walking up from a row rather
-      // than by class, so a restyle does not quietly stop measuring anything.
-      fill: (() => {
-        const main = document.querySelector("main");
-        if (!rows.length || !main) return null;
-        let box = rows[0];
-        while (box.parentElement && box.parentElement !== main) box = box.parentElement;
-        const cap = Math.min(1180, main.clientWidth);
-        return box.getBoundingClientRect().width / cap;
-      })(),
+      // The rail is drawn below the deck's head rather than in place of it.
+      // Geometry, not containment: a rail nested anywhere inside the shell
+      // would satisfy a DOM check while painting over the art.
+      belowHead:
+        h1 && rows.length
+          ? rows[0].getBoundingClientRect().top > h1.getBoundingClientRect().bottom
+          : null,
+      headGeometry:
+        h1 && rows.length
+          ? `h1 bottom ${Math.round(h1.getBoundingClientRect().bottom)} · row top ${Math.round(
+              rows[0].getBoundingClientRect().top,
+            )} · scrollY ${Math.round(window.scrollY)}`
+          : null,
+      inPanel: rows.length > 0 && panel !== null && rows.every((row) => panel.contains(row)),
+      // Versions is a tab over a panel in this document now, so the row is a
+      // tablist of buttons rather than links. A link here is the regression:
+      // it is what took the deck off screen.
+      tabs: [...document.querySelectorAll('[role="tab"]')].map((tab) => ({
+        id: tab.id,
+        label: tab.innerText.replace(/\n/g, " "),
+        selected: tab.getAttribute("aria-selected") === "true",
+      })),
+      tabLinks: [...document.querySelectorAll('[role="tablist"] a')].length,
       rows: rows.map((b) => ({
         text: b.innerText.replace(/\n/g, " · "),
         open: b.getAttribute("aria-expanded") === "true",
         panel: b.getAttribute("aria-controls"),
       })),
-      restore: /restore|revert|roll back/i.test(document.body.innerText),
-      pending: /pending|draft/i.test(document.body.innerText),
+      // Scoped to the panel, not the body: the deck's head carries a pending
+      // changes banner of its own, and a body-wide match would read that
+      // banner as a rail row for the draft.
+      restore: /restore|revert|roll back/i.test(panel?.innerText ?? ""),
+      pending: /pending|draft/i.test(panel?.innerText ?? ""),
       moving: moving.length,
     };
   }, { selector: ROW, text: ROW_TEXT.source });
@@ -208,7 +225,10 @@ const readStamps = (page) =>
       /^[WLD]$/.test(li.innerText.trim().split("\n")[0] ?? ""),
     );
     return rows.map((li) => {
-      const spans = [...li.querySelectorAll(":scope > span")];
+      // Any depth, not `:scope > span`: a game carrying a note draws its slots
+      // inside an inner row, so the stamp is a grandchild there and a child
+      // otherwise. The pattern narrows this, not the depth.
+      const spans = [...li.querySelectorAll("span")];
       const stamp = spans.find((s) => /^(v\d+|—)$/.test(s.innerText.trim()));
       if (!stamp) return { stamp: null };
       const box = stamp.getBoundingClientRect();
@@ -401,10 +421,30 @@ try {
   await logGames(userId, deck.deckId, deck.versions[1].id);
   console.log(`signed in as ${userId} · deck ${deck.deckId}`);
 
-  // ── The guard, once: a rail is not width-dependent in whom it refuses.
-  // `networkidle`, not `domcontentloaded`: the route streams behind a loading
-  // boundary, so the document is "loaded" while the skeleton is still on screen
-  // and the refusal has not arrived yet.
+  // ── The retired route, once: it forwards rather than drawing anything, which
+  // is how a link shipped before the rail became a tab still lands on the rail.
+  await page.goto(`${BASE}/decks/${deck.deckId}/versions`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(700);
+  const forwarded = await readRail(page);
+  console.log(`\n########## the retired route · /decks/<id>/versions`);
+  console.log(`  url: ${forwarded.url}`);
+  check(
+    "the old route forwards to the deck page's Versions tab",
+    forwarded.url === `/decks/${deck.deckId}?tab=versions`,
+    forwarded.url,
+  );
+  check(
+    "and the rail is what it lands on",
+    forwarded.rows.length === 3 && forwarded.inPanel,
+    `${forwarded.rows.length} rows${forwarded.inPanel ? " in the panel" : " outside the panel"}`,
+  );
+
+  // ── The guard, once: a rail is not width-dependent in whom it refuses. The
+  // forward carries no guard of its own beyond the uuid shape, so the refusal
+  // is the deck page's — which is where the rail now lives.
+  // `networkidle`, not `domcontentloaded`: the deck page streams behind a
+  // loading boundary, so the document is "loaded" while the skeleton is still on
+  // screen and the refusal has not arrived yet.
   const refused = await page.goto(`${BASE}/decks/${foreignDeckId}/versions`, {
     waitUntil: "networkidle",
   });
@@ -416,23 +456,27 @@ try {
   console.log(`\n########## another player's deck · /decks/<id>/versions`);
   check("no rail drawn for a deck the reader does not own", !leaked);
   check("the not-found page is drawn instead", notFoundPage);
-  // Reported, not asserted. `versions/loading.tsx` makes this route stream, so
-  // the 200 is flushed with the first chunk before the guard's `notFound()`
-  // throws — the body is the refusal, and the header cannot be.
-  console.log(`  status: ${refusedStatus} (200 while the route has a loading boundary)`);
+  // Reported, not asserted. `decks/[id]/loading.tsx` makes the forwarded-to page
+  // stream, so the 200 is flushed with the first chunk before the guard's
+  // `notFound()` throws — the body is the refusal, and the header cannot be.
+  console.log(`  status: ${refusedStatus} (200 while the deck page has a loading boundary)`);
 
   for (const viewport of VIEWPORTS) {
     const vpContext = await browser.newContext({ viewport });
     const vpPage = await vpContext.newPage();
     await signIn(vpPage);
 
-    // ── Surface 4 · the rail
-    await vpPage.goto(`${BASE}/decks/${deck.deckId}/versions`, { waitUntil: "networkidle" });
+    // ── Surface 4 · the rail, reached by pressing the tab rather than by a URL.
+    // The tab is the way in, so a rail a URL can reach and a click cannot is
+    // still the bug Hugh reported.
+    await vpPage.goto(`${BASE}/decks/${deck.deckId}`, { waitUntil: "networkidle" });
+    await vpPage.waitForTimeout(900);
+    await vpPage.locator("#tab-versions").click();
     await vpPage.waitForTimeout(700);
     const rail = await readRail(vpPage);
-    console.log(`\n########## ${viewport.label} · /decks/<id>/versions`);
+    console.log(`\n########## ${viewport.label} · /decks/<id> · Versions tab`);
     console.log(`  url: ${rail.url}`);
-    console.log(`  h1: ${rail.h1} · back: ${rail.back}`);
+    console.log(`  deck name: ${rail.deckName} (${rail.deckNameDrawn ? "drawn" : "not drawn"})`);
     for (const row of rail.rows) console.log(`    ${row.open ? "open " : "closed"} ${row.text}`);
     check(`${viewport.label} · one row per version`, rail.rows.length === 3, `${rail.rows.length} of 3`);
     // Every figure on a row comes out of `listVersions` — the card count off the
@@ -473,27 +517,28 @@ try {
       rail.rows.every((row) => /mv \d+\.\d\d/i.test(row.text)),
       rail.rows.map((row) => row.text.match(/mv \d+\.\d\d/i)?.[0] ?? "none").join(" · "),
     );
-    // §Surfaces 4 heads the route with the deck's tab row and draws neither a
-    // back link nor a heading. The row is the way back, and every cell has to
-    // land on the tab it names — a cell pointing at a route that ignores the
-    // parameter is a link that lies.
-    const current = rail.tabs.filter((tab) => tab.current);
+    // Versions is the fourth tab, selected, in the same tablist as the other
+    // three. The cell used to be a link to a route of its own, which is what
+    // made it the one cell that took the deck's head off screen.
+    const selected = rail.tabs.filter((tab) => tab.selected);
     check(
-      `${viewport.label} · the tab row heads the route, Versions current`,
-      current.length === 1 && /versions/i.test(current[0].label),
-      rail.tabs.map((t) => `${t.label}${t.current ? "*" : ""}`).join(" · ") || "no row",
+      `${viewport.label} · Versions is a selected tab in the deck's tablist`,
+      selected.length === 1 && selected[0].id === "tab-versions",
+      rail.tabs.map((t) => `${t.label}${t.selected ? "*" : ""}`).join(" · ") || "no tablist",
     );
     check(
-      `${viewport.label} · each cell lands on the tab it names`,
-      ["/versions", "?tab=consider", "?tab=games"].every((suffix) =>
-        rail.tabs.some((tab) => (tab.href ?? "").endsWith(suffix)),
-      ) && rail.tabs.some((tab) => /\/decks\/[^/?]+$/.test(tab.href ?? "")),
-      rail.tabs.map((t) => t.href).join(" · ") || "no row",
+      `${viewport.label} · all four tabs are in the row`,
+      ["tab-deck", "tab-consider", "tab-games", "tab-versions"].every((id) =>
+        rail.tabs.some((tab) => tab.id === id),
+      ),
+      rail.tabs.map((t) => t.id).join(" · ") || "no tablist",
     );
-    // The cells' figures come off the route's loader rather than a prop a test
-    // chose, so this is the only place the `gameCount` subquery is proved: the
-    // fixture writes exactly two games and three versions under this deck.
-    const gamesCell = rail.tabs.find((tab) => (tab.href ?? "").endsWith("?tab=games"));
+    // The regression, named: any link in the row is a cell that navigates.
+    check(`${viewport.label} · no cell in the row is a link`, rail.tabLinks === 0, `${rail.tabLinks} links`);
+    // The cells' figures come off the deck page's loader rather than a prop a
+    // test chose, so this is the only place those counts are proved: the fixture
+    // writes exactly two games and three versions under this deck.
+    const gamesCell = rail.tabs.find((tab) => tab.id === "tab-games");
     check(
       `${viewport.label} · the Games cell counts the fixture's two games`,
       /(^|\D)2(\D|$)/.test(gamesCell?.label ?? ""),
@@ -501,21 +546,25 @@ try {
     );
     check(
       `${viewport.label} · the Versions cell counts the fixture's three versions`,
-      /(^|\D)3(\D|$)/.test(current[0]?.label ?? ""),
-      current[0]?.label ?? "no current cell",
+      /(^|\D)3(\D|$)/.test(selected[0]?.label ?? ""),
+      selected[0]?.label ?? "no selected cell",
     );
-    check(`${viewport.label} · no back link above the rail`, rail.back === null, rail.back ?? "");
+    // Hugh's ruling, and the whole point of the move: the deck's head stays on
+    // screen while its history is read, with the rail below it.
     check(
-      `${viewport.label} · the heading names the document without drawing ink`,
-      rail.h1 !== null && !rail.h1Visible,
-      `${rail.h1 ?? "no h1"}${rail.h1Visible ? " (drawn)" : ""}`,
+      `${viewport.label} · the deck's name is drawn above the rail`,
+      rail.deckNameDrawn && rail.belowHead === true,
+      `${rail.deckName ?? "no h1"}${rail.belowHead === true ? " · rail below it" : " · rail NOT below it"} · ${rail.headGeometry ?? "no geometry"}`,
     );
-    // Gap A: a flex item with `margin-inline: auto` is shrink-to-fit, and the
-    // rail drew at roughly half the desktop's width until `w-full` restored it.
     check(
-      `${viewport.label} · the rail fills the width it is given`,
-      rail.fill !== null && rail.fill > 0.99,
-      rail.fill === null ? "no row" : `${Math.round(rail.fill * 100)}% of the cap`,
+      `${viewport.label} · the rows are inside the Versions tab panel`,
+      rail.inPanel,
+      rail.inPanel ? "panel-versions" : "outside panel-versions",
+    );
+    check(
+      `${viewport.label} · the panel's heading names it without drawing ink`,
+      rail.railHeading !== null && !rail.railHeadingDrawn,
+      `${rail.railHeading ?? "no h2"}${rail.railHeadingDrawn ? " (drawn)" : ""}`,
     );
     check(`${viewport.label} · no restore control`, !rail.restore);
     check(`${viewport.label} · no row for the pending draft`, !rail.pending);
@@ -568,7 +617,7 @@ try {
     // The v1 row is the initial arm: no diff to fetch, and a browse link instead.
     // Read on a fresh load rather than by closing the open row first — what is
     // being checked is the arm the panel draws, not the toggle.
-    await vpPage.goto(`${BASE}/decks/${deck.deckId}/versions`, { waitUntil: "networkidle" });
+    await vpPage.goto(`${BASE}/decks/${deck.deckId}?tab=versions`, { waitUntil: "networkidle" });
     await railRows(vpPage).last().click();
     await railRows(vpPage).and(vpPage.locator('[aria-expanded="true"]')).first().waitFor();
     await vpPage.waitForTimeout(600);

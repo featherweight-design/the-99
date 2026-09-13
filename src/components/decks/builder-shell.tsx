@@ -31,6 +31,7 @@ import {
 } from "../../app/decks/actions";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
+import { initialBuilderView } from "../../lib/decks/builder-view";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
 import { gameLogCopy } from "../../lib/copy/game-log";
@@ -53,6 +54,10 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { LastSlotsStrip } from "./last-slots-strip";
 import { PendingBanner } from "./pending-banner";
+import { VersionRail } from "./version-history";
+// Type only: `versions.ts` reaches `src/db`, which throws at module init in a
+// browser. See `src/lib/client-bundle-safety.test.ts`.
+import type { VersionSummary } from "../../lib/decks/versions";
 import { PendingChangeProvider } from "./pending-change";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import type { DraftState } from "../../lib/decks/draft-shape";
@@ -130,6 +135,10 @@ interface BuilderShellProps {
   /** Cards in the version a discard would land on, straight through to the
       banner — see `pending-banner.tsx`. Absent draws no `Discard` at all. */
   versionCards?: number;
+  /** Every version this deck has committed, newest first. Empty on a brew, which
+      draws no `Versions` tab at all — a tab explaining that a deck has no
+      history is a tab advertising its own emptiness (§Decisions 4). */
+  versions?: VersionSummary[];
   /** The tab this visit lands on, read off the URL by the route. Only the
       arrival: switching tabs stays component state, so nothing writes it back. */
   initialView?: BuilderView;
@@ -165,12 +174,15 @@ export function BuilderShell({
   draft = null,
   wasCounts,
   versionCards,
+  versions = [],
   initialView = "deck",
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
   const [grouping, setGrouping] = useState<"type" | "role">("type");
-  const [view, setView] = useState<BuilderView>(initialView);
+  const [view, setView] = useState<BuilderView>(
+    initialBuilderView(initialView, versions.length),
+  );
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
@@ -913,20 +925,20 @@ export function BuilderShell({
                       ? gameLogCopy.tab.aria(String(games.length))
                       : gameLogCopy.tab.ariaNone,
                 },
+                // Absent on a brew rather than empty: a deck with no version has
+                // no history, and a tab saying so advertises its own emptiness
+                // (§Decisions 4).
+                ...(versions.length > 0
+                  ? [
+                      {
+                        id: "versions" as const,
+                        label: deckVersioningCopy.history.tab,
+                        count: versions.length,
+                        accessibleName: deckVersioningCopy.history.tabAria(versions.length),
+                      },
+                    ]
+                  : []),
               ]}
-              // The newest version's NUMBER is the count of versions: commitVersion
-              // computes it as max + 1 under a lock, so it cannot skip. That is why
-              // the version rail costs this route no query and no new prop.
-              links={
-                draft?.version
-                  ? [{
-                      href: `/decks/${deck.id}/versions`,
-                      label: deckVersioningCopy.history.tab,
-                      count: draft.version.number,
-                      accessibleName: deckVersioningCopy.history.tabAria(draft.version.number),
-                    }]
-                  : undefined
-              }
               view={view}
               onViewChange={setView}
             >
@@ -944,6 +956,10 @@ export function BuilderShell({
             {view === "games" ? (
               <div id="panel-games" role="tabpanel" aria-labelledby="tab-games">
                 <GamesPanel deckId={deck.id} games={games} summary={gameSummary} />
+              </div>
+            ) : view === "versions" ? (
+              <div id="panel-versions" role="tabpanel" aria-labelledby="tab-versions">
+                <VersionRail deckId={deck.id} versions={versions} />
               </div>
             ) : view === "consider" ? (
               <ConsiderPanel
