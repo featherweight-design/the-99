@@ -401,7 +401,11 @@ export function DecksView({
             filters={state.filters}
             onChange={onFilters}
             shown={shown.length}
-            total={decks.length}
+            // The SHELF's figure, the same one the chassis divides by — the
+            // sheet prints `shown of total` in its header and announces it in
+            // its own live region, so the library's count here would have the
+            // modal saying one thing while the line behind it said another.
+            total={shelfTotal(counts, state.shelf)}
             open={sheet.open}
             onDismiss={() => setSheet({ open: false, focusSearch: false })}
             autoFocusSearch={sheet.focusSearch}
