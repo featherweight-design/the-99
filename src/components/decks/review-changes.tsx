@@ -458,7 +458,11 @@ export function ReviewChanges({
     // The rows open the card modal, and the builder's provider does not reach
     // this route — the review page is its own page, as the update diff is.
     <CardDetailProvider>
-      <div className="mx-auto" style={{ maxWidth: 1180 }}>
+      {/* `w-full` is load-bearing: the shell's `<main>` is a flex column, and a
+          flex item with `margin-inline: auto` loses `align-items: stretch` and
+          sizes to its content. Without it this page drew ~870px wide on a
+          1300px desktop instead of filling to 1180. */}
+      <div className="mx-auto w-full" style={{ maxWidth: 1180 }}>
         {/* Its own block on the phone, ruled off and full-bleed, because the back
             link and the heading are what the reader lands on before the list
             starts. Desktop has no such division: the heading opens the page. */}

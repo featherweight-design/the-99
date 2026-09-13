@@ -131,7 +131,14 @@ versions **the tab does not render at all** (state 37b, §Decisions 7).
 | color | `#C9A24B` (`--accent`) | `#C9A24B` (`--accent`) |
 | value drawn | `3` | `3` |
 | rendered at 0 versions | **—** (absent; and the whole tab is absent — state 37b) | **—** (same) |
-| copy key | none — the bare number. `history.heading(n)` (`{n} versions`) is not drawn **on the tab**; it carries the route's own `h1` instead, per the resolution recorded under Discrepancy 28 | same |
+| copy key | none — the bare number. `history.heading(n)` (`{n} versions`) is not drawn **on the tab**; it names the route's document as an `sr-only` `h1`, per the resolution recorded under Discrepancy 28 | same |
+
+**Reachability (corrected 2026-09-12).** This cell is not decoration borrowed from the deck page:
+§Surfaces 4 draws the deck's four-cell tab row at the head of `/decks/[id]/versions` at both
+widths, with `Versions` active. `BuilderRouteTabs` in `builder-tabs.tsx` renders it there, so the
+active treatment above is reachable on the shipped route. The earlier reading — that the route
+draws its own `← deck name` header instead, recorded as Gap 4 — was wrong against the canvas and
+has been corrected in the gap report.
 
 ### Versions tab — inactive siblings (for contrast; shipped chrome)
 
@@ -964,3 +971,16 @@ not positions in one flat 1–45 sequence.
 57. **No focus style is specified for anything on either surface.** The one link
     (`Browse the {n} cards →`) inherits the global `a` colour and a hover, and nothing in the
     bundle declares a focus ring — for it, for the rail rows, or for the segmented pair.
+58. **The tab row's own metrics contradict the shipped row this table declares to be shipped
+    chrome.** "Tab row container" above rules `gap: 18px / 26px` with `overflow: hidden` at
+    390px, and "Versions tab — active cell" rules `gap: 6px / 7px` with `padding-bottom:
+    11px / 13px`. `BuilderTabs` — drawn by the deck page, whose own handoff set these — ships
+    `gap: 16px / 22px`, cell `gap: 6px` at both widths, and `padding-bottom: 8px / 10px`.
+    **Resolution (engineering, this table's own governing-value rule): the shipped chrome
+    wins and this table's four rows are errata.** `/decks/[id]/versions` draws the same
+    component instance the deck page draws, so honouring the figures here would make one row
+    of chrome measure differently on two routes a single click apart — the defect the rule
+    exists to prevent. `overflow: hidden` is additionally wrong as stated: it forces both
+    axes, and the global `:focus-visible` outline sits 2px outside each cell with a 2px
+    offset, so it clips every keyboard indicator against the row's bottom rule. The row
+    clips on one axis with `overflow-x-clip`, which leaves the vertical visible.

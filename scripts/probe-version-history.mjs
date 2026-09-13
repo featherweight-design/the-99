@@ -56,8 +56,6 @@ const {
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const TEMPLATE = process.env.PROBE_TEMPLATE_DECK ?? "a1111111-1111-1111-1111-111111111111";
 
-// The rail's way back is the deck's name, so the check needs the same string the
-// insert wrote.
 const DECK_NAME = "Probe · version history";
 
 const VIEWPORTS = [
@@ -129,8 +127,40 @@ const readRail = (page) =>
     });
     return {
       url: location.pathname,
-      h1: document.querySelector("h1")?.innerText ?? null,
+      h1: document.querySelector("h1")?.textContent ?? null,
+      // The canvas draws no heading here, so the `h1` names the document
+      // without ink. `innerText` reads as empty on an `sr-only` element,
+      // which is the point — `textContent` is the only way to see it.
+      h1Visible: (() => {
+        const h = document.querySelector("h1");
+        return h ? h.getBoundingClientRect().width > 1 : false;
+      })(),
       back: document.querySelector("header a")?.innerText ?? null,
+      // §Surfaces 4 heads this route with the deck's own tab row, `Versions`
+      // current. The active cell's treatment is drawn nowhere else in the
+      // product, so a row that goes missing takes a whole design state with it.
+      tabs: [...document.querySelectorAll("a")]
+        .filter((a) => /\/decks\/[^/]+(\?tab=|\/versions)?$/.test(a.getAttribute("href") ?? ""))
+        .map((a) => ({
+          href: a.getAttribute("href"),
+          label: a.innerText.replace(/\n/g, " "),
+          current: a.getAttribute("aria-current") === "page",
+        })),
+      // Gap A: `mx-auto` inside the shell's flex column loses `align-items:
+      // stretch`, and the rail drew at its content width at every viewport.
+      // A ratio, not a pixel count, because the cap is 1180 and the phone is
+      // narrower than that.
+      // The centred container, not a row: the rows sit inside its gutters, and
+      // it is the box that collapsed. Found by walking up from a row rather
+      // than by class, so a restyle does not quietly stop measuring anything.
+      fill: (() => {
+        const main = document.querySelector("main");
+        if (!rows.length || !main) return null;
+        let box = rows[0];
+        while (box.parentElement && box.parentElement !== main) box = box.parentElement;
+        const cap = Math.min(1180, main.clientWidth);
+        return box.getBoundingClientRect().width / cap;
+      })(),
       rows: rows.map((b) => ({
         text: b.innerText.replace(/\n/g, " · "),
         open: b.getAttribute("aria-expanded") === "true",
@@ -443,10 +473,49 @@ try {
       rail.rows.every((row) => /mv \d+\.\d\d/i.test(row.text)),
       rail.rows.map((row) => row.text.match(/mv \d+\.\d\d/i)?.[0] ?? "none").join(" · "),
     );
+    // §Surfaces 4 heads the route with the deck's tab row and draws neither a
+    // back link nor a heading. The row is the way back, and every cell has to
+    // land on the tab it names — a cell pointing at a route that ignores the
+    // parameter is a link that lies.
+    const current = rail.tabs.filter((tab) => tab.current);
     check(
-      `${viewport.label} · the deck's name is the way back`,
-      (rail.back ?? "").includes(DECK_NAME),
-      rail.back ?? "no link",
+      `${viewport.label} · the tab row heads the route, Versions current`,
+      current.length === 1 && /versions/i.test(current[0].label),
+      rail.tabs.map((t) => `${t.label}${t.current ? "*" : ""}`).join(" · ") || "no row",
+    );
+    check(
+      `${viewport.label} · each cell lands on the tab it names`,
+      ["/versions", "?tab=consider", "?tab=games"].every((suffix) =>
+        rail.tabs.some((tab) => (tab.href ?? "").endsWith(suffix)),
+      ) && rail.tabs.some((tab) => /\/decks\/[^/?]+$/.test(tab.href ?? "")),
+      rail.tabs.map((t) => t.href).join(" · ") || "no row",
+    );
+    // The cells' figures come off the route's loader rather than a prop a test
+    // chose, so this is the only place the `gameCount` subquery is proved: the
+    // fixture writes exactly two games and three versions under this deck.
+    const gamesCell = rail.tabs.find((tab) => (tab.href ?? "").endsWith("?tab=games"));
+    check(
+      `${viewport.label} · the Games cell counts the fixture's two games`,
+      /(^|\D)2(\D|$)/.test(gamesCell?.label ?? ""),
+      gamesCell?.label ?? "no Games cell",
+    );
+    check(
+      `${viewport.label} · the Versions cell counts the fixture's three versions`,
+      /(^|\D)3(\D|$)/.test(current[0]?.label ?? ""),
+      current[0]?.label ?? "no current cell",
+    );
+    check(`${viewport.label} · no back link above the rail`, rail.back === null, rail.back ?? "");
+    check(
+      `${viewport.label} · the heading names the document without drawing ink`,
+      rail.h1 !== null && !rail.h1Visible,
+      `${rail.h1 ?? "no h1"}${rail.h1Visible ? " (drawn)" : ""}`,
+    );
+    // Gap A: a flex item with `margin-inline: auto` is shrink-to-fit, and the
+    // rail drew at roughly half the desktop's width until `w-full` restored it.
+    check(
+      `${viewport.label} · the rail fills the width it is given`,
+      rail.fill !== null && rail.fill > 0.99,
+      rail.fill === null ? "no row" : `${Math.round(rail.fill * 100)}% of the cap`,
     );
     check(`${viewport.label} · no restore control`, !rail.restore);
     check(`${viewport.label} · no row for the pending draft`, !rail.pending);

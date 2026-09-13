@@ -4,7 +4,7 @@
 // and the arrows are what put it back within reach.
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { BuilderTabs, type BuilderTabSpec, type BuilderView } from "./builder-tabs";
+import { BuilderRouteTabs, BuilderTabs, type BuilderTabSpec, type BuilderView } from "./builder-tabs";
 
 const DECK_TAB = { id: "deck" as const, label: "In deck", count: 12, accessibleName: "In deck, 12 cards" };
 const CONSIDER_TAB = { id: "consider" as const, label: "Consider", count: 30, accessibleName: "Consider, 30 cards" };
@@ -157,5 +157,39 @@ describe("BuilderTabs — the version route", () => {
     render(<BuilderTabs tabs={three} view="deck" onViewChange={onViewChange} links={[LINK]} />);
     fireEvent.keyDown(screen.getByRole("link", { name: LINK.accessibleName }), { key: "ArrowRight" });
     expect(onViewChange).not.toHaveBeenCalled();
+  });
+});
+
+// The same row drawn on a route that is not the builder. Its cells are links
+// rather than tabs, because nothing here controls a panel in this document.
+describe("BuilderRouteTabs", () => {
+  const CELLS = [
+    { href: "/decks/d1", label: "Your deck", count: 99, accessibleName: "Your deck, 99 cards" },
+    { href: "/decks/d1?tab=games", label: "Games", accessibleName: "Games" },
+    { href: "/decks/d1/versions", label: "Versions", count: 3, accessibleName: "Versions, 3", current: true },
+  ];
+
+  it("draws every cell as a link and no tab at all", () => {
+    render(<BuilderRouteTabs cells={CELLS} />);
+    expect(screen.getAllByRole("link")).toHaveLength(3);
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
+    expect(screen.queryByRole("tablist")).toBeNull();
+  });
+
+  // Announced, not merely underlined: the marker is what tells a screen reader
+  // which of three links is the page already being read.
+  it("announces the page being read, and only it", () => {
+    render(<BuilderRouteTabs cells={CELLS} />);
+    const current = screen.getAllByRole("link", { current: "page" });
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveAttribute("href", "/decks/d1/versions");
+  });
+
+  // A count is drawn only where there is one to draw. The Consider cell ships
+  // without one, and a `0` in its place would be a claim nobody computed.
+  it("draws a count only for the cells that carry one", () => {
+    render(<BuilderRouteTabs cells={CELLS} />);
+    expect(screen.getByRole("link", { name: "Games" }).textContent).toBe("Games");
+    expect(screen.getByRole("link", { name: "Your deck, 99 cards" }).textContent).toContain("99");
   });
 });
