@@ -157,10 +157,14 @@ sql<number>`(
 - **A join saves you, a `where` saves you, the projection does not.** With two tables in the
   `from`, or with the same `sql` in `.where()`, Drizzle qualifies correctly. Confirmed by
   rendering all three through `PgDialect.sqlToQuery`.
-- **No unit test can catch this.** Component tests receive the figure as a prop and stay green.
-  The proof is a probe that calls the real loader against a real Postgres and asserts against a
-  fixture whose true count is known — `probe:versions` asserts both tab-row figures for exactly
-  this reason. When a count reads 0 and should not, print `.toSQL()` and read the emitted SQL.
+- **A `.toSQL()` test catches it; a component test never will.** Component tests receive the
+  figure as a prop and stay green however the query was written. Rendering the query and asserting
+  on the emitted string does catch it, needs no database, and is what `src/lib/decks/built.test.ts`
+  already does for `notBuiltBy` — assert the qualified form, `"deck_games"."deck_id"`, rather than
+  that the column name appears anywhere. Keep a probe for the returned figure: emitted SQL proves
+  the question, a fixture whose true count is known proves the answer, and `probe:versions` asserts
+  both tab-row figures for exactly that reason. When a count reads 0 and should not, print
+  `.toSQL()` first.
 
 ## Caching a list a reader flips between
 
