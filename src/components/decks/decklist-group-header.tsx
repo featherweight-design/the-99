@@ -17,6 +17,11 @@ interface DecklistGroupHeaderProps {
   noteColor?: string;
   /** Promotes the label to an h3 so a group can be a labelled landmark. */
   headingId?: string;
+  /** Gives the heading a −1 tabindex so a write can hand focus to it. The review
+   *  page lands here after a restore: the group the row left names where the
+   *  reader is, which a bare wrapper div would not. Off everywhere else — a
+   *  heading nothing focuses does not need to be focusable. */
+  focusable?: boolean;
   /**
    * Shopping groups: the arithmetic this group closes, shown beside the label in
    * mono 10px --fg-faint. E.g. "1 · closes 2→10". Omit in normal groups.
@@ -39,6 +44,7 @@ export function DecklistGroupHeader({
   note,
   noteColor = "var(--fg-locked)",
   headingId,
+  focusable = false,
   gapClause,
   autoCount = 0,
 }: DecklistGroupHeaderProps) {
@@ -60,6 +66,7 @@ export function DecklistGroupHeader({
           // arriving as a bare number from the sibling span.
           <h3
             id={headingId}
+            tabIndex={focusable ? -1 : undefined}
             aria-label={`${label} · ${count}`}
             className={labelClass}
             style={{ color: labelColor }}

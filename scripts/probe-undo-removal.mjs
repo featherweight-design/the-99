@@ -83,8 +83,13 @@ async function seed(userId) {
     select oracle_id from cards where commander_legal = true
       and color_identity @> array['G']::text[] and type_line ilike '%Legendary%Creature%'
     limit 1`;
+  // The commander is excluded by name: `addCardToDeck` refuses its own deck's
+  // commander with `is-commander`, so a commander row under `Going out` would
+  // be the one row here whose control cannot succeed — and this probe's whole
+  // contract is that it always does.
   const cards = await sql`
     select oracle_id from cards where commander_legal = true and type_line not ilike '%Basic%'
+      and oracle_id <> ${commander}
       and (color_identity = '{}'::text[] or color_identity <@ array['G']::text[])
     limit 8`;
   const [deck] = await sql`
@@ -139,7 +144,11 @@ async function readColumn(page) {
 }
 
 const report = {};
-let deckId = null;
+/** One deck per viewport. The first run restores a cut and then removes two more
+ *  cards for the #185 check, so a shared fixture would hand the second viewport
+ *  a column of a different size and the assertions below would be measuring
+ *  whatever the first one left behind. */
+const deckIds = [];
 await clerkSetup();
 const browser = await chromium.launch();
 try {
@@ -148,7 +157,8 @@ try {
     const page = await context.newPage();
     await signIn(page);
     const userId = await page.evaluate(() => window.Clerk.user.id);
-    if (!deckId) deckId = await seed(userId);
+    const deckId = await seed(userId);
+    deckIds.push(deckId);
 
     await page.goto(`${BASE}/decks/${deckId}/changes`, { waitUntil: "networkidle" });
     // The phone puts the two directions behind a segmented pair; the column is
@@ -194,12 +204,12 @@ try {
     await context.close();
   }
 } finally {
-  if (deckId) {
-    await sql`delete from deck_cards where deck_id = ${deckId}`;
+  for (const id of deckIds) {
+    await sql`delete from deck_cards where deck_id = ${id}`;
     await sql`delete from deck_version_cards where version_id in
-              (select id from deck_versions where deck_id = ${deckId})`;
-    await sql`delete from deck_versions where deck_id = ${deckId}`;
-    await sql`delete from decks where id = ${deckId}`;
+              (select id from deck_versions where deck_id = ${id})`;
+    await sql`delete from deck_versions where deck_id = ${id}`;
+    await sql`delete from decks where id = ${id}`;
   }
   await browser.close();
 }

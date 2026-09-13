@@ -196,11 +196,17 @@ function Column({
 }) {
   const renderGroup = ([group, groupRows]: TypeGroup) => (
     <div key={group} className="mb-[16px] last:mb-0">
-      {/* tabIndex −1 so it can receive focus without joining the tab order: it
+      {/* The heading itself, not a wrapper around it: a reader landing on a
+          bare div after a restore is told nothing about where they are, and the
+          whole point of the target is that it names the group the row left.
+          tabIndex −1 so it can receive focus without joining the tab order — it
           is a landing place after a write, not a stop on the way through. */}
-      <div id={groupHeadingId(descriptionId, columnKey, group)} tabIndex={-1}>
-        <DecklistGroupHeader label={group} count={groupRows.length} />
-      </div>
+      <DecklistGroupHeader
+        label={group}
+        count={groupRows.length}
+        headingId={groupHeadingId(descriptionId, columnKey, group)}
+        focusable
+      />
       <div className="flex flex-col gap-[4px]">
         {groupRows.map((row) => {
           // The claim the row's control is drawn against, guards and all —
@@ -457,7 +463,11 @@ export function ReviewChanges({
   const [restoreError, setRestoreError] = useState<{ oracleId: string; message: string } | null>(
     null,
   );
-  const [, startRestore] = useTransition();
+  // Kept, not dropped. Commit and discard serialize with this add on the deck
+  // lock, so a commit that wins the race snapshots the cut the optimistic row
+  // has already hidden — and the restore then lands as a fresh draft on the
+  // other side of the navigation. The two doors are shut for the round trip.
+  const [restoring, startRestore] = useTransition();
   // The same hook the banner's control uses, so the question asked from either
   // door is one construct with one set of answers.
   const discard = useDiscardConfirm(state);
@@ -486,7 +496,9 @@ export function ReviewChanges({
   // change set in the order the page draws it rather than stopping at a column.
   // Grouped order, not the payload's: the columns group by type, and Prev/Next
   // stepping to a row three groups down is a list the reader cannot follow.
-  const siblings = [...orderedIds(rows.in), ...orderedIds(rows.out)];
+  // `outRows`, not `rows.out`: a row that has optimistically left the column is
+  // not somewhere Prev/Next should be able to page back to.
+  const siblings = [...orderedIds(rows.in), ...orderedIds(outRows)];
 
   // Counted off the state's own buckets rather than off `rows.in`, because the
   // state is what every other surface's figure is counted off: the banner, this
@@ -508,6 +520,25 @@ export function ReviewChanges({
   const basicsOnly = !firstCommit && inCount === 0 && outCount === 0 && state.basicsChanged;
   // The draft's own size, which a restore grows: the card is back in the deck.
   const liveCardCount = cardCount + restoredCopies;
+
+  // The strip's `after` is the draft's shape, so a restored card belongs in it:
+  // its role, its type and its mana value are all back in the deck and every
+  // cell the strip draws counts them. Without this the row leaves the column
+  // while the curve beside it still describes a deck the card is out of.
+  const liveAfter =
+    restoredCopies === 0
+      ? after
+      : [
+          ...after,
+          ...rows.out
+            .filter((row) => restoredIds.includes(row.oracleId))
+            .map((row) => ({
+              role: row.role,
+              quantity: row.from - row.to,
+              typeLine: row.typeLine,
+              cmc: row.cmc,
+            })),
+        ];
 
   // Copies going back in the pool, never rows: one remove of `3 → 1` releases
   // two, and this figure is printed beside `buyCount`, which counts copies.
@@ -553,21 +584,40 @@ export function ReviewChanges({
         }
         // Announced into the region that outlives this row, because the row is
         // removed by its own success. Which sentence depends on what is left.
+        // The last change of any kind: the draft is gone and the route goes with
+        // it.
+        const dissolving = outAfter === 0 && inCount === 0 && !state.basicsChanged;
         draftAnnouncer().textContent =
-          outAfter === 0 && inCount === 0 && !state.basicsChanged
+          dissolving
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
             : outAfter === 0
               ? restoreCopy.announcedLastOut(card.name, cardsAfter)
               : restoreCopy.announced(card.name, cardsAfter, outAfter);
         // Focus before the refresh, while the tree this render built is still
         // in the document. The group heading the row left, never the next row's
-        // control — and the page heading when the column itself is going, which
-        // is the one case the heading cannot receive it.
-        const target =
-          outAfter > 0 && groupOfRow
-            ? document.getElementById(groupHeadingId(descriptionId, "out", groupOfRow))
-            : null;
-        (target ?? document.querySelector("h1"))?.focus?.();
+        // control.
+        //
+        // NOT when this was the last change of any kind: the route redirects to
+        // the deck page, and focusing a node about to be unmounted by a
+        // navigation is a no-op that reads like a promise kept. The
+        // announcement above is the receipt for that case, and a landing hash
+        // like the commit and discard receipts is a separate piece of work.
+        if (!dissolving) {
+          const heading =
+            outAfter > 0 && groupOfRow
+              ? document.getElementById(groupHeadingId(descriptionId, "out", groupOfRow))
+              : null;
+          // The page heading is the fallback when the column itself is going.
+          // It carries no tabindex of its own — a heading nothing focuses does
+          // not need one — so it is given one for the landing, the way the
+          // discard receipt does it.
+          const fallback = document.querySelector("h1");
+          if (heading) heading.focus();
+          else if (fallback) {
+            fallback.setAttribute("tabindex", "-1");
+            fallback.focus();
+          }
+        }
         router.refresh();
       });
     },
@@ -650,7 +700,7 @@ export function ReviewChanges({
           {/* Under the lede and above the columns, because it answers the other
               question the page is asked: the columns say which cards moved, and
               this says where the deck's shape went. */}
-          <ChangedStrip before={before} after={after} />
+          <ChangedStrip before={before} after={liveAfter} />
 
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
               standing for a purchase, a pull or a column that is not there. */}
@@ -760,6 +810,9 @@ export function ReviewChanges({
           {commitSheetOpen ? (
             <CommitSheet
               deckId={deckId}
+              // Same race, one door further in: a sheet already open when a
+              // restore starts can commit the draft the row has left.
+              commitDisabled={restoring}
               state={state}
               rows={rows}
               cardCount={liveCardCount}
@@ -805,6 +858,12 @@ export function ReviewChanges({
                         button. */}
                     <PrimaryButton
                       onClick={() => setCommitSheetOpen(true)}
+                      // Shut for the length of a restore's round trip. The two
+                      // writes serialize on the deck lock, so a commit that wins
+                      // the race freezes the cut the optimistic row has already
+                      // taken off the screen — and the restore then lands as a
+                      // fresh draft on the far side of the navigation.
+                      disabled={restoring}
                       className="inline-flex flex-1 md:flex-none items-center justify-center min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
                     >
                       {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
@@ -812,7 +871,11 @@ export function ReviewChanges({
                     {/* Withheld on a brew, where there is no version for a discard
                         to land on — the rendering half of the server's own refusal. */}
                     {discard.offered && (
-                      <DiscardTrigger onOpen={discard.open} triggerRef={discard.triggerRef} />
+                      <DiscardTrigger
+                        onOpen={discard.open}
+                        triggerRef={discard.triggerRef}
+                        disabled={restoring}
+                      />
                     )}
                   </div>
                   <span className="order-first md:order-last font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]">

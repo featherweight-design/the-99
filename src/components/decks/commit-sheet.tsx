@@ -74,6 +74,10 @@ export type CommitSheetProps = {
    *  reader has just undone. Absent from every other caller, which has no list
    *  of its own to be ahead of the server. */
   releasedOverride?: number;
+  /** Shut while another write to the same draft is in flight — the review page
+   *  passes this during a restore. The two serialize on the deck lock, and a
+   *  commit that wins the race freezes a cut the reader has just undone. */
+  commitDisabled?: boolean;
   /** Folds the sheet away. The sheet is unmounted rather than hidden, which is
    *  what leaves the note empty when it is opened again. */
   onCancel: () => void;
@@ -85,6 +89,7 @@ export function CommitSheet({
   rows,
   cardCount,
   releasedOverride,
+  commitDisabled = false,
   onCancel,
 }: CommitSheetProps) {
   const router = useRouter();
@@ -281,7 +286,7 @@ export function CommitSheet({
               `--fg` on `--bg` are those two colours. Its hover and its disabled
               appearance come with it rather than being restated here. */}
           <PrimaryButton
-            disabled={pending}
+            disabled={pending || commitDisabled}
             className={`${BAR_BUTTON} min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]`}
             onClick={() => {
               setError(null);

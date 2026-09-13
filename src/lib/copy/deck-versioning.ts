@@ -234,9 +234,9 @@ export const deckVersioningCopy = {
     // Which of the three fires depends on what is left behind it, and no count
     // of nought is ever drawn — including in an announcement.
     announced: (card: string, cards: number, out: number) =>
-      `${card} is back in the deck. ${cards} cards, ${out} going out.`,
+      `${card} is back in the deck. ${plural(cards, "card")}, ${out} going out.`,
     announcedLastOut: (card: string, cards: number) =>
-      `${card} is back in the deck. ${cards} cards, nothing going out.`,
+      `${card} is back in the deck. ${plural(cards, "card")}, nothing going out.`,
     // A restore can dissolve the draft entirely, which deletes the banner and
     // redirects the route. The absence IS the news, so this is the only notice.
     announcedLastChange: (card: string, version: number) =>

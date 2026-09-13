@@ -87,12 +87,24 @@ export function useDiscardConfirm(state: DraftState) {
 export function DiscardTrigger({
   onOpen,
   triggerRef,
+  disabled = false,
 }: {
   onOpen: () => void;
   triggerRef?: Ref<HTMLButtonElement>;
+  /** Shut while another write to the same draft is in flight. The review page
+   *  passes this during a restore: the two serialize on the deck lock, and a
+   *  discard that wins the race throws away a card the reader has just put
+   *  back. */
+  disabled?: boolean;
 }) {
   return (
-    <button ref={triggerRef} type="button" onClick={onOpen} className={GHOST_CTA}>
+    <button
+      ref={triggerRef}
+      type="button"
+      onClick={onOpen}
+      disabled={disabled}
+      className={`${GHOST_CTA} disabled:opacity-50 disabled:cursor-default`}
+    >
       {deckVersioningCopy.pending.discardCta}
     </button>
   );

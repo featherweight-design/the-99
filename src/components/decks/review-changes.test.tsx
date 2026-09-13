@@ -996,6 +996,43 @@ describe("ReviewChanges", () => {
       await held.release();
     });
 
+    // Commit and discard serialize with this add on the deck lock. A commit
+    // that wins the race freezes the cut the optimistic row has already taken
+    // off the screen, and the restore then lands as a fresh draft on the far
+    // side of the navigation.
+    it("shuts the commit and discard doors while the write is in flight", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      const commit = screen.getByRole("button", {
+        name: deckVersioningCopy.pending.commitCta(2),
+      });
+      expect(commit).toBeEnabled();
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(commit).toBeDisabled();
+
+      await held.release();
+      expect(
+        screen.getByRole("button", { name: deckVersioningCopy.pending.commitCta(2) }),
+      ).toBeEnabled();
+    });
+
+    // A row that has optimistically left is not somewhere Prev/Next should be
+    // able to page back to.
+    it("drops the restored row out of the modal's sibling list", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      // The row is gone from the column, so the card behind it is gone from the
+      // list the modal pages through.
+      expect(screen.queryByText("Mox Diamond")).toBeNull();
+      await held.release();
+    });
+
     // The whole row is a button that opens the card. Without `stopPropagation`
     // putting a card back also opens it.
     it("does not open the card it puts back", async () => {
