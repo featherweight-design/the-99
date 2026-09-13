@@ -635,11 +635,15 @@ export function CardModal({
   // `printings` and the art-tier subqueries reading it.
   // `set · code · collector number`, and the field AND its separator go when the
   // holding carries no number — never "no number" (the printing picker's ruling).
-  const zoomCaption = `${cardZoomCopy.printing(
-    resolved?.setName ?? resolved?.setCode ?? "",
-    resolved?.setCode ?? "",
-    resolved?.collectorNumber ?? "",
-  )}${flipped ? cardZoomCopy.backSuffix : ""}`;
+  const zoomCaption = resolved
+    ? `${cardZoomCopy.printing(
+        resolved.setName ?? resolved.setCode,
+        resolved.setCode,
+        resolved.collectorNumber,
+      )}${flipped ? cardZoomCopy.backSuffix : ""}`
+    // A card with no printings at all names nothing, and ` · ` is not a caption.
+    // The zoom draws the card and no line rather than a line with nothing in it.
+    : null;
 
   const faceImage = flipped ? card.backImageUri : resolved?.imageUri;
   const artStyle: React.CSSProperties = faceImage
@@ -678,7 +682,12 @@ export function CardModal({
         // line to twelve, and paging Prev/Next through the collection resized
         // the dialog under the cursor on every step. The content column scrolls
         // instead.
-        className="flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
+        // `relative` is load-bearing, not decoration: the zoom layer is absolute and
+        // takes its box from the nearest positioned ancestor. Without it that ancestor
+        // is the fixed backdrop, so the layer would cover the viewport — a second
+        // full-screen thing over a dialog over a backdrop, and clicks outside the
+        // dialog would dismiss the zoom instead of reaching the backdrop.
+        className="relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
         style={{
           boxShadow: "var(--modal-shadow)",
         }}
@@ -690,6 +699,11 @@ export function CardModal({
             scaled past its own edges so the blur has no transparent rim — and
             the tile is the only sharp copy. */}
         <div
+          // Inert while the zoom is up: the shipped ✕ and every control under the layer
+          // stay mounted for layout, and `useDialogA11y` collects every button in the
+          // dialog — so without this, Tab or a screen reader reaches the covered
+          // `Close card details` and dismisses the whole dialog instead of the zoom.
+          inert={zoomed}
           className={`relative overflow-hidden md:hidden ${compactArt ? "flex items-end gap-[14px]" : ""}`}
           style={{
             padding: compactArt ? "44px 20px 14px" : "44px 20px 20px",
@@ -743,7 +757,7 @@ export function CardModal({
               onClick={() => setZoomed(true)}
               aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
               aria-expanded={zoomed}
-              aria-controls={ZOOM_REGION}
+              aria-controls={zoomed ? ZOOM_REGION : undefined}
               className="absolute inset-0 rounded-[10px] cursor-pointer bg-transparent border-0 p-0"
             />
             {!compactArt && <ZoomMark size={28} />}
@@ -808,6 +822,7 @@ export function CardModal({
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
         <div
+          inert={zoomed}
           className="hidden md:flex items-center justify-center flex-none"
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
@@ -829,7 +844,7 @@ export function CardModal({
               onClick={() => setZoomed(true)}
               aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
               aria-expanded={zoomed}
-              aria-controls={ZOOM_REGION}
+              aria-controls={zoomed ? ZOOM_REGION : undefined}
               className="absolute inset-0 rounded-[12px] cursor-pointer bg-transparent border-0 p-0"
             />
             <ZoomMark size={30} />
@@ -870,7 +885,7 @@ export function CardModal({
             On desktop the column is a flex stack: the body scrolls, the Prev/Next
             row sits below it so it stays bottom-aligned whatever the oracle text
             length. */}
-        <div className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
+        <div inert={zoomed} className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
           {/* Desktop close button — §Desktop: Close Button */}
           <button
             type="button"
@@ -1099,12 +1114,14 @@ export function CardModal({
             />
             {/* One mono line: which printing you are holding. Never the price — a card
                 in your hand has none printed on it, and the tag is one dismissal away. */}
-            <p
-              className="font-mono text-[11px] mt-[14px] m-0"
-              style={{ color: "var(--fg-muted)" }}
-            >
-              {zoomCaption}
-            </p>
+            {zoomCaption && (
+              <p
+                className="font-mono text-[11px] mt-[14px] m-0"
+                style={{ color: "var(--fg-muted)" }}
+              >
+                {zoomCaption}
+              </p>
+            )}
             <button
               type="button"
               ref={zoomCloseRef}

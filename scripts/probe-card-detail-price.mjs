@@ -214,6 +214,21 @@ try {
   // rectangle, never the page's.
   await page.getByRole("button", { name: /^Look at / }).first().click();
   await page.waitForSelector('[data-testid="card-zoom"]', { timeout: 5_000 });
+  // The layer animates in over 200ms from `scale(.94)`, so a rect read on
+  // attachment measures a card mid-flight and fails the size check for no reason.
+  // Waited for the geometry to settle, not for a duration.
+  await page
+    .waitForFunction(
+      () => {
+        const c = document.querySelector('[data-testid="card-zoom-card"]');
+        if (!c) return false;
+        const { width } = c.getBoundingClientRect();
+        return width > 0 && Math.abs(width - c.offsetWidth) <= 1;
+      },
+      null,
+      { timeout: 5_000 },
+    )
+    .catch(() => {});
   const zoom = await readZoom(page);
   console.log("\n── desktop · zoom ──");
   console.log(JSON.stringify(zoom, null, 2));

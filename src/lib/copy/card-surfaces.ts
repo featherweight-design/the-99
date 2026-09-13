@@ -158,8 +158,13 @@ export const cardZoomCopy = {
    * `num` may be empty on a bare `Name,Qty` import — the field AND its separator
    * go, per the printing picker's ruling. Never "no number".
    */
-  printing: (setName: string, code: string, num: string) =>
-    num ? `${setName} · ${code} ${num}` : `${setName} · ${code}`,
+  printing: (setName: string, code: string, num: string) => {
+    // Where the catalog has no row for the set, the caller passes the code as the
+    // name — and `RVR · RVR 12` names the set twice. The code is dropped there, the
+    // same suppression the picker's tiles already make.
+    const head = setName === code ? code : `${setName} · ${code}`;
+    return num ? `${head} ${num}` : head;
+  },
 
   /** Appended to the caption on the reverse face. Not a second line. */
   backSuffix: " · back",

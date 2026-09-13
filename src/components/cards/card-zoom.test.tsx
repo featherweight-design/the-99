@@ -153,6 +153,50 @@ describe("the zoom", () => {
     );
   });
 
+  it("makes everything under the layer inert", () => {
+    // The shipped ✕ stays mounted behind the zoom, and the dialog's focus trap
+    // collects every button in the dialog — so a Tab could otherwise reach it and
+    // close the whole modal when the reader meant to close the zoom.
+    mount();
+    openZoom();
+
+    const covered = screen.getAllByRole("button", { name: "Close card details" });
+    expect(covered.length).toBeGreaterThan(0);
+    for (const button of covered) {
+      expect(button.closest("[inert]")).not.toBeNull();
+    }
+    // The layer's own control is not under an inert ancestor.
+    expect(screen.getByRole("button", { name: cardZoomCopy.close }).closest("[inert]")).toBeNull();
+  });
+
+  it("draws no caption at all for a card with no printings", () => {
+    // ` · ` is not a printing label.
+    mount(card({ printings: [] }));
+    openZoom();
+
+    expect(screen.getByTestId("card-zoom").querySelector("p")).toBeNull();
+  });
+
+  it("names the set once when the catalog has no name for it", () => {
+    mount(card({ printings: [{ ...card().printings[0], setName: null }] }));
+    openZoom();
+
+    expect(screen.getByTestId("card-zoom")).toHaveTextContent("RVR 12");
+    expect(screen.getByTestId("card-zoom").textContent).not.toContain("RVR · RVR");
+  });
+
+  it("points at the region only while it exists", () => {
+    // A dangling `aria-controls` is a reference to nothing for assistive tech.
+    mount();
+    const closed = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0];
+    expect(closed).not.toHaveAttribute("aria-controls");
+
+    openZoom();
+
+    expect(screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0])
+      .toHaveAttribute("aria-controls", "card-zoom");
+  });
+
   it("reports its own state on the trigger", () => {
     mount();
     const trigger = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0];
