@@ -173,6 +173,42 @@ export function DecksView({
   // for a reader whose preference is not the default, and it is the honest one:
   // the server cannot know what this browser stores.
   const [storedSort, chooseSort] = useStoredView(DECK_SORT_KEY, isDeckSort);
+
+  /**
+   * THE URL IS RE-READ WHEN A NAVIGATION CHANGES IT, and not otherwise.
+   *
+   * The seed above runs once, which was enough while the URL and this state
+   * could only disagree through this view's own writes. They can disagree the
+   * other way too: the shell's `Decks` link clears the query without unmounting
+   * anything, and a reader who chose `Newest` would have kept it while the
+   * address bar said nothing — and, now that an absence means "follow what this
+   * browser stored", would have kept it over their own stored order.
+   *
+   * ALL FIVE parameters, not just the sort. Reconciling one would give this view
+   * two rules for two halves of its own state, and the same navigation leaves a
+   * status filter on with a bare URL.
+   *
+   * Safe against this view's own writes because they are `history.replaceState`,
+   * which the router never hears — `useSearchParams` changes on a NAVIGATION and
+   * on nothing else. `seenQuery` is set in `apply` regardless, so even a Next
+   * that started reporting them could not turn this into a loop.
+   *
+   * During render rather than in an effect: an effect would paint the previous
+   * list once and then correct it, which is the cascading-render pattern this
+   * repo's lint rejects. `shelfMissing` below already does exactly this. State
+   * rather than a ref, because a ref read during render is what the lint rejects
+   * next — and React documents this shape as adjusting state on a changed input.
+   */
+  const [seenQuery, setSeenQuery] = useState(() => search.toString());
+  if (search.toString() !== seenQuery) {
+    setSeenQuery(search.toString());
+    setState({
+      ...filtersFromParams(search),
+      sort: deckSortFromParams(search.get("sort")),
+      shelf: shelfFromParams(search, folders),
+    });
+  }
+
   const sort = state.sort ?? storedSort ?? DEFAULT_DECK_SORT;
   const [sheet, setSheet] = useState<{
     open: boolean;
@@ -214,6 +250,11 @@ export function DecksView({
     for (const key of OWNED_PARAMS) live.delete(key);
     for (const [key, value] of params) live.set(key, value);
     const query = live.toString();
+    // This view's own write is not a navigation to reconcile against. It is
+    // recorded anyway rather than relied upon not to arrive: `replaceState` is
+    // invisible to the router today, and a Next that started reporting it would
+    // otherwise turn the adjustment above into a loop.
+    setSeenQuery(query);
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
   }, []);
 

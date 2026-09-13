@@ -492,6 +492,35 @@ describe("DecksView remembers the order", () => {
     expect(sortTrigger()).toHaveAccessibleName("Sort · Last played");
   });
 
+  it("re-reads the URL when a navigation changes it, not only at mount", () => {
+    // The shell's `Decks` link clears the query without unmounting this view. An
+    // absence now means "follow what this browser stored", so a reader who chose
+    // `Newest` would otherwise have kept it over their own stored order while
+    // the address bar said nothing.
+    localStorage.setItem("the99:decks:sort", "name");
+    window.history.replaceState(null, "", "/decks?sort=newest");
+    const { rerender } = renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur", "Míriel", "Atraxa"]);
+
+    // `useSearchParams` is stubbed from `window.location`, so moving the URL and
+    // re-rendering is the navigation.
+    window.history.replaceState(null, "", "/decks");
+    rerender(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Atraxa", "Míriel", "Zur"]);
+  });
+
+  it("reconciles every parameter it owns, not only the sort", () => {
+    // One rule for the whole of this view's URL-owned state: the same navigation
+    // would otherwise leave a status filter on with a bare URL.
+    window.history.replaceState(null, "", "/decks?q=Zur");
+    const { rerender } = renderWide(view(threeDecks()));
+    expect(namesInOrder()).toEqual(["Zur"]);
+
+    window.history.replaceState(null, "", "/decks");
+    rerender(view(threeDecks()));
+    expect(namesInOrder()).toHaveLength(3);
+  });
+
   it("holds the stored order through a filter click, which writes no sort", () => {
     // `apply` rewrites every parameter the view owns. Serialising the effective
     // order there would pin the stored preference onto the URL; serialising the
