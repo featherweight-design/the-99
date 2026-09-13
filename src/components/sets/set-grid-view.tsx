@@ -18,7 +18,7 @@
 // scroll is paid for by the sticky head, the extras jump, and missing-only, which removes
 // the cells the reader is done with rather than shrinking everything.
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail } from "../cards/card-detail-provider";
@@ -135,25 +135,26 @@ export function SetGridView(props: SetGridViewProps) {
    */
   const [collapsed, setCollapsed] = useState(false);
   /**
-   * Desktop never collapses. Nothing else forbids it any more.
+   * §31: "if it is firing, the collapse waits". The delta strip is the one member of the
+   * head that is news rather than reference, and it carries the only offer to refresh a
+   * page the reader has just been told is stale.
    *
-   * §31 rules that the collapse must not hide the delta strip's message — it is the one
-   * member of the head that is news rather than reference, and it carries the only offer to
-   * refresh a page the reader has just been told is stale. That was a GATE: while the strip
-   * fired, the head was pinned open.
+   * Round 7 replaced this gate with "the strip is simply not a member the collapse hides",
+   * which shows the message but is NOT what the ruling says — and it let a variable-height
+   * strip grow the supposedly fixed 52px bar. The gate is back, with the three defects that
+   * made it expensive fixed rather than escaped:
    *
-   * The gate is gone, and the strip is simply not one of the members the collapse hides. It
-   * renders in the sticky head at both heights, so the message is visible whether or not
-   * the reader has scrolled — which is what the ruling asks for, more directly than pinning
-   * the whole head open did.
-   *
-   * The pin cost four rounds. It reopened the head under an open dialog, unmounting the
-   * trigger `useDialogA11y` had saved; its state lagged the child's first firing commit by a
-   * render, so a delta-inclusive height could be recorded and never corrected; and it
-   * needed a ref written during render to be readable at all. None of that exists without
-   * it.
+   *   - it does not apply while the sheet is open, so a strip that starts firing behind an
+   *     open dialog no longer reopens the head and unmounts the trigger `useDialogA11y`
+   *     saved;
+   *   - the ref `sizeSpacer` reads is written in a LAYOUT EFFECT, not during render, which
+   *     is what `react-hooks/refs` forbids;
+   *   - and the reserve stops recording while it fires, so a delta-inclusive height is
+   *     never the one the spacer is sized from.
    */
-  const mayCollapse = !isDesktop;
+  const [deltaFiring, setDeltaFiring] = useState(false);
+  const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
+  const mayCollapse = !isDesktop && !(deltaFiring && !sheetOpen);
   useEffect(() => {
     if (!mayCollapse) return;
     // An open sheet FREEZES the head, in whichever state it is already in. It does not
@@ -209,6 +210,10 @@ export function SetGridView(props: SetGridViewProps) {
    * Reads refs only, so the `ResizeObserver` registered once can keep calling it.
    */
   const restHeightRef = useRef<number | null>(null);
+  // Written in a layout effect, never during render: `sizeSpacer` is created once and
+  // cannot close over the state, and a ref assigned while rendering is what
+  // `react-hooks/refs` rejects.
+  const deltaFiringRef = useRef(false);
   const sizeSpacer = useRef(() => {
     const el = headRef.current;
     const spacer = spacerRef.current;
@@ -224,7 +229,11 @@ export function SetGridView(props: SetGridViewProps) {
     // sheet leaves the recorded height stale — and the first render that restores would
     // then size the spacer from a head that no longer exists. `ResizeObserver` corrects it
     // a frame later, which is a frame too late.
-    if (!el.hasAttribute("data-set-head-collapsed")) {
+    // Not while the strip is firing either: the head is pinned open then, so no reserve is
+    // needed — and recording a delta-inclusive height meant that when the message cleared,
+    // the collapse committed in the same render and the spacer stayed taller than the head
+    // by the strip's own height until the next restore.
+    if (!el.hasAttribute("data-set-head-collapsed") && !deltaFiringRef.current) {
       restHeightRef.current = el.getBoundingClientRect().height;
     }
     const rest = restHeightRef.current;
@@ -258,7 +267,6 @@ export function SetGridView(props: SetGridViewProps) {
   }, [sizeSpacer]);
   // After the DOM has changed and before the browser paints, which is the whole point: the
   // spacer has to be the right height on the frame the head first shrinks.
-  useLayoutEffect(sizeSpacer);
 
   const searchRef = useRef<HTMLInputElement>(null);
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
@@ -712,6 +720,15 @@ export function SetGridView(props: SetGridViewProps) {
   // collapsing again the moment it is dismissed.
   const shy = collapsed && mayCollapse;
 
+  useLayoutEffect(() => {
+    deltaFiringRef.current = deltaFiring;
+    sizeSpacer();
+    // Keyed, not every render. Without a list this ran after every keystroke in the search
+    // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
+    // for a head whose size had not moved. The `ResizeObserver` is what covers ordinary
+    // size changes; this covers the transitions it cannot see.
+  }, [shy, deltaFiring, isDesktop, sizeSpacer]);
+
   return (
     <div>
       <div
@@ -939,6 +956,7 @@ export function SetGridView(props: SetGridViewProps) {
           fingerprint={ownedFingerprint}
           indexed={sections.indexed}
           recheckKey={`${modalGeneration}:${artGeneration}`}
+          onFiring={onDeltaFiring}
         />
 
         {/* Hidden as a WHOLE when shy, not just its contents: the wrapper's own 10px
@@ -1450,24 +1468,25 @@ export function SetGridView(props: SetGridViewProps) {
                     </span>
                   </>
                 )}
-          {shownExtras.length > 0 ? (
+          {shownExtras.length > 0 && !shy ? (
             <>
               {" · "}
-              {/* NOT RENDERED while the region is `sr-only`. `tabIndex={-1}` was the first
+              {/* The whole clause goes, separator included: left behind, the live region
+                  announced a dangling "·" after the result count on every filter change.
+
+                  NOT RENDERED while the region is `sr-only`. `tabIndex={-1}` was the first
                   answer and it only stops FUTURE tabbing: a reader already focused on the
                   link keeps it as the active element when the collapse clips the region to
                   a 1px box, which is the same invisible-focus defect one step later.
                   Unmounted, focus falls to the body like everything else the collapse
                   hides — the settled behaviour for this whole class. The region stays
                   sr-only to keep ANNOUNCING; it was never there to keep offering. */}
-              {!shy ? (
               <a
                 href="#extras"
                 className="text-[color:var(--accent)] hover:underline"
               >
                 {setPageCopy.sections.jump}
               </a>
-              ) : null}
             </>
           ) : null}
         </p>

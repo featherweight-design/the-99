@@ -1,4 +1,4 @@
-import { cloneElement } from "react";
+import { cloneElement, useLayoutEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
@@ -18,9 +18,18 @@ vi.mock("next/navigation", () => ({
 // about it vacuous.
 const deltaProps: { recheckKey?: string; firing?: boolean } = {};
 vi.mock("./delta-strip", () => ({
-  DeltaStrip: ({ recheckKey }: { recheckKey?: string }) => {
+  DeltaStrip: ({ recheckKey, onFiring }: {
+    recheckKey?: string; onFiring?: (f: boolean) => void;
+  }) => {
     deltaProps.recheckKey = recheckKey;
-    return deltaProps.firing === true ? <div>a card arrived</div> : null;
+    const firing = deltaProps.firing === true;
+    // The CALLBACK, not the whole props object: `props` is a new reference every render, so
+    // depending on it reported false and then true again on every parent update.
+    useLayoutEffect(() => {
+      onFiring?.(firing);
+      return () => onFiring?.(false);
+    }, [firing, onFiring]);
+    return firing ? <div>a card arrived</div> : null;
   },
 }));
 
@@ -2101,18 +2110,54 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(bar.querySelector("[aria-label*='filter']")).toBeTruthy();
   });
 
-  // §31 says the collapse must not hide the delta strip's message. It is not a GATE any
-  // more — the strip is simply not one of the members the collapse hides, so the message is
-  // visible at both heights. The pin it replaces reopened the head under an open dialog and
-  // lagged the child's first firing commit by a render.
-  it("keeps the delta strip's message visible while collapsed", () => {
+  // §31, verbatim: "if it is firing, the collapse waits". Round 7 replaced this gate with
+  // "the strip is simply not a member the collapse hides", which shows the message but is
+  // not what the ruling says — and let a variable-height strip grow the fixed 52px bar.
+  it("waits for the delta strip rather than collapsing around it", () => {
     stubDesktop(false);
     deltaProps.firing = true;
     try {
       const { container } = view([p("1"), p("2")], []);
       scrollTo(400);
-      expect(isShy(container)).toBe(true);
+      expect(isShy(container)).toBe(false);
       expect(container.textContent).toMatch(/a card arrived/);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  it("and collapses once the message clears", () => {
+    stubDesktop(false);
+    deltaProps.firing = true;
+    try {
+      const r = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(r.container)).toBe(false);
+      deltaProps.firing = false;
+      r.rerender(r.again());
+      scrollTo(401);
+      expect(isShy(r.container)).toBe(true);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  // The gate does NOT apply behind an open sheet. A strip that starts firing there would
+  // otherwise reopen the head and unmount the trigger `useDialogA11y` saved — which is the
+  // defect the sheet freeze exists to prevent, arriving through the delta gate.
+  it("does not reopen behind an open sheet when the strip fires", () => {
+    stubDesktop(false);
+    const r = view([p("1"), p("2")], []);
+    scrollTo(400);
+    expect(isShy(r.container)).toBe(true);
+    const bar = r.container.querySelector("[data-set-head-bar]") as HTMLElement;
+    fireEvent.click([...bar.querySelectorAll("button")]
+      .find((b) => /Filters/.test(b.textContent ?? "")) as HTMLElement);
+    deltaProps.firing = true;
+    try {
+      r.rerender(r.again());
+      expect(isShy(r.container)).toBe(true);
+      expect(r.container.querySelector("[data-set-head-bar]")).toBeTruthy();
     } finally {
       deltaProps.firing = false;
     }
@@ -2232,9 +2277,13 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     const { container } = view(
       [p("1", { booster: true }), p("2", { booster: false })], [],
     );
+    const region = () => container.querySelector("[data-set-result]") as HTMLElement;
     expect(container.querySelector('a[href="#extras"]')).toBeTruthy();
     scrollTo(400);
     expect(container.querySelector('a[href="#extras"]')).toBeNull();
+    // The separator goes with it. Left behind, the live region announced a dangling "·"
+    // after the result count on every filter change.
+    expect(region().textContent).not.toMatch(/·\s*$/);
   });
 
   it("never collapses at desktop, however far the reader scrolls", () => {

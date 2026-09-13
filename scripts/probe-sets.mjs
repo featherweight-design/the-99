@@ -972,15 +972,24 @@ async function run() {
       await page.goBack({ waitUntil: "networkidle" });
       await waitForCells(page);
       const restoredY = await page.evaluate(() => Math.round(window.scrollY));
-      report(
-        "a first paint at a restored scroll position",
-        true,
-        restoredY > 120
-          ? `entered at y=${restoredY}`
-          : `NOT REPRODUCED — the page came up at y=${restoredY}; neither reload nor back`
-            + " restores a scroll position here, so the one-frame open head on restoration"
-            + " is unmeasured",
-      );
+      if (restoredY > 120) {
+        failures += !report(
+          "a first paint at a restored scroll position keeps the grid still",
+          true,
+          `entered at y=${restoredY}`,
+        );
+      } else {
+        // NOT a `report(..., true, ...)`. That printed `ok` and let the probe exit
+        // successfully while saying "NOT REPRODUCED" in its own detail — a green line for a
+        // case never entered, which is the exact thing this run keeps shipping. Its own
+        // marker, outside the pass/fail tally, so it can neither claim coverage nor fail a
+        // build over an engine behaviour.
+        console.log(
+          `  n/a  a first paint at a restored scroll position — NOT REPRODUCED: came up at`
+          + ` y=${restoredY}. Neither reload nor history back restores a scrolled position`
+          + " here, so the one-frame open head on restoration stays unmeasured.",
+        );
+      }
 
       const crossing = await firstCrossingShift();
       failures += !report(
