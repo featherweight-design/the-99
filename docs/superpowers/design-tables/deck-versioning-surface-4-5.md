@@ -131,7 +131,14 @@ versions **the tab does not render at all** (state 37b, §Decisions 7).
 | color | `#C9A24B` (`--accent`) | `#C9A24B` (`--accent`) |
 | value drawn | `3` | `3` |
 | rendered at 0 versions | **—** (absent; and the whole tab is absent — state 37b) | **—** (same) |
-| copy key | none — the bare number. `history.heading(n)` (`{n} versions`) is not drawn **on the tab**; it carries the route's own `h1` instead, per the resolution recorded under Discrepancy 28 | same |
+| copy key | none — the bare number. `history.heading(n)` (`{n} versions`) is not drawn **on the tab**; it names the route's document as an `sr-only` `h1`, per the resolution recorded under Discrepancy 28 | same |
+
+**Reachability (corrected 2026-09-12).** This cell is not decoration borrowed from the deck page:
+§Surfaces 4 draws the deck's four-cell tab row at the head of `/decks/[id]/versions` at both
+widths, with `Versions` active. `BuilderRouteTabs` in `builder-tabs.tsx` renders it there, so the
+active treatment above is reachable on the shipped route. The earlier reading — that the route
+draws its own `← deck name` header instead, recorded as Gap 4 — was wrong against the canvas and
+has been corrected in the gap report.
 
 ### Versions tab — inactive siblings (for contrast; shipped chrome)
 

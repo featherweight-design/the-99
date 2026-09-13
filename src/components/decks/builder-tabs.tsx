@@ -8,7 +8,10 @@
 
 import Link from "next/link";
 
-export type BuilderView = "deck" | "consider" | "games";
+// Declared outside this module so a server route can read the URL parameter that
+// names a tab without importing a client module to do it.
+export type { BuilderView } from "../../lib/decks/builder-view";
+import type { BuilderView } from "../../lib/decks/builder-view";
 
 export interface BuilderTabSpec {
   id: BuilderView;
@@ -29,6 +32,9 @@ export interface BuilderTabLink {
   /** Omitted when there is nothing to count, exactly as a tab's is. */
   count?: number;
   accessibleName: string;
+  /** The cell for the page being read. Only `BuilderRouteTabs` sets it: on the
+   *  builder itself no link cell is ever the current page. */
+  current?: boolean;
 }
 
 interface BuilderTabsProps {
@@ -98,6 +104,64 @@ function Tab({
   );
 }
 
+function LinkCell({ link }: { link: BuilderTabLink }) {
+  return (
+    <Link
+      href={link.href}
+      aria-label={link.accessibleName}
+      aria-current={link.current ? "page" : undefined}
+      // The same transparent idle border the tabs carry, so the cell sits on
+      // the same baseline as them rather than 2px below it.
+      className={`flex items-baseline gap-[6px] min-h-[44px] pb-[8px] md:pb-[10px] no-underline border-0 border-b-2 border-solid ${
+        link.current ? "border-b-[color:var(--accent)]" : "border-b-transparent"
+      }`}
+    >
+      <span
+        className={`text-[13.5px] md:text-[14px] ${
+          link.current
+            ? "font-semibold text-[color:var(--fg)]"
+            : "font-medium text-[color:var(--fg-faint)]"
+        }`}
+      >
+        {link.label}
+      </span>
+      {typeof link.count === "number" && (
+        <span
+          aria-hidden
+          className={`font-mono text-[11px] md:text-[12px] tabular-nums ${
+            // A zero count is never accent, on a link cell for the same reason it
+            // is never accent on the active tab.
+            link.current && link.count > 0
+              ? "text-[color:var(--accent)]"
+              : "text-[color:var(--fg-faint)]"
+          }`}
+        >
+          {link.count}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/** The same row, drawn on a route that is not the builder — every cell a link,
+ *  one of them the page being read. There is no tablist and no roving tabindex,
+ *  because nothing here controls a panel in this document: the cells are four
+ *  links, and the browser's own tab order is the right one for links. */
+export function BuilderRouteTabs({ cells }: { cells: readonly BuilderTabLink[] }) {
+  return (
+    <div
+      className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px] overflow-hidden"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
+      <div className="flex items-baseline gap-[16px] md:gap-[22px]">
+        {cells.map((cell) => (
+          <LinkCell key={cell.href} link={cell} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function BuilderTabs({ tabs, view, onViewChange, links, children }: BuilderTabsProps) {
   return (
     <div
@@ -152,26 +216,7 @@ export function BuilderTabs({ tabs, view, onViewChange, links, children }: Build
           ))}
         </div>
         {links?.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            aria-label={link.accessibleName}
-            // The same transparent idle border the tabs carry, so the cell sits on
-            // the same baseline as them rather than 2px below it.
-            className="flex items-baseline gap-[6px] min-h-[44px] pb-[8px] md:pb-[10px] no-underline border-0 border-b-2 border-solid border-b-transparent"
-          >
-            <span className="text-[13.5px] md:text-[14px] font-medium text-[color:var(--fg-faint)]">
-              {link.label}
-            </span>
-            {typeof link.count === "number" && (
-              <span
-                aria-hidden
-                className="font-mono text-[11px] md:text-[12px] tabular-nums text-[color:var(--fg-faint)]"
-              >
-                {link.count}
-              </span>
-            )}
-          </Link>
+          <LinkCell key={link.href} link={link} />
         ))}
         {/* Desktop only: the toolbar shares the tab row, pushed right. At phone
             width it draws as its own row inside the panel body instead. */}

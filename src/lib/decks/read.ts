@@ -335,6 +335,11 @@ export type DeckReviewHeader = {
    *  because no version can freeze them. */
   built: number;
   unresolvedCount: number;
+  /** Games logged against this deck. The version-history route needs it for the
+   *  Games cell of the tab row it shares with the builder; the review page draws
+   *  no such row and ignores it. A count rather than the rows, because neither
+   *  route reads a game. */
+  gameCount: number;
 };
 
 /**
@@ -345,7 +350,7 @@ export type DeckReviewHeader = {
  * availability rollup and both commanders' art. The review page pays for
  * `loadDraftRows` — its own snapshot, diff, claim, price and card-fact reads —
  * so calling the deck page's loader beside it buys one deck's worth of queries
- * to learn a name and two counts. Returns null for a deck this reader does not
+ * to learn a name and three counts. Returns null for a deck this reader does not
  * own, which is the ownership guard the route depends on.
  */
 export async function getDeckReviewHeader(
@@ -364,6 +369,10 @@ export async function getDeckReviewHeader(
         select count(*) from ${deckUnresolvedRows}
         where ${deckUnresolvedRows.deckId} = ${decks.id}
       )::int`,
+      gameCount: sql<number>`(
+        select count(*) from ${deckGames}
+        where ${deckGames.deckId} = ${decks.id}
+      )::int`,
     })
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
@@ -374,6 +383,7 @@ export async function getDeckReviewHeader(
     hasPartner: row.partnerOracleId !== null,
     built: row.built,
     unresolvedCount: row.unresolvedCount,
+    gameCount: row.gameCount,
   };
 }
 

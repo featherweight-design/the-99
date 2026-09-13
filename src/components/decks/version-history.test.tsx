@@ -39,7 +39,7 @@ function version(over: Partial<VersionSummary> = {}): VersionSummary {
 }
 
 function mount(versions: VersionSummary[]) {
-  return render(<VersionHistory deckId="deck_1" deckName="Korvold Sacrifice" versions={versions} />);
+  return render(<VersionHistory deckId="deck_1" versions={versions} built={99} gameCount={5} />);
 }
 
 // Newest first, as `listVersions` returns them.
@@ -135,10 +135,33 @@ describe("VersionHistory", () => {
     expect(container.textContent).not.toMatch(/pending|draft/i);
   });
 
-  it("carries one way back, named for the deck rather than just `back`", () => {
+  // §Surfaces 4 draws the deck's own tab row at the head of this route at both
+  // widths, `Versions` current — and no back link and no drawn heading. The row
+  // is the way back, and each cell has to land on the tab it names.
+  it("heads the route with the deck's tab row, Versions current", () => {
     mount(THREE);
-    const back = screen.getByRole("link", { name: /Korvold Sacrifice/ });
-    expect(back).toHaveAttribute("href", "/decks/deck_1");
+    expect(screen.getByRole("link", { name: /Your deck/ })).toHaveAttribute(
+      "href",
+      "/decks/deck_1",
+    );
+    expect(screen.getByRole("link", { name: /consider/i })).toHaveAttribute(
+      "href",
+      "/decks/deck_1?tab=consider",
+    );
+    expect(screen.getByRole("link", { name: /Games/ })).toHaveAttribute(
+      "href",
+      "/decks/deck_1?tab=games",
+    );
+    const current = screen.getByRole("link", { current: "page" });
+    expect(current.textContent).toContain(copy.tab);
+  });
+
+  // The heading names the document without drawing ink the canvas does not have.
+  it("names the document without drawing a heading", () => {
+    mount(THREE);
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading.textContent).toBe(copy.heading(3));
+    expect(heading.className).toContain("sr-only");
   });
 
   // The row is the control, so its state has to be announced and not merely

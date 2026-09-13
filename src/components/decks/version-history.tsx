@@ -12,10 +12,13 @@
 // The pending draft has no row either. It is not a version, and a rail that drew
 // it would be a rail whose top entry is not a record of anything.
 
-import Link from "next/link";
 import { useId, useState } from "react";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { gameLogCopy } from "../../lib/copy/game-log";
+import { TAB_PARAM } from "../../lib/decks/builder-view";
 import { formatDeckDate } from "../../lib/decks/format";
+import { BuilderRouteTabs } from "./builder-tabs";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { VersionSummary } from "../../lib/decks/versions";
@@ -233,17 +236,18 @@ function RailRow({
  */
 export function VersionHistory({
   deckId,
-  deckName,
   versions,
+  built,
+  gameCount,
 }: {
   deckId: string;
-  /** The deck's own name, for the one way off this route. A bare "Back" would
-   *  make the reader remember which deck they were reading to know where the
-   *  link goes — the review page's own reasoning, and its own header. */
-  deckName: string;
   /** Newest first, as `listVersions` returns them. The route refuses an empty
    *  list before this renders — an empty rail reads as a bug. */
   versions: VersionSummary[];
+  /** Matched copies in the live list, for the `Your deck` cell's count. */
+  built: number;
+  /** Games logged against this deck, for the `Games` cell's count. */
+  gameCount: number;
 }) {
   const panelPrefix = useId();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -257,21 +261,52 @@ export function VersionHistory({
   const [cache] = useState<Map<string, VersionDiffPayload>>(() => new Map());
 
   return (
-    <div className="mx-auto" style={{ maxWidth: 1180 }}>
-      {/* The review page's header, verbatim in structure: its own ruled block on
-          the phone, and on desktop the heading simply opens the page. The two
-          routes are siblings off one deck and land the same way. */}
-      <header className="px-[14px] pt-[38px] pb-[12px] border-b border-solid border-[color:var(--border)] md:px-[26px] md:pt-[24px] md:pb-0 md:border-b-0">
-        <Link
-          href={`/decks/${deckId}`}
-          className="font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]"
-        >
-          {`← ${deckName}`}
-        </Link>
-        <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
-          {copy.heading(versions.length)}
-        </h1>
-      </header>
+    // `w-full` is load-bearing, not belt-and-braces: this renders inside the
+    // shell's `<main className="flex min-w-0 flex-1 flex-col">`, and a flex item
+    // with `margin-inline: auto` loses `align-items: stretch`, leaving the box
+    // shrink-to-fit. Without it the rail drew at its content width — roughly
+    // 512px of a 1300px desktop — which is what "completely wrong" looked like.
+    <div className="mx-auto w-full" style={{ maxWidth: 1180 }}>
+      {/* The deck's own tab row, `Versions` current — what §Surfaces 4 draws at
+          the head of this route at both widths, in place of the back link and
+          heading the route used to carry. The row is the way back: `Your deck`
+          is a better-named exit than `← deck name`, and it lands on the tab it
+          says. The heading survives as a name for the document rather than as
+          ink, because nothing on the canvas draws one. */}
+      <BuilderRouteTabs
+        cells={[
+          {
+            href: `/decks/${deckId}`,
+            label: addPanelCopy.tabs.deck,
+            count: built,
+            accessibleName: addPanelCopy.tabs.deckAria(built),
+          },
+          {
+            href: `/decks/${deckId}?${TAB_PARAM}=consider`,
+            label: addPanelCopy.tabs.consider,
+            // No count: the suggestion figure is the whole recommendation
+            // computation, which this route has no other use for.
+            accessibleName: addPanelCopy.tabs.considerAriaBare,
+          },
+          {
+            href: `/decks/${deckId}?${TAB_PARAM}=games`,
+            label: gameLogCopy.tab.label,
+            // Omitted rather than zero, exactly as the builder's own tab omits
+            // it: a cell reading `Games 0` advertises its own emptiness.
+            count: gameCount > 0 ? gameCount : undefined,
+            accessibleName:
+              gameCount > 0 ? gameLogCopy.tab.aria(String(gameCount)) : gameLogCopy.tab.ariaNone,
+          },
+          {
+            href: `/decks/${deckId}/versions`,
+            label: copy.tab,
+            count: versions.length,
+            accessibleName: copy.tabAria(versions.length),
+            current: true,
+          },
+        ]}
+      />
+      <h1 className="sr-only">{copy.heading(versions.length)}</h1>
       <div className="flex flex-col gap-[6px] px-[14px] md:px-[26px] pt-[18px] md:pt-[14px] mb-[18px] md:mb-[26px]">
         {versions.map((version, i) => {
           const panelId = `${panelPrefix}-${version.id}`;

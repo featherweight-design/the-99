@@ -21,6 +21,7 @@ import { readFillPasses } from "../../../lib/decks/fill-passes";
 import { deckBodySize } from "../../../lib/decks/deck-size";
 import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks/draft-state";
 import { computeRoleCounts } from "../../../lib/decks/mix";
+import { readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 
 export default async function DeckBuilderPage({
@@ -198,6 +199,10 @@ export default async function DeckBuilderPage({
       // the dismissal is component state rather than storage: an update happens
       // many times, and persisting it would silence every one after the first.
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
+      // How the version-history route's Consider and Games cells land on the tab
+      // they name. Read on arrival only — the builder never writes it back, so
+      // switching tabs still costs no history entry.
+      initialView={readBuilderView(query[TAB_PARAM])}
     />
   );
 }

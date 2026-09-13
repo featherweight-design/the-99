@@ -18,8 +18,8 @@ export default async function VersionsPage({ params }: { params: Promise<{ id: s
 
   // `listVersions` takes no `userId` — it reads by deck id alone, so this guard
   // is the only thing standing between a signed-in account and another player's
-  // version history. The review page's own header loader, which answers the deck
-  // name without reading a whole deck to do it.
+  // version history. The review page's own header loader, which answers the two
+  // counts the tab row draws without reading a whole deck to do it.
   const detail = await getDeckReviewHeader(id, userId);
   if (!detail) notFound();
 
@@ -28,5 +28,12 @@ export default async function VersionsPage({ params }: { params: Promise<{ id: s
   // as the review page's redirect, and why the Versions tab is absent at zero.
   if (versions.length === 0) redirect(`/decks/${id}`);
 
-  return <VersionHistory deckId={id} deckName={detail.name} versions={versions} />;
+  return (
+    <VersionHistory
+      deckId={id}
+      versions={versions}
+      built={detail.built}
+      gameCount={detail.gameCount}
+    />
+  );
 }

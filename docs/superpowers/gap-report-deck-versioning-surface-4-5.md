@@ -83,17 +83,32 @@ the way into the list. Mobile/desktop parity in one PR is the standing rule, and
 §Surfaces 4, §Copy per state or READINESS 8 names the phone as an exception. The property table's
 row stands corrected to `drawn` at both widths.
 
-**Gap 4 — the active Versions-tab treatment is unreachable.** The `/versions` route draws its own
-header rather than the builder shell's tab strip, exactly as the sibling `/changes` route does.
-The tab is the way *in* from the deck page; once on the route, the way back is the deck-name link.
-Not a gap in this PR's surface.
+**Gap 4 — the active Versions-tab treatment is unreachable.** ~~Not a gap in this PR's surface.~~
+**Overturned 2026-09-12 — this was a real gap, and it is now fixed.** The original verdict argued
+that `/versions` should draw its own header rather than the tab row, "exactly as the sibling
+`/changes` route does". That reasoning took a sibling route as the authority over the canvas.
+§Surfaces 4 draws the deck's four-cell tab row at the head of this route at both widths with
+`Versions` active, and draws neither a back link nor a visible heading. The shipped route drew the
+opposite, which left the property table's "Versions tab — active cell" component rendered nowhere
+in the product — the tell the original verdict rationalised away rather than checked.
 
-**Discrepancy 28 — `history.heading(n)` is drawn as the route's `h1`.** Errata, not a gap. The
-discrepancy offered two arms: an unnamed heading slot on the route, or a dead string. The first
-arm is taken, because the route is a page and a page with no `h1` is an accessibility regression
-that no design absence asks for. The header is the sibling `/changes` route's, structurally
-verbatim: the deck-name link back, and the heading under it. The property table's count row and
-the discrepancy entry both stand corrected.
+Fixed by extracting `LinkCell` out of `BuilderTabs` and adding `BuilderRouteTabs`, the same row
+drawn as four links on a route that is not the builder, with the read page carrying
+`aria-current="page"`. The `Consider` and `Games` cells land on the tab they name via a new
+arrival-only `?tab=` parameter (`readBuilderView` / `TAB_PARAM` in `src/lib/decks/builder-view.ts`);
+switching tabs inside the builder is still component state and still costs no history entry. The
+`Games` count comes from a `count(*)` subquery folded into the existing `getDeckReviewHeader`, so
+the route makes no extra round trip. The `Consider` cell ships with no count: that figure is the
+whole recommendation computation, which this route has no other use for, so the cell takes a
+countless accessible name (`considerAriaBare`).
+
+**Discrepancy 28 — `history.heading(n)` is drawn as the route's `h1`.** Errata, not a gap —
+**amended 2026-09-12.** The discrepancy offered two arms: an unnamed heading slot on the route, or
+a dead string. The first arm still stands, because a page with no `h1` is an accessibility
+regression no design absence asks for. What changed is the ink: nothing on the canvas draws a
+heading here, so the `h1` is `sr-only`. It names the document without drawing what the design does
+not. The back link it used to sit beside is gone with Gap 4's fix — the tab row is the way back,
+and `Your deck` is a better-named exit than `← deck name`.
 
 **Discrepancy 30 — the Versions cell keeps its count at phone width.** The inactive-sibling row's
 `— (not drawn on phone)` governs the three shipped tabs, not this cell. Discrepancy 30 states the

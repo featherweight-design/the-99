@@ -130,6 +130,9 @@ interface BuilderShellProps {
   /** Cards in the version a discard would land on, straight through to the
       banner — see `pending-banner.tsx`. Absent draws no `Discard` at all. */
   versionCards?: number;
+  /** The tab this visit lands on, read off the URL by the route. Only the
+      arrival: switching tabs stays component state, so nothing writes it back. */
+  initialView?: BuilderView;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -162,11 +165,12 @@ export function BuilderShell({
   draft = null,
   wasCounts,
   versionCards,
+  initialView = "deck",
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
   const [grouping, setGrouping] = useState<"type" | "role">("type");
-  const [view, setView] = useState<BuilderView>("deck");
+  const [view, setView] = useState<BuilderView>(initialView);
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
