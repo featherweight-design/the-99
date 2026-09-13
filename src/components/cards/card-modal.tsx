@@ -506,6 +506,11 @@ export function CardModal({
     }
   }, []);
   const closeZoom = useCallback(() => {
+    // Idempotent while the exit runs. `pointer-events-none` stops the pointer, not
+    // the keyboard: the close keeps focus through its own fade, so Enter held down
+    // would clear and restart the timer on every repeat and the layer would never
+    // leave.
+    if (closingZoom) return;
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     // One timer, replaced rather than stacked: a second close during the exit used to
@@ -523,7 +528,7 @@ export function CardModal({
       setZoomed(false);
       setClosingZoom(false);
     }, 160);
-  }, [clearExit]);
+  }, [clearExit, closingZoom]);
   const openZoom = useCallback(() => {
     clearExit();
     setClosingZoom(false);
@@ -1161,11 +1166,13 @@ export function CardModal({
             role="region"
             aria-label={cardZoomCopy.layerAria(printedNameOf(preview))}
             data-testid="card-zoom"
-            // `-inset-px` above `md`, not `inset-0`: the dialog draws a 1px border
-            // there, and an absolutely positioned child is sized to the padding box —
-            // so the layer would sit 1px inside, leaving a strip of live dialog around
-            // it that swallows a click meant to dismiss.
-            className={`absolute inset-0 md:-inset-px z-20 flex flex-col items-center justify-center ${
+            // `inset-0` is the dialog's padding box, and above `md` the dialog also
+            // draws a 1px border outside it. The layer cannot cover that strip: the
+            // dialog is `overflow-hidden`, so a negative inset paints nothing and
+            // receives nothing. A click on the hairline therefore hits the dialog and
+            // does nothing at all — which is the right failure for a 1px target that
+            // was never a dismissal path, and better than pretending otherwise.
+            className={`absolute inset-0 z-20 flex flex-col items-center justify-center ${
               closingZoom ? "anim-zoom-out pointer-events-none" : "anim-zoom-in"
             }`}
             data-closing={closingZoom ? "true" : undefined}

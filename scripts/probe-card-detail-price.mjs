@@ -168,9 +168,12 @@ async function readZoom(page) {
     const d = dialog.getBoundingClientRect();
     const c = card?.getBoundingClientRect();
     return {
+      // Two pixels of tolerance, not one: above `md` the dialog draws a 1px border
+      // and the layer is sized to the padding box inside it. That hairline is the
+      // one part of the dialog the layer cannot cover, by construction.
       coversDialog:
-        Math.abs(l.top - d.top) <= 1 && Math.abs(l.left - d.left) <= 1
-        && Math.abs(l.width - d.width) <= 1 && Math.abs(l.height - d.height) <= 1,
+        Math.abs(l.top - d.top) <= 2 && Math.abs(l.left - d.left) <= 2
+        && Math.abs(l.width - d.width) <= 3 && Math.abs(l.height - d.height) <= 3,
       coversViewport: Math.abs(l.width - window.innerWidth) <= 1,
       card: c ? { width: Math.round(c.width), height: Math.round(c.height) } : null,
       caption: (layer.querySelector("p")?.textContent ?? "").trim(),

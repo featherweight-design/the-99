@@ -256,6 +256,21 @@ describe("the zoom", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("ignores a second close while the first is still playing out", () => {
+    // The close keeps keyboard focus through its own fade, so Enter held down would
+    // otherwise clear and restart the timer on every repeat.
+    mount();
+    openZoom();
+    const close = screen.getByRole("button", { name: cardZoomCopy.close });
+
+    fireEvent.click(close);
+    act(() => { vi.advanceTimersByTime(120); });
+    fireEvent.click(close);
+    act(() => { vi.advanceTimersByTime(120); });
+
+    expect(screen.queryByTestId("card-zoom")).toBeNull();
+  });
+
   it("reports its own state on the trigger", () => {
     mount();
     const trigger = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0];
