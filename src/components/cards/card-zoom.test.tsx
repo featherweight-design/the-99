@@ -218,6 +218,35 @@ describe("the zoom", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("still opens from the 72px thumb once the header has collapsed", () => {
+    // The compact header withholds the MARK and keeps the GESTURE — withholding a
+    // mark is visual, withholding a gesture is functional — so the thumb has to stay
+    // a trigger with nothing drawn on it to say so.
+    const many = Array.from({ length: 14 }, (_, i) => ({
+      ...card().printings[0],
+      scryfallId: `s-${i}`,
+      collectorNumber: String(i),
+    }));
+    mount(card({ printings: many }));
+    fireEvent.click(screen.getAllByRole("button", { name: /printings owned/ })[0]);
+
+    // Scoped to the PHONE art box: both breakpoint trees are mounted, and the
+    // desktop one never collapses — a query across both would pass on the desktop
+    // trigger while the thumb had lost its own.
+    const thumb = screen.getByTestId("modal-art-mobile");
+    const trigger = thumb.querySelector("button");
+    expect(trigger).not.toBeNull();
+    // Present AND reachable: `querySelector` finds a hidden button just as happily.
+    expect(trigger).toBeVisible();
+    expect(trigger?.getAttribute("aria-label")).toBe(cardZoomCopy.zoomAria("Smothering Tithe"));
+    // And the mark is withheld here, which is the other half of the ruling.
+    expect(thumb.textContent).not.toContain("⤢");
+
+    fireEvent.click(trigger as HTMLElement);
+
+    expect(screen.getByTestId("card-zoom")).toBeInTheDocument();
+  });
+
   it("reports its own state on the trigger", () => {
     mount();
     const trigger = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0];

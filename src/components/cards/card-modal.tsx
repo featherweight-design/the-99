@@ -1186,7 +1186,13 @@ export function CardModal({
                 in your hand has none printed on it, and the tag is one dismissal away. */}
             {zoomCaption && (
               <p
-                className="font-mono text-[11px] mt-[14px] m-0"
+                // One line, and one line's worth of room: a long set name on a narrow
+                // phone would otherwise wrap under the card or run past the layer. The
+                // end ellipsis is the same treatment every truncated name in this app
+                // gets — the set code and number are the half that identifies the
+                // printing, and they sit at the end where the ellipsis never eats them
+                // first.
+                className="font-mono text-[11px] mt-[14px] m-0 max-w-[calc(100%-32px)] overflow-hidden text-ellipsis whitespace-nowrap"
                 style={{ color: "var(--fg-muted)" }}
               >
                 {zoomCaption}
