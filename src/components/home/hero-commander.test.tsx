@@ -119,10 +119,11 @@ describe("HeroCommander", () => {
     // reverting the call site to 46 would leave every other check green.
     const wash = container.querySelector("[data-art-wash-band]")!;
     expect(wash).toHaveAttribute("data-art-wash-label-at", "71");
-    // And the block clears its own card-details trigger: that control sits in
-    // this band's bottom-right corner, and its 44px target reached under the fit
-    // chip at the end of row 2.
-    expect(block.className).toContain("pr-[46px]");
+    // And it reserves NO corner: this card renders no card-details control —
+    // that placement is the commander detail page's phone band — so a reservation
+    // here would narrow both rows for a control that never arrives.
+    expect(block.className).not.toContain("pr-[46px]");
+    expect(container.querySelector('[aria-label="View card details"]')).toBeNull();
     const [nameRow, typeRow] = Array.from(block.children) as HTMLElement[];
     expect(nameRow.textContent).toContain("Atraxa, Praetors' Voice");
     expect(nameRow.querySelector('[aria-hidden="true"]')).not.toBeNull();
