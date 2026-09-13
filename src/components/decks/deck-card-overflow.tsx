@@ -6,6 +6,8 @@ import { deleteDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { RenameForm } from "./rename-form";
+import { MoveMode } from "./deck-move-mode";
+import { folderCopy } from "../../lib/copy/folders";
 
 /** One menu row. The same geometry `DeckSortMenu` draws, which is the only
  *  menu the Decks frames specify. */
@@ -18,6 +20,16 @@ interface DeckCardOverflowProps {
   /** Cards in the deck. At zero there is nothing to diff, so the update entry
    *  is absent rather than disabled — #277 state 3. */
   built: number;
+  /** Every shelf this deck can be filed on, in the line's own order. */
+  folders: readonly { id: string; name: string }[];
+  /** The folder it is on now, or null for unfiled. */
+  folderId: string | null;
+  /**
+   * THE LABEL IS THE RECEIPT (handoff decision 17). On All decks a move changes
+   * nothing else on screen, so the row returning to the menu reading its new
+   * shelf is the whole confirmation — no toast, and no new pattern.
+   */
+  folderName: string | null;
 }
 
 /**
@@ -26,9 +38,16 @@ interface DeckCardOverflowProps {
  * Rendered as a `relative z-10` sibling to the absolute-inset Link overlay
  * so clicks here do NOT navigate.
  */
-export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowProps) {
+export function DeckCardOverflow({
+  deckId,
+  deckName,
+  built,
+  folders,
+  folderId,
+  folderName,
+}: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"menu" | "rename">("menu");
+  const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
   const [isPending, startTransition] = useTransition();
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Every deck card renders one of these, so the id has to be per-instance.
@@ -39,6 +58,12 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
     e.stopPropagation();
     setOpen((o) => !o);
     setMode("menu");
+  }
+
+  function handleMove(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setMode("move");
   }
 
   function handleRename(e: React.MouseEvent) {
@@ -55,6 +80,13 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
       await deleteDeck(deckId);
     });
   }
+
+  // Optimistic, because the tile's own menu is the only place the fact is
+  // stated: the server revalidates `/decks` behind this, and re-reading before
+  // painting would leave the row naming the old shelf for a round trip.
+  const [movedTo, setMovedTo] = useState<{ id: string | null; name: string | null } | null>(null);
+  const shelf = movedTo ?? { id: folderId, name: folderName };
+  const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
 
   function handleClose() {
     setOpen(false);
@@ -151,6 +183,19 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
               >
                 {refreshCopy.decks.menu.rename}
               </button>
+              {/* Between Rename and Delete, whether or not the Update row above
+                  rendered — it is gated on `built > 0`, so the shipped menu is
+                  two rows on a brew (errata E9). */}
+              <button
+                type="button"
+                onClick={handleMove}
+                aria-label={folderCopy.move.rowAria(deckName, shelfLabel)}
+                className={`${ITEM} cursor-pointer bg-transparent text-[color:var(--fg)]`}
+              >
+                <span className="truncate" title={shelfLabel}>
+                  {folderCopy.move.row(shelfLabel)}
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={handleDelete}
@@ -161,6 +206,19 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
                 {isPending ? "Deleting…" : refreshCopy.decks.menu.delete}
               </button>
             </div>
+          ) : mode === "move" ? (
+            <MoveMode
+              deckId={deckId}
+              deckName={deckName}
+              folders={folders}
+              currentId={shelf.id}
+              onMoved={(next) => {
+                setMovedTo(next);
+                // Back to the menu, not closed: the row now reads the new shelf,
+                // and that is the receipt.
+                setMode("menu");
+              }}
+            />
           ) : (
             <div className="p-[12px]">
               <RenameForm

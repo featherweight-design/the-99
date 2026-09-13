@@ -391,6 +391,70 @@ describe("DecksView", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("draws the shelf line above the chassis on the wide form", () => {
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    const line = container.querySelector("[data-shelf-line]");
+    const chassis = container.querySelector("[data-chassis-row='controls']");
+    expect(line).toBeTruthy();
+    // Above, and on its own ground — two different surfaces, not one strip.
+    expect(line!.compareDocumentPosition(chassis!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("draws a trigger rather than a line on the compact form", () => {
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    expect(container.querySelector("[data-shelf-line]")).toBeNull();
+    expect(container.querySelector("[data-shelf-trigger]")).toBeTruthy();
+  });
+
+  it("draws S2 on an empty named shelf, and offers no Clear filters", () => {
+    const empty: DeckFolderWithCount[] = [
+      { id: FOLDER_A, name: "Draft pile", createdAt: new Date("2026-09-01"), deckCount: 0 },
+    ];
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = renderWide(view([deckOf({ id: "u1", name: "Unfiled one" })], empty));
+    expect(screen.getByText("Nothing filed here")).toBeInTheDocument();
+    expect(screen.getByText("Draft pile · 0 decks")).toBeInTheDocument();
+    // No filter caused this, so the filtered empty's way out would be the wrong
+    // one — and the chassis stays mounted above it either way.
+    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+    expect(container.querySelector("[data-chassis-row='controls']")).toBeTruthy();
+  });
+
+  it("draws S3 with a count and no body copy when everything is filed", () => {
+    const filed = [
+      deckOf({ id: "a1", name: "Filed one", folderId: FOLDER_A, folderName: "Cube night" }),
+      deckOf({ id: "b1", name: "Other", folderId: FOLDER_B, folderName: "Commander night" }),
+    ];
+    window.history.replaceState(null, "", "/decks?folder=none");
+    renderWide(view(filed, twoFolders));
+    expect(screen.getByText("Nothing unfiled")).toBeInTheDocument();
+    expect(screen.getByText("2 decks across 2 folders")).toBeInTheDocument();
+    expect(screen.queryByText(/from its own/)).toBeNull();
+  });
+
+  it("keeps the filtered empty state when a filter emptied a populated shelf", () => {
+    // N4, not N2: the shelf has decks and a filter took them, so the way out is
+    // to clear the filter rather than to leave the shelf.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}&q=zzzz`);
+    renderWide(view(shelvedDecks(), twoFolders));
+    expect(screen.getByRole("button", { name: "Clear filters" })).toBeInTheDocument();
+    expect(screen.queryByText("Nothing filed here")).toBeNull();
+  });
+
+  it("draws no shelf line at all when the player has no decks", () => {
+    const { container } = renderWide(view([], twoFolders));
+    expect(container.querySelector("[data-shelf-line]")).toBeNull();
+    expect(container.querySelector("[data-shelf-trigger]")).toBeNull();
+  });
+
+  it("selects a shelf from the line and writes it to the URL", () => {
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /Commander night, 1 deck/ }));
+    expect(window.location.search).toBe(`?folder=${FOLDER_B}`);
+    expect(screen.getByText("Other shelf")).toBeInTheDocument();
+    expect(screen.queryByText("Filed one")).toBeNull();
+  });
+
   it("ignores a hand-edited folder id", () => {
     window.history.replaceState(null, "", "/decks?folder=nope");
     renderWide(view(shelvedDecks(), twoFolders));

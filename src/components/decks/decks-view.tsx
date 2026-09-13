@@ -47,6 +47,12 @@ import { PLAYED_LABEL, SearchField, STATUS_COPY_KEY, toggleIn } from "./deck-fil
 import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
+import { ShelfLine, ShelfTrigger, shelfSegments } from "./shelf-line";
+import { ShelfSheet } from "./shelf-sheet";
+import { ShelfEmpty, UnfiledEmpty } from "./shelf-empty";
+import { FolderCreateDialog } from "./folder-create-dialog";
+import { createFolderAction } from "../../app/decks/folder-actions";
+import { folderCopy } from "../../lib/copy/folders";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import {
   ALL_DECKS,
@@ -237,6 +243,9 @@ export function DecksView({
     focusSearch: false,
   });
 
+  const [shelfSheet, setShelfSheet] = useState(false);
+  const [creating, setCreating] = useState(false);
+
   const apply = useCallback((next: ViewState) => {
     setState(next);
     // A null sort serialises as an absence, which is what `serializeDeckSort`
@@ -380,6 +389,25 @@ export function DecksView({
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
   }, [folders]);
 
+  const segments = useMemo(() => shelfSegments(folders, counts), [folders, counts]);
+  const selectedShelf = useMemo(
+    () =>
+      segments.find((s) => s.shelf === state.shelf)
+      ?? { shelf: ALL_DECKS as Shelf, label: folderCopy.shelves.all, count: counts.all },
+    [segments, state.shelf, counts.all],
+  );
+  // An empty SHELF rather than an emptied one: no filter is on, so the state
+  // that draws must not offer to clear one (STATES N2/N3 versus N4).
+  const shelfEmpty = state.shelf !== ALL_DECKS && narrowed.length === 0;
+
+  const onShelf = useCallback(
+    (shelf: Shelf) => {
+      apply({ filters: state.filters, sort: state.sort, shelf });
+      setShelfSheet(false);
+    },
+    [apply, state.filters, state.sort],
+  );
+
   // `chipLabels` already knows how to remove one value; the chassis only needs
   // the label and the callback, so this is a shape change rather than a second
   // source of truth about what is on.
@@ -440,6 +468,26 @@ export function DecksView({
         <DecksZero buildable={buildable} cards={cards} />
       ) : (
         <div className="flex min-h-0 flex-auto flex-col">
+          {/* THE LEVEL, above the chassis and on its own ground. It draws only
+              when there is at least one deck: a shelf for nothing is furniture
+              (STATES W6/C5), and `zero` above has already taken that case. */}
+          {wide ? (
+            <ShelfLine
+              folders={folders}
+              counts={counts}
+              shelf={state.shelf}
+              onSelect={onShelf}
+              onCreate={() => setCreating(true)}
+            />
+          ) : (
+            <ShelfTrigger
+              label={selectedShelf.label}
+              count={selectedShelf.count}
+              open={shelfSheet}
+              onOpen={() => setShelfSheet(true)}
+            />
+          )}
+
           <FilterChassis
             form={wide ? "wide" : "compact"}
             controls={
@@ -578,7 +626,48 @@ export function DecksView({
             }
           />
 
-          {shown.length === 0 ? (
+          {shelfSheet && (
+            <ShelfSheet
+              segments={segments}
+              shelf={state.shelf}
+              onSelect={onShelf}
+              onCreate={() => {
+                setShelfSheet(false);
+                setCreating(true);
+              }}
+              onDismiss={() => setShelfSheet(false)}
+            />
+          )}
+
+          {creating && (
+            <FolderCreateDialog
+              onDismiss={() => setCreating(false)}
+              onCreate={async (name) => {
+                const result = await createFolderAction(name);
+                if (!result.ok) return result.reason === "duplicate" ? "duplicate" : "invalid";
+                // CR4: the new shelf is selected, which lands the reader on S2 —
+                // create, land on the empty shelf, and the state says how to
+                // fill it.
+                onShelf(result.folder.id);
+                return null;
+              }}
+            />
+          )}
+
+          {shown.length === 0 && shelfEmpty ? (
+            // S2 and S3 — an empty SHELF, which no filter caused. The filtered
+            // empty below is a different state with a different way out, and
+            // offering the wrong one is what makes an empty grid read as broken.
+            state.shelf === UNFILED ? (
+              <UnfiledEmpty
+                decks={counts.all}
+                folders={folders.length}
+                onAllDecks={() => onShelf(ALL_DECKS)}
+              />
+            ) : (
+              <ShelfEmpty name={selectedShelf.label} onAllDecks={() => onShelf(ALL_DECKS)} />
+            )
+          ) : shown.length === 0 ? (
             // No mark and no body copy: the zero state offers two routes in,
             // and this one offers the single route out of a filter the reader
             // set themselves. Conflating them makes an empty grid read as a
@@ -608,7 +697,12 @@ export function DecksView({
             <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
               {shown.map((deck) => (
                 <li key={deck.id} className="flex-none">
-                  <DeckCard deck={deck} shopping={shopping.byDeck.get(deck.id)} now={now} />
+                  <DeckCard
+                    deck={deck}
+                    shopping={shopping.byDeck.get(deck.id)}
+                    now={now}
+                    folders={folders}
+                  />
                 </li>
               ))}
             </ul>

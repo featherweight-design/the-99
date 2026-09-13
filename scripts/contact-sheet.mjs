@@ -130,6 +130,24 @@ async function run(page, steps) {
   }
 }
 
+// A typo in `widths` — or an empty array — would skip its row at every width,
+// and a row that produced no shot cannot fail the reachability check either. A
+// malformed inventory would then exit 0 having photographed nothing, which is
+// the quiet pass this whole script exists to prevent.
+const WIDTH_LABELS = WIDTHS.map((w) => w.label);
+for (const row of inventory.rows) {
+  if (row.widths === undefined) continue;
+  const bad = !Array.isArray(row.widths)
+    || row.widths.length === 0
+    || row.widths.some((w) => !WIDTH_LABELS.includes(w));
+  if (bad) {
+    console.error(
+      `row "${row.id}": \`widths\` must be a non-empty subset of ${WIDTH_LABELS.join(", ")}`,
+    );
+    process.exit(1);
+  }
+}
+
 const shots = [];
 const browser = await chromium.launch();
 try {

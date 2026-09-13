@@ -20,12 +20,12 @@ describe("DeckCardOverflow", () => {
   // value names a pattern this panel does not implement either. Its rename mode
   // is a form, not a list of actions, so no value is honest here.
   it("claims no popup pattern it does not implement", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} />);
     expect(trigger()).not.toHaveAttribute("aria-haspopup");
   });
 
   it("points aria-controls at the panel only while it is open", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} />);
     expect(trigger()).toHaveAttribute("aria-expanded", "false");
     expect(trigger()).not.toHaveAttribute("aria-controls");
 
@@ -40,8 +40,8 @@ describe("DeckCardOverflow", () => {
   it("gives each instance its own panel id", () => {
     render(
       <>
-        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />
-        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} />
+        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} />
+        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} folders={[]} folderId={null} folderName={null} />
       </>,
     );
     fireEvent.click(trigger("Atraxa"));
@@ -60,7 +60,7 @@ describe("DeckCardOverflow — THE PLATE on phone", () => {
   // the crop beneath it. That scrim is gone from this tile, so the glyph would be
   // `var(--fg)` on an unmodified crop.
   it("draws the 26px plate inside the 44px target, at both widths", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} />);
     const button = screen.getByRole("button");
     // Target unchanged: 44 on a phone, 26 from `sm:` up, where the plate fills it.
     expect(button.className).toContain("h-[44px]");
