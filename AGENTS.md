@@ -158,9 +158,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   own copy), the exported name is not the local alias, a default or namespace import binds
   something else, and nothing here flags an unused local.
 
-  **`shares.module` names a component that is rendered as-is, and each row's `view` names the
-  file that renders it.** The check reads that file directly and does not follow composition, so
-  the two have to agree. `FilterChassis` takes its controls as props and is assembled by a
+  **`shares.module` names a component that is used as-is, and each row's `view` names the file
+  that imports and uses it.** What the check proves is a value import plus a reference — not a
+  render, so `const C = Thing` satisfies it. It reads that file directly and does not follow
+  composition, so the two have to agree. `FilterChassis` takes its controls as props and is assembled by a
   route-level wrapper, so naming the chassis while the rows named route views failed three routes
   for composing it correctly — and naming a leaf while the rows still name route views would fail
   them again, because the wrapper owns the import. Pick the component first, then set `view` to
