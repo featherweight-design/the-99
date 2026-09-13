@@ -1,4 +1,4 @@
-import { cloneElement } from "react";
+import { cloneElement, useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
@@ -12,12 +12,20 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
-// The delta strip polls a server action on focus; it is covered by its own file.
-const deltaProps: { recheckKey?: string } = {};
+// The delta strip polls a server action on focus; it is covered by its own file. The mock
+// still has to be able to FIRE, because the head may not collapse while it is showing —
+// a mock that can only be silent would make that rule untestable and any assertion about
+// it vacuous.
+const deltaProps: { recheckKey?: string; firing?: boolean } = {};
 vi.mock("./delta-strip", () => ({
-  DeltaStrip: (props: { recheckKey?: string }) => {
+  DeltaStrip: (props: { recheckKey?: string; onFiring?: (f: boolean) => void }) => {
     deltaProps.recheckKey = props.recheckKey;
-    return null;
+    const firing = deltaProps.firing === true;
+    useEffect(() => {
+      props.onFiring?.(firing);
+      return () => props.onFiring?.(false);
+    }, [firing, props]);
+    return firing ? <div>a card arrived</div> : null;
   },
 }));
 
@@ -1956,5 +1964,139 @@ describe("SetGridView — the phone provenance without a release date", () => {
     );
     expect(container.querySelector("[data-set-provenance-long]")?.textContent)
       .toMatch(/an unrecorded date/);
+  });
+});
+
+// R3 finding 6, the collapse. Two heights, one threshold, an 80px hysteresis band, and a
+// reserve so the document does not change height when the head shrinks.
+//
+// The parts a browser has to answer — that the bar overlays rather than reflowing the grid,
+// and the rest height in pixels — are in `scripts/probe-sets.mjs`. What is here is the
+// state machine: which threshold fires, in which direction, and what the bar stops
+// carrying.
+describe("SetGridView — the phone head collapses past a threshold", () => {
+  const scrollTo = (y: number) => {
+    Object.defineProperty(window, "scrollY", { value: y, configurable: true, writable: true });
+    fireEvent.scroll(window);
+  };
+  const head = (c: HTMLElement) => c.querySelector("[data-set-head]") as HTMLElement;
+  const isShy = (c: HTMLElement) => head(c).hasAttribute("data-set-head-collapsed");
+
+  beforeEach(() => scrollTo(0));
+
+  it("stays open until 120px of scroll", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(119);
+    expect(isShy(container)).toBe(false);
+    scrollTo(121);
+    expect(isShy(container)).toBe(true);
+  });
+
+  // The band is what stops a thumb resting mid-gesture from fluttering the head: once
+  // collapsed it does NOT restore at 119, only at 40.
+  it("restores at 40, not at the same threshold it collapsed on", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(200);
+    expect(isShy(container)).toBe(true);
+    scrollTo(119);
+    expect(isShy(container)).toBe(true);
+    scrollTo(41);
+    expect(isShy(container)).toBe(true);
+    scrollTo(39);
+    expect(isShy(container)).toBe(false);
+  });
+
+  it("drops the chip line, the result line and the cost strip", () => {
+    stubDesktop(false);
+    const { container } = view([p("1", { rarity: "rare" }), p("2")], []);
+    scrollTo(200);
+    expect(container.querySelector("[data-set-chips]")?.className).toMatch(/hidden/);
+    expect(container.querySelector("[data-set-result]")?.className).toMatch(/hidden/);
+    expect(container.querySelector("[data-set-cost]")).toBeNull();
+  });
+
+  // What the collapsed bar keeps: where you are, how far along, and the two ways to change
+  // what you are looking at.
+  // Where you are, how far along, and the two ways to change what you are looking at.
+  it("keeps the set, the ratio and both controls", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], ["1"]);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.textContent).toMatch(/Duskmourn/);
+    expect(bar.textContent).toMatch(/1 \/ 2/);
+    expect(screen.getByRole("button", { name: /Show the search/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Filters/ }).length).toBeGreaterThan(0);
+  });
+
+  // §31's bar is ONE row, not the full block with members hidden — that reaches 140px and
+  // no further, because the identity block is a two-line stack and the controls are a
+  // third row. Its pixels are in the probe; what is here is that it exists and what it
+  // carries.
+  it("draws its own one-row bar rather than reusing the open block", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], ["1"]);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar).toBeTruthy();
+    expect(bar.className).toMatch(/h-\[52px\]/);
+    expect(bar.textContent).toMatch(/Duskmourn/);
+    expect(bar.textContent).toMatch(/1 \/ 2/);
+  });
+
+  // §29 forbids two controls with one accessible name on this page, so the bar's search
+  // control is a way BACK to the field rather than a second one.
+  it("offers a route back to the search rather than a second field", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.querySelector("input")).toBeNull();
+    expect(screen.getByRole("button", { name: /Show the search/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("searchbox", { name: /Search cards/ })).toHaveLength(1);
+  });
+
+  // The badge is how the bar carries the filter state, which is what earns it the right to
+  // drop the chip line.
+  it("carries the filter count on the badge", () => {
+    stubDesktop(false);
+    search = "c=W&r=common";
+    const { container } = view([p("1", { rarity: "common" }), p("2")], []);
+    scrollTo(200);
+    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
+    expect(bar.textContent).toMatch(/2/);
+    expect(bar.querySelector("[aria-label*='filter']")).toBeTruthy();
+  });
+
+  // The one member of the head that is news rather than reference. While it is showing,
+  // the head stays open — collapsing it away would hide the only offer to refresh.
+  it("stays open while the delta strip is firing", () => {
+    stubDesktop(false);
+    deltaProps.firing = true;
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(container)).toBe(false);
+      expect(container.textContent).toMatch(/a card arrived/);
+    } finally {
+      deltaProps.firing = false;
+    }
+  });
+
+  it("and collapses once it stops", () => {
+    stubDesktop(false);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(400);
+    expect(isShy(container)).toBe(true);
+  });
+
+  it("never collapses at desktop, however far the reader scrolls", () => {
+    stubDesktop(true);
+    const { container } = view([p("1"), p("2")], []);
+    scrollTo(2000);
+    expect(isShy(container)).toBe(false);
+    expect(container.querySelector("[data-set-cost]")).not.toBeNull();
   });
 });

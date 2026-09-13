@@ -28,6 +28,7 @@ export function DeltaStrip({
   fingerprint,
   indexed,
   recheckKey,
+  onFiring,
 }: {
   code: string;
   /** What the page was rendered against. */
@@ -45,6 +46,12 @@ export function DeltaStrip({
    * as an upload the reader never made.
    */
   indexed: boolean;
+  /**
+   * Told to the head, which may not collapse while this strip is showing a message: it is
+   * the one member of that block which is news rather than reference, and collapsing it
+   * away would hide the only offer to refresh a page the reader has been told is stale.
+   */
+  onFiring?: (firing: boolean) => void;
 }) {
   const router = useRouter();
   const [changed, setChanged] = useState<string | null>(null);
@@ -76,9 +83,19 @@ export function DeltaStrip({
     };
   }, [code, fingerprint, indexed, recheckKey]);
 
+  const firing = indexed && changed !== null;
+  // Reported in an effect, never during render: this is a parent's state and setting it
+  // while rendering a child is the update-during-render React refuses.
+  useEffect(() => {
+    onFiring?.(firing);
+    // Firing going false on unmount matters as much as it going true — the head would
+    // otherwise stay pinned open after the strip left.
+    return () => onFiring?.(false);
+  }, [firing, onFiring]);
+
   // `indexed` can go true to false under a catalog rebuild without this remounting, and a
   // retained `changed` would then report an upload delta on a page with no baseline.
-  if (!indexed || changed === null) return null;
+  if (!firing) return null;
 
   // Holdings only. A pick is part of the fingerprint — it changes which cell is filled —
   // but it is not a card gained or lost, and counting it said one had been.

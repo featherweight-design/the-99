@@ -18,7 +18,7 @@
 // scroll is paid for by the sticky head, the extras jump, and missing-only, which removes
 // the cells the reader is done with rather than shrinking everything.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail } from "../cards/card-detail-provider";
@@ -124,6 +124,73 @@ export function SetGridView(props: SetGridViewProps) {
    * unmounts the empty state's buttons — so without this, using any of them strands the
    * keyboard on a control that is no longer there.
    */
+  /**
+   * R3 finding 6, the collapse. The head has always been `sticky top-0` at every width, so
+   * the whole block follows the reader down all 399 cells — the finding is not "add a
+   * collapse", it is "the collapse this sticky head never got".
+   *
+   * TWO HEIGHTS, ONE THRESHOLD, NEVER INTERPOLATED. Down past 120px of scroll, back at 40:
+   * an 80px hysteresis band, so a thumb resting mid-gesture cannot flutter it. A head that
+   * tracked the scroll offset would be permanently in motion under the thing being read.
+   */
+  const [collapsed, setCollapsed] = useState(false);
+  /**
+   * The delta strip is the one member of the head that is news rather than reference. It
+   * appears after a focus-time check the reader did not ask for, and it carries the only
+   * offer to refresh a page they have just been told is stale — so while it is showing,
+   * the head stays open.
+   */
+  const [deltaFiring, setDeltaFiring] = useState(false);
+  const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
+  // The two states that forbid a collapse are read during render rather than pushed into
+  // `collapsed` by an effect: an effect that calls `setState` synchronously cascades a
+  // render, and the answer here is derivable — desktop never collapses, and neither does a
+  // head whose delta strip is firing.
+  const mayCollapse = !isDesktop && !deltaFiring;
+  useEffect(() => {
+    if (!mayCollapse) return;
+    const onScroll = () => {
+      const y = window.scrollY;
+      // The band read as a function of the CURRENT state, which is what makes it
+      // hysteresis rather than two thresholds: collapsed stays collapsed until 40, open
+      // stays open until 120, and between the two nothing happens.
+      setCollapsed((was) => (was ? y > 40 : y > 120));
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [mayCollapse]);
+  /**
+   * The rest height, held so the DOCUMENT does not change height when the head collapses.
+   * Sticky overlays, so the grid's own layout is untouched at every scroll position — but
+   * the sticky element still occupies its box in flow, and shrinking that box pulls the
+   * grid up under the reader's thumb on the first crossing.
+   *
+   * Measured while open and applied to a wrapper that is not itself sticky, so the reserve
+   * is a plain block of the right height and the head floats inside it.
+   */
+  const headRef = useRef<HTMLDivElement>(null);
+  const [restHeight, setRestHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const el = headRef.current;
+    if (el === null || collapsed) return;
+    // Read off the DOM at callback time rather than off the `collapsed` this effect
+    // closed over. `ResizeObserver` delivers at the end of a frame, so the shrink that
+    // the collapse causes can arrive BEFORE the cleanup that disconnects the observer —
+    // and the reserve then records the collapsed height, which is the one number it must
+    // never hold. The probe caught this: 288px reserved at rest, 140px collapsed.
+    const measure = () => {
+      if (el.hasAttribute("data-set-head-collapsed")) return;
+      setRestHeight(el.getBoundingClientRect().height);
+    };
+    measure();
+    // The head's open height is not a constant: a two-line title, the delta strip, and the
+    // cost strip's expanded form all move it, and a reserve measured once would be wrong
+    // for the rest of the visit.
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [collapsed]);
   const searchRef = useRef<HTMLInputElement>(null);
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
@@ -563,14 +630,101 @@ export function SetGridView(props: SetGridViewProps) {
       : firstEnabledRarity;
 
 
+  // Phone only, and only when there is a measured rest height to reserve. Desktop never
+  // collapses: same container, full form, `md:` sizes untouched.
+  // `collapsed` is the scroll's answer; `shy` is whether it applies. Held apart so a
+  // reader who scrolls, then triggers a delta strip, restores the full head and keeps the
+  // scroll state underneath it — rather than the strip clearing the state and the head
+  // collapsing again the moment it is dismissed.
+  const shy = collapsed && mayCollapse;
+
   return (
     <div>
+      {/* The RESERVE. Not sticky itself — it is a plain block holding the head's open
+          height in the document while the head, sticky inside it, gets shorter. Without it
+          the flow box shrinks with the head and the grid jumps up on the first crossing. */}
+      <div style={shy && restHeight !== null ? { minHeight: restHeight } : undefined}>
       <div
+        ref={headRef}
         data-set-head
+        data-set-head-collapsed={shy ? "" : undefined}
         className="sticky top-0 z-[2] pb-[12px] pt-[10px]"
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
-        <div className="flex items-start gap-[12px]">
+        {/* §31's collapsed bar: ONE row at 52px carrying where you are, how far along, and
+            the two ways to change what you are looking at. Not the same nodes hidden — the
+            identity block is a two-line stack and the control row is a third, so hiding
+            members of them reaches 140px and no further. This is its own row.
+
+            The search control is a BUTTON back to the head, never a second field: §29
+            forbids two controls with one accessible name on this page, and the field is
+            forty pixels of scroll away. */}
+        {shy ? (
+          <div data-set-head-bar className="flex h-[52px] items-center gap-[8px]">
+            <SetIcon
+              uri={iconSvgUri}
+              size={22}
+              desktopSize={22}
+              tone={complete ? "success" : "muted"}
+              ringed={complete}
+            />
+            <span
+              className="min-w-0 flex-1 truncate font-display text-[14px]"
+              style={{ color: complete ? "var(--success)" : "var(--fg)" }}
+            >
+              {name}
+            </span>
+            {sections.indexed && !complete ? (
+              <span
+                className="shrink-0 font-mono text-[11px]"
+                style={{ color: "var(--fg-muted)" }}
+                aria-label={setPageCopy.head.ratioAria(sections.baseOwned, sections.baseTotal)}
+              >
+                {sections.baseOwned} / {sections.baseTotal}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                window.scrollTo({ top: 0 });
+                // Focus follows the scroll, or a keyboard reader presses this and lands
+                // nowhere: the control they wanted is the field this button stands for.
+                searchRef.current?.focus();
+              }}
+              aria-label={setPageCopy.head.backToSearch}
+              className="inline-flex size-[44px] shrink-0 items-center justify-center
+                         rounded-[6px] text-[13px] text-[color:var(--fg-body)]"
+            >
+              <span aria-hidden="true">⌕</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+              className="inline-flex h-[36px] shrink-0 items-center gap-[6px] rounded-[6px]
+                         border border-[color:var(--border)] px-[10px] text-[12px]
+                         text-[color:var(--fg-body)]"
+            >
+              {setFilterCopy.label}
+              {/* The badge is how the collapsed bar carries the filter state, which is why
+                  it may drop the chip line. At zero filters there is no badge and nothing
+                  to carry. */}
+              {filtersOn > 0 ? (
+                <span
+                  aria-label={setFilterCopy.countBadgeAria(filtersOn)}
+                  className="inline-flex h-[18px] min-w-[18px] items-center justify-center
+                             rounded-full bg-[color:var(--accent)] px-[5px] font-mono
+                             text-[10px] text-[color:var(--bg)]"
+                >
+                  {filtersOn}
+                </span>
+              ) : null}
+            </button>
+          </div>
+        ) : null}
+
+        <div className={`${shy ? "hidden" : "flex"} items-start gap-[12px]`}>
           {/* 30px on a phone, which is the geometry the sticky head is sized around. */}
           <SetIcon
             uri={iconSvgUri}
@@ -680,9 +834,13 @@ export function SetGridView(props: SetGridViewProps) {
           fingerprint={ownedFingerprint}
           indexed={sections.indexed}
           recheckKey={`${modalGeneration}:${artGeneration}`}
+          onFiring={onDeltaFiring}
         />
 
-        <div className="mt-[10px]">
+        {/* Hidden as a WHOLE when shy, not just its contents: the wrapper's own 10px
+            margin is real height, and an empty box with a margin is exactly the kind of
+            slack that made the collapsed head 85px rather than 75. */}
+        <div className={shy ? "hidden" : "mt-[10px]"}>
           {complete ? (
             // At 100% the extras are the only thing left, so the count is promoted into
             // the head and the same cost strip re-scopes to them.
@@ -706,7 +864,9 @@ export function SetGridView(props: SetGridViewProps) {
           {/* Nothing left in the scoped section means the terminal state, not a zero
               figure: a complete set whose extras are all owned would otherwise read
               "over 0 of the 0 you are missing" beside "Nothing left in this set". */}
-          {(complete
+          {/* The money is not on the collapsed bar: it is not acted on mid-scroll, and it
+              is the single largest member of the head. */}
+          {!shy && (complete
             ? sections.extrasTotal - sections.extrasOwned
             : sections.baseTotal) > 0 ? (
           <CostStrip
@@ -734,7 +894,7 @@ export function SetGridView(props: SetGridViewProps) {
             unindexed set has no cells in either section, so there is no count to state and
             no grid beneath the head for a height change to move. The invariant is about the
             rack not moving what the reader is reading, and there is nothing there to move. */}
-        <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
+        <div className={`mt-[10px] flex-nowrap items-center gap-[8px] ${shy ? "hidden" : "flex"}`}>
           {/* The field leads the row and is the ONLY child that shrinks — `min-w-0` on it
               and `shrink-0` on everything else is what keeps the row from wrapping. At
               390px the arithmetic is tight and deliberate: `Filters` with a badge is 93,
@@ -925,9 +1085,13 @@ export function SetGridView(props: SetGridViewProps) {
             unreachable here. At phone the chips scroll horizontally and never wrap, and
             Clear is outside that scroll — so the clipped item is a chip and never the way
             out. */}
+        {/* The chip line is not on the collapsed bar: §31 rules it out, and the `Filters`
+            badge already carries the state from the `filtersOn` count. It is hidden rather
+            than unmounted so the horizontal scroll position and the focus inside it
+            survive a collapse and a restore. */}
         <div
           data-set-chips
-          className="mt-[8px] flex items-center gap-[6px]"
+          className={`mt-[8px] items-center gap-[6px] ${shy ? "hidden" : "flex"}`}
           style={{ minHeight: 22 }}
         >
           {/* Clear sits OUTSIDE the scrolling strip, which is how "the clipped item is a
@@ -1110,7 +1274,14 @@ export function SetGridView(props: SetGridViewProps) {
             and moved the grid under the reader's thumb: the exact motion the fixed-height
             rule exists to prevent, arriving through the row meant to guarantee it. Desktop
             has 1112px and never wraps. */}
-        <div className="mt-[8px] min-h-[32px] md:min-h-[16px]" data-set-result>
+        {/* The result line goes with it, and its `min-h` goes too — reserving 32px on a bar
+            that is not drawing the line is 32px of empty sticky. The live region inside is
+            unmounted with it, which is correct: nothing announces while the bar is shy
+            because nothing there can be changed. */}
+        <div
+          className={shy ? "hidden" : "mt-[8px] min-h-[32px] md:min-h-[16px]"}
+          data-set-result
+        >
         {sections.indexed ? (
         <p
           role="status"
@@ -1164,6 +1335,7 @@ export function SetGridView(props: SetGridViewProps) {
         </p>
         ) : null}
         </div>
+      </div>
       </div>
 
       {!sections.indexed ? (

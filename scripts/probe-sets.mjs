@@ -785,6 +785,97 @@ async function run() {
       }
     }
 
+    // R3 finding 6, the collapse. Everything here is a browser question: JSDOM has no
+    // scroll, no sticky, and no layout, so the unit tests can prove which threshold fires
+    // and this has to prove what the page does when it does.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const tracksNow = () => page.evaluate(() => {
+      const grid = document.querySelector("[data-set-grid]");
+      return grid === null
+        ? null
+        : getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
+    });
+    const headNow = () => page.evaluate(() => {
+      const el = document.querySelector("[data-set-head]");
+      if (el === null) return null;
+      return {
+        height: Math.round(el.getBoundingClientRect().height),
+        shy: el.hasAttribute("data-set-head-collapsed"),
+        bar: (() => {
+          const b = document.querySelector("[data-set-head-bar]");
+          return b === null ? null : Math.round(b.getBoundingClientRect().height);
+        })(),
+        // The reserve. `offsetParent` is the wrapper the sticky head floats inside, and its
+        // height is what the DOCUMENT is holding — the number that must not change.
+        reserved: el.parentElement
+          ? Math.round(el.parentElement.getBoundingClientRect().height)
+          : null,
+      };
+    });
+    const scrollTo = async (y) => {
+      await page.evaluate((to) => window.scrollTo(0, to), y);
+      // Two frames: the listener is passive and the class change lands on the next paint.
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    };
+
+    const restState = await headNow();
+    const tracksAtRest = await tracksNow();
+    await scrollTo(400);
+    const shyState = await headNow();
+    const tracksScrolled = await tracksNow();
+
+    if (restState === null || shyState === null || tracksAtRest === null || tracksScrolled === null) {
+      failures += !report(
+        "the collapse can be measured", false,
+        "the head or the grid was not on the page — nothing below this was measured",
+      );
+    } else {
+      failures += !report(
+        "the head collapses past the threshold",
+        !restState.shy && shyState.shy,
+        `at rest shy=${restState.shy} ${restState.height}px, at 400 shy=${shyState.shy} ${shyState.height}px`,
+      );
+      failures += !report(
+        "and is actually shorter, not merely marked",
+        shyState.height < restState.height,
+        `${restState.height}px to ${shyState.height}px`,
+      );
+      // §31 rules the collapsed bar at 52px of content. With the container's own 10/12
+      // padding and its border that is 75px, and the number is asserted rather than merely
+      // reported: "shorter" was true at 140px too, which is the same block with members
+      // hidden rather than the one-row bar the ruling draws.
+      failures += !report(
+        "the collapsed bar is the one-row form, not the full block with members hidden",
+        shyState.bar === 52 && shyState.height <= 80,
+        `bar ${shyState.bar}px, head ${shyState.height}px`,
+      );
+      // R3 names this test itself: the bar overlays, so the grid's own layout is the same
+      // at every scroll position.
+      failures += !report(
+        "the grid's track count is identical at scroll 0 and scroll 400",
+        tracksAtRest === tracksScrolled,
+        `${tracksAtRest} tracks then ${tracksScrolled}`,
+      );
+      // And the reserve, which is the difference between overlaying and not jumping.
+      failures += !report(
+        "the document holds the head's rest height while it is collapsed",
+        restState.reserved !== null
+          && shyState.reserved !== null
+          && Math.abs(restState.reserved - shyState.reserved) <= 1,
+        `reserved ${restState.reserved}px at rest, ${shyState.reserved}px collapsed`,
+      );
+      await scrollTo(20);
+      const restored = await headNow();
+      failures += !report(
+        "and it comes back",
+        restored !== null && !restored.shy,
+        restored === null ? "the head could not be measured" : `shy=${restored.shy} ${restored.height}px`,
+      );
+    }
+    await scrollTo(0);
+
     // The search field (§29). It is the only child of the control row that shrinks, and the
     // row must not wrap at either width — a control landing on its own line inside a sticky
     // head is the defect the three-row rule exists to prevent, arriving by another route.

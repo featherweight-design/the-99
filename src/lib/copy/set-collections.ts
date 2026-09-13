@@ -242,6 +242,10 @@ export const setPageCopy = {
   breadcrumb: (code: string) => `Collection / Sets / ${code.toUpperCase()}`,
 
   head: {
+    // The collapsed bar's search control is NOT a second field. §29 forbids two controls
+    // with one accessible name on this page, and the field is one scroll away — so this
+    // returns the reader to it rather than duplicating it.
+    backToSearch: "Show the search and the full header",
     meta: (code: string, released: string, base: number, extras: number) =>
       `${code.toUpperCase()} · released ${released} · ${base} in the base run`
       + ` · ${extras} ${extras === 1 ? "extra" : "extras"}`,
@@ -276,6 +280,24 @@ export const setPageCopy = {
 
   cost: {
     label: "Cost to complete",
+    // R3 finding 6, move 3. The phone's one-row form: the figure, what it covers, and the
+    // control that opens the rest. `to finish` rather than the label above it — the row has
+    // no room for a caption and a figure, and the phrase has to carry both.
+    // Two nodes rather than one string, because the figure takes --accent and the rest
+    // does not — the same split the expanded form already makes.
+    collapsedTail: (priced: number, missing: number) =>
+      `to finish · ${priced} of ${missing}`,
+    collapsedTailExtras: (priced: number, missing: number) =>
+      `to finish the extras · ${priced} of ${missing}`,
+    // The count is in the name because the caveats are the reason this expands at all: a
+    // reader who cannot see the row needs to know whether opening it says anything.
+    expandAria: (caveats: number) =>
+      caveats === 0
+        ? "Show the full cost, with the send button"
+        : caveats === 1
+          ? "Show the full cost, with the send button and 1 note"
+          : `Show the full cost, with the send button and ${caveats} notes`,
+    collapseAria: "Hide the full cost",
     // R3: at 100% the same strip re-scopes to the extras rather than being
     // replaced by a button. Same component, same sentence shape, same selector.
     labelExtras: "Cost to finish the extras",
