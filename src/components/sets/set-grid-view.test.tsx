@@ -1164,3 +1164,47 @@ describe("SetGridView — colour order is canonical, not click order", () => {
       .map((d) => d.style.background)).toEqual(["var(--w)", "var(--u)"]);
   });
 });
+
+// Round 25: claiming `role="radio"` without the keyboard contract is worse than the toggles
+// it replaced — it promises arrow navigation and a single tab stop, then delivers neither.
+describe("SetGridView — the sheet's rarity group honours the radio pattern", () => {
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+
+  it("keeps one tab stop: the checked value", () => {
+    stubDesktop(false);
+    search = "r=rare";
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Rare" })).toHaveAttribute("tabindex", "0");
+    for (const name of ["Common", "Uncommon", "Mythic"]) {
+      expect(screen.getByRole("radio", { name })).toHaveAttribute("tabindex", "-1");
+    }
+  });
+
+  // `all` is a state this group can be in, and a group with no tab stop is unreachable.
+  it("falls back to the first when none is checked", () => {
+    stubDesktop(false);
+    view([p("1", { rarity: "rare" }), p("2")], []);
+    openSheet();
+    expect(screen.getByRole("radio", { name: "Common" })).toHaveAttribute("tabindex", "0");
+  });
+
+  it("moves focus and the selection on arrow keys", () => {
+    stubDesktop(false);
+    search = "r=common";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    openSheet();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowRight" });
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=uncommon");
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Uncommon" }));
+  });
+
+  it("wraps at the ends", () => {
+    stubDesktop(false);
+    search = "r=common";
+    view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
+    openSheet();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Common" }), { key: "ArrowLeft" });
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/collection/sets/dsk?r=mythic");
+  });
+});

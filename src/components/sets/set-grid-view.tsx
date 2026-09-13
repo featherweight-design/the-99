@@ -274,6 +274,17 @@ export function SetGridView(props: SetGridViewProps) {
   const pickRarity = (current: string[], value: string) =>
     (current.includes(value) ? [] : [value]);
 
+  // The radio pattern the sheet's group owes once it claims the role: arrows move focus AND
+  // the selection, wrapping at the ends, following `rack/availability-control.tsx`. Claiming
+  // `role="radio"` without this is worse than the toggles it replaced — it promises a
+  // keyboard contract and then does not honour it.
+  const rarityRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const stepRarity = (from: number, dir: 1 | -1) => {
+    const next = (from + dir + RARITIES.length) % RARITIES.length;
+    rarityRefs.current[next]?.focus();
+    setFilters({ ...filters, rarities: [RARITIES[next]] });
+  };
+
   // What the colour and rarity filters match, missing-only aside: the denominator behind
   // both the owns-all claim and its correction.
   const matchedIgnoringMissing = applyFilters(
@@ -695,16 +706,29 @@ export function SetGridView(props: SetGridViewProps) {
               aria-label={setFilterCopy.rarity.label}
               className="mb-[16px] flex flex-wrap gap-[8px]"
             >
-              {RARITIES.map((r) => {
+              {RARITIES.map((r, i) => {
                 const on = filters.rarities.includes(r);
                 return (
                   <button
                     key={r}
+                    ref={(node) => { rarityRefs.current[i] = node; }}
                     type="button"
                     role="radio"
                     aria-checked={on}
                     aria-label={setFilterCopy.rarity.options[r]}
+                    // Roving: the checked value is the group's single tab stop, and with
+                    // none checked the first is — `all` is a state this group can be in,
+                    // and a group with no tab stop cannot be reached by keyboard at all.
+                    tabIndex={on || (filters.rarities.length === 0 && i === 0) ? 0 : -1}
                     onClick={() => setFilters({ ...filters, rarities: pickRarity(filters.rarities, r) })}
+                    onKeyDown={(e) => {
+                      const dir = e.key === "ArrowRight" || e.key === "ArrowDown"
+                        ? 1
+                        : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+                      if (dir === 0) return;
+                      e.preventDefault();
+                      stepRarity(i, dir);
+                    }}
                     className={[
                       "min-h-[44px] rounded-[8px] px-[14px] text-[13px] border",
                       on
