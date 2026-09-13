@@ -205,10 +205,10 @@ describe("the zoom", () => {
     expect(document.activeElement).toBe(screen.getAllByRole("button", { name: "Close card details" })[0]);
   });
 
-  it("lets a second Escape reach the dialog while the zoom is still leaving", () => {
-    // The layer stays mounted for its 160ms exit. Without treating that as already
-    // dismissed, the second press of a quick double-press restarts the timer and the
-    // reader's dialog never closes.
+  it("walks down the ladder on a quick double-press", () => {
+    // Zoom, then dialog. The rungs are only worth having if pressing twice quickly
+    // takes both — an earlier version held the first rung through an exit animation
+    // and swallowed the second press.
     const { onClose } = mount();
     openZoom();
 

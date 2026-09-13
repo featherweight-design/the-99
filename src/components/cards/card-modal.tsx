@@ -489,12 +489,6 @@ export function CardModal({
   const compactArt = hasPicker && expanded && overflowing;
 
   /**
-   * Leaves over 160ms, or at once for a reader who has asked for less motion —
-   * where the static state is "gone", not "gone slowly". The media query is read at
-   * the press rather than subscribed to: this is one transition, and a reader who
-   * changes the setting mid-fade has bigger news than the fade.
-   */
-  /**
    * Closing unmounts the layer.
    *
    * IT USED TO PLAY OUT over 160ms, per the motion table's exit row, and that one
@@ -557,11 +551,11 @@ export function CardModal({
       zoomCloseRef.current?.focus();
       return;
     }
-    // Only when nothing else has claimed focus. Escape during the exit collapses the
-    // printing region and focuses its Set trigger; the zoom's timer lands afterwards,
-    // and restoring unconditionally would take focus off the stage the reader just
-    // moved to. A normal close leaves focus on an unmounted button, so the document
-    // has fallen back to `body` and this runs.
+    // Only when nothing else has claimed focus. A close leaves focus on the button
+    // that is being unmounted, so the document falls back to `body` and this runs;
+    // anything else already sitting on a control inside the dialog got there on
+    // purpose — the printing region's own Escape stage is the one that does — and
+    // taking it back would undo that.
     const active = document.activeElement;
     if (active && active !== document.body && dialogRef.current?.contains(active)) return;
     const mounted = zoomTriggerRefs.current.filter((el): el is HTMLButtonElement => el !== null);
