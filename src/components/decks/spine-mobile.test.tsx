@@ -182,7 +182,10 @@ describe("SpineMobile", () => {
     // band on a phone for exactly the long names that fill the column. Only the
     // 15px of hit padding overhangs now, which fits the block's 18px inset.
     expect(holder.style.width).toBe("14px");
-    expect(holder.className).toContain("flex-none");
+    // No `flex-none`: the holder is inline-level in the title's own text flow
+    // now, not a flex item — which is what puts it on the title's last line
+    // instead of after the heading's full-width box.
+    expect(holder.style.verticalAlign).toBe("baseline");
     // Beside the heading, not inside it: within the heading its `aria-label`
     // joined the heading's own accessible name, so heading navigation announced
     // the control and then the control announced itself again.
@@ -194,18 +197,16 @@ describe("SpineMobile", () => {
     expect(holder.className).toContain("z-[1]");
   });
 
-  // A 14px spacer, not the 44px one the old plated control needed: the row
-  // centres title and glyph together, so the balance has to match the glyph's
-  // own width. A 44px spacer would push the centred title off centre in the
-  // other direction.
-  it("balances the pencil with a spacer its own width, not the old 44px one", () => {
+  // No spacer at all. It existed only to balance the pencil's flow width so a
+  // CENTRED title stayed on the band's centre; the block is left-aligned now, and
+  // a leading spacer would push the title off the block's own edge for nothing.
+  it("draws no spacer opposite the pencil, because the title is left-aligned", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
-    const spacers = Array.from(container.querySelectorAll<HTMLElement>('span[aria-hidden="true"]'));
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    const spacers = Array.from(block.querySelectorAll<HTMLElement>('span[aria-hidden="true"]'));
+    expect(spacers.filter((el) => el.style.width === "20px")).toHaveLength(0);
     expect(spacers.filter((el) => el.style.width === "44px")).toHaveLength(0);
-    // 20px: the glyph's 14 plus the 6 that sets it off from the name. A spacer
-    // that does not match the glyph's flow width leaves the centred title off
-    // centre by the difference.
-    expect(spacers.filter((el) => el.style.width === "20px").length).toBeGreaterThan(0);
+    expect(block.className).toContain("items-start");
   });
 });
 
@@ -270,8 +271,10 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   it("keeps the block clear of the card-details corner", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    // The RIGHT alone, now that the block reads from the left: a centred block
+    // had to pad both sides to clear that corner without moving its centre.
     expect(Number.parseInt(block.style.paddingRight, 10)).toBeGreaterThanOrEqual(40);
-    expect(block.style.paddingLeft).toBe(block.style.paddingRight);
+    expect(block.style.paddingLeft).toBe("");
   });
 
   // No pips on this band. The chip and the names are what the phone's line
@@ -287,5 +290,63 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
       0,
     );
     expect(block.textContent).not.toContain("Naya");
+  });
+
+  // The band reads from the left: title, then the chip and the commander under
+  // it. It was centred, which is what the mocks were compared against and what
+  // this pins so it cannot drift back.
+  it("left-aligns the band's whole block, title and meta row alike", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    expect(block.className).toContain("items-start");
+    expect(block.className).not.toContain("items-center");
+
+    const heading = container.querySelector<HTMLElement>("h1")!;
+    expect(heading.style.textAlign).toBe("left");
+    // Inline-level and clamped: inline so the pencil joins its last line box,
+    // clamped because the 90px ramp figure is measured against two lines.
+    expect(heading.style.display).toBe("-webkit-inline-box");
+    expect(heading.style.webkitLineClamp).toBe("2");
+
+    const meta = container.querySelector<HTMLElement>("[data-spine-meta]")!;
+    expect(meta.className).toContain("justify-start");
+    expect(meta.className).not.toContain("justify-center");
+  });
+
+  // The field replaces the title in place, so it takes the title's alignment.
+  it("left-aligns the rename field, like the title it replaces", () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
+    expect(screen.getByLabelText(renameCopy.fieldAria).className).toContain("text-left");
+  });
+
+  // The pencil follows the title's TEXT, not the heading's box. A flex sibling
+  // sat after that box, and a wrapped heading's box is full width — so a
+  // two-line name pushed the glyph to the far right of the band while a
+  // one-line name kept it beside the words. jsdom lays nothing out, so the
+  // declaration is what is assertable, and the declaration is the whole fix:
+  // an inline-level clamped heading, a baseline-aligned inline holder after it,
+  // and no flex row between them.
+  it("keeps the pencil in the title's text flow, however the name wraps", () => {
+    const { container } = renderSpine(
+      <SpineMobile
+        {...props}
+        deck={{ ...props.deck, name: "HD Tune — A Very Long Deck Name That Keeps Going" }}
+      />,
+    );
+    const heading = container.querySelector<HTMLElement>("h1")!;
+    const holder = container
+      .querySelector<HTMLElement>('button[aria-label^="Rename deck"]')!
+      .parentElement!;
+    // Siblings in one inline flow: the holder comes straight after the heading,
+    // and their shared parent is not a flex container.
+    expect(holder.previousElementSibling).toBe(heading);
+    expect(holder.parentElement!.className).not.toContain("flex");
+    expect(holder.style.verticalAlign).toBe("baseline");
+    // The heading stays the clamped inline box, and its accessible name is the
+    // deck's name alone.
+    expect(heading.style.display).toBe("-webkit-inline-box");
+    expect(heading.textContent).toBe("HD Tune — A Very Long Deck Name That Keeps Going");
+    expect(heading.querySelector("button")).toBeNull();
   });
 });

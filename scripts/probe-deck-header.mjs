@@ -138,6 +138,14 @@ const READ_HEADER = `() => {
     // glyph. Reading the marker rather than the heading keeps that honest if a
     // future change puts anything beside the name again.
     title: h1 ? (h1.querySelector('[data-deck-title]') ?? h1).textContent.trim() : null,
+    // The band reads from the left on the phone. Measured as geometry rather than
+    // as a class: the title's left edge against the block's own, which is the
+    // thing a centred block gets wrong and a property table cannot see.
+    titleOffset: (() => {
+      const block = header.querySelector('[data-wash-label]');
+      if (!h1 || !block) return null;
+      return Math.round(h1.getBoundingClientRect().left - block.getBoundingClientRect().left);
+    })(),
     titleShadow: h1 ? getComputedStyle(h1).textShadow : null,
     titleColor: h1 ? getComputedStyle(h1).color : null,
     barBackground: fill ? getComputedStyle(fill).backgroundColor : null,
@@ -417,6 +425,13 @@ try {
       // Item 4 — the meta row crosses the divider while the field takes the band.
       if (rest.metaInBand === 'no-marker' || editing.metaInBand === 'no-marker') {
         fail(`the deck header draws no [data-spine-meta] — the divider move is unmeasured`);
+      }
+      // Flush left, within a pixel: a centred block put the title tens of pixels
+      // in from its own edge, which is what the drawings were compared against.
+      if (rest.titleOffset === null) {
+        fail(`no title or no [data-wash-label] to measure the title's offset against`);
+      } else if (rest.titleOffset > 1) {
+        fail(`title sits ${rest.titleOffset}px in from the block's left edge, expected flush`);
       }
       if (rest.metaInBand !== true) fail(`meta row not in the band at rest`);
       if (editing.metaInBand !== false) fail(`meta row did not move below the divider`);

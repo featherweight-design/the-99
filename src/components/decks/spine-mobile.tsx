@@ -62,7 +62,7 @@ export function SpineMobile({
       // inside a child — so the probe read null and its two divider assertions
       // failed on every deck instead of measuring the move.
       data-spine-meta
-      className="flex w-full min-w-0 flex-nowrap items-center justify-center"
+      className="flex w-full min-w-0 flex-nowrap items-center justify-start"
       style={{ gap: 8 }}
     >
       {/* The chip leads the row, as the drawings have it: it is the one thing on
@@ -181,18 +181,16 @@ export function SpineMobile({
           // The block the ramp is keyed to, hooked so a probe measures it rather
           // than guessing at it.
           data-wash-label
-          className="absolute flex flex-col items-center"
-          // 40 of padding on BOTH sides, not a right inset: the card-details
-          // control now sits in this band's bottom-right corner, and its 44px
-          // target overlapped the meta row's right end — a title that ran under
-          // it, and a tap that could land on either. Padding both sides keeps the
-          // title centred on the band while clearing the corner; an inset on one
-          // side would move the centre by half of it.
+          className="absolute flex flex-col items-start"
+          // Left-aligned, so the reserved space is on the right ALONE: the
+          // card-details control sits in this band's bottom-right corner and its
+          // 44px target reached into the meta row. A centred block had to pad
+          // both sides to clear that corner without moving its centre; a
+          // left-aligned one pays for it once.
           style={{
             left: 18,
             right: 18,
             bottom: 12,
-            paddingLeft: 40,
             paddingRight: 40,
             gap: renaming ? 8 : 6,
           }}
@@ -209,7 +207,7 @@ export function SpineMobile({
                 // commits.
                 readOnly={rename.isPending}
                 aria-label={renameCopy.fieldAria}
-                className="w-full rounded-[8px] border border-[color:var(--accent)] bg-[color:var(--surface-sunken)] text-center font-display font-[700] focus-visible:outline-none"
+                className="w-full rounded-[8px] border border-[color:var(--accent)] bg-[color:var(--surface-sunken)] text-left font-display font-[700] focus-visible:outline-none"
                 style={{
                   boxSizing: "border-box",
                   padding: "8px 12px",
@@ -271,28 +269,36 @@ export function SpineMobile({
             </>
           ) : (
             <>
-              <div className="flex items-center justify-center" style={{ maxWidth: "100%" }}>
-                {/* The glyph's flow width, opposite it — 20px now: 14 of glyph
-                    plus the 6px that sets it off from the name. The row centres
-                    title and glyph together, so a spacer that does not match
-                    leaves the name off the band's centre by the difference. */}
-                <span aria-hidden="true" className="flex-none" style={{ width: 20 }} />
-                {/* The spacer above is what balances this. The pencil is a 14px
-                    holder in flow — not a zero-width one, which put its whole
-                    44px box past the text where the band clips it — so the row
-                    centres 14px of glyph against 14px of nothing and the title
-                    stays on the band's centre. */}
+              {/* A BLOCK, not a flex row, and that is the whole fix for the
+                  floating pencil. A flex sibling sits after the heading's BOX,
+                  and a heading whose text wraps has a full-width box — so on a
+                  one-line name the glyph landed right after the words and on a
+                  two-line name it landed at the far right of the band, which
+                  read as arbitrary. In normal inline flow it shares the
+                  heading's LAST LINE BOX instead, which is where the drawings
+                  put it.
+
+                  No spacer either: it existed only to balance the glyph's flow
+                  width so a centred title stayed centred, and this block reads
+                  from the left. */}
+              <div className="w-full" style={{ maxWidth: "100%", textAlign: "left" }}>
                 <h1
-                  // The clamp lives on the SPAN inside, not on the heading: a
-                  // clamped box needs `overflow: hidden`, and anything beside the
-                  // text inside it gets clipped when the heading shrink-wraps a
-                  // short name. The heading holds the clamped text alone, and the
-                  // glyph is its sibling in the row.
-                  className="flex min-w-0 items-end justify-center font-display font-[700]"
+                  // `-webkit-inline-box`: inline-LEVEL so the glyph after it
+                  // joins its last line, and still the clamped box the 90px ramp
+                  // figure is measured against. With `overflow: hidden` its
+                  // baseline is its bottom edge, which is what puts a
+                  // baseline-aligned glyph beside the last line rather than the
+                  // first.
+                  className="m-0 min-w-0 font-display font-[700]"
                   style={{
+                    display: "-webkit-inline-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    maxWidth: "100%",
                     fontSize: 20,
                     lineHeight: 1.25,
-                    textAlign: "center",
+                    textAlign: "left",
                     color: "var(--fg)",
                     textShadow: COVER_INK_SHADOW,
                   }}
@@ -303,18 +309,12 @@ export function SpineMobile({
                       The clamp lives here rather than on the heading so the
                       heading can be a flex line: a clamped box clips, and the
                       glyph beside the title would be clipped with it. */}
-                  <span
-                    data-deck-title
-                    className="min-w-0"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {deck.name}
-                  </span>
+                  {/* The marker is the deck's name alone — the glyph is outside
+                      this heading, so neither the heading's text content nor its
+                      accessible name carries it. The clamp moved up to the
+                      heading itself, which is now the inline box the glyph
+                      follows. */}
+                  <span data-deck-title>{deck.name}</span>
                 </h1>
                 {/* The glyph is a SIBLING of the heading, in the same row, not a
                     child of it. Inside the heading its `aria-label` joined the
@@ -336,18 +336,14 @@ export function SpineMobile({
                     position, so the row underneath won the hit test across the
                     bottom third of this target. The same defect #534 fixed one
                     control over. */}
-                {/* `self-center`, because the row's own `items-center` is what
-                    the glyph should follow and the `items-end` on the heading
-                    aligns only the heading's own child. Centred across the title
-                    row: against a two-line name a bottom-aligned glyph reads as a
-                    footnote to the second line rather than as the title's
-                    control. */}
+                {/* `vertical-align: baseline` against an inline box whose
+                    overflow is hidden: that box's baseline IS its bottom edge, so
+                    the glyph sits beside the title's last line on a wrapped name
+                    and beside its only line on a short one. No `self-*` — there
+                    is no flex row left to align within. */}
                 <span
-                  // Centred and set off from the name, as on desktop: against a
-                  // two-line title a bottom-aligned glyph reads as a footnote to
-                  // the second line.
-                  className="relative z-[1] inline-flex flex-none self-center"
-                  style={{ width: 14, marginLeft: 6 }}
+                  className="relative z-[1] inline-flex"
+                  style={{ width: 14, marginLeft: 6, verticalAlign: "baseline" }}
                 >
                   <button
                     type="button"
