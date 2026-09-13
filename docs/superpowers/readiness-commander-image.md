@@ -1,6 +1,14 @@
 # READINESS — One commander image (handoff R6)
 
-**Verdict: 🟢 Green.** Build starts now — this PR is the design record and the
+**Verdict: 🟢 Green. Shipped 2026-09-12** across PRs #537, #538, #539, #540,
+#542, #544 and #548 — the figures below are the ones that shipped, §5c is the
+table of record for every `labelAt`, and §6's errata is the correction of record.
+Two things stayed open and neither blocked: `/decks` colour filtering still reads
+`commanderColorIdentity` alone, so a pair filters on its primary while every
+surface words the union, and the 640–699px two-up crop loss remains — both need
+files a live filter round owns.
+
+Build starts now — this PR is the design record and the
 plan; the build slices follow it, PRs 2 through 6 of the plan, and the deck slice
 ships as two because the tile and the spines share no file. §6's amendments are every place the handoff's
 own arithmetic had to be corrected inside a rule it got right, and §5c is the one
