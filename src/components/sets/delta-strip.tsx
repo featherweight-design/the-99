@@ -15,7 +15,7 @@
 // its finish, leaves a count identical while the art and the foil mark on screen are
 // stale. The strip says how many cards moved, and renders whenever anything did.
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ownedFingerprintForSet } from "../../app/collection/sets/actions";
 import { holdingCountOf } from "../../lib/sets/completion";
@@ -28,7 +28,6 @@ export function DeltaStrip({
   fingerprint,
   indexed,
   recheckKey,
-  onFiring,
 }: {
   code: string;
   /** What the page was rendered against. */
@@ -46,12 +45,6 @@ export function DeltaStrip({
    * as an upload the reader never made.
    */
   indexed: boolean;
-  /**
-   * Told to the head, which may not collapse while this strip is showing a message: it is
-   * the one member of that block which is news rather than reference, and collapsing it
-   * away would hide the only offer to refresh a page the reader has been told is stale.
-   */
-  onFiring?: (firing: boolean) => void;
 }) {
   const router = useRouter();
   const [changed, setChanged] = useState<string | null>(null);
@@ -84,18 +77,6 @@ export function DeltaStrip({
   }, [code, fingerprint, indexed, recheckKey]);
 
   const firing = indexed && changed !== null;
-  // A LAYOUT effect, so the head opens on the same frame this message appears. A passive
-  // effect runs after paint, which put the message under the collapsed one-row bar for a
-  // frame before the head reopened around it.
-  //
-  // Still an effect and not render: this is a parent's state, and setting it while
-  // rendering a child is the update-during-render React refuses.
-  useLayoutEffect(() => {
-    onFiring?.(firing);
-    // Firing going false on unmount matters as much as it going true — the head would
-    // otherwise stay pinned open after the strip left.
-    return () => onFiring?.(false);
-  }, [firing, onFiring]);
 
   // `indexed` can go true to false under a catalog rebuild without this remounting, and a
   // retained `changed` would then report an upload delta on a page with no baseline.

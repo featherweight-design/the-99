@@ -1,4 +1,4 @@
-import { cloneElement, useEffect } from "react";
+import { cloneElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SetGridView } from "./set-grid-view";
@@ -13,25 +13,14 @@ vi.mock("next/navigation", () => ({
 }));
 
 // The delta strip polls a server action on focus; it is covered by its own file. The mock
-// still has to be able to FIRE, because the head may not collapse while it is showing —
-// a mock that can only be silent would make that rule untestable and any assertion about
-// it vacuous.
+// still has to be able to FIRE, because §31 rules that the collapse must not hide its
+// message — a mock that could only be silent would make that untestable and any assertion
+// about it vacuous.
 const deltaProps: { recheckKey?: string; firing?: boolean } = {};
 vi.mock("./delta-strip", () => ({
-  DeltaStrip: ({ recheckKey, onFiring }: {
-    recheckKey?: string; onFiring?: (f: boolean) => void;
-  }) => {
+  DeltaStrip: ({ recheckKey }: { recheckKey?: string }) => {
     deltaProps.recheckKey = recheckKey;
-    const firing = deltaProps.firing === true;
-    // The CALLBACK, not the whole props object. `props` is a new reference every render,
-    // so depending on it re-ran this effect on every parent update — reporting false and
-    // then true again, which briefly re-enabled the collapse and made the firing assertion
-    // weaker than it reads. The real strip does not behave that way.
-    useEffect(() => {
-      onFiring?.(firing);
-      return () => onFiring?.(false);
-    }, [firing, onFiring]);
-    return firing ? <div>a card arrived</div> : null;
+    return deltaProps.firing === true ? <div>a card arrived</div> : null;
   },
 }));
 

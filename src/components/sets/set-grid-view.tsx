@@ -244,6 +244,11 @@ export function SetGridView(props: SetGridViewProps) {
       sizeSpacer();
     };
     measure();
+    // Guarded, as `top-off-list.tsx` guards its own measured bar: an unconditional
+    // constructor throws on mount in any engine without the API, taking every set page with
+    // it. The `measure()` above has already run, so the reserve is correct for the head as
+    // it stands — it simply stops tracking later changes.
+    if (typeof ResizeObserver === "undefined") return;
     // The head's open height is not a constant: a two-line title, the delta strip, and the
     // cost strip's expanded form all move it, and a reserve measured once would be wrong
     // for the rest of the visit.
@@ -919,6 +924,12 @@ export function SetGridView(props: SetGridViewProps) {
 
         {/* Keyed on the fingerprint so a refresh remounts it: without the key the strip
             kept rendering its old message against a grid that had already updated. */}
+        {/* Rendered at BOTH heights, and deliberately not one of the members the collapse
+            hides: §31 rules that the message must not be collapsed away. The head therefore
+            grows by exactly this strip while it is firing, which is a height change under
+            the reader — allowed here and nowhere else on this surface, because a delta is
+            news and the §28 three-row rule is about the filter state. The pin this replaced
+            grew the head by its whole open form instead. */}
         <DeltaStrip
           // The set code is in the key: two sets with the same indexed state and the same
           // ownership fingerprint — two you hold nothing from — would otherwise reuse the

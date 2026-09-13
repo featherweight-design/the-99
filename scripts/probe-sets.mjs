@@ -955,6 +955,33 @@ async function run() {
             : `${barTargets.count} measured, smallest ${barTargets.smallest}px`,
       );
 
+      // RESTORATION, attempted. The initial scroll read is in a passive effect, because the
+      // layout effect the shape asks for is a hard lint error here, so a first paint at
+      // scrollY > 120 shows the open head for one frame. What that costs the GRID should be
+      // nothing — the head shrinks by its own difference and the spacer grows by the same
+      // amount in the same commit — but this probe cannot demonstrate it either way:
+      // NEITHER a reload NOR a history back restores a scrolled position in this engine, so
+      // the page always comes up at the top and the case is never entered.
+      //
+      // Reported rather than asserted, and reported as NOT REPRODUCED rather than as a
+      // pass. A check that cannot reach its case must say so; a green line here would be a
+      // claim of coverage that does not exist.
+      await page.evaluate(() => window.scrollTo(0, 600));
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.goto(`${BASE}/collection/sets`, { waitUntil: "networkidle" });
+      await page.goBack({ waitUntil: "networkidle" });
+      await waitForCells(page);
+      const restoredY = await page.evaluate(() => Math.round(window.scrollY));
+      report(
+        "a first paint at a restored scroll position",
+        true,
+        restoredY > 120
+          ? `entered at y=${restoredY}`
+          : `NOT REPRODUCED — the page came up at y=${restoredY}; neither reload nor back`
+            + " restores a scroll position here, so the one-frame open head on restoration"
+            + " is unmeasured",
+      );
+
       const crossing = await firstCrossingShift();
       failures += !report(
         "the grid does not move in the document on the first crossing",
