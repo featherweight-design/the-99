@@ -159,7 +159,14 @@ const READ_HEADER = `() => {
       if (!title || !pencil || !block) return null;
       const range = document.createRange();
       range.selectNodeContents(title);
-      const lines = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      // Filtered to the lines the heading actually SHOWS. A clamped heading
+      // reported rects for lines it had hidden, so the last rect could be an
+      // invisible one and the glyph "correct" below the visible text. The title
+      // is unclamped now and nothing is hidden, so this filter should never drop
+      // a line — which is why the count is reported either way.
+      const frame = h1.getBoundingClientRect();
+      const all = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      const lines = all.filter((r) => r.bottom <= frame.bottom + 1);
       if (!lines.length) return null;
       const last = lines[lines.length - 1];
       // The GLYPH's edges, not the target's. The button is a 14px box with 15px
@@ -171,6 +178,7 @@ const READ_HEADER = `() => {
       const mid = box.top + box.height / 2;
       return {
         lines: lines.length,
+        hidden: all.length - lines.length,
         // The glyph's vertical centre inside the last line's own band, with a
         // pixel of tolerance for the half-leading either side.
         onLastLine: mid >= last.top - 1 && mid <= last.bottom + 1,
@@ -486,6 +494,9 @@ try {
         // defect this check exists to catch, and a `>= 0` test passes it.
         if (pencil.after > 12) {
           fail(`pencil sits ${pencil.after}px after the last line's text, expected it to follow the words`);
+        }
+        if (pencil.hidden > 0) {
+          fail(`${pencil.hidden} title line(s) are drawn outside the heading's own box`);
         }
         if (pencil.lines < 2) {
           note(`  (this deck's title is one line — the wrapped case went unchecked here)`);

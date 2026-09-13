@@ -6,7 +6,7 @@
 // carries none.
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
@@ -34,61 +34,20 @@ export function SpineMobile({
   offerFirstCommit,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  // Where the rename glyph sits, measured. CSS cannot express it: a wrapped box
-  // takes the whole available width, so anything following the title in flow
-  // lands at that box's right edge rather than after its last WORD — which is
-  // the same far-right glyph a flex sibling produced. The title's own line boxes
-  // are the only thing that knows where its last line ends, and a Range over
-  // the text is the only way to read them.
+  // No measurement, and no clamp. `-webkit-line-clamp` requires
+  // `display: -webkit-box`, which is an ATOMIC inline box: its width is the
+  // whole available width once its text wraps, so anything following it in flow
+  // lands at that box's right edge rather than after its last word. Measuring
+  // the last line with a Range does not rescue it either — `getClientRects`
+  // reports lines the clamp hides, and the `…` the clamp draws is generated
+  // content that no Range can see, so a glyph placed after the measured text
+  // sits on top of it.
   //
-  // `null` until measured, which is also the no-JS and pre-hydration state: the
-  // glyph falls back to the block's bottom-right corner, never clipped and never
-  // far from the title, and the measurement moves it beside the words.
-  const [glyphAt, setGlyphAt] = useState<{ left: number; top: number } | null>(null);
-
-  useLayoutEffect(() => {
-    const title = titleRef.current;
-    const frame = title?.parentElement;
-    if (!title || !frame) return;
-    const measure = () => {
-      const text = title.querySelector("[data-deck-title]");
-      if (!text) return;
-      const range = document.createRange();
-      range.selectNodeContents(text);
-      // Guarded because a Range's line boxes are a LAYOUT question: jsdom
-      // implements the Range but not `getClientRects`, so a component test hits
-      // the fallback position rather than a crash. The real measurement is
-      // asserted in a browser by `probe-deck-header.mjs`, which reads the same
-      // rects and fails if the glyph is more than 12px past the last line.
-      if (typeof range.getClientRects !== "function") return;
-      // Every line box the text draws; the last is the line the glyph follows.
-      // Zero-area rects are the collapsed ones at a wrap point.
-      const lines = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height > 0);
-      const last = lines[lines.length - 1];
-      if (!last) return;
-      const base = frame.getBoundingClientRect();
-      setGlyphAt({
-        // 6px after the words, and never past the slot the heading's padding
-        // reserves — a last line that fills the width would otherwise put the
-        // glyph outside the block.
-        left: Math.min(last.right - base.left + 6, Math.max(base.width - GLYPH, 0)),
-        // Centred on that line rather than on the block: against a two-line name
-        // the block's centre is between the lines.
-        top: last.top - base.top + (last.height - GLYPH) / 2,
-      });
-    };
-    measure();
-    // Re-measured on anything that can move the last line: the column's width,
-    // and the display face arriving after first paint — a fallback face wraps at
-    // a different word than Cinzel does.
-    const observer =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(frame);
-    document.fonts?.ready?.then(measure).catch(() => {});
-    return () => observer?.disconnect();
-    // `deck.name` and `renaming` both change which text is laid out.
-  }, [deck.name, renaming]);
+  // So the title is not clamped. The heading is `display: inline`, which is
+  // NON-atomic: its text wraps as ordinary inline content and the glyph after it
+  // continues on the heading's last line, at any line count, with no JavaScript
+  // and no fallback state. The cost is the block's height, which is why the ramp
+  // is keyed to a three-line title rather than a two-line one.
   const { commander, partner } = deck;
   const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
@@ -229,20 +188,19 @@ export function SpineMobile({
         <ArtWash
           strategy="cover"
           height={288}
-          // The block's MEASURED height in pixels from the foot, at 390px and at
-          // the title's own ceiling: `-webkit-line-clamp: 2` makes two lines hard
-          // rather than an estimate, so 12 bottom inset, a 22px meta row — the
-          // settled chip height, stated on the pill for exactly this reason — a
-          // 6px gap and two 20px title lines at 1.25 for 50 gives 90. The pill
-          // drew 23 from padding over an inherited line box before this round,
-          // which put the block at 91 and the title's first pixels on a rising
-          // ramp.
+          // The block's MEASURED height in pixels from the foot, at a THREE-line
+          // title: 12 bottom inset, a 22px meta row — the settled chip height —
+          // a 6px gap and three 25px title lines at 20/1.25 gives 115.
           //
-          // The handoff's 83 was measured against a three-line title, which this
-          // clamp forbids; its own correction note is the reason the figure is
-          // measured here rather than taken — a `labelAt` derived from a block
-          // other than the one drawn is this round's own failure.
-          labelAtPx={90}
+          // Three, not two, because the title is no longer clamped: clamping
+          // needs `-webkit-box`, an atomic inline box whose width is the whole
+          // available width once its text wraps, which is what put the rename
+          // glyph at the far right of a two-line name. An unclamped inline
+          // heading lets the glyph follow the words at any line count, and the
+          // price is keying this figure to the taller block. It is a ceiling, so
+          // a one- or two-line title simply holds its ramp higher than it needs
+          // — more art, never less protection.
+          labelAtPx={115}
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
@@ -359,15 +317,8 @@ export function SpineMobile({
                   No spacer either: it existed only to balance the glyph's flow
                   width so a centred title stayed centred, and this block reads
                   from the left. */}
-              <div
-                // `relative`: the glyph is positioned within this frame, from a
-                // measurement of the title's last line box. It is also the box
-                // the `ResizeObserver` watches.
-                className="relative w-full"
-                style={{ maxWidth: "100%", textAlign: "left" }}
-              >
+              <div className="w-full" style={{ maxWidth: "100%", textAlign: "left" }}>
                 <h1
-                  ref={titleRef}
                   // `-webkit-inline-box`: inline-LEVEL so the glyph after it
                   // joins its last line, and still the clamped box the 90px ramp
                   // figure is measured against. With `overflow: hidden` its
@@ -376,19 +327,13 @@ export function SpineMobile({
                   // first.
                   className="m-0 min-w-0 font-display font-[700]"
                   style={{
-                    // `-webkit-box`, block-level: the glyph no longer follows
-                    // this box in flow, so it does not need to be inline — and a
-                    // block box wraps the same way at every width, which is what
-                    // the measurement reads.
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                    // The glyph's slot, reserved on every line. The measurement
-                    // keeps the glyph inside the block, and without this a last
-                    // line that fills the width would have the glyph over its
-                    // final word.
-                    paddingRight: GLYPH + 6,
+                    // `inline`, and NON-atomic — which is the whole mechanism.
+                    // Its text wraps as ordinary inline content, so the glyph
+                    // after it continues on the heading's last line however many
+                    // lines that is. An atomic box (`-webkit-box`,
+                    // `inline-block`, a flex item) takes the full available
+                    // width when it wraps and puts the glyph at the far right.
+                    display: "inline",
                     fontSize: 20,
                     lineHeight: 1.25,
                     textAlign: "left",
@@ -430,18 +375,13 @@ export function SpineMobile({
                     document position, so the row underneath won the hit test
                     across the bottom third of this target. The same defect #534
                     fixed one control over. */}
-                {/* Positioned from the measurement above: beside the title's
-                    last word at whatever width the column happens to be. Until
-                    that measurement lands — and if it never does — it falls back
-                    to the block's bottom-right corner, which is always visible
-                    and never clipped. */}
+                {/* In flow, straight after the heading, so it shares the
+                    heading's last line — `\u00a0` first so a line break never
+                    falls between the name and its control. */}
+                {"\u00a0"}
                 <span
-                  className="absolute z-[1] inline-flex"
-                  style={
-                    glyphAt
-                      ? { width: GLYPH, left: glyphAt.left, top: glyphAt.top }
-                      : { width: GLYPH, right: 0, bottom: 0 }
-                  }
+                  className="relative z-[1] inline-flex"
+                  style={{ width: GLYPH, verticalAlign: "baseline" }}
                 >
                   <button
                     type="button"
