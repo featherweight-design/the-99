@@ -17,13 +17,32 @@
 // rather than four. `filter-panel.tsx` debounces its own count the same way.
 
 import type { Lane } from "../../../lib/commanders/lane-params";
-import { commandersCopy, discoverCopy } from "../../../lib/copy/lanes";
+import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
 
 /** The sentence the rack and the sheet header both print. The sheet draws it
     silently — this lane has one live region and it is the result line. */
 export function resultSentence(shown: number, total: number, lane: Lane): string {
   const copy = lane === "owned" ? commandersCopy.result : discoverCopy.result;
   return shown === total ? copy.rest(total) : copy.filtered(shown, total);
+}
+
+/** The sentence with the `Exactly` aside appended, when there is one.
+ *
+ *  The separator lives HERE rather than at the call site, because the aside is
+ *  an independent clause (`Exactly excludes 6 that Any would show`) and joining
+ *  it with a comma splices two sentences. It was a literal in `filter-rack.tsx`
+ *  and a second literal in the test, which meant the test asserted its own copy
+ *  of the rule and stayed green when the component's copy changed. */
+export function resultLineWithAside(
+  shown: number,
+  total: number,
+  lane: Lane,
+  excludedByExactly: number | null,
+): string {
+  const sentence = resultSentence(shown, total, lane);
+  return excludedByExactly === null
+    ? sentence
+    : `${sentence}. ${filterCopy.match.excludedAside(excludedByExactly)}`;
 }
 
 // What survives of the rack's result line: the sentence, which reads lane copy

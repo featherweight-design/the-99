@@ -44,7 +44,7 @@ export function DegradedBanner({
       ? degraded.bodyWithSynergy
       : degraded.body;
   const desktopBody = synergy
-    ? "EDHREC is unreachable. Fit scores reflect pool and role coverage only — synergy receipts are hidden until the connection is restored."
+    ? "EDHREC is unreachable. Fit scores reflect pool and role coverage only: synergy receipts are hidden until the connection is restored."
     : variant === "both"
       ? degraded.bodyWithSynergy
       : degraded.body;

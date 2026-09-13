@@ -33,7 +33,7 @@ import { ColourControl } from "./colour-control";
 import { FilterSheet } from "./filter-sheet";
 import { OrderControl } from "./order-control";
 import { ORDER_OPTIONS } from "./order-options";
-import { resultSentence } from "./result-line";
+import { resultLineWithAside } from "./result-line";
 import { SearchControl } from "./search-control";
 
 export function FilterRack({
@@ -145,11 +145,7 @@ export function FilterRack({
         // would also fire a fresh request for a ranking nobody asked for.
         onChange({ ...defaultParams(lane), order: params.order })
       }
-      resultLine={`${resultSentence(shown, total, lane)}${
-        excludedByExactly === null
-          ? ""
-          : ` — ${filterCopy.match.excludedAside(excludedByExactly)}`
-      }`}
+      resultLine={resultLineWithAside(shown, total, lane, excludedByExactly)}
       // Compact's persistent row is `search · sort · Filters` (STATES §156), so
       // the trigger joins the trailing cluster rather than sitting in the
       // controls ahead of it. Wide keeps sort alone past the hairline, where

@@ -335,7 +335,7 @@ export function DiscoveryRow({
           outline inherited from globals.css. */}
       <Link
         href={href}
-        aria-label={`${rowLabel} — view commander details`}
+        aria-label={`${rowLabel}: view commander details`}
         className="absolute inset-0 z-[1]"
       />
 

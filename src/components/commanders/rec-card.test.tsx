@@ -87,6 +87,16 @@ describe("RecCard synergy states", () => {
     const link = within(container).getByRole("link", { name: /Krenko, Mob Boss/ });
     expect(link).toHaveAttribute("href", "/commanders/krenko-mob-boss");
   });
+
+  // The separator before the destination is a screen-reader PAUSE. The test
+  // above matches on a regex that passes under either punctuation, so the name
+  // is pinned whole here: a revert to the em dash fails this and nothing else.
+  it("names the destination after a colon, not a dash", () => {
+    const { container } = card();
+    expect(
+      within(container).getByRole("link", { name: /Krenko, Mob Boss/ }),
+    ).toHaveAccessibleName("Krenko, Mob Boss: view commander details");
+  });
 });
 
 describe("RecCard row shape", () => {

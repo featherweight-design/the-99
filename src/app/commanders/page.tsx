@@ -124,7 +124,7 @@ export default async function CommandersPage({
               margin: "26px 0 0",
             }}
           >
-            No commanders in the ranks — yet
+            No commanders in the ranks, yet
           </h1>
 
           {/* Body paragraph: 13.5px mobile / 15px desktop */}
@@ -143,8 +143,8 @@ export default async function CommandersPage({
             </span>
             <span className="hidden sm:inline">
               We scanned all {uniqueCardsRead.toLocaleString()} cards and none
-              can helm a legal 99 on their own. Add a legendary creature — or a
-              planeswalker that can command — and they&apos;ll appear here, ranked.
+              can helm a legal 99 on their own. Add a legendary creature, or a
+              planeswalker that can command, and they&apos;ll appear here, ranked.
             </span>
           </p>
 
