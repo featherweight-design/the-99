@@ -455,7 +455,9 @@ two parts — the content moves (#565) and the collapse (#567).
 on `local-dev` at 390 and all carried in `docs/superpowers/readiness-set-collections-addendum.md`, whose
 table of shipped figures is the record:
 
-- **The phone provenance rides the ratio line, not the title line.** §31 puts it on the
+- **The phone provenance rides the ratio line, not the title line. Ratified with Hugh
+  2026-09-13**, and the ratification is recorded against §31 move 2 in the handoff itself so
+  a future reader finds it where the old anchor is written. §31 puts it on the
   title's trailing edge and prices the move at −15px. The `h1` is `line-clamp-2` and a real
   set name is what gives width, so the code pushed *Avatar: The Last Airbender* from one
   line to two — 30px to 60px — and the move cost 15 instead of saving it.

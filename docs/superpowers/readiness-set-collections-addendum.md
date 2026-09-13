@@ -143,7 +143,7 @@ its arithmetic and one anchor row move. Both figures come from `pnpm probe:sets`
 against `local-dev`, on `Avatar: The Last Airbender` — an indexed, incomplete set with a
 priced cost strip, which is the shape the finding was raised against.
 
-**The phone provenance cannot ride the title line.** §31 move 2 puts `head.metaShort` on
+**The phone provenance cannot ride the title line. Ratified with Hugh 2026-09-13.** §31 move 2 puts `head.metaShort` on
 "the title line's trailing edge" and prices the move at **−15px**. The `h1` is
 `line-clamp-2`, and a real set name is what gives width when the code sits beside it: the
 title went **30px to 60px**, one clamped line to two, so a move meant to save 15 cost 15 and
@@ -153,7 +153,8 @@ Design's stated goal, one fewer line of provenance on the phone, is met either w
 about the desktop form changes. The probe carries a structural guard for it, because a
 height check cannot tell the two placements apart on a short set name.
 
-**Move 4 buys nothing, and must not.** §31 prices the result line's redundant half at
+**Move 4 buys nothing, and must not.** Recorded rather than ratified — it changes no design
+decision, only the arithmetic behind one. §31 prices the result line's redundant half at
 **−10px**. Its container is `min-h-[32px] md:min-h-[16px]`, and that phone reserve is not
 slack — the `missingOnly` form ("*226 missing · numbers skip, because the cards you own are
 hidden*") wraps to two lines at 390, and §28's three-row rule requires the rack's height not
@@ -164,7 +165,8 @@ above — but as copy, not as pixels.
 
 **So PR 5a's measured total is −28px, not −40**: 388px to 360px.
 
-**And §31's rest and collapsed figures predate §28.** Its 148px rest was written before
+**And §31's rest and collapsed figures predate §28.** Recorded rather than ratified, for the
+same reason: the *bar* is exactly the 52px §31 draws, and only the rest figure moved. Its 148px rest was written before
 #549's 44px chip line and 32px result reserve landed, which is the same staleness the plan
 already flagged when the head went 366 to 388. The shipped figures, measured at 390 on the
 same fixture after PR 5b:
