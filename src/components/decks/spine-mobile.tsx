@@ -319,12 +319,17 @@ export function SpineMobile({
                   from the left. */}
               <div className="w-full" style={{ maxWidth: "100%", textAlign: "left" }}>
                 <h1
-                  // `-webkit-inline-box`: inline-LEVEL so the glyph after it
-                  // joins its last line, and still the clamped box the 90px ramp
-                  // figure is measured against. With `overflow: hidden` its
-                  // baseline is its bottom edge, which is what puts a
-                  // baseline-aligned glyph beside the last line rather than the
-                  // first.
+                  // `display: inline`, and NOT clamped — which is the mechanism.
+                  // A clamp needs `-webkit-box`, an ATOMIC inline box whose width
+                  // is the whole available width once its text wraps, so the glyph
+                  // after it lands at that box's right edge rather than after its
+                  // last word. A plain inline heading wraps as ordinary text and
+                  // the glyph continues on its last line at any line count.
+                  //
+                  // The ramp's figure is keyed to three lines as a ceiling. A name
+                  // long enough to take a fourth holds its ramp below its own
+                  // block, and the browser probe's block-versus-hold check fails
+                  // by name if one ever appears — reported rather than hidden.
                   className="m-0 min-w-0 font-display font-[700]"
                   style={{
                     // `inline`, and NON-atomic — which is the whole mechanism.

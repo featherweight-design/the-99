@@ -390,7 +390,40 @@ try {
     }
 
     // Items 2/3/4 — the rename flow on the first deck, screenshotted per state.
-    const walk = deckPaths[0];
+    // A deck whose title actually WRAPS, not simply the first one. The glyph's
+    // placement depends on the last line of a wrapped title, and the first deck's
+    // name is one line — so this walk kept reporting "the wrapped case went
+    // unchecked" on the very geometry three attempts got wrong. Each candidate is
+    // loaded and measured; the first that wraps is the one walked, and if none of
+    // them wrap that is said out loud rather than passing quietly.
+    let walk = deckPaths[0];
+    let wrapped = 0;
+    for (const candidate of deckPaths) {
+      await page.goto(`${BASE}${candidate}`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(
+        () => [...document.querySelectorAll("[data-spine-meta]")].some((e) => e.getClientRects().length > 0),
+        null,
+        { timeout: 15_000 },
+      );
+      await page.waitForTimeout(600);
+      const lines = await page.evaluate(
+        `(() => {
+          const vis = (e) => e.getClientRects().length > 0;
+          const text = [...document.querySelectorAll('[data-deck-title]')].find(vis);
+          if (!text) return 0;
+          const range = document.createRange();
+          range.selectNodeContents(text);
+          return [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0).length;
+        })()`,
+      );
+      if (lines >= 2) {
+        walk = candidate;
+        wrapped = lines;
+        break;
+      }
+    }
+    if (wrapped) note(`${vpName}: walking ${walk} — its title wraps to ${wrapped} lines`);
+    else note(`  FAIL no deck on this account has a title that wraps — the glyph's wrapped case cannot be measured`);
     await page.goto(`${BASE}${walk}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const rest = await page.evaluate(`(${READ_HEADER})()`);
