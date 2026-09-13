@@ -1084,7 +1084,7 @@ try {
       await checkChrome(page, `${vpName} the picker, picked`, note);
     }
     if (!commanderOracleId) {
-      note(`  FAIL no /decks/new?commander= link found — the pre-filled door goes unchecked`);
+      note(`  FAIL no Build this deck link (/decks?commander=) found — the pre-filled door goes unchecked`);
     }
 
     // The deck header, which is the other surface drawing this control — and the
@@ -1139,6 +1139,11 @@ try {
         .filter((href) => /^\\/decks\\/[^/]+$/.test(href) && href !== '/decks/new')`,
     );
     let walkedADeck = false;
+    // Kept for the reduced-transparency comparison below, which needs a real
+    // deck page: the deck header mounts a cover wash on the phone and the
+    // portrait wash on desktop, and a scrim regression there would otherwise sit
+    // outside every route that check visits.
+    let walkedDeckHref = null;
     // Every link, not the first five: a run whose earliest decks all have
     // crop-less commanders would have concluded that no deck page draws the
     // control, which is a false failure about the fixture rather than the build.
@@ -1188,6 +1193,7 @@ try {
         }
       }
       walkedADeck = true;
+      walkedDeckHref = deckHref;
       break;
     }
     if (!walkedADeck) {
@@ -1199,17 +1205,19 @@ try {
     // override this round deletes was a cover-only rule, so sampling portraits
     // alone would have let exactly the regression B9 asks about through.
     // Every route that can mount a scrim, not one of each strategy. The rule
-    // this round deletes was cover-only, and cover bands are mounted on four
+    // this round deletes was cover-only, and cover bands are mounted on six
     // routes — Home's hero and resume rows, both deck-tile arms on `/decks`, the
-    // owned lane's rows on `/discover`, and the detail hero on a commander page.
-    // Sampling two of them would have let a selector regression on any of the
-    // others through, which is the whole question B9 asks.
+    // owned lane on `/discover`, the detail hero on a commander page, and the
+    // deck header, whose phone band is `cover` and whose desktop row is the
+    // portrait. Sampling two of them would have let a selector regression on any
+    // of the others through, which is the whole question B9 asks.
     for (const [whatKind, path] of [
       ["portrait rows", "/commanders"],
       ["home's cover bands", "/"],
       ["deck tiles", "/decks"],
       ["the owned lane", "/discover"],
       ...(commanderSlug ? [["the detail hero", commanderSlug]] : []),
+      ...(walkedDeckHref ? [["the deck header", walkedDeckHref]] : []),
     ]) {
       await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
