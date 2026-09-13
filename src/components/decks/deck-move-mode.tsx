@@ -19,7 +19,9 @@ import { folderCopy } from "../../lib/copy/folders";
 const ROW =
   "flex min-h-[38px] w-full cursor-pointer items-center gap-[9px] border-x-0 border-b-0 border-t "
   + "border-solid border-t-[color:var(--elevated)] bg-transparent px-[13px] text-left font-sans "
-  + "text-[13px] text-[color:var(--fg)] transition-colors hover:bg-[color:var(--elevated)]";
+  // No `transition-colors`: this round draws no motion at all (decision 27,
+  // errata E12), and a hover that eases is motion.
+  + "text-[13px] text-[color:var(--fg)] hover:bg-[color:var(--elevated)]";
 
 export function MoveMode({
   deckId,

@@ -13,7 +13,7 @@
 // panel form blur lands before the button's click and double-submits
 // (`rename-form.tsx:21-23`).
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -34,12 +34,28 @@ export function FolderCreateDialog({
   onDismiss: () => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
-  useDialogA11y(dialog, onDismiss, {});
+  const input = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState(false);
+
+  // A dismissal mid-flight would unmount the dialog while the write it started
+  // goes on to succeed — the reader cancels and gets a folder anyway. Every
+  // path is guarded together, which is why the hook is handed this and not
+  // `onDismiss` directly.
+  const dismiss = () => {
+    if (pending) return;
+    onDismiss();
+  };
+
+  // `initialFocusRef`, never native `autoFocus`: the attribute focuses the input
+  // before the hook's mount effect records what to return focus TO, so the hook
+  // would capture this input as its own return target and, on close, focus an
+  // element that no longer exists.
+  useDialogA11y(dialog, dismiss, { initialFocusRef: input });
 
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
 
+  const errorId = useId();
   const trimmed = value.trim();
   const canCreate = trimmed.length > 0 && !pending;
 
@@ -68,7 +84,7 @@ export function FolderCreateDialog({
     <div className="fixed inset-0 z-50 flex flex-col justify-center px-[16px]">
       <div
         aria-hidden="true"
-        onClick={onDismiss}
+        onClick={dismiss}
         className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
       />
       <div
@@ -91,7 +107,7 @@ export function FolderCreateDialog({
           className="flex flex-col gap-[10px]"
         >
           <TextField
-            autoFocus
+            ref={input}
             value={value}
             onChange={(e) => {
               setValue(stripControlChars(e.target.value));
@@ -100,14 +116,24 @@ export function FolderCreateDialog({
             maxLength={FOLDER_NAME_MAX}
             placeholder={folderCopy.create.placeholder}
             aria-label={folderCopy.create.fieldAria}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
             readOnly={pending}
             className={`w-full rounded-[8px] px-[11px] py-[9px] font-sans text-[14px] ${
               error ? "border-[color:var(--danger)]" : ""
             }`}
           />
 
+          {/* An alert, and named by the field: a refusal inserted into a plain
+              paragraph is never read, and the reader whose focus is in the
+              field is the one who needs it. */}
           {error && (
-            <p className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
+            <p
+              id={errorId}
+              role="alert"
+              className="m-0 font-mono text-[11px]"
+              style={{ color: "var(--danger)" }}
+            >
               {error}
             </p>
           )}
@@ -115,7 +141,8 @@ export function FolderCreateDialog({
           <div className="flex justify-end gap-[8px]">
             <button
               type="button"
-              onClick={onDismiss}
+              disabled={pending}
+              onClick={dismiss}
               className="h-[36px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] font-sans text-[13px] text-[color:var(--fg-body)]"
             >
               {folderCopy.create.cancel}

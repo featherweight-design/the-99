@@ -144,7 +144,7 @@ function chipLabels(filters: DeckFilters): { key: string; label: string; without
 
 export function DecksView({
   decks,
-  folders,
+  folders: serverFolders,
   shopping,
   buildable,
   cards,
@@ -162,7 +162,9 @@ export function DecksView({
     sort: deckSortFromParams(search.get("sort")),
     // Read against the folders that exist, so a stale or hand-edited id lands
     // on All decks rather than on an empty grid for a shelf that is not there.
-    shelf: shelfFromParams(search, folders),
+    // The SERVER's folders: this runs once, at mount, before anything local
+    // exists to merge in.
+    shelf: shelfFromParams(search, serverFolders),
   }));
 
   // The order this browser last chose, kept across visits. It sits UNDER the URL
@@ -245,8 +247,18 @@ export function DecksView({
   });
 
   const [shelfSheet, setShelfSheet] = useState(false);
+  /** Where the create dialog was opened from, so focus can be returned there. */
+  const [createFrom, setCreateFrom] = useState<"line" | "sheet" | "move">("line");
   const [creating, setCreating] = useState(false);
   const router = useRouter();
+  /**
+   * The folder this reader just made, held until the refreshed payload carries
+   * it. Without it the create flow eats itself: `onShelf` selects an id that is
+   * not in `folders` yet, and the missing-shelf reconciliation below reads that
+   * as a deleted folder and drops the reader back on All decks — instead of the
+   * empty shelf CR4 requires them to land on.
+   */
+  const [justMade, setJustMade] = useState<DeckFolderWithCount | null>(null);
   const [, startRefresh] = useTransition();
 
   /**
@@ -327,7 +339,7 @@ export function DecksView({
   );
   // One map, feeding both the shelf line's segments and the result line's
   // denominator, so the two figures cannot drift apart. See `shelfCounts`.
-  const counts = useMemo(() => shelfCounts(decks, folders), [decks, folders]);
+  const counts = useMemo(() => shelfCounts(decks, serverFolders), [decks, serverFolders]);
 
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
@@ -335,6 +347,16 @@ export function DecksView({
   // The chassis switches form on its own breakpoint, not Tailwind's — 1000px,
   // because `/collection`'s seven controls need 987 and the row must never wrap.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+
+  // The server's list, plus a folder made a moment ago that it has not returned
+  // yet. It drops out of its own accord once the payload includes that id.
+  const folders = useMemo(
+    () =>
+      justMade && !serverFolders.some((f) => f.id === justMade.id)
+        ? [...serverFolders, justMade].sort((a, b) => a.name.localeCompare(b.name))
+        : serverFolders,
+    [serverFolders, justMade],
+  );
 
   // THE SELECTED SHELF CAN STOP EXISTING UNDER THE READER. A folder action
   // revalidates `/decks`, and the App Router can hand this client component new
@@ -424,9 +446,15 @@ export function DecksView({
   const shelfEmpty = state.shelf !== ALL_DECKS && narrowed.length === 0;
 
   const onShelf = useCallback(
-    (shelf: Shelf) => {
+    (shelf: Shelf, announce = false) => {
       apply({ filters: state.filters, sort: state.sort, shelf });
       setShelfSheet(false);
+      // ANNOUNCED ONLY WHERE THE CHASSIS CANNOT — from inside the sheet, whose
+      // `aria-modal` puts the result line out of reach, and after a create,
+      // which lands the reader somewhere they did not tap. On the wide line the
+      // result line speaks for itself, and announcing here as well would say
+      // the same change twice.
+      if (!announce) return;
       const chosen = segments.find((s) => s.shelf === shelf);
       if (chosen) setShelfSaid(folderCopy.shelves.aria(chosen.label, chosen.count));
     },
@@ -502,7 +530,10 @@ export function DecksView({
               counts={counts}
               shelf={state.shelf}
               onSelect={onShelf}
-              onCreate={() => setCreating(true)}
+              onCreate={() => {
+                setCreateFrom("line");
+                setCreating(true);
+              }}
             />
           ) : (
             <ShelfTrigger
@@ -659,8 +690,9 @@ export function DecksView({
             <ShelfSheet
               segments={segments}
               shelf={state.shelf}
-              onSelect={onShelf}
+              onSelect={(shelf) => onShelf(shelf, true)}
               onCreate={() => {
+                setCreateFrom("sheet");
                 setShelfSheet(false);
                 setCreating(true);
               }}
@@ -670,17 +702,34 @@ export function DecksView({
 
           {creating && (
             <FolderCreateDialog
-              onDismiss={() => setCreating(false)}
+              onDismiss={() => {
+                setCreating(false);
+                // The control that opened this is gone when it was the sheet's
+                // row, so the hook has nothing to return focus to. The trigger
+                // that opens the sheet is the nearest equivalent, and it is the
+                // same handoff the filter sheet makes at its own breakpoint.
+                if (createFrom === "sheet") {
+                  document
+                    .querySelector<HTMLElement>("[data-shelf-trigger] button")
+                    ?.focus();
+                }
+              }}
               onCreate={async (name) => {
                 const result = await createFolderAction(name);
                 if (!result.ok) return result.reason === "duplicate" ? "duplicate" : "invalid";
+                // Held locally first, THEN selected: the reconciliation below
+                // would otherwise read an id the server has not returned yet as
+                // a folder that was deleted.
+                setJustMade({
+                  id: result.folder.id,
+                  name: result.folder.name,
+                  createdAt: new Date(),
+                  deckCount: 0,
+                });
                 // CR4: the new shelf is selected, which lands the reader on S2 —
                 // create, land on the empty shelf, and the state says how to
-                // fill it.
-                onShelf(result.folder.id);
-                // The new shelf is not in `folders` until the server payload
-                // arrives; without this the reader lands on a segment that is
-                // not drawn yet.
+                // fill it. Announced, because they did not tap that shelf.
+                onShelf(result.folder.id, true);
                 refresh();
                 return null;
               }}
@@ -735,7 +784,10 @@ export function DecksView({
                     shopping={shopping.byDeck.get(deck.id)}
                     now={now}
                     folders={folders}
-                    onCreateFolder={() => setCreating(true)}
+                    onCreateFolder={() => {
+                      setCreateFrom("move");
+                      setCreating(true);
+                    }}
                     say={setShelfSaid}
                   />
                 </li>
