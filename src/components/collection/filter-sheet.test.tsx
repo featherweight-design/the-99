@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { CollectionFilterSheet } from "./filter-sheet";
 import type { BrowseFilters } from "../../lib/collection/browse";
+import { availabilityCopy } from "../../lib/copy/availability";
 
 const FILTERS: BrowseFilters = {
   search: "",
@@ -142,6 +143,17 @@ describe("CollectionFilterSheet", () => {
     expect(region()?.textContent).toBe("");
     act(() => vi.advanceTimersByTime(2));
     expect(region()?.textContent).toBe("3 of 40 match");
+  });
+
+  it("says WHY availability is out, not just that it is", () => {
+    // Disabled chips alone tell a screen reader four values are out and nothing
+    // about why; the wide surface puts the same sentence on its trigger.
+    render(sheet({ availabilityOk: false }));
+    expect(
+      screen.getByRole("group", {
+        name: availabilityCopy.degraded.collectionFilterDisabledAria,
+      }),
+    ).toBeTruthy();
   });
 
   it("refuses every availability chip when the aggregate could not be read", () => {

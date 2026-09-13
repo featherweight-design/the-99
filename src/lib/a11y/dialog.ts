@@ -123,6 +123,19 @@ export function useDialogA11y(
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       const active = document.activeElement as HTMLElement | null;
+      // A dialog that took initial focus on ITS OWN root holds focus on an
+      // element the trap cannot see: the root carries `tabIndex={-1}` so it is
+      // deliberately excluded from `visibleFocusables`, and it is therefore
+      // neither `first` nor `last`. Both branches below then missed, and the
+      // very first Shift+Tab after opening walked out of an `aria-modal`
+      // surface into the page behind it. Anything not in the list — the root,
+      // or a child that opted out — enters at the appropriate end instead.
+      const inTrap = active !== null && focusables.includes(active);
+      if (!inTrap) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+        return;
+      }
       if (e.shiftKey && active === first) {
         e.preventDefault();
         last.focus();

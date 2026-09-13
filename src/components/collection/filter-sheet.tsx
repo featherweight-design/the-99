@@ -20,6 +20,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import { toggleAvailability } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
@@ -180,8 +181,22 @@ function SheetBody({
           {/* `pointer-events-none` stops a mouse and nothing else, so the
               degraded state is carried on each chip rather than on the box —
               a keyboard could still activate a chip inside a box that only
-              refused clicks. */}
-          <div className={`flex flex-wrap gap-[8px] ${availabilityOk ? "" : "opacity-[0.42]"}`}>
+              refused clicks.
+
+              The group carries the REASON. Disabled chips alone tell a screen
+              reader that four values are out and nothing about why, where the
+              wide surface puts the same sentence on its disabled trigger. A
+              reader who cannot see the dimming would otherwise be told less
+              than a reader who can. */}
+          <div
+            className={`flex flex-wrap gap-[8px] ${availabilityOk ? "" : "opacity-[0.42]"}`}
+            role="group"
+            aria-label={
+              availabilityOk
+                ? copy.availabilityHeading
+                : availabilityCopy.degraded.collectionFilterDisabledAria
+            }
+          >
             {availabilityOptions.map((option) => (
               <Chip
                 key={option.code}

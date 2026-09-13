@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { fireEvent, renderHook } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useDialogA11y } from "./dialog";
@@ -155,4 +155,42 @@ describe("useDialogA11y and inert subtrees", () => {
 
     expect(document.activeElement?.id).toBe("covered");
   });
+
+  // The root carries `tabIndex={-1}` so it is excluded from the focusable list —
+  // it is neither `first` nor `last`, so both wrap branches missed and the first
+  // Shift+Tab after opening left an `aria-modal` surface for the page behind it.
+  // `/collection`'s filter sheet and the deck sheet both take initial focus this
+  // way, to avoid raising the phone keyboard.
+  function renderRootFocused() {
+    const el = document.createElement("div");
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.tabIndex = -1;
+    el.innerHTML = `<button id="first">first</button><button id="last">last</button>`;
+    document.body.appendChild(el);
+    appended.push(el);
+    // jsdom gives every element a zero rect, which the trap reads as "not visible".
+    for (const node of el.querySelectorAll("button")) {
+      node.getClientRects = () => [{ width: 10, height: 10 }] as unknown as DOMRectList;
+    }
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, vi.fn(), { initialFocusRef: ref });
+    });
+    return el;
+  }
+
+  it("wraps Shift+Tab to the last control when the root holds focus", () => {
+    const el = renderRootFocused();
+    expect(document.activeElement).toBe(el);
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(el.querySelector("#last"));
+  });
+
+  it("enters at the first control when the root holds focus and Tab goes forward", () => {
+    const el = renderRootFocused();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(el.querySelector("#first"));
+  });
+
 });

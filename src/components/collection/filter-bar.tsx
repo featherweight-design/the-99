@@ -5,7 +5,7 @@
 // on mobile only (desktop keeps the inline pip row), and Sort single-select.
 // Visual chrome matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type BrowseFilters, type SortDirection, type SortKey } from "../../lib/collection/browse";
 import {
   buildSortOptions,
@@ -160,6 +160,20 @@ export function FilterBar({
   // put outside the controls that just appeared. The wide form's search field
   // takes it instead, which is `/decks`' answer to the identical problem.
   const [handOffFocus, setHandOffFocus] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  // Imperative, NOT `autoFocus`. This field sits in the same position in both
+  // branches, so React reuses the one `<input>` across the crossing rather than
+  // mounting a new one — and `autoFocus` is a MOUNT-time prop, so flipping it
+  // true on a surviving element does nothing at all. The handoff looked wired
+  // and left focus on `body`, which is the same trap a `/decks` round caught
+  // once already.
+  //
+  // The flag is cleared on the way BACK to compact, during render, rather than
+  // here — this codebase's lint forbids `setState` inside an effect, and
+  // `/decks` resets its own handoff the same way.
+  useEffect(() => {
+    if (handOffFocus) searchRef.current?.focus();
+  }, [handOffFocus]);
   const [sheetWasWide, setSheetWasWide] = useState(wide);
   if (sheetWasWide !== wide) {
     setSheetWasWide(wide);
@@ -300,9 +314,7 @@ export function FilterBar({
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
           placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
           aria-label="Search your cards"
-          // Takes the focus the closing sheet could not return to its own
-          // trigger, which unmounts in the same commit.
-          autoFocus={handOffFocus}
+          ref={searchRef}
         />
 
         {/* The pips and the three dimension panels are the WIDE form only. On
