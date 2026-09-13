@@ -549,9 +549,14 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    expensive. */
 .anim-zoom-in { animation: zoom-in 0.2s ease-out both; }
 /* Leaving is shorter than arriving, deliberately: arriving is a reveal, leaving
-   should be gone before the hand is. No scale on the way out — the card shrinking
-   away reads as a second object rather than the same one being put down. */
-.anim-zoom-out { animation: zoom-in 0.16s ease-in reverse both; }
+   should be gone before the hand is. Opacity ONLY — reversing `zoom-in` would scale
+   the card down on the way out, and a card that shrinks away reads as a second
+   object rather than the same one being put down. */
+@keyframes zoom-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.anim-zoom-out { animation: zoom-out 0.16s ease-in both; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,

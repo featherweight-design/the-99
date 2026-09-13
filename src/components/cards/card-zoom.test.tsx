@@ -243,6 +243,19 @@ describe("the zoom", () => {
     expect(screen.getByTestId("card-zoom")).toBeInTheDocument();
   });
 
+  it("lets a second Escape reach the dialog while the zoom is still leaving", () => {
+    // The layer stays mounted for its 160ms exit. Without treating that as already
+    // dismissed, the second press of a quick double-press restarts the timer and the
+    // reader's dialog never closes.
+    const { onClose } = mount();
+    openZoom();
+
+    act(() => { fireEvent.keyDown(document, { key: "Escape" }); });
+    act(() => { fireEvent.keyDown(document, { key: "Escape" }); });
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("reports its own state on the trigger", () => {
     mount();
     const trigger = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") })[0];

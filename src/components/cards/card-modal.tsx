@@ -536,7 +536,10 @@ export function CardModal({
   const onEscape = useCallback(() => {
     // Zoom first, then the region, then the dialog — the printing region's shipped
     // two-stage shape with one rung added rather than a new shape to learn (§3.11).
-    if (zoomed) {
+    // A zoom already leaving is a zoom already dismissed: a second Escape during the
+    // 160ms exit must fall through to the region and the dialog rather than restart
+    // the timer, or a quick double-press does nothing the second time.
+    if (zoomed && !closingZoom) {
       closeZoom();
       return;
     }
@@ -555,7 +558,7 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, expanded, onClose, zoomed]);
+  }, [closeZoom, closingZoom, expanded, onClose, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef });
@@ -1158,7 +1161,11 @@ export function CardModal({
             role="region"
             aria-label={cardZoomCopy.layerAria(printedNameOf(preview))}
             data-testid="card-zoom"
-            className={`absolute inset-0 z-20 flex flex-col items-center justify-center ${
+            // `-inset-px` above `md`, not `inset-0`: the dialog draws a 1px border
+            // there, and an absolutely positioned child is sized to the padding box —
+            // so the layer would sit 1px inside, leaving a strip of live dialog around
+            // it that swallows a click meant to dismiss.
+            className={`absolute inset-0 md:-inset-px z-20 flex flex-col items-center justify-center ${
               closingZoom ? "anim-zoom-out pointer-events-none" : "anim-zoom-in"
             }`}
             data-closing={closingZoom ? "true" : undefined}
@@ -1175,7 +1182,11 @@ export function CardModal({
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
             <div
               data-testid="card-zoom-card"
-              className="rounded-[13px] md:rounded-[14px] w-[318px] md:w-[372px]"
+              // Width is the drawn figure until the dialog is too short for it — an
+              // 85vh cap on a landscape laptop can leave less than the 520px card plus
+              // its caption — and then height wins and the width follows the ratio.
+              // The whole card is the promise; a clipped one keeps neither half of it.
+              className="rounded-[13px] md:rounded-[14px] w-[318px] md:w-[372px] max-w-[calc(100%-32px)] max-h-[calc(100%-72px)]"
               style={{
                 aspectRatio: "63/88",
                 ...artStyle,
