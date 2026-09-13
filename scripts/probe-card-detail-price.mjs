@@ -1,4 +1,4 @@
-// The price under the art in the card modal (card-detail R2, table §1 and §2).
+// The price under the art, and the zoom, in the card modal (card-detail R2, §1-§3).
 //
 // What a browser proves and a test cannot: that the tag paints at all, WHERE it sits
 // relative to the art it belongs to (10px under at desktop, 9px at phone), and that
@@ -153,6 +153,32 @@ async function openCard(page, name) {
     );
 }
 
+/**
+ * The zoom, measured rather than described: the layer must cover the DIALOG's
+ * rectangle and not the viewport's — that is the whole of §3.1, and it is the one
+ * thing a unit test cannot see.
+ */
+async function readZoom(page) {
+  return page.evaluate(() => {
+    const layer = document.querySelector('[data-testid="card-zoom"]');
+    if (!layer) return null;
+    const dialog = document.querySelector('[role="dialog"]');
+    const card = document.querySelector('[data-testid="card-zoom-card"]');
+    const l = layer.getBoundingClientRect();
+    const d = dialog.getBoundingClientRect();
+    const c = card?.getBoundingClientRect();
+    return {
+      coversDialog:
+        Math.abs(l.top - d.top) <= 1 && Math.abs(l.left - d.left) <= 1
+        && Math.abs(l.width - d.width) <= 1 && Math.abs(l.height - d.height) <= 1,
+      coversViewport: Math.abs(l.width - window.innerWidth) <= 1,
+      card: c ? { width: Math.round(c.width), height: Math.round(c.height) } : null,
+      caption: (layer.querySelector("p")?.textContent ?? "").trim(),
+      dialogs: document.querySelectorAll('[role="dialog"]').length,
+    };
+  });
+}
+
 const browser = await chromium.launch();
 try {
   await clerkSetup();
@@ -184,6 +210,27 @@ try {
   // not sealed inside the aria-hidden heading. That is all this probe claims now,
   // and it makes no writes at all.
 
+  // The zoom, at this width. 372x520 is the drawn figure; the layer is the dialog's
+  // rectangle, never the page's.
+  await page.getByRole("button", { name: /^Look at / }).first().click();
+  await page.waitForSelector('[data-testid="card-zoom"]', { timeout: 5_000 });
+  const zoom = await readZoom(page);
+  console.log("\n── desktop · zoom ──");
+  console.log(JSON.stringify(zoom, null, 2));
+  if (!zoom?.coversDialog || zoom.coversViewport || zoom.dialogs !== 1) {
+    console.log("\nFAIL: the zoom must be a region inside the one dialog, sized to it.");
+    process.exitCode = 1;
+  }
+  if (!zoom?.card || Math.abs(zoom.card.width - 372) > 2 || Math.abs(zoom.card.height - 520) > 3) {
+    console.log(`\nFAIL: zoomed card is ${JSON.stringify(zoom?.card)}, expected about 372x520.`);
+    process.exitCode = 1;
+  }
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
+  if (!(await page.locator('[role="dialog"]').count())) {
+    console.log("\nFAIL: the first Escape closed the dialog as well as the zoom.");
+    process.exitCode = 1;
+  }
   await context.close();
 
   // ── phone, including the compact header ──────────────────────────────────

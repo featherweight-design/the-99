@@ -133,3 +133,50 @@ export function spokenManaCost(cost: string | null | undefined): string {
   if (symbols.length === 0) return manaCopy.costNone;
   return manaCopy.costAria(symbols.map(speakSymbol).join(" "));
 }
+
+/**
+ * The zoom (card detail R2, §3) — the whole card at something like hand size.
+ *
+ * No price string anywhere here, and none is to be added: the figure lives under
+ * the art, the zoom refuses it deliberately (a card in your hand has no price
+ * printed on it), and the tag is one dismissal away.
+ */
+export const cardZoomCopy = {
+  /**
+   * The art becomes a button. The name is shared rather than bespoke — the
+   * commander's own was deleted when its lightbox became this modal, and this must
+   * not reintroduce the pattern.
+   */
+  zoomAria: (name: string) => `Look at ${name} up close`,
+
+  /** The layer's own label. It is a region inside the dialog, NOT a second dialog. */
+  layerAria: (name: string) => `${name}, shown large`,
+
+  /**
+   * The one caption under the zoomed card: which printing you are holding.
+   *
+   * `num` may be empty on a bare `Name,Qty` import — the field AND its separator
+   * go, per the printing picker's ruling. Never "no number".
+   */
+  printing: (setName: string, code: string, num: string) =>
+    num ? `${setName} · ${code} ${num}` : `${setName} · ${code}`,
+
+  /** Appended to the caption on the reverse face. Not a second line. */
+  backSuffix: " · back",
+
+  /**
+   * The shipped ✕ keeps its slot and changes its label: "Close card details"
+   * while a zoom is up is a lie about what the press will do.
+   */
+  close: "Close the large view",
+
+  /**
+   * The quiet hint under the desktop art. Desktop only — the phone has the mark
+   * and a thumb.
+   *
+   * REJECTED: "Tap to zoom" (zoom is a verb about a viewer, and this is not one)
+   * and "View full card" (the phrase the full-card round retired for lying about
+   * its destination; it must not come back pointing somewhere else).
+   */
+  hint: "tap the art to hold it",
+} as const;

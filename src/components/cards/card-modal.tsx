@@ -28,7 +28,7 @@ import { PriceTag } from "./price-tag";
 import { priceFor, priceKeyFor } from "../../lib/cards/price-lookup";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
-import { printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
+import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
@@ -284,6 +284,12 @@ export function CardModal({
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
   const desktopTriggerRef = useRef<HTMLButtonElement>(null);
   const [expanded, setExpanded] = useState(false);
+  // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
+  const [zoomed, setZoomed] = useState(false);
+  // Where focus goes back to on close: the art that opened it, at whichever width
+  // is actually on screen.
+  const zoomTriggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const zoomCloseRef = useRef<HTMLButtonElement>(null);
   const [announcement, setAnnouncement] = useState("");
   // No reset on card change: the provider keys this component on oracleId, so
   // Prev/Next remounts and a new card starts on its front face by construction.
@@ -466,6 +472,12 @@ export function CardModal({
   // Escape collapses the region first and returns focus to the Set field; a second Escape
   // closes the dialog exactly as it does today.
   const onEscape = useCallback(() => {
+    // Zoom first, then the region, then the dialog — the printing region's shipped
+    // two-stage shape with one rung added rather than a new shape to learn (§3.11).
+    if (zoomed) {
+      setZoomed(false);
+      return;
+    }
     if (!expanded) {
       onClose();
       return;
@@ -481,10 +493,33 @@ export function CardModal({
         return;
       }
     }
-  }, [expanded, onClose]);
+  }, [expanded, onClose, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape);
+
+  // Focus follows the layer: in to the flip control when there is a face to turn to,
+  // otherwise to the close; out to the art that opened it, at whichever width is on
+  // screen — `focus()` on a `display:none` element is a no-op, so the loop lands on
+  // the one that has layout (table rows 3.10, 3.12).
+  const wasZoomed = useRef(false);
+  useEffect(() => {
+    // Transitions only. Without this the effect's first run — on mount, with the
+    // layer closed — would take focus off whatever the dialog's own trap had just
+    // given it and park it on the art.
+    if (wasZoomed.current === zoomed) return;
+    wasZoomed.current = zoomed;
+    if (zoomed) {
+      zoomCloseRef.current?.focus();
+      return;
+    }
+    const mounted = zoomTriggerRefs.current.filter((el): el is HTMLButtonElement => el !== null);
+    // The visible one where the environment reports layout, and the first mounted one
+    // where it does not — jsdom gives every element a zero rect, so a strict
+    // visibility filter would hand focus to nobody in tests while looking correct.
+    const target = mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0];
+    target?.focus();
+  }, [zoomed]);
 
   function toggleExpanded() {
     const next = !expanded;
@@ -569,6 +604,7 @@ export function CardModal({
     />
   ) : null;
 
+  const ZOOM_REGION = "card-zoom";
   const REGION_MOBILE = "printings-mobile";
   const REGION_DESKTOP = "printings-desktop";
 
@@ -597,6 +633,14 @@ export function CardModal({
   // so a flip on a card whose front is a picked printing can show a back from a
   // different one. Known limitation — closing it means a `back_image_uri` on
   // `printings` and the art-tier subqueries reading it.
+  // `set · code · collector number`, and the field AND its separator go when the
+  // holding carries no number — never "no number" (the printing picker's ruling).
+  const zoomCaption = `${cardZoomCopy.printing(
+    resolved?.setName ?? resolved?.setCode ?? "",
+    resolved?.setCode ?? "",
+    resolved?.collectorNumber ?? "",
+  )}${flipped ? cardZoomCopy.backSuffix : ""}`;
+
   const faceImage = flipped ? card.backImageUri : resolved?.imageUri;
   const artStyle: React.CSSProperties = faceImage
     ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
@@ -686,6 +730,23 @@ export function CardModal({
               boxShadow: "0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
           >
+            {/* The art is the trigger — the silent affordance the builder spine and the
+                commander column already use. A stretched button rather than the art
+                element itself, so the flip control stays a sibling: a control inside a
+                button is not a control. In the compact state the MARK is withheld at
+                the same threshold the flip control is — a 28px plate on a 72px thumb is
+                most of the picture — while the gesture stays on the whole thumb, so the
+                shipped focus ring is the only evidence it is pressable (rows 2.3-2.5). */}
+            <button
+              type="button"
+              ref={(el) => { zoomTriggerRefs.current[0] = el; }}
+              onClick={() => setZoomed(true)}
+              aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
+              aria-expanded={zoomed}
+              aria-controls={ZOOM_REGION}
+              className="absolute inset-0 rounded-[10px] cursor-pointer bg-transparent border-0 p-0"
+            />
+            {!compactArt && <ZoomMark size={28} />}
             {/* Absent on the 72px thumbnail: a 44px target on a 72px image is
                 most of the art, and the collapsed header is a printing-picker
                 state where the art is a locator rather than the thing read. The
@@ -759,6 +820,19 @@ export function CardModal({
               boxShadow: "0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
           >
+            {/* Same trigger at this width, stretched over the art so the flip control
+                stays a sibling. The mark is 30px here against the phone's 28 — the
+                art is 264px against 180. */}
+            <button
+              type="button"
+              ref={(el) => { zoomTriggerRefs.current[1] = el; }}
+              onClick={() => setZoomed(true)}
+              aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
+              aria-expanded={zoomed}
+              aria-controls={ZOOM_REGION}
+              className="absolute inset-0 rounded-[12px] cursor-pointer bg-transparent border-0 p-0"
+            />
+            <ZoomMark size={30} />
             {twoFaced && (
               <FlipControl
                 otherFaceName={flipped ? faces.front : faces.back}
@@ -780,6 +854,15 @@ export function CardModal({
                 {priceTag}
               </div>
             )}
+            {/* Desktop only — the phone has the mark and a thumb. `--fg-locked`, below
+                whatever the tag left, and deliberately not a verb about a viewer. */}
+            <p
+              className="absolute top-full left-1/2 -translate-x-1/2 m-0 whitespace-nowrap font-mono text-[10px]"
+              style={{ marginTop: priceTag ? 38 : 12, color: "var(--fg-locked)" }}
+              data-testid="modal-zoom-hint"
+            >
+              {cardZoomCopy.hint}
+            </p>
           </div>
         </div>
 
@@ -986,6 +1069,57 @@ export function CardModal({
             </span>
           </div>
         </div>
+        {/* THE ZOOM LAYER — a region inside this dialog, never a dialog of its own and
+            never the viewport (table §3.1). `absolute inset-0` against the dialog
+            element, so the backdrop's click-to-close survives underneath and no second
+            focus trap or live region is introduced. */}
+        {zoomed && (
+          <div
+            id={ZOOM_REGION}
+            role="region"
+            aria-label={cardZoomCopy.layerAria(printedNameOf(preview))}
+            data-testid="card-zoom"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center anim-zoom-in"
+            onClick={() => setZoomed(false)}
+            style={{
+              background: "color-mix(in srgb, var(--bg) 94%, transparent)",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            {/* The whole card, at the largest 63/88 the rect allows — 372x520 desktop,
+                318x444 phone. Clicking it closes too: three doors, one stage. */}
+            <div
+              data-testid="card-zoom-card"
+              className="rounded-[13px] md:rounded-[14px] w-[318px] md:w-[372px]"
+              style={{
+                aspectRatio: "63/88",
+                ...artStyle,
+                boxShadow: "0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.35)",
+              }}
+            />
+            {/* One mono line: which printing you are holding. Never the price — a card
+                in your hand has none printed on it, and the tag is one dismissal away. */}
+            <p
+              className="font-mono text-[11px] mt-[14px] m-0"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {zoomCaption}
+            </p>
+            <button
+              type="button"
+              ref={zoomCloseRef}
+              onClick={(e) => { e.stopPropagation(); setZoomed(false); }}
+              aria-label={cardZoomCopy.close}
+              // The modal's shipped X in its shipped slot at both widths, gaining a
+              // plate so it clears the scrim. Its label changes, its position does not.
+              // The plate is what clears the scrim; the rest is the shipped ✕'s own
+              // slot and size at each width.
+              className="absolute flex items-center justify-center rounded-full top-[22px] right-[18px] md:right-[24px] w-[32px] md:w-[34px] h-[32px] md:h-[34px] text-[16px] md:text-[15px] bg-[color:var(--elevated)] border border-[color:var(--border-strong)] text-[color:var(--fg)]"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1007,6 +1141,38 @@ export function CardModal({
  * what pressing it does, and every app that turns a card over draws an arrow
  * going round.
  */
+/**
+ * The mark on the art. Bottom-LEFT on every card, because the flip control owns
+ * bottom-right — a one-faced card keeps an empty right corner rather than a
+ * shifted left one (table row 3.8).
+ *
+ * It draws THE PLATE the art-wash ratification defines: opaque `--bg` under one
+ * `--border-strong` hairline at radius 7, which is what every control over art
+ * draws now that the top scrim is gone.
+ */
+function ZoomMark({ size }: { size: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute flex items-center justify-center pointer-events-none"
+      style={{
+        left: 10,
+        bottom: 10,
+        width: size,
+        height: size,
+        borderRadius: 7,
+        background: "var(--bg)",
+        border: "1px solid var(--border-strong)",
+        color: "var(--fg)",
+        fontSize: Math.round(size * 0.52),
+        lineHeight: 1,
+      }}
+    >
+      ⤢
+    </span>
+  );
+}
+
 function FlipControl({
   otherFaceName, onFlip, size,
 }: {

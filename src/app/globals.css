@@ -510,6 +510,15 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   100% { opacity: 1; }
 }
 
+/* The card zoom (card detail R2). Two literals, both new: 200ms in, one step above
+   the sheet's 180, because a 520px card arriving instantly reads as a jump cut and
+   over 200ms reads as being picked up; and `scale(.94)`, not `.8`, because it is
+   the same card getting closer rather than a new object appearing. */
+@keyframes zoom-in {
+  0% { opacity: 0; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 /* Quick-add results. Dismissal is instant in both motion modes — a list that
    fades out keeps stale rows under the cursor while the next query is typed. */
 @keyframes quickadd-in {
@@ -534,6 +543,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .anim-backdrop-in { animation: backdrop-in 0.18s ease-out both; }
 .anim-quickadd-in { animation: quickadd-in 0.14s ease-out both; }
+/* `both`, so the first frame is the 0% state rather than a full-size card for one
+   frame before the animation takes it. The blur underneath is set at its final value
+   on the first frame and never animated: at 10px it is invisible in motion and
+   expensive. */
+.anim-zoom-in { animation: zoom-in 0.2s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
@@ -546,6 +560,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-backdrop-in,
   /* Results appear in place and opaque: the rise and the fade both go. */
   .anim-quickadd-in,
+  /* The zoom still opens — it is not a disabled feature. It is simply there, at
+     full opacity and full size, with no scale and no fade. */
+  .anim-zoom-in,
   .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer
