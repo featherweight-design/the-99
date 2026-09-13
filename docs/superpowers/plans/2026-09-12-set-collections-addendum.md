@@ -323,6 +323,21 @@ both**, and the grid's track count identical at scroll 0 and scroll 400. §31's 
 148 and 52 of *content*; the collapsed bar is exactly 52, and the rest height is above 148
 because §28's 44px chip line and 32px result reserve both postdate that arithmetic.
 
+**Amendment, 2026-09-13 (PR #591) — the two thresholds are measured, not fixed.** The
+120/40 pair above shipped and produced a defect the arithmetic could not have predicted: the
+reserve is the open head's height less the collapsed bar, so everywhere above `grid top −
+bar` the strip under the bar is empty. On this fixture that is 213px of nothing, and the
+head held its collapsed form down to y=40 before popping open — which is what the reader
+sees on the way back up, and what they reported. The thresholds are now read live off the
+spacer's bottom edge and the bar's own measured height: restore at `grid top − bar` (~325px
+here), collapse an 80px band past it (~405px). The band, and the rule that the head is never
+interpolated with the scroll offset, are unchanged; only the two numbers are, and they are
+now a function of the head this set actually draws rather than of one fixture's arithmetic.
+The same change animates the step between the two heights over 180ms, honouring
+`prefers-reduced-motion` — §31 asks for two heights, and says nothing about the step between
+them being instantaneous. Both want Design's ratification; neither blocks, because the
+alternative is the band.
+
 **Watch for:** finding 6 rules that the collapsed bar must not carry the chip line, and
 #549 spent four rounds making that chip line touchable at 44px. The badge carries the state
 when collapsed — but confirm the chip line's own height still holds at rest, since it is
