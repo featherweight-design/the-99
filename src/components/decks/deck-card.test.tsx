@@ -127,12 +127,32 @@ describe("DeckCard", () => {
     expect(screen.queryByText(/no commander/i)).toBeNull();
   });
 
-  it("bands the art at 2.2:1 with a floor, not a fixed height", () => {
+  // Two stated bands, chosen by the tile's own CELL rather than by a ratio or a
+  // viewport. A 2.2:1 ratio plus a 104px floor made the band a function of the
+  // column; a single 248 would have made it a function of nothing, and the grid
+  // gives a 102px cell at 640px — beside a 262px filter column — where 248 is a
+  // portrait sliver. The handoff's floor is ~330px of column and this is it.
+  it("draws the cell band above its column floor and the resume band below", () => {
     const { container } = render(<DeckCard deck={deck()} shopping={undefined} now={now} />);
-    const band = container.querySelector("[data-deck-art]");
-    expect(band?.className).toContain("aspect-[2.2/1]");
-    expect(band?.className).toContain("min-h-[104px]");
-    expect(band?.className).not.toContain("h-[124px]");
+    const band = container.querySelector<HTMLElement>("[data-deck-art]")!;
+    expect(band.className).toContain("h-[168px]");
+    expect(band.className).toContain("@min-[330px]:h-[248px]");
+    expect(band.className).not.toContain("aspect-[2.2/1]");
+    expect(band.className).not.toContain("min-h-[104px]");
+
+    // The tile is the container the band queries — its width IS the column.
+    expect(container.querySelector("article")!.className).toContain("@container");
+
+    const heights = Array.from(band.querySelectorAll("[data-art-wash-band]")).map((el) =>
+      el.getAttribute("data-art-wash-band"),
+    );
+    expect(heights).toEqual(["168", "248"]);
+    // One block, both bands: a px `labelAt` is the block's own height, so it does
+    // not move when the band does.
+    const labelAts = Array.from(band.querySelectorAll("[data-art-wash-label-at]")).map((el) =>
+      el.getAttribute("data-art-wash-label-at"),
+    );
+    expect(labelAts).toEqual(["46", "46"]);
   });
 
   it("leaves a Draft tile's track empty and its last-played slot unrendered", () => {
@@ -151,14 +171,19 @@ describe("DeckCard", () => {
     expect(screen.queryByText("never played")).toBeNull();
   });
 
-  it("prints never played rather than leaving the corner blank", () => {
+  // `never played` is cut with no replacement. It filled a slot rather than
+  // answering a question, and if last-played matters it belongs in the overflow
+  // menu or on the deck's own page.
+  it("draws nothing where never played used to sit", () => {
     render(<DeckCard deck={deck({ lastPlayedAt: null })} shopping={undefined} now={now} />);
-    expect(screen.getByText("never played")).toBeInTheDocument();
+    expect(screen.queryByText("never played")).toBeNull();
   });
 
   it("gives each status its own explaining figure", () => {
     const cases: Array<[Partial<DeckListItem>, string]> = [
-      [{ statusPill: "Complete", toBuyCount: 0, ownedCount: 99 }, "all owned"],
+      // Complete is absent from this list deliberately: `all owned` was a third
+      // way of saying finished beside a full green bar and `99 / 99`, and the bar
+      // and the count carry it between them. See the assertion below.
       [{ statusPill: "Unresolved", unresolvedCount: 2 }, "2 lines unresolved"],
       [{ statusPill: "Unresolved", unresolvedCount: 1 }, "1 line unresolved"],
       [{ statusPill: "Over", built: 104 }, "5 over"],
@@ -169,6 +194,20 @@ describe("DeckCard", () => {
       expect(screen.getByText(text)).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it("gives a Complete tile no detail figure at all", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Complete", toBuyCount: 0, ownedCount: 99, built: 99 })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.queryByText("all owned")).toBeNull();
+    // The two things that say it instead are both still here.
+    expect(screen.getByText("99 / 99")).toBeInTheDocument();
+    expect(document.querySelector("[data-deck-bar-fill]")).not.toBeNull();
   });
 
   it("fills an empty detail slot with the in-use-elsewhere clause", () => {
@@ -209,15 +248,68 @@ describe("DeckCard", () => {
     expect(screen.getByText("0 / 99")).toBeInTheDocument();
   });
 
+  // The identity joins it, because the block draws it and the overlay link's
+  // explicit label means its descendants are never read: without it the tile
+  // shows a commander and a colour a screen reader is never told.
   it("names the whole tile for a screen reader, in the order the tile reads", () => {
     render(
       <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
     expect(
       screen.getByRole("link", {
-        name: "Atraxa, Praetors' Voice, To buy, 99 / 99, 3 to buy · $18.40",
+        name: "Atraxa, Praetors' Voice, Atraxa, Praetors' Voice, Non-red, To buy, 99 / 99, 3 to buy · $18.40",
       }),
     ).toBeInTheDocument();
+  });
+
+  // A pair states BOTH commanders. The visible line shortens them to fit; the
+  // accessible name never does, because truncation is a layout compromise rather
+  // than an information one.
+  it("names both commanders of a pair", () => {
+    render(
+      <DeckCard
+        deck={deck({
+          commanderName: "Ishai, Ojutai Dragonspeaker",
+          partnerName: "Bruse Tarl, Boorish Herder",
+          built: 98,
+        })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    const link = screen.getByRole("link");
+    expect(link.getAttribute("aria-label")).toContain(
+      "Ishai, Ojutai Dragonspeaker and Bruse Tarl, Boorish Herder",
+    );
+    // Both, visibly too, with the `+` the spines use: the accessible name
+    // naming the pair while the line named one commander gave a sighted reader
+    // a different deck identity than a screen reader got.
+    expect(screen.getByText(/Ishai.*\+.*Bruse Tarl/)).toBeInTheDocument();
+  });
+
+  // The pair's colour is the UNION of the two identities. A tile printing the
+  // primary commander's colour alone would tell its owner a four-colour deck is
+  // two — and every earlier pair test left `partnerColorIdentity` null, so that
+  // regression passed them all.
+  it("words a pair's colour as the union of both identities", () => {
+    render(
+      <DeckCard
+        deck={deck({
+          commanderName: "Ishai, Ojutai Dragonspeaker",
+          commanderColorIdentity: ["W", "U"],
+          partnerName: "Bruse Tarl, Boorish Herder",
+          partnerColorIdentity: ["R", "W"],
+          built: 98,
+        })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    const link = screen.getByRole("link");
+    // W+U ∪ R+W is the three-colour pair name. The primary's identity alone
+    // would word itself `Azorius`, which is the regression this pins.
+    expect(link.getAttribute("aria-label")).toContain("Jeskai");
+    expect(link.getAttribute("aria-label")).not.toContain("Azorius");
   });
 
   // The detail figure moves between the meta row and the detail row by grid
@@ -233,7 +325,7 @@ describe("DeckCard", () => {
 
   // §4 of the handoff: the wash owns one band, carrying the name, the subtitle
   // and the status chip. Everything else sits below a divider on flat ground.
-  it("prints the commander name under the deck name, in the band", () => {
+  it("prints the commander name and its colour under the deck name, in the band", () => {
     render(
       <DeckCard
         deck={deck({ name: "Blink and you'll miss it", commanderName: "Yuriko, the Tiger's Shadow" })}
@@ -241,7 +333,14 @@ describe("DeckCard", () => {
         now={now}
       />,
     );
-    expect(screen.getByText("Yuriko, the Tiger's Shadow")).toBeInTheDocument();
+    // One line carrying the colour the pips used to draw, in TWO spans: the
+    // colour is what the pips came off for, so the name is the half that gives
+    // and the colour never truncates.
+    const name = screen.getByText("Yuriko, the Tiger's Shadow");
+    expect(name.className).toContain("truncate");
+    const colour = name.nextElementSibling as HTMLElement;
+    expect(colour.className).toContain("flex-none");
+    expect(colour.textContent).toContain("·");
   });
 
   it("separates the band from the data with a divider", () => {
@@ -250,5 +349,81 @@ describe("DeckCard", () => {
     );
     const footer = container.querySelector(".deck-card-footer") as HTMLElement;
     expect(footer.style.borderTop).toBe("1px solid var(--border)");
+  });
+});
+
+describe("DeckCard — the progress sentence", () => {
+  // `[chip] [bar] [count]`, read left to right. The chip is a status and the bar
+  // is a status, so they belong on one row — and moving the chip off the art is
+  // what leaves the block above carrying identity alone, which is what drops the
+  // band's `labelAt` from 78 to 46 and turns 32px of darkness back into art.
+  it("moves the status chip off the art and onto the bar's row", () => {
+    const { container } = render(<DeckCard deck={deck()} shopping={undefined} now={now} />);
+    const band = container.querySelector<HTMLElement>("[data-deck-art]")!;
+    expect(band.textContent).not.toContain("To buy");
+
+    const chip = screen.getByText("To buy");
+    expect(chip.className).toContain("[grid-area:chip]");
+    expect(chip.className).not.toContain("absolute");
+    expect(container.querySelector(".deck-card-footer")?.contains(chip)).toBe(true);
+  });
+
+  // The pips go, not the worded colour. `Green` beside a green square is the same
+  // redundancy one layer down, and at a 189px column the word is what stays
+  // legible — an earlier round had this backwards.
+  it("draws no identity pips", () => {
+    const { container } = render(<DeckCard deck={deck()} shopping={undefined} now={now} />);
+    const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
+    expect(footer.querySelectorAll('[aria-hidden="true"]')).toHaveLength(0);
+    expect(footer.className).not.toContain("pips");
+  });
+});
+
+describe("DeckCard — the footer's second row", () => {
+  // Declared unconditionally it cost a blank strip plus the row gap on every
+  // tile with nothing to put there — most of them — and taller tiles for an
+  // empty area is the opposite of what this round is for.
+  it("declares no second row when there is no figure and no date", () => {
+    const { container } = render(
+      <DeckCard
+        deck={deck({ statusPill: "Building", built: 87, lastPlayedAt: null, inUseElsewhere: 0 })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
+    expect(footer.className).toContain("[grid-template-areas:'chip_bar_count']");
+    expect(footer.className).not.toContain("detail_detail_detail");
+  });
+
+  it("declares it when a figure is there to go in it", () => {
+    const { container } = render(
+      <DeckCard deck={deck({ statusPill: "Over", built: 104 })} shopping={undefined} now={now} />,
+    );
+    const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
+    expect(footer.className).toContain("detail_detail_detail");
+    expect(screen.getByText("5 over")).toBeInTheDocument();
+  });
+
+  // A Draft CAN have a logged game — the Games panel offers the form on an empty
+  // deck — and a Draft never draws last played, because its detail row carries
+  // `created today` alone. Two separate conditions gave that deck an empty second
+  // row at `sm`; one figure decides both the template and the render.
+  it("declares no second row for a Draft with a logged game", () => {
+    const { container } = render(
+      <DeckCard
+        deck={deck({
+          statusPill: "Draft",
+          built: 0,
+          createdAt: daysBefore(30),
+          lastPlayedAt: daysBefore(2),
+        })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
+    expect(footer.className).toContain("[grid-template-areas:'chip_bar_count']");
+    expect(footer.className).not.toContain("played");
   });
 });

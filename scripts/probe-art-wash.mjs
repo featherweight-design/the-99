@@ -378,7 +378,25 @@ const READ_BLOCK_VS_HOLD = `() => {
   return [...document.querySelectorAll('[data-art-wash-band]')]
     .filter((root) => root.getClientRects().length)
     .map((root) => {
-      const band = root.parentElement;
+      // The band is not always the wash's own parent. A surface that picks its
+      // band with a container query wraps each wash in a breakpoint div and
+      // hangs the label beside those wrappers, so the label is a NIECE of the
+      // wash rather than a sibling — and a reader stopping at the parent found
+      // no label and failed the surface for drawing none.
+      //
+      // Climbing is bounded by height: an ancestor the same height as the wash
+      // IS the band however many wrappers deep it sits, and the first one that
+      // is taller is the surface around it, whose foot is not this band's foot.
+      const rootHeight = root.getBoundingClientRect().height;
+      let band = root.parentElement;
+      while (
+        band &&
+        !band.querySelector('[data-wash-label]') &&
+        band.parentElement &&
+        Math.abs(band.parentElement.getBoundingClientRect().height - rootHeight) <= 1
+      ) {
+        band = band.parentElement;
+      }
       const bandBox = band.getBoundingClientRect();
       const labels = [...band.querySelectorAll('[data-wash-label]')]
         .filter((el) => el.getClientRects().length)

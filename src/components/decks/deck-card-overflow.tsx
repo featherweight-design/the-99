@@ -87,23 +87,34 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
         // Omitted while closed: the panel is unmounted at rest, and a reference
         // to an absent id is worse than no reference at all.
         aria-controls={open ? panelId : undefined}
-        // 44px square on phone so the control clears the touch-target floor,
-        // and bare there — the drawn plate is desktop-only, where the control
-        // is 26px and needs the ground to stay legible over art.
-        // The open state is a class, not an inline style: an inline background
-        // outranks the hover: utilities beside it and the control stops
-        // highlighting the moment the panel is open.
-        // Decision 3 — the desktop plate is opaque and carries a hairline, as
-        // every other chip over art does. `border-0` is gone rather than
-        // overridden: preflight already zeroes the width, and leaving it in
-        // fought the `sm:` border for source order.
-        className={`flex h-[44px] w-[44px] cursor-pointer items-center justify-center p-0 font-mono text-[13px] tracking-[1px] transition-colors sm:h-[26px] sm:w-[26px] sm:rounded-[7px] sm:border sm:text-[11px] ${
-          open
-            ? "rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-[color:var(--fg)] sm:text-[color:var(--fg)]"
-            : "text-[color:var(--fg)] sm:border-[color:var(--border-strong)] sm:bg-[color:var(--bg)] sm:text-[color:var(--fg-body)]"
-        }`}
+        // A 44px target on a phone and the unchanged 26px control at desktop,
+        // with the 26px plate drawn inside either one. It was bare on a phone by ruling — "the
+        // drawn plate is desktop-only" — and what made that safe was the top
+        // scrim veiling the crop under it. That scrim is gone, so this glyph
+        // would be `var(--fg)` on an unmodified crop: the one accessibility
+        // exposure in the round, and it is fixed in the same change that creates
+        // it rather than a PR later.
+        //
+        // Hit area unchanged, drawn box now matching desktop, touch floor
+        // untouched. The open state is a class, not an inline style: an inline
+        // background outranks the hover: utilities beside it and the control
+        // stops highlighting the moment the panel is open.
+        className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center bg-transparent p-0 sm:h-[26px] sm:w-[26px]"
       >
-        …
+        {/* THE PLATE, as `full-card-trigger.tsx` draws it: opaque `var(--bg)`
+            under one hairline at radius 7. Opaque rather than measured per
+            theme — ink on `--bg` is the page's own body contrast — which is what
+            lets the band underneath carry no scrim at all. Decision 3's
+            treatment, now at both widths. */}
+        <span
+          className={`flex h-[26px] w-[26px] items-center justify-center rounded-[7px] border font-mono text-[13px] tracking-[1px] transition-colors sm:h-full sm:w-full sm:text-[11px] ${
+            open
+              ? "border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
+              : "border-[color:var(--border-strong)] bg-[color:var(--bg)] text-[color:var(--fg-body)] sm:text-[color:var(--fg-body)]"
+          }`}
+        >
+          …
+        </span>
       </button>
 
       {open && (

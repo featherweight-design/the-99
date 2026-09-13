@@ -52,3 +52,26 @@ describe("DeckCardOverflow", () => {
     expect(new Set(ids).size).toBe(2);
   });
 });
+
+describe("DeckCardOverflow — THE PLATE on phone", () => {
+  // The round's one accessibility fix, and it ships in the same change that
+  // creates the exposure. This control was bare at 44px by ruling — "the drawn
+  // plate is desktop-only" — and what made that safe was the top scrim veiling
+  // the crop beneath it. That scrim is gone from this tile, so the glyph would be
+  // `var(--fg)` on an unmodified crop.
+  it("draws the 26px plate inside the 44px target, at both widths", () => {
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
+    const button = screen.getByRole("button");
+    // Target unchanged: 44 on a phone, 26 from `sm:` up, where the plate fills it.
+    expect(button.className).toContain("h-[44px]");
+    expect(button.className).toContain("sm:h-[26px]");
+    expect(button.className).toContain("bg-transparent");
+
+    const plate = button.firstElementChild as HTMLElement;
+    expect(plate.className).toContain("h-[26px]");
+    expect(plate.className).toContain("rounded-[7px]");
+    expect(plate.className).toContain("bg-[color:var(--bg)]");
+    expect(plate.className).toContain("border-[color:var(--border-strong)]");
+    expect(plate.textContent).toBe("…");
+  });
+});

@@ -411,8 +411,13 @@ export type DeckListItem = {
   unresolvedCount: number;
   /**
    * The most recent game logged against this deck, or null when none is. Drawn
-   * on the right of every tile's detail row; `never played` is the null case,
-   * and it is a real state rather than a missing figure.
+   * on the right of a tile's second row at desktop widths, and **only when it
+   * has a date**: the `never played` clause is cut, with no replacement, because
+   * it filled a slot rather than answering a question. A deck with no logged game
+   * draws nothing there, and that absence is the state. A Draft tile draws
+   * nothing there either, even holding a date: its detail row carries `created
+   * today` instead, so `DeckCard` excludes that status rather than printing a
+   * play date beside a deck that has not been built.
    */
   lastPlayedAt: Date | null;
   /**

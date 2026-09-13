@@ -76,7 +76,8 @@ export const refreshCopy = {
     // Both clauses read "to buy" rather than "unowned". Since seniority landed,
     // the figure counts trips to a shop, and a card an older finished deck has
     // already taken is one of them while being a card the player owns. The pill
-    // above it says "To buy" and now means the same thing.
+    // BESIDE it says "To buy" and means the same thing — it sits on the progress
+    // row now rather than on the art above this figure.
     detailToBuy: (n: number, cost: string) => `${n} to buy · ${cost}`,
     // The same clause when nothing on the list carries a price. No price row is
     // not a price of zero, so the copies print and the cost does not.
@@ -90,7 +91,6 @@ export const refreshCopy = {
     // would say the same thing twice; the tile, whose pill sits up in the art,
     // keeps the fuller clause above.
     detailCopies: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
-    detailComplete: 'all owned',
     detailUnresolved: (n: number) => (n === 1 ? '1 line unresolved' : `${n} lines unresolved`),
     detailOver: (n: number) => `${n} over`,
     detailDraft: 'created today',
@@ -99,7 +99,6 @@ export const refreshCopy = {
     // NOTE: decks.commander_oracle_id is NOT NULL — a deck always has a
     // commander, so there is no "no commander yet" string and no placeholder
     // art. A Draft deck is a named commander with 0 / 99 built.
-    lastPlayedNever: 'never played',
 
     // Overflow menu — the three shipped items, in this order. Delete is
     // --danger and last. Do not add items here without a decision.
@@ -110,16 +109,25 @@ export const refreshCopy = {
       trigger: (deckName: string) => `Actions for ${deckName}`,
     },
 
-    // Card label for screen readers: name, status, count, and the detail
-    // figure — the same four things the tile shows, in the same order.
-    cardAria: (name: string, status: string, count: string, detail: string) =>
-      `${name}, ${status}, ${count}, ${detail}`,
+    // Card label for screen readers: name, identity, status, count, and the
+    // detail figure — the same five things the tile shows, in the same order.
+    // `identity` is the commander (both, on a pair) and the deck's colour,
+    // which the tile's block now draws under the name. The overlay link carries an explicit label, so
+    // its descendants are NOT read: without this the visual tile presents an
+    // identity a screen reader is never told.
+    cardAria: (
+      name: string,
+      identity: string,
+      status: string,
+      count: string,
+      detail: string,
+    ) => `${name}, ${identity}, ${status}, ${count}, ${detail}`,
     // Building has no fourth thing — its count IS the explanation, and it is
     // already the third. The same is true of a Draft older than the day it was
     // created, which `detailDraft` cannot describe. Neither may fall back to
     // cardAria with the count repeated: a reader would hear the figure twice.
-    cardAriaNoDetail: (name: string, status: string, count: string) =>
-      `${name}, ${status}, ${count}`,
+    cardAriaNoDetail: (name: string, identity: string, status: string, count: string) =>
+      `${name}, ${identity}, ${status}, ${count}`,
   },
 
   // ── Zero states ───────────────────────────────────────────────────────
