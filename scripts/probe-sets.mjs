@@ -699,17 +699,22 @@ async function run() {
         return node ? Math.round(node.getBoundingClientRect().height) : null;
       };
       const h1 = el.querySelector("h1");
-      // Where the phone's provenance sits. The handoff puts it on the title line; measured
-      // there it pushed a real set name from one clamped line to two and cost more than the
-      // whole move saved, so it rides the ratio line instead. Structural, because a height
-      // check cannot tell the two placements apart on a SHORT name.
-      const codeOnTitleLine = h1?.parentElement
-        ? /·\s*\d{4}\s*$/.test(h1.parentElement.textContent ?? "")
-        : false;
+      const shortCode = document.querySelector("[data-set-provenance-short]");
+      const shown = (node) => node !== null && getComputedStyle(node).display !== "none";
       return {
         total: Math.round(el.getBoundingClientRect().height),
         title: h1 ? Math.round(h1.getBoundingClientRect().height) : null,
-        codeOnTitleLine,
+        // Found by its own marker, and reported as absent rather than as false: the first
+        // version of this guard read `h1.parentElement.textContent`, which is the whole
+        // identity block — ratio, provenance and note included — so it never ended in the
+        // year and reported clean no matter where the code was put.
+        shortCodePresent: shortCode !== null,
+        codeInsideTitle: shortCode !== null && h1 !== null && h1.contains(shortCode),
+        // The two lines moves 1 and 2 remove. Structural, and true on any fixture — which
+        // an absolute height bound is not: a set with a short title or no cost strip is
+        // already under 388px with none of this PR applied.
+        longProvenanceShown: shown(document.querySelector("[data-set-provenance-long]")),
+        noteShown: shown(document.querySelector("[data-set-ratio-note]")),
         chips: px("[data-set-chips]"),
         result: px("[data-set-result]"),
       };
@@ -717,13 +722,16 @@ async function run() {
     if (phoneHead === null) {
       failures += !report("the phone head can be measured", false, "no [data-set-head]");
     } else {
-      // 388 was the shipped height on `main` the morning this was built, measured on an
-      // indexed, incomplete set. The bound is the shipped figure, not the target: PR 5b's
-      // collapse is what reaches R3's 148, and asserting 148 here would fail a correct 5a.
-      failures += !report(
-        "the phone head at rest is smaller than the head these moves came from",
-        phoneHead.total < 388,
-        `${phoneHead.total}px against 388px shipped — chips ${phoneHead.chips}px, result ${phoneHead.result}px`,
+      // REPORTED, not asserted. The probe picks whatever incomplete indexed set the
+      // fixture offers, and a set with a short title or no priced cost strip is already
+      // under 388px with none of this PR applied — so a `< 388` predicate passes on a
+      // reverted build and proves nothing. What the moves actually did is structural, and
+      // that is what the three checks below assert. The number is here to be read.
+      report(
+        "the phone head at rest measures",
+        true,
+        `${phoneHead.total}px — 388px was the shipped height when these moves were written`
+        + ` · chips ${phoneHead.chips}px, result ${phoneHead.result}px`,
       );
       // The chip line is what makes the expanded head's height a constant, and #549 spent
       // four rounds getting it to 44. A content move above it must not have cost that.
@@ -734,13 +742,28 @@ async function run() {
       );
       // The trap this PR fell into once: the provenance was placed on the title line, the
       // title wrapped, and the head got 15px BIGGER while every unit test passed. Nothing
-      // in JSDOM can see a wrap, so the guard has to live here.
+      // in JSDOM can see a wrap, so the guard has to live here — and it fails on an ABSENT
+      // marker as loudly as on a misplaced one, because a guard that cannot find the thing
+      // it guards is not passing.
       failures += !report(
-        "the phone's provenance does not ride the title into a second line",
-        !phoneHead.codeOnTitleLine,
-        phoneHead.codeOnTitleLine
-          ? `the set code is on the title line, title ${phoneHead.title}px`
-          : `title ${phoneHead.title}px, code on the ratio line`,
+        "the phone's provenance is on the page and off the title line",
+        phoneHead.shortCodePresent && !phoneHead.codeInsideTitle,
+        !phoneHead.shortCodePresent
+          ? "no [data-set-provenance-short] — the guard measured nothing"
+          : phoneHead.codeInsideTitle
+            ? `the set code is inside the h1, title ${phoneHead.title}px`
+            : `title ${phoneHead.title}px, code on the ratio line`,
+      );
+      // Moves 1 and 2, asserted where they actually happen rather than through a height.
+      failures += !report(
+        "the long provenance is not on the phone",
+        !phoneHead.longProvenanceShown,
+        phoneHead.longProvenanceShown ? "still displayed at 390" : "display:none at 390",
+      );
+      failures += !report(
+        "the scope note is not on the phone for an indexed set",
+        !phoneHead.noteShown,
+        phoneHead.noteShown ? "still displayed at 390" : "display:none at 390",
       );
     }
 

@@ -1807,7 +1807,7 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
   it("and the extras ratio trails it, because the note promised they were counted apart", () => {
     stubDesktop(false);
     const { container } = view(indexed(), ["1"]);
-    expect(container.textContent).toMatch(/0 \/ 1 extras/);
+    expect(container.textContent).toMatch(/0 \/ 1 extra/);
   });
 
   // The one state where the note still stands alone: no ratio for `base` to ride on.
@@ -1824,7 +1824,10 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
 
   // Move 2. The full interpolated string is the desktop form and is unchanged; the phone
   // gets what identifies the set, on the title line's trailing edge.
-  it("rides a short provenance on the title line and hides the long one", () => {
+  // On the RATIO line, not the title line — see the readiness correction. The title is
+  // `line-clamp-2` and the code beside it wrapped a real set name, costing more than the
+  // move saved.
+  it("rides a short provenance on the ratio line and hides the long one", () => {
     stubDesktop(false);
     const { container } = view(indexed(), []);
     expect(container.textContent).toMatch(/DSK · 2026/);
@@ -1848,6 +1851,38 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
 
   // The live region is the thing that announces a filter change, and it has to be ONE
   // region holding both forms rather than two regions of which one is hidden.
+  // An `aria-label` REPLACES everything its descendants contribute, so the extras figure
+  // and the code were on the screen and absent from the accessible name while nested
+  // inside the ratio's labelled span. They sit outside it now.
+  it("announces the extras figure and the code rather than swallowing them", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    const labelled = container.querySelector("[aria-label^='You have']") as HTMLElement;
+    expect(labelled).toBeTruthy();
+    expect(labelled.textContent).not.toMatch(/extras|extra|DSK/);
+    expect(container.querySelector("[data-set-provenance-short]")).toBeTruthy();
+    expect(container.querySelector("[data-set-provenance-short]")?.closest("[aria-label]"))
+      .toBeNull();
+  });
+
+  // Scoped to the incomplete branch, this left a completed set's phone with no code and no
+  // year at all — the long paragraph is hidden there too.
+  it("keeps the code and year when the set is complete", () => {
+    stubDesktop(false);
+    const { container } = view(
+      [p("1", { name: "Plains", booster: true }), p("2", { name: "Island", booster: true })],
+      ["1", "2"],
+    );
+    expect(container.textContent).toMatch(/DSK · 2026/);
+  });
+
+  // The noun agrees with the denominator, as `head.meta` and the set index both do.
+  it("says one extra, not one extras", () => {
+    stubDesktop(false);
+    const { container } = view(indexed(), ["1"]);
+    expect(container.textContent).toMatch(/0 \/ 1 extra(?!s)/);
+  });
+
   it("keeps both forms inside a single live region", () => {
     stubDesktop(false);
     view(indexed(), ["1"]);

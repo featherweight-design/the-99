@@ -257,7 +257,10 @@ export const setPageCopy = {
       percent === null ? `${have} / ${total} base` : `${have} / ${total} base · ${percent}%`,
     // The extras ratio, trailing the scoped figure. It is what the absorbed note promised
     // was counted apart, so dropping the note without it would lose the fact.
-    extrasTrail: (have: number, total: number) => `${have} / ${total} extras`,
+    // The noun agrees with the denominator, as `head.meta` and the set index both do:
+    // a one-printing extras section reads "0 / 1 extra".
+    extrasTrail: (have: number, total: number) =>
+      `${have} / ${total} ${total === 1 ? "extra" : "extras"}`,
     // R3 finding 6, move 2. `meta` is one interpolated string of four values; this is the
     // phone form beside it, never a replacement. The two counts it drops are the two
     // figures move 1 puts on the line above, which is the only reason dropping them is free.

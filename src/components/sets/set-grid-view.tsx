@@ -597,39 +597,45 @@ export function SetGridView(props: SetGridViewProps) {
               ) : (
                 <span aria-label={setPageCopy.head.ratioAria(sections.baseOwned, sections.baseTotal)}>
                   {/* R3 finding 6, move 1. Two forms of one figure, not two figures: the
-                      phone carries the scope word the note below used to carry, and the
-                      extras ratio trails it. The accessible name is the same string at
-                      both widths — it already said "in the base run". */}
+                      phone carries the scope word the note below used to carry. The
+                      accessible name is the same string at both widths — it already said
+                      "in the base run". */}
                   <span className="md:hidden">
                     {setPageCopy.head.ratioScoped(
                       sections.baseOwned, sections.baseTotal, sections.percent,
                     )}
-                    {sections.extrasTotal > 0 ? (
-                      <span style={{ color: "var(--fg-locked)" }}>
-                        {" · "}
-                        {setPageCopy.head.extrasTrail(sections.extrasOwned, sections.extrasTotal)}
-                      </span>
-                    ) : null}
-                    {/* R3 finding 6, move 2, on the RATIO line rather than the title line.
-                        The handoff names the title's trailing edge and prices the move at
-                        −15px, but the title is `line-clamp-2` and a real set name is what
-                        gives width: on `Avatar: The Last Airbender` at 390 the code pushed
-                        the `h1` from one line to two, 30px to 60px, and the move that was
-                        meant to save 15 cost 15. Measured, not argued — see the readiness
-                        erratum. This line is mono 11px and already the shortest in the
-                        block, so the code lands on it without moving anything. */}
-                    {releasedAt ? (
-                      <span style={{ color: "var(--fg-locked)" }}>
-                        {" · "}
-                        {setPageCopy.head.metaShort(code, releasedAt)}
-                      </span>
-                    ) : null}
                   </span>
                   <span className="hidden md:inline">
                     {sections.baseOwned} / {sections.baseTotal} · {sections.percent}%
                   </span>
                 </span>
               )}
+              {/* OUTSIDE the ratio's span, deliberately. That span carries an explicit
+                  `aria-label`, which REPLACES everything its descendants contribute — the
+                  same contract the set index's extras figure is held to. Nested, these two
+                  were on the screen and absent from the accessible name. */}
+              {sections.indexed && sections.extrasTotal > 0 && !complete ? (
+                <span className="md:hidden">
+                  {" · "}
+                  {setPageCopy.head.extrasTrail(sections.extrasOwned, sections.extrasTotal)}
+                </span>
+              ) : null}
+              {/* R3 finding 6, move 2, on the RATIO line rather than the title line. The
+                  handoff names the title's trailing edge and prices the move at −15px, but
+                  the title is `line-clamp-2` and a real set name is what gives width: on
+                  `Avatar: The Last Airbender` at 390 the code pushed the `h1` from one line
+                  to two, 30px to 60px, and the move meant to save 15 cost 15. Measured, not
+                  argued — see the readiness erratum.
+
+                  Rendered for every INDEXED state, not only the incomplete one. Scoped to
+                  the incomplete branch it left a complete set's phone with no code and no
+                  year at all, because the long provenance paragraph is hidden there too. */}
+              {sections.indexed && releasedAt ? (
+                <span data-set-provenance-short className="md:hidden">
+                  {" · "}
+                  {setPageCopy.head.metaShort(code, releasedAt)}
+                </span>
+              ) : null}
             </p>
             {/* Provenance, and only when there is provenance to state: an unindexed set
                 has no base or extras figure, and the ratio note below is the one line that
@@ -638,6 +644,7 @@ export function SetGridView(props: SetGridViewProps) {
               // R3 finding 6, move 2: the full string is the DESKTOP form and is unchanged.
               // The phone gets what identifies the set, on the line above.
               <p
+                data-set-provenance-long
                 className="hidden font-mono text-[10px] md:block"
                 style={{ color: "var(--fg-locked)" }}
               >
@@ -653,6 +660,7 @@ export function SetGridView(props: SetGridViewProps) {
                 and keeps standing alone when the set is unindexed — there `base` has no
                 figure to ride on, and the phone form above renders nothing at all. */}
             <p
+              data-set-ratio-note
               className={`font-mono text-[10px] ${sections.indexed ? "hidden md:block" : ""}`}
               style={{ color: "var(--fg-locked)" }}
             >
