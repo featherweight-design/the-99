@@ -328,6 +328,8 @@ export function SpineDesktop({
           </div>
 
           <div
+            // Same marker as the phone's row, for the same probe.
+            data-spine-meta
             className="flex flex-wrap items-center"
             style={{ gap: 10, marginTop: 3, minWidth: 0 }}
           >

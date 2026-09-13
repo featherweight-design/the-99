@@ -188,10 +188,15 @@ const READ_HEADER = `() => {
     // which side of the divider it is on without reading class names.
     metaInBand: (() => {
       const band = art ? art.parentElement?.parentElement : null;
-      const meta = [...header.querySelectorAll('p')].find(
-        (p) => visible(p) && p.textContent.includes('·') && !/owned/.test(p.textContent),
-      );
-      if (!band || !meta) return null;
+      // By marker, not by shape: this row is a div whose separator sits in a
+      // child, so a search for a paragraph containing a middot found nothing and
+      // both divider assertions failed on every deck rather than measuring the
+      // move. A sentinel string where the marker is missing, so a dropped hook
+      // fails the check instead of quietly retiring it. (No backticks in this
+      // comment: it travels to the browser inside a template literal.)
+      const meta = [...header.querySelectorAll('[data-spine-meta]')].find(visible);
+      if (!band) return null;
+      if (!meta) return 'no-marker';
       return meta.getBoundingClientRect().bottom <= band.getBoundingClientRect().bottom + 1;
     })(),
   };
@@ -410,6 +415,9 @@ try {
       }
     } else {
       // Item 4 — the meta row crosses the divider while the field takes the band.
+      if (rest.metaInBand === 'no-marker' || editing.metaInBand === 'no-marker') {
+        fail(`the deck header draws no [data-spine-meta] — the divider move is unmeasured`);
+      }
       if (rest.metaInBand !== true) fail(`meta row not in the band at rest`);
       if (editing.metaInBand !== false) fail(`meta row did not move below the divider`);
       else note(`  mobile meta row moves below the divider while editing`);

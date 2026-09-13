@@ -57,6 +57,11 @@ export function SpineMobile({
     // both sides. The names group waives its minimum; the row has to waive its
     // own for that to reach the layout.
     <div
+      // The marker the deck-header probe finds this row by. It used to look for
+      // a `<p>` containing a `·`, and this row is a `div` whose separator lives
+      // inside a child — so the probe read null and its two divider assertions
+      // failed on every deck instead of measuring the move.
+      data-spine-meta
       className="flex w-full min-w-0 flex-nowrap items-center justify-center"
       style={{ gap: 8 }}
     >

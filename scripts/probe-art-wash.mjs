@@ -689,24 +689,31 @@ async function checkBands(page, label, note) {
     draft ran these inside the list loop alone, where the control list is always
     empty and every assertion under it passes without executing. A check that
     cannot fail is worse than no check. */
-async function checkChrome(page, label, note) {
-  // Nothing may push the document wider than the window. This is the one class
-  // of bug a property table cannot catch and jsdom cannot see: a `flex-nowrap`
-  // row without a zero minimum of its own takes its content's min-content width
-  // as a floor, so a long two-faced commander name drew the deck header outside
-  // the viewport on both sides. Measured on every route at every width, because
-  // the name that does it is data, not a layout the probe could pick.
-  // Against the scrolling element's own `clientWidth`, not `window.innerWidth`:
-  // the two differ by the vertical scrollbar, which is exactly the width a
-  // marginal overflow hides behind. `probe-price-ui.mjs` already measures it
-  // this way.
+/** Nothing may push the document wider than its own viewport. This is the one
+    class of bug a property table cannot catch and jsdom cannot see: a
+    `flex-nowrap` row without a zero minimum of its own takes its content's
+    min-content width as a floor, so a long two-faced commander name drew the
+    deck header outside the viewport on both sides.
+
+    Its own routine, not part of `checkChrome`, because it has nothing to do with
+    the card-details control and must run on pages that draw none — a crop-less
+    commander still mounts the same spine and can carry the same long name.
+
+    Measured against the scrolling element's own `clientWidth` rather than
+    `window.innerWidth`: the two differ by the vertical scrollbar, which is
+    exactly the width a marginal overflow hides behind. `probe-price-ui.mjs`
+    already measures it this way, and any surplus at all is the failure — these
+    are integer widths. */
+async function checkNoOverflow(page, label, note) {
   const overflow = await page.evaluate(
     `(() => { const d = document.scrollingElement; return Math.round(d.scrollWidth - d.clientWidth); })()`,
   );
-  if (overflow > 1) {
-    note(`  FAIL ${label}: the document is ${overflow}px wider than the window — content is outside the viewport`);
+  if (overflow > 0) {
+    note(`  FAIL ${label}: the document is ${overflow}px wider than its viewport — content is outside it`);
   }
+}
 
+async function checkChrome(page, label, note) {
   const plates = await page.evaluate(`(${READ_PLATES})()`);
   if (plates.length) {
     note(`${label}: ${plates.length} card-details control(s) at ${[...new Set(plates.map((p) => p.drawn?.join("×")))].join(", ")}`);
@@ -905,6 +912,7 @@ try {
 
       await checkBands(page, `${vpName} ${routeName}`, note);
 
+      await checkNoOverflow(page, `${vpName} ${routeName}`, note);
       await checkChrome(page, `${vpName} ${routeName}`, note);
     }
 
@@ -965,6 +973,7 @@ try {
       if (layout === "desktop" && bottoms.length !== 0) {
         note(`  FAIL desktop drew a bottom-labelled band; the treatment is phone-only`);
       }
+      await checkNoOverflow(page, `${vpName} ${slug}`, note);
       await checkChrome(page, `${vpName} ${slug}`, note);
       // The 288 detail band, which no list route draws.
       await checkBands(page, `${vpName} ${slug}`, note);
@@ -1036,6 +1045,7 @@ try {
       for (const box of required) {
         if (!boxes.has(box)) note(`  FAIL ${what} draws no ${box} thumb`);
       }
+      await checkNoOverflow(page, `${vpName} ${what}`, note);
       await checkChrome(page, `${vpName} ${what}`, note);
     }
 
@@ -1111,6 +1121,7 @@ try {
         } else if (slotThumb.join("×") !== "44×62") {
           note(`  FAIL the filled partner slot's thumb is ${slotThumb.join("×")}, expected 44×62`);
         }
+        await checkNoOverflow(page, `${vpName} the picker, paired`, note);
         await checkChrome(page, `${vpName} the picker, paired`, note);
         pairing = true;
         break;
@@ -1135,6 +1146,7 @@ try {
       if (layout === "phone" && boxes.has("64×89")) {
         note(`  FAIL a summary thumb drew on the phone, whose dock is text-only`);
       }
+      await checkNoOverflow(page, `${vpName} the picker, picked`, note);
       await checkChrome(page, `${vpName} the picker, picked`, note);
     }
     if (!commanderBuildHref) {
@@ -1204,6 +1216,10 @@ try {
     for (const deckHref of deckHrefs) {
       await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
+      // Before the crop-less skip: a commander with no crop draws no control by
+      // ruling, but it mounts the same spine and can carry the same long name —
+      // and the overflow that name caused is the bug this walk is here for.
+      await checkNoOverflow(page, `${vpName} ${deckHref}`, note);
       const deckPlates = await page.evaluate(`(${READ_PLATES})()`);
       if (!deckPlates.length) {
         note(`${vpName} ${deckHref}: no card-details control — this commander has no crop`);
