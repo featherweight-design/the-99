@@ -684,6 +684,99 @@ async function run() {
       }
     }
 
+    // The search field (§29). It is the only child of the control row that shrinks, and the
+    // row must not wrap at either width — a control landing on its own line inside a sticky
+    // head is the defect the three-row rule exists to prevent, arriving by another route.
+    const rowAt = async (width, query = "") => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${BASE}/collection/sets/${code}${query}`, { waitUntil: "networkidle" });
+      // The ROW, not the cells — the same correction `rackAt` already carries, missed here.
+      // `?c=W&r=rare` can legitimately match nothing in a valid set, and this probe measures
+      // the control row, which is on the page either way. Waiting for a cell would fail a
+      // layout check on a fixture that simply has no white rares.
+      await page.waitForSelector("[data-set-search-slot]", { timeout: 20_000 });
+      return page.evaluate(() => {
+        const field = document.querySelector('input[aria-label^="Search cards in"]');
+        if (!field) return null;
+        // The WRAPPER carries the 132px floor, not the input: `SearchField` spends width on
+        // its leading glyph, its padding and the 22px trailing clear, so the input sits well
+        // under the wrapper and measuring it would report a breach that is not one — or miss
+        // a real one, depending on which way the slack ran.
+        const slot = field.closest("[data-set-search-slot]");
+        const row = field.closest("[class*='flex-nowrap']");
+        if (!row) return null;
+        const kids = [...row.children].filter((c) => c.getClientRects().length > 0);
+        // A wrap is the ROW growing past its tallest child. Comparing each child's `top`
+        // would report three lines for one: `items-center` centres children of different
+        // heights, so their top edges legitimately differ on a single line.
+        const tallest = Math.max(...kids.map((c) => c.getBoundingClientRect().height));
+        const rowHeight = row.getBoundingClientRect().height;
+        return {
+          wrapped: rowHeight > tallest + 2,
+          rowHeight: Math.round(rowHeight),
+          tallest: Math.round(tallest),
+          fieldWidth: Math.round((slot ?? field).getBoundingClientRect().width),
+          inputWidth: Math.round(field.getBoundingClientRect().width),
+          fontSize: parseFloat(getComputedStyle(field).fontSize),
+          fields: document.querySelectorAll('input[aria-label^="Search cards in"]').length,
+        };
+      });
+    };
+    // Counted with the phone sheet OPEN, which is the only state that can prove it: a
+    // duplicate field mounted in the sheet is absent from the document while the sheet is
+    // closed, so counting there proves nothing about the invariant it is named for.
+    const fieldsWithSheetOpen = async () => {
+      const trigger = await page.$('button[aria-expanded][aria-haspopup="dialog"]');
+      if (!trigger) return null;
+      await trigger.click();
+      await page.waitForSelector('[role="dialog"]', { timeout: 5_000 });
+      return page.evaluate(
+        () => document.querySelectorAll('input[aria-label^="Search cards in"]').length,
+      );
+    };
+    // Both widths, and at 390 with a filter on as well: the `Filters` badge takes width from
+    // the only child that may shrink, which is exactly when a floor earns its keep.
+    for (const [width, floor, query] of [[1280, 132, ""], [390, 132, ""], [390, 132, "?c=W&r=rare"]]) {
+      const row = await rowAt(width, query);
+      if (row === null) {
+        failures += !report(`the search field is on the page at ${width}`, false, "not found");
+        continue;
+      }
+      failures += !report(
+        `the control row does not wrap at ${width}${query}`,
+        !row.wrapped,
+        `row ${row.rowHeight}px against a tallest child of ${row.tallest}px`,
+      );
+      failures += !report(
+        `the field's slot clears its ${floor}px minimum at ${width}${query}`,
+        row.fieldWidth >= floor,
+        `slot ${row.fieldWidth}px, input ${row.inputWidth}px`,
+      );
+      failures += !report(
+        `exactly one field carries that accessible name at ${width}${query}`,
+        row.fields === 1,
+        `${row.fields} fields`,
+      );
+      // iOS Safari zooms the page when a text input under 16px takes focus, which would
+      // throw away the 390px arithmetic this row is built on.
+      failures += !report(
+        `the field clears the 16px iOS zoom floor at ${width}${query}`,
+        width >= 768 || row.fontSize >= 16,
+        `${row.fontSize}px`,
+      );
+    }
+
+    // And with the sheet open, where a duplicate would actually be in the document.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const openSheetFields = await fieldsWithSheetOpen();
+    failures += !report(
+      "still exactly one field with the phone sheet open",
+      openSheetFields === 1,
+      openSheetFields === null ? "no Filters trigger found" : `${openSheetFields} fields`,
+    );
+
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
     await waitForCells(page);

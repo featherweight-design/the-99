@@ -38,6 +38,14 @@ export const setFilterCopy = {
   // here — a second copy of a label is a second thing to keep in step.
   rarity: setFilterCopyRarity,
   label: "Filters",
+  // The name search (addendum R2 §29). The SET is in the accessible name and not in the
+  // placeholder: /collection/sets' own field says "Find any set" in the same skin one tap
+  // away, and a screen-reader user has no other way to tell which population they are in.
+  search: {
+    placeholder: "Find a card in this set",
+    ariaLabel: (set: string) => `Search cards in ${set}`,
+    clear: "Clear the search",
+  },
   colourLabel: "Colour",
   missingOnly: setFilterCopyMissingOnly,
   sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
@@ -64,10 +72,19 @@ export const setFilterCopy = {
   // the addendum's own note says to take them from the chassis once it lands, and it has.
   // Only the accessible name is this page's, because the chassis's names a sort this page
   // does not have.
+  // It clears the three dimensions AND the query. Sort is the chassis's exclusion because
+  // sort does not narrow; a search does, and a Clear that left it on would leave the reader
+  // looking at four cells under a control that claimed to clear everything. The field's own
+  // × stays scoped to the field.
+  //
   // CONTAINS the visible label, which is the chassis's `Clear all filters` — a voice-control
-  // user says what they can see (WCAG 2.5.3), and "Clear every filter" said the same thing
-  // in words the button does not show.
-  clearAllAria: "Clear all filters",
+  // user says what they can see (WCAG 2.5.3), so this extends that phrase rather than
+  // replacing it with a synonym the button does not show.
+  clearAllAria: "Clear all filters and the search",
+  // Row 2 at rest, when a QUERY is the only thing narrowing. The chassis's `No filters on`
+  // would be a contradiction there: the field IS on, the result line says so, and the chip
+  // line has no chip for it because the field is visible on the row above.
+  noOtherFilters: "No other filters on",
 
   // The rarity panel. `FilterPanel` mounted, never forked (§28's named dependency).
   rarityPanel: {
@@ -361,6 +378,21 @@ export const setPageCopy = {
     extrasCount: (have: number, total: number) => `Extras ${have} / ${total}`,
     extrasGloss: "the only thing left in this set",
     noExtras: "Nothing left in this set",
+  },
+
+  // Zero WITH a query is its own branch: the heading names the query, because "nothing
+  // matches" on a page reached from a catalogue-wide search reads as a claim about the
+  // catalogue. Two corrections, narrowest first.
+  searchZero: {
+    heading: (set: string, q: string) => `Nothing in ${set} matches \u201C${q}\u201D`,
+    // Only ever shown when the query is the ONLY thing narrowing. With a colour or rarity
+    // on, the name may well be in the set and a filter removed it — calling that a spelling
+    // would be false, so that case takes the ordinary filtered-empty heading instead.
+    // Says what was searched, and offers spelling as ONE reading rather than asserting it:
+    // a perfectly-spelled card from another set reaches this branch too, and telling that
+    // reader they mistyped is a misdiagnosis.
+    body:
+      "This searches the names in this set only. Check the spelling, or the card may be from another set.",
   },
 
   zeroResults: {

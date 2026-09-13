@@ -33,7 +33,7 @@ import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { parseAsOf, type PriceFact } from "../../lib/decks/price";
 import {
-  applyFilters, EMPTY_FILTERS, parseFilters, RARITIES, serialiseFilters,
+  applyFilters, EMPTY_FILTERS, isQueryActive, parseFilters, RARITIES, serialiseFilters,
   WUBRG, type SetGridFilters,
 } from "../../lib/sets/filters";
 import { sectionsOf, type Cell } from "../../lib/sets/completion";
@@ -42,6 +42,7 @@ import { setFilterCopy, setPageCopy, setsIndexCopy } from "../../lib/copy/set-co
 import type { PrintingPriceRow } from "../../lib/sets/read";
 import { SetCell } from "./set-cell";
 import { SetIcon } from "./set-icon";
+import { SearchField } from "../ui/text-field";
 import { CostStrip } from "./cost-strip";
 import { DeltaStrip } from "./delta-strip";
 
@@ -117,6 +118,17 @@ export function SetGridView(props: SetGridViewProps) {
   // mounted: crossing the breakpoint with it open left the desktop page scroll-locked and
   // trapped focus in a dialog nobody could see. Unmounted rather than hidden.
   const isDesktop = useIsDesktop();
+  /**
+   * The search input, so every control that clears the query can put focus back in it.
+   * Clearing hides the field's own × (`visibility`, and out of the tab order with it) and
+   * unmounts the empty state's buttons — so without this, using any of them strands the
+   * keyboard on a control that is no longer there.
+   */
+  const searchRef = useRef<HTMLInputElement>(null);
+  const clearQuery = () => {
+    setFilters({ ...filters, query: "" });
+    searchRef.current?.focus();
+  };
   // Closed on the transition rather than merely unmounted by it: leaving `sheetOpen` true
   // returned focus to a trigger that is now hidden, and shrinking back to mobile remounted
   // a sheet the reader never reopened.
@@ -154,11 +166,13 @@ export function SetGridView(props: SetGridViewProps) {
   const filters = local ?? urlFilters;
 
   function setFilters(next: SetGridFilters) {
-    // Only the three parameters this page owns are replaced. Rebuilding the string from
-    // them alone dropped everything else a link might carry, which the collection browser
-    // is careful not to do.
+    // Only the parameters this page owns are replaced. Rebuilding the string from them
+    // alone dropped everything else a link might carry, which the collection browser is
+    // careful not to do. `q` joins the list with the name search: an empty query
+    // serialises to an absence, so without deleting it first, clearing the search would
+    // leave the old one standing in the URL — a Clear that clears nothing.
     const live = new URLSearchParams(window.location.search);
-    for (const key of ["c", "r", "m"]) live.delete(key);
+    for (const key of ["c", "r", "m", "q"]) live.delete(key);
     for (const [key, value] of serialiseFilters(next)) live.set(key, value);
     const qs = live.toString();
     window.history.replaceState(
@@ -318,7 +332,14 @@ export function SetGridView(props: SetGridViewProps) {
   // set with it set — and gating Clear on `effective` left that parameter with no way out
   // of the UI, ready to reactivate the moment the set stopped being complete.
   const anyFilterOn =
-    filters.colors.length > 0 || filters.rarities.length > 0 || filters.missingOnly;
+    filters.colors.length > 0 || filters.rarities.length > 0 || filters.missingOnly
+    || isQueryActive(filters.query);
+
+  // What the RESULT LINE reads, which is not what the badge reads. The badge counts the
+  // dimensions behind the sheet; the line describes the page, and a query narrows it just
+  // as a colour does — so a query-only search stated "399 cells · 62 yours, 337 missing"
+  // about a page showing four.
+  const narrowing = filtersOn > 0 || isQueryActive(effective.query);
 
   // The chip line, in DIMENSION order and never click order — a line that re-orders itself
   // as you use it is a line you have to re-read. Colour collapses past one pip rather than
@@ -368,17 +389,28 @@ export function SetGridView(props: SetGridViewProps) {
       onRemove: () => setFilters({ ...filters, missingOnly: false }),
     });
   }
-  const clearAll = () => setFilters(EMPTY_FILTERS);
-  // A filter that is SET but not APPLIED draws no chip, so the chip line alone would offer
-  // no way out of it. That happens exactly once: `m=1` still in the URL on a set the reader
-  // has completed, where `effective` drops missing-only and its control is gone too. Clear
-  // stays, because it is the only route left to a parameter that would start filtering
-  // again the moment the set stopped being complete.
-  //
-  // Named precisely rather than inferred from an empty chip line: `?m=1&c=W` on a complete
-  // set draws a White chip, so "no chips" was false and the hidden `m` had neither a toggle
-  // nor a Clear. This is the one filter this page can hold without applying, and this is
-  // the one condition under which it does.
+  // `EMPTY_FILTERS` clears the query too, so every non-dialog route to it owes the same
+  // focus return the field's own × does — without it, the chip-line Clear and the empty
+  // state's second button both unmount themselves and drop focus to the body. The phone
+  // sheet's Clear passes `false`: focusing a field behind an open dialog is worse than
+  // leaving focus in the sheet the reader is still using.
+  const clearAll = (refocus = true) => {
+    setFilters(EMPTY_FILTERS);
+    if (refocus) searchRef.current?.focus();
+  };
+  // Past ONE ACTIVE CONTROL, which is not the same as one chip: the search field narrows
+  // and carries no chip, because it is visible on the row where a chip would only repeat
+  // it. Counting chips alone hid the way out from a reader with a query and one filter on.
+  const activeControls = chips.length + (isQueryActive(effective.query) ? 1 : 0);
+  // And a filter that is SET but not APPLIED has no control at all. That happens exactly
+  // once: `m=1` still in the URL on a set the reader has completed, where `effective` drops
+  // missing-only and its toggle is gone too. Clear stays, because it is the only route left
+  // to a parameter that would start filtering again the moment the set stopped being
+  // complete — and it is named precisely rather than inferred from an empty chip line,
+  // since `?m=1&c=W` draws a White chip and "no chips" would be false. Naming it this way
+  // also keeps the QUERY out of it: a query draws no chip either, but it is not hidden —
+  // it has a visible field with its own × two rows up, and counting it here would put
+  // `Clear all filters` on the line at one active control.
   const staleFilter = complete && filters.missingOnly;
 
   // Per-row counts from the ONE filtered computation, so the panel never disagrees with
@@ -566,12 +598,71 @@ export function SetGridView(props: SetGridViewProps) {
             no grid beneath the head for a height change to move. The invariant is about the
             rack not moving what the reader is reading, and there is nothing there to move. */}
         <div className="mt-[10px] flex flex-nowrap items-center gap-[8px]">
+          {/* The field leads the row and is the ONLY child that shrinks — `min-w-0` on it
+              and `shrink-0` on everything else is what keeps the row from wrapping. At
+              390px the arithmetic is tight and deliberate: `Filters` with a badge is 93,
+              `Missing` is 76, two gaps are 16, so the field gets 173 against a 132 minimum.
+
+              Never in the sheet. A second field behind `Filters` is two controls with one
+              accessible name — the defect `MissingOnlyToggle` already exists to avoid on
+              this page — and the badge does not count it, because it is visible beside it. */}
+          {/* `min-w-[132px]`, which is the chassis's floor and not decoration: `min-w-0`
+              alone lets this shrink to nothing on a narrower phone or beside a longer
+              rarity value, and the 173px-at-390 arithmetic the row is built on assumes a
+              132 minimum under it. The INPUT stays shrinkable; this item does not go below
+              the floor. */}
+          <div data-set-search-slot className="min-w-[132px] flex-auto">
+            <SearchField
+              ref={searchRef}
+              containerClassName="px-[10px] py-[6px] md:py-[4px]"
+              // 16px on the phone is not a type choice: iOS Safari zooms the page when a
+              // text input under 16px takes focus, which would throw away the 390px
+              // arithmetic this row is built on. The compact size starts at `md`.
+              className="text-[16px] md:text-[12.5px]"
+              value={filters.query}
+              onChange={(e) => setFilters({ ...filters, query: e.target.value })}
+              placeholder={setFilterCopy.search.placeholder}
+              aria-label={setFilterCopy.search.ariaLabel(name)}
+              autoComplete="off"
+              spellCheck={false}
+              trailing={
+                /* The field's own scoped clear, which the chip line deliberately does not
+                   duplicate: a query draws no chip, and at one active control there is no
+                   `Clear all filters` either — so without this the only way out of a search
+                   was to select the text and delete it. Always rendered and hidden by
+                   `visibility` rather than unmounted, so its 22px does not reflow the input
+                   as the last character goes. */
+                <button
+                  type="button"
+                  onClick={clearQuery}
+                  aria-label={setFilterCopy.search.clear}
+                  // TRIMMED, like every other reading of this value — serialisation,
+                  // matching, the result line. Typing only spaces left the grid unfiltered
+                  // under an enabled, focusable clear for a query that filtered nothing.
+                  aria-hidden={!isQueryActive(filters.query) || undefined}
+                  tabIndex={isQueryActive(filters.query) ? 0 : -1}
+                  className="flex-none rounded-full flex items-center justify-center
+                             bg-[color:var(--border)] text-[color:var(--fg-muted)]"
+                  style={{
+                    // 24px, the minimum target size. On a phone this is the only escape
+                    // when the search is the sole active control — the chip line shows no
+                    // Clear at one control — so it cannot be the smallest thing on screen.
+                    width: 24, height: 24, fontSize: 12,
+                    visibility: isQueryActive(filters.query) ? "visible" : "hidden",
+                  }}
+                >
+                  ×
+                </button>
+              }
+            />
+          </div>
+
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
-            className="md:hidden inline-flex min-h-[44px] items-center gap-[6px] rounded-[6px]
+            className="md:hidden inline-flex shrink-0 min-h-[44px] items-center gap-[6px] rounded-[6px]
                        px-[12px] text-[13px] border border-[color:var(--border)]
                        text-[color:var(--fg-body)]"
           >
@@ -599,7 +690,9 @@ export function SetGridView(props: SetGridViewProps) {
               measurement get re-derived by hand. */}
           {/* Layout only: `hidden md:flex` is the width gate, and the wrapper exists so the
               pips sit as one flex item beside the trigger. It is deliberately not a focus
-              target — see the note above on why this route has no breakpoint rescue. */}
+              target — see the note above on why this route has no breakpoint rescue.
+              `shrink-0` is the search field's doing: it is the one child of this row that
+              may compress. */}
           <div className="hidden shrink-0 md:flex">
             <ColourPips
               value={filters.colors}
@@ -634,7 +727,11 @@ export function SetGridView(props: SetGridViewProps) {
               inside an invisible ancestor, and hand focus to a panel nobody can see. The
               phone's rarity control is the chip group in the sheet, and this is the other
               half of that one-control-per-width rule. */}
+          {/* Wrapped, because `FilterPanel`'s own root is a plain `<div className="relative">`
+              with the default `flex-shrink: 1` — so without this the rarity control joined
+              the compression and the field stopped being the only child that shrinks. */}
           {isDesktop ? (
+            <div className="shrink-0">
             <FilterPanel
               copy={setFilterCopy.rarityPanel}
               searchable={false}
@@ -663,6 +760,7 @@ export function SetGridView(props: SetGridViewProps) {
                 setFilters({ ...filters, rarities: pickRarity(filters.rarities, code) })}
               onClear={() => setFilters({ ...filters, rarities: [] })}
             />
+            </div>
           ) : null}
 
           {complete ? null : <MissingOnlyToggle filters={filters} onChange={setFilters} />}
@@ -698,7 +796,9 @@ export function SetGridView(props: SetGridViewProps) {
               className="font-mono text-[11px] leading-[14px] py-[3px] whitespace-nowrap"
               style={{ color: "var(--fg-faint)" }}
             >
-              {chassisCopy.chips.none}
+              {isQueryActive(effective.query)
+                ? setFilterCopy.noOtherFilters
+                : chassisCopy.chips.none}
             </span>
           ) : (
             chips.map((chip) => <FilterChipPill key={chip.key} chip={chip} />)
@@ -711,10 +811,10 @@ export function SetGridView(props: SetGridViewProps) {
               noise. Not a GhostButton: it was the only one in a row of 32px hairlines, and
               the chassis's answer to "what should this button look like" is that it is not
               a button on that row at all. */}
-          {chips.length > 1 || staleFilter ? (
+          {activeControls > 1 || staleFilter ? (
             <button
               type="button"
-              onClick={clearAll}
+              onClick={() => clearAll()}
               aria-label={setFilterCopy.clearAllAria}
               className="relative shrink-0 cursor-pointer border-0 bg-transparent p-0
                          font-mono text-[11px] leading-[14px] underline whitespace-nowrap
@@ -825,7 +925,15 @@ export function SetGridView(props: SetGridViewProps) {
             </div>
 
             <div className="flex items-center gap-[10px]">
-              <GhostButton onClick={clearAll} disabled={!anyFilterOn}>
+              {/* The same search-aware name the chip line's Clear carries. This one clears
+                  the query too, and the field is OUTSIDE the `aria-modal` sheet — so
+                  without it a screen-reader user has no way to know their search is about
+                  to go with their filters. */}
+              <GhostButton
+                onClick={() => clearAll(false)}
+                disabled={!anyFilterOn}
+                aria-label={setFilterCopy.clearAllAria}
+              >
                 {chassisCopy.chips.clearAll}
               </GhostButton>
               <button
@@ -866,7 +974,7 @@ export function SetGridView(props: SetGridViewProps) {
         >
           {effective.missingOnly
             ? setPageCopy.result.missingOnly(shown.filter((c) => !c.owned).length)
-            : filtersOn > 0
+            : narrowing
               // The classified population, not every row: an unclassified printing is
               // rendered in neither section, so `cells.length` promised cells the page
               // does not draw.
@@ -922,10 +1030,16 @@ export function SetGridView(props: SetGridViewProps) {
             { ...effective, missingOnly: false },
           ).filter((c) => c.owned).length}
           setName={name}
+          query={isQueryActive(effective.query) ? effective.query.trim() : ""}
+          // Whether anything BUT the query is narrowing, which decides the second clause of
+          // the search branch's body — a sentence claiming other filters are on when they
+          // are not is worse than no sentence.
+          otherFiltersOn={filtersOn > 0 || effective.missingOnly}
           // Turns missing-only off and keeps the rest: the promised correction is "show
           // the ones you DO own that match", not "discard what you filtered to".
           onShowAll={() => setFilters({ ...filters, missingOnly: false })}
-          onClearAll={clearAll}
+          onClearSearch={clearQuery}
+          onClearAll={() => clearAll()}
         />
       ) : (
         <>
@@ -1015,7 +1129,7 @@ function MissingOnlyToggle({
         : setFilterCopy.missingOnly.ariaOff}
       onClick={() => onChange({ ...filters, missingOnly: !filters.missingOnly })}
       className={[
-        "min-h-[44px] md:min-h-[32px] rounded-[6px] px-[12px] md:px-[10px]",
+        "shrink-0 min-h-[44px] md:min-h-[32px] rounded-[6px] px-[12px] md:px-[10px]",
         "text-[13px] md:text-[12px] border hover:bg-[color:var(--elevated)]",
         filters.missingOnly
           ? "text-[color:var(--accent)] border-[color:var(--accent)]"
@@ -1091,33 +1205,72 @@ function Section({
 }
 
 function ZeroResults({
-  missingOnly, ownedCount, setName, onShowAll, onClearAll,
+  missingOnly, ownedCount, setName, query, otherFiltersOn,
+  onShowAll, onClearSearch, onClearAll,
 }: {
   missingOnly: boolean;
   ownedCount: number;
   setName: string;
+  query: string;
+  otherFiltersOn: boolean;
   onShowAll: () => void;
+  onClearSearch: () => void;
   onClearAll: () => void;
 }) {
   // Zero under missing-only is good news, unlike the /commanders zero state: it means you
-  // own everything that matched. The cheapest correction shows the cards you DO own.
-  return (
-    <EmptyState>
-      <EmptyStateTitle>
-        {missingOnly
-          ? setPageCopy.zeroResults.headingOwnsAll("cards that match")
-          : setPageCopy.zeroResults.headingNone("cards that match")}
-      </EmptyStateTitle>
-      {missingOnly ? (
+  // own everything that matched. The cheapest correction shows the cards you DO own — and
+  // it carries the query too when there is one, which is why `what` was a parameter.
+  const what = query === "" ? "cards that match" : `cards matching \u201C${query}\u201D`;
+  if (missingOnly) {
+    return (
+      <EmptyState>
+        <EmptyStateTitle>{setPageCopy.zeroResults.headingOwnsAll(what)}</EmptyStateTitle>
         <EmptyStateBody>
           {setPageCopy.zeroResults.bodyOwnsAll(ownedCount, setName)}
         </EmptyStateBody>
-      ) : null}
-      <div className="mt-[16px]">
-        <GhostButton onClick={missingOnly ? onShowAll : onClearAll}>
-          {missingOnly
-            ? setPageCopy.zeroResults.showAll(ownedCount)
-            : chassisCopy.chips.clearAll}
+        <div className="mt-[16px]">
+          <GhostButton onClick={onShowAll}>
+            {setPageCopy.zeroResults.showAll(ownedCount)}
+          </GhostButton>
+        </div>
+      </EmptyState>
+    );
+  }
+
+  // Zero with a query the query ALONE caused: the heading names it, because "nothing
+  // matches" on a page reached from a catalogue-wide search reads as a claim about the
+  // catalogue, and here the query really is the thing to blame.
+  //
+  // Only when it is alone. With a colour or rarity on, `q=plains&c=U` returns nothing in a
+  // set that plainly contains Plains — the name is present and a filter removed it — so
+  // claiming it is absent, and calling it a spelling, would be false. That case falls
+  // through to the ordinary filtered-empty heading, which names the query without
+  // explaining it away.
+  if (query !== "" && !otherFiltersOn) {
+    return (
+      <EmptyState>
+        <EmptyStateTitle>{setPageCopy.searchZero.heading(setName, query)}</EmptyStateTitle>
+        <EmptyStateBody>{setPageCopy.searchZero.body}</EmptyStateBody>
+        <div className="mt-[16px]">
+          <GhostButton onClick={onClearSearch}>{setFilterCopy.search.clear}</GhostButton>
+        </div>
+      </EmptyState>
+    );
+  }
+
+  // Corrections NARROWEST FIRST — a reader who mistyped wants the search gone, not their
+  // filters. The search's own button only appears when there is a search to clear.
+  return (
+    <EmptyState>
+      <EmptyStateTitle>{setPageCopy.zeroResults.headingNone(what)}</EmptyStateTitle>
+      <div className="mt-[16px] flex items-center justify-center gap-[10px]">
+        {query !== "" ? (
+          <GhostButton onClick={onClearSearch}>{setFilterCopy.search.clear}</GhostButton>
+        ) : null}
+        {/* Third of three, and the same rule: this clears the query too, so its name says
+            so. The other two are the chip line's and the sheet's. */}
+        <GhostButton onClick={onClearAll} aria-label={setFilterCopy.clearAllAria}>
+          {chassisCopy.chips.clearAll}
         </GhostButton>
       </div>
     </EmptyState>
