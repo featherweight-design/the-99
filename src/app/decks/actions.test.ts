@@ -706,6 +706,36 @@ describe("addCardToDeck — the touch stamp follows the insert", () => {
   });
 });
 
+// The removal's stamp. The add's two cases are above; this is the other half of
+// the pair a player reaches by hand, and the one whose guard is a read of the
+// row rather than a conflict clause.
+describe("removeCardFromDeck — the touch stamp follows the removal", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const CARD = "11111111-1111-1111-1111-111111111111";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+  function ownDeck() {
+    stub.state.decks.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+  }
+
+  it("stamps the deck when a copy comes out", async () => {
+    ownDeck();
+    stub.state.deckRows.push({ oracleId: CARD, quantity: 1 });
+    const { removeCardFromDeck } = await import("./actions");
+    await removeCardFromDeck(DECK, CARD);
+    expect(stamped()).toBe(true);
+  });
+
+  // The row this removal named is not there — another tab took it, or the
+  // reader clicked twice. Nothing was written, so nothing was edited.
+  it("does not stamp when the row is already gone", async () => {
+    ownDeck();
+    const { removeCardFromDeck } = await import("./actions");
+    await removeCardFromDeck(DECK, CARD);
+    expect(stamped()).toBe(false);
+  });
+});
+
 describe("restoreAutoCards — the rows come from the client", () => {
   const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
   const CARD_A = "11111111-1111-1111-1111-111111111111";

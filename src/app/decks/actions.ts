@@ -901,12 +901,14 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing()
       .returning({ oracleId: deckCards.oracleId });
-    // The INSERT's own result, not `count`. `count` comes from the read above,
-    // and `removeCardFromDeck` takes the `deck_cards` row lock rather than this
-    // deck-row lock — so a row the read saw as the player's can be gone by the
-    // time the insert runs, which puts a card back while `count` still says
-    // nothing was restored. The toast keeps reporting `count`, which is the
-    // figure it has always reported; the stamp follows what was written.
+    // The INSERT's own result, not `count`. `count` is what the read above
+    // predicted, and the two can still disagree: the writers that take the deck
+    // row's lock — the add, the removal, the sweep, the top-off, the list
+    // update, the restore — are serialised against each other by it, but
+    // `keepAutoCard` and `keepAllAutoCards` reach `deck_cards` without it, and
+    // the conflict clause is what decides each row either way. The toast keeps
+    // reporting `count`, which is the figure it has always reported; the stamp
+    // follows what was actually written.
     if (restoredRows.length > 0) await touchDeck(tx, deckId);
     return count;
   });

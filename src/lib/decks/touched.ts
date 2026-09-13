@@ -8,6 +8,15 @@
 // query would be a second definition of the same rule — the one that would go
 // stale when a fourth kind of work is added.
 
+/**
+ * A note on the three clocks. `last_edited_at` and `committed_at` are written by
+ * Postgres's `now()`; `deck_games.played_at` is the date the game was PLAYED,
+ * which the log lets the player set and which therefore may be days old and does
+ * not come from the database's clock at all. That is the column's contract, not
+ * a gap in it — Home's shipped resume order has always read it — and it is why
+ * this module compares instants rather than trying to rank three writers by
+ * whose clock wrote them.
+ */
 export type TouchVerb = "edited" | "committed" | "played";
 
 /** The subset of `DeckListItem` this module reads. Field names are its names. */
