@@ -575,6 +575,13 @@ export function ReviewChanges({
       // it, the row is gone from both the optimistic list and the server's.
       const outAfter = outCount - 1;
       const cardsAfter = liveCardCount + 1;
+      // Whether another restore is already going. Read at the click, because
+      // both figures above are this render's snapshot: tap two rows inside one
+      // round trip and each would compute `outAfter === 0` from a column the
+      // other has not left yet, and both would announce a dissolution that has
+      // not happened. The stronger sentence is only earned when this write is
+      // the only one in the air.
+      const alone = !restoring;
       startRestore(async () => {
         addRestoredId(card.oracleId);
         let result: Awaited<ReturnType<typeof addCardToDeck>>;
@@ -610,7 +617,7 @@ export function ReviewChanges({
         // draft where nothing else moved, so on a mixed draft it reads false and
         // this would announce a dissolution that did not happen — and skip the
         // focus handoff on a page that is still there.
-        const dissolving = outAfter === 0 && inCount === 0 && !state.basicsMoved;
+        const dissolving = alone && outAfter === 0 && inCount === 0 && !state.basicsMoved;
         draftAnnouncer().textContent =
           dissolving
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
@@ -655,7 +662,7 @@ export function ReviewChanges({
     },
     [
       addRestoredId, deckId, descriptionId, inCount, liveCardCount, outCount,
-      rows.out, router, state.basicsMoved, state.version,
+      restoring, rows.out, router, state.basicsMoved, state.version,
     ],
   );
 

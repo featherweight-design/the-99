@@ -1051,6 +1051,23 @@ describe("ReviewChanges", () => {
       expect(refresh).toHaveBeenCalled();
     });
 
+    // Two taps inside one round trip: each computes its own "how many are left"
+    // from a column the other has not left yet, so both would otherwise claim
+    // to be the last and announce a dissolution that has not happened.
+    it("does not let two restores both claim to be the last", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await act(async () => {
+        fireEvent.click(putBack("Chrome Mox"));
+      });
+      await held.release();
+      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
+      expect(spoken).not.toContain("matches v");
+    });
+
     // The whole row is a button that opens the card. Without `stopPropagation`
     // putting a card back also opens it.
     it("does not open the card it puts back", async () => {
