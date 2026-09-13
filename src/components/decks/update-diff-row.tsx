@@ -211,7 +211,13 @@ function AvailabilitySlot({
       availability={card.availability}
       seam={SEAM}
       selfExcluded={selfClaimed}
-      className="flex-none"
+      // The marker sets no size and no family of its own (card-availability
+      // design 3.4: the row density rides the meta line it sits on), and this
+      // row has no meta line — `ROW_SHELL` declares a flex box and nothing
+      // about type. Left to inherit, the label painted in the page's sans base,
+      // half again the size of the `buy` tag that alternates with it in this
+      // same slot. The pair is the decklist row's, a step below the card name.
+      className="flex-none font-mono text-[11px] md:text-[11.5px]"
     />
   );
 }

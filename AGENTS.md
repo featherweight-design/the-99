@@ -145,6 +145,28 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   It writes one deck with no games under the account it signs in as and deletes it in a
   `finally`; point it at `local-dev` or a scratch Neon branch, **never production**.
+- `pnpm probe:review` walks `/decks/[id]/changes` at 390x844 and 1300x900: the route's guard on
+  a clean deck, `?commit=1` arriving as a URL, the phone's segmented column pair, the `Pull it`
+  control against a real claim, the what-changed strip drawing all six cells at both widths,
+  the discard confirm at both doors, and the type of the availability marker on a diff row.
+
+  That last one needs a fixture no other check does. An `in` row buys by default, so an add
+  that is unowned or hard-claimed draws a buy tag; an `out` row excludes its own claim, so a
+  cut with no spare copy is deliberately silent. The one row that reaches the marker is an add
+  whose lone copy is held by a **brew** — a deck with no committed version claims softly, so
+  the add keeps its free bucket and the label reads `1 in a brew`. The probe builds that brew
+  itself, and refuses to run at all when the collection holds no card free to put in it.
+
+  The marker checks name the row they expect — a `1 in a brew` label on the brew's own card —
+  rather than counting markers, and assert the size by value at each width: 11px under 768px,
+  11.5px above it. Each clause closes a way a run could report a pass while measuring nothing.
+  With the marker's type reverted the label reads 16px sans against a 12.5px card name; with
+  only the `md:` step dropped it reads 11px on desktop, which is still under the name and
+  passes every other check; with the brew's card left out of the staged draft it reads
+  `markers: 0`. All three fail the run.
+
+  It writes three decks under the account it signs in as and deletes them in a `finally`;
+  point it at `local-dev` or a scratch Neon branch, **never production**.
 - `scripts/contact-sheet.mjs` photographs every surface in a feature's inventory at both widths
   and lays them out as one image, so a route that never got the feature, or a phone that is wrong
   while the desktop is right, is visible in a glance. Inventories live in

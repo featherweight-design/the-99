@@ -6,6 +6,7 @@
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -147,6 +148,53 @@ describe("the review page's mounting", () => {
     // availability slot 40px right of every spell above it.
     const spell = draw(<DiffRowOut review card={card({ manaCost: "{1}{U}" })} />);
     expect((spell.lastElementChild as HTMLElement).style.width).toBe("40px");
+  });
+
+  it("types the availability marker itself, having no meta line to lend it one", () => {
+    // The marker sets no size and no family of its own by design, so whatever
+    // hosts it has to. `ROW_SHELL` declares a flex box and nothing about type,
+    // which left the label painting in the page's sans base — half again the
+    // `buy` tag that alternates with it in the same slot.
+    const soft = draw(
+      <DiffRowIn
+        review
+        sourceLine={null}
+        card={card({
+          availability: {
+            owned: 1,
+            hard: 0,
+            soft: 1,
+            free: 1,
+            claims: [
+              {
+                id: "d1",
+                name: "Atraxa",
+                quantity: 1,
+                mature: false,
+                pending: false,
+                commander: false,
+              },
+            ],
+          },
+        })}
+      />,
+    );
+    // Anchored on the label the marker itself writes, then walked up to the
+    // marker's own root — three other elements on this row carry `font-mono`
+    // with a px size, so any class-only selector finds one of them and passes
+    // with the marker left untyped.
+    const label = screen.getByText(availabilityCopy.marker.soft(1));
+    const marker = label.closest("span.inline-flex");
+    expect(marker).toBeTruthy();
+    expect(marker!.className).toContain("font-mono");
+    // Both steps, by value: the decklist row's own pair. A pattern that takes any
+    // px size passes on a marker that drops the `md:` step, which is a size the
+    // design specifies and the phone assertion cannot speak for.
+    expect(marker!.className).toContain("text-[11px]");
+    expect(marker!.className).toContain("md:text-[11.5px]");
+    // And the row above it lends nothing, which is why the marker must carry it.
+    expect(soft.className).not.toContain("font-mono");
+    expect(soft.className).not.toMatch(/text-\[/);
   });
 
   it("holds 44px for a row carrying an action, and 40px for one that does not", () => {
