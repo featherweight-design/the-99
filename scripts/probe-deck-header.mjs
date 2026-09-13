@@ -423,7 +423,11 @@ try {
       }
     }
     if (wrapped) note(`${vpName}: walking ${walk} — its title wraps to ${wrapped} lines`);
-    else note(`  FAIL no deck on this account has a title that wraps — the glyph's wrapped case cannot be measured`);
+    // A NOTE, not a failure: an account whose every deck name fits one line is a
+    // data condition, not a defect, and failing the run for it would make the
+    // probe's exit code a fact about the fixture. It is said loudly instead, so a
+    // green run cannot be mistaken for having measured the wrapped case.
+    else note(`  (no deck on this account has a title that wraps — the glyph's wrapped case went unmeasured)`);
     await page.goto(`${BASE}${walk}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const rest = await page.evaluate(`(${READ_HEADER})()`);

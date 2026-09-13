@@ -360,9 +360,9 @@ export function SpineMobile({
                       glyph beside the title would be clipped with it. */}
                   {/* The marker is the deck's name alone — the glyph is outside
                       this heading, so neither the heading's text content nor its
-                      accessible name carries it. The clamp moved up to the
-                      heading itself, which is now the inline box the glyph
-                      follows. */}
+                      accessible name carries it. No clamp lives here or on the
+                      heading: the title wraps freely, which is what lets the
+                      glyph follow its last line. */}
                   {/* `min-w-0`: this span is a flex item of the inline box, and
                       an unbroken 120-character name would otherwise force its
                       min-content width past the reserved width and push the glyph
