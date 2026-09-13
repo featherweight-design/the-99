@@ -104,8 +104,14 @@ query plan that does not exist.
 export async function touchDeck(tx: Tx, deckId: string): Promise<void>
 ```
 
-One statement, `update decks set last_edited_at = now() where id = $1`. Takes the transaction
-handle so it lands inside the caller's transaction and cannot half-apply.
+One statement, `update decks set last_edited_at = clock_timestamp() where id = $1`. Takes the
+transaction handle so it lands inside the caller's transaction and cannot half-apply.
+
+**`clock_timestamp()`, not `now()`** — corrected here from the first draft, on round 7 of review.
+`now()` is the transaction's start, read before the statement waits for the deck row's lock, so an
+edit queued behind another edit would stamp a time from before the one it followed. `commitVersionIn`
+takes the same expression for the same reason (round 8): the two columns are compared against each
+other, so they have to be read off the same clock.
 
 **Ownership is the caller's.** Every call site already authorises the deck before mutating it;
 `touchDeck` re-checking would be a second authorisation path that could disagree with the first.
@@ -120,7 +126,7 @@ Call `touchDeck` at every site that changes what the deck *is*:
 | `src/app/decks/actions.ts` | 17 | Yes — adds, removals, basics, fill, sweep, rename, commander change |
 | `src/app/decks/update-actions.ts` | 4 | Yes |
 | `src/app/decks/import-actions.ts` | 3 | Yes — an import is the deck being written |
-| `src/lib/decks/versions.ts` | 2 | **No.** A commit is its own term in the sort key (`committed_at`); touching here would make every commit also an edit and the verb would never be `committed` |
+| `src/lib/decks/versions.ts` | 2 | **Split.** `commitVersionIn` does **not** — a commit is its own term in the sort key, and touching there would make every commit also an edit so the verb would never be `committed`. `restoreDraftFromVersion` **does**: a discard rewrites `deck_cards` wholesale, so the draft changed even though it now matches a version |
 | `src/lib/decks/folders.ts` | 2 | **No.** Filing is not work on the deck (constraint 1) |
 
 Each site gets the call, not a wrapper: a `withTouch` helper over 24 call sites would hide which
@@ -177,14 +183,19 @@ because deck names are not unique (`read.ts:529`).
 `scripts/probe-touched.ts`, per-run `user_id`, deleted in a `finally`, pointed at `local-dev`,
 **never production**. Proves what no unit test can:
 
-1. A deck's `last_edited_at` moves when a card is added, and **does not** when it is filed on a shelf.
-2. A commit does not move `last_edited_at`, so the verb is `committed`.
+1. A deck's `last_edited_at` does **not** move when it is filed on a shelf, through the real
+   `moveDeck`. The add is **not** here and cannot be: every server action calls `requireUserId()`,
+   so a database-only script cannot reach one. The add's two branches — a card placed, and a repeat
+   the conflict clause swallows — are asserted in `actions.test.ts` against the emitted statements,
+   as the removal's are.
+2. A commit does not move `last_edited_at`, so the verb is `committed`; a discard does.
 3. `lastCommittedAt` comes back non-null for a committed deck — the figure, against a fixture whose
    true value is known, because emitted SQL proves the question and only a row proves the answer.
 4. The backfill: a deck inserted with an explicit old `created_at` reads that instant, not `now()`.
 
-Run its failure path before trusting it — revert task 3's call in `actions.ts` and watch check 1
-fail.
+Run every check's failure path before trusting it. Done, four times: dropping the discard's stamp,
+breaking the correlated subquery, emptying the migration's backfill, and teaching `moveDeck` to
+stamp each fail exactly the check written for them.
 
 ---
 

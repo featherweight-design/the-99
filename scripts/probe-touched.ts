@@ -119,6 +119,31 @@ const editedAt = async (deckId: string) => {
   return rows[0].t;
 };
 
+/** A version's `committed_at` as the database prints it, so the comparison below
+    is UTC on both sides. `newestVersion()` returns a MAPPED timestamp, which the
+    driver parses in the runtime's own zone — on a developer machine west of UTC
+    that is the same instant with a different `getTime()`, and the check would
+    report a failure that is really a timezone. */
+const committedAtText = async (versionId: string) => {
+  const { rows } = await fixture.execute<{ t: string }>(sql`
+    select committed_at::text as t from deck_versions where id = ${versionId}::uuid
+  `);
+  return rows[0].t;
+};
+
+/** Both sides to the MILLISECOND. Postgres keeps microseconds and a JavaScript
+    `Date` does not, so the reader's value is the database's truncated — comparing
+    at full precision would fail on a correct read. That truncation is a real
+    property of this pipeline, not an artefact of the probe: see the note on ties
+    in `touched.ts`. */
+const toMillis = (text: string) => {
+  const [seconds, fraction = ""] = text.split(".");
+  return `${seconds}.${(fraction + "000").slice(0, 3)}`;
+};
+
+const asText = (at: Date | null) =>
+  at === null ? null : toMillis(at.toISOString().replace("T", " ").replace(/Z$/, ""));
+
 const find = (list: Awaited<ReturnType<typeof listDecksWithStats>>, id: string) => {
   const deck = list.find((d) => d.id === id);
   if (!deck) throw new Error(`deck ${id} is missing from the list`);
@@ -200,10 +225,11 @@ async function main() {
     committedRow.lastCommittedAt !== null,
     true,
   );
+  const firstVersion = await newestVersion(committed);
   check(
     "and it is the version's own instant",
-    committedRow.lastCommittedAt?.getTime() === (await newestVersion(committed))?.committedAt.getTime(),
-    true,
+    asText(committedRow.lastCommittedAt),
+    toMillis(await committedAtText(firstVersion!.id)),
   );
   check("a brew reports no commit", find(list, edited).lastCommittedAt, null);
   check("a deck with no game reports none", find(list, committed).lastPlayedAt, null);
@@ -213,7 +239,11 @@ async function main() {
   await commitVersion(committed, "second");
   const reread = find(await listDecksWithStats(USER, "name"), committed);
   const newest = await newestVersion(committed);
-  check("lastCommittedAt is the NEWEST commit", reread.lastCommittedAt?.getTime(), newest?.committedAt.getTime());
+  check(
+    "lastCommittedAt is the NEWEST commit",
+    asText(reread.lastCommittedAt),
+    toMillis(await committedAtText(newest!.id)),
+  );
 
   // Logged last, so the game is the newest act in the fixture: commits are
   // stamped by the database's clock and so is this, and the order below is the
