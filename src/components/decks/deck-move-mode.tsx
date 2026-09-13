@@ -68,17 +68,20 @@ export function MoveMode({
     if (inFlight.current) return;
     inFlight.current = true;
     startTransition(async () => {
-      // A THROWN ACTION IS HANDLED HERE, not left to reject. The action layer
-      // lets an unexpected database error travel deliberately, and an
-      // unhandled rejection inside a transition would leave this list open with
-      // nothing said and nothing reverted. It is treated as the refusal it is
-      // from the reader's side: nothing moved.
-      const ok = await moveDeckAction(deckId, id).catch(() => false);
-      // `false` is "not yours, or gone" — the action revalidates for exactly
-      // that reason, and the list this reader is looking at is the stale one.
-      // Refreshed, and nothing announced: nothing moved.
+      // THREW AND REFUSED ARE DIFFERENT ANSWERS, and collapsing them tells a
+      // reader nothing when the write actually failed. `false` is a conflict
+      // they cannot act on — the deck or the folder is gone, the action
+      // revalidates for exactly that reason, and the refresh is the whole
+      // response. A rejection is a failure they can act on, and silence there
+      // would leave them believing the move landed.
+      const answer = await moveDeckAction(deckId, id).catch(() => "threw" as const);
       inFlight.current = false;
-      if (!ok) {
+      if (answer === "threw") {
+        say(folderCopy.move.failed);
+        onRefused();
+        return;
+      }
+      if (!answer) {
         onRefused();
         return;
       }

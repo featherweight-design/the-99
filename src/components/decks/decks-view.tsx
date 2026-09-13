@@ -9,7 +9,7 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -52,7 +52,7 @@ import { ShelfLine, ShelfTrigger, shelfSegments } from "./shelf-line";
 import { ShelfSheet } from "./shelf-sheet";
 import { ShelfEmpty, UnfiledEmpty } from "./shelf-empty";
 import { FolderCreateDialog } from "./folder-create-dialog";
-import { createFolderAction } from "../../app/decks/folder-actions";
+import { createFolderAction, moveDeckAction } from "../../app/decks/folder-actions";
 import { folderCopy } from "../../lib/copy/folders";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import {
@@ -257,6 +257,13 @@ export function DecksView({
   });
   /** Where the create dialog was opened from, so focus can be returned there. */
   const [createFrom, setCreateFrom] = useState<"line" | "sheet" | "move">("line");
+  /**
+   * The deck whose move panel opened the create dialog. `New folder…` is on that
+   * list so the destination can be made FROM THE ACT (handoff decision 16) — so
+   * the deck is filed into the folder it just made, rather than being left
+   * unfiled while the page walks off to the new empty shelf.
+   */
+  const [creatingFor, setCreatingFor] = useState<string | null>(null);
 
   const [creating, setCreating] = useState(false);
   const router = useRouter();
@@ -778,6 +785,7 @@ export function DecksView({
             <FolderCreateDialog
               onDismiss={() => {
                 setCreating(false);
+                setCreatingFor(null);
                 // The control that opened this is gone when it was the sheet's
                 // row, so the hook has nothing to return focus to. The trigger
                 // that opens the sheet is the nearest equivalent, and it is the
@@ -815,6 +823,12 @@ export function DecksView({
                 // fill it. Announced from the action's own answer rather than
                 // through `segments`, which this callback closed over one render
                 // before the new folder existed in it. A new shelf holds nothing.
+                // Made from the act: the deck whose panel asked for this folder
+                // is filed into it, and only then does the page follow. Without
+                // this the new shelf is selected, the card leaves the grid with
+                // its move panel, and the deck the reader was filing is left
+                // exactly where it was.
+                if (creatingFor) await moveDeckAction(creatingFor, result.folder.id);
                 onShelf(result.folder.id);
                 // Named from the action's own answer: `segments` in this
                 // callback closed over the render before the folder existed. A
@@ -876,6 +890,7 @@ export function DecksView({
                     folders={folders}
                     onCreateFolder={() => {
                       setCreateFrom("move");
+                      setCreatingFor(deck.id);
                       setCreating(true);
                     }}
                     say={say}
