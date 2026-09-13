@@ -1190,6 +1190,9 @@ try {
     } else {
       note(`  ${vpName} small cell: ${smallCell.cell}px column draws the 168 band`);
     }
+    // At this width too, while it is the one laid out: the 900px arm is a real
+    // layout the app ships and nothing else measures it.
+    await checkNoOverflow(page, `${vpName} /decks at 900`, note);
     await page.setViewportSize({ width, height });
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
