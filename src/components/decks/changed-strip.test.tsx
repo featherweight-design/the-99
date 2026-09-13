@@ -45,6 +45,25 @@ describe("ChangedStrip", () => {
     }
   });
 
+  it("stands no cell down at the phone's width", () => {
+    render(<ChangedStrip before={BEFORE} after={AFTER} />);
+    // jsdom applies no media query, so whether a cell is on screen at 390px is
+    // the browser probe's question. What is answerable here is the markup that
+    // used to hide three of them: a cell classed `hidden md:block` is drawn on
+    // desktop only, whatever the reader's width.
+    const labels = [
+      deckVersioningCopy.changed.manaValue,
+      ...(["ramp", "draw", "removal", "wipes", "land"] as const).map(
+        (role) => RECOMMENDED_MIX[role].label,
+      ),
+    ];
+    expect(labels).toHaveLength(6);
+    for (const label of labels) {
+      const cell = screen.getByText(label).parentElement;
+      expect(cell?.className.split(/\s+/)).not.toContain("hidden");
+    }
+  });
+
   it("reads the curve's direction rather than leaving the reader to subtract", () => {
     render(<ChangedStrip before={BEFORE} after={AFTER} />);
     expect(screen.getByText(deckVersioningCopy.changed.manaValueDown)).toBeTruthy();

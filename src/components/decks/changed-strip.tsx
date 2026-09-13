@@ -80,7 +80,6 @@ function StripCell({
   afterTone,
   note,
   noteTone,
-  hiddenOnPhone,
 }: {
   label: string;
   /** Null when there is no previous figure — a brew, or a version with nothing to
@@ -91,16 +90,12 @@ function StripCell({
   afterTone: string;
   note: string | null;
   noteTone: string;
-  /** Three of the six cells stand down at 390px, where six of them are 55px wide.
-   *  One element with a responsive class, never a second strip for the width. */
-  hiddenOnPhone: boolean;
 }) {
   return (
     <div
       className={
-        (hiddenOnPhone ? "hidden md:block " : "") +
-        "flex-1 min-w-0 rounded-[8px] md:rounded-[9px] px-[11px] py-[9px] md:px-[14px] md:py-[12px] " +
-        "bg-[color:var(--surface)] border border-solid border-[color:var(--border)]"
+        "min-w-0 rounded-[8px] md:rounded-[9px] px-[11px] py-[9px] md:px-[14px] md:py-[12px] " +
+        "md:flex-1 bg-[color:var(--surface)] border border-solid border-[color:var(--border)]"
       }
     >
       <p className="m-0 mb-[5px] md:mb-[7px] font-mono uppercase truncate text-[9px] md:text-[10px] tracking-[0.12em] md:tracking-[0.14em] text-[color:var(--fg-faint)]">
@@ -121,9 +116,10 @@ function StripCell({
           {after}
         </span>
       </p>
-      {/* Desktop only: at 390px three cells share the width and the verdict is a
-          sentence in a 55px column. The figures above it are the fact; this is
-          the reading of it. */}
+      {/* Desktop only, as the design draws it: at 390px a cell is a third of the
+          screen and `still under rec 10` wraps inside it. The figures above are
+          the fact; this is the reading of it, and it is the half that survives
+          being read one screen later on a wider window. */}
       {note !== null && (
         <p className="hidden md:block m-0 mt-[6px] font-mono text-[10px]" style={{ color: noteTone }}>
           {note}
@@ -179,7 +175,13 @@ export function ChangedStrip({ before, after }: ChangedStripProps) {
       {/* The mana-value cell is absent, not empty, when there is nothing to
           average: an all-land list has no curve, and a dash there would be a
           figure standing in for one. */}
-      <div className="flex gap-[7px] md:gap-[10px] mb-[11px] md:mb-[10px]">
+      {/* Three across on the phone, two rows of them, rather than one row of six
+          55px columns or three cells and three omissions: every role the deck is
+          measured against is a figure the reader came here for, and a mix cell
+          the phone drops is a recommendation only desktop readers are held to.
+          One element with responsive classes — a grid under 768px and the
+          design's single flex row above it. */}
+      <div className="grid grid-cols-3 md:flex gap-[7px] md:gap-[10px] mb-[11px] md:mb-[10px]">
         {manaValueText !== null && (
           <StripCell
             label={copy.manaValue}
@@ -193,7 +195,6 @@ export function ChangedStrip({ before, after }: ChangedStripProps) {
             }
             note={!movedCurve ? null : curveDown ? copy.manaValueDown : copy.manaValueUp}
             noteTone="var(--fg-locked)"
-            hiddenOnPhone={false}
           />
         )}
         {ROLE_ORDER.map((role) => {
@@ -215,10 +216,6 @@ export function ChangedStrip({ before, after }: ChangedStripProps) {
               // Green only where the draft is what carried the role over — an
               // already-met role reads its verdict as the standing fact it is.
               noteTone={met && comparable && was < target ? "var(--success)" : "var(--fg-locked)"}
-              // Mana value, Ramp and Removal survive at 390px. Which three the
-              // design keeps is undrawn (Discrepancy 14); these are the three it
-              // draws.
-              hiddenOnPhone={role === "draw" || role === "wipes" || role === "land"}
             />
           );
         })}

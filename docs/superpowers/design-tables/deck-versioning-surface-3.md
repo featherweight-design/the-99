@@ -403,17 +403,17 @@ The strip needs `cmc` in the detail select and the version's cards joined throug
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | `flex` | `flex` |
+| display | `grid` | `flex` |
 | gap | `7px` | `10px` |
 | margin-bottom | `11px` | `10px` |
-| flex-wrap | — (single row) | — (single row) |
-| cells drawn | **3** — `Mana value`, `Removal`, `Ramp` | **6** — `Mana value`, `Removal`, `Draw`, `Ramp`, `Wipes`, `Land` (Discrepancy 14) |
+| rows | three columns, two rows (`grid-cols-3`) | — (single row) |
+| cells drawn | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` | **6**, in `ROLE_ORDER` — `Mana value`, `Ramp`, `Draw`, `Removal`, `Wipes`, `Land` (Discrepancy 14, resolved) |
 
 ### Strip cell
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| flex | `1` | `1` |
+| flex | — (grid item; `flex-1` is `md:` only) | `1` |
 | background | `#1A1713` (`--surface`) | `#1A1713` (`--surface`) |
 | border | `1px solid #26211B` (`--border`) | `1px solid #26211B` (`--border`) |
 | border-radius | `8px` | `9px` |
@@ -430,7 +430,7 @@ The strip needs `cmc` in the detail select and the version's cards joined throug
 | text-transform | `uppercase` | `uppercase` |
 | color | `#8E8269` (`--fg-faint`) | `#8E8269` (`--fg-faint`) |
 | margin-bottom | `5px` | `7px` |
-| text | `Mana value` (`changed.manaValue`) · role name | `Mana value` · `Removal` · `Draw` · `Ramp` · `Wipes` · `Land` |
+| text | `Mana value` (`changed.manaValue`) · role name, in `ROLE_ORDER` | `Mana value` · `Ramp` · `Draw` · `Removal` · `Wipes` · `Land` |
 
 ### Strip cell — figures
 
@@ -851,6 +851,10 @@ two the strip owns.
 14. **The phone strip drops three of the six cells and substitutes one.** Desktop draws Mana
     value, Removal, Draw, Ramp, Wipes, Land; phone draws Mana value, Removal, **Ramp**. No
     rule says which three survive at 390px, or that Ramp outranks Draw.
+    **Resolved 2026-09-13 (Hugh):** "We need to render all of these cards on mobile, we can't
+    just selectively remove three." The phone draws all six, three across in two rows, so the
+    reader is held to the same list of recommendations at either width. There is no ranking to
+    settle because nothing is dropped. The per-cell verdict line stays desktop-only.
 15. **`holds at rec ~37` matches no copy string.** `changed.clears(rec)` and
     `changed.under(rec)` are the only two verdict strings, and neither produces a `~`.
 16. **The unmoved cells' colours contradict each other.** `Wipes 1 → 1` draws `#E0913C`
