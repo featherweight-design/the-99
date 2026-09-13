@@ -163,13 +163,16 @@ describe("SpineDesktop", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
     const field = screen.getByLabelText("Deck name") as HTMLInputElement;
-    const box = [field.style.width, field.style.height];
-    expect(box).toEqual(["352px", "29px"]);
+    // 352 is a CEILING now, not a fixed width: below ~1200px of row the title
+    // column's inset is 364px, so a 768px viewport leaves about 318px of column
+    // and a fixed field ran under the action controls beside it.
+    const box = [field.style.width, field.style.maxWidth, field.style.height];
+    expect(box).toEqual(["100%", "352px", "29px"]);
 
     // save-disabled: cleared name
     fireEvent.change(field, { target: { value: "" } });
     expect(screen.getByRole("button", { name: /Save/ }).getAttribute("aria-disabled")).toBe("true");
-    expect([field.style.width, field.style.height]).toEqual(box);
+    expect([field.style.width, field.style.maxWidth, field.style.height]).toEqual(box);
 
     // and the hint row is present in every state, so no row is ever added
     expect(screen.getByTestId("spine-rename-hint")).toBeTruthy();

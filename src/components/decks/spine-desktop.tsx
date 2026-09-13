@@ -57,7 +57,11 @@ export interface SpineBandProps {
 
 /** §B16 — the field's box, identical in all four editing states. Declared
     rather than left to layout: zero reflow between states is the point. */
-const FIELD_BOX = { width: 352, height: 29 } as const;
+// `maxWidth`, not a fixed `width`: the title column's inset is 364px below
+// ~1200px of row, so a 768px viewport leaves about 318px of column — less than
+// 352 — and a fixed field would have run under the action controls beside it
+// while renaming. 352 stays the intended size wherever the column can hold it.
+const FIELD_BOX = { width: "100%", maxWidth: 352, height: 29 } as const;
 
 /**
  * Decision 18's shrinking half. Both names take it; the partner additionally
