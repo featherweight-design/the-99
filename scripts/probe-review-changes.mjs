@@ -33,7 +33,10 @@
 //      — and a diff row has no meta line, so the label painted in the page's
 //      16px sans, above the card name beside it. What it inherits is a fact
 //      about laid-out type, so only a browser can read it. The run fails when
-//      the label is not mono or is larger than the name in its own row.
+//      the label is not mono, is larger than the name in its own row, or is not
+//      the decklist row's own size at that width — 11px under 768px, 11.5px
+//      above it. It also fails when the fixture's own row draws no marker at
+//      all, because a run that measures nothing must not read as a pass.
 //
 // THE FIXTURE IS THIS SCRIPT'S OWN. The probe account is not the account that owns
 // local-dev's decks, and a deck page the signed-in player does not own is a 404 —
@@ -334,6 +337,10 @@ const readReview = (page) =>
             label: text(s),
             family: style.fontFamily,
             size: Number.parseFloat(style.fontSize),
+            // The oracle name, off the button's title: the face prints the
+            // printed name, which for a Secret Lair row is not the name the
+            // fixture asked for.
+            name: name?.getAttribute("title") ?? (name ? text(name) : null),
             nameSize: name ? Number.parseFloat(getComputedStyle(name).fontSize) : null,
           };
         }),
@@ -668,13 +675,17 @@ try {
     `claimed card: ${claimed.name} (${claimed.oracleId}) · owned ${claimed.owned} · ` +
       `sleeved in ${claimed.sleeved_in} deck(s)`,
   );
-  console.log(
-    `softly claimed add: ${
-      brewed
-        ? `${brewed.name} (owned 1, in the brew ${brewed.deckId})`
-        : "NONE — the marker checks measure nothing this run"
-    }`,
-  );
+  if (!brewed) {
+    // Without it the marker checks measure nothing and the run would still exit
+    // 0, which is the one outcome a probe must never produce. The fixture needs
+    // one collection card held at a single copy that no deck of this reader
+    // sleeves or commands; `local-dev` has thousands.
+    throw new Error(
+      "No collection card is free to be softly claimed, so the availability " +
+        "marker cannot be reached. Point this at a fuller collection.",
+    );
+  }
+  console.log(`softly claimed add: ${brewed.name} (owned 1, in the brew ${brewed.deckId})`);
   await context.close();
 
   for (const { label, width, height } of VIEWPORTS) {
@@ -720,7 +731,7 @@ try {
     await stage(
       underReview.deckId,
       underReview.versionId,
-      [claimed.oracleId, ...(brewed ? [brewed.oracleId] : [])],
+      [claimed.oracleId, brewed.oracleId],
       3,
     );
     await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
@@ -728,7 +739,7 @@ try {
     });
     await vpPage.waitForTimeout(900);
     let seen = await readReview(vpPage);
-    console.log(`\n########## ${label} · ${brewed ? 2 : 1} add(s) / 3 cuts`);
+    console.log(`\n########## ${label} · 2 adds / 3 cuts`);
     console.log(`  h1: ${seen.h1}`);
     console.log(`  lede: ${seen.ledeVisible ? seen.lede : "hidden"}`);
     console.log(`  chips: ${seen.chips[0] ?? "absent"}`);
@@ -834,13 +845,35 @@ try {
     // the same defect read a second way, because every other host of this marker
     // supplies mono.
     console.log(`  markers: ${seen.markers.length} on this page`);
+    // The one marker this page is built to draw, named. A count alone would pass
+    // on any marker the page happened to carry — a cut's, say — and pass equally
+    // if the fixture's add stopped rendering one at all, which is the state the
+    // styling is being measured on.
+    const brewMarker = seen.markers.find(
+      (m) => m.name === brewed.name && m.label === "1 in a brew",
+    );
+    if (!brewMarker) {
+      mistypedMarkers.push(
+        `${label} · no "1 in a brew" marker on the ${brewed.name} row, so nothing was measured`,
+      );
+    }
     for (const marker of seen.markers) {
       console.log(
-        `    "${marker.label}" ${marker.size}px in ${marker.family.split(",")[0]}` +
+        `    "${marker.label}" on ${marker.name ?? "no row name"} · ` +
+          `${marker.size}px in ${marker.family.split(",")[0]}` +
           ` · name ${marker.nameSize ?? "not found"}px`,
       );
       if (!/mono/i.test(marker.family)) {
         mistypedMarkers.push(`${label} · "${marker.label}" is not mono (${marker.family})`);
+      }
+      // The decklist row's own pair, and the responsive step between them is the
+      // half of the fix that "smaller than the name" cannot see: 11px passes that
+      // test at both widths while dropping the `md:` size the design specifies.
+      const expected = width < 768 ? 11 : 11.5;
+      if (marker.size !== expected) {
+        mistypedMarkers.push(
+          `${label} · "${marker.label}" is ${marker.size}px, expected ${expected}px`,
+        );
       }
       if (marker.nameSize === null) {
         mistypedMarkers.push(`${label} · "${marker.label}" has no name beside it to measure`);

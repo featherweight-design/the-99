@@ -155,8 +155,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   cut with no spare copy is deliberately silent. The one row that reaches the marker is an add
   whose lone copy is held by a **brew** — a deck with no committed version claims softly, so
   the add keeps its free bucket and the label reads `1 in a brew`. The probe builds that brew
-  itself. With the marker's type reverted the label reads 16px sans against a 12.5px card name
-  and the run fails; without the brew it reads `markers: 0` and measures nothing.
+  itself, and refuses to run at all when the collection holds no card free to put in it.
+
+  The marker checks name the row they expect — a `1 in a brew` label on the brew's own card —
+  rather than counting markers, and assert the size by value at each width: 11px under 768px,
+  11.5px above it. Each clause closes a way a run could report a pass while measuring nothing.
+  With the marker's type reverted the label reads 16px sans against a 12.5px card name; with
+  only the `md:` step dropped it reads 11px on desktop, which is still under the name and
+  passes every other check; with the brew's card left out of the staged draft it reads
+  `markers: 0`. All three fail the run.
 
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.

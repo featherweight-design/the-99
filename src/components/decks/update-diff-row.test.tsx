@@ -187,7 +187,11 @@ describe("the review page's mounting", () => {
     const marker = label.closest("span.inline-flex");
     expect(marker).toBeTruthy();
     expect(marker!.className).toContain("font-mono");
-    expect(marker!.className).toMatch(/text-\[[\d.]+px\]/);
+    // Both steps, by value: the decklist row's own pair. A pattern that takes any
+    // px size passes on a marker that drops the `md:` step, which is a size the
+    // design specifies and the phone assertion cannot speak for.
+    expect(marker!.className).toContain("text-[11px]");
+    expect(marker!.className).toContain("md:text-[11.5px]");
     // And the row above it lends nothing, which is why the marker must carry it.
     expect(soft.className).not.toContain("font-mono");
     expect(soft.className).not.toMatch(/text-\[/);
