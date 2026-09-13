@@ -30,13 +30,18 @@ describe("deckTuningCopy", () => {
     for (const s of strings) expect(s).not.toMatch(/\bnet\b/i);
   });
 
-  // The readBack line ends on its separator because an emphasised clause follows it
-  // in the markup. That is the only string here allowed to end unfinished, and
+  // The readBack line ends on its separator because an emphasised clause follows
+  // it in the markup. That is the only string here allowed to end unfinished, and
   // naming it is what stops a second one being added by habit.
+  //
+  // The class includes the COLON since the 2026-09-13 sweep: `readBack` used to
+  // end on an em dash, so a guard listing only `—` and `,` covered it. It now
+  // ends on `:`, and a guard that did not list `:` would wave through the very
+  // ending it exists to catch.
   it("ends every line but the read-back one on a finished clause", () => {
     for (const s of strings) {
       if (s === deckTuningCopy.note.readBack) continue;
-      expect(s.trimEnd()).not.toMatch(/[—,]$/);
+      expect(s.trimEnd()).not.toMatch(/[—:,]$/);
     }
   });
 
