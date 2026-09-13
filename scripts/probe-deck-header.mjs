@@ -129,8 +129,11 @@ const READ_HEADER = `() => {
     artUrl: /url\\(/.test(image) ? image.replace(/^.*?url\\(["']?/, '').replace(/["']?\\).*$/, '') : null,
     isGradientOnly: !/url\\(/.test(image) && /gradient/.test(image),
     scrims: header.querySelectorAll('.art-wash-scrim').length,
-    // The heading's text content now includes the rename glyph, which lives in
-    // its text run by design. `[data-deck-title]` is the deck's name alone.
+    // `[data-deck-title]` is the deck's name alone, which is what the heading
+    // holds now: the rename control is its SIBLING, outside the clamped text, so
+    // neither the heading's text content nor its accessible name carries a glyph.
+    // Reading the marker rather than the heading is what keeps this honest if a
+    // future change puts anything beside that text again.
     title: h1 ? (h1.querySelector('[data-deck-title]') ?? h1).textContent.trim() : null,
     titleShadow: h1 ? getComputedStyle(h1).textShadow : null,
     titleColor: h1 ? getComputedStyle(h1).color : null,
