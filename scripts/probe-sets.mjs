@@ -948,6 +948,66 @@ async function run() {
     }
     await scrollTo(0);
 
+    // The sheet's stacking context. `position: sticky` with a `z-index` creates one, so
+    // while the sheet was a descendant of the head its `z-50` was confined to the head's
+    // `z-[2]` and the shell's `fixed z-40` tab bar painted over its footer. A z-index is a
+    // number in a class list and proves nothing; the only test is asking the engine what is
+    // actually on top at a point inside the sheet.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/collection/sets/${code}`, { waitUntil: "networkidle" });
+    await waitForCells(page);
+    const sheetTrigger = await page.$('button[aria-haspopup="dialog"]');
+    if (sheetTrigger === null) {
+      failures += !report("the filter sheet can be opened", false, "no trigger on the page");
+    } else {
+      await sheetTrigger.click();
+      await page.waitForSelector('[role="dialog"]', { timeout: 5_000 });
+      const hit = await page.evaluate(() => {
+        const d = document.querySelector('[role="dialog"]');
+        if (d === null) return null;
+        const r = d.getBoundingClientRect();
+        // 20px above the sheet's bottom edge, which is where the tab bar overlaps.
+        const el = document.elementFromPoint(
+          Math.round(r.left + r.width / 2), Math.round(r.bottom - 20),
+        );
+        return {
+          inside: el !== null && d.contains(el),
+          at: `${Math.round(r.left + r.width / 2)},${Math.round(r.bottom - 20)}`,
+          rect: `${Math.round(r.top)}-${Math.round(r.bottom)}`,
+          vh: window.innerHeight,
+          hit: el === null ? "nothing" : `${el.tagName}.${String(el.className).slice(0, 32)}`,
+          insideHead: document.querySelector("[data-set-head]")?.contains(d) ?? false,
+        };
+      });
+      if (hit === null) {
+        failures += !report("the sheet's footer can be hit-tested", false, "no dialog");
+      } else {
+        // REPORTED, not asserted. The sheet is a descendant of a `sticky z-[2]` head, which
+        // is a stacking context, so its `z-50` cannot beat the shell's `fixed z-40` tab bar
+        // — true on `main` today and not introduced here. The line is in the probe so the
+        // fact is measured rather than remembered, and so the follow-up that portals the
+        // sheet has a check waiting for it.
+        report(
+          "what is on top at the sheet's footer",
+          true,
+          hit.inside
+            ? `the sheet (${hit.at})`
+            : `${hit.hit} — known, pre-existing: the sheet is inside a sticky stacking`
+              + ` context. At ${hit.at}, sheet ${hit.rect}`,
+        );
+        // Also reported and not asserted, for the same reason: the panel already overflows
+        // the fold on `main` (658-1154 against 844), so a check here would fail on code
+        // this PR does not touch. Recorded so the follow-up that portals the sheet starts
+        // from a measured before rather than from a comment.
+        report(
+          "the sheet panel against the fold",
+          true,
+          `${hit.rect} against ${hit.vh}px — known, pre-existing on main at 658-1154`,
+        );
+      }
+      await page.keyboard.press("Escape");
+    }
+
     // The search field (§29). It is the only child of the control row that shrinks, and the
     // row must not wrap at either width — a control landing on its own line inside a sticky
     // head is the defect the three-row rule exists to prevent, arriving by another route.

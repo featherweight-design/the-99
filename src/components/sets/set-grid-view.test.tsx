@@ -2146,10 +2146,9 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     }
   });
 
-  // Opening the sheet from the collapsed bar must not reopen the head: the dialog is a
-  // child of the head element and not of the bar, so its first focused control bubbled
-  // through the guard and unmounted the trigger `useDialogA11y` returns focus to.
-  it("stays collapsed when the sheet opens from the bar", () => {
+  // Opening the sheet from the collapsed bar keeps the bar: the head does not reopen, so
+  // `useDialogA11y` still has the trigger it will return focus to.
+  it("keeps the bar when the sheet opens from it", () => {
     stubDesktop(false);
     const { container } = view([p("1"), p("2")], []);
     scrollTo(400);
@@ -2158,8 +2157,8 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
       .find((b) => /Filters/.test(b.textContent ?? "")) as HTMLElement;
     fireEvent.click(trigger);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    fireEvent.focus(screen.getByRole("dialog").querySelector("button") as HTMLElement);
     expect(isShy(container)).toBe(true);
+    expect(container.querySelector("[data-set-head-bar]")).toBeTruthy();
   });
 
   // A complete base run can still have extras and enough cells to scroll, and the icon is
@@ -2211,46 +2210,33 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     )).toBe(true);
   });
 
-  // Collapsing puts the open subtree behind `display:none` while the reader is standing in
-  // it, and the browser leaves focus on the hidden control. Not a focus rescue — this route
-  // deleted one of those over five rounds — the case is simply made impossible.
-  it("does not collapse while focus is inside the head", () => {
+  // The four-part focus mechanism this replaced — a pin, a bar exception, a rescue ref and
+  // a layout effect — drew findings in five consecutive rounds and grew a new hole in each.
+  // What is left is one term: the head does not collapse while the SHEET is open, because
+  // that is the case with a real defect behind it. `useDialogA11y` returns focus to the
+  // trigger on close, and a collapse would have removed it.
+  it("does not collapse while the filter sheet is open", () => {
     stubDesktop(false);
     const { container } = view([p("1"), p("2")], []);
-    fireEvent.focus(screen.getByRole("searchbox", { name: /Search cards/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     scrollTo(400);
     expect(isShy(container)).toBe(false);
   });
 
-  it("and collapses once focus leaves it", () => {
+  it("and collapses once the sheet closes", () => {
     stubDesktop(false);
     const { container } = view([p("1"), p("2")], []);
-    const field = screen.getByRole("searchbox", { name: /Search cards/ });
-    fireEvent.focus(field);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     scrollTo(400);
     expect(isShy(container)).toBe(false);
-    // `relatedTarget` outside the head is what "left" means; a tab between two controls
-    // inside it must not re-enable the collapse.
-    fireEvent.blur(field, { relatedTarget: document.body });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     scrollTo(401);
     expect(isShy(container)).toBe(true);
   });
 
   // The region is `sr-only` to keep ANNOUNCING, not to keep offering: clipped to a 1px box
   // the jump link is still focusable, so Tab landed on an invisible control.
-  // The bar is inside the head element too, so a guard on the whole head meant tabbing to
-  // the bar's own Filters button reopened the head and unmounted that button under the
-  // reader's focus — the same strand, from the other direction.
-  it("does not reopen when focus lands on the collapsed bar itself", () => {
-    stubDesktop(false);
-    const { container } = view([p("1"), p("2")], []);
-    scrollTo(400);
-    expect(isShy(container)).toBe(true);
-    const bar = container.querySelector("[data-set-head-bar]") as HTMLElement;
-    fireEvent.focus(bar.querySelector("button") as HTMLElement);
-    expect(isShy(container)).toBe(true);
-  });
-
   it("takes the extras jump link out of the tab order while collapsed", () => {
     stubDesktop(false);
     const { container } = view(

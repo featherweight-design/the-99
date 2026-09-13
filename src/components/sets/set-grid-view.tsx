@@ -142,37 +142,27 @@ export function SetGridView(props: SetGridViewProps) {
    */
   const [deltaFiring, setDeltaFiring] = useState(false);
   const onDeltaFiring = useCallback((firing: boolean) => setDeltaFiring(firing), []);
-  /**
-   * A third state that forbids a collapse: focus is inside the open head.
-   *
-   * Collapsing puts that subtree behind `display:none` while the reader is standing in it —
-   * in the search field, on a filter chip, inside the cost disclosure — and the browser
-   * leaves focus on the hidden control. The keyboard is then nowhere, with a visible bar
-   * somewhere else on screen.
-   *
-   * NOT a focus rescue. This route deleted one of those over five review rounds and the
-   * lesson held: the cheap answer is to make the case impossible rather than to catch it.
-   * A reader whose focus is in the head is using the head, and scrolling with it open is
-   * what they asked for; the collapse resumes the moment they leave.
-   */
-  const [focusInHead, setFocusInHead] = useState(false);
-  /**
-   * The head can reopen for a reason that is not the reader: the delta strip fires on a
-   * window focus event and pins it open. If focus was on one of the bar's two buttons, that
-   * button is unmounted underneath it and the keyboard is left on a detached node.
-   *
-   * Bounded on purpose — two controls, one destination. The bar's `Filters` and the open
-   * row's `Filters` are the same control at two sizes, so that is where focus goes.
-   */
-  const openFiltersRef = useRef<HTMLButtonElement>(null);
-  const rescueFromBar = useRef(false);
   // The two states that forbid a collapse are read during render rather than pushed into
   // `collapsed` by an effect: an effect that calls `setState` synchronously cascades a
   // render, and the answer here is derivable — desktop never collapses, and neither does a
   // head whose delta strip is firing.
-  const mayCollapse = !isDesktop && !deltaFiring && !focusInHead;
+  const mayCollapse = !isDesktop && !deltaFiring;
   useEffect(() => {
     if (!mayCollapse) return;
+    // An open sheet FREEZES the head, in whichever state it is already in. It does not
+    // force it open: opened from the collapsed bar, forcing it open would unmount the
+    // trigger `useDialogA11y` returns focus to — the very defect being avoided, arriving
+    // from the other side. So the listener simply stands down and `collapsed` holds.
+    //
+    // This one term replaces a four-part focus mechanism — a pin, a bar exception, a rescue
+    // ref and a layout effect — that drew findings in five consecutive rounds and grew a
+    // new hole in each. This route deleted a focus rescue once before, for the same reason.
+    //
+    // What that mechanism protected beyond the sheet: focus in the open subtree falls to
+    // the body when it is hidden. For the search field and the chips that is what every
+    // collapsing header on the web does, and the reader got there by scrolling, which needs
+    // no focus at all.
+    if (sheetOpen) return;
     const onScroll = () => {
       const y = window.scrollY;
       // The band read as a function of the CURRENT state, which is what makes it
@@ -183,7 +173,7 @@ export function SetGridView(props: SetGridViewProps) {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [mayCollapse]);
+  }, [mayCollapse, sheetOpen]);
   /**
    * The rest height, held so the DOCUMENT does not change height when the head collapses.
    * Sticky overlays, so the grid's own layout is untouched at every scroll position — but
@@ -195,7 +185,6 @@ export function SetGridView(props: SetGridViewProps) {
    */
   const headRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
   /**
    * The spacer's height, written to the DOM rather than held in state.
    *
@@ -207,6 +196,9 @@ export function SetGridView(props: SetGridViewProps) {
    * Reads refs only, so the `ResizeObserver` registered once can keep calling it.
    */
   const restHeightRef = useRef<number | null>(null);
+  // Read by `sizeSpacer`, which is created once and cannot close over the state.
+  const deltaFiringRef = useRef(false);
+  deltaFiringRef.current = deltaFiring;
   const sizeSpacer = useRef(() => {
     const el = headRef.current;
     const spacer = spacerRef.current;
@@ -216,7 +208,12 @@ export function SetGridView(props: SetGridViewProps) {
     // sheet leaves the recorded height stale — and the first render that restores would
     // then size the spacer from a head that no longer exists. `ResizeObserver` corrects it
     // a frame later, which is a frame too late.
-    if (!el.hasAttribute("data-set-head-collapsed")) {
+    // Not while the delta strip is firing, either. The head is pinned open then, so no
+    // reserve is needed — and recording a delta-inclusive height meant that when the strip
+    // resolved back to the baseline, the collapse committed in the same render and the
+    // spacer stayed taller than the head by the strip's own height until the next restore.
+    // The reserve represents the steady-state open head.
+    if (!el.hasAttribute("data-set-head-collapsed") && !deltaFiringRef.current) {
       restHeightRef.current = el.getBoundingClientRect().height;
     }
     const rest = restHeightRef.current;
@@ -703,39 +700,10 @@ export function SetGridView(props: SetGridViewProps) {
   // collapsing again the moment it is dismissed.
   const shy = collapsed && mayCollapse;
 
-  // The head can reopen for a reason that is not the reader — the delta strip fires on a
-  // window focus event — and that unmounts the bar under whatever had focus in it. Declared
-  // here because it reads `shy`, which is derived below the state it depends on.
-  useLayoutEffect(() => {
-    if (shy || !rescueFromBar.current) return;
-    rescueFromBar.current = false;
-    openFiltersRef.current?.focus();
-  }, [shy]);
-
   return (
     <div>
       <div
         ref={headRef}
-        // Only while the head is OPEN. Anything focused once it is collapsed — the bar's
-        // own buttons, and the filter sheet, which is a child of this element and not of
-        // the bar — would otherwise reopen the head and unmount the control the reader had
-        // just reached. `useDialogA11y` then returns focus to a trigger that is gone.
-        //
-        // Read as "focus pins an open head", never "focus opens a closed one".
-        onFocus={() => {
-          if (!shy) setFocusInHead(true);
-        }}
-        // `onBlur` is React's delegated `focusout`, so it fires with the NEW target in
-        // `relatedTarget` — which is how leaving the open block is told apart from moving
-        // inside it. A plain `onBlur` that always cleared would re-enable the collapse on
-        // every tab between two controls in it.
-        onBlur={(e) => {
-          const next = e.relatedTarget as Node | null;
-          const stillOpen = next !== null
-            && e.currentTarget.contains(next)
-            && barRef.current?.contains(next) !== true;
-          if (!stillOpen) setFocusInHead(false);
-        }}
         data-set-head-shy={shy ? "" : undefined}
         data-set-head
         data-set-head-collapsed={shy ? "" : undefined}
@@ -752,15 +720,8 @@ export function SetGridView(props: SetGridViewProps) {
             forty pixels of scroll away. */}
         {shy ? (
           <div
-            ref={barRef}
             data-set-head-bar
             className="flex h-[52px] items-center gap-[8px]"
-            onFocus={() => { rescueFromBar.current = true; }}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                rescueFromBar.current = false;
-              }
-            }}
           >
             <SetIcon
               uri={iconSvgUri}
@@ -1091,7 +1052,6 @@ export function SetGridView(props: SetGridViewProps) {
 
           <button
             type="button"
-            ref={openFiltersRef}
             onClick={() => setSheetOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
@@ -1265,7 +1225,23 @@ export function SetGridView(props: SetGridViewProps) {
           ) : null}
         </div>
 
-        {/* The phone sheet. Same URL-backed state as the rack above it, and the same
+        {/* KNOWN, PRE-EXISTING, and not this PR's to fix: `position: sticky` with a
+            `z-index` creates a stacking context, so this sheet's `z-50` is confined to the
+            head's `z-[2]` and the shell's `fixed z-40` tab bar paints over its footer. A
+            hit test 20px above the sheet's bottom edge returns a tab-bar link. That is true
+            on `main` today, from the row this PR does not change.
+
+            And the panel overflows the viewport regardless of where it is mounted —
+            `main` puts it at 658-1154 against an 844px fold, this branch at 747-1243. So
+            the footer the tab bar covers is off-screen either way, and moving the sheet out
+            of the head changes nothing a reader can see. Left where it has always been:
+            a pre-existing surface is not this PR's to rewrite at round 5.
+
+            The real fix is a portal on `FilterSheet` plus a panel that fits, which is a
+            change to every route that mounts it. Both figures are in `probe:sets` so the
+            follow-up starts from measurements rather than from this comment.
+
+            The phone sheet. Same URL-backed state as the rack above it, and the same
             controls at a 44px target. */}
         {sheetOpen && !isDesktop ? (
           <FilterSheet onClose={() => setSheetOpen(false)}>
@@ -1397,6 +1373,7 @@ export function SetGridView(props: SetGridViewProps) {
             and moved the grid under the reader's thumb: the exact motion the fixed-height
             rule exists to prevent, arriving through the row meant to guarantee it. Desktop
             has 1112px and never wraps. */}
+
         {/* `sr-only` when shy, never `hidden`, and never a second region beside it.
             `Filters` IS reachable from the collapsed bar, so the result count still
             changes there — unmounting the only `role="status"` left a screen-reader user
