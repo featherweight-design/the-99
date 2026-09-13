@@ -50,7 +50,9 @@ export function resolveSpecifier(file, specifier) {
  * module-level check calls that shared. It is not.
  */
 function parse(source, file) {
-  return ts.createSourceFile(file, source, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX);
+  // `setParentNodes` so the reference walk can ask what position an
+  // identifier sits in — a property key and a parameter name are not uses.
+  return ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 }
 
 function valueImports(parsed) {
@@ -99,12 +101,49 @@ function valueImports(parsed) {
   return found;
 }
 
+/**
+ * Is this identifier a USE of the name, or just the name appearing somewhere?
+ *
+ * An identifier with the right text is not a reference when it is the key of an
+ * object literal, the property half of `x.Thing`, or the name being introduced
+ * by a declaration — a parameter called `FilterChassis` shadows the import
+ * rather than using it. A shorthand property (`{ FilterChassis }`) IS a use, so
+ * it is deliberately not excluded.
+ *
+ * This is positional, not a symbol resolution: a genuine shadow in an inner
+ * scope that then references the shadowed name still counts. Resolving symbols
+ * needs a whole Program and a type checker, which is a heavier tool than a
+ * check meant to run in under a second — and the remaining hole requires
+ * someone to name a local after the component they are not rendering.
+ */
+function isUse(node) {
+  const parent = node.parent;
+  if (!parent) return true;
+  if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false;
+  if (ts.isQualifiedName(parent) && parent.right === node) return false;
+  if (ts.isPropertyAssignment(parent) && parent.name === node) return false;
+  if (ts.isPropertySignature(parent) && parent.name === node) return false;
+  // The name a declaration introduces: parameters, variables, functions,
+  // classes, and destructured bindings.
+  if (
+    (ts.isParameter(parent) ||
+      ts.isVariableDeclaration(parent) ||
+      ts.isFunctionDeclaration(parent) ||
+      ts.isClassDeclaration(parent) ||
+      ts.isBindingElement(parent)) &&
+    parent.name === node
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** Is `local` referenced anywhere outside the import declarations? */
 function isReferenced(parsed, local) {
   let used = false;
   const visit = (node) => {
     if (used || ts.isImportDeclaration(node)) return;
-    if (ts.isIdentifier(node) && node.text === local) {
+    if (ts.isIdentifier(node) && node.text === local && isUse(node)) {
       used = true;
       return;
     }

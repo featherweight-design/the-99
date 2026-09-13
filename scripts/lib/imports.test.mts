@@ -52,6 +52,17 @@ describe("importsSharedBinding", () => {
     expect(ask('import { FilterChassis } from "../ui/filter-chassis";')).toBe(false);
   });
 
+  it("does not count a property key, a property access, or a shadowing name", () => {
+    // An identifier with the right text is not a use of the import. A parameter
+    // named after the component shadows it; `x.FilterChassis` names a property.
+    const imp = 'import { FilterChassis } from "../ui/filter-chassis";';
+    expect(ask(imp + '\nexport const o = { FilterChassis: true };')).toBe(false);
+    expect(ask(imp + '\nexport const v = theme.FilterChassis;')).toBe(false);
+    expect(ask(imp + '\nexport function render(FilterChassis) { return null; }')).toBe(false);
+    // Shorthand IS a use — the value is the imported one.
+    expect(ask(imp + '\nexport const o = { FilterChassis };')).toBe(true);
+  });
+
   it("accepts a reference that is not JSX", () => {
     expect(
       ask('import { FilterChassis } from "../ui/filter-chassis";\nconst C = FilterChassis;'),
@@ -87,7 +98,7 @@ describe("importsSharedBinding", () => {
   it("rejects a prose mention on a line comment", () => {
     // The first finding this file exists for: a bare `from "…"` regex reads
     // this as an import and reports a route as sharing when it does not.
-    expect(ask('// import { FilterChassis } from "../ui/filter-chassis";')).toBe(false);
+    expect(ask('// import { FilterChassis } from "../ui/filter-chassis";' + USE)).toBe(false);
   });
 
   it("rejects an import quoted inside a block comment", () => {
@@ -96,37 +107,48 @@ describe("importsSharedBinding", () => {
     expect(
       // Column zero inside the comment — indented by a leading ` * ` it would
       // not reach the anchor anyway, and the test would prove nothing.
-      ask('/*\nimport { FilterChassis } from "../ui/filter-chassis";\n*/\nexport const x = 1;'),
+      ask('/*\nimport { FilterChassis } from "../ui/filter-chassis";\n*/' + USE),
     ).toBe(false);
   });
 
   it("rejects an import inside a template literal", () => {
     expect(
-      ask('const snippet = `\nimport { FilterChassis } from "../ui/filter-chassis";\n`;'),
+      ask('const snippet = `\nimport { FilterChassis } from "../ui/filter-chassis";\n`;' + USE),
     ).toBe(false);
   });
 
   it("rejects an import inside an ordinary string", () => {
-    expect(ask('const doc = \'import { FilterChassis } from "../ui/filter-chassis"\';')).toBe(false);
+    expect(
+      ask('const doc = \'import { FilterChassis } from "../ui/filter-chassis"\';' + USE),
+    ).toBe(false);
   });
 
   it("rejects a constant-only import from the shared module", () => {
     // `/collection`'s browser.tsx, exactly: it takes the breakpoint and renders
     // its own FilterBar.
-    expect(ask('import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";')).toBe(false);
+    expect(ask('import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";' + USE)).toBe(false);
   });
 
   it("rejects a type-only import, in both spellings", () => {
-    expect(ask('import type { FilterChassis } from "../ui/filter-chassis";')).toBe(false);
-    expect(ask('import { type FilterChassis } from "../ui/filter-chassis";')).toBe(false);
+    // Referenced in a type position, so the rejection is about `isTypeOnly`
+    // rather than about the import being unused.
+    const TYPE_USE = '\ntype T = FilterChassis;';
+    expect(ask('import type { FilterChassis } from "../ui/filter-chassis";' + TYPE_USE)).toBe(false);
+    expect(ask('import { type FilterChassis } from "../ui/filter-chassis";' + TYPE_USE)).toBe(false);
   });
 
   it("rejects the binding imported from a different module", () => {
-    expect(ask('import { FilterChassis } from "../../lib/copy/filter-chassis";')).toBe(false);
+    expect(ask('import { FilterChassis } from "../../lib/copy/filter-chassis";' + USE)).toBe(
+      false,
+    );
   });
 
   it("rejects a longer name that merely starts with the binding", () => {
-    expect(ask('import { FilterChassisCopy } from "../ui/filter-chassis";')).toBe(false);
+    expect(
+      ask(
+        'import { FilterChassisCopy } from "../ui/filter-chassis";\nexport const V = () => <FilterChassisCopy />;',
+      ),
+    ).toBe(false);
   });
 
   it("follows the exported name through an alias", () => {
@@ -137,14 +159,16 @@ describe("importsSharedBinding", () => {
         'import { FilterChassis as Chassis } from "../ui/filter-chassis";\nexport const V = () => <Chassis />;',
       ),
     ).toBe(true);
-    expect(ask('import { Other as FilterChassis } from "../ui/filter-chassis";')).toBe(false);
+    expect(ask('import { Other as FilterChassis } from "../ui/filter-chassis";' + USE)).toBe(
+      false,
+    );
   });
 
   it("does not read a side-effect import into a later re-export", () => {
     // The round-3 finding: a lazy regex ran from `import` across the blank line
     // to the re-export's `from`, and reported a value import that is not there.
     expect(
-      ask('import "./setup";\n\nexport { FilterChassis } from "../ui/filter-chassis";'),
+      ask('import "./setup";\n\nexport { FilterChassis } from "../ui/filter-chassis";' + USE),
     ).toBe(false);
   });
 
