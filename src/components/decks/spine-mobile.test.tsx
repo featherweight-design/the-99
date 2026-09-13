@@ -182,18 +182,24 @@ describe("SpineMobile", () => {
     // band on a phone for exactly the long names that fill the column. Only the
     // 15px of hit padding overhangs now, which fits the block's 18px inset.
     expect(holder.style.width).toBe("14px");
-    // No `flex-none`: the holder is inline-level in the title's own text flow
-    // now, not a flex item — which is what puts it on the title's last line
-    // instead of after the heading's full-width box.
-    expect(holder.style.verticalAlign).toBe("baseline");
+    // Absolutely positioned from a measurement of the title's last line box,
+    // because CSS cannot place an element after the last WORD of wrapped text.
+    // jsdom has no layout, so what is assertable here is the fallback: the
+    // block's bottom-right corner, which is where the glyph sits until the
+    // measurement lands and if it never does.
+    expect(holder.className).toContain("absolute");
+    expect(holder.style.right).toBe("0px");
+    expect(holder.style.bottom).toBe("0px");
     // Beside the heading, not inside it: within the heading its `aria-label`
     // joined the heading's own accessible name, so heading navigation announced
     // the control and then the control announced itself again.
     expect(holder.closest("h1")).toBeNull();
     expect(holder.previousElementSibling?.tagName).toBe("H1");
     // And it wins the hit test over the row below, whose own controls come later
-    // in the DOM — the 15px of hit padding reaches past the title line.
-    expect(holder.className).toContain("relative");
+    // in the DOM — the 15px of hit padding reaches past the title line. `z-[1]`
+    // on an absolutely positioned box does the same job `relative` did on an
+    // in-flow one: both make it a positioned element with a stacking order of
+    // its own, rather than one ordered by document position.
     expect(holder.className).toContain("z-[1]");
   });
 
@@ -306,9 +312,11 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
 
     const heading = container.querySelector<HTMLElement>("h1")!;
     expect(heading.style.textAlign).toBe("left");
-    // Inline-level and clamped: inline so the pencil joins its last line box,
-    // clamped because the 90px ramp figure is measured against two lines.
-    expect(heading.style.display).toBe("-webkit-inline-box");
+    // Block-level and clamped: the glyph is positioned rather than in flow, and
+    // a block box wraps the same way at every width, which is what the
+    // measurement reads. Clamped at two because the 90px ramp figure is
+    // measured against that ceiling.
+    expect(heading.style.display).toBe("-webkit-box");
     expect(heading.style.webkitLineClamp).toBe("2");
 
     const meta = container.querySelector<HTMLElement>("[data-spine-meta]")!;
@@ -330,7 +338,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
   // declaration is what is assertable, and the declaration is the whole fix:
   // an inline-level clamped heading, a baseline-aligned inline holder after it,
   // and no flex row between them.
-  it("keeps the pencil in the title's text flow, however the name wraps", () => {
+  it("positions the pencil from the title's own last line, however it wraps", () => {
     const { container } = renderSpine(
       <SpineMobile
         {...props}
@@ -341,25 +349,21 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     const holder = container
       .querySelector<HTMLElement>('button[aria-label^="Rename deck"]')!
       .parentElement!;
-    // Siblings in one inline flow: the holder comes straight after the heading,
-    // and their shared parent is not a flex container.
-    expect(holder.previousElementSibling).toBe(heading);
-    expect(holder.parentElement!.className).not.toContain("flex");
-    expect(holder.style.verticalAlign).toBe("baseline");
-    // The heading reserves the glyph's flow width — 14 plus its 6px margin —
-    // because a title long enough to need the whole line otherwise pushed the
-    // glyph onto a line of its own, where baseline alignment cannot reach back
-    // up to the clamped last line.
-    expect(heading.style.maxWidth).toBe("calc(100% - 20px)");
-    // The heading stays the clamped inline box, and its accessible name is the
-    // deck's name alone.
-    expect(heading.style.display).toBe("-webkit-inline-box");
+    // The frame the glyph is positioned within is the heading's own parent, so
+    // the two share a coordinate space.
+    expect(holder.parentElement).toBe(heading.parentElement);
+    expect(holder.parentElement!.className).toContain("relative");
+    expect(holder.className).toContain("absolute");
+    // The heading reserves the glyph's slot on every line — 14 plus 6 — so a
+    // last line that fills the width cannot put the glyph over its final word.
+    expect(heading.style.paddingRight).toBe("20px");
+    // The heading's accessible name is still the deck's name alone.
     expect(heading.textContent).toBe("HD Tune — A Very Long Deck Name That Keeps Going");
     expect(heading.querySelector("button")).toBeNull();
-    // What jsdom CANNOT answer is whether that reserved width is enough, or
-    // whether the glyph lands on the last line rather than beside the first:
-    // there is no layout here. `probe-deck-header.mjs` measures it in a browser
-    // — the title's own line boxes via a Range, the glyph's rect against the
-    // last of them, and its plate against the block's right edge.
+    // Where the glyph actually LANDS is a layout question jsdom cannot answer.
+    // `probe-deck-header.mjs` reads the title's line boxes with a Range in a real
+    // browser and fails if the glyph is more than 12px past the last line's text
+    // — which is the check that caught an atomic inline box passing while it sat
+    // at the far right of a short second line.
   });
 });

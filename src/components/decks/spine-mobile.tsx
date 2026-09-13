@@ -6,7 +6,7 @@
 // carries none.
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
@@ -22,6 +22,10 @@ import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 
+/** The rename glyph's drawn size. Named because the measurement below has to
+    keep the glyph inside the block, and the heading reserves the same figure. */
+const GLYPH = 14;
+
 export function SpineMobile({
   deck,
   counts,
@@ -30,6 +34,61 @@ export function SpineMobile({
   offerFirstCommit,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  // Where the rename glyph sits, measured. CSS cannot express it: a wrapped box
+  // takes the whole available width, so anything following the title in flow
+  // lands at that box's right edge rather than after its last WORD — which is
+  // the same far-right glyph a flex sibling produced. The title's own line boxes
+  // are the only thing that knows where its last line ends, and a Range over
+  // the text is the only way to read them.
+  //
+  // `null` until measured, which is also the no-JS and pre-hydration state: the
+  // glyph falls back to the block's bottom-right corner, never clipped and never
+  // far from the title, and the measurement moves it beside the words.
+  const [glyphAt, setGlyphAt] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const title = titleRef.current;
+    const frame = title?.parentElement;
+    if (!title || !frame) return;
+    const measure = () => {
+      const text = title.querySelector("[data-deck-title]");
+      if (!text) return;
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      // Guarded because a Range's line boxes are a LAYOUT question: jsdom
+      // implements the Range but not `getClientRects`, so a component test hits
+      // the fallback position rather than a crash. The real measurement is
+      // asserted in a browser by `probe-deck-header.mjs`, which reads the same
+      // rects and fails if the glyph is more than 12px past the last line.
+      if (typeof range.getClientRects !== "function") return;
+      // Every line box the text draws; the last is the line the glyph follows.
+      // Zero-area rects are the collapsed ones at a wrap point.
+      const lines = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height > 0);
+      const last = lines[lines.length - 1];
+      if (!last) return;
+      const base = frame.getBoundingClientRect();
+      setGlyphAt({
+        // 6px after the words, and never past the slot the heading's padding
+        // reserves — a last line that fills the width would otherwise put the
+        // glyph outside the block.
+        left: Math.min(last.right - base.left + 6, Math.max(base.width - GLYPH, 0)),
+        // Centred on that line rather than on the block: against a two-line name
+        // the block's centre is between the lines.
+        top: last.top - base.top + (last.height - GLYPH) / 2,
+      });
+    };
+    measure();
+    // Re-measured on anything that can move the last line: the column's width,
+    // and the display face arriving after first paint — a fallback face wraps at
+    // a different word than Cinzel does.
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(frame);
+    document.fonts?.ready?.then(measure).catch(() => {});
+    return () => observer?.disconnect();
+    // `deck.name` and `renaming` both change which text is laid out.
+  }, [deck.name, renaming]);
   const { commander, partner } = deck;
   const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
@@ -292,8 +351,15 @@ export function SpineMobile({
                   No spacer either: it existed only to balance the glyph's flow
                   width so a centred title stayed centred, and this block reads
                   from the left. */}
-              <div className="w-full" style={{ maxWidth: "100%", textAlign: "left" }}>
+              <div
+                // `relative`: the glyph is positioned within this frame, from a
+                // measurement of the title's last line box. It is also the box
+                // the `ResizeObserver` watches.
+                className="relative w-full"
+                style={{ maxWidth: "100%", textAlign: "left" }}
+              >
                 <h1
+                  ref={titleRef}
                   // `-webkit-inline-box`: inline-LEVEL so the glyph after it
                   // joins its last line, and still the clamped box the 90px ramp
                   // figure is measured against. With `overflow: hidden` its
@@ -302,17 +368,19 @@ export function SpineMobile({
                   // first.
                   className="m-0 min-w-0 font-display font-[700]"
                   style={{
-                    display: "-webkit-inline-box",
+                    // `-webkit-box`, block-level: the glyph no longer follows
+                    // this box in flow, so it does not need to be inline — and a
+                    // block box wraps the same way at every width, which is what
+                    // the measurement reads.
+                    display: "-webkit-box",
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
-                    // The holder's own flow width is RESERVED: 14 of glyph plus
-                    // its 6px margin. At `100%` a title long enough to need the
-                    // whole line left nothing for the glyph, which pushed it to a
-                    // line of its own — baseline alignment cannot reach back up
-                    // to the clamped last line, and the extra line breaks the
-                    // 90px figure the ramp is keyed to.
-                    maxWidth: "calc(100% - 20px)",
+                    // The glyph's slot, reserved on every line. The measurement
+                    // keeps the glyph inside the block, and without this a last
+                    // line that fills the width would have the glyph over its
+                    // final word.
+                    paddingRight: GLYPH + 6,
                     fontSize: 20,
                     lineHeight: 1.25,
                     textAlign: "left",
@@ -354,14 +422,18 @@ export function SpineMobile({
                     document position, so the row underneath won the hit test
                     across the bottom third of this target. The same defect #534
                     fixed one control over. */}
-                {/* `vertical-align: baseline` against an inline box whose
-                    overflow is hidden: that box's baseline IS its bottom edge, so
-                    the glyph sits beside the title's last line on a wrapped name
-                    and beside its only line on a short one. No `self-*` — there
-                    is no flex row left to align within. */}
+                {/* Positioned from the measurement above: beside the title's
+                    last word at whatever width the column happens to be. Until
+                    that measurement lands — and if it never does — it falls back
+                    to the block's bottom-right corner, which is always visible
+                    and never clipped. */}
                 <span
-                  className="relative z-[1] inline-flex"
-                  style={{ width: 14, marginLeft: 6, verticalAlign: "baseline" }}
+                  className="absolute z-[1] inline-flex"
+                  style={
+                    glyphAt
+                      ? { width: GLYPH, left: glyphAt.left, top: glyphAt.top }
+                      : { width: GLYPH, right: 0, bottom: 0 }
+                  }
                 >
                   <button
                     type="button"
