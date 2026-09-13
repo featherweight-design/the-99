@@ -236,7 +236,7 @@ describe("CommandersView result line", () => {
       ...results(4, ["U"]).map((r, i) => ({ ...r, slug: `u-${i}`, oracleId: `u-${i}` })),
     ];
     view(mixed);
-    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Red" }));
     expect(resultLine()).toHaveTextContent("40 of 44 commanders match");
   });
 
@@ -250,7 +250,7 @@ describe("CommandersView result line", () => {
 
 describe("CommandersView windowing under the colour filter", () => {
   const filterToRed = () =>
-    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Red" }));
 
   it("resets the window and recounts against the filtered length", () => {
     const mixed = [...results(40, ["R"]), ...results(40, ["U"]).map((r, i) => ({
@@ -317,7 +317,7 @@ describe("CommandersView zero states", () => {
 
   it("keeps naming a pip when one is lit, since that state has a correction", () => {
     view(results(40, ["R"]));
-    fireEvent.click(screen.getByRole("button", { name: "Blue" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Blue" }));
     noRows();
     expect(screen.getByText("Nothing in the pile matches")).toBeInTheDocument();
     expect(screen.queryByText("No commander by that name")).toBeNull();
@@ -364,7 +364,7 @@ describe("CommandersView ranking toggle", () => {
   it("keeps the mode in the URL when a colour lands after the flip", () => {
     view(results(3, ["R"]), { freeItems: results(3, ["R"]) });
     fireEvent.click(segments(FREE)[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Red" }));
     expect(urls().at(-1)).toBe("/commanders?c=r&a=free");
   });
 
@@ -446,7 +446,7 @@ describe("CommandersView ranking toggle", () => {
     view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
 
     navigateTo("/commanders");
-    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Red" }));
 
     expect(urls().at(-1)).toBe("/commanders?c=r");
   });
@@ -606,7 +606,7 @@ describe("CommandersView reveal a11y", () => {
     const live = container.querySelector('[aria-live="polite"]')!;
     fireEvent.click(control()!);
     expect(live).toHaveTextContent(/Ranks 26 to 50 added/);
-    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Red" }));
     expect(live).toHaveTextContent("");
   });
 
@@ -622,21 +622,21 @@ describe("CommandersView reveal a11y", () => {
 describe("CommandersView URL writes", () => {
   it("writes only the parameters that are off their default", () => {
     view(results(3, ["B"]));
-    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Black" }));
     expect(urls().at(-1)).toBe("/commanders?c=b");
   });
 
   it("writes nothing back once every control returns to its default", () => {
     view(results(3, ["B"]));
-    fireEvent.click(screen.getByRole("button", { name: "Black" }));
-    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Black" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Black" }));
     expect(urls().at(-1)).toBe("/commanders");
   });
 
   it("writes with replaceState rather than navigating", () => {
     view(results(3, ["B"]));
     routerReplace.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Black" }));
     expect(routerReplace).not.toHaveBeenCalled();
     expect(replaceState).toHaveBeenCalled();
   });
@@ -644,7 +644,7 @@ describe("CommandersView URL writes", () => {
   it("preserves parameters it does not own, read off the live URL", () => {
     window.history.replaceState(null, "", "/commanders?ref=email");
     view(results(3, ["B"]));
-    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Black" }));
     expect(urls().at(-1)).toBe("/commanders?ref=email&c=b");
   });
 
