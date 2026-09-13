@@ -1,11 +1,10 @@
 {
   "feature": "Filter chassis — one control on four routes",
-  "note": "Four routes the brief says carry the same filter control. `view` names each route's OWN view file, never a wrapper it mounts. Steps are plain `goto`s because every surface here is a page.\n\nNO `shares` BLOCK YET, deliberately. All four routes already render `FilterChassis` — /decks directly, /commanders and /discover through the shared `FilterRack`, /collection through `FilterBar` — and composing the chassis behind a route-level assembler is the design working, not a defect, because the chassis takes its controls as props. Pointing `shares.module` at the chassis therefore failed three routes for doing the right thing.\n\nWhat is genuinely duplicated is the phone sheet: `DeckFilterSheet`, the rack's `FilterSheet` and `CollectionFilterSheet` are three implementations of one job, and the handoff (STATES §49, §157, §177-180) describes one sheet pattern whose CONTENTS vary by route. The ruling is one sheet component taking its dimensions as props. When it lands, add `shares` here pointing at it — direct import is the right invariant for a leaf component in a way it never was for the chassis.",
+  "note": "Four routes the brief says carry the same filter control. Steps are plain `goto`s because every surface here is a page.\n\nNO `shares` BLOCK YET, deliberately. All four routes already render `FilterChassis` — /decks directly, /commanders and /discover through the shared `FilterRack`, /collection through `FilterBar` — and composing a primitive that takes its controls as props behind a route-level assembler is the design working, not a defect. Pointing `shares.module` at the chassis therefore failed three routes for doing the right thing.\n\nWhat is genuinely duplicated is the phone sheet: `DeckFilterSheet`, the rack's `FilterSheet` and `CollectionFilterSheet` are three implementations of one job, where the handoff (STATES §49, §157, §177-180) describes one sheet pattern whose CONTENTS vary by route. The ruling is one sheet component taking its dimensions as props.\n\nWHEN IT LANDS, `view` HAS TO MOVE WITH IT. `check-shared-imports.mjs` reads each row's `view` directly and does not follow composition, so a `shares` block naming the new sheet while these rows still name the route views would reproduce exactly the false failures this inventory just removed — the wrappers will own the sheet import, not the views. The rule is that `view` names the file that RENDERS the shared component, which for the sheet means `rack/filter-rack.tsx` and `collection/filter-bar.tsx` rather than `commanders-view.tsx` and `browser.tsx`. The rows carry no `view` today for that reason: the right value depends on which component the block ends up naming.",
   "rows": [
     {
       "id": "decks",
       "label": "/decks",
-      "view": "src/components/decks/decks-view.tsx",
       "steps": [
         {
           "goto": "/decks",
@@ -17,7 +16,6 @@
     {
       "id": "commanders",
       "label": "/commanders",
-      "view": "src/components/commanders/commanders-view.tsx",
       "steps": [
         {
           "goto": "/commanders",
@@ -29,7 +27,6 @@
     {
       "id": "discover",
       "label": "/discover",
-      "view": "src/components/commanders/discovery-view.tsx",
       "steps": [
         {
           "goto": "/discover",
@@ -41,7 +38,6 @@
     {
       "id": "collection",
       "label": "/collection",
-      "view": "src/components/collection/browser.tsx",
       "steps": [
         {
           "goto": "/collection",

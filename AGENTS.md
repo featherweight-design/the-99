@@ -158,10 +158,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   own copy), the exported name is not the local alias, a default or namespace import binds
   something else, and nothing here flags an unused local.
 
-  **Point `shares.module` at a leaf, not at a composed primitive.** `FilterChassis` takes its
-  controls as props and is meant to be assembled by a route-level wrapper, so requiring each
-  route to import it directly failed three routes for composing it correctly. The invariant fits
-  a component a route renders as-is.
+  **`shares.module` names a component that is rendered as-is, and each row's `view` names the
+  file that renders it.** The check reads that file directly and does not follow composition, so
+  the two have to agree. `FilterChassis` takes its controls as props and is assembled by a
+  route-level wrapper, so naming the chassis while the rows named route views failed three routes
+  for composing it correctly — and naming a leaf while the rows still name route views would fail
+  them again, because the wrapper owns the import. Pick the component first, then set `view` to
+  wherever each route renders it, which may be a wrapper.
 
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the `pr-review` skill (`~/.claude/skills/pr-review/SKILL.md`), which is the single source of truth across every repo — invoke it rather than working from memory or from any copy. UI features additionally run `feature-acceptance` per PR and again at feature close. This repo merges via **squash**.
