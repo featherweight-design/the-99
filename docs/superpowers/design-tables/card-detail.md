@@ -70,7 +70,7 @@ was verified in the tree and is what the build implements.
 | 3.6 | Close | The modal's shipped ✕ — 34px desktop / 32px phone, in its shipped slot, gaining an `--elevated` plate to clear the scrim. Its **label** changes, its position does not | canvas §7 |
 | 3.7 | Trigger | The sharp art becomes a `button` with `aria-expanded` and `aria-controls`. **No visible mark on the art**: the ⤢ plate is retired and the hint line of row 3.9 is the whole affordance | canvas §7, E17 |
 | 3.8 | Corner rule | **Nothing sits on the art at all.** The zoom mark is gone and the turn control has moved under the card (E17). A one-faced card simply has no turn control rather than a different layout | ruled 2026-09-13, E14, E17 |
-| 3.9 | Hint | **Both widths**, mono 10px `--fg-locked`, centred, first row of the under-card stack: `Click to zoom` desktop, `Tap to zoom` phone. `aria-hidden` — the art's own button is already named | ruled 2026-09-13, E17 |
+| 3.9 | Hint | **Both widths**, mono 10px `--fg-locked`, centred, first row of the under-card stack: `Click to zoom` desktop, `Tap to zoom` phone. `aria-hidden` — the art's own button is already named. **Except the compact header**, which withholds the whole stack — hint, turn and tag — at the same threshold row 2.3 withholds the mark at, and for the same reason: a 72px thumbnail is a locator in a printing-picker state, and it has the name and type line beside it instead (rows 2.2, 2.5) | ruled 2026-09-13, E17 |
 | 3.10 | Dismissal | Three doors, one stage: tap the card, tap the layer, or `Esc`. Focus returns to the art | README §3 |
 | 3.11 | Escape order | Zoom first, dialog second — the printing region's shipped two-stage shape. With the region open as well it is three stages | README §3, gap 4 |
 | 3.12 | Focus on open | To the flip control when two-faced, otherwise to ✕ | canvas §7 a11y |
@@ -84,7 +84,7 @@ was verified in the tree and is what the build implements.
 | # | Property | Value | Source |
 |---|---|---|---|
 | 4.1 | Where it turns | **Everywhere the card is drawn.** The 180px phone art and the 264px desktop art turn on the same `rotateY` as the zoom; Amendment 3's instant swap is retired (E17) | Amendment 3, ruled 2026-09-13, E17 |
-| 4.2 | Axis | `rotateY`, with `perspective: 1400px` on the layer | canvas §4 |
+| 4.2 | Axis | `rotateY`, with `perspective: 1400px` on **whatever contains the turning box** — the zoom layer for the zoom, and each art box for the modal's own art (E17). Never on the box that turns, which is what makes the turn read flat | canvas §4, E17 |
 | 4.3 | Duration / easing | `320ms`, `cubic-bezier(.2,.7,.2,1)` | canvas §4 |
 | 4.4 | Face swap | At `160ms`, the midpoint, behind the edge; `backface-visibility: hidden` on both faces | canvas §4 |
 | 4.5 | Re-press mid-turn | Reverses from the current angle. Never queues, never double-turns | canvas §4 |
@@ -102,7 +102,7 @@ was verified in the tree and is what the build implements.
 | 5.2 | Zoom close | **No exit.** The layer unmounts | Gone, 0ms — unchanged, because it always was | ruled 2026-09-13, E13 |
 | 5.3 | Flip | 320ms `cubic-bezier(.2,.7,.2,1)`, **on every surface the card is drawn** — the modal's art as well as the zoom (E17) | Face replaces face, 0ms; the face is then announced on the press rather than on a landing there is none of | MOTION, E17 |
 | 5.4 | Scrim | Fades with the layer, same timings; the blur is not animated | MOTION |
-| 5.5 | Not animated | The price tag's appearance and the art column's 30px height change. **The un-zoomed flip is animated now** — same 320ms turn as the zoom's (E17), so row 5.3 covers every surface | MOTION, E17 |
+| 5.5 | Not animated | The price tag's appearance and the art column's height change with it — 27px desktop, 35px phone, per row 1.14. **The un-zoomed flip is animated now** — same 320ms turn as the zoom's (E17), so row 5.3 covers every surface | MOTION, E17 |
 | 5.6 | How it is written | Two media blocks, one per animation. **Never a global `transition: none`** — the modal has shipped transitions of its own | MOTION, `globals.css:459-462` |
 
 ## 6. Coexistence

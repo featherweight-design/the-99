@@ -552,6 +552,33 @@ describe("what sits under the card", () => {
     expect(price).toBeGreaterThan(turn);
   });
 
+  it("announces the art's face at once for a reader who asked for less motion", () => {
+    // `anim-card-turn` is `transition: none` under reduced motion, so there is no
+    // landing to wait for and the press IS the landing. It is the only
+    // announcement path the modal art has there, and nothing covered it — the
+    // zoom's own reduced-motion case is a different control.
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      onchange: null,
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      mount(twoFaced());
+      fireEvent.click(screen.getAllByRole("button", { name: /Turn over to/ })[0]);
+      // No `transitionEnd` fired, deliberately: there is no transition.
+      expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent)
+        .toBe("Showing Insectile Aberration");
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it("keeps the hint out of the accessibility tree", () => {
     // The art's own button is already named "Look at {card} up close". A second
     // voice saying "Click to zoom" beside it is the same instruction twice.

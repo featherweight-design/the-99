@@ -363,6 +363,15 @@ try {
       );
       process.exitCode = 1;
     }
+    // 12px is the spacing, not just "somewhere below": the figure is part of the
+    // geometry E17 records, and a margin change that kept the control outside the
+    // card would otherwise pass every check here.
+    if (placement && Math.abs(placement.gapUnderCard - 12) > 1) {
+      console.log(
+        `\nFAIL: the turn sits ${placement.gapUnderCard}px under the zoomed card, expected 12px.`,
+      );
+      process.exitCode = 1;
+    }
     if (before === after) {
       console.log("\nFAIL: the card did not turn — the transform is unchanged.");
       process.exitCode = 1;
