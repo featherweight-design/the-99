@@ -82,7 +82,13 @@ export function PriceTag({
     const visual = (
       <span
         className={className ? `${base} ${className}` : base}
-        style={{ color: "var(--fg-locked)", border: "1px dashed var(--fg-locked)" }}
+        // The WORD takes `--fg-muted`; the EDGE keeps `--fg-locked`. Measured, not
+        // assumed: `--fg-locked` on `--bg` runs 3.23:1 (phyrexia) to 3.49:1, which
+        // clears the 3:1 non-text floor a dashed edge answers to and fails the 4.5:1
+        // this 10px word does. `--fg-muted` runs 6.61 to 7.35 and clears everywhere;
+        // `--fg-faint` was the handoff's suggestion and still fails two themes at
+        // 4.12 and 4.29.
+        style={{ color: "var(--fg-muted)", border: "1px dashed var(--fg-locked)" }}
         aria-label={standalone ? undefined : label}
       >
         {setPageCopy.cell.noStock}

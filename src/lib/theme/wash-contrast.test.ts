@@ -323,3 +323,34 @@ describe("art wash contrast floor", () => {
     });
   }
 });
+
+/**
+ * The price tag's own floor, in the two places it is drawn — the set grid's cell and
+ * the card modal's art column.
+ *
+ * It is here rather than in a component test because the question is a token
+ * question: `no stock` is a 10px word, which answers to 4.5:1, and the dashed edge
+ * around it is a non-text mark, which answers to 3:1. Those two are different tokens
+ * on purpose, and the only way to know they both clear is to measure every theme.
+ *
+ * `--fg-locked` was the word's ink until 2026-09-13 and measured 3.23:1 in phyrexia —
+ * a pass against the edge's floor, and a fail against its own.
+ */
+describe("the price tag's ink", () => {
+  for (const theme of THEMES.keys()) {
+    it(`${theme}: \`no stock\` clears 4.5:1 on the card's ground`, () => {
+      const ratio = contrast(token(theme, "fg-muted"), token(theme, "bg"));
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it(`${theme}: the dashed edge clears the 3:1 a non-text mark answers to`, () => {
+      const ratio = contrast(token(theme, "fg-locked"), token(theme, "bg"));
+      expect(ratio).toBeGreaterThanOrEqual(3);
+    });
+
+    it(`${theme}: the priced figure clears 4.5:1 in --accent`, () => {
+      const ratio = contrast(token(theme, "accent"), token(theme, "bg"));
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+});
