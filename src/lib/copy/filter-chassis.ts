@@ -61,7 +61,7 @@ export const chassisCopy = {
      * that return very different lists.
      */
     collapsedExactly: (count: number) =>
-      `Exactly ${count} ${count === 1 ? "colour" : "colours"}`,
+      `Exactly ${fmt(count)} ${count === 1 ? "colour" : "colours"}`,
     /** The five hues, in WUBRG order, with the names the lanes already use. */
     /**
      * Keyed lowercase by `lanes.ts`; the pips look up through a lowercased
@@ -88,7 +88,7 @@ const deckPanel = (
   triggerLabel: dimension,
   triggerOne: (name) => `${dimension} · ${name}`,
   triggerAriaCollapsed: `${dimension} filter`,
-  triggerAriaWithSelection: (n) => `${dimension} filter, ${n} on`,
+  triggerAriaWithSelection: (n) => `${dimension} filter, ${fmt(n)} on`,
 
   panelAriaLabel: `${dimension} options`,
   sheetTitle: dimension,
@@ -99,7 +99,7 @@ const deckPanel = (
   clearSearch: "",
 
   groupDefault: dimension,
-  groupSelected: (n) => `${n} on`,
+  groupSelected: (n) => `${fmt(n)} on`,
   groupMatches: (n) => countNoun(n),
 
   optionAria: (name, count) => `${name}, ${countNoun(count)}`,
@@ -119,19 +119,19 @@ const deckPanel = (
   emptyBody: (query) => ({ before: "No ", query, after: " to show" }),
 
   announceMatches: (n) => countNoun(n),
-  announceAdded: (name, n, shown, total) => `${name} on. ${shown} of ${total} decks.`,
-  announceRemoved: (name, n, shown, total) => `${name} off. ${shown} of ${total} decks.`,
-  announceCleared: (total) => `Filters cleared. ${total} decks.`,
+  announceAdded: (name, n, shown, total) => `${name} on. ${fmt(shown)} of ${fmt(total)} decks.`,
+  announceRemoved: (name, n, shown, total) => `${name} off. ${fmt(shown)} of ${fmt(total)} decks.`,
+  announceCleared: (total) => `Filters cleared. ${fmt(total)} decks.`,
 });
 
-const deckCount = (n: number) => `${n} ${n === 1 ? "deck" : "decks"}`;
+const deckCount = (n: number) => `${fmt(n)} ${n === 1 ? "deck" : "decks"}`;
 
 export const deckChassisCopy = {
   status: deckPanel(refreshCopy.filters.statusHeading, deckCount),
   played: deckPanel(refreshCopy.filters.lastPlayedHeading, deckCount),
   /** Row 3. The count the header used to print, now the chassis's result line. */
   result: (shown: number, total: number) =>
-    shown === total ? deckCount(total) : `${shown} of ${deckCount(total)} match`,
+    shown === total ? deckCount(total) : `${fmt(shown)} of ${deckCount(total)} match`,
 } as const;
 
 /**

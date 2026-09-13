@@ -237,7 +237,11 @@ export function FilterBar({
           containerClassName={
             wide
               ? "gap-[10px] flex-1 px-[14px] py-[10px]"
-              : "gap-[8px] px-[12px] py-[9px]"
+              // `min-h-[44px]`, like every other control in the compact row.
+              // The drawn padding gives ~37-41px, so search was the one
+              // undersized target sitting beside pips, triggers, sort and the
+              // view toggle that all enforce it.
+              : "gap-[8px] px-[12px] py-[9px] min-h-[44px]"
           }
           className="text-[14px]"
           value={filters.search}
