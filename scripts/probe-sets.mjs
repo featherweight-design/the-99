@@ -41,6 +41,20 @@ const HEAD_SETTLE_MS = 320;
  * collapse.
  */
 const PAST_COLLAPSE = 900;
+/**
+ * The same offset, clamped to what the fixture can actually reach.
+ *
+ * A browser clamps `scrollTo` to the document's maximum, so on a short set — or a `PROBE_SET`
+ * pointed at one — the page stops above the threshold, the head is still open, and every
+ * check below reports a collapse that never failed. The clamp is reported rather than
+ * silently applied: a fixture that cannot be scrolled past the threshold has not tested it.
+ */
+async function reachable(page, wanted) {
+  return page.evaluate((target) => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    return { target: Math.min(target, Math.max(0, max)), max: Math.round(max) };
+  }, wanted);
+}
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 
@@ -886,7 +900,17 @@ async function run() {
     };
     const restState = await headNow();
     const tracksAtRest = await tracksNow();
-    await scrollTo(PAST_COLLAPSE);
+    const depth = await reachable(page, PAST_COLLAPSE);
+    if (depth.target < PAST_COLLAPSE) {
+      failures += !report(
+        "the fixture is tall enough to scroll past the collapse",
+        false,
+        `this set scrolls ${depth.max}px and the threshold is past ${PAST_COLLAPSE}px —`
+        + " every collapse check below is measuring an open head. Pick a longer set with"
+        + " PROBE_SET.",
+      );
+    }
+    await scrollTo(depth.target);
     const shyState = await headNow();
     const tracksScrolled = await tracksNow();
 
@@ -955,7 +979,7 @@ async function run() {
       // runs at rest, where the bar does not exist — so the one path to the filters while
       // the head is collapsed was the only phone action never measured, and it shipped at
       // 36px.
-      await scrollTo(PAST_COLLAPSE);
+      await scrollTo(depth.target);
       const barTargets = await page.evaluate(() => {
         const bar = document.querySelector("[data-set-head-bar]");
         if (bar === null) return null;
@@ -1018,7 +1042,7 @@ async function run() {
       // render — and the DESKTOP height stayed reserved under a phone head. Only a real
       // engine can catch it: JSDOM reports every height as 0, so the unit test written for
       // this passed with the fix removed.
-      await scrollTo(PAST_COLLAPSE);
+      await scrollTo(depth.target);
       await page.setViewportSize({ width: 1280, height: 900 });
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       await page.setViewportSize({ width: 390, height: 844 });
