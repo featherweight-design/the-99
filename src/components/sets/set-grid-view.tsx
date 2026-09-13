@@ -213,6 +213,22 @@ export function SetGridView(props: SetGridViewProps) {
     },
     [urlKey],
   );
+  /**
+   * A `q` the parse threw away is still in the address bar, and nothing else would remove
+   * it: the grid is unfiltered, so `Clear all filters` does not render and the field's own
+   * × is inert. `?q=%CC%81` or `?q=%20` would then survive a reload and a share as a dead
+   * parameter nobody can clear.
+   *
+   * Written once, on the URL that carried it, rather than on every render — `setFilters`
+   * serialises the canonical value, which omits an inactive query, so the second pass has
+   * nothing left to find.
+   */
+  useEffect(() => {
+    if ((params.get("q") ?? "") !== "" && urlFilters.query === "") setFilters(urlFilters);
+    // `setFilters` and `urlFilters` are both derived from this key; re-running on their
+    // identity would rewrite the URL every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlKey]);
   const typeQuery = (value: string) => {
     setDraft(value);
     cancelQueryTimer();

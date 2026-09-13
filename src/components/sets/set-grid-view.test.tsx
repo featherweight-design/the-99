@@ -1096,6 +1096,27 @@ describe("SetGridView — the name search", () => {
     }
   });
 
+  // A `q` the parse throws away is still in the address bar, and nothing else removes it:
+  // the grid is unfiltered, so `Clear all filters` does not render and the field's × is
+  // inert. Without this it survives a reload and a share as a dead parameter.
+  it("strips a query that folds to nothing from the URL", () => {
+    search = "q=%20%20";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
+  });
+
+  it("leaves the URL alone when the query is real", () => {
+    search = "q=plains";
+    view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  it("and when there is no query at all", () => {
+    search = "c=W";
+    view([p("1", { name: "Plains", colorIdentity: ["W"] })], []);
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
   // The phone slot is 173px, and the long placeholder truncates in it. The accessible name
   // carries the set at both widths and does not change.
   it("shortens the placeholder on the phone and keeps the full name", () => {
