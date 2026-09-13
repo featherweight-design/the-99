@@ -125,11 +125,24 @@ describe("the price under the art", () => {
     expect(screen.queryByTestId("modal-price-mobile")).toBeNull();
   });
 
-  it("renders nothing for a holding that names no printing to ask about", () => {
-    // A bare `Name,Qty` import: no catalog id and no collector number. `no stock`
-    // there would be a claim about a printing we cannot name.
+  it("prices a bare `Name,Qty` holding when its set holds one printing", () => {
+    // The commonest import in this app carries neither an id nor a collector number.
+    // The catalog still names the printing when the set holds only one of the card,
+    // and refusing there made the whole feature invisible on such a collection.
     mount(card({
       printings: [printing({ scryfallId: undefined, collectorNumber: "" })],
+    }));
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$2.41");
+  });
+
+  it("renders nothing when nothing narrows the holding to one printing", () => {
+    mount(card({
+      printings: [printing({ scryfallId: undefined, collectorNumber: "" })],
+      prices: indexPriceRows([
+        priceRow(),
+        priceRow({ scryfall_id: "s-variant", collector_number: "400", price_cents: 9999 }),
+      ]),
     }));
 
     expect(screen.queryByTestId("modal-price-desktop")).toBeNull();

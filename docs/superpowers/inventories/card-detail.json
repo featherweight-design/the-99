@@ -1,0 +1,136 @@
+{
+  "feature": "Card detail \u2014 price, zoom, flip",
+  "out": "/private/tmp/claude-501/-Users-huey-Projects-the-99/05a735ce-94f9-4c79-b08c-78e90ab23a14/scratchpad/contact-sheet-card-detail",
+  "rows": [
+    {
+      "id": "collection-rows",
+      "label": "/collection (rows) \u2014 modal",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Gravelgill",
+          "settle": 2500
+        },
+        {
+          "click": "button[aria-label^=\"Gravelgill Scoundrel,\"]",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "collection-rows-zoom",
+      "label": "/collection \u2014 the zoom",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Gravelgill",
+          "settle": 2500
+        },
+        {
+          "click": "button[aria-label^=\"Gravelgill Scoundrel,\"]",
+          "wait": "[role=dialog]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Look at ",
+          "wait": "[data-testid=card-zoom]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "collection-grid",
+      "label": "/collection (grid) \u2014 modal",
+      "steps": [
+        {
+          "goto": "/collection?view=grid&q=Safewright",
+          "settle": 7000
+        },
+        {
+          "click": "text=Safewright Cavalry",
+          "wait": "[role=dialog]",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "sets-cell",
+      "label": "/collection/sets/tla \u2014 a cell opens the modal",
+      "steps": [
+        {
+          "goto": "/collection/sets/tla",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "in your collection",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "deck-row",
+      "label": "/decks/[id] \u2014 decklist row",
+      "steps": [
+        {
+          "goto": "/decks/56cf025b-1f4c-458a-84d7-4f2bdb36d93d",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "commander-detail",
+      "label": "/commanders/[slug] \u2014 Card details opens the modal",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "settle": 20000
+        },
+        {
+          "clickRole": "link",
+          "name": "[A-Za-z]",
+          "settle": 14000
+        },
+        {
+          "clickRole": "button",
+          "name": "View card details",
+          "wait": "[role=dialog]",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "two-faced-zoom",
+      "label": "two-faced card \u2014 the turn, in the zoom",
+      "steps": [
+        {
+          "goto": "/collection?view=rows&q=Toralf",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Toralf",
+          "wait": "[role=dialog]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Look at ",
+          "wait": "[data-testid=card-zoom]",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid=card-zoom] button[aria-label^='Turn over to']",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}
