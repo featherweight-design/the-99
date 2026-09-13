@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Availability, DeckClaim } from "./availability";
 import { summarisePrices } from "./price";
 import {
+  anyBasicMoved,
   bucketDraftAdds, changeCount, hasChanges, pullCandidate, pullHints, releasableClaims,
   releasedCopies, unfreeAdds, type DraftAdd, type DraftState,
 } from "./draft-state";
@@ -179,5 +180,35 @@ describe("pullCandidate", () => {
   it("draws nothing for a card with no sleeved holder", () => {
     expect(pullCandidate(availability([claim({ mature: false })]))).toBeNull();
     expect(pullCandidate(undefined)).toBeNull();
+  });
+
+});
+
+// The flag the review page's last-row routing turns on. `basicsChanged` cannot
+// answer this: it is set only when NOTHING else moved, so on a mixed draft it
+// reads false — and the page would then send a reader to the deck page while
+// their draft is still there.
+describe("anyBasicMoved", () => {
+  const basics = new Set(["island", "swamp"]);
+  const change = (oracleId: string) => ({ oracleId, from: 0, to: 1 });
+
+  it("sees a basic that moved alongside other cards", () => {
+    expect(
+      anyBasicMoved({ adds: [change("sol-ring")], removes: [change("swamp")] }, basics),
+    ).toBe(true);
+  });
+
+  it("sees one that moved on its own", () => {
+    expect(anyBasicMoved({ adds: [change("island")], removes: [] }, basics)).toBe(true);
+  });
+
+  it("says no when only other cards moved", () => {
+    expect(
+      anyBasicMoved({ adds: [change("sol-ring")], removes: [change("mox")] }, basics),
+    ).toBe(false);
+  });
+
+  it("says no on a draft that moved nothing", () => {
+    expect(anyBasicMoved({ adds: [], removes: [] }, basics)).toBe(false);
   });
 });

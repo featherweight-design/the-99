@@ -87,6 +87,22 @@ export function pullHints(
 
 /** The adds that cost something. A null bucket is excluded with the free ones,
  *  for the opposite reason: not known to be free, but not known to be anything. */
+/**
+ * Whether any basic land moved in this diff, alone or alongside other cards.
+ *
+ * Pulled out of `readDraft` so it can be tested without a database: the mixed
+ * case — a basic moved AND a card cut — is the one the flag exists for, and it
+ * is also the one `basicsChanged` cannot see, because that flag is set only
+ * when nothing else moved. Get this wrong and restoring the last drawn row
+ * sends the reader to the deck page while their draft is still there.
+ */
+export function anyBasicMoved(
+  diff: { adds: DraftChange[]; removes: DraftChange[] },
+  basics: ReadonlySet<string>,
+): boolean {
+  return [...diff.adds, ...diff.removes].some((c) => basics.has(c.oracleId));
+}
+
 export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
   return bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
 }
@@ -224,7 +240,7 @@ async function readDraft(
   // rest". The review page needs the difference — restoring its last drawn row
   // leaves a draft that still exists when a basic moved, and one that does not
   // when none did, and those two land on different routes.
-  const basicsMoved = [...diff.adds, ...diff.removes].some((c) => basics.has(c.oracleId));
+  const basicsMoved = anyBasicMoved(diff, basics);
 
   // A basics-only edit: real, committable, and priceable by nothing. Every list
   // and every figure stays empty, and `basicsChanged` is the one signal that
