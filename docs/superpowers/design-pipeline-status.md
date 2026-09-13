@@ -144,19 +144,17 @@ amendment's ✅ row, and the desktop `Card details` control on **#7**'s._
 
 
 
-| 3 | **What this deck is, in four figures** — no ticket filed | `docs/superpowers/design-briefs/2026-09-12-what-this-deck-is.md` | Design draws the per-deck stats block at both breakpoints and says what the roll-up altitude shows; the deck-page half lands as a handoff, the roll-up half either lands with it or is handed to the home brief with this vocabulary attached | Same workshop, same ticketless basis. **The computation is already merged and probed** (PR #524: `src/lib/decks/stats.ts`, `stats-query.ts`, `pnpm probe:stats`), so this is a drawing problem, not a data one. What makes it a brief rather than a ticket is that three of the four figures are already stated somewhere else and two of those statements are ratified: the Games tab draws the record and `game-log.md:121` rules its own count is "games logged, never the record", and deck versioning's what-changed strip already uses the word **curve** for a one-number mana average that `deck-versioning-surface-2.md:618` confines to the strip alone. Cost to complete is printed on four surfaces today and **they do not all print the same figure** — three read `loadShoppingRollup`, whose quantity is the post-seniority deficit, while the deck page's strip sums the decklist's own Shopping rows at `decklist.tsx:181`; the brief hands that to Design rather than averaging it. The colour spread is the only genuinely new figure. Two arithmetic properties constrain the drawing: a multi-colour card counts once per colour, so the five colour figures sum past the deck size and every share divides by `copies`; and the curve is eight buckets with 7 as a ceiling, lands excluded and counted separately |
 
 
 **All five of the 2026-09-11 workshop's groups now have a brief except one, and that one is
 deferred rather than outstanding.** Card detail was briefed on 2026-09-12, drew a handoff the same
 day and has moved to 🟢 Ready; deck stats and folders were briefed alongside it; folders drew its own
-handoff on 2026-09-13 and moved to 🟢 Ready too, leaving deck stats at rank 3 as the only
-one of the five still waiting on a handoff — and the stale 📐 row card detail kept after its
-handoff landed is removed with this edit.
+handoff on 2026-09-13 and moved to 🟢 Ready too, and **deck stats is paused** — moved to 🚦
+below on 2026-09-13, at Hugh's call, with its brief standing and more design workshopping wanted
+before a handoff is produced. The stale 📐 row card detail kept after its handoff landed is removed
+with this edit, which leaves this table holding no row from that workshop at all.
 
-**Deck stats is paused at Hugh's call, 2026-09-13.** The brief stands and nothing in it is
-withdrawn; more design workshopping is wanted before a handoff is produced, so it holds its 📐 rank
-rather than moving to 🎨. The home redesign is the remaining group, and it waits on **two** things: the
+The home redesign is the fifth group and the only one still unbriefed. It waits on **two** things: the
 commander-image treatment it renders (rank 2), and rank 3's roll-up vocabulary, since the stats
 block Group D adds to both home frames *is* that brief's roll-up altitude. No ticket has been filed
 for any of them.
@@ -249,6 +247,7 @@ has no state, and is still worth closing rather than resolving one ticket at a t
 | # / vertical | Where it got to | Paused | Notes |
 |---|---|---|---|
 | **#10** Deck tuning suggestions from play results | Spec, handoff and implementation plan all merged; no build PR opened | 2026-09-07, Hugh's call — "not the time to build this one, but we'll circle back" | Nothing is blocking it and nothing about it is unresolved: the brief merged on PR #392, Design delivered all five surfaces at R2 the same day, the handoff audited **🟢 Green at R2**, and the 18-task plan merged on PR #406 after four Copilot rounds. It is paused on timing alone, and it is the repo's first LLM tier, which is the reason to be deliberate about when it starts. **Everything needed to resume is on `main`**: spec `docs/superpowers/specs/2026-09-07-deck-tuning-suggestions-design.md`, plan `docs/superpowers/plans/2026-09-07-deck-tuning-suggestions.md`, gap report `docs/superpowers/gap-report-deck-tuning.md`, property table `docs/superpowers/design-tables/deck-tuning.md`, handoff `design/design_handoff_the99_deck_tuning/`. The plan's own shape when picked up again: tasks 1–2 are schema and copy, 3–5 add the two new inputs (a per-game note and a deck intent), 6–9 are the pure core (fingerprint, evidence pack, prompt, six validation rules), 10–12 hold the real risk (the model client, the durability contract, and the read/gate/ceiling), 13–16 are the surfaces, and 17–18 close out. **The three rulings most expensive to re-derive** are recorded in the plan and should not be re-litigated: a `pending` run row is committed in its own transaction before the model call and both outcome writes are guarded by `where status = 'pending'`, so zero rows affected means "I was reaped" and the result is discarded; the failure vocabulary is **five** classes, not four, because `interrupted` is written by the read-time reaper and is user-visible; and #9's presentation rules carry over whole — no percentage and no net figure ever reaches the screen, every count carries its own denominator, and `PATTERN_MIN = 3` stays a presentation threshold rather than a data gate. **#389** in 🕰️ below was filed out of this scoping and stays out of scope |
+| **Deck stats — the deck's four figures** — no ticket filed | Brief merged (PR #532); no handoff produced | **2026-09-13**, at Hugh's call | `docs/superpowers/design-briefs/2026-09-12-what-this-deck-is.md` stands and nothing in it is withdrawn — Hugh wants more design workshopping before a handoff is drawn. The computation is already merged and probed (PR #524: `src/lib/decks/stats.ts`, `stats-query.ts`, `pnpm probe:stats`), so a resumed round starts at the drawing rather than the data. It left 📐 rather than sitting there looking pickable: this table's question is what is waiting on Design, and this is waiting on a workshop. **The home redesign inherits the pause** — its own brief needs this one's roll-up vocabulary, per that brief's §6 |
 
 **The legend's 🚦 definition was widened on 2026-09-07 to admit this row.** It previously read
 "paused mid-workshop", which described only an item Design had not finished with. #10 is the

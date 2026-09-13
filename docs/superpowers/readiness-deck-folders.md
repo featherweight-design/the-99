@@ -21,9 +21,12 @@ on pixels and is exact:**
 `listFolders` returns empty folders with `deckCount: 0` (`src/lib/decks/folders.ts:58`), and this
 route disables a zero-count panel row — `disabled: count === 0 && !state.filters.statuses.includes(status)`
 at `decks-view.tsx:191`, and the same shape at `:201`. Under branch (a) the only surface naming a
-folder you just created would refuse to be clicked, and there would be no route to file the first
-deck into it. That is a filter dimension being asked to be a destination, and it fails on the first
-use of the feature.
+folder you just created would refuse to be clicked. Filing still has a path — §3.3 puts Move on the
+deck's own menu, and that list is not the filter panel — but the shelf itself would be unreachable:
+a reader could file a deck into a folder they cannot then go and look at, and the empty state that
+teaches the loop (create → land on the shelf → the state says how to fill it) could never be
+reached. That is a filter dimension being asked to be a destination, and it fails on the first use
+of the feature.
 
 The chassis amendment is exactly as small as Design says. `decks-view.tsx:340` reads
 `resultLine={deckChassisCopy.result(shown.length, decks.length)}`; the round changes the second
@@ -41,7 +44,7 @@ argument and nothing else. `deckChassisCopy.result` (`src/lib/copy/filter-chassi
 | A one-value trigger span caps at 230px | `filter-panel.tsx:893` | **Exact**, `max-w-[230px]` / `max-w-[170px]` |
 | "A square tick on a one-of-many list promises you can have two" | `filter-panel.tsx:519` | **True**, verbatim |
 | Pin-on-open, computed once | `filter-panel.tsx:214-221` | **True** |
-| `page.tsx` would refetch an identical list | `src/app/decks/page.tsx:32-43` | **True** — it loads the deck list and the shopping roll-up; the folder is already a column on every deck (`read.ts:636-637`) |
+| `page.tsx` would refetch an identical list | `src/app/decks/page.tsx:32-43` | **True** — it loads the deck list and the shopping roll-up; the folder is already a column on every deck (`read.ts:560-561`, returned at `:666-667`) |
 | `OWNED_PARAMS` + `replaceState` is the write path | `decks-view.tsx:61,124` | **True** |
 | The result line is `aria-atomic` and debounced at 300ms | `ui/result-line.tsx:22,252-253` | **Exact** |
 | Chassis decisions 18, 19, 23 say what is quoted | chassis `README.md:180,192,224` | **True** — and decision 23's exception is declared, not smuggled |
@@ -136,7 +139,7 @@ Product wanted it. It is not overruled, for a reason from the tree rather than f
 detail row already holds one figure per status and that figure is conditional — `To buy` prints
 copies and money, `Over` prints an overage, `Complete` prints a fixed clause
 (`deck-card.tsx:54-89`, six `case` branches). A folder clause would be a second tenant competing with a row that already
-branches five ways, on the one shelf (`All decks`) where every other tile is also unlabelled.
+branches six ways, on the one shelf (`All decks`) where every other tile is also unlabelled.
 
 The Move row names the current shelf, and it names it where the reader can change it. Ship without,
 and revisit if a real library makes the gap felt — which is Design's own recommendation.
