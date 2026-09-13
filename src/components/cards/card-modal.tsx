@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
+import type { BrowseCard, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
 import {
   cssUrl,
   printedNameOf,
@@ -368,10 +368,21 @@ export function CardModal({
     // falls back to the set representative when the exact join is missing — so a Moxfield
     // or Archidekt holding can match here and still hold another printing's image. When the
     // caller handed over the exact art, it wins over that fallback.
-    const known = card.printings.some((p) => matchesPreference(p, at));
+    // Identity is the caller's id where it gave one, and the (set, collector number)
+    // pair where it did not. The distinction matters because the pair is not unique:
+    // `printings` puts no constraint on it, so a fetched row can share the pair and
+    // still BE a different printing. Stamping the caller's id onto that row would put
+    // one printing's price under another's art — so a row whose own id disagrees does
+    // not count as the printing being opened, and the exact one is injected below.
+    const isTarget = (p: BrowsePrinting) =>
+      at.scryfallId
+        ? p.scryfallId === at.scryfallId
+          || (p.scryfallId === undefined && matchesPreference(p, at))
+        : matchesPreference(p, at);
+    const known = card.printings.some(isTarget);
     const printings = known
       ? card.printings.map((p) => {
-          if (!matchesPreference(p, at)) return p;
+          if (!isTarget(p)) return p;
           // The caller's id names the printing exactly, and travels whether or not it
           // also handed over art: the row's own id may be absent, or dropped because
           // two holdings disagreed about it, and the price is looked up by it.

@@ -244,6 +244,33 @@ describe("a card opened at a printing", () => {
 
     expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$15.00");
   });
+
+  it("does not stamp the caller's id onto a different printing that shares the pair", () => {
+    // The owned row IS a different catalog printing with the same (set, collector
+    // number) — the pair is not unique. The caller named `s-exact` but handed over
+    // no art for it, so the resolver keeps drawing the owned row's picture; the
+    // figure has to be that row's too. Relabelling it with the caller's id would
+    // print $15.00 under a printing that costs $1.00.
+    render(
+      <CardModal
+        card={card({
+          printings: [printing({ scryfallId: "s-owned", imageUri: "https://img/owned.jpg" })],
+          prices: indexPriceRows([
+            priceRow({ scryfall_id: "s-owned", price_cents: 100 }),
+            priceRow({ scryfall_id: "s-exact", price_cents: 1500 }),
+          ]),
+        })}
+        position={1}
+        total={1}
+        onClose={() => {}}
+        onPrev={null}
+        onNext={null}
+        openAtPrinting={{ setCode: "RVR", collectorNumber: "12", scryfallId: "s-exact", imageUri: null }}
+      />,
+    );
+
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$1.00");
+  });
 });
 
 describe("the compact art header", () => {
