@@ -387,6 +387,42 @@ describe("the turn inside the zoom", () => {
     expect(control.getAttribute("style")).not.toContain("right: 10px");
   });
 
+  it("announces at once for a reader who asked for less motion", () => {
+    // There is no transition to wait for there, so the press IS the landing — and
+    // this is the only path that announces without a `transitionend`.
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      onchange: null,
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      const layer = openTwoFaced();
+
+      fireEvent.click(within(layer).getByRole("button", { name: /Turn over to/ }));
+
+      expect(screen.getByRole("dialog").querySelector('[aria-live="polite"]')?.textContent)
+        .toBe("Showing Insectile Aberration");
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it("keeps the seam on both faces", () => {
+    // The faces paint over the parent's inset ring, so each carries its own or the
+    // zoomed card loses its edge on exactly the cards that have two of them.
+    const layer = openTwoFaced();
+
+    for (const id of ["card-zoom-face-front", "card-zoom-face-back"]) {
+      expect(within(layer).getByTestId(id).getAttribute("style")).toContain("inset 0 0 0 1px");
+    }
+  });
+
   it("gives a one-faced card no control at all", () => {
     // The gate is the `layout` column, never a `//` in the name: a split or adventure
     // card carries the separator and has no back.

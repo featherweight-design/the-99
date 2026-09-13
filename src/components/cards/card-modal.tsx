@@ -1258,7 +1258,14 @@ export function CardModal({
                     aria-hidden
                     data-testid="card-zoom-face-front"
                     className="absolute inset-0 rounded-[13px] md:rounded-[14px]"
-                    style={{ ...frontStyle, backfaceVisibility: "hidden" }}
+                    style={{
+                      ...frontStyle,
+                      backfaceVisibility: "hidden",
+                      // Each face carries the seam: they paint over the parent's inset
+                      // ring, so without it the zoomed card loses its edge on exactly
+                      // the cards that have two of them.
+                      boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+                    }}
                   />
                   <div
                     aria-hidden
@@ -1268,6 +1275,7 @@ export function CardModal({
                       ...backStyle,
                       backfaceVisibility: "hidden",
                       transform: "rotateY(180deg)",
+                      boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
                     }}
                   />
                   {/* The press must not reach the layer, which dismisses on click:
