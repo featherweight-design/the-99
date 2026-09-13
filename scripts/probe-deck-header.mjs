@@ -162,7 +162,12 @@ const READ_HEADER = `() => {
       const lines = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
       if (!lines.length) return null;
       const last = lines[lines.length - 1];
+      // The GLYPH's edges, not the target's. The button is a 14px box with 15px
+      // of padding and an equal negative margin, so its border box starts 15px
+      // before the glyph — enough to read as sitting before the title's text on a
+      // short name and fail a correct build.
       const box = pencil.getBoundingClientRect();
+      const glyph = { left: box.left + 15, right: box.right - 15 };
       const mid = box.top + box.height / 2;
       return {
         lines: lines.length,
@@ -170,10 +175,10 @@ const READ_HEADER = `() => {
         // pixel of tolerance for the half-leading either side.
         onLastLine: mid >= last.top - 1 && mid <= last.bottom + 1,
         // And after that line's text rather than before it.
-        after: Math.round(box.left - last.right),
+        after: Math.round(glyph.left - last.right),
         // The drawn 26px plate is centred in a 44px target, so 9px of that
         // target may overhang; the PLATE is what must stay inside the block.
-        withinBlock: Math.round(block.getBoundingClientRect().right - (box.right - 9)),
+        withinBlock: Math.round(block.getBoundingClientRect().right - glyph.right),
       };
     })(),
     titleShadow: h1 ? getComputedStyle(h1).textShadow : null,
@@ -460,8 +465,8 @@ try {
       // in from its own edge, which is what the drawings were compared against.
       if (rest.titleOffset === null) {
         fail(`no title or no [data-wash-label] to measure the title's offset against`);
-      } else if (rest.titleOffset > 1) {
-        fail(`title sits ${rest.titleOffset}px in from the block's left edge, expected flush`);
+      } else if (Math.abs(rest.titleOffset) > 1) {
+        fail(`title sits ${rest.titleOffset}px from the block's left edge, expected flush`);
       }
       // The pencil, measured: on the title's last line, after its text, and with
       // its drawn plate inside the block. A wrapped name is the case that broke
@@ -475,6 +480,16 @@ try {
         note(`  pencil: title wraps to ${pencil.lines} line(s), glyph ${pencil.after}px after the last`);
         if (!pencil.onLastLine) fail(`pencil is not on the title's last line`);
         if (pencil.after < 0) fail(`pencil sits ${-pencil.after}px BEFORE the end of the last line`);
+        // BOUNDED, not merely positive. An atomic inline box takes the whole
+        // available width when its text wraps, so the glyph can sit far to the
+        // right of a short last line and still be "after" it — which is the
+        // defect this check exists to catch, and a `>= 0` test passes it.
+        if (pencil.after > 12) {
+          fail(`pencil sits ${pencil.after}px after the last line's text, expected it to follow the words`);
+        }
+        if (pencil.lines < 2) {
+          note(`  (this deck's title is one line — the wrapped case went unchecked here)`);
+        }
         if (pencil.withinBlock < 0) {
           fail(`pencil's plate overhangs the block by ${-pencil.withinBlock}px`);
         }

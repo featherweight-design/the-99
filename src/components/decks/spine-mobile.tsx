@@ -331,7 +331,11 @@ export function SpineMobile({
                       accessible name carries it. The clamp moved up to the
                       heading itself, which is now the inline box the glyph
                       follows. */}
-                  <span data-deck-title>{deck.name}</span>
+                  {/* `min-w-0`: this span is a flex item of the inline box, and
+                      an unbroken 120-character name would otherwise force its
+                      min-content width past the reserved width and push the glyph
+                      off the phone instead of clamping. */}
+                  <span data-deck-title className="min-w-0">{deck.name}</span>
                 </h1>
                 {/* The glyph is a SIBLING of the heading, not a child. Inside it
                     its `aria-label` joined the heading's own accessible name, so
