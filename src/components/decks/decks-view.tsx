@@ -9,7 +9,7 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
@@ -38,12 +38,33 @@ import { PLAYED_LABEL, SearchField, STATUS_COPY_KEY, toggleIn } from "./deck-fil
 import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
+import type { DeckFolderWithCount } from "../../lib/decks/folders";
+import {
+  ALL_DECKS,
+  FOLDER_PARAM,
+  UNFILED,
+  narrowToShelf,
+  shelfCounts,
+  shelfFromParams,
+  shelfToParam,
+  shelfTotal,
+  showsUnfiled,
+  matchFolder,
+  type Shelf,
+} from "../../lib/decks/folder-view";
 import { ImportDeckButton } from "./import-deck-button";
 import { NewDeckButton } from "./new-deck-button";
 import { SearchIcon } from "./search-icon";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
+  /**
+   * Every shelf this player has, in name order, with the deck count the server
+   * read. The counts drawn on screen come from `shelfCounts` over the loaded
+   * decks rather than from these rows — see the note there — but the LIST is
+   * this: a folder holding no decks has no deck row to be named by.
+   */
+  folders: DeckFolderWithCount[];
   shopping: ShoppingRollup;
   /** Commanders in the ready-to-build set. Only the zero state prints it. */
   buildable: number;
@@ -58,9 +79,15 @@ export type DecksViewProps = {
 };
 
 /** The parameters this view owns. Everything else on the URL is left alone. */
-const OWNED_PARAMS = ["status", "colour", "played", "q", "sort"];
+const OWNED_PARAMS = ["status", "colour", "played", "q", "sort", FOLDER_PARAM];
 
-type ViewState = { filters: DeckFilters; sort: DeckSort };
+/**
+ * The shelf is a THIRD FIELD here and never a fifth on `DeckFilters` (handoff
+ * decision 7). That is what makes `EMPTY_FILTERS`, `activeFilterCount`, the
+ * `Filters` badge and `Clear all filters` unable to move it — by construction
+ * rather than by care.
+ */
+type ViewState = { filters: DeckFilters; sort: DeckSort; shelf: Shelf };
 
 /** One removable chip per active value — a heading with two values has two. */
 function chipLabels(filters: DeckFilters): { key: string; label: string; without: DeckFilters }[] {
@@ -92,13 +119,25 @@ function chipLabels(filters: DeckFilters): { key: string; label: string; without
   ];
 }
 
-export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: DecksViewProps) {
+export function DecksView({
+  decks,
+  folders,
+  shopping,
+  buildable,
+  cards,
+  now: nowIso,
+}: DecksViewProps) {
   // Seeded from the URL, so a shared link paints filtered on the first frame
   // rather than painting everything and then correcting itself. Read through
   // `useSearchParams` rather than `window.location`, which the server render
   // does not have; every later read is in a callback, where `window` is safe.
   const search = useSearchParams();
-  const [state, setState] = useState<ViewState>(() => filtersFromParams(search));
+  const [state, setState] = useState<ViewState>(() => ({
+    ...filtersFromParams(search),
+    // Read against the folders that exist, so a stale or hand-edited id lands
+    // on All decks rather than on an empty grid for a shelf that is not there.
+    shelf: shelfFromParams(search, folders),
+  }));
   const [sheet, setSheet] = useState<{
     open: boolean;
     focusSearch: boolean;
@@ -117,6 +156,9 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   const apply = useCallback((next: ViewState) => {
     setState(next);
     const params = filtersToParams(next.filters, next.sort);
+    // The shelf writes itself, beside the filters and never inside them.
+    const folderValue = shelfToParam(next.shelf);
+    if (folderValue !== null) params.set(FOLDER_PARAM, folderValue);
     // Every parameter this view does not own is read back off the live URL and
     // preserved — `?select=` rides in from the synergy picks and must survive a
     // filter click.
@@ -128,22 +170,30 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   }, []);
 
   const onFilters = useCallback(
-    (filters: DeckFilters) => apply({ filters, sort: state.sort }),
-    [apply, state.sort],
+    (filters: DeckFilters) => apply({ filters, sort: state.sort, shelf: state.shelf }),
+    [apply, state.sort, state.shelf],
   );
   const onSort = useCallback(
-    (sort: DeckSort) => apply({ filters: state.filters, sort }),
-    [apply, state.filters],
+    (sort: DeckSort) => apply({ filters: state.filters, sort, shelf: state.shelf }),
+    [apply, state.filters, state.shelf],
   );
 
   // Derived during render, never in an effect: an effect would paint the
   // previous list once before correcting it.
   const now = useMemo(() => new Date(nowIso), [nowIso]);
   const sorted = useMemo(() => sortDecks(decks, state.sort), [decks, state.sort]);
+  // THE SHELF NARROWS FIRST, in the same client-side pass. Everything below —
+  // the grid, the result line's denominator and the panels' per-option counts —
+  // is measured against the shelf the reader is standing on, which is what
+  // makes a status reading 0 mean "0 here" rather than "0 anywhere".
+  const narrowed = useMemo(() => narrowToShelf(sorted, state.shelf), [sorted, state.shelf]);
   const shown = useMemo(
-    () => filterDecks(sorted, state.filters, now),
-    [sorted, state.filters, now],
+    () => filterDecks(narrowed, state.filters, now),
+    [narrowed, state.filters, now],
   );
+  // One map, feeding both the shelf line's segments and the result line's
+  // denominator, so the two figures cannot drift apart. See `shelfCounts`.
+  const counts = useMemo(() => shelfCounts(decks, folders), [decks, folders]);
 
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
@@ -151,6 +201,28 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   // The chassis switches form on its own breakpoint, not Tailwind's — 1000px,
   // because `/collection`'s seven controls need 987 and the row must never wrap.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+
+  // THE SELECTED SHELF CAN STOP EXISTING UNDER THE READER. A folder action
+  // revalidates `/decks`, and the App Router can hand this client component new
+  // server props without remounting it — so a deleted folder would leave
+  // `state.shelf` naming an id that is no longer in `folders`, and the grid and
+  // both denominators would read as an empty shelf rather than falling back.
+  //
+  // Adjusted during render rather than in an effect, the way the breakpoint
+  // reconciliation below is: React re-runs this pass before touching the DOM, so
+  // nothing paints against the missing shelf. The URL is rewritten too — left
+  // alone it would restore the dead shelf on the next mount.
+  //
+  // `Unfiled` is in this too. It has no segment until the first folder exists
+  // (`showsUnfiled`), so deleting the last folder while the reader stands on it
+  // leaves a shelf that nothing on screen can show as selected — the same state
+  // `shelfFromParams` refuses to read from a URL.
+  const shelfMissing =
+    state.shelf !== null
+    && (state.shelf === UNFILED
+      ? !showsUnfiled(folders)
+      : !folders.some((f) => f.id === state.shelf));
+  if (shelfMissing) setState({ ...state, shelf: ALL_DECKS });
 
   // Crossing to wide unmounts the sheet but would leave `open` true, so
   // crossing back would remount it already open — a modal the reader never
@@ -170,6 +242,32 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
     else if (!wide && sheet.handOffFocus) setSheet({ ...sheet, handOffFocus: false });
   }
 
+  // The URL half of that reconciliation, and the one part that belongs in an
+  // effect: `replaceState` is a DOM write, not state, so it cannot happen during
+  // render. Left undone, the dead `?folder=` would restore the vanished shelf on
+  // the next mount.
+  //
+  // Keyed on the FOLDER LIST and measured against the live URL, not against
+  // `shelfMissing`: the render-time reset above clears that flag before any
+  // effect runs, so an effect watching it would never fire.
+  useEffect(() => {
+    const live = new URLSearchParams(window.location.search);
+    const named = live.get(FOLDER_PARAM);
+    // `null` rather than falsy: a bare `?folder=` is All decks to the parser and
+    // has to leave the URL too, or a bookmark keeps a parameter that means the
+    // absence of one.
+    if (named === null) return;
+    // `none` survives only while there is an `Unfiled` segment to select, and a
+    // folder id matches whatever case it arrived in — the same rule the parser
+    // reads it by.
+    if (named === UNFILED ? showsUnfiled(folders) : matchFolder(folders, named) !== undefined) {
+      return;
+    }
+    live.delete(FOLDER_PARAM);
+    const query = live.toString();
+    window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
+  }, [folders]);
+
   // `chipLabels` already knows how to remove one value; the chassis only needs
   // the label and the callback, so this is a shape change rather than a second
   // source of truth about what is on.
@@ -183,7 +281,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   // zero meaningful: a status showing 0 would return nothing *given the colours
   // already on*, rather than being a status no deck has ever had.
   const statusOptions = STATUS_ORDER.map((status) => {
-    const count = filterDecks(sorted, { ...state.filters, statuses: [status] }, now).length;
+    const count = filterDecks(narrowed, { ...state.filters, statuses: [status] }, now).length;
     return {
       code: status,
       label: refreshCopy.status[STATUS_COPY_KEY[status]],
@@ -193,7 +291,7 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
   });
 
   const playedOptions = (["thisMonth", "never"] as const).map((window) => {
-    const count = filterDecks(sorted, { ...state.filters, played: window }, now).length;
+    const count = filterDecks(narrowed, { ...state.filters, played: window }, now).length;
     return {
       code: window,
       label: PLAYED_LABEL[window],
@@ -337,7 +435,10 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
             }
             chips={chassisChips}
             onClearAll={() => onFilters(EMPTY_FILTERS)}
-            resultLine={deckChassisCopy.result(shown.length, decks.length)}
+            // The denominator is the SHELF, not the library: with the library's
+            // figure the line would describe a list the reader is not looking
+            // at. It comes off the same map the segment above prints from.
+            resultLine={deckChassisCopy.result(shown.length, shelfTotal(counts, state.shelf))}
             // The sheet is aria-modal and now carries its own region, so the
             // chassis's goes quiet while it is open rather than announcing the
             // same count from behind the modal.
@@ -352,7 +453,11 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
             filters={state.filters}
             onChange={onFilters}
             shown={shown.length}
-            total={decks.length}
+            // The SHELF's figure, the same one the chassis divides by — the
+            // sheet prints `shown of total` in its header and announces it in
+            // its own live region, so the library's count here would have the
+            // modal saying one thing while the line behind it said another.
+            total={shelfTotal(counts, state.shelf)}
             open={sheet.open}
             onDismiss={() => setSheet({ open: false, focusSearch: false })}
             autoFocusSearch={sheet.focusSearch}
@@ -372,7 +477,12 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
               </h2>
               <button
                 type="button"
-                onClick={() => apply({ filters: EMPTY_FILTERS, sort: state.sort })}
+                // Clears the FILTERS and keeps the shelf: the filtered empty
+                // state is offered on a shelf the reader chose, and leaving it
+                // is a different act with its own control.
+                onClick={() =>
+                  apply({ filters: EMPTY_FILTERS, sort: state.sort, shelf: state.shelf })
+                }
                 // Switches at the chassis breakpoint, not `sm:`. This sits
                 // below the compact chassis at 640-999px, where `sm:h-[32px]`
                 // would put it under the touch floor — the same mismatch the

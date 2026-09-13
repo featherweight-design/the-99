@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { listDecksWithStats } from "../../lib/decks/read";
+import { listFolders } from "../../lib/decks/folders";
 import { loadShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { selectParamSuffix } from "../../lib/decks/selection-param";
 import { DEFAULT_DECK_SORT } from "../../lib/decks/sort";
@@ -30,7 +31,7 @@ export default async function DecksPage({
   }
 
   const userId = await requireUserId();
-  const [decks, shopping] = await Promise.all([
+  const [decks, shopping, folders] = await Promise.all([
     // The sort has no default in the reader, so no caller's order can move
     // under it. The server hands back this order and the client re-sorts from
     // there without a request.
@@ -40,6 +41,10 @@ export default async function DecksPage({
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.
     loadShoppingRollup(userId),
+    // The shelf line's own read, and it cannot be derived from the decks above:
+    // a folder holding no decks has no deck row to be named by, and landing on
+    // that empty shelf is the whole loop the create flow teaches.
+    listFolders(userId),
   ]);
 
   // Only the zero state prints these two, and `getRankedList` recomputes the
@@ -53,6 +58,7 @@ export default async function DecksPage({
   return (
     <DecksView
       decks={decks}
+      folders={folders}
       shopping={shopping}
       // The same nine as Home's Ready to build, clamped by what actually
       // scored. Not a second threshold.
