@@ -14,9 +14,10 @@
 // 80px dismissal. A caller renders its own body and footer.
 //
 // NOT the scroll lock, though an earlier draft of this took it. Every caller
-// already holds the page — three through `useDialogA11y`, which locks by
-// default, and `filter-panel` through `useScrollLock` directly — so a lock here
-// was a SECOND counted lock per sheet rather than a fix. The locks are counted,
+// already holds the page — the deck and collection sheets through
+// `useDialogA11y`, which locks by default, and the rack and `filter-panel`
+// through `useScrollLock` directly, both having their own focus policy — so a
+// lock here was a SECOND counted lock per sheet rather than a fix. The locks are counted,
 // so nothing visibly broke; it was simply an owner too many, and the claim that
 // two routes gained the behaviour was wrong. One owner, and it is the a11y
 // layer that already had it.
@@ -208,7 +209,12 @@ export function Sheet({
         // bounded, and a second guard here would mask it — an upward drag that
         // reached this with a negative offset would be silently ignored rather
         // than caught.
-        style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
+        // `animation: none` while dragging. The default panel arrives under
+        // `anim-sheet-in`, which animates `transform` for 180ms — and a CSS
+        // animation outranks a normal inline transform, so a drag begun inside
+        // that window updated `dragY` while the panel sat still. Neither current
+        // adopter uses the default class, so this is a trap set for the next one.
+        style={dragY ? { transform: `translateY(${dragY}px)`, animation: "none" } : undefined}
       >
         {/* Drag handle. `aria-hidden` and unfocusable on purpose: the ✕ below is
             the one accessible close control, and two identically-labelled

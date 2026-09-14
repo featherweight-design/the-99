@@ -113,6 +113,16 @@ describe("Sheet", () => {
     expect(releasePointerCapture).toHaveBeenCalledWith(1);
   });
 
+  it("stops the entrance animation while dragging", () => {
+    // The default panel arrives under `anim-sheet-in`, which animates
+    // `transform` for 180ms, and a CSS animation outranks a normal inline
+    // transform — so a drag begun in that window moved nothing.
+    render(<Sheet {...props} open />);
+    fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle(), { clientY: 30, pointerId: 1 });
+    expect(screen.getByRole("dialog").getAttribute("style")).toContain("animation: none");
+  });
+
   it("follows the pointer mid-drag", () => {
     render(<Sheet {...props} open />);
     fireEvent.pointerDown(handle(), { clientY: 0 });
@@ -128,9 +138,9 @@ describe("Sheet", () => {
   });
 
   it("does not hold the page — every caller already does", () => {
-    // Three callers lock through `useDialogA11y`, which locks by default, and
-    // `filter-panel` calls `useScrollLock` itself. A lock here was a second
-    // counted lock per sheet rather than a fix.
+    // The deck and collection sheets lock through `useDialogA11y`, which locks
+    // by default; the rack and `filter-panel` call `useScrollLock` themselves.
+    // A lock here was a second counted lock per sheet rather than a fix.
     render(<Sheet {...props} open />);
     expect(document.body.style.overflow).toBe("");
   });
