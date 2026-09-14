@@ -386,6 +386,11 @@ export function useHeadCollapse({
     if (el === null || spacer === null || !stepping || crossedBreakpoint
       || prefersReducedMotion() || typeof el.animate !== "function"
       || from === null || to === null || Math.abs(to - from) < 1) {
+      // A bar height measured on the phone must not decide a threshold after a trip to
+      // desktop and back. `evaluateCollapse` clears it too, but that callback only runs from
+      // the scroll listener — and the listener is not installed on desktop, so the crossing
+      // itself is the only place that can.
+      if (crossedBreakpoint && isDesktop) barHeightRef.current = null;
       sizeSpacer();
       if (containerRef.current !== null) {
         // The anchoring switch still applies: the leap is the height change's doing, not the
