@@ -11,7 +11,7 @@ import { isUuid } from "../../../../lib/uuid";
 
 export default async function UpdateDeckPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // See the note in `versions/page.tsx`: a malformed segment reaching a uuid
+  // See the note in `decks/[id]/page.tsx`: a malformed segment reaching a uuid
   // column is a 500 where the route means not-found.
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();

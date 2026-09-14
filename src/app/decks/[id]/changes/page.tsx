@@ -20,7 +20,7 @@ export default async function ChangesPage({
 }) {
   const { id } = await params;
   const { commit } = await searchParams;
-  // See the note in `versions/page.tsx`: a malformed segment reaching a uuid
+  // See the note in `decks/[id]/page.tsx`: a malformed segment reaching a uuid
   // column is a 500 where the route means not-found.
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();

@@ -446,6 +446,15 @@ try {
     /There's no page here\./.test(retiredBody),
     retiredUrl,
   );
+  // Asserted here, unlike the ownership guard below, and the difference is the
+  // whole reason this check is worth having. A route that still EXISTS and
+  // throws `notFound()` behind a loading boundary has already flushed its 200;
+  // a route that does not exist never streams, so Next answers the header as
+  // well as the body. Measured against a running dev server on 2026-09-13:
+  // `/decks/<uuid>/versions` returns 404. Without this, a page that rendered the
+  // same not-found component on a 200 would satisfy both checks above and the
+  // probe would call the retirement done.
+  check("and answers 404, not a 200 carrying that page", retired?.status() === 404, retiredUrl);
 
   // ── The guard, once: a rail is not width-dependent in whom it refuses. This
   // asked through the retired route while it existed, because the forward
@@ -466,7 +475,7 @@ try {
   console.log(`\n########## another player's deck · /decks/<id>`);
   check("no rail drawn for a deck the reader does not own", !leaked);
   check("the not-found page is drawn instead", notFoundPage);
-  // Reported, not asserted. `decks/[id]/loading.tsx` makes the forwarded-to page
+  // Reported, not asserted. `decks/[id]/loading.tsx` makes the deck page
   // stream, so the 200 is flushed with the first chunk before the guard's
   // `notFound()` throws — the body is the refusal, and the header cannot be.
   console.log(`  status: ${refusedStatus} (200 while the deck page has a loading boundary)`);

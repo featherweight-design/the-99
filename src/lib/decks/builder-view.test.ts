@@ -7,8 +7,8 @@ describe("readBuilderView", () => {
     expect(readBuilderView("games")).toBe("games");
     expect(readBuilderView("deck")).toBe("deck");
     // `versions` is a tab like any other and an arrival may name it, so a
-    // fallback here would land a link meant for the rail on `Your deck` with
-    // nothing to say it had missed.
+    // fallback here would land a hand-written URL meant for the rail on
+    // `Your deck` with nothing to say it had missed.
     expect(readBuilderView("versions")).toBe("versions");
   });
 

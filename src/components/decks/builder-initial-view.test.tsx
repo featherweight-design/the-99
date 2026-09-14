@@ -1,8 +1,8 @@
-// The tab the arrival opens on. The deck page draws its own tab row, and the
-// Consider and Games cells are links back to the builder carrying
-// `?tab=`. Parsing that parameter is covered in `builder-view.test.ts`; what is
-// only answerable through the shell is whether the parsed value actually decides
-// which tab is selected on the first render.
+// The tab the arrival opens on. Nothing in the app writes `?tab=` — the tab row
+// is a row of buttons and switching is component state — so the parameter
+// answers a URL written by hand or held in a bookmark. Parsing it is covered in
+// `builder-view.test.ts`; what is only answerable through the shell is whether
+// the parsed value actually decides which tab is selected on the first render.
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";

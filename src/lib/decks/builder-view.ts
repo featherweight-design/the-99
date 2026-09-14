@@ -1,13 +1,15 @@
 // Which of the builder's four tabs a visit lands on, and how a URL says so.
 //
 // The tab is component state on the builder itself — switching tabs is not a
-// navigation, and making it one would push a history entry per click. But a URL
-// may still name the tab on arrival — the tab row's own cells link back carrying
-// `?tab=`, and a link can name any tab including `versions`. This used to be
-// justified by `/decks/[id]/versions` redirecting here; that route is retired,
-// and the parameter is read for its own sake now.
-// Only the arrival is read: nothing writes this parameter back as the reader
-// switches.
+// navigation, and making it one would push a history entry per click. The tab
+// row is a row of `<button>`s for that reason.
+//
+// So NOTHING IN THE APP PRODUCES A `?tab=` URL. The parameter used to be
+// justified by `/decks/[id]/versions` redirecting here carrying it; that route
+// is retired, and what the parameter answers now is a URL written by hand or
+// kept in a bookmark. It is read on arrival only, and never written back as the
+// reader switches — which is the same contract it always had, minus the one
+// in-app producer.
 
 export type BuilderView = "deck" | "consider" | "games" | "versions";
 

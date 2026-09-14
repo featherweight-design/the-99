@@ -51,8 +51,10 @@ export default async function DeckBuilderPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  // See the note in `versions/page.tsx`: a malformed segment reaching a uuid
-  // column is a 500 where the route means not-found.
+  // A malformed segment reaching a uuid column is a 500 where the route means
+  // not-found, so every deck route answers it here rather than passing it on.
+  // This is the note the other deck routes point at; it lived in the retired
+  // `versions/page.tsx` until that route was deleted.
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();
 
