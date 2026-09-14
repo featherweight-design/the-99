@@ -137,8 +137,14 @@ than leaving the asking deck showing a buy tag until someone remembers to go and
 source.
 
 **Guard:** if the source deck already has pending changes of its own, the pull is not offered as
-a one-click action. The offer becomes a link to that deck to release the card there. Committing
-automatically would sweep somebody's half-finished tinkering into a version they never asked for.
+a one-click action. Committing automatically would sweep somebody's half-finished tinkering into
+a version they never asked for.
+
+> **Amendment, 2026-09-14, taken on Hugh's instruction.** This guard originally turned the offer
+> into a link to the source deck. The link is withdrawn: on a paired type column it claimed the
+> width the card name needed, and the row printed a deck while printing no card. The guard is now
+> a `deck in draft` tag plus an accessible description on the row, and nothing links to the
+> holding deck.
 
 ## Surfaces
 

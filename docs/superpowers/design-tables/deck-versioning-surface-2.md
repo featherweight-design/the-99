@@ -342,7 +342,7 @@ is the click target; the pull control is its one nested action and stops propaga
 | border | `1px solid #26211B` (`--border`) | `1px solid #26211B` |
 | border-radius | `7px` | `7px` |
 | padding | `0 8px` | `0 9px` (`0 6px 0 9px` when the row carries an action) |
-| display | `flex`, `align-items: center` | `flex`, `align-items: center` |
+| display | `flex`, `align-items: center` | `flex`, `align-items: center` — **two stacked lines on a row that names a holding deck**; see the amendment below |
 | gap | `9px` | `9px` (`8px` inside a nested sub-column) |
 | row gap in the list | `4px` | `4px` |
 | click target | the whole row opens the card | the whole row opens the card |
@@ -355,9 +355,26 @@ is the click target; the pull control is its one nested action and stops propaga
 |----------|--------|---------|
 | background | (same rule) | `#221D17` — the annotation names it `--elevated-hover` |
 | border | (same rule) | `1px solid #4A3A1C` (`--accent-shadow`) |
-| meta appears | (same rule) | `open card →`, mono `10px` `#8E8269`, in the meta slot |
+| meta appears | (same rule) | **withdrawn** — see the amendment below; the row draws no pointer hint |
 | focus-visible | not specified | not specified |
 | active | not specified | not specified |
+
+> **Amendment, 2026-09-14, taken on Hugh's instruction and not through a design round.** Two
+> things change on a row that names the deck sleeving the copy: the row keeps **two lines at
+> every width**, and it draws **no `open card →` hint and no trailing anchor**.
+>
+> The single desktop line was not reachable. A row that prints a card name, a deck name, a buy
+> tag and a control needs about 561px; a paired type column is 574px wide at 1300px and 165px at
+> 820px, so `flex: 1 1 0%` on the card name took it to zero and the row named a deck while
+> printing no card at all. The hover hint then claimed the width the trailing `Open →` anchor
+> was standing in, and pushed it off the line. The phone's two-line stacking is what this row now
+> draws at both widths: the name line, then a meta line that wraps under pressure, with a 90px
+> floor under the deck name so it truncates rather than vanishing.
+>
+> The anchor and the hint go together. Both existed to say the row is clickable, which it already
+> is — a click anywhere that is not a button or a link opens the card, so the deck name is the
+> way in. **The link to the holding deck is genuinely lost by this**, and no surface replaces it.
+> `pnpm probe:review` holds both names to a 40px floor at 1300px and again at 820px.
 
 ### Row slot — ownership dot (`OwnershipDot`, `aria-hidden`)
 
@@ -477,16 +494,23 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | tag font | mono `9.5px`, `letter-spacing 0.1em`, `uppercase` | mono `9.5px`, `letter-spacing 0.1em`, `uppercase` |
 | tag color | `#E0913C` (`--warning`) | `#E0913C` |
 | tag border / radius / padding | `1px solid #4A3A1C`, radius `4px`, `1px 5px` — `BuyTag`'s shape | `1px solid #4A3A1C`, radius `4px`, `1px 5px` |
-| tag text | `pending` (`review.pullGuardTag`) | `pending` |
+| tag text | `deck in draft` (`review.pullGuardTag`) — see the amendment below | `deck in draft` |
 | tag placement | beside the deck name on the meta line | beside the deck name, grouped `flex; gap 5px` |
-| action label | `Open →` (`review.pullGuardAction`) | `Open →` |
-| action font | sans `600` `12.5px`, `#EDE6D8` (`--fg`) | sans `600` `12px`, `#EDE6D8` |
-| action box | `1px solid #3A3229`, radius `7px`, `padding 0 16px`, `min-height 44px` | `1px solid #3A3229`, radius `7px`, `padding 0 11px`, `min-height 34px` |
-| geometry vs a pullable row | same width class, same height | same width class, same height |
+| action label | **withdrawn** — see the amendment below | **withdrawn** |
+| action font | **withdrawn** | **withdrawn** |
+| action box | **withdrawn** | **withdrawn** |
+| geometry vs a pullable row | shorter — the tag alone stands where the control did | shorter |
 | price | **absent on the canvas's phone guard row** — states 20/21 say the price stays (Discrepancies 6) | present (`buy │ $6.40` on `Birds of Paradise`) |
-| accessible name | `{deck} has pending changes of its own. Open it to release {card}.` (`review.pullGuardA11y`) — never rendered | same |
-| disabled button alternative | rejected — a link, never a dead control (READINESS 13) | same |
-| server dependency | a per-holding-deck *has pending changes* flag; the client must not infer it | same |
+| accessible description | `{deck} has a draft of its own, so {card} cannot be pulled from it.` (`review.pullGuardA11y`) — carried by the row, never rendered | same |
+| disabled button alternative | rejected — but so is the link now; the guard is a tag and a description (READINESS 13 is satisfied by drawing no control at all) | same |
+| server dependency | a per-holding-deck *has a draft* flag; the client must not infer it | same |
+
+> **Amendment, 2026-09-14, taken on Hugh's instruction and not through a design round.** The tag
+> read `pending`, and beside a card name it was taken for a pending change to **that card** — on
+> a row where the card is not being touched at all. It names the deck now: `deck in draft`. The
+> `Open →` anchor is withdrawn with the hover hint above, for the same reason, and the sentence
+> it used to carry reaches a screen reader as the row's own description instead. The commander
+> guard was already silent; the two guards now have the same shape.
 
 ### Pull guard — variant 2, the card is that deck's commander (state 21)
 
