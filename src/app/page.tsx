@@ -5,7 +5,6 @@ import { receiptCountsByCommander, type ReceiptCounts } from "../lib/commanders/
 import { loadAvailability } from "../lib/decks/availability-query";
 import { listDecksWithStats } from "../lib/decks/read";
 import { loadShoppingRollup } from "../lib/decks/shopping-rollup";
-import { DEFAULT_DECK_SORT } from "../lib/decks/sort";
 import { commitmentFigures, type Commitments } from "../lib/home/commitments";
 import { getCollectionLastUpdated, getCollectionStats } from "../lib/home/summary";
 import { getRankedList } from "../lib/recs/ranked-list";
@@ -93,9 +92,13 @@ export default async function HomePage() {
   // /decks/import. Showing them the three steps would hide the deck they have.
   const [stats, decks] = await Promise.all([
     getCollectionStats(userId),
-    // Explicit, because the parameter has no default. Home's rail is a resume
-    // rail, so last played is the order it wants on its own merits.
-    listDecksWithStats(userId, DEFAULT_DECK_SORT),
+    // `name`, which is the CHEAPEST order this reader offers, because Home does
+    // not use the order it asks for: the resume block re-sorts by `byTouched`
+    // and nothing else on the page renders this list. `lastPlayed` — what Home
+    // took while the deck rail existed — orders by a correlated `max()` over
+    // `deck_games` on every request, and that work was thrown away the moment
+    // the rail went.
+    listDecksWithStats(userId, "name"),
   ]);
   if (stats.uniqueCards === 0 && decks.length === 0) {
     return <FirstRunChecklist />;

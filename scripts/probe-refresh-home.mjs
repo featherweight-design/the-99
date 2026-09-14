@@ -89,16 +89,36 @@ const READ_ROWS = `() => {
   const section = heading.closest('section');
   return [...section.querySelectorAll('a[href^="/decks/"]')].map((a) => {
     const r = a.getBoundingClientRect();
-    const art = a.querySelector('[data-art-wash], img, [style*="background-image"]');
-    const stamp = [...a.querySelectorAll('span')]
-      .map((s) => (s.textContent ?? '').trim())
-      .find((t) => /^· (edited|committed|played) /.test(t)) ?? null;
+    // The wash's own root publishes the band it was keyed to; the painted layer
+    // beside it is the portrait ONLY when the row has a crop. A commander with
+    // no art crop draws an identity gradient at inset-0 — a supported rendering,
+    // and full width — so measuring whatever is painted would report a portrait
+    // of 300-odd for a row that is drawn exactly as intended. Crop-backed rows
+    // are asserted at 99; artless rows are counted and reported instead.
+    const stampEl = [...a.querySelectorAll('span')]
+      .find((s) => /^· (edited|committed|played) /.test((s.textContent ?? '').trim())) ?? null;
+    const stamp = stampEl ? (stampEl.textContent ?? '').trim() : null;
+    // Whether the stamp is WHOLLY inside the row. The row hides its overflow
+    // and the stamp does not shrink, so a meta line with too little room clips
+    // it rather than wrapping — and a half-printed stamp is worse than none.
+    // (No backticks in this comment: the whole function is a template literal.)
+    const stampBox = stampEl ? stampEl.getBoundingClientRect() : null;
+    const stampClipped = stampBox
+      ? stampBox.right > r.right + 0.5 || stampBox.left < r.left - 0.5 || stampBox.width < 1
+      : true;
+    const washRoot = a.querySelector('[data-art-wash-band]');
+    // The crop's own layer: the wash draws it at a stated width, where the
+    // artless gradient spans the band. Anything as wide as the row is the latter.
+    const cropLayer = [...a.querySelectorAll('.art-wash-art')]
+      .find((el) => el.getBoundingClientRect().width < r.width - 1) ?? null;
     const name = a.querySelector('[data-resume-text] > span');
     return {
       x: Math.round(r.x), y: Math.round(r.y),
       w: Math.round(r.width), h: Math.round(r.height),
-      portrait: art ? Math.round(art.getBoundingClientRect().width) : null,
+      band: washRoot ? Number(washRoot.getAttribute('data-art-wash-band')) : null,
+      portrait: cropLayer ? Math.round(cropLayer.getBoundingClientRect().width) : null,
       stamp,
+      stampClipped,
       nameWidth: name ? Math.round(name.getBoundingClientRect().width) : 0,
     };
   });
@@ -119,6 +139,14 @@ async function main() {
 
   for (const vp of [
     { label: "desktop", width: 1440, height: 900 },
+    // The band the old threshold made a third layout of: one column, and until
+    // this round desktop padding with it.
+    { label: "tablet", width: 1100, height: 900 },
+    // 1200 is the tightest two-up: the rows pair at 1180, so this is where the
+    // meta line has least room for the pill, the count and the stamp together.
+    // At 1024 — inside the old 1000px threshold — every stamp was clipped away
+    // by the row's own overflow, which is the defect this width exists to hold.
+    { label: "narrow-pair", width: 1200, height: 900 },
     { label: "mid", width: 900, height: 900 },
     { label: "phone", width: 390, height: 844, isMobile: true, hasTouch: true },
   ]) {
@@ -150,9 +178,9 @@ async function main() {
       ["Ready to build", "Pick up where you left off", "Commitments"],
     );
     check(
-      `${vp.label}: two columns above 1000, one below`,
+      `${vp.label}: two columns above 1180, one below`,
       columnsOfBlocks.length,
-      vp.width >= 1000 ? 2 : 1,
+      vp.width >= 1180 ? 2 : 1,
     );
     check(
       `${vp.label}: no Your decks heading`,
@@ -164,7 +192,7 @@ async function main() {
     check(`${vp.label}: four resume rows`, rows.length, 4);
     const columns = new Set(rows.map((r) => r.x)).size;
     const lines = new Set(rows.map((r) => r.y)).size;
-    if (vp.width >= 1000) {
+    if (vp.width >= 1180) {
       check(`${vp.label}: two columns`, columns, 2);
       check(`${vp.label}: two lines`, lines, 2);
     } else {
@@ -181,9 +209,27 @@ async function main() {
       true,
     );
 
+    check(
+      `${vp.label}: no stamp is clipped by its row`,
+      rows.filter((r) => r.stampClipped).length,
+      0,
+    );
+
     // 5. The shipped row, unchanged — errata E1/E2.
     check(`${vp.label}: the band is a stated 72`, [...new Set(rows.map((r) => r.h))], [72]);
-    check(`${vp.label}: the portrait is 99`, [...new Set(rows.map((r) => r.portrait))], [99]);
+    check(`${vp.label}: every band is keyed to 72`, [...new Set(rows.map((r) => r.band))], [72]);
+    // Crop-backed rows only. A commander with no art crop draws the identity
+    // gradient across the band instead, which is the wash's own supported answer
+    // and not a portrait of the wrong width.
+    const cropped = rows.filter((r) => r.portrait !== null);
+    check(
+      `${vp.label}: every crop-backed portrait is 99`,
+      [...new Set(cropped.map((r) => r.portrait))],
+      cropped.length > 0 ? [99] : [],
+    );
+    if (cropped.length !== rows.length) {
+      console.log(`      (${rows.length - cropped.length} row(s) drew the artless identity gradient)`);
+    }
 
     // 7. The width nobody drew. A name clipped to nothing is the defect this
     //    block already shipped once, at 640px, and the reason 1000 is the
@@ -212,11 +258,17 @@ async function main() {
     //    does not navigate is exactly what counting cannot tell apart.
     if (vp.label === "desktop") {
       const all = onPage(page, 'a[href="/decks"]').filter({ hasText: /All \d+ decks/ });
-      check("desktop: the footer offers All {n} decks", await all.count(), 1);
-      await all.first().click();
-      await page.waitForURL(/\/decks$/, { timeout: 10_000 });
-      check("desktop: it lands on /decks", new URL(page.url()).pathname, "/decks");
-      await page.goBack({ waitUntil: "networkidle" });
+      const found = await all.count();
+      check("desktop: the footer offers All {n} decks", found, 1);
+      // Only where there is exactly one to press. A missing or doubled footer is
+      // already the failure above, and clicking into it would throw here — before
+      // the summary line and before the remaining viewports ever run.
+      if (found === 1) {
+        await all.first().click();
+        await page.waitForURL(/\/decks$/, { timeout: 10_000 });
+        check("desktop: it lands on /decks", new URL(page.url()).pathname, "/decks");
+        await page.goBack({ waitUntil: "networkidle" });
+      }
     }
 
     await page.screenshot({ path: `/tmp/home-parity-${vp.label}.png`, fullPage: true });

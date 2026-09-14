@@ -74,7 +74,11 @@ export const refreshCopy = {
     // heading used to print, inside the control that goes there — so the number
     // is a destination rather than a label. Absent when `more` is 0.
     moreDecks: (more: number) => `${more} more deck${more === 1 ? '' : 's'}`,
-    allDecks: (total: number) => `All ${total} decks`,
+    // Singular-aware, though the footer that prints it is absent below five
+    // decks — the figure beside it would be nought, and a block whose figure is
+    // nought is absent rather than zeroed. The string is exported, and `All 1
+    // decks` is not a sentence this app would print anywhere.
+    allDecks: (total: number) => `All ${total} deck${total === 1 ? '' : 's'}`,
 
     commitmentsHeading: 'Commitments',
     inUseRow: 'Cards in use',

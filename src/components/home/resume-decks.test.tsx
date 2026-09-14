@@ -261,7 +261,7 @@ describe("ResumeDecks", () => {
     expect(text.className).toContain("min-[1000px]:pl-[116px]");
     const row = container.querySelector<HTMLElement>('a[href^="/decks/"]')!;
     expect(row.className).toContain("pr-[10px]");
-    expect(row.className).toContain("min-[1000px]:pr-[18px]");
+    expect(row.className).toContain("min-[1180px]:pr-[18px]");
   });
 
   // Two-up only where two rows clear their own fixed content.
@@ -271,6 +271,9 @@ describe("ResumeDecks", () => {
     );
     const rows = container.querySelector<HTMLElement>('a[href^="/decks/"]')!.parentElement!;
     expect(rows.className).toContain("flex-col");
-    expect(rows.className).toContain("min-[1000px]:flex-row");
+    // 1180, not 1000. The pair's threshold moved when the stamp joined the meta
+    // line: at 1024 each row was about 300px and the stamp was clipped away by
+    // the row's own overflow.
+    expect(rows.className).toContain("min-[1180px]:flex-row");
   });
 });

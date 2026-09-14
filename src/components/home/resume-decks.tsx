@@ -113,7 +113,7 @@ function ResumeRow(
       // the portrait. Two rows never overflowed, which is why the bug arrives
       // with the fourth. Above 1000px the container is a row again and `flex-1`
       // is what makes the pair share the width.
-      className={`relative flex h-[72px] min-w-0 flex-none items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[10px] min-[1000px]:flex-1 min-[1000px]:pr-[18px] ${className ?? ""}`}
+      className={`relative flex h-[72px] min-w-0 flex-none items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[10px] min-[1180px]:flex-1 min-[1180px]:pr-[18px] ${className ?? ""}`}
     >
       {/* §ResumeRow — the commander's portrait, at the band's own height. It is
           a column the type starts clear of, not a plate the type sits on: 99px
@@ -310,20 +310,33 @@ export function ResumeDecks({
           clipped away entirely. Two rows clear 255 each at 1000px of viewport,
           which is where they go side by side; below it they stack. The row
           itself is untouched — same band, same portrait, same inset. */}
-      {/* 2×2 above 1000px, stacked below — and the threshold is the arithmetic
-          above, not a guess. `basis-[calc(50%-6px)]` is half the row less half
-          the 12px gap, so four rows wrap into two pairs; `flex-wrap` is what
-          makes the second pair a second line rather than four columns of 128px.
-          A single column of four would push Commitments off the fold on desktop
-          and leave the right rail long and empty. */}
-      <div className="flex flex-col gap-[12px] min-[1000px]:flex-row min-[1000px]:flex-wrap">
+      {/* 2×2 above 1180px, stacked below, and the threshold is arithmetic. The
+          old two-up line was drawn for a row with no stamp: the meta line's
+          fixed content is a status pill at about 62, two 14px gaps, a
+          non-shrinking count at about 45 and now a non-shrinking stamp at about
+          78 — 213px before the commander's name gets a pixel, on top of the
+          116px inset and 18px of right padding. A row therefore needs ~347, a
+          pair needs ~706, and with 52px of page padding, the 20px gap, the
+          316px rail and the 12px gap between them that is 1106px of viewport.
+          1180 is the next round figure clear of it.
+
+          At 1000 — where the pair sat before the stamp existed — each row was
+          about 300px and the stamp was clipped away entirely by the row's own
+          overflow. `pnpm probe:home` measures exactly that at 1024, because a
+          clipped stamp is invisible in a diff and in a class list alike.
+
+          `basis-[calc(50%-6px)]` is half the row less half the 12px gap, so four
+          rows wrap into two pairs; `flex-wrap` makes the second pair a second
+          line rather than four columns. A single column of four would push
+          Commitments off the fold and leave the right rail long and empty. */}
+      <div className="flex flex-col gap-[12px] min-[1180px]:flex-row min-[1180px]:flex-wrap">
         {decks.map((deck) => (
           <ResumeRow
             key={deck.id}
             deck={deck}
             copies={toBuyCopies(shopping, deck.id)}
             now={now}
-            className="min-[1000px]:basis-[calc(50%-6px)]"
+            className="min-[1180px]:basis-[calc(50%-6px)]"
           />
         ))}
       </div>

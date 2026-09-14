@@ -725,23 +725,23 @@ Copy: heading `home.commitmentsHeading`.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| background | — | `var(--surface-inset)` |
-| border-width | — | 1 |
-| border-style | — | solid |
-| border-color | — | `var(--border)` |
-| border-radius | — | 14 |
-| padding (all sides) | — | 14 |
-| display | — | flex |
-| flex-direction | — | column |
-| gap | — | 11 |
+| background | `var(--surface-inset)` | `var(--surface-inset)` |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border)` | `var(--border)` |
+| border-radius | 14 | 14 |
+| padding (all sides) | 14 | 14 |
+| display | flex | flex |
+| flex-direction | column | column |
+| gap | 11 | 11 |
 
 ### Commitments row (each of 3)
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | — | flex |
-| align-items | — | baseline |
-| justify-content | — | space-between |
+| display | flex | flex |
+| align-items | baseline | baseline |
+| justify-content | space-between | space-between |
 
 #### Row label
 
@@ -749,9 +749,9 @@ Copy: row 1 `home.inUseRow`, row 2 `home.overCommittedRow`, row 3 `home.toBuyRow
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| font-family | — | `var(--font-sans)` |
-| font-size | — | 13 |
-| color | — | `var(--fg-body)` |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 13 | 13 |
+| color | `var(--fg-body)` | `var(--fg-body)` |
 
 #### Row value
 
@@ -760,10 +760,10 @@ row 3 `home.toBuyValue(n, cost)`.
 
 | Property | Mobile | Row 1 (Cards in use) | Row 2 (Spoken for twice) | Row 3 (To buy, all decks) |
 |----------|--------|---|---|---|
-| font-family | — | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` |
-| font-size | — | 13 | 13 | 13 |
-| font-variant-numeric | — | tabular-nums | tabular-nums | tabular-nums |
-| color | — | `var(--accent)` | `var(--danger)` | `var(--fg)` |
+| font-family | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 13 | 13 | 13 | 13 | 13 | 13 |
+| font-variant-numeric | tabular-nums | tabular-nums | tabular-nums | tabular-nums | tabular-nums | tabular-nums |
+| color | `var(--accent)` | `var(--danger)` | `var(--fg)` | `var(--accent)` | `var(--danger)` | `var(--fg)` |
 
 ### "Review commitments" button
 
@@ -771,19 +771,19 @@ Copy: `home.reviewCommitments`.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | — | flex |
-| align-items | — | center |
-| justify-content | — | center |
-| width | — | 100% (stretched by the column) |
-| height | — | 32 |
-| border-width | — | 1 |
-| border-style | — | solid |
-| border-color | — | `var(--border-strong)` |
-| border-radius | — | 8 |
-| font-family | — | `var(--font-sans)` |
-| font-size | — | 12.5 |
-| color | — | `var(--fg)` |
-| margin-top | — | 2 |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| width | 100% (stretched by the column) | 100% (stretched by the column) |
+| height | **44** — the phone floor. The card was desktop-only when this control was drawn, so it carried 32 at every width until the phone mounted it | 32 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| border-radius | 8 | 8 |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 12.5 | 12.5 |
+| color | `var(--fg)` | `var(--fg)` |
+| margin-top | 2 | 2 |
 
 ---
 

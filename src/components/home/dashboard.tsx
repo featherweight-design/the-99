@@ -106,13 +106,15 @@ export function Dashboard(props: DashboardProps) {
           point of this round. The order is the same both ways: CTAs, Ready to
           build, the resume block, Commitments. On desktop Commitments IS the
           right rail now, the deck list that sat above it having left. */}
-      {/* Two columns at 1000px, not at `sm`. The resume block pairs its rows at
-          exactly that width, and between 640 and 999 the old `sm:flex-row` put
-          Commitments in a 316px rail BESIDE the rows — so the reader at 900px
-          met a different block order from the reader at either width the
-          handoff draws. One column until the page is wide enough for two. */}
-      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 min-[1000px]:flex-row min-[1000px]:gap-[20px] sm:p-[20px_26px_26px]">
-        <div className="flex min-w-0 flex-col gap-[12px] min-[1000px]:flex-auto sm:gap-[11px]">
+      {/* Two columns at 1180px, not at `sm` — the same threshold the resume rows
+          pair at, because the rail is what takes the width away from them.
+          Between 640 and 1179 the old `sm:flex-row` put Commitments in a 316px
+          rail BESIDE the rows, so a reader at 900px met a different block order
+          from a reader at either width the handoff draws. The PADDING moves with
+          the split rather than staying at `sm`: left behind, it gave 640–1179 a
+          third layout, one column wide with desktop padding. */}
+      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
+        <div className="flex min-w-0 flex-col gap-[12px] min-[1180px]:flex-auto sm:gap-[11px]">
           <ReadyToBuild ready={props.ready} inUse={props.inUse} />
           {/* Sliced here rather than inside the section, so the section draws
               what it is handed and the ordering stays testable without a DOM.
@@ -126,17 +128,20 @@ export function Dashboard(props: DashboardProps) {
           />
         </div>
 
-        <div className="flex flex-col gap-[12px] min-[1000px]:w-[316px] min-[1000px]:flex-none sm:gap-[11px]">
-          {/* Null when the availability read failed. Three zeroes after a
-              failed query is a lie, so the card leaves rather than guessing. */}
-          {props.commitments !== null && (
+        {/* The column exists only when the card does. Null when the availability
+            read failed — three zeroes after a failed query is a lie, so the card
+            leaves rather than guessing — and an empty column reserving 316px
+            would leave a blank rail squeezing the resume rows beside it for a
+            block that is not there. */}
+        {props.commitments !== null && (
+          <div className="flex flex-col gap-[12px] min-[1180px]:w-[316px] min-[1180px]:flex-none sm:gap-[11px]">
             <CommitmentsCard
               commitments={props.commitments}
               shopping={props.shopping}
               totalCards={props.stats.totalCards}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
