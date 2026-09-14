@@ -21,6 +21,8 @@ function deck(over: Partial<FilterableDeck> & { id?: string } = {}) {
     name: "Atraxa, Praetors' Voice",
     commanderName: "Atraxa, Praetors' Voice",
     commanderColorIdentity: ["W", "U", "B", "G"],
+    partnerName: null,
+    partnerColorIdentity: null,
     statusPill: "Complete" as const,
     lastPlayedAt: THIS_MONTH,
     ...over,
@@ -156,5 +158,40 @@ describe("URL round trip", () => {
     const back = filtersFromParams(new URLSearchParams("status=Complete,Draft&colour=G,W"));
     expect(back.filters.statuses).toEqual(["Draft", "Complete"]);
     expect(back.filters.colours).toEqual(["W", "G"]);
+  });
+
+  // A pair deck's colour is the UNION. The tile, both deck-header spines and the
+  // rail all word it that way, so a filter reading the primary's identity alone
+  // hid a deck from the very colour its own tile claimed.
+  it("matches a pair on the union of both commanders' colours", () => {
+    const pair = deck({
+      name: "Flyers and friends",
+      commanderName: "Ishai, Ojutai Dragonspeaker",
+      commanderColorIdentity: ["W", "U"],
+      partnerName: "Bruse Tarl, Boorish Herder",
+      partnerColorIdentity: ["R", "W"],
+    });
+    // Red comes only from the partner.
+    expect(filterDecks([pair], { ...EMPTY_FILTERS, colours: ["R"] }, NOW)).toHaveLength(1);
+    // Containment still holds across the union: W and R together match.
+    expect(filterDecks([pair], { ...EMPTY_FILTERS, colours: ["W", "R"] }, NOW)).toHaveLength(1);
+    // And a colour neither commander brings still excludes it.
+    expect(filterDecks([pair], { ...EMPTY_FILTERS, colours: ["B"] }, NOW)).toHaveLength(0);
+  });
+
+  // The tile prints the partner's name, so the search reaches it. Typing a
+  // partner's name and getting nothing is the same class of mismatch.
+  it("searches the partner's name as well as the primary's", () => {
+    const pair = deck({
+      // A deck name that contains NEITHER commander, or a hit on the name would
+      // pass this whether or not the partner is searched.
+      name: "Flyers and friends",
+      commanderName: "Ishai, Ojutai Dragonspeaker",
+      partnerName: "Bruse Tarl, Boorish Herder",
+      partnerColorIdentity: ["R", "W"],
+    });
+    expect(filterDecks([pair], { ...EMPTY_FILTERS, search: "bruse" }, NOW)).toHaveLength(1);
+    expect(filterDecks([pair], { ...EMPTY_FILTERS, search: "ishai" }, NOW)).toHaveLength(1);
+    expect(filterDecks([pair], { ...EMPTY_FILTERS, search: "kratos" }, NOW)).toHaveLength(0);
   });
 });
