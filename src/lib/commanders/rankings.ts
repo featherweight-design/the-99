@@ -46,10 +46,12 @@ export type CommanderRankings = {
  *
  * 3 — free mode now lists from the free pool rather than only ranking against
  * it, so version 2's `freeRanking` holds commanders whose own card a finished
- * deck has sleeved. Nothing about the reader's rows changed, so nothing drops
- * the tag: without this bump a warm entry keeps serving the old free list, and
- * the defect this release fixes survives the deploy for up to the hour ceiling
- * for every reader who does not write.
+ * deck has sleeved. The payload's SHAPE is unchanged and so are the reader's
+ * rows — which is the whole problem, because the tag is dropped by the reader's
+ * own writes and nothing here is a write. Only the cached RESULT moved. Without
+ * this bump a warm entry keeps serving the old free list, and the defect this
+ * release fixes survives the deploy for up to the hour ceiling for every reader
+ * who does not write.
  */
 const PAYLOAD_VERSION = 3;
 

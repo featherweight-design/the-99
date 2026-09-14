@@ -395,6 +395,16 @@ Applies to the `Something new` option when the player has built no deck. Three s
 
 Verbatim normative statements governing these four surfaces.
 
+> **Rulings 15, 18 and 30 are SUPERSEDED, and were before this table was written.**
+> They govern a `Score against` control under discovery — one that keeps its place,
+> shows a disabled `What's free` segment, and re-ranks on a fetch. Discover mounts
+> no such control: it is the owned lane's alone under locked decision 3, and
+> `availability-control.tsx` says so in its own header. Nothing here reinstates it.
+> The rulings are left as written because they are quotations of what Design said,
+> not a spec anyone should now implement; what changed on 2026-09-14 is only that
+> the control is named `Build from`, and that the row above states the absence
+> plainly instead of leaving it to be inferred.
+
 1. > "**Tier 1 — scope, in the page header, beside the title.** It changes which commanders exist on this page, which is the same class of change as the title. Label `Show`, two segments, the shipped segmented geometry at 32px."
 2. > "The subtitle beneath the title restates the population in words on every flip"
 3. > "That line is how the player knows the list changed without counting rows, and it is the reason scope needs no count of its own."

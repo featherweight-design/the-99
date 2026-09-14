@@ -606,6 +606,8 @@ Trailing clause of the same list, which governs the row's absent states:
 > - **`ScoreDelta` does not apply under discovery.** … It is null under discovery's first release because the free re-rank is not computed over 3,334 candidates.
 
 > - **Copy** lives in `src/lib/copy/` … It adds a `discoveryCopy` block and **edits nothing** in `availability.ts`; the receipt line's clauses, the degraded strings and the `Score against` labels are all reused by reference.
+>
+>   **Superseded 2026-09-14 for the labels only.** The control is `Build from`, and its labels live in `commandersCopy.availability` in `lanes.ts` — `availability.ts` never held the shipped ones, and the five dead keys that named it there were deleted. The receipt and degraded strings are untouched, so the rest of this bullet stands.
 
 Token contract, from the E2 frame:
 

@@ -483,8 +483,8 @@ Every accessible name quoted verbatim from `availability · copy strings.ts`.
 | 17.3 | Hard marker, many decks | `no free copies; they are on ${deckCount} of your finished lists` | CP:42–43 |
 | 17.4 | Over marker | `${deckCount} of your finished lists include this card and you own ${shortBy} too few` | CP:48 |
 | 17.5 | Over, own decklist | `your ${otherDeck} list also includes this card and you don’t own enough for both` | CP:50–51 |
-| 17.6 | Ranking, default | `ranking.allAria` | CP:66–85 |
-| 17.7 | Ranking, free | `ranking.freeAria` | CP:66–85 |
+| 17.6 | Ranking, default | the segment's visible label, `commandersCopy.availability.all`. `ranking.allAria` was deleted with the rename (§7 errata) — the control labels each radio with the word on it rather than a second sentence | CP:66–85 |
+| 17.7 | Ranking, free | likewise `commandersCopy.availability.free`, at BOTH widths: the 32px rack segment shortens its visible text to `freeShort`, and the announced name stays the long form | CP:66–85 |
 | 17.8 | Ranking announce | `ranking.announce(mode, n)` | CP:81–84 |
 | 17.9 | Score delta | `receipt.deltaAria`, `receipt.altScore` | CP:90–104 |
 | 17.10 | Deck summary | `deckSummary.ariaLabel` | CP:130–138 |

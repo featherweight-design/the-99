@@ -588,6 +588,34 @@ describe("CommandersView ranking toggle", () => {
       expect(cards()).toHaveLength(3);
     });
 
+    // The lane's search-empty state says the commander may not be owned and
+    // points at Discover. For a card the reader owns and has sleeved that is
+    // false twice over, and it is the same class of lie this whole change
+    // exists to remove — so free mode answers for its own narrowing here too.
+    it("says where the searched commander went, rather than sending the reader to Discover", () => {
+      const all = results(3);
+      view(all, { avail: "free", freeItems: [] });
+      fireEvent.change(screen.getByRole("searchbox"), {
+        target: { value: all[0].name },
+      });
+
+      expect(screen.queryByText("No commander by that name")).toBeNull();
+      expect(screen.queryByRole("link", { name: "Search Discover" })).toBeNull();
+      expect(
+        screen.getByText(`Your commanders matching "${all[0].name}" are all sleeved into decks you've built.`),
+      ).toBeInTheDocument();
+    });
+
+    // The other half of that rule, and what keeps it honest: a query matching
+    // nothing at all is not free mode's doing, so the state that names the other
+    // lane is still the right one.
+    it("leaves a query that matches nothing to the search state", () => {
+      const all = results(3);
+      view(all, { avail: "free", freeItems: [] });
+      fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzzzz" } });
+      expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    });
+
     // The colour state names a pip to drop and can still say how many rows that
     // returns, which is the more useful answer. Free's state names no pip, so it
     // must not pre-empt one.

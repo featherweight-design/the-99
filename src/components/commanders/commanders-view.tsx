@@ -524,14 +524,20 @@ export function CommandersView({
         {/* Result list, or whichever zero state explains the emptiness. The
             colour state names a pip to drop, the search state names the other
             lane and the free state names the other segment, so which one renders
-            follows which control did the narrowing. Free is tested FIRST and
-            with the other two controls explicitly dark: with a pip lit as well,
-            the colour state's arithmetic still has an answer and is the more
-            useful one. Zero with nothing lit at all is not a filtered result —
+            follows which control did the narrowing. Free is tested FIRST, and
+            only yields to the colour state: with a pip lit the colour
+            arithmetic still has an answer and is the more useful one, but with a
+            QUERY lit the search state would tell a reader who owns the commander
+            that they may not own it and send them to Discover. `sleevedByFree`
+            counts over the rows the search left, so it is non-null here only
+            when the query really did match commanders that free mode then hid. Zero with nothing lit at all is not a filtered result —
             the reader owns no commanders — and the list's own emptiness is the
             honest thing to show. */}
-        {filtered.length === 0 && colors.length === 0 && params.q.trim() === "" && sleevedByFree ? (
-          <FreeEmpty onShowAll={() => update({ ...params, avail: "all" })} />
+        {filtered.length === 0 && colors.length === 0 && sleevedByFree ? (
+          <FreeEmpty
+            query={params.q.trim() || undefined}
+            onShowAll={() => update({ ...params, avail: "all" })}
+          />
         ) : filtered.length === 0 && colors.length > 0 ? (
           <FilteredEmpty
             nearest={nearest}

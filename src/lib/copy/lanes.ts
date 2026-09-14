@@ -121,6 +121,12 @@ export const commandersCopy = {
   emptyFree: {
     heading: "They're all in decks already",
     body: "Nothing you own is free to lead a new deck right now.",
+    // The same state reached through the search box. It must exist separately,
+    // because the lane's other search-empty sentence says the commander may not
+    // be owned and points at Discover — which is exactly false here: the reader
+    // owns it, and a deck they built is holding it.
+    searchBody: (q: string) =>
+      `Your commanders matching "${q}" are all sleeved into decks you've built.`,
     fix: "All my cards",
   },
 

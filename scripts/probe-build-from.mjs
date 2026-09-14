@@ -127,6 +127,26 @@ async function pickCandidates(userId) {
             join decks d on d.id = dc.deck_id
            where d.user_id = $1 and dc.oracle_id = ci.oracle_id
         )
+        -- And the COMMITTED versions, which is where a claim actually comes
+        -- from. A deck whose draft has since dropped a card still holds it in
+        -- the version it is sleeved as, so a picker that read `deck_cards`
+        -- alone could choose a card that is already unavailable — and the
+        -- pre-check below would then stop the run over a card the fixture never
+        -- touched. Newest version per deck, matching `loadAvailability`.
+        and not exists (
+          select 1 from deck_version_cards dvc
+            join deck_versions v on v.id = dvc.version_id
+            join decks d on d.id = v.deck_id
+           where d.user_id = $1
+             and dvc.oracle_id = ci.oracle_id
+             and v.number = (select max(v2.number) from deck_versions v2 where v2.deck_id = v.deck_id)
+        )
+        and not exists (
+          select 1 from deck_versions v
+            join decks d on d.id = v.deck_id
+           where d.user_id = $1
+             and (v.commander_oracle_id = ci.oracle_id or v.partner_oracle_id = ci.oracle_id)
+        )
       group by ci.oracle_id, c.name
       having sum(ci.quantity) <= 2
       order by sum(ci.quantity), c.name
