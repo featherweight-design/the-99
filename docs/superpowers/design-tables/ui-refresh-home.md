@@ -636,7 +636,20 @@ band under the portrait. Two rows never overflowed, which is why the defect arri
 | portrait width | 99 (= band × 1.37, `art-wash.md`) | 99 |
 | type inset | 108 below 1000px, 116 above — unchanged, and deliberately not moved to 1180: it is keyed to the row's own width, which a stacked row has all of | 116 |
 
-### ResumeRow — deck name
+### ResumeRow — first line: deck name and stamp
+
+The name truncates; the stamp does not. They share the row's first line, which is why the stamp can
+be non-shrinking without a tight row eating it: the only child that gives is the one that is
+supposed to.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | baseline | baseline |
+| gap | 8 | 8 |
+| stamp position | `margin-left: auto` — the line's right edge | same |
+
+#### Deck name
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -662,10 +675,15 @@ and the stamp outranks the clause — it is the block's evidence for the order i
 
 ### ResumeRow — touched stamp
 
-The one element this round adds to a shipped row. **Errata E6:** the handoff draws it under the
-count on desktop, which cannot coexist with its own two other rulings — the row is a stated 72px
-band and no row may grow a line at either width. It sits in the meta line at both widths instead,
-which is the "one resume row, drawn at two widths" the handoff asks for in prose.
+The one element this round adds to a shipped row, and it sits on the FIRST line, right-aligned, at
+both widths.
+
+**Errata E6:** the handoff draws it under the count on desktop, which cannot coexist with its own
+two other rulings — the row is a stated 72px band, and no row may grow a line at either width. The
+meta line cannot hold it either, which is a measurement rather than a judgement: with the longest
+verb and figure, `committed 10mo ago`, the pill, the count and the stamp are three non-shrinking
+children needing 243px of the 240 that line has at 390px, and the row's own overflow ate the stamp.
+Beside the deck name it sits next to the one child that truncates by design.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|

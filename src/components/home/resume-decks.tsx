@@ -107,11 +107,11 @@ function ResumeRow(
       // be a second way to do the one thing the row already does.
       // The height is stated, not a floor: the wash beside it is a hard 72px, so
       // a row allowed to grow past that would show an unwashed strip.
-      // `flex-none` below 1000px, `flex-1` above. The container is a COLUMN
+      // `flex-none` below 1180px, `flex-1` above. The container is a COLUMN
       // there, so `flex: 1` applies to HEIGHT: four rows in a short column each
       // shrank below the stated 72 and showed a strip of unwashed band under
       // the portrait. Two rows never overflowed, which is why the bug arrives
-      // with the fourth. Above 1000px the container is a row again and `flex-1`
+      // with the fourth. Above 1180px the container is a row again and `flex-1`
       // is what makes the pair share the width.
       className={`relative flex h-[72px] min-w-0 flex-none items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[10px] min-[1180px]:flex-1 min-[1180px]:pr-[18px] ${className ?? ""}`}
     >
@@ -155,11 +155,33 @@ function ResumeRow(
             in both rows only because a new deck is named after its commander by
             default; a renamed deck must show the name its owner gave it, as the
             rail and the deck tile both already do. */}
-        <span
-          className="truncate font-display text-[14.5px] font-semibold text-[color:var(--fg)]"
-          style={{ lineHeight: 1.2 }}
-        >
-          {deck.name}
+        {/* The deck name and the stamp share the row's first line. The stamp
+            sat in the meta line until the measurement below moved it: with the
+            longest verb and the longest figure — `committed 10mo ago` — the
+            pill, the count and the stamp are three non-shrinking children of one
+            line, and at 390px they need 243px of the 240 that line has. The
+            commander's name had already shrunk to nothing by then, so the row's
+            own overflow ate the stamp.
+
+            Up here it sits beside the one child that is SUPPOSED to give: the
+            deck name truncates, which is what a long name does anyway. No row
+            grows a line, the stamp is never half-printed, and there is one stamp
+            element rather than a width-switched pair. `pnpm probe:home` writes
+            the longest stamp into every row and re-measures, at every width. */}
+        <span className="flex min-w-0 items-baseline gap-[8px]">
+          <span
+            data-resume-name
+            className="min-w-0 truncate font-display text-[14.5px] font-semibold text-[color:var(--fg)]"
+            style={{ lineHeight: 1.2 }}
+          >
+            {deck.name}
+          </span>
+          <span
+            data-resume-stamp
+            className="ml-auto flex-none whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-locked)]"
+          >
+            {stamp}
+          </span>
         </span>
 
         <span className="flex min-w-0 items-center gap-[14px]">
@@ -236,21 +258,6 @@ function ResumeRow(
               the `86 / 9` this whole arrangement exists to prevent. */}
           <span className="flex gap-[4px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
             <span className="flex-none whitespace-nowrap">{count}</span>
-            {/* The stamp, in the meta line at BOTH widths — errata E6. The
-                handoff draws it under the count on desktop, which cannot
-                coexist with its own two other rulings: the row is a stated 72px
-                band (the wash root is a hard 72, and anything taller shows an
-                unwashed strip) and no row may grow a line at either width. In
-                this slot it is one row drawn twice, which is what the handoff
-                asked for in the sentence above the one it drew.
-
-                It never shrinks and never wraps: it is the block's evidence for
-                the order it drew, and a half-printed stamp is worse than none.
-                The clause beside it is what gives — the rule decision 23 already
-                applied to it. */}
-            <span className="flex-none whitespace-nowrap text-[color:var(--fg-locked)]">
-              {`· ${stamp}`}
-            </span>
             {clause && (
               <span className="min-w-0 truncate">
                 {`· ${refreshCopy.decks.detailCopies(copies!)}`}
@@ -308,9 +315,12 @@ export function ResumeDecks({
           1180 is the next round figure clear of it.
 
           At 1000 — where the pair sat before the stamp existed — each row was
-          about 300px and the stamp was clipped away entirely by the row's own
-          overflow. `pnpm probe:home` measures exactly that at 1024, because a
-          clipped stamp is invisible in a diff and in a class list alike.
+          about 300px and the stamp was clipped away by the row's own overflow.
+          That was measured at 1024, a width that now stacks and so cannot
+          reproduce it; what `pnpm probe:home` carries forward instead is the
+          measurement itself, writing the longest stamp into every row at every
+          width it draws. A clipped stamp is invisible in a diff and in a class
+          list alike.
 
           `basis-[calc(50%-6px)]` is half the row less half the 12px gap, so four
           rows wrap into two pairs; `flex-wrap` makes the second pair a second

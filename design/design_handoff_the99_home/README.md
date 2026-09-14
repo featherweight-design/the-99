@@ -108,7 +108,7 @@ these are the shipped figures.
 | E3 | "3px status rule on the left edge" | That is the **rail's** keyline — the block this round deletes. The resume row has never had one | No rule; the status pill is the row's status signal |
 | E4 | Deck name `15.5px` | `14.5px` | `14.5` |
 | E5 | STATES §C prints `imported {t} ago` for a never-edited deck, while §B excludes creation from the sort key — so such a deck has no key value and cannot appear at all | — | `decks.last_edited_at` is seeded from `created_at`, making creation the stamp's floor rather than a sort term. The verb is `edited`; `imported` is dropped, because nothing distinguishes an import from an edit once seeded and a verb that cannot be derived would be a guess |
-| E6 | The stamp sits under the count on desktop | — | It sits in the meta line at **both** widths. "Under the count" cannot coexist with this handoff's own two other rulings — the row is a stated 72px band, and no row may grow a line at either width. In the meta line it is "one resume row, drawn at two widths", which is what §Consistency asks for in prose |
+| E6 | The stamp sits under the count on desktop | — | It sits on the row's **first line, right-aligned, at both widths**. "Under the count" cannot coexist with this handoff's own two other rulings — the row is a stated 72px band, and no row may grow a line at either width. The meta line cannot hold it either, and that is a measurement: with `committed 10mo ago` the pill, the count and the stamp are three non-shrinking children needing 243px of the 240 that line has at 390px. Beside the deck name it sits next to the one child that truncates by design |
 
 Two things the build added that this document did not ask for, both forced by the fourth row:
 

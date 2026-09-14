@@ -13,7 +13,7 @@
 //   1. Four blocks at BOTH widths, in one order — CTAs, Ready to build, the
 //      resume block, Commitments. Nothing is on one width only.
 //   2. `Your decks` is gone from both, heading and rows.
-//   3. Four resume rows, 2×2 above 1000px and stacked below.
+//   3. Four resume rows, 2×2 above 1180px and stacked below.
 //   4. Every row carries a stamp, and the stamps are in the order the block
 //      claims — a row's evidence for why it is where it is.
 //   5. The row's geometry is the shipped one: a stated 72px band, a 99px
@@ -95,8 +95,10 @@ const READ_ROWS = `() => {
     // and full width — so measuring whatever is painted would report a portrait
     // of 300-odd for a row that is drawn exactly as intended. Crop-backed rows
     // are asserted at 99; artless rows are counted and reported instead.
-    const stampEl = [...a.querySelectorAll('span')]
-      .find((s) => /^· (edited|committed|played) /.test((s.textContent ?? '').trim())) ?? null;
+    // Anchored to the row's own hook rather than to the text it prints: a
+    // matcher keyed on the verbs would go quiet the day the copy changed, and a
+    // quiet check reads exactly like a passing one.
+    const stampEl = a.querySelector('[data-resume-stamp]');
     const stamp = stampEl ? (stampEl.textContent ?? '').trim() : null;
     // Whether the stamp is WHOLLY inside the row. The row hides its overflow
     // and the stamp does not shrink, so a meta line with too little room clips
@@ -111,7 +113,7 @@ const READ_ROWS = `() => {
     // artless gradient spans the band. Anything as wide as the row is the latter.
     const cropLayer = [...a.querySelectorAll('.art-wash-art')]
       .find((el) => el.getBoundingClientRect().width < r.width - 1) ?? null;
-    const name = a.querySelector('[data-resume-text] > span');
+    const name = a.querySelector('[data-resume-name]');
     return {
       x: Math.round(r.x), y: Math.round(r.y),
       w: Math.round(r.width), h: Math.round(r.height),
@@ -142,11 +144,10 @@ async function main() {
     // The band the old threshold made a third layout of: one column, and until
     // this round desktop padding with it.
     { label: "tablet", width: 1100, height: 900 },
-    // 1200 is the tightest two-up: the rows pair at 1180, so this is where the
-    // meta line has least room for the pill, the count and the stamp together.
-    // The clipping this width holds the line against was measured at 1024, back
-    // when the pair started at 1000 — that width now stacks, so it can no longer
-    // reproduce it, and 1200 is where the same arithmetic is tightest today.
+    // 20px inside the 1180 threshold: the narrowest pair this probe draws, and
+    // where the row's first line has least room for a long deck name and a long
+    // stamp together. Not the narrowest pair that EXISTS — that is 1180 itself —
+    // so this is representative rather than a boundary test.
     { label: "narrow-pair", width: 1200, height: 900 },
     { label: "mid", width: 900, height: 900 },
     { label: "phone", width: 390, height: 844, isMobile: true, hasTouch: true },
@@ -234,7 +235,11 @@ async function main() {
     }
 
     // 4. Every row states its evidence, and the stamps agree with the order.
-    check(`${vp.label}: every row carries a stamp`, rows.every((r) => r.stamp !== null), true);
+    check(
+      `${vp.label}: every row carries a stamp`,
+      rows.every((r) => /^(edited|committed|played) /.test(r.stamp ?? "")),
+      true,
+    );
     const ages = rows.map((r) => staleness(r.stamp));
     check(
       `${vp.label}: the stamps run oldest-last`,
@@ -247,6 +252,33 @@ async function main() {
       rows.filter((r) => r.stampClipped).length,
       0,
     );
+
+    // The WORST case, which the account's own data may not contain: the longest
+    // verb and the longest elapsed figure together. Written into the live rows
+    // and measured, then put back — a stamp that fits `edited 2h ago` and clips
+    // `committed 10mo ago` is a defect nobody would see until a deck went a year
+    // without a game.
+    const worstClipped = await page.evaluate(`(() => {
+      const heading = [...document.querySelectorAll('main h2')]
+        .find((h) => (h.textContent ?? '').trim().startsWith('Pick up'));
+      const section = heading.closest('section');
+      const rows = [...section.querySelectorAll('a[href^="/decks/"]')];
+      const originals = [];
+      for (const a of rows) {
+        const el = a.querySelector('[data-resume-stamp]');
+        if (el) { originals.push([el, el.textContent]); el.textContent = 'committed 10mo ago'; }
+      }
+      const clipped = rows.filter((a) => {
+        const r = a.getBoundingClientRect();
+        const el = a.querySelector('[data-resume-stamp]');
+        if (!el) return true;
+        const b = el.getBoundingClientRect();
+        return b.right > r.right + 0.5 || b.width < 1;
+      }).length;
+      for (const [el, text] of originals) el.textContent = text;
+      return clipped;
+    })()`);
+    check(`${vp.label}: the longest stamp fits too`, worstClipped, 0);
 
     // 5. The shipped row, unchanged — errata E1/E2.
     check(`${vp.label}: the band is a stated 72`, [...new Set(rows.map((r) => r.h))], [72]);
@@ -290,9 +322,15 @@ async function main() {
     // 6. The footer's link, pressed rather than counted. A link that renders and
     //    does not navigate is exactly what counting cannot tell apart.
     if (vp.label === "desktop") {
+      // The footer is absent when every deck is already drawn — a figure of
+      // nought is an absence, not a zero — so an account with exactly four decks
+      // correctly has none. `rows.length` is 4 either way; the total is what
+      // decides, and it is read off the footer's own copy where there is one.
       const all = onPage(page, 'a[href="/decks"]').filter({ hasText: /All \d+ decks/ });
       const found = await all.count();
-      check("desktop: the footer offers All {n} decks", found, 1);
+      const moreThanShown = await page.evaluate(`(() => [...document.querySelectorAll('main span')]
+        .some((el) => el.getClientRects().length && /^\\d+ more decks?$/.test((el.textContent ?? '').trim())))()`);
+      check("desktop: the footer appears exactly when decks remain", found, moreThanShown ? 1 : 0);
       // Only where there is exactly one to press. A missing or doubled footer is
       // already the failure above, and clicking into it would throw here — before
       // the summary line and before the remaining viewports ever run.

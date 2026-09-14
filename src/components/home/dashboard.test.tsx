@@ -124,8 +124,8 @@ describe("Dashboard body", () => {
     render(<Dashboard {...BASE} decks={decks} now="2026-09-13T12:00:00Z" />);
     // Exactly 24 hours is `yesterday`, not `1d ago` — the ladder reads hours
     // below a day, then yesterday, then days.
-    expect(screen.getByText("· edited yesterday")).toBeInTheDocument();
-    expect(screen.getByText("· played 2d ago")).toBeInTheDocument();
+    expect(screen.getByText("edited yesterday")).toBeInTheDocument();
+    expect(screen.getByText("played 2d ago")).toBeInTheDocument();
   });
 
   // The block says what its order means once, in a caption. Not a control: the
