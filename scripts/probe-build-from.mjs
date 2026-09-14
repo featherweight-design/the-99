@@ -207,6 +207,21 @@ async function readLane(page, { avail, query }) {
 const holds = (lane, name) =>
   lane.names.some((n) => n.toLowerCase().startsWith(name.toLowerCase().slice(0, 18)));
 
+/**
+ * How many commanders the aside says free mode hid, or 0 where it drew none.
+ *
+ * Read as a FIGURE rather than tested for presence, because this database is
+ * shared and another probe's leaked fixture can leave a commander hard-claimed
+ * before this one starts. Against a baseline that already carries an aside,
+ * "an aside is present afterwards" is satisfied by the leak alone, and a build
+ * with the membership rule reverted would pass. What is this run's own is the
+ * DIFFERENCE its fixture made.
+ */
+function hiddenCount(line) {
+  const match = /(\d[\d,]*) more (?:is|are) sleeved into/.exec(line);
+  return match ? Number(match[1].replace(/,/g, "")) : 0;
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -232,9 +247,9 @@ async function run() {
           "Nothing this run measures afterwards would mean anything.",
       );
     }
-    const beforeLine = (await readLane(page, { avail: "free" })).line;
-    if (/sleeved into/.test(beforeLine)) {
-      note(`baseline already carries an aside: "${beforeLine}"`);
+    const baseline = hiddenCount((await readLane(page, { avail: "free" })).line);
+    if (baseline > 0) {
+      note(`baseline already hides ${baseline} — another fixture on this database`);
     }
     note(`before · free lists ${target.name}`);
 
@@ -262,8 +277,12 @@ async function run() {
       }
 
       const freeLine = (await readLane(page, { avail: "free" })).line;
-      if (!/sleeved into (a deck|decks) you've built/.test(freeLine)) {
-        failures.push(`${viewport.label} · free result line never accounts for the hidden row: "${freeLine}"`);
+      const hidden = hiddenCount(freeLine);
+      if (hidden !== baseline + 1) {
+        failures.push(
+          `${viewport.label} · the aside should have gone from ${baseline} to ${baseline + 1}, ` +
+            `and reads ${hidden}: "${freeLine}"`,
+        );
       } else {
         note(`after · ${viewport.label} · "${freeLine}"`);
       }
