@@ -3,7 +3,8 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
-import { getDeckSuggestions } from "../actions";
+import { cacheForUser } from "../../../lib/cache/user-lists";
+import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import {
   arrivedFromImport,
@@ -24,6 +25,22 @@ import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
+
+// The two reads below are the builder's expensive half — measured against the
+// largest deck in the database, `loadDeckSuggestions` took 543ms and
+// `readSynergyCards` 185ms of the ~900ms the page spent on data, and it paid both
+// again every time the reader came back from the Changes or Versions tab. Neither
+// depends on anything but the reader's own rows, so both are cached under the same
+// `user-lists:<userId>` tag every deck write already drops (`revalidateClaims`
+// calls `revalidateUserLists`). No new tag, and no new invalidation site: the
+// deck writes that revalidate paths without dropping the tag only ever touch
+// `deck_cards.auto`, the game log, or nothing at all, none of which either payload
+// reads.
+//
+// The leading element of each key is a version, bumped when a deployment changes
+// what the payload says for unchanged rows — see the note on `cacheForUser`.
+const SUGGESTIONS_KEY = ["deck-suggestions", "1"];
+const SYNERGY_KEY = ["deck-synergy", "1"];
 
 export default async function DeckBuilderPage({
   params,
@@ -65,7 +82,9 @@ export default async function DeckBuilderPage({
     draft,
     versions,
   ] = await Promise.all([
-      getDeckSuggestions(id),
+      cacheForUser(userId, [...SUGGESTIONS_KEY, id], () =>
+        loadDeckSuggestions(id, userId),
+      ),
       // The move-card picker lists every other deck by name, as it always has.
       listDecksWithStats(userId, "name"),
       // Read the ranked support list only when the strip can render. A completed
@@ -75,10 +94,18 @@ export default async function DeckBuilderPage({
       // detail.cards as coveredOracleIds would apply the role-coverage exclusion
       // to them, which is a different exclusion with a different meaning.
       openSlots > 0
-        ? readSynergyCards(
+        ? cacheForUser(
             userId,
-            [detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : [])],
-            [],
+            [
+              ...SYNERGY_KEY,
+              detail.commander.oracleId,
+              detail.partner?.oracleId ?? "-",
+            ],
+            () => readSynergyCards(
+              userId,
+              [detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : [])],
+              [],
+            ),
           )
         : [],
       listDeckGames(id, userId),
@@ -139,11 +166,21 @@ export default async function DeckBuilderPage({
   // can never come back from it. `excludeDeckId` is the deck being built, so its
   // own claims do not count against its own candidates.
   //
+  // The Consider tiles take their markers from this same read, rather than from
+  // the cached suggestions payload: a claim is point-in-time — another deck of
+  // the reader's own can commit and change it — so it must not be stored, and
+  // the candidates already ask the same question from the same vantage.
+  //
   // Both are swallowed. A failed price read degrades to bare rows and a failed
   // availability read to no markers, rather than taking the builder down — the
   // same treatment search-action.ts gives availability.
-  const ownedCandidateIds = candidateCards.filter((c) => c.owned).map((c) => c.oracleId);
-  const [priced, candidateAvailability] = await Promise.all([
+  const ownedIds = [
+    ...new Set([
+      ...candidateCards.filter((c) => c.owned).map((c) => c.oracleId),
+      ...suggestions.filter((s) => s.owned).map((s) => s.oracleId),
+    ]),
+  ];
+  const [priced, availability] = await Promise.all([
     loadPrices([
       ...new Set([
         ...detail.cards.map((c) => c.oracleId),
@@ -151,10 +188,8 @@ export default async function DeckBuilderPage({
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
     ]).catch(() => null),
-    ownedCandidateIds.length > 0
-      ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedCandidateIds }).catch(
-          () => null,
-        )
+    ownedIds.length > 0
+      ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedIds }).catch(() => null)
       : null,
   ]);
 
@@ -166,7 +201,12 @@ export default async function DeckBuilderPage({
     price: priced?.prices.get(card.oracleId) ?? null,
   });
   const cards = detail.cards.map(withPrice);
-  const pricedSuggestions = suggestions.map(withPrice);
+  // Owned tiles only, for the reason the read above is scoped that way: an
+  // unowned oracle id can never come back from the collection.
+  const pricedSuggestions = suggestions.map((s) => ({
+    ...withPrice(s),
+    availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
+  }));
 
   // First-run: user's only deck and it has no cards yet.
   const firstRun = allDecks.length === 1 && detail.built === 0;
@@ -177,7 +217,7 @@ export default async function DeckBuilderPage({
   const candidates: TopOffCandidate[] = candidateCards.map((c) => ({
     ...c,
     price: c.owned ? null : (priced?.prices.get(c.oracleId) ?? null),
-    availability: c.owned ? (candidateAvailability?.get(c.oracleId) ?? null) : null,
+    availability: c.owned ? (availability?.get(c.oracleId) ?? null) : null,
   }));
 
   return (

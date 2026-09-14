@@ -150,6 +150,17 @@ export type DeckDetail = {
   total: number;
 };
 
+/** The deck row, or a throw. Used by every deck mutation and by the reads that
+    have no other reason to load the deck. The predicate is defence in depth at
+    the query layer; the explicit comparison below is the authorization the tests
+    constrain — it fires even when the stub or ORM ignores the WHERE clause. */
+export async function requireDeck(deckId: string, userId: string) {
+  const [deck] = await db.select().from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  if (!deck || deck.userId !== userId) throw new Error("deck not found");
+  return deck;
+}
+
 export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
   // First: check deck exists and belongs to userId.
   const [deck] = await db
