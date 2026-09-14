@@ -1184,6 +1184,51 @@ async function run() {
             : `${collapsingStep.moved}px on the step that collapsed it`,
       );
 
+      // A REVERSAL mid-step. The reader collapses the head and changes their mind inside the
+      // 180ms, which cancels a run and starts its opposite — and the second run has to begin
+      // from the two heights on screen rather than from the steady-state pair the cancel
+      // leaves behind, or `head + spacer` is discontinuous on its first frame and the
+      // document jumps by the difference.
+      await scrollTo(0);
+      const reversal = await page.evaluate(() => new Promise((resolve) => {
+        const grid = document.querySelector("[data-set-grid]");
+        const head = document.querySelector("[data-set-head]");
+        if (grid === null || head === null) return resolve(null);
+        const docTop = () => Math.round(grid.getBoundingClientRect().top + window.scrollY);
+        const before = docTop();
+        let worst = 0;
+        const watch = () => {
+          worst = Math.max(worst, Math.abs(docTop() - before));
+        };
+        window.scrollTo(0, 900);
+        // Inside the step, not after it: 60ms of a 180ms transition.
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          let frames = 0;
+          const tick = () => {
+            watch();
+            if (++frames > 40) {
+              return resolve({ shift: worst, shy: head.hasAttribute("data-set-head-collapsed") });
+            }
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }, 60);
+      }));
+      // The bound is 8px rather than 1px, and the figure it replaces says why. Carrying the
+      // two in-flight heights into the reversal costs a few pixels of sub-frame rounding as
+      // the reserve and the head hand over; NOT carrying them costs nothing here and snaps
+      // the head through its whole 213px instead, because the cancelled run leaves the two
+      // steady-state figures behind and the step that follows has `from === to`. The
+      // measured pair is 6px against 213px.
+      failures += !report(
+        "reversing mid-step does not move the grid in the document",
+        reversal !== null && reversal.shift <= 8,
+        reversal === null
+          ? "the head or the grid was not on the page — the check measured nothing"
+          : `${reversal.shift}px at its worst across the reversal, ending shy=${reversal.shy}`,
+      );
+
       await scrollTo(20);
       const restored = await headNow();
       failures += !report(

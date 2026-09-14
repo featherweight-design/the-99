@@ -415,6 +415,14 @@ export function useHeadCollapse({
     // Clipped for the length of the step only. The open head carries controls that open
     // above and below it, and a head that clipped at rest would cut them off.
     el.style.overflow = "hidden";
+    // Both boxes put where the step BEGINS, in this commit rather than on the animation's
+    // first frame. A cancelled run reverts its element to the natural height immediately, so
+    // between that revert and the new animation taking effect there is one frame where the
+    // head is its full height and the reserve is still the one the reader was looking at —
+    // the document grows by the difference for that frame and drops back. Writing both up
+    // front closes it.
+    el.style.height = `${from}px`;
+    spacer.style.height = `${spacerFrom}px`;
     animatingRef.current = true;
 
     const timing = { duration: COLLAPSE_MS, easing: "ease" } as const;
@@ -434,18 +442,30 @@ export function useHeadCollapse({
       // again.
       if (!animatingRef.current) return;
       animatingRef.current = false;
-      // Where the head had reached, before anything is torn down: a reversal carries on
-      // from the pixel the reader can see rather than from the height it was aiming at.
-      lastHeightRef.current = el.getBoundingClientRect().height;
+      // BOTH heights as the reader currently sees them, read before anything is torn down.
+      // A reversal has to carry on from here, and both halves matter: the head alone leaves
+      // the reserve starting at its steady-state figure, so `head + spacer` is discontinuous
+      // on the first frame of the new step and the document jumps by the difference.
+      const reachedHead = el.getBoundingClientRect().height;
+      const reachedSpacer = spacer.getBoundingClientRect().height;
       for (const running of runningRef.current) running.cancel();
       runningRef.current = [];
       el.style.overflow = "";
+      el.style.height = "";
       if (container !== null) container.style.overflowAnchor = "";
-      // Now that the head is its own height again, the reserve may be re-read — and the
-      // bar's height with it, which is what the threshold below wants. A reader who
+      // Now that the head is its own height again, the steady-state figures may be re-read —
+      // the rest height, and the bar's, which is what the threshold wants. A reader who
       // scrolled up while this ran was answered on the fallback and may have come to rest
       // inside the band; nothing else would revisit that until they scrolled again.
       sizeSpacer();
+      // And then the in-flight pair goes back on top of what `sizeSpacer` just recorded. It
+      // measures the form the head has ARRIVED at — which after a cancel is the new target,
+      // not the pixel the reader is looking at — so leaving its figures in place makes the
+      // next step either a snap (`from === to`) or a jump (a reserve starting where nothing
+      // is drawn). On a clean finish the two are the same figures, so this costs nothing
+      // there.
+      lastHeightRef.current = reachedHead;
+      spacer.style.height = `${reachedSpacer}px`;
       evaluateCollapse(isDesktop);
     };
     headAnim.addEventListener("finish", done);
