@@ -32,6 +32,7 @@ import {
 } from "./deck-filter-column";
 import type { DeckFilters } from "../../lib/decks/filter";
 import { ColourPips } from "../ui/colour-pips";
+import { Sheet } from "../ui/sheet";
 
 /**
  * Filters only. The sheet carried the sort until §3.4 retired that group — the
@@ -126,17 +127,27 @@ function Group({ heading, children }: { heading: string; children: React.ReactNo
  * which is what makes its focus-return and its counted scroll lock correct.
  */
 export function DeckFilterSheet({ open, ...rest }: DeckFilterSheetProps) {
-  return open ? <SheetBody {...rest} /> : null;
+  // The gate stays HERE as well as inside `Sheet`, and they are not the same
+  // gate. `Sheet` decides what is painted; this decides what is MOUNTED — and
+  // the body owns a focus trap and a debounced announcement. Mounted while
+  // closed, the trap runs against a hidden panel and the announcement effect
+  // fires where nothing can read it.
+  // `{ open, ... }` destructured, never `props.open` read off a bare `open`:
+  // an unbound `open` resolves to `window.open`, which is a function and so
+  // always truthy. No ReferenceError, no type error — `open` is a DOM global —
+  // and the gate silently never closes.
+  return open ? <SheetBody open={open} {...rest} /> : null;
 }
 
 function SheetBody({
+  open,
   filters,
   onChange,
   shown,
   total,
   onDismiss,
   autoFocusSearch,
-}: Omit<DeckFilterSheetProps, "open">) {
+}: DeckFilterSheetProps) {
   const dialog = useRef<HTMLDivElement>(null);
 
   // The sheet is `aria-modal`, so the chassis's result line sits outside it and
@@ -171,33 +182,33 @@ function SheetBody({
   const c = refreshCopy.filters;
 
   return (
-    // z-50, not z-40: the phone tab bar is z-40 and paints later, so at z-40 it
-    // sits over the sheet's own footer and Clear cannot be clicked at all.
-    // Visible wherever the chassis is compact. This was `sm:hidden`, which is
-    // 640px: between 640 and 999 the compact triggers opened this dialog and
-    // CSS hid it, leaving the filters unreachable across that whole band.
-    // `max-[999px]:flex` rather than a `sm:` utility, because the chassis owns
-    // the breakpoint and Tailwind has no stop at 1000.
-    <div className="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex">
-      <div
-        aria-hidden="true"
-        onClick={onDismiss}
-        className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
-      />
-      <div
-        ref={dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-label={c.sheetTitle}
-        // Focusable only as the trap's landing point, never as a tab stop.
-        tabIndex={-1}
-        className="relative z-10 flex flex-col gap-[14px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
-      >
-        <div
-          aria-hidden="true"
-          className="h-[4px] w-[38px] self-center rounded-[2px] bg-[color:var(--border-strong)]"
-        />
-
+    <Sheet
+      open={open}
+      onDismiss={onDismiss}
+      ariaLabel={c.sheetTitle}
+      panelRef={dialog}
+      // z-50, not z-40: the phone tab bar is z-40 and paints later, so at z-40
+      // it sits over the sheet's own footer and Clear cannot be clicked at all.
+      // Visible wherever the chassis is compact. This was `sm:hidden`, which is
+      // 640px: between 640 and 999 the compact triggers opened this dialog and
+      // CSS hid it, leaving the filters unreachable across that whole band.
+      // `max-[999px]:flex` rather than a `sm:` utility, because the chassis owns
+      // the breakpoint and Tailwind has no stop at 1000.
+      frameClassName="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex"
+      scrimClassName="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
+      // This route's handle and its offset, to the pixel. The shell's default is
+      // 36px round in a 9px/4px wrapper; this is 38px at 2px radius under 12px
+      // of padding, which with the 14px below puts the first heading 30px from
+      // the panel top exactly as it did before.
+      handleClassName="flex touch-none justify-center pt-[12px] pb-0"
+      handleBarClassName="h-[4px] w-[38px] rounded-[2px] bg-[color:var(--border-strong)]"
+      // This route's box, kept as it is: the chassis handoff specifies the
+      // anchored panel and not the sheet, so the 22px/`--surface-inset` pair
+      // here and the 16px/`--surface-rail` pair on `/commanders` are an undrawn
+      // detail answered twice. Collapsing them is a design ruling.
+      panelClassName="relative z-10 flex max-h-[86vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+    >
+      <div className="flex flex-col gap-[14px] px-[16px] pt-[14px] pb-[16px]">
         <div className="flex items-baseline gap-[10px]">
           <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
             {c.sheetTitle}
@@ -287,6 +298,6 @@ function SheetBody({
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {announcement}
       </span>
-    </div>
+    </Sheet>
   );
 }

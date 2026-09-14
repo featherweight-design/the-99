@@ -361,3 +361,24 @@ describe("CollectionFilterSheet", () => {
     expect(list?.className).toContain("overflow-y-auto");
   });
 });
+
+describe("CollectionFilterSheet drag-to-dismiss", () => {
+  it("dismisses on a drag past the threshold", () => {
+    // The route's own wiring, not the shell's. `ui/sheet.test.tsx` proves the
+    // shell in isolation, so dropping `onDismiss` or the handle props here would
+    // leave every existing test green while /collection lost the gesture.
+    const onDismiss = vi.fn();
+    render(sheet({ onDismiss }));
+    const handle = document.querySelector('[role="dialog"] [aria-hidden]')!;
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 90, pointerId: 1 });
+    fireEvent.pointerUp(handle, { clientY: 90, pointerId: 1 });
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps its own 38px handle rather than the shell's default", () => {
+    render(sheet());
+    const bar = document.querySelector('[role="dialog"] [aria-hidden] > span')!;
+    expect(bar.className).toContain("w-[38px]");
+  });
+});

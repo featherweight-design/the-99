@@ -178,3 +178,52 @@ describe("DeckFilterSheet", () => {
     );
   });
 });
+
+describe("DeckFilterSheet mounting", () => {
+  it("runs no effects while closed", () => {
+    // The body owns a focus trap and a debounced announcement. Mounted while
+    // closed, the trap runs against a hidden panel and the announcement fires
+    // where nothing can read it — which is what moving the gate into `Sheet`
+    // quietly did until review caught it.
+    const { container } = render(
+      <DeckFilterSheet
+        open={false}
+        filters={EMPTY_FILTERS}
+        onChange={() => {}}
+        shown={3}
+        total={9}
+        onDismiss={() => {}}
+        autoFocusSearch={false}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    // The lock belongs to `useDialogA11y` inside the body, so a body that never
+    // mounts is also a page that was never held.
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+});
+
+describe("DeckFilterSheet drag-to-dismiss", () => {
+  it("dismisses on a drag past the threshold", () => {
+    // The route's own wiring, not the shell's. `sheet.test.tsx` proves the shell
+    // in isolation, so dropping `onDismiss` or the handle props here would leave
+    // every existing test green while /decks quietly lost the gesture.
+    const onDismiss = vi.fn();
+    render(
+      <DeckFilterSheet
+        open
+        filters={EMPTY_FILTERS}
+        onChange={() => {}}
+        shown={3}
+        total={9}
+        onDismiss={onDismiss}
+        autoFocusSearch={false}
+      />,
+    );
+    const handle = document.querySelector('[role="dialog"] [aria-hidden]')!;
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 90, pointerId: 1 });
+    fireEvent.pointerUp(handle, { clientY: 90, pointerId: 1 });
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+});
