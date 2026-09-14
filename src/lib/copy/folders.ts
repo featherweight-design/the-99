@@ -121,6 +121,12 @@ export const folderCopy = {
     /** Nothing to return, so the sentence has nothing to promise about. */
     bodyEmpty: 'Nothing is filed here.',
     confirm: 'Delete folder',
+    /**
+     * A delete that THREW rather than answering. `false` means already gone and
+     * is treated as done; this is an outage, and the sentence has to name the
+     * act that did not happen rather than borrow create's.
+     */
+    failed: 'That folder was not deleted. Try again.',
     cancel: 'Cancel',
   },
 

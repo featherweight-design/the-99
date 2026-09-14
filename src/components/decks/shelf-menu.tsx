@@ -89,7 +89,10 @@ export function ShelfMenu({
   });
 
   return (
-    <span ref={wrapper} className="relative inline-flex">
+    // A `div`, not a `span`: `Panel` renders a `div role="dialog"` inside this
+    // wrapper, and a div is not phrasing content. `inline-flex` keeps it sitting
+    // in the segment exactly as before.
+    <div ref={wrapper} className="relative inline-flex">
       <button
         ref={trigger}
         type="button"
@@ -190,7 +193,7 @@ export function ShelfMenu({
           )}
         </Panel>
       )}
-    </span>
+    </div>
   );
 }
 
@@ -376,7 +379,7 @@ function DeleteFolder({
       inFlight.current = false;
       if (answer === "threw") {
         onBusy(false);
-        setError(folderCopy.create.failed);
+        setError(folderCopy.del.failed);
         return;
       }
       onDone();

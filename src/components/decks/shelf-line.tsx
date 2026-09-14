@@ -53,9 +53,13 @@ export function shelfSegments(
   return segments;
 }
 
+// No horizontal padding here: the segment's own padding depends on what it
+// holds — a bare button pays it inside, and a button plus a `…` splits it — and
+// an `px-` on the shared base fought whatever the case set, doubling it on the
+// segments with no actions.
 const SEGMENT =
   "inline-flex h-[34px] cursor-pointer items-center whitespace-nowrap rounded-[8px] "
-  + "border border-solid px-[11px] font-sans text-[13px]";
+  + "border border-solid font-sans text-[13px]";
 
 /**
  * The wide form. A plain button group carrying `aria-current` — not a tablist:
@@ -125,7 +129,7 @@ export function ShelfLine({
         return (
           <div
             key={segment.shelf ?? "all"}
-            className={`${SEGMENT} ${actions ? "pr-[5px]" : "p-0"} ${
+            className={`${SEGMENT} ${actions ? "pl-[11px] pr-[5px]" : "px-0"} ${
               selected
                 ? "border-[color:var(--border-strong)] bg-[color:var(--elevated)] font-medium text-[color:var(--fg)]"
                 : "border-transparent bg-transparent text-[color:var(--fg-muted)]"
@@ -137,7 +141,7 @@ export function ShelfLine({
               aria-label={folderCopy.shelves.aria(segment.label, segment.count)}
               onClick={() => onSelect(segment.shelf)}
               className={`flex h-[32px] cursor-pointer items-center border-none bg-transparent font-sans text-[13px] ${
-                actions ? "pl-0" : "px-[11px]"
+                actions ? "px-0" : "px-[11px]"
               } ${selected ? "font-medium text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
             >
               <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
@@ -159,7 +163,7 @@ export function ShelfLine({
       <button
         type="button"
         onClick={onCreate}
-        className={`${SEGMENT} gap-[6px] border-dashed border-[color:var(--border-dashed)] bg-transparent text-[12.5px] text-[color:var(--fg-body)]`}
+        className={`${SEGMENT} gap-[6px] px-[11px] border-dashed border-[color:var(--border-dashed)] bg-transparent text-[12.5px] text-[color:var(--fg-body)]`}
       >
         <span className="font-mono text-[13px]">+</span>
         {folderCopy.create.action}

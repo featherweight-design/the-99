@@ -517,6 +517,24 @@ describe("DecksView", () => {
     ]);
   });
 
+  it("gives the compact form the same shelf actions", () => {
+    // The phone gets rename and delete too: the wide assertions above run under
+    // renderWide, so without this a regression could take the actions off the
+    // phone with every other test green.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    expect(
+      container.querySelectorAll("[data-shelf-trigger] button[aria-label^='Actions for']"),
+    ).toHaveLength(1);
+  });
+
+  it("draws no compact shelf actions on All decks", () => {
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    expect(
+      container.querySelectorAll("[data-shelf-trigger] button[aria-label^='Actions for']"),
+    ).toHaveLength(0);
+  });
+
   it("draws no shelf actions on All decks", () => {
     const { container } = renderWide(view(shelvedDecks(), twoFolders));
     expect(shelfActions(container)).toHaveLength(0);
