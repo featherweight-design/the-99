@@ -98,6 +98,16 @@ const hiddenCells = [];
  *  and never the laid-out pair. */
 const mistypedMarkers = [];
 
+/** Type-move rows whose name is clipped by its own box. `text-overflow: ellipsis`
+ *  does not touch `innerText`, so a truncated `Enchantment` reads back whole and
+ *  every assertion on the row's text passes while the reader sees `Enchantme...`.
+ *  What tells them apart is the name's overflow against its box, which needs a
+ *  layout: the phone row hands the name the spare width and sizes the figure
+ *  beside it to its digits, where a fixed 74px name slot clipped the one
+ *  variable-length thing in the row and left `2 → 3` sitting in space it had no
+ *  use for. */
+const clippedGroups = [];
+
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
   { label: "desktop · 1300x900", width: 1300, height: 900 },
@@ -311,6 +321,8 @@ const readReview = (page) =>
                 afterColor: afterFigure ? getComputedStyle(afterFigure).color : null,
                 delta: spans[2] ? text(spans[2]) : null,
                 barVisible: visible(bar),
+                groupWidth: spans[0] ? Math.round(spans[0].getBoundingClientRect().width) : null,
+                groupClipped: spans[0] ? spans[0].scrollWidth > spans[0].clientWidth + 1 : null,
               };
             })
           : null;
@@ -843,8 +855,18 @@ try {
     for (const move of seen.shape.moves ?? []) {
       console.log(
         `    ${move.group}: ${move.pair} ${move.delta} · pair ${move.pairColor} · ` +
-          `after ${move.afterColor} · bar ${move.barVisible ? "drawn" : "hidden"}`,
+          `after ${move.afterColor} · bar ${move.barVisible ? "drawn" : "hidden"} · ` +
+          `name ${move.groupWidth}px${move.groupClipped ? " CLIPPED" : ""}`,
       );
+      if (move.groupClipped) {
+        clippedGroups.push(`${label} · "${move.group}" clipped in a ${move.groupWidth}px slot`);
+      }
+    }
+    // A section with no row measures nothing, and the fixture is built to move at
+    // least one type group — so an empty list is the check having lost its subject
+    // rather than a deck whose shape held.
+    if ((seen.shape.moves ?? []).length === 0) {
+      clippedGroups.push(`${label} · no type-move row to measure a name against`);
     }
 
     // 2b-ii. The availability marker's own type. A marker larger than the card
@@ -1128,5 +1150,11 @@ if (hiddenCells.length > 0) {
 if (mistypedMarkers.length > 0) {
   console.log(`\n########## FAIL · an availability marker carries the wrong type`);
   for (const line of mistypedMarkers) console.log(`  ${line}`);
+  process.exitCode = 1;
+}
+
+if (clippedGroups.length > 0) {
+  console.log(`\n########## FAIL · a type-move row clips its own name`);
+  for (const line of clippedGroups) console.log(`  ${line}`);
   process.exitCode = 1;
 }

@@ -161,7 +161,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm probe:review` walks `/decks/[id]/changes` at 390x844 and 1300x900: the route's guard on
   a clean deck, `?commit=1` arriving as a URL, the phone's segmented column pair, the `Pull it`
   control against a real claim, the what-changed strip drawing all six cells at both widths,
-  the discard confirm at both doors, and the type of the availability marker on a diff row.
+  its type-move rows not clipping their own names, the discard confirm at both doors, and the
+  type of the availability marker on a diff row.
 
   That last one needs a fixture no other check does. An `in` row buys by default, so an add
   that is unowned or hard-claimed draws a buy tag; an `out` row excludes its own claim, so a
@@ -177,6 +178,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   only the `md:` step dropped it reads 11px on desktop, which is still under the name and
   passes every other check; with the brew's card left out of the staged draft it reads
   `markers: 0`. All three fail the run.
+
+  The clipping check needs a layout twice over. `text-overflow: ellipsis` leaves `innerText`
+  whole, so a truncated `Enchantment` reads back intact and every assertion on the row's text
+  passes while the reader sees `Enchantme...`; what tells them apart is `scrollWidth` against
+  `clientWidth` on the name itself. An empty move list FAILS rather than passing quietly — the
+  fixture is built to move a type group, so no row means the check lost its subject.
 
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.
