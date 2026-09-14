@@ -82,7 +82,7 @@ export function FilterSheet({
   const panelRef = useRef<HTMLDivElement>(null);
   // The count as last announced. Null means "not announced yet this opening",
   // which is what keeps the sheet from reading its own count out on open.
-  const lastLine = useRef<string | null>(null);
+  const lastShown = useRef<number | null>(null);
 
   // The page holds still behind the sheet. This one traps focus itself — it owns
   // its Escape and its drag dismissal — so it takes the lock alone rather than
@@ -95,36 +95,31 @@ export function FilterSheet({
     if (open) panelRef.current?.focus();
   }, [open]);
 
-  // The result sentence is announced debounced 300ms, exactly as the reference
-  // panel announces its match count: FILTERING is immediate and only the message
-  // waits, so a reader tapping four pips hears one message, not four.
+  // The count is announced debounced 300ms, exactly as the reference panel
+  // announces its match count: FILTERING is immediate and only the message
+  // waits, so a reader tapping four pips hears one number, not four.
   //
-  // The SENTENCE, and keyed on the sentence — it used to announce the dismiss
-  // label and fire only when `shown` moved. Below `CHASSIS_WIDE_MIN_PX` this
-  // sheet is the only place `Build from` exists, and the page's own region is
-  // silenced while it is open (`silentResult`), so a count alone told a reader
-  // that rows had gone and never that free mode had taken them. It also said
-  // nothing at all when a filter changed which rows were shown without changing
-  // how many.
-  //
-  // Two sentences that are IDENTICAL still do not re-announce — two colour
-  // filters each leaving four rows, say. That hole predates this change and is
-  // strictly smaller than it was; closing it needs the shared `ResultLine`'s
-  // `revision` threaded through the rack to both surfaces, which is its own
-  // piece of work. See the PR's Settled section.
+  // THIS REGION SPEAKS FOR THE FILTERS, and for nothing else. It briefly
+  // announced the rack's whole composed sentence instead, so that the hidden-row
+  // aside would reach a compact reader — and that put two announcements on one
+  // `Build from` flip, because `silentResult` quiets the chassis result row and
+  // not the lane's own mode announcer, which was already speaking for that
+  // change. The aside now rides on that mode announcement, where the change it
+  // explains is announced, and this region is back to the one job it can hold
+  // without duplicating another.
   useEffect(() => {
     if (!open) {
-      lastLine.current = null;
+      lastShown.current = null;
       return;
     }
-    if (lastLine.current === null || lastLine.current === resultLine) {
-      lastLine.current = resultLine;
+    if (lastShown.current === null || lastShown.current === shown) {
+      lastShown.current = shown;
       return;
     }
-    lastLine.current = resultLine;
-    const t = setTimeout(() => setAnnouncement(resultLine), 300);
+    lastShown.current = shown;
+    const t = setTimeout(() => setAnnouncement(filterCopy.sheet.dismiss(shown)), 300);
     return () => clearTimeout(t);
-  }, [open, resultLine]);
+  }, [open, shown]);
 
   if (!open) return null;
 

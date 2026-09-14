@@ -194,7 +194,13 @@ try {
     await signIn(page);
     console.log(`\n########## ${label}`);
 
-    await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
+    // Opened in FREE mode, because the flip below is to `All my cards` and every
+  // assertion after it is labelled `(all)`. Visiting the default and then
+  // clicking the default's own segment is a no-op: the click lands on the radio
+  // that is already checked, nothing re-ranks, and the twelve readings past it
+  // describe the state the page loaded in. That was true before this rename too
+  // — the old locator simply matched nothing and skipped instead.
+  await page.goto(`${BASE}/commanders?a=free`, { waitUntil: "networkidle" });
     await page.waitForTimeout(900);
 
     const bar = await toolbar(page);

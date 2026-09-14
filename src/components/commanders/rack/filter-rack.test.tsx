@@ -52,7 +52,7 @@ function renderRack(
 // The sheet is MOUNTED only while open, rather than mounted and returning null.
 // Both look identical in the DOM while it is shut, and the difference is the
 // announcement inside it: kept alive across a closing, the status node held the
-// last sentence and read it out again the instant the sheet came back — on a
+// last count and read it out again the instant the sheet came back — on a
 // reopening where nothing had changed. Three review rounds went into managing
 // that lifetime before it was removed instead.
 describe("FilterRack sheet lifetime", () => {
@@ -64,7 +64,7 @@ describe("FilterRack sheet lifetime", () => {
     open();
     rerender(rackEl("owned", defaultParams("owned"), 12, 148, false, null, 3));
     await waitFor(() =>
-      expect(within(screen.getByRole("dialog")).getByRole("status")).toHaveTextContent(/sleeved/),
+      expect(within(screen.getByRole("dialog")).getByRole("status")).toHaveTextContent(/12/),
     );
 
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });

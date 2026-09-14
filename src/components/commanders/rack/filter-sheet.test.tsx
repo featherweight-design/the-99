@@ -68,8 +68,8 @@ describe("FilterSheet", () => {
 
   // The header's own promise is that it says what the result line behind the
   // scrim says. It recomposed the sentence for itself instead, so both asides
-  // went missing the moment the reader opened Filters — and below 1024px that is
-  // the ONLY place four of the lane's controls exist, so the phone lost the
+  // went missing the moment the reader opened Filters — and in the compact form
+  // that is the ONLY place four of the lane's controls exist, so the phone lost the
   // explanation entirely while the desktop kept it.
   it("carries the rack's asides, not just its sentence", () => {
     const line = resultLineWithAside(12, 12, "owned", null, 3);
@@ -81,41 +81,21 @@ describe("FilterSheet", () => {
     ).toBeInTheDocument();
   });
 
-  // Below 1024px this sheet is the only place `Build from` exists, and the page's
-  // own region is silenced while it is open. A count alone told a reader that
-  // rows had gone and never that free mode had taken them.
-  it("announces the whole sentence, asides included", async () => {
-    const line = resultLineWithAside(12, 12, "owned", null, 3);
-    const { rerender } = render(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={15} resultLine={resultLineWithAside(15, 15, "owned", null, null)} />,
-    );
-    rerender(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={line} />,
-    );
-
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        /3 more are sleeved into decks you've built/,
-      ),
-    );
-  });
-
   // The rack mounts this sheet only while it is open, so a reopening is a fresh
   // mount and starts silent whatever the sentence says. Asserted as the unmount
   // the rack performs, not as an `open={false}` rerender, because that is the
   // lifecycle the component actually has — and it is the whole reason it no
   // longer tracks an announcement's identity by hand.
-  it("starts silent on a reopening, even on the sentence it last announced", async () => {
-    const line = resultLineWithAside(12, 12, "owned", null, 3);
-    const sheet = (resultLine: string) => (
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={resultLine} />
+  it("starts silent on a reopening, even on the count it last announced", async () => {
+    const sheet = (shown: number) => (
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={shown} resultLine={resultLineWithAside(shown, 148, "owned", null, null)} />
     );
-    const first = render(sheet(resultLineWithAside(15, 15, "owned", null, null)));
-    first.rerender(sheet(line));
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/sleeved/));
+    const first = render(sheet(148));
+    first.rerender(sheet(12));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/12/));
     first.unmount();
 
-    render(sheet(line));
+    render(sheet(12));
     expect(screen.getByRole("status")).toHaveTextContent("");
   });
 

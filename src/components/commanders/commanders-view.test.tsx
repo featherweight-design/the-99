@@ -529,6 +529,20 @@ describe("CommandersView ranking toggle", () => {
     expect(live).toHaveTextContent("Ranked from free cards only · 2 commanders");
   });
 
+  // The aside rides on THIS announcement rather than on the compact sheet's own
+  // region. The sheet speaks for the filters; giving it this sentence too put
+  // two announcements on one flip, because `silentResult` quiets the chassis
+  // result row and not this announcer.
+  it("announces what the flip hid, in the sentence that announces the flip", () => {
+    const all = results(5);
+    const { container } = view(all, { freeItems: all.slice(0, 2) });
+    const live = container.querySelector('[aria-live="polite"]')!;
+    fireEvent.click(segments(FREE)[0]);
+    expect(live).toHaveTextContent(
+      "Ranked from free cards only · 2 commanders. 3 more are sleeved into decks you've built",
+    );
+  });
+
   // Free mode narrows the list as well as rescoring it: a commander whose own
   // card a finished deck has sleeved is not one you can build today. The rows it
   // hides have to be accounted for, or the reader watches a count drop with

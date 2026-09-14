@@ -212,13 +212,13 @@ export const availabilityCopy = {
   // control means.
   degraded: {
     heading: "We can’t see your decks right now",
-    body: "Ranking and Fit are unaffected. We just can’t tell which cards are already in a deck, so What’s free is unavailable until this comes back.",
+    body: "Ranking and Fit are unaffected. We just can’t tell which cards are already in a deck, so Free cards only is unavailable until this comes back.",
     retry: "Retry now",
     segmentDisabledAria:
-      "What’s free is unavailable. We can’t read your decks right now",
+      "Free cards only is unavailable. We can’t read your decks right now",
     // Both reads down: ONE banner, two sentences, one Retry. Never two banners.
     bodyWithSynergy:
-      "Synergy data and deck contents are both unavailable. Ranking continues on pool and role coverage, and What’s free is unavailable until they come back.",
+      "Synergy data and deck contents are both unavailable. Ranking continues on pool and role coverage, and Free cards only is unavailable until they come back.",
     // /collection has no ranking to mislead, so it fails QUIET — markers absent,
     // Availability trigger disabled with this reason. No banner there.
     collectionFilterDisabledAria:

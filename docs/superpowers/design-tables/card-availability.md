@@ -234,7 +234,9 @@ this amendment's.
 > commanders the lane LISTS as well as which cards it scores against, so the
 > label was renamed to `Build from`: a commander whose own card is sleeved into a
 > finished deck is no longer shown under `Free cards only`. Rows 7.1 to 7.3, 7.5,
-> 7.6 and 7.14 are restated against the shipped strings. The five dead
+> 7.6 and 7.14 carry the shipped segment NAMES. Row 7.14's treatment is a
+> separate matter and is marked below: the disabled-and-struck segment it calls
+> for has never shipped. The five dead
 > `availabilityCopy.ranking` keys that named this control were deleted with the
 > rename.
 
@@ -259,7 +261,7 @@ this amendment's.
 |---|---|---|---|---|
 | 7.12 | All my cards | no `?avail` | shipped ranking, no receipt clause change | RM:119–141 |
 | 7.13 | Free cards only | `?avail=free` | re-ranked against the free pool **and narrowed to it**; deltas visible where the score moved; the aside at 7.15 counts what was hidden | RM:119–141 |
-| 7.14 | Degraded | availability read down | `Free cards only` **disabled and struck through**; banner per §10 | RM:291–338 |
+| 7.14 | Degraded | availability read down | **Drawn: the banner alone** (§10), plus a refused flip — `CommandersView` rejects the change and the segment keeps its ordinary treatment. The `disabled and struck through` segment this row called for has never shipped: `AvailabilityControl` has no such state, and `commanders-view.test.tsx` pins its absence. Noted 2026-09-14; the divergence predates this change | RM:291–338 |
 | 7.16 | Nothing free | `?avail=free`, no pip lit, no query, every commander sleeved | `emptyFree` zero state: heading, one sentence, and an `All my cards` button. Never drawn with another control lit — the colour state's arithmetic is the more useful answer there | — |
 
 **Row count: 12 elements + 4 states.**
@@ -304,7 +306,7 @@ The receipt line **always renders**; the second clause is a suffix (RM:182–190
 | 10.1 | Component | — | — | — | — | reuses the **shipped `DegradedBanner`** — no new component | RM:291–338 |
 | 10.2 | Availability down | — | — | — | — | `degraded.body`, one `Retry now` | CP:174–188 |
 | 10.3 | **Both reads down** | — | — | — | — | **ONE banner, two sentences, one `Retry now`** — `degraded.bodyWithSynergy` | RM:291–338, CP:174–188 |
-| 10.4 | Toggle treatment | — | — | — | — | `Free cards only` segment disabled **and struck through** | RM:291–338 |
+| 10.4 | Toggle treatment | — | — | — | — | **not drawn** — see 7.14. The spec asked for the `Free cards only` segment disabled and struck through; the shipped failure state is the banner plus a refused flip | RM:291–338 |
 | 10.5 | Builder surfaces | — | — | — | — | **fail quiet** — no banner, no marker | A2RM:188–190 |
 | 10.6 | `/collection` | — | — | — | — | **fails quiet.** Filter disabled with `degraded.collectionFilterDisabledAria`; **no banner** | A2RM:188–190, CP:174–188 |
 
