@@ -527,7 +527,7 @@ Module: `discoveryCopy` in `src/lib/copy/commander-discovery.ts`. Enumerated as 
 | Price absent / owned-suppressed | **no key exists, by design** ("so a future edit cannot accidentally give absence a label") | — |
 | Untagged note heading | `untagged.heading` | — |
 | Untagged note body | `untagged.body` | — |
-| Receipt line's other clauses, degraded strings, `Score against` labels | **not in this module** — reused **by reference** from `availability.ts`; `discoveryCopy` edits nothing there | — |
+| Receipt line's other clauses, degraded strings, `Build from` labels | **not in this module** — reused **by reference**; the receipt and degraded strings from `availability.ts`, the control's own labels from `commandersCopy.availability` in `lanes.ts`. `discoveryCopy` edits neither | — |
 
 **Copy-key gaps found (structure, not wording):**
 1. Mobile novelty overflow is drawn as `+2`; `justify.tagList` only emits the long `— and N more` form. No short key exists.

@@ -1,11 +1,12 @@
 // The free ranking, expressed against the canonical one (#52).
 //
 // `/commanders` ships both rankings in one render, which is what makes the
-// `Score against` toggle a state change rather than a fetch — the whole reason
-// the design forbids a loading treatment on it. But the two lists are the same
-// commanders: measured on a 189-candidate collection, 65.6 KB of the free
-// list's 99.4 KB was byte-identical to the canonical list already beside it,
-// the image URLs and names and slugs sent twice.
+// `Build from` toggle a state change rather than a fetch — the whole reason
+// the design forbids a loading treatment on it. But the free list is a SUBSET of
+// the canonical one and shares every row it keeps: measured on a 189-candidate
+// collection, 65.6 KB of the free list's 99.4 KB was byte-identical to the
+// canonical list already beside it, the image URLs and names and slugs sent
+// twice.
 //
 // So the second list ships as a diff. Which fields move is not fixed — a
 // collection with nothing sleeved moves none of them, and a heavily committed
@@ -25,9 +26,15 @@ export type FreeRankingDelta = {
  * Null when the free list names a commander the canonical one does not.
  *
  * That is the same fail-closed answer `rankFree` already gives for the same
- * situation, and for its reason: the alternative is a list that is quietly one
- * row short, and a commander that vanishes when the player flips a control
- * promising only to rescore. A disabled toggle is honest.
+ * situation, and for its reason: a free list holding a row canonical never had
+ * is two reads disagreeing, and neither one can be trusted to draw. A disabled
+ * toggle is honest.
+ *
+ * A SHORTER free list is not that, and is not an error. Free mode narrows to
+ * what the player could build today, so `order` is a subset of the canonical
+ * indices and the count the reader is shown shrinks with it. Nothing about the
+ * format changes: `order` was always canonical indices in free rank order, so a
+ * subset round-trips through `fromFreeDelta` untouched.
  */
 export function toFreeDelta(
   canonical: CommanderListItem[],

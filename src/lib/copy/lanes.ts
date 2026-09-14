@@ -62,12 +62,26 @@ export const commandersCopy = {
     added: "Recently added",
   },
 
+  // The legend names what the control DOES, and it does two things now: it picks
+  // the pool every score is read against, and it picks which commanders the lane
+  // lists at all. "Score against" was true of the first and silent about the
+  // second, which is how a commander sitting in another deck's 99 came to read as
+  // free. It is still never shortened to "Availability" — that word collides with
+  // the builder's `Owned only`, which filters a collection and asks a different
+  // question.
   availability: {
-    legend: "Score against",
+    legend: "Build from",
     all: "All my cards",
     free: "Free cards only",
     freeShort: "Free only",
     hint: "Free means not spoken for by a deck you've already built.",
+    // Appended to the result line, free mode only, only when it hid something.
+    // The reader has just watched a count drop; this is the sentence that says
+    // where those rows went without putting them back.
+    sleevedAside: (hidden: number) =>
+      hidden === 1
+        ? "1 more is sleeved into a deck you've built"
+        : `${n(hidden)} more are sleeved into decks you've built`,
   },
 
   result: {
@@ -97,6 +111,17 @@ export const commandersCopy = {
     bodyNoSingleFix: "No single filter is doing this. Several are overlapping.",
     fixDrop: (control: string) => `Drop ${control}`,
     fixMode: "Switch to Any of these",
+  },
+
+  // Free mode with nothing left to show, and no other control lit — every
+  // commander this player owns is sleeved into a deck they have built. Its own
+  // state rather than `empty`'s, because that one names a filter to drop and the
+  // fix here is the other half of one control. The button carries the segment's
+  // own label, so pressing it lands the reader somewhere they can already name.
+  emptyFree: {
+    heading: "They're all in decks already",
+    body: "Nothing you own is free to lead a new deck right now.",
+    fix: "All my cards",
   },
 
   // The mirror of `discoverCopy.empty`, said about the other lane. A name that

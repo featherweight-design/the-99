@@ -30,7 +30,7 @@ import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
 import { DegradedBanner } from "./degraded-banner";
-import { FilteredEmpty, OwnedSearchEmpty } from "./filtered-empty";
+import { FilteredEmpty, FreeEmpty, OwnedSearchEmpty } from "./filtered-empty";
 import {
   REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
 } from "./reveal-control";
@@ -293,6 +293,17 @@ export function CommandersView({
     return diff > 0 ? diff : null;
   }, [searched, colors, params.match]);
 
+  // What `Build from` cost, counted against the canonical list so the figure
+  // answers for one control alone — the same shape as `excludedByExactly` above.
+  // Null outside free mode and null where it hid nothing, because a "0 sleeved"
+  // aside is noise. Both lists are already on the client, so this is a
+  // subtraction rather than a read.
+  const sleevedByFree = useMemo(() => {
+    if (avail !== "free" || !freeItems) return null;
+    const hidden = results.length - freeItems.length;
+    return hidden > 0 ? hidden : null;
+  }, [avail, freeItems, results.length]);
+
   // Two rank maps, each built once over the FULL candidate set in that mode's
   // ordering. Both are pre-filter, so filtering still never renumbers: a hidden
   // rank leaves a gap rather than closing it. The numeral does move when the
@@ -332,7 +343,7 @@ export function CommandersView({
   const [shown, setShown] = useState(REVEAL_STEP);
 
   // Every control on the rack lands here. Both rankings are already on the
-  // client, so even `Score against` is a state change: no push, no transition,
+  // client, so even `Build from` is a state change: no push, no transition,
   // no dimmed list waiting on a server that has nothing left to say.
   const update = useCallback(
     (next: LaneParams) => {
@@ -496,17 +507,23 @@ export function CommandersView({
         shown={filtered.length}
         total={active.length}
         excludedByExactly={excludedByExactly}
+        sleevedByFree={sleevedByFree}
       />
 
       {/* ── Main content: list (or filtered-empty) ── */}
       <div className="flex flex-1 flex-col p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
         {/* Result list, or whichever zero state explains the emptiness. The
-            colour state names a pip to drop and the search state names the
-            other lane, so which one renders follows which control did the
-            narrowing. Zero with neither lit is not a filtered result — the
-            reader owns no commanders — and the list's own emptiness is the
+            colour state names a pip to drop, the search state names the other
+            lane and the free state names the other segment, so which one renders
+            follows which control did the narrowing. Free is tested FIRST and
+            with the other two controls explicitly dark: with a pip lit as well,
+            the colour state's arithmetic still has an answer and is the more
+            useful one. Zero with nothing lit at all is not a filtered result —
+            the reader owns no commanders — and the list's own emptiness is the
             honest thing to show. */}
-        {filtered.length === 0 && colors.length > 0 ? (
+        {filtered.length === 0 && colors.length === 0 && params.q.trim() === "" && sleevedByFree ? (
+          <FreeEmpty onShowAll={() => update({ ...params, avail: "all" })} />
+        ) : filtered.length === 0 && colors.length > 0 ? (
           <FilteredEmpty
             nearest={nearest}
             onDrop={handleDropColour}

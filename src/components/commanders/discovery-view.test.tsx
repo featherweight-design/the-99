@@ -513,7 +513,7 @@ describe("DiscoveryView", () => {
   it("rules off a list that was windowed once it is fully revealed", () => {
     render(<DiscoveryView encoded={list({ items: many(30), candidateCount: 30 })} />);
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
-    expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
+    expect(screen.getByText(/End of ranking · 30/)).toBeTruthy();
   });
 
   // The only thing separating the control from the last card is the list's own
@@ -537,7 +537,7 @@ describe("DiscoveryView", () => {
     expect(screen.getByText(revealAnnouncement(30, 30, 25))).toBeTruthy();
     // The window overshot to 50; the list, and the rule under it, stop at 30.
     expect(container.querySelectorAll("li").length).toBe(30);
-    expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
+    expect(screen.getByText(/End of ranking · 30/)).toBeTruthy();
   });
 
   // A re-rank returns a differently ordered list under the same mounted

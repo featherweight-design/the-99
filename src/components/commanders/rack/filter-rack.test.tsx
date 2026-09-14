@@ -94,10 +94,10 @@ describe("FilterRack", () => {
   it("gives the owned rack availability, and the discover rack none", () => {
     stubWidth(true);
     const { unmount } = renderRack("owned");
-    expect(screen.getByRole("radiogroup", { name: "Score against" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Build from" })).toBeInTheDocument();
     unmount();
     renderRack("discover", defaultParams("discover"), 3301, 3301);
-    expect(screen.queryByRole("radiogroup", { name: "Score against" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: "Build from" })).not.toBeInTheDocument();
   });
 
   it("reads the order options off the lane", () => {

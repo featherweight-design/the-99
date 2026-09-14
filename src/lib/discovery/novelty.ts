@@ -29,9 +29,12 @@ export type FloorInput = { collectionSupport: number; edhrecTotal: number | null
 
 /**
  * The floor reads the whole collection, never a pool a control can narrow.
- * Reading `ownedSupport` here is what let the availability toggle remove rows:
- * `Score against` is documented as scoring-only, but the novelty sort dropped
- * every row the narrowed pool pushed below the bar.
+ * Reading `ownedSupport` here is what let a narrowed pool remove rows the
+ * control had no business removing: the novelty sort dropped every row the
+ * narrowed pool pushed below the bar, silently and with nothing on screen
+ * accounting for it. Which rows a control may remove is the OWNED lane's
+ * question, answered there by `Build from` and said out loud in its result line;
+ * this floor is not a place to answer it.
  */
 export function clearsFloor(c: FloorInput): boolean {
   if (c.edhrecTotal == null || c.edhrecTotal <= 0) return false;

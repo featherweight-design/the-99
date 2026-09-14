@@ -4,10 +4,10 @@
  * invariant true in both ranking modes — a filter hides rows and leaves a gap in
  * the numerals rather than closing it.
  *
- * Two of these exist per page, one per `Score against` mode. Which is in play
+ * Two of these exist per page, one per `Build from` mode. Which is in play
  * follows `?avail=`. The numeral therefore DOES change when the toggle moves,
  * and that is deliberate: the shipped invariant is about filtering, which
- * changes no score, while `Score against` changes the score itself. Frozen
+ * changes no score, while `Build from` changes the score itself. Frozen
  * numerals would render `3, 4, 1, 2` down a page whose own order contradicts
  * them.
  *

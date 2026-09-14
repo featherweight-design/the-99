@@ -63,3 +63,27 @@ describe("free ranking delta", () => {
     expect(toFreeDelta(canonical, [item({ oracleId: "c", slug: "c" })])).toBeNull();
   });
 });
+
+// Free mode drops the commanders whose own card is sleeved, so the delta has to
+// carry a SHORTER list than the canonical one. `order` is canonical indices, so
+// this needs no format change — which is exactly the claim worth pinning, since
+// nothing else would fail if a later reader "fixed" the length asymmetry.
+describe("a free list shorter than the canonical one", () => {
+  const r = (oracleId: string, score: number) => item({ oracleId, slug: oracleId, score });
+  const canonical = [r("a", 90), r("b", 80), r("c", 70)];
+
+  it("round-trips the rows it kept, in free order", () => {
+    const free = [r("c", 70), r("a", 40)];
+    const delta = toFreeDelta(canonical, free)!;
+
+    expect(delta.order).toEqual([2, 0]);
+    expect(fromFreeDelta(canonical, delta).map((r) => r.oracleId)).toEqual(["c", "a"]);
+    expect(fromFreeDelta(canonical, delta).map((r) => r.score)).toEqual([70, 40]);
+  });
+
+  it("carries an empty free list rather than failing", () => {
+    const delta = toFreeDelta(canonical, [])!;
+    expect(delta.order).toEqual([]);
+    expect(fromFreeDelta(canonical, delta)).toEqual([]);
+  });
+});

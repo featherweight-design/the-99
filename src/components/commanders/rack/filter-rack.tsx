@@ -43,6 +43,7 @@ export function FilterRack({
   shown,
   total,
   excludedByExactly,
+  sleevedByFree,
   orderPending = false,
 }: {
   params: LaneParams;
@@ -53,6 +54,9 @@ export function FilterRack({
   total: number;
   /** Null unless `Exactly` is active AND it costs rows `Any` would have shown. */
   excludedByExactly: number | null;
+  /** Owned lane only. Null unless free mode is on AND it hid commanders whose
+      own card a finished deck has sleeved. */
+  sleevedByFree?: number | null;
   /** Discover only: a ranking order missed the payload cache and the server is
       answering. Every other control, and every other order, narrows or arranges
       a list already in memory. */
@@ -145,7 +149,7 @@ export function FilterRack({
         // would also fire a fresh request for a ranking nobody asked for.
         onChange({ ...defaultParams(lane), order: params.order })
       }
-      resultLine={resultLineWithAside(shown, total, lane, excludedByExactly)}
+      resultLine={resultLineWithAside(shown, total, lane, excludedByExactly, sleevedByFree)}
       // Compact's persistent row is `search · sort · Filters` (STATES §156), so
       // the trigger joins the trailing cluster rather than sitting in the
       // controls ahead of it. Wide keeps sort alone past the hairline, where

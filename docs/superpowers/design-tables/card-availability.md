@@ -223,31 +223,46 @@ this amendment's.
 
 ---
 
-## 7 · `/commanders` — ranking toggle
+## 7 · `/commanders` — the `Build from` control
+
+> **Errata, 2026-09-14 (ratified divergence).** This section described a control
+> named `Score against` with segments `Everything I own` / `What’s free`, drawn
+> from `availabilityCopy.ranking`. Two things have happened since it was written.
+> The two-lane redesign moved the control's copy to
+> `commandersCopy.availability` in `lanes.ts`, so the segment names below were
+> already describing keys that reached no screen. And free mode now decides which
+> commanders the lane LISTS as well as which cards it scores against, so the
+> label was renamed to `Build from`: a commander whose own card is sleeved into a
+> finished deck is no longer shown under `Free cards only`. Rows 7.1 to 7.3, 7.5,
+> 7.6 and 7.14 are restated against the shipped strings. The five dead
+> `availabilityCopy.ranking` keys that named this control were deleted with the
+> rename.
 
 | # | Element | Typography | Colour | Spacing | Size | States | Source |
 |---|---|---|---|---|---|---|---|
-| 7.1 | Group label | shipped | shipped | — | — | `ranking.label` = `Score against` | CP:66–85, RM:119–141 |
-| 7.2 | Segment 1 | shipped segmented control | shipped | — | — | `Everything I own` — **default** | CP:66–85, RM:119–141 |
-| 7.3 | Segment 2 | shipped | shipped | — | — | `What’s free` (curly apostrophe) | CP:71 |
+| 7.1 | Group label | shipped | shipped | — | — | `commandersCopy.availability.legend` = `Build from` | CP:66–85, RM:119–141 |
+| 7.2 | Segment 1 | shipped segmented control | shipped | — | — | `All my cards` — **default** | CP:66–85, RM:119–141 |
+| 7.3 | Segment 2 | shipped | shipped | — | — | `Free cards only`; `Free only` on the 32px rack segment | CP:71 |
 | 7.4 | URL state | — | — | — | — | `?avail=free`; absent = default | RM:119–141 |
-| 7.5 | Subtitle | shipped | shipped | — | — | `ranking.subtitleAll` / `ranking.subtitleFree` | CP:66–85 |
-| 7.6 | Note | shipped | shipped | — | — | `ranking.freeNote` / `freeNoteLong` | CP:66–85 |
+| 7.5 | Subtitle | — | — | — | — | **retired.** The two-lane split moved every count to the rack's result line; `ranking.subtitleAll` / `subtitleFree` reach no screen | CP:66–85 |
+| 7.6 | Note | shipped | shipped | — | — | `ranking.freeNote`, **commander detail only**. The lane's own gloss is `commandersCopy.availability.hint`, in the filter sheet | CP:66–85 |
 | 7.7 | Live region | — | — | — | — | `ranking.announce(mode, n)` — see §16 (d) | CP:81–84 |
 | 7.8 | Rank numerals | shipped | shipped | — | — | recompute from a **second global rank map**, built before any colour filter, so "filtering never renumbers" survives | ARM:49–62 |
 | 7.9 | Window | — | — | — | — | flipping the toggle **resets the window to `REVEAL_STEP`** | ARM:64–70 |
 | 7.10 | Desktop grid | — | — | `40 / 100 / 1fr / 236` | unchanged | — | RM:204–212 |
 | 7.11 | Motion | — | — | — | — | none | RM:240–242 |
+| 7.15 | Hidden-row aside | shipped result line | shipped | — | — | `availability.sleevedAside(n)`, appended to the result sentence in free mode only, and only where it hid something | — |
 
 ### 7.1 Named states
 
 | # | State | Trigger | Visual | Source |
 |---|---|---|---|---|
-| 7.12 | Everything I own | no `?avail` | shipped ranking, no receipt clause change | RM:119–141 |
-| 7.13 | What's free | `?avail=free` | re-ranked, deltas visible where the score moved | RM:119–141 |
-| 7.14 | Degraded | availability read down | `What’s free` **disabled and struck through**; banner per §10 | RM:291–338 |
+| 7.12 | All my cards | no `?avail` | shipped ranking, no receipt clause change | RM:119–141 |
+| 7.13 | Free cards only | `?avail=free` | re-ranked against the free pool **and narrowed to it**; deltas visible where the score moved; the aside at 7.15 counts what was hidden | RM:119–141 |
+| 7.14 | Degraded | availability read down | `Free cards only` **disabled and struck through**; banner per §10 | RM:291–338 |
+| 7.16 | Nothing free | `?avail=free`, no pip lit, no query, every commander sleeved | `emptyFree` zero state: heading, one sentence, and an `All my cards` button. Never drawn with another control lit — the colour state's arithmetic is the more useful answer there | — |
 
-**Row count: 11 elements + 3 states.**
+**Row count: 12 elements + 4 states.**
 
 ---
 
@@ -289,7 +304,7 @@ The receipt line **always renders**; the second clause is a suffix (RM:182–190
 | 10.1 | Component | — | — | — | — | reuses the **shipped `DegradedBanner`** — no new component | RM:291–338 |
 | 10.2 | Availability down | — | — | — | — | `degraded.body`, one `Retry now` | CP:174–188 |
 | 10.3 | **Both reads down** | — | — | — | — | **ONE banner, two sentences, one `Retry now`** — `degraded.bodyWithSynergy` | RM:291–338, CP:174–188 |
-| 10.4 | Toggle treatment | — | — | — | — | `What’s free` segment disabled **and struck through** | RM:291–338 |
+| 10.4 | Toggle treatment | — | — | — | — | `Free cards only` segment disabled **and struck through** | RM:291–338 |
 | 10.5 | Builder surfaces | — | — | — | — | **fail quiet** — no banner, no marker | A2RM:188–190 |
 | 10.6 | `/collection` | — | — | — | — | **fails quiet.** Filter disabled with `degraded.collectionFilterDisabledAria`; **no banner** | A2RM:188–190, CP:174–188 |
 
@@ -447,7 +462,7 @@ Precedence: README wins; READINESS outranks both.
 | 16.4 | Card-detail status pill | drawn (A2CV:350) | ships **without** it — `hardDeckNames` is names only (RD2:78–84) | **Omit the pill** |
 | 16.5 | `free = owned − hard` | printed unqualified (A2CV:48) | that is the **off-decklist** case; on-decklist is `(owned − ownClaim) − (hard − ownHardClaim)` (RD2:105–110, A2RM:141–172) | **Both formulae ship** (§1.1) |
 | 16.6 | `Showing N of 1,418` | denominator questioned (A2CV:82, A2CV:186) | shipped denominator (total quantity) stays (RD2:86–92) | **No change** |
-| 16.7 | Live-region string | `Re-ranked by what’s free. Showing 25 of 214 commanders.` (ACV:199) | `ranking.announce(mode, n)` → `Re-ranked by what’s free · ${n} commanders` (CP:81–84) | **Copy file wins** |
+| 16.7 | Live-region string | `Re-ranked by what’s free. Showing 25 of 214 commanders.` (ACV:199) | `ranking.announce(mode, n)` → `Ranked from free cards only · ${n} commanders` (CP:81–84) | **Copy file wins.** Restated 2026-09-14: the string now names the mode with the words the control itself uses, and says "Ranked from" because free mode also narrows the list |
 | 16.8 | `deckSummary.body` deck count | drawn as the word "two" (CV:734, CV:807, A2CV:500) | template interpolates `${deckCount}` as a **numeral** (CP:133–134) | **Numeral.** Only `ownedQty === 1` spells out ("one") |
 | 16.9 | Add-panel self-exclusion | **undrawn** anywhere | required — `deckId` on `searchCards` (RD2:94–103) | **Build it** |
 | 16.10 | `was 1st` annotation | drawn (ACV:195, ACV:209) | Design says it would ship without it | **Optional; omit** unless separately requested |

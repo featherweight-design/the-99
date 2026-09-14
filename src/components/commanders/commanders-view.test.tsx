@@ -134,7 +134,7 @@ const resultLine = () =>
   screen.getByText(/commanders (you own and haven't built|match)/);
 
 // The rack mounts ONE treatment, chosen in JS at 1024px — below it the colour
-// pips and `Score against` live in a closed sheet and are not in the document
+// pips and `Build from` live in a closed sheet and are not in the document
 // at all. Every test here is about the list, so they all stand at the wide
 // breakpoint; the narrow treatment is `filter-rack.test.tsx`'s subject.
 beforeEach(() => {
@@ -180,7 +180,7 @@ describe("CommandersView windowing", () => {
     fireEvent.click(control()!);
     expect(cards()).toHaveLength(30);
     expect(control()).toBeNull();
-    expect(screen.getByText(/End of ranking · 30 of 30/)).toBeInTheDocument();
+    expect(screen.getByText(/End of ranking · 30/)).toBeInTheDocument();
   });
 
   it("clamps to the list length rather than overshooting on rapid activations", () => {
@@ -526,10 +526,65 @@ describe("CommandersView ranking toggle", () => {
     const live = container.querySelector('[aria-live="polite"]')!;
     expect(live).toHaveTextContent("");
     fireEvent.click(segments(FREE)[0]);
-    expect(live).toHaveTextContent("Re-ranked by what’s free · 2 commanders");
+    expect(live).toHaveTextContent("Ranked from free cards only · 2 commanders");
   });
 
-  // The rack's `Score against` has no struck-out segment — the banner below it
+  // Free mode narrows the list as well as rescoring it: a commander whose own
+  // card a finished deck has sleeved is not one you can build today. The rows it
+  // hides have to be accounted for, or the reader watches a count drop with
+  // nothing on screen saying why. That was the reported defect.
+  describe("the commanders free mode hides", () => {
+    it("counts them on the result line, and says nothing when it hid none", () => {
+      const all = results(5);
+      const { again } = view(all, { avail: "free", freeItems: all.slice(0, 2) });
+
+      expect(resultLine()).toHaveTextContent(
+        "2 commanders you own and haven't built. 3 more are sleeved into decks you've built",
+      );
+
+      again(all, { avail: "free", freeItems: all });
+      expect(resultLine()).not.toHaveTextContent(/sleeved/);
+    });
+
+    it("agrees its verb with a single hidden commander", () => {
+      // Three own, two free: the SENTENCE stays plural so the shared result-line
+      // matcher still finds it, and the aside is the half under test.
+      const all = results(3);
+      view(all, { avail: "free", freeItems: all.slice(0, 2) });
+      expect(resultLine()).toHaveTextContent("1 more is sleeved into a deck you've built");
+    });
+
+    // The aside answers for ONE control, so it must not appear in the mode that
+    // hides nothing — where the two lists differ only because the server sent a
+    // shorter free ranking the reader never asked for.
+    it("stays off in the other mode", () => {
+      const all = results(5);
+      view(all, { avail: "all", freeItems: all.slice(0, 2) });
+      expect(resultLine()).not.toHaveTextContent(/sleeved/);
+    });
+
+    it("offers the other segment when it has hidden every last one", () => {
+      const all = results(3);
+      view(all, { avail: "free", freeItems: [] });
+
+      expect(screen.getByText("They're all in decks already")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "All my cards" }));
+      expect(cards()).toHaveLength(3);
+    });
+
+    // The colour state names a pip to drop and can still say how many rows that
+    // returns, which is the more useful answer. Free's state names no pip, so it
+    // must not pre-empt one.
+    it("yields to the colour state when a pip is lit as well", () => {
+      const all = results(3, ["R"]);
+      view(all, { avail: "free", freeItems: [] });
+      fireEvent.click(screen.getByRole("switch", { name: "Blue" }));
+      expect(screen.queryByText("They're all in decks already")).toBeNull();
+      expect(screen.getByText("Nothing in the pile matches")).toBeInTheDocument();
+    });
+  });
+
+  // The rack's `Build from` has no struck-out segment — the banner below it
   // is what says the deck read failed. The flip is still refused.
   it("refuses the flip when we cannot read the decks", () => {
     view(results(3), { availOk: false });

@@ -187,3 +187,26 @@ export function OwnedSearchEmpty({
     />
   );
 }
+
+/**
+ * The owned lane emptied by `Build from` alone: every commander this player owns
+ * is sleeved into a deck they have built, so free mode has nothing left to rank.
+ *
+ * Its own state rather than a branch of `FilteredEmpty`, which names a colour pip
+ * to drop and would name nothing here. The single affordance is the other half of
+ * the one control that did the narrowing, and it carries that segment's own label
+ * so the reader can find it on the rack afterwards.
+ */
+export function FreeEmpty({ onShowAll }: { onShowAll: () => void }) {
+  return (
+    <ZeroState
+      heading={commandersCopy.emptyFree.heading}
+      body={commandersCopy.emptyFree.body}
+      primary={
+        <PrimaryButton onClick={onShowAll} className={ZERO_PRIMARY}>
+          {commandersCopy.emptyFree.fix}
+        </PrimaryButton>
+      }
+    />
+  );
+}

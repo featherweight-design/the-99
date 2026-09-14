@@ -163,7 +163,7 @@ Lives in the page header. Desktop: right-aligned on the same flex row as title+s
 
 ## Component: Sort trigger (§7.2 tier 2)
 
-Desktop: filter bar, immediately right of `Score against`, in the slot the inert `Order: Fit ↓ · fixed` label holds. Mobile: right-hand child of the count row (row 4 of the stack).
+Desktop: filter bar, immediately right of `Build from` (renamed from `Score against`, 2026-09-14), in the slot the inert `Order: Fit ↓ · fixed` label holds. On discover that control is absent altogether, so the trigger leads the cluster there. Mobile: right-hand child of the count row (row 4 of the stack).
 
 ### Trigger group wrapper
 | Property | Mobile | Desktop |

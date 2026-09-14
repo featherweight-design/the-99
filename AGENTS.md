@@ -333,6 +333,31 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   desktop default is the grid, which draws no pips, and a run that took the default would
   sweep nothing clean at the width the defect was reported on. Point it at `local-dev`.
 
+- `pnpm probe:build-from` proves that `/commanders` free mode LISTS from the free pool, not
+  just scores against it. The rule is decided in `rankFree` and unit-tested there; what only a
+  browser can answer is whether a commander the reader can see actually leaves the list once a
+  finished deck has sleeved its card, and whether the result line accounts for the row it
+  removed. It checks both widths, because the rack draws inline above 1024px and inside a sheet
+  below it.
+
+  It exists because the contact sheet cannot cover this. On the dev account every claim is
+  soft — brews claim softly by design — so `?a=free` photographs the same list as `All my
+  cards` with no aside, and that picture reads as coverage while proving nothing. The state has
+  to be BUILT, so the probe writes one deck with a committed version holding every copy the
+  account owns of one commander candidate. `hard` is `sleeved` rather than full (the JSON key
+  is still called `mature`, but it is `cd.sleeved`), so the deck claims without needing a
+  99-row body.
+
+  Its fixture picks TWO unclaimed candidates, and the second one is the point: the deck's own
+  commander leaves both lists through `notBuiltBy`, in either mode, so using the card under
+  test to lead the deck would prove nothing about this feature. It also asserts the row is
+  still on `All my cards` and that the aside does NOT print there — a fix that hid the
+  commander everywhere would pass a check that only looked at free mode. It searches for the
+  name rather than scanning the list, because the list is windowed and a commander ranked past
+  the first batch is absent from the document while being perfectly present in the list. Run
+  with the membership filter reverted, 4 of its 8 checks fail. It deletes the deck in a
+  `finally`; point it at `local-dev` or a scratch Neon branch, **never production**.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does
