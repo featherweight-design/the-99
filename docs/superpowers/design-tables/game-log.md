@@ -1547,6 +1547,21 @@ headline, two body paragraphs at 14.5px `--fg-body`, and a brass-solid CTA.
 | color | `--fg` (`#EDE6D8`) | `--fg` (`#EDE6D8`) |
 | Copy key | `empty.bodyQuote` | `empty.bodyQuote` |
 
+> **Errata (2026-09-13).** The quote was `ran out of gas, 3 of 3 games` and NO SURFACE
+> PRINTED IT. The per-column glosses render only on the log form's checkboxes; the
+> aggregate cell draws the axis label, the `M of N` figure and `N up · N down`. The one
+> string whose job is to demonstrate the tab's output was demonstrating something the app
+> could not say.
+>
+> It quotes `headline.finding` verbatim now — `Cards in hand is letting this deck down` —
+> which the tab writes at `N >= PATTERN_MIN` today and still writes after #10's tuning
+> suggestions land, since those render on their own surface. `game-log.test.ts` pins the
+> two together, so the quote cannot drift from the sentence it quotes again.
+>
+> The handoff under `design/design_handoff_the99_game_log/` still shows the old quote and
+> is left as delivered: `design/` is the record of what Design shipped on the day, not the
+> live spec. This table is the live spec.
+
 ### Body paragraph 2 (the cost)
 
 | Property | Mobile | Desktop |
