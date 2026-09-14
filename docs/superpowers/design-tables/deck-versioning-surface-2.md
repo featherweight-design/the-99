@@ -342,7 +342,7 @@ is the click target; the pull control is its one nested action and stops propaga
 | border | `1px solid #26211B` (`--border`) | `1px solid #26211B` |
 | border-radius | `7px` | `7px` |
 | padding | `0 8px` | `0 9px` (`0 6px 0 9px` when the row carries an action) |
-| display | `flex`, `align-items: center` | `flex`, `align-items: center` — **two stacked lines on a row that names a holding deck**; see the amendment below |
+| display | `flex`, `align-items: center` | `flex`, `align-items: center` — but a row that names a holding deck is **`flex-direction: column`, `align-items: stretch`** (`ROW_SHELL_STACKED`), with `align-items: center` on each of its two lines instead. Centring the shell itself shrink-wraps both lines to their content and the card name goes to zero at 820px, which is the defect PR #622 fixed; see the amendment below |
 | gap | `9px` | `9px` (`8px` inside a nested sub-column) |
 | row gap in the list | `4px` | `4px` |
 | click target | the whole row opens the card | the whole row opens the card |
