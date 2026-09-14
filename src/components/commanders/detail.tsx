@@ -363,7 +363,12 @@ export function CommanderDetail({
       {/* ── Mobile: scrolling body ──────────────────────────────────── */}
       <div
         className="sm:hidden flex flex-col gap-[16px] overflow-y-auto"
-        style={{ flex: 1, padding: "16px 14px 0" }}
+        // The bar below is in flow, not fixed — it always sits under the last
+        // section rather than over it. The 100px spacer that used to end this
+        // column was reserving room for an overlay that does not exist, and drew
+        // as a band of nothing between the synergy panel and the Build bar. The
+        // bottom padding here is the gap that band was hiding.
+        style={{ flex: 1, padding: "16px 14px 16px" }}
       >
         {/* Fit Hero (mobile) */}
         <FitHero commander={c} rank={rank} isBestFit={isBestFit} avail={avail} width="phone" />
@@ -467,12 +472,9 @@ export function CommanderDetail({
             </span>
           </div>
         ) : null}
-
-        {/* Bottom spacer so sticky bar doesn't cover last content */}
-        <div style={{ height: 100 }} />
       </div>
 
-      {/* ── Mobile: sticky bottom Build bar ────────────────────────── */}
+      {/* ── Mobile: bottom Build bar ───────────────────────────────── */}
       <div
         className="sm:hidden flex-none flex items-center gap-[12px]"
         style={{

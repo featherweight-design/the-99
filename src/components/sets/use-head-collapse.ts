@@ -15,6 +15,31 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+/**
+ * Honoured for the height change, as every other motion in this app is. A reader who has
+ * asked for no motion gets the two heights and the step between them, with nothing drawn in
+ * between.
+ */
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined"
+    && typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * How far past the reopen point the reader has to be before the head collapses. The band is
+ * what stops a head one pixel either side of a single threshold flipping on every frame of a
+ * slow scroll; 80 is the width the fixed 40/120 pair had.
+ */
+const HYSTERESIS_PX = 80;
+
+/**
+ * The collapse and the restore, in ms. §31 asks for two heights, not for a head that tracks
+ * the scroll — this animates the step between them and nothing else, so the head is still at
+ * rest in both states and in motion only across the change.
+ */
+const COLLAPSE_MS = 180;
+
 export type HeadCollapse = {
   /** True when the collapsed bar should be drawn in place of the open head. */
   shy: boolean;
@@ -22,6 +47,12 @@ export type HeadCollapse = {
   headRef: React.RefObject<HTMLDivElement | null>;
   /** Goes on the always-mounted spacer BESIDE the head, never wrapping it. */
   spacerRef: React.RefObject<HTMLDivElement | null>;
+  /**
+   * Goes on the element that holds the head, the spacer and the grid. Scroll anchoring is
+   * suspended on it for the length of a collapse and restored afterwards — see the switch in
+   * the layout effect below for why it is neither left on nor left off.
+   */
+  containerRef: React.RefObject<HTMLDivElement | null>;
   /**
    * Open the head now, without waiting for a scroll event.
    *
@@ -80,30 +111,38 @@ export function useHeadCollapse({
   // freeze holds whatever was true when it opened.
   const mayCollapse = !isDesktop && !deltaFiring;
 
-  useEffect(() => {
-    if (!mayCollapse) return;
-    // An open sheet freezes the head: the listener stands down and `collapsed` holds.
-    if (sheetOpen) return;
-    const onScroll = () => {
-      const y = window.scrollY;
-      // Read as a function of the CURRENT state, which is what makes this hysteresis rather
-      // than two thresholds: collapsed stays collapsed until 40, open stays open until 120,
-      // and between the two nothing happens. Never interpolated with the scroll offset — a
-      // head that tracked it would be permanently in motion under the thing being read.
-      setCollapsed((was) => (was ? y > 40 : y > 120));
-    };
-    // The first read is here, in a passive effect, so a reload at scrollY > 120 paints the
-    // open head for one frame before collapsing. Moving it to a layout effect is what the
-    // shape asks for and `react-hooks/set-state-in-effect` forbids outright; deriving it
-    // during render would read `window.scrollY` on the server and mismatch on hydration.
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [mayCollapse, sheetOpen]);
-
   const headRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const restHeightRef = useRef<number | null>(null);
+  /** The collapsed bar's height, measured the same way and only while it is drawn. */
+  const barHeightRef = useRef<number | null>(null);
+  /**
+   * True only between the start of a height transition and its end. Every measurement is
+   * off limits while it is: mid-animation the head is whatever pixel the transition has
+   * reached, and recording that as the rest height leaves the spacer reserving a head that
+   * existed for one frame.
+   */
+  const animatingRef = useRef(false);
+  /**
+   * The pair in flight, so a reversal cancels rather than races.
+   *
+   * Declared up here with the other refs rather than beside the effect that writes it: the
+   * `ResizeObserver` below reads it, and a ref an effect reads may not be written by
+   * anything declared later (`react-hooks/immutability`).
+   */
+  const runningRef = useRef<Animation[]>([]);
+  /**
+   * Set when a step ends because something interrupted it rather than because it finished.
+   * The next run reads it to know it has a reader mid-step to carry on from.
+   */
+  const interruptedRef = useRef(false);
+  /**
+   * The head's height as it last stood, refreshed on every measurement. The transition needs
+   * where the head is coming FROM, and by the time a layout effect can ask, the swap has
+   * already happened in that same commit — the head is already the height it is going to.
+   */
+  const lastHeightRef = useRef<number | null>(null);
 
   /**
    * The spacer's height, written to the DOM rather than held in state.
@@ -136,7 +175,15 @@ export function useHeadCollapse({
     // Skipping the measurement while the strip fires has a hole — the sheet can still edit
     // the filters behind it — and storing a delta-inclusive height leaves the spacer too
     // tall once the message clears. Subtracting satisfies both.
-    if (!el.hasAttribute("data-set-head-collapsed")) {
+    if (animatingRef.current) {
+      // Size the spacer from the height the head has RIGHT NOW — that is what keeps the
+      // document still while it grows or shrinks — but record nothing from it.
+    } else if (el.hasAttribute("data-set-head-collapsed")) {
+      // Recorded here as well as in the scroll handler: a collapse can land without a scroll
+      // — the sheet's freeze releasing, a breakpoint trip — and the threshold wants the bar
+      // it is actually drawing.
+      barHeightRef.current = el.getBoundingClientRect().height;
+    } else {
       const delta = el.querySelector("[data-set-delta]");
       restHeightRef.current = el.getBoundingClientRect().height
         - (delta === null ? 0 : delta.getBoundingClientRect().height);
@@ -145,6 +192,7 @@ export function useHeadCollapse({
     spacer.style.height = rest === null
       ? "0px"
       : `${Math.max(0, rest - el.getBoundingClientRect().height)}px`;
+    if (!animatingRef.current) lastHeightRef.current = el.getBoundingClientRect().height;
   }, []);
 
   useEffect(() => {
@@ -153,7 +201,14 @@ export function useHeadCollapse({
     // `sizeSpacer` records the height as well as writing the spacer, and it is the one place
     // that decides WHEN a height may be recorded. This callback used to keep its own copy of
     // that decision and the two drifted the moment a second condition was added.
-    const measure = () => sizeSpacer();
+    const measure = () => {
+      // A step in flight sizes the reserve itself, through the keyframes the layout effect
+      // wrote — so the observer stands down rather than writing a figure of its own, and the
+      // effect below picks the step up again if the head's natural height moved underneath
+      // it.
+      if (animatingRef.current) return;
+      sizeSpacer();
+    };
     measure();
     // Guarded, as `top-off-list.tsx` guards its own measured bar: an unconditional
     // constructor throws on mount in any engine without the API. The `measure()` above has
@@ -166,6 +221,92 @@ export function useHeadCollapse({
     return () => observer.disconnect();
   }, [sizeSpacer]);
 
+  /**
+   * The collapse decision, as a function of the current scroll offset.
+   *
+   * A callback rather than a body inside the listener, because the listener is not the only
+   * thing that has to be able to ask. A transition settling is the other: the bar's height
+   * cannot be measured while one is running, so a reader who scrolls up DURING the first
+   * collapse gets the fallback threshold, and without a re-ask afterwards a thumb that comes
+   * to rest at, say, y=100 leaves the head collapsed over an empty strip until the next
+   * scroll event — which may never come.
+   */
+  const evaluateCollapse = useCallback((onDesktop: boolean) => {
+    const y = window.scrollY;
+    // Where the reserve starts showing. The spacer holds the open head's height in the
+    // document while the collapsed bar draws in its place, so above this offset the band
+    // between the bar's bottom edge and the grid is empty — the head has to be open again
+    // by then, or the reader scrolls up into nothing and watches it pop open underneath
+    // them. The grid's own top, less the bar that covers it: measured rather than guessed,
+    // because the open head is one line taller with a wrapped title and a constant that
+    // fits one set fits the next by luck.
+    //
+    // Both figures are read HERE rather than taken from what a commit last recorded. The
+    // spacer's bottom edge is where the grid starts whichever form the head is in, and the
+    // bar's height is refreshed off the bar itself every time one is drawn — a cached
+    // figure is only as fresh as the render that wrote it, and a threshold that waits a
+    // commit for its input answers the first scroll after a collapse with the old one.
+    //
+    // Both fall back to the fixed 40/120 pair they replace: before any collapse there is
+    // no bar to measure, and an engine that lays nothing out reports 0 for every box.
+    const head = headRef.current;
+    const spacer = spacerRef.current;
+    if (head !== null && !animatingRef.current) {
+      if (head.hasAttribute("data-set-head-collapsed")) {
+        barHeightRef.current = head.getBoundingClientRect().height;
+      } else if (onDesktop) {
+        // A figure measured on the phone must not decide a threshold after a trip to desktop
+        // and back: the bar is not drawn there, and the head it belongs to may have changed
+        // size while it was away. Cleared rather than kept, so the first collapse after the
+        // trip runs on the grid's own top like any other first collapse.
+        barHeightRef.current = null;
+      }
+    }
+    const gridTop = spacer === null
+      ? null
+      : spacer.getBoundingClientRect().bottom + window.scrollY;
+    const bar = barHeightRef.current;
+    // The head's own height is the signal that anything here was laid out at all. A
+    // `gridTop` on its own cannot say: an engine that lays nothing out reports every rect at
+    // 0, and `0 + scrollY` then reads as a plausible grid top that is really just the
+    // reader's offset.
+    const laidOut = head !== null && head.getBoundingClientRect().height > 0;
+    const measured = laidOut && gridTop !== null && gridTop > 0;
+    const reopenAt = !measured || bar === null || bar <= 0 ? 40 : Math.max(0, gridTop - bar);
+    // The FIRST collapse of a visit has no bar to measure — one has never been drawn — and
+    // running it on the old fixed 120 made it the only collapse of the visit at that offset,
+    // with every later one at ~405. The grid's own top answers it without a bar: collapse
+    // when the open head has scrolled entirely past, which is within a few pixels of where
+    // the measured rule puts it once a bar exists. Only an engine that lays nothing out
+    // still falls back to 120.
+    const collapseAt = bar === null || bar <= 0
+      ? (measured ? gridTop : 120)
+      : reopenAt + HYSTERESIS_PX;
+    // Read as a function of the CURRENT state, which is what makes this hysteresis rather
+    // than two thresholds: collapsed stays collapsed until the reserve would show, open
+    // stays open until a band past it, and between the two nothing happens. Never
+    // interpolated with the scroll offset — a head that tracked it would be permanently in
+    // motion under the thing being read.
+    setCollapsed((was) => (was ? y > reopenAt : y > collapseAt));
+  }, []);
+
+  // Placed after the recorder above, not before it: the decision is read off the
+  // measurements `sizeSpacer` writes, and a ref an effect reads may not be written by
+  // anything declared later (`react-hooks/immutability`).
+  useEffect(() => {
+    if (!mayCollapse) return;
+    // An open sheet freezes the head: the listener stands down and `collapsed` holds.
+    if (sheetOpen) return;
+    const onScroll = () => evaluateCollapse(isDesktop);
+    // The first read is here, in a passive effect, so a reload at scrollY > 120 paints the
+    // open head for one frame before collapsing. Moving it to a layout effect is what the
+    // shape asks for and `react-hooks/set-state-in-effect` forbids outright; deriving it
+    // during render would read `window.scrollY` on the server and mismatch on hydration.
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [mayCollapse, sheetOpen, isDesktop, evaluateCollapse]);
+
   const wantShy = collapsed && mayCollapse;
 
   /**
@@ -177,13 +318,191 @@ export function useHeadCollapse({
   if (!sheetOpen && shyAtSheetOpen !== null) setShyAtSheetOpen(null);
   const shy = sheetOpen && shyAtSheetOpen !== null ? shyAtSheetOpen : wantShy;
 
-  useLayoutEffect(() => {
-    sizeSpacer();
-    // Keyed, not every render. Without a list this ran after every keystroke in the search
-    // field and every modal update, each one forcing a synchronous `getBoundingClientRect`
-    // for a head whose size had not moved. The `ResizeObserver` covers ordinary size
-    // changes; this covers the transitions it cannot see.
-  }, [shy, deltaFiring, isDesktop, sizeSpacer]);
+  /**
+   * The state the last animation was run for. The two heights swap by `display`, so without
+   * this the restore would animate again every time the delta strip or the breakpoint moved
+   * the head while it was already open.
+   */
+  const animatedShyRef = useRef(shy);
 
-  return { shy, headRef, spacerRef, openHead: () => setCollapsed(false) };
+  /** The breakpoint the last run saw. A crossing is a re-layout, never a transition. */
+  const animatedDesktopRef = useRef(isDesktop);
+
+  /**
+   * The step between the two heights, animated — and owned by the engine rather than by this
+   * file.
+   *
+   * This was a CSS transition driven by hand: a `transitionend` listener, a safety timer for
+   * the transition that never starts, an idempotent settle to keep the two from tripping
+   * over each other, and a `requestAnimationFrame` loop to keep the reserve in step. Every
+   * round of review landed in that lifecycle rather than in the effect it produces — a stale
+   * timer landing inside the next transition, a dependency change settling a run nothing
+   * restarted, a breakpoint crossing animated as though it were a restore. `Element.animate`
+   * has the lifecycle already: a returned `Animation` cancels, replaces and reports itself,
+   * so reversal is `cancel()` and cleanup is one handler that cannot run twice.
+   *
+   * The spacer is animated in the SAME call rather than written frame by frame, with the
+   * mirror-image keyframes. Two animations of the same duration and easing move as one, so
+   * the document's height is constant across the step by construction instead of by a loop
+   * racing the paint.
+   */
+  useLayoutEffect(() => {
+    const el = headRef.current;
+    const spacer = spacerRef.current;
+    const changed = animatedShyRef.current !== shy;
+    const crossedBreakpoint = animatedDesktopRef.current !== isDesktop;
+    animatedShyRef.current = shy;
+    animatedDesktopRef.current = isDesktop;
+
+    // Whatever was running is over the moment the target moves. `cancel()` fires the
+    // handler below, which records where the head had reached and re-reads the reserve.
+    //
+    // `interruptedRef` is how that fact survives into this run. React tears the previous
+    // effect down BEFORE setting the new one up, so by the time this line is reached the
+    // list has already been emptied by that cleanup — reading its length here always said
+    // "nothing was running", and the restart this enables never happened once.
+    const wasRunning = interruptedRef.current || runningRef.current.length > 0;
+    interruptedRef.current = false;
+    for (const running of runningRef.current) running.cancel();
+    runningRef.current = [];
+
+    const from = lastHeightRef.current;
+    const to = el === null ? null : el.getBoundingClientRect().height;
+
+    // Every reason not to animate, and they all end the same way: hold the reserve right.
+    //
+    // A BREAKPOINT crossing is in here deliberately. Widening while the phone bar is drawn
+    // changes `shy` as a side effect of the re-layout, and animating that clipped the
+    // desktop head's controls inside a 75px box on its way to a height that belongs to a
+    // different design.
+    // A run already in flight is reason enough to step, even where `shy` has not moved: the
+    // delta strip arriving or clearing changes the head's natural height, and the keyframes
+    // in flight are aiming at the height it had a moment ago. Cancelling above and
+    // re-deriving here restarts the step from the pixel the reader can see to the height the
+    // head now wants, which is what keying this effect on `deltaFiring` could not do while
+    // the step was a CSS transition — the setup that followed the teardown saw no change and
+    // never restarted.
+    const stepping = changed || wasRunning;
+    if (el === null || spacer === null || !stepping || crossedBreakpoint
+      || prefersReducedMotion() || typeof el.animate !== "function"
+      || from === null || to === null || Math.abs(to - from) < 1) {
+      // A bar height measured on the phone must not decide a threshold after a trip to
+      // desktop and back. `evaluateCollapse` clears it too, but that callback only runs from
+      // the scroll listener — and the listener is not installed on desktop, so the crossing
+      // itself is the only place that can.
+      if (crossedBreakpoint && isDesktop) barHeightRef.current = null;
+      sizeSpacer();
+      if (containerRef.current !== null) {
+        // The anchoring switch still applies: the leap is the height change's doing, not the
+        // animation's, so even an instant swap needs it off for the frame it lands in.
+        //
+        // The release is guarded, not unconditional. The first layout pass takes this path,
+        // and the passive scroll read can start a real step before its frame arrives — an
+        // unguarded release then turns anchoring back on in the middle of the transition and
+        // hands back the leap this switch exists to remove.
+        const container = containerRef.current;
+        container.style.overflowAnchor = "none";
+        requestAnimationFrame(() => {
+          if (!animatingRef.current) container.style.overflowAnchor = "";
+        });
+      }
+      return;
+    }
+
+    const container = containerRef.current;
+    if (container !== null) container.style.overflowAnchor = "none";
+
+    // The head it is ARRIVING at, measured now. While the head is collapsed its open subtree
+    // is `display: none` and cannot be measured, so a filter changed through the sheet
+    // leaves the recorded rest height describing a head that no longer exists — and the two
+    // keyframe pairs below would then not sum to a constant, which is the whole point of
+    // animating them together.
+    if (!el.hasAttribute("data-set-head-collapsed")) {
+      const delta = el.querySelector("[data-set-delta]");
+      restHeightRef.current = to - (delta === null ? 0 : delta.getBoundingClientRect().height);
+    }
+    const rest = restHeightRef.current;
+    // The START of the reserve is what the document is holding right now, not what the new
+    // rest height implies: `head + spacer` has to be continuous across the first frame as
+    // well as the last.
+    const spacerFrom = Math.max(0, spacer.getBoundingClientRect().height);
+    const spacerTo = rest === null ? spacerFrom : Math.max(0, rest - to);
+
+    // Clipped for the length of the step only. The open head carries controls that open
+    // above and below it, and a head that clipped at rest would cut them off.
+    el.style.overflow = "hidden";
+    // Both boxes pinned at where the step ENDS, in this commit.
+    //
+    // The END rather than the start, and that is the whole subtlety. `Element.animate`
+    // defaults to `fill: "none"`, so the keyframes stop contributing the moment the step
+    // finishes and the box falls back to whatever the inline height says: pinned to the
+    // start, a completed step lands back where it began for the frame before the handler
+    // clears it. Pinned to the target, the fallback IS the target, the keyframe at time 0
+    // still paints the start, and nothing jumps at either end.
+    el.style.height = `${to}px`;
+    spacer.style.height = `${spacerTo}px`;
+    animatingRef.current = true;
+
+    const timing = { duration: COLLAPSE_MS, easing: "ease" } as const;
+    const headAnim = el.animate(
+      [{ height: `${from}px` }, { height: `${to}px` }],
+      timing,
+    );
+    const spacerAnim = spacer.animate(
+      [{ height: `${spacerFrom}px` }, { height: `${spacerTo}px` }],
+      timing,
+    );
+    runningRef.current = [headAnim, spacerAnim];
+
+    const done = (interrupted: boolean) => {
+      // `cancel()` and `finish` both arrive here, and the guard is what makes the pair
+      // safe: cancelling the head fires this, which cancels the spacer, which fires it
+      // again.
+      if (!animatingRef.current) return;
+      animatingRef.current = false;
+      // BOTH heights as the reader currently sees them, read before anything is torn down.
+      // A reversal has to carry on from here, and both halves matter: the head alone leaves
+      // the reserve starting at its steady-state figure, so `head + spacer` is discontinuous
+      // on the first frame of the new step and the document jumps by the difference.
+      const reachedHead = el.getBoundingClientRect().height;
+      const reachedSpacer = spacer.getBoundingClientRect().height;
+      for (const running of runningRef.current) running.cancel();
+      runningRef.current = [];
+      el.style.overflow = "";
+      el.style.height = "";
+      if (container !== null) container.style.overflowAnchor = "";
+      // Now that the head is its own height again, the steady-state figures may be re-read —
+      // the rest height, and the bar's, which is what the threshold wants. A reader who
+      // scrolled up while this ran was answered on the fallback and may have come to rest
+      // inside the band; nothing else would revisit that until they scrolled again.
+      sizeSpacer();
+      // And then the in-flight pair goes back on top of what `sizeSpacer` just recorded. It
+      // measures the form the head has ARRIVED at — which after a cancel is the new target,
+      // not the pixel the reader is looking at — so leaving its figures in place makes the
+      // next step either a snap (`from === to`) or a jump (a reserve starting where nothing
+      // is drawn). On a clean finish the two are the same figures, so this costs nothing
+      // there.
+      lastHeightRef.current = reachedHead;
+      spacer.style.height = `${reachedSpacer}px`;
+      interruptedRef.current = interrupted;
+      evaluateCollapse(isDesktop);
+    };
+    const onFinish = () => done(false);
+    const onCancel = () => done(true);
+    headAnim.addEventListener("finish", onFinish);
+    headAnim.addEventListener("cancel", onCancel);
+
+    return () => {
+      headAnim.removeEventListener("finish", onFinish);
+      headAnim.removeEventListener("cancel", onCancel);
+      // A teardown is an interruption by definition: either the reader reversed, or
+      // something moved the head's size under a step that was still running.
+      done(true);
+    };
+    // `deltaFiring` is a dependency again, and safe to be one now: a change while a step is
+    // running re-derives and restarts it rather than tearing it down with nothing to pick it
+    // up, which is what the CSS transition could not do.
+  }, [shy, isDesktop, deltaFiring, sizeSpacer, evaluateCollapse]);
+
+  return { shy, headRef, spacerRef, containerRef, openHead: () => setCollapsed(false) };
 }

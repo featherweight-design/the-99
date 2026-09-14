@@ -127,6 +127,35 @@ async function run(page, steps) {
     }
     if (step.wait) await page.waitForSelector(step.wait, { timeout: 15_000 });
     if (step.settle) await page.waitForTimeout(step.settle);
+    // A surface that only exists part-way down the page — the set head's collapsed bar, the
+    // foot of a long column — is reached by scrolling to it, which is a step like any other
+    // rather than a reason for a second script.
+    //
+    // LAST in the step, after its `wait` and its `settle`. A route that streams is still its
+    // loading shell for the first moment, and a scroll applied then is clamped to a document
+    // that has not arrived — the sheet would photograph the top of the page while its label
+    // claimed the collapsed head or the foot of the column.
+    if (typeof step.scroll === "number") {
+      await page.evaluate((y) => window.scrollTo(0, y), step.scroll);
+    }
+    if (step.scroll === "bottom") {
+      // The document AND any element that is actually scrolling. On this app's phone
+      // layouts the document is the scroller — measured, no route reports a scrolling
+      // descendant — but `/commanders/[slug]` marks its column `overflow-y-auto`, so a
+      // future height constraint would move the scroll into it and a window-only verb would
+      // photograph the top while claiming the foot.
+      await page.evaluate(() => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        for (const node of document.querySelectorAll("body *")) {
+          const style = getComputedStyle(node);
+          const scrolls = style.overflowY === "auto" || style.overflowY === "scroll";
+          if (scrolls && node.scrollHeight - node.clientHeight > 1) {
+            node.scrollTop = node.scrollHeight;
+          }
+        }
+      });
+    }
+
   }
 }
 

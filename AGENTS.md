@@ -193,6 +193,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   that locator rather than against a selector string of its own, so `onPage` keeps owning
   what "the page" means.
 
+- `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
+  sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
+  `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does
+  not move under 900px of wheel and comes back to the same offset when it closes. The lock
+  is `document.body.style.overflow`, and whether that stops a wheel is a question about the
+  viewport's overflow propagation rather than about the property, so jsdom reports every
+  route as passing. A surface whose trigger is not on the page FAILS rather than being
+  skipped. Point it at `local-dev`. One row is exempt from the offset half and says so: the
+  sort panel returns focus to its trigger, which scrolls it back into view.
 - `scripts/contact-sheet.mjs` photographs every surface in a feature's inventory at both widths
   and lays them out as one image, so a route that never got the feature, or a phone that is wrong
   while the desktop is right, is visible in a glance. Inventories live in

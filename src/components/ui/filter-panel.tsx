@@ -26,6 +26,7 @@
 // remount the search input and it would lose focus on the first keystroke.
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useScrollLock } from "../../lib/a11y/dialog";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import type { FilterPanelCopy } from "../../lib/copy/collection";
 import { PrimaryButton } from "./button";
@@ -190,6 +191,14 @@ export function FilterPanel({
   // Desktop popover `left`, measured against the viewport. See popoverShift.
   const [popoverLeft, setPopoverLeft] = useState(0);
   const dragStartY = useRef<number | null>(null);
+
+  // The sheet — never the popover. A phone sheet is `aria-modal` over a scrim,
+  // so the page behind it must hold still; the desktop popover is `absolute`
+  // beside its trigger and travels with the page, which is what a dropdown does.
+  // Only the lock is taken: rule 2 above keeps DOM focus on the search field, so
+  // `useDialogA11y`, which moves focus to the first focusable and wraps Tab
+  // around it, cannot own this panel.
+  useScrollLock(open && !isDesktop);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

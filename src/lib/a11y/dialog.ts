@@ -37,6 +37,39 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
 let scrollLocks = 0;
 let overflowBeforeLock = "";
 
+/**
+ * Hold the page still while a surface is up, and let go when the last one closes.
+ *
+ * Counted rather than saved-and-restored per caller. Two surfaces can be up at
+ * once — the deck builder's add sheet and export dialog are independent flags —
+ * and whichever unmounts first would otherwise restore the overflow it captured
+ * and free a page the other one still needs held. The count releases only on the
+ * last unlock, and the original value is captured once, by the first locker.
+ *
+ * Exported because two sheets trap focus themselves and cannot take
+ * `useDialogA11y` wholesale: the rack's sheet owns its own Escape and drag
+ * dismissal, and `FilterPanel` keeps DOM focus on its search field by design, so
+ * a hook that moves focus to the first focusable would break its one rule. They
+ * still have to hold the page — an `aria-modal` sheet over a page that scrolls
+ * behind it reads as broken — so the lock is the part they share.
+ */
+export function useScrollLock(locked: boolean) {
+  useEffect(() => {
+    if (!locked) return;
+    if (scrollLocks === 0) {
+      overflowBeforeLock = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    scrollLocks += 1;
+    return () => {
+      scrollLocks -= 1;
+      if (scrollLocks === 0) {
+        document.body.style.overflow = overflowBeforeLock;
+      }
+    };
+  }, [locked]);
+}
+
 export function useDialogA11y(
   dialogRef: RefObject<HTMLElement | null>,
   onClose: () => void,
@@ -107,26 +140,7 @@ export function useDialogA11y(
     visibleFocusables(dialogRef.current)[0]?.focus();
   }, [dialogRef, initialFocusRef]);
 
-  // Counted rather than saved-and-restored per dialog. Two dialogs can be up at
-  // once — the deck builder's add sheet and export dialog are independent flags
-  // — and whichever unmounts first would otherwise restore the overflow it
-  // captured and free a page the other one still needs held. The count releases
-  // only on the last unlock, and the original value is captured once, by the
-  // first locker.
-  useEffect(() => {
-    if (!lockScroll) return;
-    if (scrollLocks === 0) {
-      overflowBeforeLock = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-    }
-    scrollLocks += 1;
-    return () => {
-      scrollLocks -= 1;
-      if (scrollLocks === 0) {
-        document.body.style.overflow = overflowBeforeLock;
-      }
-    };
-  }, [lockScroll]);
+  useScrollLock(lockScroll);
 
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {

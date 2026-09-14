@@ -134,7 +134,7 @@ export function SetGridView(props: SetGridViewProps) {
    * freeze, the breakpoint round trip. Not one of them was in the markup, which is why the
    * markup for the members it hides stays here, with the members.
    */
-  const { shy, headRef, spacerRef, openHead } =
+  const { shy, headRef, spacerRef, containerRef, openHead } =
     useHeadCollapse({ isDesktop, deltaFiring, sheetOpen });
   /**
    * The search input, so every control that clears the query can put focus back in it.
@@ -597,7 +597,13 @@ export function SetGridView(props: SetGridViewProps) {
   // scroll state underneath it — rather than the strip clearing the state and the head
   // collapsing again the moment it is dismissed.
   return (
-    <div>
+    // The container the hook suspends scroll anchoring on, for the length of a collapse and
+    // no longer. Anchoring ignores sticky boxes, so at the crossing it saw the reserve GROW
+    // by the head's own shrink, never saw the shrink, and compensated for a change that had
+    // not happened — an 80px wheel step measured 293px, and it does so on `main` too. Held
+    // off permanently it would cost the reader their place on a filter change instead, which
+    // is the case anchoring is for, so it is switched rather than set.
+    <div ref={containerRef}>
       <div
         ref={headRef}
         data-set-head-shy={shy ? "" : undefined}

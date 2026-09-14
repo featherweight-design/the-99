@@ -192,6 +192,48 @@ try {
     // bug that desktop could not reach at all.
     await walkSurface(page, `${vpName} commander page`, vpName, "commander", { expectFlip: true });
 
+    // The phone column's foot. Its last section used to be followed by a 100px spacer
+    // reserving room for an overlay that does not exist — the Build bar is in flow, under
+    // the column, not over it — so the page ended with a band of nothing between the last
+    // section and the bar. Only an engine can say: the spacer was a real box with no
+    // content, so nothing in the markup reads as wrong.
+    if (vpName === "mobile") {
+      const foot = await page.evaluate(() => {
+        const column = document.querySelector('div[class*="sm:hidden"][class*="overflow-y-auto"]');
+        // Both scrollers driven to the end before anything is read. The document is the one
+        // that moves here — the column is marked `overflow-y-auto` but its parent sets no
+        // height, so it grows instead of scrolling — and a reading taken at the top of a
+        // column that WAS scrolling would put the Build bar above the last section and turn
+        // a dead spacer into a negative gap that passes.
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        if (column !== null) column.scrollTop = column.scrollHeight;
+        const bar = [...document.querySelectorAll("div")].find((d) =>
+          d.className.includes("sm:hidden")
+          && d.className.includes("flex-none")
+          && /Build/.test(d.textContent ?? ""));
+        if (column === null || bar === null) return null;
+        const last = column.lastElementChild;
+        return {
+          gap: Math.round(bar.getBoundingClientRect().top - last.getBoundingClientRect().bottom),
+          lastText: (last.textContent ?? "").trim().slice(0, 24),
+          lastHeight: Math.round(last.getBoundingClientRect().height),
+        };
+      });
+      if (foot === null) {
+        fail("mobile: the phone column or the Build bar was not on the page — nothing measured");
+      } else if (foot.lastText === "") {
+        fail(`mobile: the column ends in an empty ${foot.lastHeight}px box — a dead spacer`);
+      } else if (foot.gap < 0) {
+        // A bar drawn OVER the last section is the other way for this to be wrong, and a
+        // one-sided bound reported it as a pass — the gap simply went negative.
+        fail(`mobile: the Build bar overlaps "${foot.lastText}" by ${-foot.gap}px`);
+      } else if (foot.gap > 40) {
+        fail(`mobile: ${foot.gap}px of nothing between "${foot.lastText}" and the Build bar`);
+      } else {
+        note(`  phone column ends on "${foot.lastText}", ${foot.gap}px above the Build bar`);
+      }
+    }
+
     // And the deck header, which draws the same control in its own placement.
     //
     // A deck whose commander has no `art_crop` draws NO chip, deliberately — §G:

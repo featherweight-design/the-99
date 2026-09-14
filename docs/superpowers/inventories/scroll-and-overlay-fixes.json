@@ -1,0 +1,239 @@
+{
+  "feature": "Scroll and overlay fixes",
+  "rows": [
+    {
+      "id": "collection-filters-sheet",
+      "label": "/collection — Filters sheet over a scrolled list",
+      "steps": [
+        {
+          "goto": "/collection",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "scroll": 400,
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter cards",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "collection-sort-panel",
+      "label": "/collection — Sort panel over a scrolled list",
+      "steps": [
+        {
+          "goto": "/collection",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "scroll": 400,
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort cards",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "commanders-filters-sheet",
+      "label": "/commanders — Filters sheet over a scrolled lane",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "settle": 3500,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "scroll": 400,
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filters",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "discover-filters-sheet",
+      "label": "/discover — Filters sheet over a scrolled lane",
+      "steps": [
+        {
+          "goto": "/discover",
+          "settle": 3500,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "scroll": 400,
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filters",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "decks-filter-sheet",
+      "label": "/decks — Filter decks sheet over a scrolled shelf",
+      "steps": [
+        {
+          "goto": "/decks",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "scroll": 400,
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter decks",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "set-head-open",
+      "label": "/collection/sets — the head at rest",
+      "steps": [
+        {
+          "goto": "/collection/sets/${PROBE_SET}",
+          "settle": 3500,
+          "wait": "[data-set-head]"
+        }
+      ]
+    },
+    {
+      "id": "set-head-collapsed",
+      "label": "/collection/sets — the collapsed bar, and no band under it",
+      "steps": [
+        {
+          "goto": "/collection/sets/${PROBE_SET}",
+          "settle": 3500,
+          "wait": "[data-set-head]"
+        },
+        {
+          "scroll": 600,
+          "settle": 700
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "set-head-restored",
+      "label": "/collection/sets — scrolled back to where the head reopens",
+      "steps": [
+        {
+          "goto": "/collection/sets/${PROBE_SET}",
+          "settle": 3500,
+          "wait": "[data-set-head]"
+        },
+        {
+          "scroll": 600,
+          "settle": 700
+        },
+        {
+          "scroll": 200,
+          "settle": 700
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "set-filters-sheet",
+      "label": "/collection/sets — Filters sheet over a scrolled grid",
+      "steps": [
+        {
+          "goto": "/collection/sets/${PROBE_SET}",
+          "settle": 3500,
+          "wait": "[data-set-head]"
+        },
+        {
+          "scroll": 600,
+          "settle": 700
+        },
+        {
+          "click": "main button[aria-haspopup=\"dialog\"]:visible",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "commander-detail-foot",
+      "label": "/commanders/[slug] — the foot of the column and the Build bar",
+      "steps": [
+        {
+          "goto": "/commanders/${PROBE_COMMANDER_SLUG}",
+          "settle": 4000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "scroll": "bottom",
+          "settle": 900
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "collection-sort-popover-desktop",
+      "label": "/collection — the Sort popover, desktop form",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "scroll": 400,
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort cards",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    }
+  ],
+  "note": "Steps are Playwright verbs, and a row may name the widths it exists at. No account's ids are committed: the set page takes PROBE_SET and the commander page PROBE_COMMANDER_SLUG from the environment. The filter sheets are phone surfaces — at 1300 the same controls are popovers or an inline row, so those rows are shot at 390 only and the desktop form has a row of its own. A trigger selector is scoped to `main`: the shell's account control carries the same `aria-haspopup=\"dialog\"` at phone width and comes first in document order, so an unscoped row photographs the account sheet and reports success."
+}

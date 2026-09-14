@@ -2012,6 +2012,205 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     expect(isShy(container)).toBe(false);
   });
 
+  // The reserve is the open head's height held in the document while the 52px bar draws in
+  // its place, so anywhere above `rest - bar` the band under the bar is empty. A fixed 40
+  // left the reader scrolling up into that band and watching the head pop open underneath
+  // them; the threshold is measured so there is no band to see. jsdom lays nothing out, so
+  // the two heights are stubbed — that is the whole input to the rule.
+  it("restores where the reserve would start showing, not at a fixed 40", () => {
+    stubDesktop(false);
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      // The reserve's bottom edge is where the grid starts, and the rule is read off that
+      // rather than off the head's height: the head sits below the phone header, so its own
+      // offset is not 0 and reads 0 again once it is stuck.
+      if (this.hasAttribute("data-set-head-reserve")) {
+        // Viewport-relative, as a real rect is: the grid sits at document 200 whatever the
+        // page is scrolled to.
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      // The first collapse of a visit has no bar to measure — one has never been drawn — so
+      // it runs on the grid's own top instead of the old fixed 120: the head collapses once
+      // it has scrolled entirely past, which is within a few pixels of where the measured
+      // rule puts every later one.
+      scrollTo(199);
+      expect(isShy(container)).toBe(false);
+      scrollTo(201);
+      expect(isShy(container)).toBe(true);
+      // From here both heights are known. It restores the moment the reserve would come
+      // into view — 200 less the bar's 52 — rather than holding until the old 40.
+      scrollTo(160);
+      expect(isShy(container)).toBe(true);
+      scrollTo(147);
+      expect(isShy(container)).toBe(false);
+      // And collapses again a band past that point, not at 120.
+      scrollTo(200);
+      expect(isShy(container)).toBe(false);
+      scrollTo(229);
+      expect(isShy(container)).toBe(true);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+    }
+  });
+
+  // A reader who asked for no motion gets the two heights and the step between them, with
+  // nothing drawn in between — so no animation may be started at all.
+  //
+  // Asked of the ENGINE rather than of an inline style: the step is `Element.animate`, which
+  // jsdom does not implement, so the hook's own "this engine will not animate" branch
+  // answers first and a test reading `style.height` passes with the motion check deleted —
+  // which is what the first version of this did. Stubbing `animate` is what gives both
+  // halves something to see.
+  function stubMotion(reduce: boolean) {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: /prefers-reduced-motion/.test(query) ? reduce : false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    // Typed rather than bare: the assertions below read the keyframes and the timing off
+    // the recorded calls, and `vi.fn()` with no signature records them as an empty tuple.
+    const animate = vi.fn((frames: Keyframe[], timing: KeyframeAnimationOptions) => ({
+      frames,
+      timing,
+      cancel: vi.fn(),
+      finish: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    Object.defineProperty(HTMLElement.prototype, "animate", {
+      value: animate, configurable: true, writable: true,
+    });
+    // The head has to be measurable, or the hook falls back before it reaches the question.
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      if (this.hasAttribute("data-set-head-reserve")) {
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    return {
+      animate,
+      restore: () => {
+        HTMLElement.prototype.getBoundingClientRect = rect;
+        delete (HTMLElement.prototype as { animate?: unknown }).animate;
+        vi.unstubAllGlobals();
+      },
+    };
+  }
+
+  it("starts no animation when the reader asks for reduced motion", () => {
+    const motion = stubMotion(true);
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(container)).toBe(true);
+      expect(motion.animate).not.toHaveBeenCalled();
+    } finally {
+      motion.restore();
+    }
+  });
+
+  // The other side of the same switch, and what makes the test above a measurement rather
+  // than a restatement of jsdom: with motion allowed the head and the reserve are animated
+  // TOGETHER, which is what holds the document still across the step.
+  it("animates the head and the reserve as one when motion is allowed", () => {
+    const motion = stubMotion(false);
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(container)).toBe(true);
+      expect(motion.animate).toHaveBeenCalledTimes(2);
+      const [headFrames, headTiming] = motion.animate.mock.calls[0];
+      const [spacerFrames, spacerTiming] = motion.animate.mock.calls[1];
+      expect(headFrames).toEqual([{ height: "200px" }, { height: "52px" }]);
+      // The mirror image: the reserve takes on exactly what the head gives up.
+      expect(spacerFrames).toEqual([{ height: "0px" }, { height: "148px" }]);
+      expect(spacerTiming).toEqual(headTiming);
+    } finally {
+      motion.restore();
+    }
+  });
+
+  // A breakpoint crossing is a re-layout, not a step between two heights. Widening while
+  // the phone bar is drawn turns `shy` off as a side effect, and animating that put the
+  // desktop head's controls inside a 75px clipped box on the way to a height belonging to a
+  // different design. The head must arrive at its desktop form without an animation.
+  it("does not animate a crossing to desktop", () => {
+    const listeners: (() => void)[] = [];
+    let wide = false;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: /prefers-reduced-motion/.test(query) ? false : wide,
+        addEventListener: (_: string, fn: () => void) => listeners.push(fn),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    // The stub records its `finish` handlers, and the test fires them: without a finished
+    // collapse the hook's own cleanup records the head at its DESKTOP height, the crossing
+    // then has nothing to animate BETWEEN, and the test passes with the guard deleted.
+    const finishers: (() => void)[] = [];
+    const animate = vi.fn((frames: Keyframe[], timing: KeyframeAnimationOptions) => ({
+      frames,
+      timing,
+      cancel: vi.fn(),
+      finish: vi.fn(),
+      addEventListener: (type: string, fn: () => void) => {
+        if (type === "finish") finishers.push(fn);
+      },
+      removeEventListener: vi.fn(),
+    }));
+    Object.defineProperty(HTMLElement.prototype, "animate", {
+      value: animate, configurable: true, writable: true,
+    });
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function boxed(this: HTMLElement) {
+      if (this.hasAttribute("data-set-head")) {
+        const height = this.hasAttribute("data-set-head-collapsed") ? 52 : 200;
+        return { ...rect.call(this), height, bottom: height } as DOMRect;
+      }
+      if (this.hasAttribute("data-set-head-reserve")) {
+        return { ...rect.call(this), bottom: 200 - window.scrollY } as DOMRect;
+      }
+      return rect.call(this);
+    };
+    try {
+      const { container } = view([p("1"), p("2")], []);
+      scrollTo(400);
+      expect(isShy(container)).toBe(true);
+      // The phone's own collapse is animated — the control for what follows.
+      expect(animate).toHaveBeenCalled();
+      // And it finishes, so the head is recorded at the bar's height rather than at the one
+      // it is about to arrive at.
+      act(() => { for (const fn of finishers) fn(); });
+      animate.mockClear();
+      // And now the window widens: same `shy` flip, different reason.
+      wide = true;
+      act(() => { for (const fn of listeners) fn(); });
+      expect(isShy(container)).toBe(false);
+      expect(animate).not.toHaveBeenCalled();
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
+      vi.unstubAllGlobals();
+    }
+  });
+
   // Hidden, not unmounted. Unmounting threw away the reader's expanded cost disclosure and
   // any focus in it, and the head that came back was a different height from the one the
   // reserve had been holding.

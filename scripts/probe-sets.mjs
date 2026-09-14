@@ -25,6 +25,36 @@ import { openSheet } from "./lib/surface.mjs";
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const SET = process.env.PROBE_SET ?? null;
+/**
+ * Long enough for the head's collapse/restore transition to finish. The hook animates the
+ * step between the two heights over 180ms; everything measured about either FORM has to be
+ * read after that, and the one check that is about the motion itself samples inside it.
+ */
+const HEAD_SETTLE_MS = 320;
+/**
+ * A scroll offset past the collapse point on any fixture.
+ *
+ * It used to be 400, and 400 is now on the wrong side of the threshold: the head reopens
+ * where the reserve would start showing — the grid's top less the collapsed bar, which is
+ * ~325px on a phone here — and collapses a band past that. So the head is still open at 400
+ * by design, and a check that scrolled there measured an open head and called it a missing
+ * collapse.
+ */
+const PAST_COLLAPSE = 900;
+/**
+ * The same offset, clamped to what the fixture can actually reach.
+ *
+ * A browser clamps `scrollTo` to the document's maximum, so on a short set — or a `PROBE_SET`
+ * pointed at one — the page stops above the threshold, the head is still open, and every
+ * check below reports a collapse that never failed. The clamp is reported rather than
+ * silently applied: a fixture that cannot be scrolled past the threshold has not tested it.
+ */
+async function reachable(page, wanted) {
+  return page.evaluate((target) => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    return { target: Math.min(target, Math.max(0, max)), max: Math.round(max) };
+  }, wanted);
+}
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 
@@ -829,6 +859,10 @@ async function run() {
       await page.evaluate((to) => window.scrollTo(0, to), y);
       // Two frames: the listener is passive and the class change lands on the next paint.
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      // And then the height transition between the two forms, which every check below wants
+      // the END of. Sampling two frames in reads a head part-way between its two heights,
+      // which is neither form and fails checks that are about the forms.
+      await page.waitForTimeout(HEAD_SETTLE_MS);
     };
     // The FIRST crossing, sampled on the exact frame the collapse lands.
     //
@@ -852,7 +886,7 @@ async function run() {
         // VIEWPORT position necessarily changes — that is the scroll itself.
         const docTop = () => Math.round(grid.getBoundingClientRect().top + window.scrollY);
         const before = docTop();
-        window.scrollTo(0, 400);
+        window.scrollTo(0, 900);
         let frames = 0;
         const tick = () => {
           if (head.hasAttribute("data-set-head-collapsed")) {
@@ -866,7 +900,17 @@ async function run() {
     };
     const restState = await headNow();
     const tracksAtRest = await tracksNow();
-    await scrollTo(400);
+    const depth = await reachable(page, PAST_COLLAPSE);
+    if (depth.target < PAST_COLLAPSE) {
+      failures += !report(
+        "the fixture is tall enough to scroll past the collapse",
+        false,
+        `this set scrolls ${depth.max}px and the threshold is past ${PAST_COLLAPSE}px —`
+        + " every collapse check below is measuring an open head. Pick a longer set with"
+        + " PROBE_SET.",
+      );
+    }
+    await scrollTo(depth.target);
     const shyState = await headNow();
     const tracksScrolled = await tracksNow();
 
@@ -879,7 +923,8 @@ async function run() {
       failures += !report(
         "the head collapses past the threshold",
         !restState.shy && shyState.shy,
-        `at rest shy=${restState.shy} ${restState.height}px, at 400 shy=${shyState.shy} ${shyState.height}px`,
+        `at rest shy=${restState.shy} ${restState.height}px, at ${PAST_COLLAPSE} shy=`
+        + `${shyState.shy} ${shyState.height}px`,
       );
       failures += !report(
         "and is actually shorter, not merely marked",
@@ -891,12 +936,12 @@ async function run() {
       // reported: "shorter" was true at 140px too, which is the same block with members
       // hidden rather than the one-row bar the ruling draws.
       // The point of the whole feature. Asserted at BOTH positions, because a head that
-      // sticks at rest and leaves at 400 is the exact bug this PR shipped and the exact one
+      // sticks at rest and leaves once scrolled is the exact bug this PR shipped and the one
       // its first probe could not see.
       failures += !report(
         "the head is still at the top of the viewport after scrolling",
         Math.abs(shyState.top) <= 1,
-        `top ${shyState.top}px at 400 — ${restState.top}px unscrolled, which is the app`
+        `top ${shyState.top}px at ${PAST_COLLAPSE} — ${restState.top}px unscrolled, which is the app`
         + " chrome above it and not this head's doing",
       );
       failures += !report(
@@ -907,7 +952,7 @@ async function run() {
       // R3 names this test itself: the bar overlays, so the grid's own layout is the same
       // at every scroll position.
       failures += !report(
-        "the grid's track count is identical at scroll 0 and scroll 400",
+        `the grid's track count is identical at scroll 0 and scroll ${PAST_COLLAPSE}`,
         tracksAtRest === tracksScrolled,
         `${tracksAtRest} tracks then ${tracksScrolled}`,
       );
@@ -921,7 +966,7 @@ async function run() {
       );
       // Deep, because the bug this replaces only appeared once the scroll passed the
       // height of the box the head had been wrapped in. A single mid-page sample would
-      // have missed it at 400 too if the reserve had been a little taller.
+      // have missed it once scrolled too if the reserve had been a little taller.
       await scrollTo(2000);
       const deep = await headNow();
       failures += !report(
@@ -934,7 +979,7 @@ async function run() {
       // runs at rest, where the bar does not exist — so the one path to the filters while
       // the head is collapsed was the only phone action never measured, and it shipped at
       // 36px.
-      await scrollTo(400);
+      await scrollTo(depth.target);
       const barTargets = await page.evaluate(() => {
         const bar = document.querySelector("[data-set-head-bar]");
         if (bar === null) return null;
@@ -997,7 +1042,7 @@ async function run() {
       // render — and the DESKTOP height stayed reserved under a phone head. Only a real
       // engine can catch it: JSDOM reports every height as 0, so the unit test written for
       // this passed with the fix removed.
-      await scrollTo(400);
+      await scrollTo(depth.target);
       await page.setViewportSize({ width: 1280, height: 900 });
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       await page.setViewportSize({ width: 390, height: 844 });
@@ -1034,6 +1079,154 @@ async function run() {
         !crossing.saw
           ? "the head never reported itself collapsed — the check measured nothing"
           : `${crossing.shift}px on the frame it collapsed, ${crossing.frames} frames in`,
+      );
+
+      // The band the reserve leaves. While the bar is drawn the document still holds the
+      // open head's height, so anywhere above `grid top − bar` the strip between the bar's
+      // bottom edge and the grid is empty — and the head used to stay collapsed down to
+      // y=40, which put up to a bar's worth of nothing under it on the way back up before
+      // it snapped open. The thresholds are measured from those two figures now, so the
+      // settled band is zero at every offset.
+      let worstBand = { y: null, band: -1, shy: null };
+      for (let y = 600; y >= 0; y -= 25) {
+        await scrollTo(y);
+        const band = await page.evaluate(() => {
+          const head = document.querySelector("[data-set-head]");
+          const spacer = document.querySelector("[data-set-head-reserve]");
+          if (head === null || spacer === null) return null;
+          return {
+            band: Math.round(Math.max(
+              0,
+              spacer.getBoundingClientRect().bottom - head.getBoundingClientRect().bottom,
+            )),
+            shy: head.hasAttribute("data-set-head-collapsed"),
+          };
+        });
+        if (band !== null && band.band > worstBand.band) worstBand = { y, ...band };
+      }
+      failures += !report(
+        "no empty band under the collapsed bar anywhere on the way back up",
+        worstBand.band >= 0 && worstBand.band <= 1,
+        worstBand.band < 0
+          ? "the head or the spacer was not on the page — the check measured nothing"
+          : `worst ${worstBand.band}px at y=${worstBand.y}, shy=${worstBand.shy}`,
+      );
+
+      // The step between the two heights is animated, in both directions. A swap of two
+      // `display` states is instant by construction, which is what read as the head
+      // snapping; the heights below are sampled every frame across the change, so a head
+      // that jumps reports two of them and one that moves reports a run.
+      const heightsAcross = async (from, to) => {
+        await scrollTo(from);
+        return page.evaluate((target) => new Promise((resolve) => {
+          const head = document.querySelector("[data-set-head]");
+          if (head === null) return resolve(null);
+          const seen = [];
+          window.scrollTo(0, target);
+          const t0 = performance.now();
+          const tick = () => {
+            const h = Math.round(head.getBoundingClientRect().height);
+            if (seen[seen.length - 1] !== h) seen.push(h);
+            if (performance.now() - t0 > 500) return resolve(seen);
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }), to);
+      };
+      const collapsing = await heightsAcross(0, 900);
+      const restoring = await heightsAcross(900, 0);
+      failures += !report(
+        "the head animates between its two heights rather than snapping",
+        Array.isArray(collapsing) && collapsing.length >= 4
+          && Array.isArray(restoring) && restoring.length >= 4,
+        collapsing === null || restoring === null
+          ? "the head was not on the page — the check measured nothing"
+          : `${collapsing.length} heights collapsing (${collapsing[0]}→`
+            + `${collapsing[collapsing.length - 1]}px), ${restoring.length} restoring`
+            + ` (${restoring[0]}→${restoring[restoring.length - 1]}px)`,
+      );
+
+      // The crossing must not move the reader. Scroll anchoring ignores sticky boxes, so
+      // without the head's container opting out it sees the reserve grow by the head's own
+      // shrink, compensates for a change that never happened, and an 80px step lands 293px
+      // down — most of a phone screen, at the exact moment the reader is reading. Stepped
+      // like a wheel rather than jumped, because that is the gesture it ruined.
+      await scrollTo(0);
+      const steps = await page.evaluate(() => new Promise((resolve) => {
+        const head = document.querySelector("[data-set-head]");
+        if (head === null) return resolve(null);
+        const seen = [];
+        let last = 0;
+        let n = 0;
+        const step = () => {
+          window.scrollBy(0, 80);
+          setTimeout(() => {
+            const y = Math.round(window.scrollY);
+            seen.push({ moved: y - last, shy: head.hasAttribute("data-set-head-collapsed") });
+            last = y;
+            if (++n >= 10) return resolve(seen);
+            step();
+          }, 180);
+        };
+        step();
+      }));
+      const collapsingStep = steps === null
+        ? null
+        : steps.find((row, i) => i > 0 && row.shy && !steps[i - 1].shy);
+      failures += !report(
+        "an 80px step across the collapse moves the reader 80px",
+        steps !== null && collapsingStep !== undefined && collapsingStep !== null
+          && Math.abs(collapsingStep.moved - 80) <= 8,
+        steps === null
+          ? "the head was not on the page — the check measured nothing"
+          : collapsingStep === undefined || collapsingStep === null
+            ? "no step crossed the threshold — the check measured nothing"
+            : `${collapsingStep.moved}px on the step that collapsed it`,
+      );
+
+      // A REVERSAL mid-step. The reader collapses the head and changes their mind inside the
+      // 180ms, which cancels a run and starts its opposite — and the second run has to begin
+      // from the two heights on screen rather than from the steady-state pair the cancel
+      // leaves behind, or `head + spacer` is discontinuous on its first frame and the
+      // document jumps by the difference.
+      await scrollTo(0);
+      const reversal = await page.evaluate(() => new Promise((resolve) => {
+        const grid = document.querySelector("[data-set-grid]");
+        const head = document.querySelector("[data-set-head]");
+        if (grid === null || head === null) return resolve(null);
+        const docTop = () => Math.round(grid.getBoundingClientRect().top + window.scrollY);
+        const before = docTop();
+        let worst = 0;
+        const watch = () => {
+          worst = Math.max(worst, Math.abs(docTop() - before));
+        };
+        window.scrollTo(0, 900);
+        // Inside the step, not after it: 60ms of a 180ms transition.
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          let frames = 0;
+          const tick = () => {
+            watch();
+            if (++frames > 40) {
+              return resolve({ shift: worst, shy: head.hasAttribute("data-set-head-collapsed") });
+            }
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }, 60);
+      }));
+      // A pixel, not a bound with a story. It was 6px while the animation pinned its inline
+      // height to the START — `fill: "none"` then dropped each box back there for the frame
+      // between the step finishing and the handler clearing it — and the fix for that is
+      // what brought this to 1. Without the in-flight pair being carried at all it reads
+      // clean here and snaps the head through its whole 213px instead, which is why this
+      // check is paired with the animation one above rather than standing alone.
+      failures += !report(
+        "reversing mid-step does not move the grid in the document",
+        reversal !== null && reversal.shift <= 2,
+        reversal === null
+          ? "the head or the grid was not on the page — the check measured nothing"
+          : `${reversal.shift}px at its worst across the reversal, ending shy=${reversal.shy}`,
       );
 
       await scrollTo(20);
