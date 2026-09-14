@@ -159,6 +159,11 @@ commander-image treatment it renders (rank 2), and rank 3's roll-up vocabulary, 
 block Group D adds to both home frames *is* that brief's roll-up altitude. No ticket has been filed
 for any of them.
 
+**A parity pass shipped ahead of it on 2026-09-13**, at Hugh's call — `design/design_handoff_the99_home/`,
+in ✅ Shipped below. It is not that redesign and does not close it: it makes the two widths one page
+again (the rail deleted, the resume block grown and sorted by last touched, Commitments mounted on
+the phone) and adds no block the redesign would have to keep. The redesign may re-cut all of it.
+
 **Two questions the #94 sweep raised are filed together as #412**, and belong to that
 brief rather than to a cycle of their own. `collection/no-results.tsx` and `commanders/filtered-empty.tsx` are the same
 empty state drawn twice with different geometry and voice; folding them changes what a
@@ -340,6 +345,7 @@ The first six shipped against the pre-richness baseline; **#51** then applied br
 
 | # / vertical | Handoff | Shipped |
 |---|---|---|
+| **Home parity** — one page, drawn twice — no ticket filed | `design/design_handoff_the99_home/` (R1) | 2026-09-13 (PRs #594, #602). 🟡 **Yellow**, audited the day it arrived; every finding closed eng-side and none needed a Design round-trip. Desktop and mobile Home had drifted into two pages: the resume block and Commitments were desktop-only, and `Your decks` — a second, worse `/decks` one tap from the real one — carried the phone. The rail is deleted at both widths; the resume block takes the whole job at four rows, sorted by last touched, ending with the count that heading used to print; Commitments is mounted on the phone, last. **Shipped ahead of the home redesign brief, at Hugh's call** — that redesign is still unbriefed in 🕰️ below, waiting on the commander-image treatment and rank 3's roll-up vocabulary, and may re-cut this. #594 built the data the stamp needed: `decks.last_edited_at` did not exist in any form, so the column, its write path and `pnpm probe:touched` are that PR. Six figures in the handoff are corrected as errata E1–E6 in its README, the last being the stamp's placement — "under the count on desktop" cannot coexist with the handoff's own stated 72px band and its no-second-line rule, and the meta line cannot hold it either, which is a measurement: with `committed 10mo ago` the pill, the count and the stamp need 243px of the 240 that line has at 390px. `docs/superpowers/design-tables/ui-refresh-home.md` is re-enumerated in place — §ResumeRows rewritten, §DeckRail retired, §HomeBody's threshold corrected, and three of its §Ambiguities closed, including *"Mobile Home drops four whole regions"*, which is the question this round answers |
 | **#5** App shell — nav, auth chrome, empty/first-run states | `design/design_handoff_the99_appshell/` | 2026-07-19 (PR #15) |
 | **#6** Collection — CSV upload flow + collection view | `design/design_handoff_the99_collection/` | 2026-07-19 (PR #18) |
 | **#7** Commander recommendations — ranked, explainable list | `design/design_handoff_the99_commanders/` | 2026-07-19 (PR #21). **Amended 2026-09-11, ratified 2026-09-12:** the desktop commander card frame carries the same `⛶ Card details` control the phone's art header does, bottom-left inside the frame with the frame as its tap target (PR #517). §4 specifies that affordance for the phone alone, *"on desktop the full card is always shown in the left column"* — true of the full-card lightbox it opened when that was written, untrue of the card modal it opens now, which holds printings, rulings and a two-faced commander's flip. Built as the reported defect (*"card details doesn't work on desktop"* and *"two sided commanders are not flippable"* — one cause); errata in that handoff's README and in `design-tables/commanders.md` |
