@@ -299,7 +299,7 @@ inside the sheet, which overrides both the Component notes' "two lists" and stat
 | line-height | `1.55` | `1.55` |
 | color | `#8E8269` (`--fg-faint`) | `#8E8269` (`--fg-faint`) |
 | lead phrase | `No action required` in `#C6B79A` (`--fg-body`), `font-weight: 400` inside a `<b>` | same |
-| text as drawn | `No action required: committing releases them.` (shortened) | `No action required: committing is what releases them. Take them out of the box whenever you next open it.` (Discrepancy 12) |
+| text as drawn | `No action required — committing releases them.` (shortened, and the dash is the canvas's; see Discrepancy 12) | `No action required: committing is what releases them. Take them out of the box whenever you next open it.` (Discrepancy 12) |
 
 ### Apply bar
 

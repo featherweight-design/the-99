@@ -74,12 +74,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   It exists because the 2026-09-13 em-dash sweep spent FOUR consecutive review rounds on this,
   each round naming a different partial list. Every fix was right and every round found more,
-  because a list assembled by reading has a tail. On its first clean run it found nine stale
-  quotations across six tables that three hand-built inventories had all missed, because each
-  of those was scoped to one PR's diff while the drift came from another PR entirely. Four of
-  those nine were invisible to the check's own first version, which is the more useful lesson:
-  it reported "no design table quotes a form the code stopped emitting" over rows that plainly
-  did. **Run a guard's failure path before believing its green.**
+  because a list assembled by reading has a tail. It found **13 stale quotations across seven
+  tables** that three hand-built inventories had all missed, because each of those was scoped
+  to one PR's diff while the drift came from another PR entirely.
+
+  Eleven of the 13 were invisible to the check's OWN first version, which is the more useful
+  lesson: it printed "no design table quotes a form the code stopped emitting" over rows that
+  plainly did, and review found that, not the check. **Run a guard's failure path before
+  believing its green.** `scripts/lib/copy-drift.test.mts` now pins one case per failure path,
+  each written as the shape that defeated the parser; every one of them was confirmed to fail
+  against the version it was written for.
 
   **Nothing is synthesised.** The first version put a dash back where the punctuation now is
   and searched for that; it reported 46 findings, every one false, having rewritten
