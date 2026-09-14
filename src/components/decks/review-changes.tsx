@@ -116,46 +116,16 @@ function restorable(row: DraftRow): boolean {
 
 type TypeGroup = readonly [string, DraftRow[]];
 
-/** How many rows a type group can hold and still share a line with the group
- *  under it. The design pairs two short groups into a nested row of two
- *  sub-columns and never says where short ends, so the figure is ours: at four
- *  rows a pair is already as tall as the heading it saves, which is the whole
- *  reason to pair them. */
-const PAIRABLE_ROWS = 3;
-
 /**
- * The column's groups, with short neighbours folded into one drawn line.
- *
- * Consecutive only, and never a third into an existing pair: the point is a
- * shorter column, not a grid — a group that finds no short neighbour beside it
- * simply takes the full width, which is what every long group does.
- */
-function pairGroups(rows: DraftRow[]): TypeGroup[][] {
-  const lines: TypeGroup[][] = [];
-  for (const group of groupByCardType(rows) as TypeGroup[]) {
-    const open = lines[lines.length - 1];
-    const short = group[1].length <= PAIRABLE_ROWS;
-    if (open && open.length === 1 && short && open[0][1].length <= PAIRABLE_ROWS) {
-      open.push(group);
-    } else {
-      lines.push([group]);
-    }
-  }
-  return lines;
-}
-
-/**
- * A column's rows in the order it draws them — across group boundaries, and left
- * to right through a paired line's two sub-columns.
+ * A column's rows in the order it draws them, across group boundaries.
  *
  * `decklist.tsx` flattens its groups the same way and for the same reason: the
  * modal's Prev/Next walks the list the eye does, and the payload's own order is
  * not that list once the rows are grouped by type.
  */
 function orderedIds(rows: DraftRow[]): string[] {
-  return pairGroups(rows).flatMap((line) =>
-    line.flatMap(([, groupRows]) => groupRows.map((r) => r.oracleId)),
-  );
+  return (groupByCardType(rows) as TypeGroup[])
+    .flatMap(([, groupRows]) => groupRows.map((r) => r.oracleId));
 }
 
 function Column({
@@ -380,21 +350,13 @@ function Column({
           {note}
         </span>
       </div>
-      {pairGroups(rows).map((line) =>
-        line.length === 1 ? (
-          renderGroup(line[0])
-        ) : (
-          // Two short groups on one line, at the layout's own gap. Stacked on
-          // the phone, where a sub-column is 190px and every card name wraps.
-          <div key={line[0][0]} className="flex flex-col md:flex-row gap-[22px]">
-            {line.map((group) => (
-              <div key={group[0]} className="flex-1 min-w-0">
-                {renderGroup(group)}
-              </div>
-            ))}
-          </div>
-        ),
-      )}
+      {/* One group per line, at the column's full width. Two short groups used
+          to share a line as sub-columns of about 276px, which saved a heading's
+          height and cost every row on those lines the width its own contents
+          need: a name, a cost track and a `Put back` do not fit across 276px, so
+          the control wrapped under the name and the two halves of the column
+          disagreed about what a row looks like. Hugh's ruling of 2026-09-14. */}
+      {(groupByCardType(rows) as TypeGroup[]).map(renderGroup)}
     </section>
   );
 }

@@ -61,14 +61,18 @@ const ROW_BOX_STACKED = "min-h-[44px] p-[8px] md:pl-[9px] md:pr-[6px]";
  *  the holding deck, the price and the control on the second.
  *
  *  It was one line above 768px, with `md:contents` dissolving both groupings into
- *  the flat flex row every other row is, and that row does not fit. A column
- *  pairs two short type groups into sub-columns of about 276px (`pairGroups`), and
- *  even an unpaired column at 1300px leaves about 574px against a line asking for
- *  a dot, a card name, a deck name, a price tag, a 44px control and the cost
- *  track. Whichever item was the flexible one went to zero: first the card name,
- *  which is the reported bug, then the deck name once the row split in two.
- *  Two lines is what the phone already draws and what the row can honour, and
- *  both of those lines wrap for the same reason. */
+ *  the flat flex row every other row is, and that row does not fit. A type group
+ *  takes its direction column's full width — about 574px at 1300px, and under
+ *  400px at the narrowest desktop — against a line asking for a dot, a card
+ *  name, a deck name, a price tag, a 44px control and the cost track. Whichever
+ *  item was the flexible one went to zero: first the card name, which is the
+ *  reported bug, then the deck name once the row split in two. Two lines is what
+ *  the phone already draws and what the row can honour, and both of those lines
+ *  wrap for the same reason.
+ *
+ *  Short groups used to share a line as ~276px sub-columns, which made the same
+ *  row narrower again; that pairing is retired (2026-09-14) and this shell does
+ *  not depend on it either way. */
 const ROW_SHELL_STACKED = `flex flex-col items-stretch gap-[8px] ${ROW_RADIUS}`;
 const STACK_LINE = "flex items-center gap-[9px]";
 
