@@ -347,10 +347,9 @@ export type DeckReviewHeader = {
    *  because no version can freeze them. */
   built: number;
   unresolvedCount: number;
-  /** Games logged against this deck. The version-history route needs it for the
-   *  Games cell of the tab row it shares with the builder; the review page draws
-   *  no such row and ignores it. A count rather than the rows, because neither
-   *  route reads a game. */
+  /** Games logged against this deck, for the Games cell of the builder's tab
+   *  row. The review page draws no such row and ignores it. A count rather than
+   *  the rows, because neither surface reads a game. */
   gameCount: number;
 };
 

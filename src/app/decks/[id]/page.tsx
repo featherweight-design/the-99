@@ -255,9 +255,10 @@ export default async function DeckBuilderPage({
       // the dismissal is component state rather than storage: an update happens
       // many times, and persisting it would silence every one after the first.
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
-      // How the version-history route's Consider and Games cells land on the tab
-      // they name. Read on arrival only — the builder never writes it back, so
-      // switching tabs still costs no history entry.
+      // How a URL names the tab it opens on. Read on arrival only — the builder
+      // never writes it back, so switching tabs still costs no history entry.
+      // Nothing in the app produces such a URL now that `/decks/[id]/versions`
+      // is retired; see the note in `lib/decks/builder-view.ts`.
       initialView={readBuilderView(query[TAB_PARAM])}
     />
   );

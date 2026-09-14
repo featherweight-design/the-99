@@ -39,11 +39,6 @@ export const addPanelCopy = {
     deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
     considerAria: (n: number) =>
       `Cards to consider, ${plural(n, "suggestion", "suggestions")}`,
-    // The version-history route draws the same row of cells but cannot count the
-    // suggestions: that figure is the whole recommendation computation, which the
-    // builder pays for and this route has no other use for. The cell is a link to
-    // the builder with no number beside it, so its name carries none either.
-    considerAriaBare: "Cards to consider",
     // No `panelAria`: each tabpanel is named by its tab through
     // aria-labelledby, which wins over aria-label, so a panel-side name would
     // never reach a screen reader.

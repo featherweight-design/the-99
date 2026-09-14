@@ -18,8 +18,14 @@ link rule (lines 19–20).
 Hugh: *"Deck details > Versions: This is the only tab in the Deck details view that routes to a
 new page and removes the commander details. We need to fix this."* The rail now draws inside the
 deck page's own `Versions` tab panel, so the deck's head — art, commander line, progress, the
-pending banner — stays on screen while history is read. `/decks/[id]/versions` survives only as a
-redirect to `/decks/[id]?tab=versions`, because links to it shipped.
+pending banner — stays on screen while history is read.
+
+**Superseded 2026-09-13.** This ruling left `/decks/[id]/versions` alive as a redirect to
+`/decks/[id]?tab=versions`, because links to it shipped. Hugh retired the route later the same
+day, accepting that those links now reach the not-found page. The route does not exist, and
+nothing in the app produces a `?tab=` URL: the tab row is a row of buttons and the parameter
+answers a URL written by hand. The handoff README records the redirect as of its own date and is
+left as that record.
 
 This supersedes every row below that specifies a route, a link or a heading level for the tab and
 the rail, namely:
