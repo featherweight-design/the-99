@@ -51,8 +51,10 @@ export default async function DeckBuilderPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  // See the note in `versions/page.tsx`: a malformed segment reaching a uuid
-  // column is a 500 where the route means not-found.
+  // A malformed segment reaching a uuid column is a 500 where the route means
+  // not-found, so every deck route answers it here rather than passing it on.
+  // This is the note the other deck routes point at; it lived in the retired
+  // `versions/page.tsx` until that route was deleted.
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();
 
@@ -253,9 +255,10 @@ export default async function DeckBuilderPage({
       // the dismissal is component state rather than storage: an update happens
       // many times, and persisting it would silence every one after the first.
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
-      // How the version-history route's Consider and Games cells land on the tab
-      // they name. Read on arrival only — the builder never writes it back, so
-      // switching tabs still costs no history entry.
+      // How a URL names the tab it opens on. Read on arrival only — the builder
+      // never writes it back, so switching tabs still costs no history entry.
+      // Nothing in the app produces such a URL now that `/decks/[id]/versions`
+      // is retired; see the note in `lib/decks/builder-view.ts`.
       initialView={readBuilderView(query[TAB_PARAM])}
     />
   );

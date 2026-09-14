@@ -18,13 +18,14 @@
  * what it says about one of them. (The order is by `createdAt` and does not move
  * — see `listRecentDecks`.)
  *
- * The rail is here rather than in `claimSurfaces` because everything on it moves
- * on writes that carry no claim: it draws the deck's name in its one way back, a
- * row per version, and each version's games-held tally. A commit adds a row, a
- * rename changes the header, and logging a game moves a tally.
+ * The version rail used to be listed here as its own path. It is a TAB on the
+ * deck page now and `/decks/[id]/versions` is retired, so revalidating the deck
+ * page revalidates the rail with it — everything the rail draws (the deck's
+ * name, a row per version, each version's games-held tally) is on that page.
+ * Naming the retired path as well would invalidate a cache entry no route fills.
  */
 export function deckSurfaces(deckId: string): string[] {
-  return [`/decks/${deckId}`, `/decks/${deckId}/versions`, "/decks", "/"];
+  return [`/decks/${deckId}`, "/decks", "/"];
 }
 
 /**
