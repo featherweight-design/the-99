@@ -147,8 +147,48 @@ describe("FilterPanel", () => {
     const trigger = screen.getByRole("button", { name: /Filter by set/ });
     const focus = vi.spyOn(trigger, "focus");
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    // `detail: 1` is a real press. `fireEvent.click` defaults it to 0, which is what a
+    // native button reports for Enter and Space — so the default is the KEYBOARD case, and
+    // a test that omits it is testing the other branch.
+    fireEvent.click(screen.getByRole("button", { name: "Done" }), { detail: 1 });
     expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  // A native button fires `onClick` for Enter and Space too, so `Done` pressed from the
+  // keyboard arrives looking exactly like a click. `detail` is the only thing that separates
+  // them: 0 for the synthetic click, 1 or more for a press.
+  it("returns focus the visible way when Done is pressed from the keyboard", () => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }), { detail: 0 });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: false });
+  });
+
+  // Single-select dismisses on the row itself, which is the third way out of the sheet and
+  // the one neither test above reaches.
+  it("keeps the reader's place when a tap commits a single-select", () => {
+    setViewport(false);
+    renderPanel({ selectionMode: "single", options: OPTIONS.slice(0, 2) });
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getAllByRole("option")[0], { detail: 1 });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("returns focus the visible way when the keyboard commits a single-select", () => {
+    setViewport(false);
+    renderPanel({ selectionMode: "single", options: OPTIONS.slice(0, 2) });
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    fireEvent.keyDown(dialog, { key: "Enter" });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: false });
   });
 
   it("returns focus the visible way when Escape dismisses it", () => {
