@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { getVersionDiff } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { printsPair } from "../../lib/decks/draft-shape";
 import { cardTypeGroup, groupByCardType } from "../../lib/decks/grouping";
 import { formatDeckDate } from "../../lib/decks/format";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
@@ -40,10 +41,12 @@ function grouped(cards: VersionDiffCard[]): GroupedCard[] {
 /**
  * One card in the diff. A quantity move prints the pair inside the name, via the
  * import's own `recountedItem` — the same string the update review uses for the
- * same fact, so the two surfaces cannot describe a recount differently.
+ * same fact, so the two surfaces cannot describe a recount differently. Which
+ * moves count as one is `printsPair`, shared with the review page and the
+ * pending banner for the same reason.
  */
 function DiffCardRow({ card }: { card: VersionDiffCard }) {
-  const moved = card.from > 0 && card.to > 0;
+  const moved = printsPair(card);
   const name = moved
     ? deckImportCopy.update.diff.recountedItem(card.name, String(card.from), String(card.to))
     : card.name;

@@ -141,16 +141,6 @@ export const deckVersioningCopy = {
       "freezes the list exactly as it stands and starts claiming its cards against your " +
       "other decks.",
 
-    // The third case the two lines at the top cannot describe: a draft that
-    // moved only basic lands. It has a version to cut and no nameable row, so
-    // `heading` reads "0 changes since v1" over an open commit sheet — a zero
-    // standing for a real edit. Same reasoning as `firstHeading` above, and the
-    // page is reachable in this state only as the banner's `?commit=1`.
-    basicsHeading: (version: number) => `Mana base only, since v${version}`,
-    basicsLede: (version: number) =>
-      "This draft moved basic lands and nothing else, so no card is coming in or going out and " +
-      `there is nothing to buy. Committing freezes the new mana base as v${version}.`,
-
     chipIn: "in",
     chipOut: "out",
     chipBuy: "to buy",
@@ -353,43 +343,31 @@ export const deckVersioningCopy = {
     // The number is in the question AND on the button: two changes and thirty-six
     // are different acts behind one word.
     //
-    // At zero it is the draft that is named instead. A basics-only draft has
-    // changes — `basicsChanged` is what keeps the banner up — and names no card,
-    // so `changeCount` is 0 and "Discard 0 changes?" would ask about nothing on
-    // a surface that is only there because something moved.
-    question: (n: number) => (n === 0 ? "Discard this draft?" : `Discard ${plural(n, "change")}?`),
+    // No zero branch on any of the four below. There used to be one, for the
+    // draft that moved only basic lands and so named no card; those lands are
+    // rows now, and `hasChanges` is `changeCount > 0`, so a sheet that is up has
+    // at least one change to count.
+    question: (n: number) => `Discard ${plural(n, "change")}?`,
     consequence: (version: number, date: string, cards: number, adds: number, removes: number) => {
       const back = `The deck goes back to v${version} as committed on ${date}: ` +
         `${plural(cards, "card")}. `;
-      // A draft can be adds-only, cuts-only, or basics-only, and "the 0 you cut" is
-      // a figure nobody moved. Only the halves that exist are named, and the verb
-      // follows what is left: two clauses are always plural, one is plural unless
-      // it counts a single card.
+      // A draft can be adds-only or cuts-only, and "the 0 you cut" is a figure
+      // nobody moved. Only the halves that exist are named, and the verb follows
+      // what is left: two clauses are always plural, one is plural unless it
+      // counts a single card.
       const lost = [
         adds > 0 ? `the ${adds} you added` : null,
         removes > 0 ? `the ${removes} you cut` : null,
       ].filter(Boolean).join(" and ");
-      // No named card means a basics-only draft, and nothing else: the sheet is
-      // only up while something differs, and a difference that names no card is
-      // a basic-land edit. So the sentence names THAT rather than claiming the
-      // draft holds nothing — the land count is the work being thrown away, and
-      // it needs no argument of its own to be known.
-      if (!lost) {
-        return `${back}The basic lands you changed are not stored anywhere, so this `
-          + "cannot be undone.";
-      }
       const single = adds > 0 && removes > 0 ? null : adds || removes;
       return `${back}${lost.charAt(0).toUpperCase()}${lost.slice(1)} ` +
         `${single === 1 ? "is" : "are"} not stored anywhere, so this cannot be undone.`;
     },
-    // Same zero branch as the question, and for the same reason.
-    confirm: (n: number) => (n === 0 ? "Discard the draft" : `Discard ${plural(n, "change")}`),
+    confirm: (n: number) => `Discard ${plural(n, "change")}`,
     cancel: "Keep editing",
     pending: "Discarding…",
     announced: (n: number, version: number) =>
-      n === 0
-        ? `Draft discarded. Back to v${version}.`
-        : `${plural(n, "change")} discarded. Back to v${version}.`,
+      `${plural(n, "change")} discarded. Back to v${version}.`,
     refused: "We couldn't discard those changes. Nothing has changed.",
     // The same distinction the commit sheet draws, and it matters more here: the
     // restore may have committed before the reply was lost, so "nothing has

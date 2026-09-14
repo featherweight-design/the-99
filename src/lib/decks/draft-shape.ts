@@ -27,29 +27,18 @@ export type DraftState = {
   /** Null for a brew. Every pending surface is absent on a brew: there is no
    *  version for the draft to be pending against. */
   version: DeckVersion | null;
-  /** Cards the draft added, bucketed, basics excluded. */
+  /** Cards the draft added, bucketed. Basics are in the list — a basic buckets
+   *  `free` and costs nothing, which is not the same as being invisible. Five
+   *  Swamps cut and five other lands added is the edit this page exists to
+   *  describe. */
   adds: DraftAdd[];
   /** The same adds as raw diff entries, index-aligned with `adds`. `DraftAdd`
    *  carries `needed` and `shortfall` but not the `from`/`to` pair, and both the
    *  banner and the review row print that pair for a quantity move. */
   addChanges: DraftChange[];
-  /** Cards the draft cut, basics excluded, each carrying `from` and `to`. */
+  /** Cards the draft cut, each carrying `from` and `to`. Basics included, for
+   *  the reason they are included in `adds`. */
   removes: DraftChange[];
-  /** True when the draft differs from the version ONLY in basic lands. Basics are
-   *  outside the availability model, so they are excluded from every list and
-   *  every figure — but a deck whose land count moved has genuinely changed and
-   *  must still be committable. Without this flag `changeCount` is 0, the banner
-   *  takes its clean branch, and a real edit has no route to a commit. */
-  basicsChanged: boolean;
-  /** Whether ANY basic land moved, alone or alongside other cards.
-   *
-   *  `basicsChanged` above answers a narrower question — it is set only when
-   *  NOTHING else moved — so on a mixed draft it reads false and cannot be used
-   *  to ask "does this draft survive without its non-basic changes?". The review
-   *  page asks exactly that when its last drawn row is put back: a draft that
-   *  also moved a basic is still a draft, and one that did not has dissolved
-   *  and the route redirects. */
-  basicsMoved: boolean;
   /** Oracle name per changed card, both lists — what the banner's inline
    *  density says at six changes or fewer. */
   names: Map<string, string>;
@@ -124,9 +113,10 @@ export type DraftState = {
   newestAsOf: Date | null;
 };
 
-/** `adds.length + removes.length` — the figure every count chip is built on.
- *  Basics are not in either list, so this is a count of *nameable* changes and
- *  not a test of whether the draft differs. Use `hasChanges` for that. */
+/** `adds.length + removes.length` — the figure every count chip is built on, and
+ *  the whole test of whether the draft differs. Every card the draft moved is in
+ *  one of those two lists, basics included, so there is no second question to
+ *  ask; `hasChanges` is this figure against zero. */
 export function changeCount(state: DraftState): number {
   return state.adds.length + state.removes.length;
 }
@@ -144,12 +134,12 @@ export function releasedCopies(state: DraftState): number {
   return state.removes.reduce((sum, r) => sum + (r.from - r.to), 0);
 }
 
-/** Whether the draft differs from the version at all. A basics-only edit counts
- *  here and in no figure, which is the only honest split: the app cannot price
- *  an Island, and it must not tell a player who cut three of them that the deck
- *  is unchanged. */
+/** Whether the draft differs from the version at all. The app cannot price an
+ *  Island, and it must not tell a player who cut three of them that the deck is
+ *  unchanged — so the Islands are rows like any other, and this is one figure
+ *  against zero rather than a count beside a flag. */
 export function hasChanges(state: DraftState): boolean {
-  return changeCount(state) > 0 || state.basicsChanged;
+  return changeCount(state) > 0;
 }
 
 /**
@@ -206,4 +196,24 @@ export function heldElsewhere(
   shortfall: number,
 ): boolean {
   return shortfall > 0 && (a?.claims ?? []).some((c) => c.mature);
+}
+
+/**
+ * Whether a row's `from → to` pair says anything its column heading did not.
+ *
+ * `0 → 1` and `1 → 0` are exactly what `Coming in` and `Going out` state above
+ * the rows, so printing the pair there restates the heading beside every name.
+ * Every other shape carries copies nothing else on the page holds.
+ *
+ * Here rather than in each of the three surfaces that draws a diff — the review
+ * page, the pending banner and the version rail — because they were three copies
+ * of `from > 0 && to > 0`, which was the same rule only for as long as no row
+ * could move more than one copy: a card is sleeved singly, so a whole cut was
+ * always `1 → 0`. Basic lands are drawn now, and a deck that cut all five of its
+ * Swamps printed a bare `Swamp` on all three — five cards coming out of the
+ * sleeve, stated as though they were one, which is the defect this round exists
+ * to fix. One predicate is what stops the three from drifting apart again.
+ */
+export function printsPair(change: { from: number; to: number }): boolean {
+  return change.from > 1 || change.to > 1;
 }

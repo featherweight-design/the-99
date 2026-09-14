@@ -166,12 +166,22 @@ try {
   check("a committed deck reads its own version", clean.version?.number, 1);
   check("an untouched draft is clean", changeCount(clean), 0);
 
-  // 3. A BASICS-ONLY EDIT. Real, committable, and priceable by nothing: both
-  //    lists stay empty and `basicsChanged` is the one signal.
+  // 3. A BASICS-ONLY EDIT. Real, committable, and priceable by nothing — and a
+  //    NAMED ROW all the same. Twelve Islands going into a deck is the edit the
+  //    review page exists to describe, and a player who cannot read the count
+  //    cannot know how many to take out of the box. What a basic is kept out of
+  //    is the money: it is never asked about, it buckets free, and nothing
+  //    quotes a price for it.
   await put(deck.id, card.basic, 12);
   const basicsOnly = await loadDraftState(deck.id, USER);
-  check("a basics-only edit names no card", changeCount(basicsOnly), 0);
-  check("…and still counts as a change", basicsOnly.basicsChanged, true);
+  check("a basics-only edit is a change", changeCount(basicsOnly), 1);
+  check("…and names the card", basicsOnly.names.get(card.basic) !== undefined, true);
+  check("…with the pair it moved between",
+    `${basicsOnly.addChanges[0]?.from}→${basicsOnly.addChanges[0]?.to}`, "0→12");
+  check("…bucketed free", basicsOnly.adds[0]?.bucket, "free");
+  check("…and costing nothing", basicsOnly.unfreeCount, 0);
+  check("…so no price is quoted", basicsOnly.total, null);
+  check("…and nothing is pullable", basicsOnly.pullableCount, 0);
 
   // 4. A REAL EDIT: two adds in, one card out.
   await put(deck.id, card.priced, 1);
@@ -180,19 +190,24 @@ try {
     delete from deck_cards where deck_id = ${deck.id} and oracle_id = ${card.cut}
   `);
   const state = await loadDraftState(deck.id, USER);
-  check("the adds are named", state.adds.length, 2);
+  //    Three adds: the two cards, and the twelve Islands still sitting in the
+  //    draft from step 3. A basic alongside other changes is a row like the rest.
+  check("the adds are named", state.adds.length, 3);
   check("the cut is named", state.removes.length, 1);
-  check("basics are in neither list", state.basicsChanged, false);
+  check("the basic is among the adds", state.adds.some((a) => a.oracleId === card.basic), true);
 
   //    `names` is a CHANGED-CARD map. The facts behind it are read over the whole
   //    draft because the mana average needs every row, and a consumer enumerating
-  //    this map must not draw the kept card or the twelve basics.
-  check("names covers the changed cards and nothing else", state.names.size, 3);
+  //    this map must not draw the kept card, which did not move.
+  check("names covers the changed cards and nothing else", state.names.size, 4);
 
   // 5. THE PURCHASE. Neither add is owned, so both are unfree; one has a live
   //    price and one has never been stocked. A figure over partial coverage
   //    reads as a complete one, so the coverage travels with it.
-  check("both adds cost something", state.unfreeCount, 2);
+  //    The basic is the third add and is not among them: it was never asked
+  //    about, so a mixed draft's money figures are the same as they were before
+  //    the Islands were staged.
+  check("both unowned adds cost something, and the basic does not", state.unfreeCount, 2);
   check("the total covers the one priced copy", state.pricedCopies, 1);
   check("…and is stated", state.total !== null, true);
   check("…against the feed's newest run", state.newestAsOf !== null, true);
@@ -200,7 +215,7 @@ try {
   // 6. THE ROWS. Driven by the state's own two lists so the drawn rows cannot
   //    drift out of step with the counts, and `quantity` is the DELTA.
   const { rows } = await loadDraftRows(deck.id, USER);
-  check("an in row per add", rows.in.length, 2);
+  check("an in row per add", rows.in.length, 3);
   check("an out row per cut", rows.out.length, 1);
   check("the out row is the cut card", rows.out[0]?.oracleId, card.cut);
   check("the out row counts the copies it lost", rows.out[0]?.quantity, 1);
@@ -208,7 +223,23 @@ try {
   //    The collection lookup: the cut copy is going back to a box the player has,
   //    and the two adds are cards they do not own.
   check("the cut card reads as owned", rows.out[0]?.owned, true);
-  check("an add reads as unowned", rows.in.every((r) => !r.owned), true);
+  check(
+    "an add reads as unowned",
+    rows.in.filter((r) => r.oracleId !== card.basic).every((r) => !r.owned),
+    true,
+  );
+  //    Except the basic, which is owned whatever the collection says — that
+  //    column is the one thing keeping a buy tag off twelve Islands.
+  check(
+    "the basic row reads as owned",
+    rows.in.find((r) => r.oracleId === card.basic)?.owned,
+    true,
+  );
+  check(
+    "…and carries no availability to draw a marker from",
+    rows.in.find((r) => r.oracleId === card.basic)?.availability ?? null,
+    null,
+  );
   //    A cut makes no purchase decision, whatever the claim read said.
   check("an out row carries no bucket", rows.out[0]?.bucket, null);
 

@@ -81,13 +81,27 @@ export type BucketedAdd = {
  * A partially covered add is `claimed`, not `free`: one free copy against an
  * ask of five still sends the player shopping, and calling it free would hide
  * a purchase behind a satisfied-looking row.
+ *
+ * `basics` is answered before the map is consulted at all, and that order is the
+ * point. A basic land is never asked about, so it has no entry — and an add with
+ * no entry is `unowned`, which would put ten Forests on a shopping list. The
+ * whole application already treats a basic as unlimited; saying so here makes it
+ * a free add on every surface that reads a bucket, including the one surface
+ * where the claim read FAILED. A failed read states nothing about a Swamp.
  */
 export function bucketAdds(
   adds: DraftChange[],
   availability: Map<string, { free: number; claims: { id: string; name: string }[] }>,
+  basics: ReadonlySet<string> = new Set(),
 ): BucketedAdd[] {
   return adds.map((change) => {
     const needed = change.to - change.from;
+    if (basics.has(change.oracleId)) {
+      return {
+        oracleId: change.oracleId, needed, shortfall: 0,
+        bucket: "free" as const, heldBy: [],
+      };
+    }
     const entry = availability.get(change.oracleId);
     if (!entry) {
       return {

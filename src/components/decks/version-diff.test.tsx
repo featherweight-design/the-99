@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VersionDiff } from "./version-diff";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
 import { COST_TRACK } from "../ui/cost-pips";
@@ -75,6 +76,32 @@ describe("VersionDiff", () => {
     mount();
     expect(await screen.findByText("Sol Ring")).toBeInTheDocument();
     expect(screen.getByText("Mind Stone")).toBeInTheDocument();
+  });
+
+  // Five Swamps leaving read as a bare `Swamp` until basic lands could reach a
+  // diff, because no other row ever lost more than a copy and `1 → 0` is what
+  // the heading above it already says. The rule is `printsPair`, shared with the
+  // review page and the pending banner so the three cannot describe one move
+  // three ways.
+  it("prints the pair when a whole cut takes more than one copy", async () => {
+    getVersionDiff.mockResolvedValueOnce({
+      in: [],
+      out: [card({ oracleId: "swamp", name: "Swamp", typeLine: "Basic Land — Swamp", from: 5, to: 0 })],
+    });
+    mount();
+    expect(
+      await screen.findByText(deckImportCopy.update.diff.recountedItem("Swamp", "5", "0")),
+    ).toBeInTheDocument();
+  });
+
+  // And says nothing extra for the single copy the heading already described.
+  it("names a single cut card without a pair", async () => {
+    getVersionDiff.mockResolvedValueOnce({
+      in: [],
+      out: [card({ oracleId: "out", name: "Mind Stone", from: 1, to: 0 })],
+    });
+    mount();
+    expect(await screen.findByText("Mind Stone")).toBeInTheDocument();
   });
 
   // The diff is a record of what the deck WAS, so it carries none of the deck

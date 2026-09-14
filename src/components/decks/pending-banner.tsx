@@ -10,7 +10,9 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy, INLINE_CHANGE_MAX } from "../../lib/copy/deck-versioning";
 import { priceCopy } from "../../lib/copy/price";
 import type { DraftChange } from "../../lib/decks/draft-diff";
-import { changeCount, hasChanges, type DraftAdd, type DraftState } from "../../lib/decks/draft-shape";
+import {
+  changeCount, hasChanges, printsPair, type DraftAdd, type DraftState,
+} from "../../lib/decks/draft-shape";
 import { formatDeckDate } from "../../lib/decks/format";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
@@ -42,15 +44,16 @@ const reviewHref = (deckId: string) => `/decks/${deckId}/changes`;
 /**
  * What the inline list calls one change.
  *
- * A card the deck did not hold, or has cut entirely, is its name. A card whose
- * count *moved* is `Name 1 → 2` — the shipped `recountedItem`, because "+ Sol
- * Ring" on a deck that already ran one is a sentence that reads as a duplicate
- * rather than a second copy. Nothing new is authored for a fact the import diff
- * already has a string for.
+ * A card arriving or leaving as a single copy is its name. Any other move is
+ * `Name 1 → 2` — the shipped `recountedItem`, because "+ Sol Ring" on a deck
+ * that already ran one is a sentence that reads as a duplicate rather than a
+ * second copy. Nothing new is authored for a fact the import diff already has a
+ * string for, and which moves print a pair is `printsPair`, shared with the
+ * review page and the version rail.
  */
 function changeLabel(state: DraftState, change: DraftChange): string {
   const name = state.names.get(change.oracleId) ?? change.oracleId;
-  const moved = change.from > 0 && change.to > 0;
+  const moved = printsPair(change);
   return moved
     ? deckImportCopy.update.diff.recountedItem(name, String(change.from), String(change.to))
     : name;
@@ -359,16 +362,9 @@ export function PendingBanner({ state, deckId, versionCards, onDiscarded }: Pend
               </Link>
               <div className={CONTROLS_SECOND_ROW}>
                 {discardControl}
-                {/* Absent on a basics-only draft. That draft has changes —
-                    `basicsChanged` is what keeps the banner up — and it has no
-                    named card, so the review page has two empty columns and
-                    redirects anything but `?commit=1` straight back here. The
-                    commit link beside it is the whole offer. */}
-                {n > 0 && (
-                  <Link href={reviewHref(deckId)} className={REVIEW_LINK}>
-                    {copy.reviewLink}
-                  </Link>
-                )}
+                <Link href={reviewHref(deckId)} className={REVIEW_LINK}>
+                  {copy.reviewLink}
+                </Link>
               </div>
             </>
           ) : (

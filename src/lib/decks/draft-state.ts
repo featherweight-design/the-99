@@ -31,7 +31,8 @@ import { cardTypeGroup, primaryRole } from "./read";
 // caller has one import for the whole model.
 export type { DraftAdd, DraftState } from "./draft-shape";
 export {
-  changeCount, hasChanges, heldElsewhere, pullCandidate, releasableClaims, releasedCopies,
+  changeCount, hasChanges, heldElsewhere, printsPair, pullCandidate, releasableClaims,
+  releasedCopies,
 } from "./draft-shape";
 
 /**
@@ -45,12 +46,24 @@ export {
 export function bucketDraftAdds(
   adds: DraftChange[],
   availability: Map<string, Availability> | null,
+  basics: ReadonlySet<string> = new Set(),
 ): DraftAdd[] {
   if (!availability) {
-    return adds.map((c) => ({
-      oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
-      bucket: null, heldBy: [],
-    }));
+    // A basic is free whatever the claim read did, because it was never part of
+    // that read: nothing was asked, so nothing failed. Left as a null bucket it
+    // would drop out of the column's `free · sleeved · buy` breakdown and make
+    // the three terms disagree with the count above them.
+    return adds.map((c) => (
+      basics.has(c.oracleId)
+        ? {
+            oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
+            bucket: "free" as const, heldBy: [],
+          }
+        : {
+            oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
+            bucket: null, heldBy: [],
+          }
+    ));
   }
   return bucketAdds(adds, new Map(
     [...availability].map(([oracleId, a]) => [
@@ -61,7 +74,7 @@ export function bucketDraftAdds(
       // `claimed` only where a pull would actually relieve the shortfall.
       { free: a.free, claims: pullSources(a) },
     ]),
-  ));
+  ), basics);
 }
 
 /**
@@ -92,22 +105,6 @@ export function pullHints(
  *  for the opposite reason: not known to be free, but not known to be anything. */
 export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
   return bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
-}
-
-/**
- * Whether any basic land moved in this diff, alone or alongside other cards.
- *
- * Pulled out of `readDraft` so it can be tested without a database: the mixed
- * case — a basic moved AND a card cut — is the one the flag exists for, and it
- * is also the one `basicsChanged` cannot see, because that flag is set only
- * when nothing else moved. Get this wrong and restoring the last drawn row
- * sends the reader to the deck page while their draft is still there.
- */
-export function anyBasicMoved(
-  diff: { adds: DraftChange[]; removes: DraftChange[] },
-  basics: ReadonlySet<string>,
-): boolean {
-  return [...diff.adds, ...diff.removes].some((c) => basics.has(c.oracleId));
 }
 
 /**
@@ -211,7 +208,7 @@ async function readDraft(
   const { version, before, draft } = await readSnapshot(deckId);
 
   const empty: DraftState = {
-    version, adds: [], addChanges: [], removes: [], basicsChanged: false, basicsMoved: false,
+    version, adds: [], addChanges: [], removes: [],
     names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
     claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
@@ -229,58 +226,46 @@ async function readDraft(
   const changedIds = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
   if (changedIds.length === 0) return bare(empty);
 
-  // The changed cards alone. Basics come out of both lists below for the reason
-  // the commit receipt drops them: they are outside the availability model, so
-  // neither list has a figure to print — which is why this read covers them and
-  // the maps built from it do not.
+  // The changed cards, basics among them. A basic stays in both lists and is
+  // drawn like any other row: cutting five Swamps to make room for five other
+  // lands is exactly the edit this page exists to describe, and the player has
+  // to know how many to take out of the sleeve. What a basic is kept OUT of is
+  // the money — see `bucketAdds`, and the two reads scoped below.
   const facts = await loadNameFacts(changedIds);
   const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
-  const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
-  const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
-  // Whether ANY basic moved, which `basicsChanged` cannot answer: that flag is
-  // set only on a draft where nothing else moved, so a mixed draft reports
-  // false and a reader cannot tell "no basics" from "basics alongside the
-  // rest". The review page needs the difference — restoring its last drawn row
-  // leaves a draft that still exists when a basic moved, and one that does not
-  // when none did, and those two land on different routes.
-  const basicsMoved = anyBasicMoved(diff, basics);
+  const adds = diff.adds;
+  const removes = diff.removes;
 
-  // A basics-only edit: real, committable, and priceable by nothing. Every list
-  // and every figure stays empty, and `basicsChanged` is the one signal that
-  // says the draft differs — see `hasChanges`.
-  if (adds.length === 0 && removes.length === 0) {
-    return bare({ ...empty, basicsChanged: true, basicsMoved: true });
-  }
-
-  const changed = [...adds, ...removes].map((c) => c.oracleId);
-  // Filtered even so: `facts` covers the changed BASICS too, and a consumer
-  // enumerating this map would otherwise draw a basic land the deck's other
-  // figures deliberately say nothing about.
-  const changedSet = new Set(changed);
-  const names = new Map(
-    facts.filter((f) => changedSet.has(f.oracleId)).map((f) => [f.oracleId, f.name]),
-  );
+  const changed = changedIds;
+  const names = new Map(facts.map((f) => [f.oracleId, f.name]));
   // Same scope as `names`, and the cost track is drawn beside a changed name and
   // nowhere else. A card the catalog gives no cost stays out of the map rather
   // than entering it as a null, so its track draws nothing.
   const costs = new Map(
     facts
-      .filter((f) => changedSet.has(f.oracleId) && f.manaCost !== null)
+      .filter((f) => f.manaCost !== null)
       .map((f) => [f.oracleId, f.manaCost as string]),
   );
   // Excluding this deck: the question is what OTHER decks hold, which is the
   // same question the commit asks. Scoped to the adds unless a caller is drawing
   // rows, which need the `out` side too.
-  const asked = detailed ? changed : adds.map((a) => a.oracleId);
+  //
+  // Basics are asked about on NEITHER side. They are outside the claim model —
+  // `loadAvailability`'s own header says so — and an id that reaches it comes
+  // back with no row, which is how an added Forest became an `unowned` add on a
+  // shopping list. They are rows on the page and absences in this read, and the
+  // two are not in tension: what the page draws for one is a name and a count.
+  const notBasic = (id: string) => !basics.has(id);
+  const asked = (detailed ? changed : adds.map((a) => a.oracleId)).filter(notBasic);
   const availability = asked.length > 0
     ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId })
         .catch(() => null)
     : new Map<string, Availability>();
 
   const claimsKnown = availability !== null;
-  const bucketed = bucketDraftAdds(adds, availability);
+  const bucketed = bucketDraftAdds(adds, availability, basics);
   const unfree = unfreeAdds(bucketed);
-  const priceAsked = detailed ? changed : unfree.map((a) => a.oracleId);
+  const priceAsked = (detailed ? changed : unfree.map((a) => a.oracleId)).filter(notBasic);
   const prices = priceAsked.length > 0
     ? await loadPrices(priceAsked).catch(() => null)
     : null;
@@ -337,8 +322,6 @@ async function readDraft(
       // to one and preserve its order — this is the list they were given.
       addChanges: adds,
       removes,
-      basicsChanged: false,
-      basicsMoved,
       names,
       costs,
       prices: priceTags,
@@ -493,7 +476,14 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
       cardTypeGroup: cardTypeGroup(name.typeLine),
       role: primaryRole({ ...detail, typeLine: name.typeLine }),
       cmc: name.cmc,
-      owned: detail.owned,
+      // A basic land is owned, whatever the collection says. The column is the
+      // one thing standing between a basic row and a buy tag —
+      // `AvailabilitySlot` draws that tag on `!owned` — and a player whose CSV
+      // happens to list no Swamp would otherwise be told to go and buy five,
+      // on the one card every Shopping surface in this app already treats as
+      // unlimited. Stated here rather than in the row, so no component has to
+      // learn what a basic is.
+      owned: isBasicLand(name.typeLine) || detail.owned,
       quantity: Math.abs(to - from),
       auto: false,
       availability: read.availability?.get(change.oracleId) ?? null,

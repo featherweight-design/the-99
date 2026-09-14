@@ -68,12 +68,12 @@ describe("deckVersioningCopy", () => {
     expect(copy.discard.question(1)).toBe("Discard 1 change?");
   });
 
-  // A basics-only draft has changes and names no card, so `changeCount` is 0 while
-  // the banner is still up. Counting them out loud would ask about nothing.
-  it("names the draft rather than a count of zero changes", () => {
-    expect(copy.discard.question(0)).toBe("Discard this draft?");
-    expect(copy.discard.confirm(0)).toBe("Discard the draft");
-    expect(copy.discard.announced(0, 2)).toBe("Draft discarded. Back to v2.");
+  // There is no zero branch on any of these. There used to be, for the draft
+  // that moved only basic lands and so named no card; those lands are rows now,
+  // and `hasChanges` is `changeCount > 0`, so a sheet that is up has at least
+  // one change to count.
+  it("counts the changes it is discarding", () => {
+    expect(copy.discard.confirm(1)).toBe("Discard 1 change");
     expect(copy.discard.announced(36, 2)).toBe("36 changes discarded. Back to v2.");
   });
 
@@ -88,11 +88,6 @@ describe("deckVersioningCopy", () => {
     );
     expect(copy.discard.consequence(1, "12 Sep", 99, 1, 0)).toContain(
       "The 1 you added is not stored anywhere",
-    );
-    // A basics-only draft is a real, committable change that names no card — so
-    // the sentence names the land edit rather than saying nothing is at stake.
-    expect(copy.discard.consequence(1, "12 Sep", 99, 0, 0)).toContain(
-      "The basic lands you changed are not stored anywhere",
     );
   });
 

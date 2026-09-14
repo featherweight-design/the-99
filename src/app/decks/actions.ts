@@ -1170,6 +1170,10 @@ export type CommitResult =
        *  strength of a query that threw. Same distinction `PullResult.buy`
        *  draws, and the same one the page's `claimsKnown` draws. */
       buy: BucketedAdd[] | null;
+      /** What goes back in the box, basics included, each carrying its
+       *  `from`/`to` pair. Unlike `buy` this is a physical instruction rather
+       *  than a shopping decision, and five cut Swamps are five cards to take
+       *  out of the sleeve. */
       pull: DraftChange[];
     }
   | { ok: false; message: string };
@@ -1257,15 +1261,16 @@ export async function commitDeckVersion(
     const diff = draftDiff(draft, before);
     // Basics are out of the availability model entirely — see that query's
     // header — so an added Forest comes back with no row and would bucket as
-    // `unowned`, putting ten Forests on a shopping list. Dropped here rather
-    // than special-cased downstream, because every other Shopping surface in
-    // the app already treats basics as unlimited.
+    // `unowned`, putting ten Forests on a shopping list. Dropped from the BUY
+    // list here rather than special-cased downstream, because every other
+    // Shopping surface in the app already treats basics as unlimited.
     //
-    // Both sides of the diff, not just the adds. A basic kept in `removes`
-    // renders as a bare `Island` under "back in the pool" — no count, no
-    // movement, and a claim the deck lost its Islands, on a card the player has
-    // thirty of. Neither list has a truthful figure to print for one.
-    const changed = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
+    // The adds alone. `removes` keeps its basics: the receipt's pull side is a
+    // physical instruction — take these out of the box — and a cut Island is
+    // exactly that. What made a basic wrong there was a bare `Island` asserting
+    // the card had left a deck the player still plays thirty of; the row carries
+    // its `from → to` now, so the figure it prints is the true one.
+    const changed = diff.adds.map((c) => c.oracleId);
     const basics = new Set(
       changed.length === 0 ? [] : (await tx.select({
         oracleId: cards.oracleId, typeLine: cards.typeLine,
@@ -1274,7 +1279,7 @@ export async function commitDeckVersion(
         .map((c) => c.oracleId),
     );
     const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
-    const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
+    const removes = diff.removes;
 
     // A first version buys nothing. `previous` is null, so `before` is empty and
     // `diff.adds` is the whole deck — every card the player already owns and has

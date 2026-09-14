@@ -50,6 +50,21 @@
 //      broken build. The run also fails on any anchor inside a diff row: the
 //      `Open →` link to the holding deck is what put the row under pressure, and the
 //      plate opens the card for any click landing outside a control.
+//   9. A BASIC LAND IS A ROW, AND CARRIES NO MONEY. A deck that cut all five of
+//      its Swamps drew nothing here: the loader dropped every basic out of both
+//      change lists before anything downstream ran. The fixture sleeves two
+//      basics into the version at five copies each and moves both — one to
+//      nothing, one down a single copy — and the run fails when either row is
+//      missing, draws a bare name without its `from → to` pair, wears a buy tag,
+//      or draws an availability marker. The ADD is what makes those last two
+//      mean anything: a buy tag is an `in`-row treatment and an `out` row
+//      excludes its own claim, so a fixture of cuts alone would report both as
+//      absent while measuring nothing. `Put back` is read as a QUANTITY test
+//      rather than a rule about basics: the `5 → 4` row keeps the control and
+//      the `5 → 0` row must not offer it, because a put-back adds one copy while
+//      the model beside it credits the whole row. A direct visit is expected to
+//      be ADMITTED — the page used to refuse one and send the reader back to the
+//      deck, which is what left the edit undescribed.
 //
 // THE FIXTURE IS THIS SCRIPT'S OWN. The probe account is not the account that owns
 // local-dev's decks, and a deck page the signed-in player does not own is a 404 —
@@ -128,6 +143,15 @@ const clippedGroups = [];
  *  jsdom lays nothing out and applies no media query, so a component test can
  *  assert a class list and never the box a name ended up with. */
 const erasedNames = [];
+
+/** Basic-land rows that went missing, lost their count, or picked up a piece of
+ *  the money model. The reported bug is the first of those — a deck that cut all
+ *  five of its Swamps drew no row at all — and the other three are the ways a
+ *  fix for it could go too far: a bare name asserting the card left the deck, a
+ *  buy tag on a card every Shopping surface in the app treats as unlimited, or a
+ *  `Put back` that adds one copy while crediting the deck five. jsdom sees none
+ *  of it: the diff is a server read against a real version. */
+const basicFindings = [];
 
 /** The narrowest desktop: one step above the `md` breakpoint the erased row used
  *  to dissolve at. The bug needs the row to overflow, and a 1300px viewport gives
@@ -433,6 +457,31 @@ const readReview = (page) =>
             cardTop: name ? Math.round(name.getBoundingClientRect().top) : null,
           };
         }),
+      // Every drawn row, by its titled trigger: the card's name, the whole text
+      // of the row, and whether it wears a buy tag or offers `Put back`. This is
+      // what answers the basic-land case, where the readings are all absences —
+      // a basic is drawn like any other row and asked about by nothing, so what
+      // proves the money stayed out of it is a named row with no tag beside it.
+      diffRows: [...(columns?.querySelectorAll("button[title]") ?? [])].map((b) => {
+        // The row plate is the LAST ancestor still holding this name alone. The
+        // walk has to stop there: one step further up is the type group, which
+        // holds every row in it, and reading a `Put back` off that reports the
+        // neighbour's control as this row's. A cut basic drawing no control of
+        // its own is exactly the row that would be misread.
+        let plate = b;
+        for (let node = b.parentElement, up = 0; node && up < 5; node = node.parentElement, up++) {
+          if (node.querySelectorAll("button[title]").length > 1) break;
+          plate = node;
+        }
+        return {
+          card: b.getAttribute("title"),
+          text: text(plate).replace(/\n/g, " "),
+          putBack: !!plate.querySelector("button[aria-label^=\"Put \"]"),
+          // The tag is the word alone in its own element, so a card whose NAME
+          // holds "buy" is not mistaken for one that wears it.
+          buyTag: [...plate.querySelectorAll("span")].some((x) => /^buy$/i.test(text(x))),
+        };
+      }),
       // Anchors inside the columns. A diff row carries none: the `Open →` link to
       // the holding deck was what put the row under pressure in the first place,
       // and the plate itself opens the card for any click outside a control.
@@ -744,24 +793,161 @@ async function stage(deckId, versionId, addOracleIds, cuts) {
   }
 }
 
-/** Put one basic land into the deck, and name it. `isBasicLand` reads the type
- *  line, so the card has to be a real catalog basic rather than any land — and a
- *  basic is the one edit the diff counts as a change while naming no card, which
- *  is the whole point of the basics-only case. The template is 99 non-basic
- *  lands, so this adds rather than increments. Returns null if the catalog holds
- *  no basic at all, so the block reports itself skipped rather than as a pass. */
-async function addOneBasic(deckId) {
+/** Three basic lands, moved three ways in one draft — which is the reported edit
+ *  itself: a deck that dropped all five of its Swamps and put five other lands
+ *  in their place.
+ *
+ *  Each figure answers something the other two cannot.
+ *
+ *  `5 → 0` is the bug as reported, and it is also the row that must NOT offer
+ *  `Put back`: a put-back is one copy while the optimistic model beside it
+ *  credits the whole row. `5 → 4` is the same card at the one delta the control
+ *  can honour, and it is the only proof the gate is a quantity test rather than
+ *  a blanket refusal on basics.
+ *
+ *  `0 → 5` is the ADD, and without it the buy-tag and availability-marker
+ *  readings measure nothing at all: a tag is an `in`-row treatment, and an `out`
+ *  row excludes its own claim and is silent by design.
+ *
+ *  That add has to be a basic the collection holds NO copy of, and this account
+ *  owns them all — so the fixture takes its rows for one basic out and puts them
+ *  back. `AvailabilitySlot` draws the tag on `!owned`, and `owned` comes off a
+ *  collection read: an added basic the player happens to own reads as owned
+ *  whether or not the model forces it, so the tag reading passes over a build
+ *  with the rule taken out. A basic the collection has never heard of is the
+ *  only add that tells the two apart, and it is also the exact row a player was
+ *  told to go and buy five Forests on.
+ *
+ *  The version is written rather than the draft alone: a cut needs something to
+ *  be cut FROM, and `deck_version_cards` is what the diff reads. Every version
+ *  row this overwrites is captured first and put back with the rest — the
+ *  template is a real 99-card deck and may already sleeve any of these basics,
+ *  and deleting its rows outright would leave every later block in the run
+ *  measuring a corrupted version.
+ *
+ *  `undo` is the caller's cleanup handle and is populated BEFORE each write it
+ *  covers, never after: this function is a sequence of statements, and a throw
+ *  between one of them and the return would otherwise strand whatever the
+ *  previous statement removed. A version of it that returned the handle at the
+ *  end could take a player's collection rows away permanently.
+ *
+ *  Returns null when the catalog cannot supply three distinct basics that are
+ *  usable here, so the block reports itself skipped rather than as a pass. */
+async function stageBasics(deckId, versionId, userId, undo) {
   const { rows } = await pool.query(
     `select oracle_id, name from cards where type_line ilike 'basic land%'
-      order by name limit 1`,
+      order by name limit 2`,
   );
-  if (rows.length === 0) return null;
+  if (rows.length < 2) return null;
+  const [gone, trimmed] = rows;
+  // The add has to be a basic that is NOT already in this version: one that is
+  // would be a recount rather than an add, and a quantity that happens to be 5
+  // already would be no change at all — the row would simply not be there, and
+  // the block would report it missing while the page was right.
+  const { rows: addRows } = await pool.query(
+    `select c.oracle_id, c.name from cards c
+      where c.type_line ilike 'basic land%'
+        and c.oracle_id <> all($1::uuid[])
+        and not exists (
+          select 1 from deck_version_cards v
+           where v.version_id = $2 and v.oracle_id = c.oracle_id
+        )
+      order by c.name limit 1`,
+    [[gone.oracle_id, trimmed.oracle_id], versionId],
+  );
+  const added = addRows[0] ?? null;
+  // Three distinct basics or nothing. The contract above says so, and a run that
+  // staged only the two cuts would record a failed probe for an add it never
+  // meant to have.
+  if (!added) return null;
+  // Every column, so the rows go back exactly as they were, and `returning *`
+  // rather than a read-then-delete: one statement cannot leave a half-lifted
+  // card. Handed to `undo` in the same breath — see the header.
+  const { rows: liftedRows } = await pool.query(
+    `delete from collection_items where user_id = $1 and oracle_id = $2 returning *`,
+    [userId, added.oracle_id],
+  );
+  undo.collection.push(...liftedRows);
+  // What the version already held for the two cut basics, captured before the
+  // upsert overwrites it. An absent one leaves nothing to put back, which is why
+  // `clearVersionBasics` deletes the ids it was given and then re-inserts these.
+  const { rows: priorVersionRows } = await pool.query(
+    `select * from deck_version_cards where version_id = $1 and oracle_id = any($2::uuid[])`,
+    [versionId, [gone.oracle_id, trimmed.oracle_id]],
+  );
+  undo.versionCards.push(...priorVersionRows);
   await pool.query(
-    `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)
-       on conflict (deck_id, oracle_id) do update set quantity = deck_cards.quantity + 1`,
-    [deckId, rows[0].oracle_id],
+    `insert into deck_version_cards (version_id, oracle_id, quantity, since)
+       select $1, unnest($2::uuid[]), 5, now()
+       on conflict (version_id, oracle_id) do update set quantity = 5`,
+    [versionId, [gone.oracle_id, trimmed.oracle_id]],
   );
-  return rows[0].name;
+  await pool.query(`delete from deck_cards where deck_id = $1`, [deckId]);
+  await pool.query(
+    `insert into deck_cards (deck_id, oracle_id, quantity, auto)
+       select $1, oracle_id, quantity, false from deck_version_cards where version_id = $2`,
+    [deckId, versionId],
+  );
+  // The whole cut, and the single-copy one.
+  await pool.query(`delete from deck_cards where deck_id = $1 and oracle_id = $2`,
+    [deckId, gone.oracle_id]);
+  await pool.query(
+    `update deck_cards set quantity = 4 where deck_id = $1 and oracle_id = $2`,
+    [deckId, trimmed.oracle_id],
+  );
+  // The five lands that replace them. Not in the version, so this is an add.
+  await pool.query(
+    `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 5, false)
+       on conflict (deck_id, oracle_id) do update set quantity = 5`,
+    [deckId, added.oracle_id],
+  );
+  return {
+    gone: gone.name,
+    trimmed: trimmed.name,
+    added: added.name,
+    oracleIds: [gone.oracle_id, trimmed.oracle_id],
+  };
+}
+
+/** Re-insert rows exactly as they were read, column for column. Both things
+ *  `stageBasics` displaces are whole rows of tables this script does not own, so
+ *  neither is rebuilt from remembered fields. */
+async function putRowsBack(table, rows) {
+  for (const row of rows ?? []) {
+    const columns = Object.keys(row);
+    await pool.query(
+      `insert into "${table}" (${columns.map((c) => `"${c}"`).join(", ")})
+         values (${columns.map((_, i) => `$${i + 1}`).join(", ")})
+       on conflict do nothing`,
+      columns.map((c) => row[c]),
+    );
+  }
+}
+
+/** Undo everything `stageBasics` displaced outside its own decks: the account's
+ *  collection rows for the added basic, and whatever the version already held
+ *  for the two cut ones. Idempotent and safe to call twice — the block calls it
+ *  inline, and the run's `finally` calls it again for a run that died first. */
+async function undoBasicsFixture(undo) {
+  await putRowsBack("collection_items", undo.collection);
+  await putRowsBack("deck_version_cards", undo.versionCards);
+  undo.collection.length = 0;
+  undo.versionCards.length = 0;
+}
+
+/** Take the fixture's basics back out of the version. Every block after this one
+ *  counts rows, and `stage`'s `cuts` takes the first n by oracle id — left in,
+ *  a basic could be one of them and every figure below would move.
+ *
+ *  It removes the ids it was given and nothing else; whatever the version held
+ *  for them BEFORE the fixture wrote is put back by `undoBasicsFixture`, which
+ *  the caller runs straight after. The template is a real 99-card deck, so a
+ *  version that already sleeved a Forest keeps it. */
+async function clearVersionBasics(versionId, oracleIds) {
+  await pool.query(
+    `delete from deck_version_cards where version_id = $1 and oracle_id = any($2::uuid[])`,
+    [versionId, oracleIds],
+  );
 }
 
 /** What the confirm says and wears, printed the same way at both doors. */
@@ -806,6 +992,11 @@ let underReview = null;
 let holder = null;
 let claimed = null;
 let brewed = null;
+/** Rows `stageBasics` displaced in tables this script does not own, and has not
+ *  yet put back. Held outside the try so the `finally` can restore them whatever
+ *  killed the run, and populated BEFORE each write rather than on return, so a
+ *  throw part-way through the fixture cannot strand a player's collection. */
+const undo = { collection: [], versionCards: [] };
 let userId = null;
 try {
   const context = await browser.newContext({ viewport: VIEWPORTS[0] });
@@ -854,28 +1045,89 @@ try {
     console.log(`\n########## ${label} · CLEAN deck`);
     console.log(`  landed on: ${new URL(vpPage.url()).pathname} (expect /decks/<id>)`);
 
-    // 1b. A BASICS-ONLY draft, which names no card and still has a version to
-    // cut. Both columns render empty on it, so the route admits it only as the
-    // banner's `?commit=1` — a direct visit would be two blank columns under a
-    // heading naming the mana base. Neither fact is reachable from jsdom: the
-    // redirect is a server decision and the diff is a real one.
-    const moved = await addOneBasic(underReview.deckId);
-    await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
-      waitUntil: "networkidle",
-    });
+    // 1b. A BASICS-ONLY draft. Five Swamps out of the deck used to draw NOTHING
+    // on this page — the loader dropped every basic out of both change lists
+    // before anything downstream ran — so a player who had redistributed their
+    // mana base could not tell how many lands to take out of the sleeve. The
+    // rows are the fix, and every reading here is about what they do and do not
+    // carry: a name and a `from → to` pair, and no money.
+    //
+    // None of it is reachable from jsdom. The diff is a real one against a real
+    // version, the admission is a server decision, and the buy tag and the
+    // availability marker are drawn off reads this fixture deliberately keeps a
+    // basic out of.
+    const basicsFixture = await stageBasics(
+      underReview.deckId, underReview.versionId, userId, undo,
+    );
     console.log(`\n########## ${label} · BASICS-ONLY draft`);
-    console.log(`  basic added: ${moved ?? "no basic in the catalog — block skipped"}`);
-    if (moved) {
+    if (!basicsFixture) {
+      console.log(`  no three usable basics in the catalog — block skipped`);
+    } else {
+      console.log(`  cut whole: ${basicsFixture.gone} 5 → 0`);
+      console.log(`  cut by one: ${basicsFixture.trimmed} 5 → 4`);
       console.log(
-        `  direct visit landed on: ${new URL(vpPage.url()).pathname} (expect /decks/<id>)`,
+        `  added: ${basicsFixture.added} 0 → 5`
+        + ` (${undo.collection.length} collection row(s) lifted, restored after)`,
       );
-      await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes?commit=1`, {
+      await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
         waitUntil: "networkidle",
       });
       await vpPage.waitForTimeout(900);
       const basics = await readReview(vpPage);
-      console.log(`  ?commit=1 landed on: ${new URL(vpPage.url()).pathname} (expect /changes)`);
-      console.log(`  h1: ${basics.h1} (expect the mana base, not a change count)`);
+      // A DIRECT visit, with no `?commit=1`. The page used to refuse one here
+      // and send the reader back to the deck, because two empty columns are not
+      // a review; it has rows now, so it is a review like any other.
+      const landed = new URL(vpPage.url()).pathname;
+      console.log(`  direct visit landed on: ${landed} (expect /changes)`);
+      if (!landed.endsWith("/changes")) {
+        basicFindings.push(`${label} · a basics-only draft was refused (landed on ${landed})`);
+      }
+      console.log(`  h1: ${basics.h1}`);
+      for (const want of [
+        { name: basicsFixture.gone, pair: "5 → 0", putBack: false },
+        { name: basicsFixture.trimmed, pair: "5 → 4", putBack: true },
+        // An add offers no put-back on any row: the reverse of an add is a
+        // removal, and the deck page does that.
+        { name: basicsFixture.added, pair: "0 → 5", putBack: false },
+      ]) {
+        const row = basics.diffRows.find((r) => r.card === want.name);
+        if (!row) {
+          basicFindings.push(`${label} · no row for ${want.name}, so nothing was measured`);
+          continue;
+        }
+        console.log(
+          `  ${want.name}: "${row.text}"`
+          + ` · buy tag ${row.buyTag} · Put back ${row.putBack}`,
+        );
+        // The count is the whole point of the row. A bare name is the shape the
+        // commit receipt used to draw, and it asserts the deck lost its Swamps
+        // on a card the player has thirty of.
+        if (!row.text.includes(want.pair)) {
+          basicFindings.push(`${label} · ${want.name} draws no ${want.pair} pair`);
+        }
+        // Never asked about, so never priced and never shopped for.
+        if (row.buyTag) basicFindings.push(`${label} · ${want.name} wears a buy tag`);
+        // `Put back` is `addCardToDeck` unwrapped — one copy — while the model
+        // beside it retires the whole row and credits `from - to`. The two agree
+        // on a single-copy cut and on nothing else, so the gate is a quantity
+        // test: `5 → 4` keeps the control and `5 → 0` must not offer it.
+        if (row.putBack !== want.putBack) {
+          basicFindings.push(
+            `${label} · ${want.name} ${row.putBack ? "offers" : "withholds"} Put back`
+            + ` on a ${want.pair} row`,
+          );
+        }
+      }
+      // And no marker on either: a basic never reaches the availability read, so
+      // there is no figure for one to draw.
+      const basicNames = [basicsFixture.gone, basicsFixture.trimmed, basicsFixture.added];
+      const basicMarkers = basics.markers.filter((m) => basicNames.includes(m.name));
+      console.log(`  availability markers on the basics: ${basicMarkers.length} (expect 0)`);
+      for (const m of basicMarkers) {
+        basicFindings.push(`${label} · ${m.name} draws an availability marker ("${m.label}")`);
+      }
+      await clearVersionBasics(underReview.versionId, basicsFixture.oracleIds);
+      await undoBasicsFixture(undo);
     }
 
     // 2. Both columns, the hard-claimed add and the softly claimed one among
@@ -1294,6 +1546,9 @@ try {
   for (const deck of [underReview, holder, brewed]) {
     if (deck) await pool.query(`delete from decks where id = $1`, [deck.deckId]);
   }
+  // Whatever the basics block displaced outside its own decks, if it died before
+  // putting it back. Empty on a run that got that far.
+  await undoBasicsFixture(undo);
   await pool.end();
   await browser.close();
 }
@@ -1325,5 +1580,11 @@ if (clippedGroups.length > 0) {
 if (erasedNames.length > 0) {
   console.log(`\n########## FAIL · a held row lost a line or a name`);
   for (const line of erasedNames) console.log(`  ${line}`);
+  process.exitCode = 1;
+}
+
+if (basicFindings.length > 0) {
+  console.log(`\n########## FAIL · a basic land is drawn wrong, or not at all`);
+  for (const line of basicFindings) console.log(`  ${line}`);
   process.exitCode = 1;
 }

@@ -1,6 +1,6 @@
 // The two `DraftState` literals every versioning component test starts from.
 //
-// Shared rather than declared per suite because the type has eighteen fields and
+// Shared rather than declared per suite because the type has fifteen fields and
 // most of them are empty in both states: a suite that grew its own copy would
 // stop tracking the shape the moment a field was added, and the two would then
 // disagree about what "a deck with no changes" even looks like.
@@ -14,8 +14,6 @@ export const BREW: DraftState = {
   adds: [],
   addChanges: [],
   removes: [],
-  basicsChanged: false,
-  basicsMoved: false,
   names: new Map(),
   costs: new Map(),
   prices: new Map(),
