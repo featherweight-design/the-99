@@ -31,6 +31,18 @@ export function onPage(page, selector) {
 }
 
 /**
+ * The same scope, by ROLE — the half `onPage` cannot express, because a role and
+ * an accessible name are not a selector string.
+ *
+ * Here rather than at each caller so the scope has ONE definition. A caller
+ * rebuilding `page.locator(PAGE).getByRole(...)` for itself is a second copy of
+ * what `PAGE` means, and the next change to it moves one of them.
+ */
+export function onPageRole(page, role, name) {
+  return page.locator(PAGE).getByRole(role, { name });
+}
+
+/**
  * Wait for every animation currently running on an element and its subtree.
  *
  * Not tied to a class: it asks the engine what is animating and waits for those

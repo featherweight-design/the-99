@@ -26,8 +26,7 @@ import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage, PAGE } from "./lib/surface.mjs";
-import { inventoryProblems } from "./lib/steps.mjs";
+import { onPage, onPageRole } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -39,11 +38,6 @@ const inventoryPath = process.argv[2];
 
 if (!inventoryPath) throw new Error("Pass the inventory JSON path.");
 const inventory = JSON.parse(await readFile(inventoryPath, "utf8"));
-const problems = inventoryProblems(inventory);
-if (problems.length > 0) {
-  console.error(`${inventoryPath} cannot be walked:\n  ${problems.join("\n  ")}`);
-  process.exit(1);
-}
 // Relative to the repository by default, so the command in a checked-in inventory
 // runs the same way on anyone's machine. An absolute `out` still wins, for a run
 // that wants to write somewhere specific.
@@ -119,16 +113,15 @@ async function run(page, steps) {
     // A surface that exists at one width only says so with `widths` on its row.
     // There is no optional click: a step that finds nothing is a failed cell,
     // which is the whole point of pressing it.
-    // PRESENCE, not truthiness. `inventoryProblems` has already refused an empty
-    // selector, and a truthiness check here would silently skip one anyway — the
-    // second half of the same bug, in the file that is supposed to be strict.
+    // PRESENCE, not truthiness. An empty selector is a step that would silently
+    // not happen, and a step that does nothing photographs the route in the
+    // previous state while the cell is counted as reached. Playwright rejects
+    // `""` loudly, which is the outcome to want.
     if (step.click !== undefined) {
       await onPage(page, step.click).first().click({ timeout: 15_000 });
     }
     if (step.clickRole !== undefined) {
-      await page
-        .locator(PAGE)
-        .getByRole(step.clickRole, { name: new RegExp(step.name) })
+      await onPageRole(page, step.clickRole, new RegExp(step.name))
         .first()
         .click({ timeout: 15_000 });
     }
@@ -137,7 +130,13 @@ async function run(page, steps) {
     if (step.fill !== undefined) {
       await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
     }
-    if (step.wait !== undefined) await page.waitForSelector(step.wait, { timeout: 15_000 });
+    // Scoped like the actions above it, and for the same reason: `wait:
+    // "[role=dialog]"` is in every inventory, and the shell's account sheet is
+    // also a `role="dialog"` sitting before `<main>` — so an unscoped wait can
+    // resolve against it and hand the next step a page that never opened.
+    if (step.wait !== undefined) {
+      await onPage(page, step.wait).first().waitFor({ state: "visible", timeout: 15_000 });
+    }
     if (step.settle !== undefined) await page.waitForTimeout(step.settle);
     // A surface that only exists part-way down the page — the set head's collapsed bar, the
     // foot of a long column — is reached by scrolling to it, which is a step like any other

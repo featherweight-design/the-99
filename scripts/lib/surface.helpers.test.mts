@@ -7,7 +7,7 @@
 // a stand-in for Playwright's page, which is enough because every behaviour that
 // matters here is about WHAT IS ASKED FOR, not about a real browser.
 import { describe, expect, it, vi } from "vitest";
-import { PAGE, onPage, openSheet, settled } from "./surface.mjs";
+import { PAGE, onPage, onPageRole, openSheet, settled } from "./surface.mjs";
 
 /**
  * The smallest thing that records what a caller asked of a page.
@@ -64,6 +64,26 @@ describe("onPage", () => {
     // Named rather than inferred: the shell is everything outside `<main>`, so
     // this constant is the whole mechanism.
     expect(PAGE).toBe("main");
+  });
+});
+
+describe("onPageRole", () => {
+  it("scopes a role lookup to the page too", () => {
+    // The half `onPage` cannot express — a role and an accessible name are not a
+    // selector string — kept beside it so `PAGE` has one definition.
+    const asked: string[] = [];
+    const page = {
+      locator: (selector: string) => {
+        asked.push(selector);
+        return { getByRole: (role: string, options: unknown) => ({ role, options }) };
+      },
+    };
+    const got = onPageRole(page as never, "button", /^Filters$/) as unknown as {
+      role: string; options: { name: RegExp };
+    };
+    expect(asked).toEqual([PAGE]);
+    expect(got.role).toBe("button");
+    expect(got.options.name).toEqual(/^Filters$/);
   });
 });
 

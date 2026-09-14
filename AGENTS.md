@@ -275,21 +275,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   while the desktop is right, is visible in a glance. Inventories live in
   `docs/superpowers/inventories/*.json`.
 
-  Every step verb — `click`, `clickRole`, `fill` — reaches page content through
-  `lib/surface.mjs`, so an inventory never spells `main` itself. An inventory is validated
-  before the browser launches, by `lib/steps.mjs`, against one rule: A STEP MUST DO
-  SOMETHING, AND THE RUNNER MUST BE ABLE TO SEE WHAT. An unknown key, an empty selector, a
-  `name` with no `clickRole` to belong to, a row with no steps — each is a step that
-  silently did not happen, which photographs a route in the wrong state and reads as
-  coverage. `STEP_SPEC` there is the whole vocabulary; a verb added to `run` and not to it
-  throws on the inventory that first uses it. Inventory selectors carry no `main` of their
-  own — the verb scopes them, and a second prefix chains `main` inside `main` and matches
-  nothing. A run that photographs NOTHING fails, whatever the cause: that backstop covers
-  the causes the preflight cannot name. A row that exists at one
-  width only says so with `"widths": ["phone"]` or `["desktop"]`; the other width is skipped
-  and reported as such rather than counted a failure. There is deliberately no optional
-  click: a step that may find nothing cannot fail, and a cell that photographs a closed route
-  reads as coverage.
+  Every step verb — `click`, `clickRole`, `fill`, and the selector `wait` — reaches page
+  content through `lib/surface.mjs` (`onPage`, `onPageRole`), so an inventory never spells
+  `main` itself and the scope has ONE definition. A second prefix would chain `main` inside
+  `main` and match nothing. `wait` is scoped for the same reason as the rest:
+  `wait: "[role=dialog]"` is in every inventory, and the shell's account sheet is also a
+  `role="dialog"` sitting before `<main>`.
+
+  A row that exists at one width only says so with `"widths": ["phone"]` or `["desktop"]`;
+  the other width is skipped and reported as such rather than counted a failure. There is
+  deliberately no optional click: a step that may find nothing cannot fail, and a cell that
+  photographs a closed route reads as coverage. And a run that photographs NOTHING fails,
+  whatever the cause — no rows, an empty `widths`, every row skipped by its own.
 
   `pnpm check:shared <inventory>` answers the half a picture cannot: whether routes that are
   supposed to carry the same control do it by rendering the same component. It reads the same
