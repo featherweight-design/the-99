@@ -175,9 +175,15 @@ describe("GamesPanel — empty", () => {
   // other test on this surface asks what is present — reintroducing the note
   // would leave all of them green. The sentence is written out rather than
   // read from a copy key, since the point is that no key holds it any more.
+  //
+  // It matches on the note's SECOND sentence. The first shared "letting the
+  // deck down" with the pitch quote that replaced it, which now reads "letting
+  // THIS deck down" — one word apart, and a guard that passes on one word is a
+  // guard that fails the next time the pitch is reworded. This half belonged to
+  // the scope note alone.
   it("draws no scope note", () => {
     mount([]);
-    expect(screen.queryByText(/letting the deck down/i)).toBeNull();
+    expect(screen.queryByText(/What to do about it stays your call/i)).toBeNull();
     expect(Object.keys(gameLogCopy.empty)).not.toContain("scope");
   });
 });

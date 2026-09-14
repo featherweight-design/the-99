@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { DiscoveryRow } from "./discovery-row";
 
 const name = "Lathril, Blade of the Elves";
@@ -254,6 +255,24 @@ describe("DiscoveryRow", () => {
     row({});
     const label = screen.getAllByRole("link")[0].getAttribute("aria-label") ?? "";
     expect(label.endsWith(": view commander details")).toBe(true);
+  });
+
+  // Every assertion above reads the label's WORDS, and the words are identical
+  // whether the component calls the copy key or rewrites the sentence by hand.
+  // So none of them fails on a revert to a hardcoded template. This one does:
+  // it moves the key and expects the label to move with it.
+  it("takes its accessible name from the copy key, not a local copy of it", () => {
+    const spy = vi
+      .spyOn(explainedCopy.home, "cardAria")
+      .mockReturnValue("stubbed accessible name");
+    try {
+      row({});
+      expect(screen.getAllByRole("link")[0].getAttribute("aria-label")).toBe(
+        "stubbed accessible name",
+      );
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("renders the price with its provenance, and speaks it", () => {

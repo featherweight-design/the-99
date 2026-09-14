@@ -34,7 +34,13 @@ export const deckTuningCopy = {
     // The desktop gloss. The phone frame draws the short form: the label row
     // is a flex line and the full sentence would push the counter onto a
     // second one at 390px.
-    hint: "optional: one line, in your words",
+    //
+    // NOT "optional" here. At `md:` the footer below the buttons already says
+    // "marks and the note are optional", so the word appeared twice on one
+    // screen. The phone keeps `hintShort` BECAUSE that footer is
+    // `hidden md:block` — there this is the only marker, and dropping it would
+    // leave the field looking required.
+    hint: "one line, in your words",
     hintShort: "optional",
     // A count with its denominator, like everything else on this surface.
     // ABSENT until the field has focus or content; `--warning` from `warnAt`;

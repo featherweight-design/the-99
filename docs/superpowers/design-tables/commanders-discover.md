@@ -781,7 +781,7 @@ does not set are omitted rather than guessed.
 | count | 4 | 4 |
 | gap | 6px | 7px |
 | flex-wrap | wrap | wrap |
-| copy key | `commandersCopy.row.roleCounter(label, have, target)` | same |
+| copy key | `commandersCopy.row.roleCounter(label, have, target)` | same  **RETIRED 2026-09-13** — the key had no call site; the row it describes is drawn by the component directly. Do not implement against it. |
 
 ### Synergy row
 
@@ -802,7 +802,7 @@ does not set are omitted rather than guessed.
 | figure font-family | IBM Plex Mono | IBM Plex Mono |
 | figure font-size | 10.5px | 11px |
 | figure color | #A89B84 | #A89B84 |
-| copy key | `commandersCopy.row.ownOfTop(own, top)` | same |
+| copy key | `commandersCopy.row.ownOfTop(own, top)` | same  **RETIRED 2026-09-13** — the key had no call site; the row it describes is drawn by the component directly. Do not implement against it. |
 
 ### Availability line
 
@@ -812,7 +812,7 @@ does not set are omitted rather than guessed.
 | font-size | 10.5px | 11.5px |
 | color | #C6B79A | #C6B79A |
 | in-use marker | ◆ in #C9A24B | ◆ in #C9A24B |
-| copy keys | `commandersCopy.row.freeCards(n)` · `.alreadyInUse(n)` · `.cardsFit(n)` / `.cardsFitShort(n)` · `.freeCardsFit(n)` · `.inUse(n)` | same |
+| copy keys | `commandersCopy.row.freeCards(n)` · `.alreadyInUse(n)` · `.cardsFit(n)` / `.cardsFitShort(n)` · `.freeCardsFit(n)` · `.inUse(n)` | same  **RETIRED 2026-09-13** — the key had no call site; the row it describes is drawn by the component directly. Do not implement against it. |
 
 ### Receipts line
 
@@ -821,7 +821,7 @@ does not set are omitted rather than guessed.
 | font-family | — | IBM Plex Mono |
 | font-size | — | 10.5px |
 | color | — | #8E8269 (var(--fg-faint)) — never var(--fg-locked) |
-| copy key | — | `commandersCopy.row.receipts(names, more)` |
+| copy key | — | `commandersCopy.row.receipts(names, more)`  **RETIRED 2026-09-13** — the key had no call site; the row it describes is drawn by the component directly. Do not implement against it. |
 
 ### Fit block
 
@@ -864,7 +864,7 @@ does not set are omitted rather than guessed.
 | font-family | IBM Plex Mono | IBM Plex Mono |
 | font-size | 10px | 10.5px |
 | color | #A89B84 | #A89B84 |
-| copy key | `commandersCopy.row.delta(d, from)` | same |
+| copy key | `commandersCopy.row.delta(d, from)` | same  **RETIRED 2026-09-13** — the key had no call site; the row it describes is drawn by the component directly. Do not implement against it. |
 
 ### Split bar
 
@@ -887,7 +887,7 @@ does not set are omitted rather than guessed.
 | swatch height | — | 7px |
 | swatch border-radius | — | 2px |
 | gap | — | 11px (inner 4px) |
-| copy key | — | `commandersCopy.row.splitLegend` |
+| copy key | — | `commandersCopy.row.splitLegend`  **RETIRED 2026-09-13** — the key had no call site; the row it describes is drawn by the component directly. Do not implement against it. |
 
 ### Row action
 

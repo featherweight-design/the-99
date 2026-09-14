@@ -97,6 +97,24 @@ describe("RecCard synergy states", () => {
       within(container).getByRole("link", { name: /Krenko, Mob Boss/ }),
     ).toHaveAccessibleName("Krenko, Mob Boss: view commander details");
   });
+
+  // Both assertions above read the label's WORDS, and the words are identical
+  // whether the component calls the copy key or rewrites the sentence by hand.
+  // So neither fails on a revert to a hardcoded template. This one does: it
+  // moves the key and expects the label to move with it.
+  it("takes its accessible name from the copy key, not a local copy of it", () => {
+    const spy = vi
+      .spyOn(explainedCopy.home, "cardAria")
+      .mockReturnValue("stubbed accessible name");
+    try {
+      const { container } = card();
+      expect(within(container).getAllByRole("link")[0]).toHaveAccessibleName(
+        "stubbed accessible name",
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe("RecCard row shape", () => {

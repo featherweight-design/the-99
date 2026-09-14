@@ -50,4 +50,15 @@ describe("game log copy", () => {
   it("never prints a signed figure", () => {
     for (const s of allStrings(gameLogCopy.cell)) expect(s).not.toMatch(/[−-]\d/);
   });
+
+  // The empty state DEMONSTRATES the tab's output, so the demonstration has to
+  // be an output. It quoted "ran out of gas, 3 of 3 games" for months and no
+  // surface printed that: the glosses render on the log form's checkboxes,
+  // never in the aggregate. Pinned to the sentence it quotes so the two cannot
+  // drift apart again.
+  it("pitches a sentence the tab actually writes", () => {
+    expect(gameLogCopy.headline.finding(axisCopy.card_flow.label)).toBe(
+      `${gameLogCopy.empty.bodyQuote}${gameLogCopy.empty.bodyAfter}`,
+    );
+  });
 });
