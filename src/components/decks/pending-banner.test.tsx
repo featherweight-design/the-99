@@ -36,8 +36,6 @@ const empty: DraftState = {
   adds: [],
   addChanges: [],
   removes: [],
-  basicsChanged: false,
-  basicsMoved: false,
   names: new Map(),
   costs: new Map(),
   prices: new Map(),
@@ -282,8 +280,11 @@ describe("PendingBanner", () => {
     expect(screen.getByText(copy.counts(0, 17))).toBeTruthy();
   });
 
+  // A basics-only draft is a removals-only draft like any other now — the cut
+  // Swamps are rows, they buy nothing, and nothing is coming in to say a
+  // sentence about.
   it("says no money sentence on a basics-only draft either", () => {
-    render(<PendingBanner state={{ ...empty, basicsChanged: true }} deckId="d" />);
+    render(<PendingBanner state={withChanges(0, 1)} deckId="d" />);
     expect(screen.queryByText(copy.moneyNone, { exact: false })).toBeNull();
   });
 
@@ -312,18 +313,28 @@ describe("PendingBanner", () => {
     ).toBeTruthy();
   });
 
-  it("still offers the commit on a basics-only draft, which no list can name", () => {
-    render(
-      <PendingBanner
-        state={{ ...empty, basicsChanged: true }}
-        deckId="d"
-      />,
-    );
+  // A whole cut of more than one copy. Five Swamps out of the sleeve printed a
+  // bare `Swamp` here for the same reason they did on the review page: the rule
+  // was `from > 0 && to > 0`, which never met a row that could lose more than
+  // one.
+  it("prints the pair on a whole cut of more than one copy", () => {
+    const state = withChanges(0, 1);
+    state.removes[0] = { oracleId: "r0", from: 5, to: 0 };
+    render(<PendingBanner state={state} deckId="d" />);
+    expect(
+      screen.getByText(deckImportCopy.update.diff.recountedItem("Cut 0", "5", "0")),
+    ).toBeTruthy();
+  });
+
+  // The review link has no gate on it any more. It used to be withheld from a
+  // basics-only draft, which named no card and so drew two empty columns; that
+  // draft has rows now, so every draft the banner is up for has something to
+  // read.
+  it("offers both the commit and the review on a basics-only draft", () => {
+    render(<PendingBanner state={withChanges(0, 1)} deckId="d" />);
     expect(screen.getByText(copy.label)).toBeTruthy();
     expect(screen.getByRole("link", { name: copy.commitCta(3) })).toBeTruthy();
-    // And offers no review of it: the page names cards, this draft names none,
-    // and the route sends a changeless visit back here unless it asked to commit.
-    expect(screen.queryByRole("link", { name: copy.reviewLink })).toBeNull();
+    expect(screen.getByRole("link", { name: copy.reviewLink })).toBeTruthy();
   });
 
   // The confirm replaces the card's body rather than standing beside it: a

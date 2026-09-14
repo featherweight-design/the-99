@@ -3,9 +3,10 @@
 // so the question is extracted rather than exercised through the page.
 
 export type ReviewAdmission = {
-  /** Named rows in the draft — `changeCount(state)`. A basics-only edit is 0. */
+  /** Rows in the draft — `changeCount(state)`. Every card the draft moved is
+   *  one, basics included, so this is the whole test of whether there is
+   *  anything to read. */
   changes: number;
-  basicsChanged: boolean;
   /** False for a brew, which has no version to diff against. */
   hasVersion: boolean;
   /** The spine's `Commit as v1` test: body size reached, nothing unresolved. */
@@ -21,22 +22,19 @@ export type ReviewAdmission = {
  * bare empty state would read as a bug — the deck page is where the version line
  * is, so that is where a refused visit goes.
  *
- * Named rows admit a visit on their own: that is a review, and the reader may
- * have arrived from anywhere. The two empty-column cases do not, because there
- * is nothing on either to read — no row, no cost — so they are admitted only as
- * the commit CTA arriving, which is what the banner promises the link does.
+ * Rows admit a visit on their own: that is a review, and the reader may have
+ * arrived from anywhere. A draft with no row at all is nothing to read — no
+ * row, no cost — so the page is admitted only as the commit CTA arriving, which
+ * is what the banner promises the link does, and only where a commit is a thing
+ * the server would accept.
  *
- * A brew is the stricter of those two: the absence of a version is not enough,
- * because `commitDeckVersion` refuses a v1 over an unfinished list, and a page
- * offering a commit the server will refuse is worse than a redirect.
+ * That leaves the brew: the absence of a version is not enough, because
+ * `commitDeckVersion` refuses a v1 over an unfinished list, and a page offering
+ * a commit the server will refuse is worse than a redirect. A deck that HAS a
+ * version and no row has nothing pending, so nothing is offered either.
  */
 export function admitsReview(a: ReviewAdmission): boolean {
   if (a.changes > 0) return true;
   if (!a.wantsCommit) return false;
-  // `hasVersion` guards the basics branch because a moved basic land is a
-  // difference FROM a version — a brew has nothing to have moved from. So a
-  // versionless draft is answered by the readiness test whatever it reports
-  // about its lands, and never admitted on a flag that cannot mean anything.
-  if (a.hasVersion) return a.basicsChanged;
-  return a.firstCommitReady;
+  return !a.hasVersion && a.firstCommitReady;
 }

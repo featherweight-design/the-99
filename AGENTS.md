@@ -161,10 +161,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   rules as `probe:claims`: per-run `user_id`, deleted in a `finally`, **never production**.
 - `pnpm probe:draft` proves the draft readers against a real Postgres by calling the real
   `loadDraftState` and `loadDraftRows` — a brew has no version rather than an empty change
-  list, a draft identical to its version is clean, a basics-only edit names no card and still
-  counts as a change, `names` covers the changed cards only, an unowned add with a live
-  price is quoted and one that has never been stocked is counted out of the coverage, and
-  a row's `quantity` is the delta rather than the copy count.
+  list, a draft identical to its version is clean, a basics-only edit is a NAMED row carrying
+  the pair it moved between and costing nothing, `names` covers the changed cards only, an
+  unowned add with a live price is quoted and one that has never been stocked is counted out
+  of the coverage, and a row's `quantity` is the delta rather than the copy count.
+  A basic is a row in both change lists and an absence in every money figure, and the probe
+  asserts both halves: it buckets `free` before the availability map is consulted, is asked
+  about by neither the claim read nor the price read, reads back `owned` so no buy tag is
+  drawn, and leaves `unfreeCount`, `total` and `pullableCount` where they were.
   Those figures come out of a snapshot transaction, a diff, a claim read, a price join and a
   collection lookup, which no unit test here can assemble. Only the diff is transaction-bound:
   the claim, price and collection reads run after that transaction closes, deliberately, because
@@ -272,6 +276,31 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   floor on the name and suppressing the invisible half of the marker box both passed the mutation
   and were dropped, because `flex-wrap` sizes items at their hypothetical width rather than their
   shrunk one and so wraps the line before any item reaches zero.
+
+  Its basics block is the one that found a defect the component tests could not. The fixture
+  sleeves two basic lands into the version at five copies each and moves both — one cut whole,
+  one cut by a single copy — and reads each row for its `from → to` pair, its buy tag, its
+  availability marker and its `Put back` control. What it caught: all three diff surfaces
+  decided whether to print the pair with their own copy of `from > 0 && to > 0`, which was
+  right for exactly as long as no row could lose more than one copy, so a whole cut of five
+  Swamps printed a bare `Swamp`. The rule is now one shared `printsPair` — `from > 1 || to > 1`
+  — and `1 → 0` still prints bare, because the column heading has already said it. `Put back`
+  is read as a QUANTITY test rather than a rule about basics: the `5 → 4` row keeps the control
+  and the `5 → 0` row must not offer it, because a put-back adds one copy while the model
+  beside it credits the whole row. A direct visit with no `?commit=1` is expected to be
+  ADMITTED — the refusal is what left the edit undescribed in the first place.
+
+  The fixture's THIRD basic, an add of five, is what makes the buy-tag and marker readings
+  mean anything: a tag is an `in`-row treatment and an `out` row excludes its own claim, so
+  a fixture of cuts alone reports both absent while measuring nothing. That add is also the
+  one place this script touches the COLLECTION. `AvailabilitySlot` draws the tag on `!owned`,
+  `owned` comes off a collection read, and the fixture account owns every basic in the
+  catalog — so an added basic reads as owned whether or not the model forces it, and the
+  reading passes over a build with the rule taken out. The block lifts that one basic's
+  `collection_items` rows with `delete ... returning *`, puts them back inline and again in
+  the run's `finally`, and prints how many it moved. Four mutations were run against it and
+  all four fail: reverting `printsPair`, dropping the `Put back` quantity gate, restoring the
+  basics filter in `readDraft`, and taking the `owned` override off a basic row.
 
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.

@@ -1210,11 +1210,12 @@ describe("commitDeckVersion", () => {
     expect(result.ok && result.buy).toEqual([]);
   });
 
-  // The same exclusion, on the other list. A basic dropped from the buy list but
-  // kept in the pull list renders as a bare `Island` under "back in the pool" —
-  // no count, no movement, and a claim the deck lost its Islands, on a card the
-  // player has thirty of.
-  it("drops basics from the pull list as well as the buy list", async () => {
+  // NOT the other list. The pull side is a physical instruction — take these
+  // out of the sleeve — and twelve Islands going down to nine is three cards to
+  // take out. What made a basic wrong here was a bare `Island` asserting the
+  // deck had lost its Islands; the row carries its `from → to` now, so the
+  // figure it prints is the true one.
+  it("keeps a basic land on the pull list, with its count", async () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     stub.state.deckRows.push({ oracleId: CARD_B, quantity: 9 });
     stub.state.cards.push({ oracleId: CARD_B, typeLine: "Basic Land — Island" });
@@ -1223,7 +1224,10 @@ describe("commitDeckVersion", () => {
       { oracleId: CARD_A, quantity: 1 },
     ]);
     const result = await commitDeckVersion(DECK_ID, null);
-    expect(result.ok && result.pull).toEqual([{ oracleId: CARD_A, from: 1, to: 0 }]);
+    expect(result.ok && result.pull).toEqual([
+      { oracleId: CARD_A, from: 1, to: 0 },
+      { oracleId: CARD_B, from: 12, to: 9 },
+    ]);
   });
 
   // Every row the snapshot took, basics included: the count is the size of the

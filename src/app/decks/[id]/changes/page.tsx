@@ -48,11 +48,10 @@ export default async function ChangesPage({
   // bare empty state would read as a bug. The deck page is where the version line
   // now is, so that is where the reader goes.
   //
-  // `changeCount` counts NAMED rows, which is not the same question as "is there
-  // anything to commit": a basics-only edit names no card and still has a version
-  // to cut, so a count alone would bounce it.
+  // `changeCount` counts every card the draft moved, basics among them, so it is
+  // the whole test of whether there is anything to review.
   //
-  // A brew is the third case, and it is the readiness test rather than the bare
+  // A brew is the other case, and it is the readiness test rather than the bare
   // absence of a version. Its draft has no change lists at all — there is nothing
   // to diff against — so the page is purely the v1 commit surface, and a brew
   // that cannot cut v1 has no reason to be here. Admitting one drew an empty page
@@ -63,11 +62,10 @@ export default async function ChangesPage({
   // into the one commit surface — or, on a brew, the spine's `Commit as v1`.
   const wantsCommit = commit === "1";
 
-  // Both empty-column cases are admitted ONLY as that arrival — see
+  // The empty-column case is admitted ONLY as that arrival — see
   // `admitsReview`, which holds the rule and is where it is tested.
   const admitted = admitsReview({
     changes: changeCount(state),
-    basicsChanged: state.basicsChanged,
     hasVersion: state.version !== null,
     firstCommitReady,
     wantsCommit,

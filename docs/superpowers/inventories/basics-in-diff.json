@@ -1,0 +1,47 @@
+{
+  "feature": "Basic lands in the draft diff",
+  "note": "Three surfaces, one deck. The defect was an ABSENCE — a draft that cut five Swamps and added five other lands drew no row on the review page and named no card in the banner — so the artefact that shows the fix is a photograph of the rows now being there, at both widths, on every surface that draws a diff. The version rail is the third row for the same reason it is named in the plan: `loadVersionDiff` never filtered basics, so it has been drawing `Swamp 5 → 0` correctly the whole time, and the sheet is what shows the draft's own page finally agreeing with it. `BASICS_DRAFT_DECK` comes from the environment, so no account's deck id lives here; point it at a committed deck whose draft has moved a basic land, which `pnpm probe:review` builds and tears down and `scripts/probe-review-changes.mjs` documents. No `shares` block: the review row and the rail row are deliberately different components, because one carries availability and a control and the other is a historical record with neither.",
+  "rows": [
+    {
+      "id": "deck-banner",
+      "label": "/decks/[id] — the pending banner, basics named inline",
+      "view": "src/components/decks/pending-banner.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${BASICS_DRAFT_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "label": "/decks/[id]/changes — basic rows in both columns",
+      "view": "src/components/decks/review-changes.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${BASICS_DRAFT_DECK}/changes",
+          "wait": "h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "version-diff",
+      "label": "/decks/[id] → Versions — a version's own diff, already correct",
+      "view": "src/components/decks/version-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${BASICS_DRAFT_DECK}?tab=versions",
+          "wait": "button[aria-expanded]",
+          "settle": 2500
+        },
+        {
+          "click": "button[aria-expanded]",
+          "wait": "[aria-expanded=\"true\"]",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}

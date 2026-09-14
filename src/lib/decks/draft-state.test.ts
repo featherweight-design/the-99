@@ -2,14 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Availability, DeckClaim } from "./availability";
 import { summarisePrices } from "./price";
 import {
-  anyBasicMoved,
-  bucketDraftAdds, changeCount, hasChanges, heldElsewhere, pullCandidate, pullHints,
+  bucketDraftAdds, changeCount, hasChanges, heldElsewhere, printsPair, pullCandidate, pullHints,
   releasableClaims,
   releasedCopies, unfreeAdds, type DraftAdd, type DraftState,
 } from "./draft-state";
 
 const state = (over: Partial<DraftState> = {}): DraftState => ({
-  version: null, adds: [], addChanges: [], removes: [], basicsChanged: false, basicsMoved: false,
+  version: null, adds: [], addChanges: [], removes: [],
   names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
   claimsKnown: true,
   buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
@@ -24,12 +23,13 @@ describe("changeCount / hasChanges", () => {
     }))).toBe(2);
   });
 
-  it("counts a basics-only edit in no figure", () => {
-    expect(changeCount(state({ basicsChanged: true }))).toBe(0);
-  });
-
-  it("still calls a basics-only edit a change — it has to be committable", () => {
-    expect(hasChanges(state({ basicsChanged: true }))).toBe(true);
+  // A basic is a row like any other, so the count that drives every chip is
+  // also the whole test of whether the draft differs. There is no second
+  // question and no flag beside the figure.
+  it("counts a basics-only edit like any other change", () => {
+    const basicsOnly = state({ removes: [{ oracleId: "swamp", from: 5, to: 0 }] });
+    expect(changeCount(basicsOnly)).toBe(1);
+    expect(hasChanges(basicsOnly)).toBe(true);
   });
 
   it("calls an untouched draft unchanged", () => {
@@ -43,6 +43,15 @@ describe("releasedCopies", () => {
     expect(releasedCopies(state({
       removes: [{ oracleId: "a", from: 3, to: 1 }, { oracleId: "b", from: 1, to: 0 }],
     }))).toBe(3);
+  });
+
+  // Five Swamps come out of the sleeve, and that is the figure "back in the
+  // pool" prints. A cut basic is released stock whatever the claim model says
+  // about it, which is nothing.
+  it("counts a cut basic's copies", () => {
+    expect(releasedCopies(state({
+      removes: [{ oracleId: "swamp", from: 5, to: 0 }],
+    }))).toBe(5);
   });
 
   it("releases nothing on a draft that cut nothing", () => {
@@ -102,6 +111,23 @@ describe("bucketDraftAdds / unfreeAdds", () => {
     expect(bucketed[0].heldBy.map((d) => d.name)).toEqual(["Prismari Artistry"]);
   });
 
+  // A basic is answered before the map is consulted, so it is free on a read
+  // that came back empty and on one that never happened. Without this an added
+  // Forest has no entry, buckets `unowned`, and reaches a shopping list.
+  it("buckets a basic free whatever the claim read did", () => {
+    const basics = new Set(["forest"]);
+    const forest = [{ oracleId: "forest", from: 0, to: 5 }];
+    const answered = bucketDraftAdds(forest, new Map(), basics);
+    const failed = bucketDraftAdds(forest, null, basics);
+    const expected = [
+      { oracleId: "forest", needed: 5, shortfall: 0, bucket: "free", heldBy: [] },
+    ];
+    expect(answered).toEqual(expected);
+    expect(failed).toEqual(expected);
+    // And free is not unfree, so nothing about a Forest is ever priced.
+    expect(unfreeAdds(failed)).toEqual([]);
+  });
+
   it("calls nothing unowned when the read failed, and quotes no purchase", () => {
     const bucketed = bucketDraftAdds(adds, null);
     // Every add keeps its place, `needed` still states the ask, and neither the
@@ -114,6 +140,33 @@ describe("bucketDraftAdds / unfreeAdds", () => {
     // No unfree rows is no priced copies, and `total` is null on a zero — so the
     // banner states no figure rather than "this commit asks for nothing".
     expect(summarisePrices([], null).pricedCopies).toBe(0);
+  });
+});
+
+// One rule for the review page, the pending banner and the version rail, which
+// held three copies of it. The three surfaces describing the same move
+// differently is the failure this exists to prevent.
+describe("printsPair", () => {
+  // What the column heading already said. `Coming in` over `Sol Ring 0 → 1` is
+  // the heading restated beside every name in the column.
+  it("says nothing for a single copy arriving or leaving", () => {
+    expect(printsPair({ from: 0, to: 1 })).toBe(false);
+    expect(printsPair({ from: 1, to: 0 })).toBe(false);
+  });
+
+  // The reported defect. Five Swamps out of the sleeve read as one until basic
+  // lands were drawn, because no other row could ever lose more than a copy.
+  it("prints the pair on a whole cut of more than one copy", () => {
+    expect(printsPair({ from: 5, to: 0 })).toBe(true);
+  });
+
+  it("prints it on a whole add of more than one copy", () => {
+    expect(printsPair({ from: 0, to: 5 })).toBe(true);
+  });
+
+  it("prints it on a recount", () => {
+    expect(printsPair({ from: 1, to: 2 })).toBe(true);
+    expect(printsPair({ from: 5, to: 4 })).toBe(true);
   });
 });
 
@@ -266,31 +319,3 @@ describe("heldElsewhere", () => {
   });
 });
 
-// The flag the review page's last-row routing turns on. `basicsChanged` cannot
-// answer this: it is set only when NOTHING else moved, so on a mixed draft it
-// reads false — and the page would then send a reader to the deck page while
-// their draft is still there.
-describe("anyBasicMoved", () => {
-  const basics = new Set(["island", "swamp"]);
-  const change = (oracleId: string) => ({ oracleId, from: 0, to: 1 });
-
-  it("sees a basic that moved alongside other cards", () => {
-    expect(
-      anyBasicMoved({ adds: [change("sol-ring")], removes: [change("swamp")] }, basics),
-    ).toBe(true);
-  });
-
-  it("sees one that moved on its own", () => {
-    expect(anyBasicMoved({ adds: [change("island")], removes: [] }, basics)).toBe(true);
-  });
-
-  it("says no when only other cards moved", () => {
-    expect(
-      anyBasicMoved({ adds: [change("sol-ring")], removes: [change("mox")] }, basics),
-    ).toBe(false);
-  });
-
-  it("says no on a draft that moved nothing", () => {
-    expect(anyBasicMoved({ adds: [], removes: [] }, basics)).toBe(false);
-  });
-});

@@ -73,8 +73,6 @@ const DRAFT: DraftState = {
     { oracleId: "recounted", from: 9, to: 7 },
     { oracleId: "gone", from: 1, to: 0 },
   ],
-  basicsChanged: false,
-  basicsMoved: false,
   names: new Map(),
   costs: new Map(),
   prices: new Map(),

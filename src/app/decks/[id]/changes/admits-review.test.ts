@@ -4,7 +4,6 @@ import { admitsReview, type ReviewAdmission } from "./admits-review";
 // A committed deck mid-edit with one card moved: the ordinary visit.
 const REVIEWING: ReviewAdmission = {
   changes: 1,
-  basicsChanged: false,
   hasVersion: true,
   firstCommitReady: false,
   wantsCommit: false,
@@ -23,14 +22,18 @@ describe("admitsReview", () => {
     expect(admitsReview({ ...REVIEWING, changes: 0, wantsCommit: true })).toBe(false);
   });
 
-  // Both empty-column cases below draw two blank columns, which is what the
-  // banner promises the review link never lands on.
-  it("admits a basics-only draft only as the commit CTA", () => {
-    const basics = { ...REVIEWING, changes: 0, basicsChanged: true };
-    expect(admitsReview(basics)).toBe(false);
-    expect(admitsReview({ ...basics, wantsCommit: true })).toBe(true);
+  // A committed deck with no row has nothing pending — the CTA is not an
+  // override. This is the case that used to be admitted for a basics-only
+  // draft, and those lands are rows now, so a count of 0 over a version means
+  // the deck matches it.
+  it("refuses a committed deck with no rows, CTA or not", () => {
+    const clean = { ...REVIEWING, changes: 0, firstCommitReady: true };
+    expect(admitsReview(clean)).toBe(false);
+    expect(admitsReview({ ...clean, wantsCommit: true })).toBe(false);
   });
 
+  // The brew draws two blank columns, which is what the banner promises the
+  // review link never lands on, so it is admitted only as the arriving CTA.
   it("admits a ready brew only as the commit CTA", () => {
     const brew = {
       ...REVIEWING,
@@ -54,20 +57,5 @@ describe("admitsReview", () => {
         wantsCommit: true,
       }),
     ).toBe(false);
-  });
-
-  // A moved basic land is a difference FROM a version, so a brew has nothing to
-  // have moved from and the loader never sets the flag on one. If it did, the
-  // readiness test is still the answer: v1 is the commit on offer.
-  it("keeps the readiness test on a brew that reports moved basics", () => {
-    const brew = {
-      ...REVIEWING,
-      changes: 0,
-      hasVersion: false,
-      basicsChanged: true,
-      wantsCommit: true,
-    };
-    expect(admitsReview({ ...brew, firstCommitReady: false })).toBe(false);
-    expect(admitsReview({ ...brew, firstCommitReady: true })).toBe(true);
   });
 });

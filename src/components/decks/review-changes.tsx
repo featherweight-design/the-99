@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import {
-  heldElsewhere, pullCandidate, releasedCopies, type DraftState,
+  heldElsewhere, printsPair, pullCandidate, releasedCopies, type DraftState,
 } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
@@ -89,17 +89,29 @@ function bucketWord(bucket: DraftRow["bucket"]): string | null {
   return null;
 }
 
-/** A row whose copy count moved rather than a card arriving or leaving whole.
- *  `draftDiff` files a change only when the counts differ, so the only pair this
- *  excludes is one where a side is zero — which the column heading has said. */
 /** Stable, so `useOptimistic`'s base identity never changes between renders. */
 const EMPTY_RESTORED: string[] = [];
 
 /** The `Coming in` column's error map, which is always empty. */
 const EMPTY_ERRORS: Record<string, string> = {};
 
-function isQuantityMove(row: DraftRow): boolean {
-  return row.from > 0 && row.to > 0;
+
+/**
+ * Whether a removal is one this page can offer to put back.
+ *
+ * A put-back is `addCardToDeck` unwrapped — ONE copy — while the optimistic
+ * model beside it retires the whole row and credits `from - to` copies to the
+ * deck. Those two agree on a removal of a single copy and on nothing else, so a
+ * five-Swamp cut would add one Swamp, hide the row, and tell the reader the deck
+ * grew by five.
+ *
+ * Basics are the only rows that ever carried a count above one, so until they
+ * were drawn this could not be reached. A `5 → 4` basic is still a single copy
+ * and still offers the control; a `5 → 0` does not, and the deck page is where
+ * that edit is undone.
+ */
+function restorable(row: DraftRow): boolean {
+  return row.from - row.to === 1;
 }
 
 type TypeGroup = readonly [string, DraftRow[]];
@@ -270,7 +282,7 @@ function Column({
           // The row prints the pair itself, inside the name: a caption under the
           // row named the card a second time, and the card is already the row
           // the caption was hanging off.
-          const recount = isQuantityMove(row)
+          const recount = printsPair(row)
             ? { from: String(row.from), to: String(row.to) }
             : undefined;
           return (
@@ -321,7 +333,7 @@ function Column({
                   // underneath the control rather than beside it — the same
                   // shape `PullControl` uses on the other side of the page.
                   action={
-                    onRestore
+                    onRestore && restorable(row)
                       ? (
                           <div className="inline-flex flex-col items-end flex-none">
                             <PutBackControl
@@ -431,11 +443,6 @@ export function ReviewChanges({
   // rather than hiding it, which is what leaves the note empty if it is opened
   // again — a half-typed reason for a version nobody committed is not a draft.
   const [commitSheetOpen, setCommitSheetOpen] = useState(commitOpen === true);
-  // The `?commit=1` arrival, and only while it lasts. The prop never changes,
-  // but closing the sheet drops the query — so a page that arrived that way,
-  // closed and reopened the sheet from the Commit button is an ordinary visit
-  // again, and `admitsReview` will refuse it the moment its last named row goes.
-  const [arrivedForCommit, setArrivedForCommit] = useState(commitOpen === true);
   // Cancelling takes `?commit=1` off the URL as well as closing the sheet. The
   // query is an instruction to open, and left behind it re-fires on a reload or
   // a back-forward return — the reader would be handed back the sheet they just
@@ -443,10 +450,6 @@ export function ReviewChanges({
   // mirror rule: the point is to avoid a navigation, not to make one.
   const closeCommitSheet = useCallback(() => {
     setCommitSheetOpen(false);
-    // The arrival is spent with the query it came in on: reopening the sheet
-    // from the Commit button is an ordinary visit, whatever brought the reader
-    // here first.
-    setArrivedForCommit(false);
     const url = new URL(window.location.href);
     if (!url.searchParams.has("commit")) return;
     url.searchParams.delete("commit");
@@ -533,15 +536,6 @@ export function ReviewChanges({
   // one only when it can actually cut v1 — see its own guard.
   const firstCommit = state.version === null;
 
-  // A draft that moved only basic lands: a version to cut, and no row either
-  // column can draw. Counting changes on it would print a nought standing for a
-  // real edit, so the heading and the lede name the edit instead.
-  // `basicsMoved` as well as `basicsChanged`: on a mixed draft the narrower flag
-  // is false by design, so restoring the last non-basic row would empty both
-  // lists and this would claim "0 changes" over a draft that still moves a
-  // basic. The two together are "nothing is left but the mana base".
-  const basicsOnly =
-    !firstCommit && inCount === 0 && outCount === 0 && (state.basicsChanged || state.basicsMoved);
   // The draft's own size, which a restore grows: the card is back in the deck.
   const liveCardCount = cardCount + restoredCopies;
 
@@ -636,24 +630,14 @@ export function ReviewChanges({
         // Announced into the region that outlives this row, because the row is
         // removed by its own success. Which sentence depends on what is left.
         //
-        // Two different questions, and they were one flag by mistake.
-        //
-        // The ROUTE leaves whenever no named row is left — `admitsReview`
-        // refuses an empty pair — EXCEPT on a `?commit=1` arrival, which is
-        // admitted for a basics-only draft. So a page whose sheet is open over
-        // a draft that still moves a basic stays exactly where it is, and the
-        // focus handoff is owed.
-        // The ARRIVAL, not the sheet's current state: opening the sheet from
-        // the Commit button carries no `?commit=1`, so that page is refused the
-        // moment its last named row goes, exactly like any other.
-        const staysForBasics = arrivedForCommit && state.basicsMoved;
-        const redirecting = alone && outAfter === 0 && inCount === 0 && !staysForBasics;
-        // The DECK matches its version again only if nothing else moved, and a
-        // basic that moved is something else. "Matches v1" over a draft that
-        // still changes the mana base is a claim about the deck, not the page.
-        const matchesVersion = redirecting && !state.basicsMoved;
+        // Every card the draft moved is a row, basics among them, so an empty
+        // pair of columns IS a deck back at its version — one question, and the
+        // route's own `admitsReview` asks it the same way. The pair used to be
+        // two questions and two flags, because a moved basic could empty both
+        // columns while the draft still differed.
+        const redirecting = alone && outAfter === 0 && inCount === 0;
         draftAnnouncer().textContent =
-          matchesVersion
+          redirecting
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
             : outAfter === 0 && alone
               // `alone` for the same reason it gates the sentence above: with
@@ -711,8 +695,8 @@ export function ReviewChanges({
       });
     },
     [
-      addRestoredId, arrivedForCommit, deckId, descriptionId, inCount, liveCardCount,
-      outCount, restoring, rows.out, router, state.basicsMoved, state.version,
+      addRestoredId, deckId, descriptionId, inCount, liveCardCount,
+      outCount, restoring, rows.out, router, state.version,
     ],
   );
 
@@ -769,9 +753,7 @@ export function ReviewChanges({
           <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
             {firstCommit
               ? copy.firstHeading(liveCardCount)
-              : basicsOnly
-                ? copy.basicsHeading(state.version?.number ?? 1)
-                : copy.heading(inCount + outCount, state.version?.number ?? 1)}
+              : copy.heading(inCount + outCount, state.version?.number ?? 1)}
           </h1>
           {/* Desktop only. At 390px the sentence is five lines above a list the
               reader came here to read, and the pulls it describes are on that
@@ -779,9 +761,7 @@ export function ReviewChanges({
           <p className="hidden md:block mt-0 mb-[18px] max-w-[680px] text-[14px] leading-[1.6] text-[color:var(--fg-body)]">
             {firstCommit
               ? copy.firstLede
-              : basicsOnly
-                ? copy.basicsLede((state.version?.number ?? 0) + 1)
-                : copy.lede((state.version?.number ?? 0) + 1)}
+              : copy.lede((state.version?.number ?? 0) + 1)}
           </p>
         </header>
 

@@ -6,6 +6,7 @@
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -681,32 +682,9 @@ describe("ReviewChanges", () => {
     expect(screen.queryByText(deckVersioningCopy.review.heading(0, 1))).toBeNull();
   });
 
-  // A draft that moved only basic lands has a version to cut and no row either
-  // column can draw, so counting changes prints a nought standing for a real
-  // edit — "0 changes since v1" over an open sheet offering v2. The page is
-  // reachable in this state only as the banner's `?commit=1`, which is why the
-  // sheet is what the pair is read above.
-  it("names the mana base rather than counting changes on a basics-only draft", () => {
-    render(
-      <ReviewChanges
-        deckId="d"
-        deckName="Korvold"
-        rows={{ in: [], out: [] }}
-        {...SHAPE}
-        state={{ ...STATE, basicsChanged: true }}
-        cardCount={CARD_COUNT}
-      />,
-    );
-    expect(
-      screen.getByRole("heading", { name: deckVersioningCopy.review.basicsHeading(1) }),
-    ).toBeTruthy();
-    expect(screen.getByText(deckVersioningCopy.review.basicsLede(2))).toBeTruthy();
-    expect(screen.queryByText(deckVersioningCopy.review.heading(0, 1))).toBeNull();
-  });
-
-  // Nothing moved at all: not a state the route admits, and the heading stays the
-  // diff's rather than borrowing the basics-only line — that line would claim an
-  // edit to the mana base nobody made.
+  // Nothing moved at all: not a state the route admits, and there is one
+  // heading left to draw. The basics-only heading it used to borrow here is
+  // retired — basics are rows, so a draft that moved them counts them.
   it("keeps the diff heading when a clean draft is rendered anyway", () => {
     render(
       <ReviewChanges
@@ -719,7 +697,6 @@ describe("ReviewChanges", () => {
       />,
     );
     expect(screen.getByRole("heading", { name: deckVersioningCopy.review.heading(0, 1) })).toBeTruthy();
-    expect(screen.queryByText(deckVersioningCopy.review.basicsHeading(1))).toBeNull();
   });
 
   // A failed claim read leaves every add's bucket null, so all three terms of the
@@ -849,6 +826,39 @@ describe("ReviewChanges", () => {
       expect(
         screen.queryByRole("button", { name: deckVersioningCopy.restore.ctaA11y("Sol Ring") }),
       ).toBeNull();
+    });
+
+    // A put-back is `addCardToDeck` unwrapped — ONE copy — while the optimistic
+    // model beside it retires the whole row and credits `from - to`. The two
+    // agree on a single-copy cut and on nothing else, so a five-Swamp cut would
+    // add one Swamp, hide the row, and tell the reader the deck grew by five.
+    // Basics are the only rows that ever carried a count above one, so this was
+    // unreachable until they were drawn.
+    // The reported defect, on the surface it was reported against. A deck that
+    // cut all five of its Swamps drew a bare `Swamp` under `Going out`, which is
+    // what the heading says about a single copy — so five cards coming out of
+    // the sleeve read as one.
+    it("prints the pair on a whole cut of more than one copy", () => {
+      mount({ in: [], out: [cut({ oracleId: "swamp", name: "Swamp", from: 5, to: 0 })] });
+      // The figures are their own element beside the name, which is what lets a
+      // long name truncate without taking the counts with it — so the assertion
+      // is `recountedItem` with the name argument empty, the same way the row
+      // builds it.
+      expect(screen.getByText("Swamp")).toBeInTheDocument();
+      expect(
+        screen.getByText(deckImportCopy.update.diff.recountedItem("", "5", "0").trim()),
+      ).toBeInTheDocument();
+    });
+
+    it("withholds it from a cut of more than one copy, and keeps it at one", () => {
+      mount({ in: [], out: [
+        cut({ oracleId: "swamp", name: "Swamp", from: 5, to: 0 }),
+        cut({ oracleId: "forest", name: "Forest", from: 5, to: 4 }),
+      ] });
+      expect(
+        screen.queryByRole("button", { name: deckVersioningCopy.restore.ctaA11y("Swamp") }),
+      ).toBeNull();
+      expect(putBack("Forest")).toBeInTheDocument();
     });
 
     it("takes the row out of the column on tap, before the server answers", async () => {
@@ -1166,36 +1176,6 @@ describe("ReviewChanges", () => {
       // And never a nought, which the copy promises is never drawn: the figure
       // counts the rows another write is still holding hidden.
       expect(spoken).not.toMatch(/\b0 going out\b/);
-    });
-
-    // The mixed draft — a basic moved AND a card cut — is the case `basicsMoved`
-    // was added for, and it is invisible to `basicsChanged`, which is false by
-    // design whenever anything else moved. Restoring the last named row leaves
-    // a draft that still changes the mana base.
-    it("calls a mixed draft's leftovers the mana base, not no changes", async () => {
-      const held = hold();
-      render(
-        <ReviewChanges
-          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
-          {...SHAPE}
-          state={{ ...STATE, basicsChanged: false, basicsMoved: true }}
-          cardCount={CARD_COUNT}
-        />,
-      );
-
-      await act(async () => {
-        fireEvent.click(putBack());
-      });
-
-      // Not "0 changes": the deck still differs from its version.
-      expect(document.body.textContent).toContain(
-        deckVersioningCopy.review.basicsHeading(STATE.version?.number ?? 1),
-      );
-      await held.release();
-      // And it never claims the deck matches the version again, because a basic
-      // that moved is something that moved.
-      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
-      expect(spoken).not.toContain("matches v");
     });
 
     // The whole row is a button that opens the card. Without `stopPropagation`

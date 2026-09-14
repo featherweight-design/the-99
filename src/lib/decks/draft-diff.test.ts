@@ -96,6 +96,18 @@ describe("bucketAdds", () => {
     expect(row.heldBy).toEqual([]);
   });
 
+  // The same absence on a basic land, which is the shape every basic arrives in:
+  // nothing asks the claim model about one, so the map can never hold a row for
+  // it. Answered before the lookup rather than after, ten Forests are free
+  // instead of a shopping list.
+  it("calls a basic free on that same absence", () => {
+    const [row] = bucketAdds([{ oracleId: C, from: 0, to: 10 }], avail, new Set([C]));
+    expect(row.bucket).toBe("free");
+    expect(row.shortfall).toBe(0);
+    expect(row.needed).toBe(10);
+    expect(row.heldBy).toEqual([]);
+  });
+
   // needed is the DELTA, not the draft's whole ask: a deck going from one copy
   // to three buys two. Returning the ask would double-charge the price total.
   it("needs only the delta when the quantity rose", () => {
