@@ -185,7 +185,10 @@ E3): a bucket equal to the whole list is a distinction without a difference. Sel
 PR 2 draws the segment without it. No unselected segment ever carries one, and neither `All decks`
 nor `Unfiled` does at any point (STATES W3/W4, errata E7).
 
-Wraps to a second line; past two it scrolls horizontally rather than growing a third (W5).
+Wraps to a second line; past two it scrolls **vertically** inside that band rather than growing a
+third (W5, corrected by errata E17). Not horizontally, which is what W5 says and what the build
+proved impossible on a wrapped row: the overflow is on the cross axis, so `overflow-x` hides every
+shelf past the second row instead of scrolling to it.
 
 **Accessibility:** plain buttons carrying `aria-current="true"`, each accessible name carrying its
 count via `folderCopy.shelves.aria`.

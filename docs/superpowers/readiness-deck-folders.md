@@ -152,6 +152,12 @@ branches six ways, on the one shelf (`All decks`) where every other tile is also
 The Move row names the current shelf, and it names it where the reader can change it. Ship without,
 and revisit if a real library makes the gap felt — which is Design's own recommendation.
 
+## §3b The three calls Hugh made at close-out, 2026-09-13
+
+- **§3.6 upheld.** No folder on the tile face. Design asked to be overruled if Product wanted it and was not: the tile's detail row already branches six ways, and the shelf line answers "how many are on each shelf" without spending that line.
+- **Home never groups by folder.** The brief left it for a later brief to inherit; it is settled instead, which turns the round's revalidation scoping into a rule (errata E18).
+- **STATES W5's scroll axis** ships vertical, with the reason recorded as errata E17 for Design to ratify.
+
 ## §4 What is not blocking, recorded
 
 - **Many shelves.** Wraps to two lines, then scrolls horizontally. Undesigned past that, which
