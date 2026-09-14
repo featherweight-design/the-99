@@ -32,6 +32,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { onPageRole, openSheet } from "./lib/surface.mjs";
 
 // CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
 // environment itself.
@@ -192,12 +193,23 @@ for (const { label, width, height } of VIEWPORTS) {
   await page.evaluate(() => {
     window.__probeStamp = true;
   });
-  // The segment's own label, and a MISS IS FATAL. This read `/everything you
-  // own/` — the name the control carried before the 2026-09-14 rename — and a
-  // locator that finds nothing simply logged a line and fell through, so the
-  // twelve checks below stopped running and the probe went on printing a
-  // successful-looking run. A rename cannot quietly disable a check that throws.
-  const other = page.getByRole("radio", { name: /all my cards/i }).first();
+  // Below the chassis's wide breakpoint the owned lane's controls live in the
+  // filter sheet, which renders null until the trigger is pressed — so on the
+  // phone this locator matched nothing whatever it was called, and every
+  // assertion past it was skipped on one of the two widths this probe advertises.
+  // Opening the sheet first is what makes the compact run measure the flip.
+  if (width < 1024) await openSheet(page);
+
+  // Through `onPageRole`, never `page.getByRole`: the shell mounts its own
+  // controls before `<main>`, and `scripts/lib/surface.mjs` is the single
+  // definition of what "the page" means.
+  //
+  // A MISS IS FATAL. This read `/everything you own/` — the name the control
+  // carried before the 2026-09-14 rename — and a locator that finds nothing
+  // simply logged a line and fell through, so the twelve checks below stopped
+  // running while the probe went on printing a successful-looking run. A rename
+  // cannot be allowed to quietly disable a check.
+  const other = onPageRole(page, "radio", /all my cards/i).first();
   if ((await other.count()) === 0) {
     throw new Error(
       "No `All my cards` segment on /commanders. The control was renamed out from under this probe, " +

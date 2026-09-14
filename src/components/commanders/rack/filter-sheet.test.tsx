@@ -2,7 +2,7 @@
 // does not depend on (see theme-picker.test.tsx). The assertions are the plan's,
 // verbatim; only the two interactions are fireEvent instead. The Esc case aims
 // the key at whatever holds focus, so it still fails if the sheet never took it.
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultParams } from "@/lib/commanders/lane-params";
 import { commandersCopy } from "@/lib/copy/lanes";
@@ -79,6 +79,25 @@ describe("FilterSheet", () => {
     expect(
       screen.getByText(/3 more are sleeved into decks you've built/),
     ).toBeInTheDocument();
+  });
+
+  // Below 1024px this sheet is the only place `Build from` exists, and the page's
+  // own region is silenced while it is open. A count alone told a reader that
+  // rows had gone and never that free mode had taken them.
+  it("announces the whole sentence, asides included", async () => {
+    const line = resultLineWithAside(12, 12, "owned", null, 3);
+    const { rerender } = render(
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={15} resultLine={resultLineWithAside(15, 15, "owned", null, null)} />,
+    );
+    rerender(
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={line} />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /3 more are sleeved into decks you've built/,
+      ),
+    );
   });
 
   it("applies a tap immediately rather than staging it behind an Apply", () => {

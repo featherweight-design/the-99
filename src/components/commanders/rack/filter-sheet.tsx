@@ -73,7 +73,7 @@ export function FilterSheet({
   const panelRef = useRef<HTMLDivElement>(null);
   // The count as last announced. Null means "not announced yet this opening",
   // which is what keeps the sheet from reading its own count out on open.
-  const lastShown = useRef<number | null>(null);
+  const lastLine = useRef<string | null>(null);
 
   // The page holds still behind the sheet. This one traps focus itself — it owns
   // its Escape and its drag dismissal — so it takes the lock alone rather than
@@ -86,22 +86,29 @@ export function FilterSheet({
     if (open) panelRef.current?.focus();
   }, [open]);
 
-  // The count is announced debounced 300ms, exactly as the reference panel
-  // announces its match count: FILTERING is immediate and only the message
-  // waits, so a reader tapping four pips hears one number, not four.
+  // The result sentence is announced debounced 300ms, exactly as the reference
+  // panel announces its match count: FILTERING is immediate and only the message
+  // waits, so a reader tapping four pips hears one message, not four.
+  //
+  // The SENTENCE, and keyed on the sentence — it used to announce the dismiss
+  // label and fire only when `shown` moved. Below 1024px this sheet is the only
+  // place `Build from` exists, and the page's own region is silenced while it is
+  // open (`silentResult`), so a count alone told a reader that rows had gone and
+  // never that free mode had taken them. It also said nothing at all when a
+  // filter changed which rows were shown without changing how many.
   useEffect(() => {
     if (!open) {
-      lastShown.current = null;
+      lastLine.current = null;
       return;
     }
-    if (lastShown.current === null || lastShown.current === shown) {
-      lastShown.current = shown;
+    if (lastLine.current === null || lastLine.current === resultLine) {
+      lastLine.current = resultLine;
       return;
     }
-    lastShown.current = shown;
-    const t = setTimeout(() => setAnnouncement(filterCopy.sheet.dismiss(shown)), 300);
+    lastLine.current = resultLine;
+    const t = setTimeout(() => setAnnouncement(resultLine), 300);
     return () => clearTimeout(t);
-  }, [open, shown]);
+  }, [open, resultLine]);
 
   if (!open) return null;
 
