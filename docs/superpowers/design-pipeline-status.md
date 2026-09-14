@@ -127,9 +127,17 @@ and in its `READINESS.md` where one exists — carries the same account; this ta
 | Amendment | Handoff | Shipped in | Ruling |
 |---|---|---|---|
 
-_Currently empty. Both founding rows shipped in PR #517 and were ratified by Hugh on 2026-09-12,
-with their errata marked settled: the `left-portrait` ambient layer is recorded on the art-wash
-amendment's ✅ row, and the desktop `Card details` control on **#7**'s._
+_Currently empty. Three rows have passed through: both founding rows shipped in PR #517 and were
+ratified by Hugh on 2026-09-12, with their errata marked settled — the `left-portrait` ambient
+layer is recorded on the art-wash amendment's ✅ row, and the desktop `Card details` control on
+**#7**'s. The third is the set head's two thresholds and its animated step, shipped in **#591**
+and **ratified by Hugh on 2026-09-14**: §31's fixed `collapse at 120, restore at 40` left 213px
+of empty band under the collapsed bar on the way back up, so both thresholds are measured from
+the grid's own top and the bar's height (~325 restore, ~405 collapse on `Avatar: The Last
+Airbender`), and the step between the two heights is animated over 180ms honouring
+`prefers-reduced-motion`. The 80px hysteresis band, the rule that the head never interpolates
+with the scroll offset, and `must not animate the title's size` are all unchanged. Reverting
+costs the band back. The full account is in `docs/superpowers/readiness-set-collections-addendum.md`._
 
 ---
 

@@ -323,7 +323,7 @@ both**, and the grid's track count identical at scroll 0 and scroll 400. §31's 
 148 and 52 of *content*; the collapsed bar is exactly 52, and the rest height is above 148
 because §28's 44px chip line and 32px result reserve both postdate that arithmetic.
 
-**Amendment, 2026-09-13 (PR #591) — the two thresholds are measured, not fixed.** The
+**Amendment, 2026-09-13 (PR #591) — the two thresholds are measured, not fixed. Ratified with Hugh 2026-09-14, direct rather than through a design round: the ruling's intent survives and only its two figures move.** The
 120/40 pair above shipped and produced a defect the arithmetic could not have predicted: the
 reserve is the open head's height less the collapsed bar, so everywhere above `grid top −
 bar` the strip under the bar is empty. On this fixture that is 213px of nothing, and the
@@ -335,8 +335,10 @@ interpolated with the scroll offset, are unchanged; only the two numbers are, an
 now a function of the head this set actually draws rather than of one fixture's arithmetic.
 The same change animates the step between the two heights over 180ms, honouring
 `prefers-reduced-motion` — §31 asks for two heights, and says nothing about the step between
-them being instantaneous. Both want Design's ratification; neither blocks, because the
-alternative is the band.
+them being instantaneous. A third defect came out of measuring the
+second and pre-dated this finding: scroll anchoring ignores sticky boxes, so the crossing
+moved the reader 293px on an 80px step. The head's container suspends anchoring for the
+length of a step. The full entry is in `docs/superpowers/readiness-set-collections-addendum.md`.
 
 **Watch for:** finding 6 rules that the collapsed bar must not carry the chip line, and
 #549 spent four rounds making that chip line touchable at 44px. The badge carries the state
