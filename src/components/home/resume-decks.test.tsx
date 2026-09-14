@@ -37,15 +37,25 @@ const rollup = (copiesByDeck: Record<string, number> = {}): ShoppingRollup => ({
   total: { copies: 0, cents: 0, pricedCopies: 0 },
 });
 
+/** One clock for every stamp, as the page threads one down. */
+const NOW = new Date("2026-09-13T12:00:00Z");
+
 describe("resumeDecks", () => {
-  it("puts a played deck above an unplayed one, however new the unplayed is", () => {
-    const played = deck({ id: "played", lastPlayedAt: new Date("2026-01-01T00:00:00Z") });
-    const fresh = deck({
-      id: "fresh",
-      lastPlayedAt: null,
-      createdAt: new Date("2026-09-07T00:00:00Z"),
+  // The order is *touched*, not *played*: an edit counts, and a deck edited this
+  // morning outranks one played in January. This is the rule that replaced "a
+  // played deck always beats an unplayed one".
+  it("puts the most recently touched deck first, whatever touched it", () => {
+    const played = deck({
+      id: "played",
+      lastPlayedAt: new Date("2026-01-01T00:00:00Z"),
+      lastEditedAt: new Date("2026-01-01T00:00:00Z"),
     });
-    expect(resumeDecks([fresh, played]).map((d) => d.id)).toEqual(["played", "fresh"]);
+    const edited = deck({
+      id: "edited",
+      lastPlayedAt: null,
+      lastEditedAt: new Date("2026-09-07T00:00:00Z"),
+    });
+    expect(resumeDecks([played, edited]).map((d) => d.id)).toEqual(["edited", "played"]);
   });
 
   it("orders played decks by when they were played", () => {
@@ -54,21 +64,47 @@ describe("resumeDecks", () => {
     expect(resumeDecks([older, newer]).map((d) => d.id)).toEqual(["newer", "older"]);
   });
 
-  it("orders unplayed decks by when they were created", () => {
-    const a = deck({ id: "a", lastPlayedAt: null, createdAt: new Date("2026-08-01T00:00:00Z") });
-    const b = deck({ id: "b", lastPlayedAt: null, createdAt: new Date("2026-09-01T00:00:00Z") });
+  // A deck nobody has edited still has a stamp: the column is seeded from the
+  // deck's creation, so a brand-new deck sorts by when it was made without
+  // creation being a term in the key.
+  it("orders never-played decks by when they were last edited", () => {
+    const a = deck({ id: "a", lastPlayedAt: null, lastEditedAt: new Date("2026-08-01T00:00:00Z") });
+    const b = deck({ id: "b", lastPlayedAt: null, lastEditedAt: new Date("2026-09-01T00:00:00Z") });
     expect(resumeDecks([a, b]).map((d) => d.id)).toEqual(["b", "a"]);
   });
 
-  it("breaks a tie on id so two renders agree", () => {
-    const at = new Date("2026-09-05T00:00:00Z");
-    const a = deck({ id: "aaa", lastPlayedAt: at });
-    const z = deck({ id: "zzz", lastPlayedAt: at });
-    expect(resumeDecks([z, a]).map((d) => d.id)).toEqual(["aaa", "zzz"]);
+  it("counts a commit as touching the deck", () => {
+    const committed = deck({
+      id: "committed",
+      lastPlayedAt: null,
+      lastEditedAt: new Date("2026-08-01T00:00:00Z"),
+      lastCommittedAt: new Date("2026-09-10T00:00:00Z"),
+    });
+    const edited = deck({
+      id: "edited",
+      lastPlayedAt: null,
+      lastEditedAt: new Date("2026-09-02T00:00:00Z"),
+    });
+    expect(resumeDecks([edited, committed]).map((d) => d.id)).toEqual(["committed", "edited"]);
   });
 
-  it("takes two and no more", () => {
-    expect(resumeDecks([deck({ id: "1" }), deck({ id: "2" }), deck({ id: "3" })])).toHaveLength(2);
+  it("breaks a tie on name, then id, so two renders agree", () => {
+    const at = new Date("2026-09-05T00:00:00Z");
+    const a = deck({ id: "aaa", name: "Zombies", lastPlayedAt: at });
+    const z = deck({ id: "zzz", name: "Atraxa", lastPlayedAt: at });
+    expect(resumeDecks([a, z]).map((d) => d.id)).toEqual(["zzz", "aaa"]);
+  });
+
+  // Four, because this block is the only route back into a deck now.
+  it("takes four and no more", () => {
+    // `lastPlayedAt` nulled: the shared fixture gives every deck the same play
+    // date, which would otherwise decide the order and leave the edit stamps
+    // saying nothing.
+    const five = [1, 2, 3, 4, 5].map((n) =>
+      deck({ id: `${n}`, lastPlayedAt: null, lastEditedAt: new Date(`2026-09-0${n}T00:00:00Z`) }),
+    );
+    expect(resumeDecks(five)).toHaveLength(4);
+    expect(resumeDecks(five).map((d) => d.id)).toEqual(["5", "4", "3", "2"]);
   });
 
   it("does not mutate its argument", () => {
@@ -80,7 +116,7 @@ describe("resumeDecks", () => {
 
 describe("ResumeDecks", () => {
   it("gives the art its own column and starts type clear of it", () => {
-    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
     const row = container.querySelector("a");
     // Stated, not a floor — the wash beside it is a hard 72px, so a row that
     // could grow past it would show an unwashed strip.
@@ -91,7 +127,7 @@ describe("ResumeDecks", () => {
   });
 
   it("needs no text shadow, because type never sits on art", () => {
-    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
     // A shadow VALUE, not the property: `statusPillStyle` declares
     // `text-shadow: none` on every pill in the app, which is the refusal of a
     // shadow rather than one.
@@ -100,7 +136,7 @@ describe("ResumeDecks", () => {
 
   it("prints the built count and the copies clause together", () => {
     render(
-      <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} />,
+      <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} total={1} now={NOW} />,
     );
     // Two elements, not one string: the clause is the only child a narrow row
     // is allowed to eat into, so it cannot share a span with the figure.
@@ -114,7 +150,7 @@ describe("ResumeDecks", () => {
     render(
       <ResumeDecks
         decks={[deck({ name: "Four colours, one plan", commanderName: "Atraxa, Praetors' Voice" })]}
-        shopping={rollup()}
+        shopping={rollup()} total={1} now={NOW}
       />,
     );
     expect(screen.getByText("Four colours, one plan")).toBeInTheDocument();
@@ -125,7 +161,7 @@ describe("ResumeDecks", () => {
     render(
       <ResumeDecks
         decks={[deck({ built: 87, toBuyCount: 0, statusPill: "Building" })]}
-        shopping={rollup()}
+        shopping={rollup()} total={1} now={NOW}
       />,
     );
     expect(screen.getByText("87 / 99")).toBeInTheDocument();
@@ -139,13 +175,13 @@ describe("ResumeDecks", () => {
   // surface will sell, and one that disagrees with the deck tile for the same
   // deck. The clause is absent instead.
   it("draws no copies clause for a deck the roll-up has no entry for", () => {
-    render(<ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup()} />);
+    render(<ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup()} total={1} now={NOW} />);
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
     expect(screen.queryByText(/cards/)).toBeNull();
   });
 
   it("names each row for the deck it opens", () => {
-    render(<ResumeDecks decks={[deck({ name: "Atraxa", id: "d1" })]} shopping={rollup()} />);
+    render(<ResumeDecks decks={[deck({ name: "Atraxa", id: "d1" })]} shopping={rollup()} total={1} now={NOW} />);
     const link = screen.getByRole("link", { name: /Atraxa/ });
     expect(link).toHaveAttribute("href", "/decks/d1");
   });
@@ -156,7 +192,7 @@ describe("ResumeDecks", () => {
     render(
       <ResumeDecks
         decks={[deck({ commanderName: "Ishai, Ojutai Dragonspeaker", partnerName: "Bruse Tarl, Boorish Herder" })]}
-        shopping={rollup()}
+        shopping={rollup()} total={1} now={NOW}
       />,
     );
     expect(screen.getByText("Ishai")).toBeInTheDocument();
@@ -170,7 +206,7 @@ describe("ResumeDecks", () => {
     render(
       <ResumeDecks
         decks={[deck({ commanderName: "Ishai, Ojutai Dragonspeaker", partnerName: "Bruse Tarl, Boorish Herder" })]}
-        shopping={rollup()}
+        shopping={rollup()} total={1} now={NOW}
       />,
     );
     const count = screen.getByText("99 / 98");
@@ -196,7 +232,7 @@ describe("ResumeDecks", () => {
             partnerName: "Bruse Tarl, Boorish Herder",
           }),
         ]}
-        shopping={rollup({ d1: 3 })}
+        shopping={rollup({ d1: 3 })} total={1} now={NOW}
       />,
     );
     expect(screen.getByText("95 / 98")).toBeInTheDocument();
@@ -209,7 +245,7 @@ describe("ResumeDecks", () => {
   });
 
   it("renders nothing when there are no decks", () => {
-    const { container } = render(<ResumeDecks decks={[]} shopping={rollup()} />);
+    const { container } = render(<ResumeDecks decks={[]} shopping={rollup()} total={1} now={NOW} />);
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -219,7 +255,7 @@ describe("ResumeDecks", () => {
   // by the row's own `overflow-hidden`. The inset's gap and the right padding
   // are the parts that give, and only below 1000px.
   it("tightens its inset and padding below the width it was drawn for", () => {
-    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
     const text = container.querySelector<HTMLElement>("[data-resume-text]")!;
     expect(text.className).toContain("pl-[108px]");
     expect(text.className).toContain("min-[1000px]:pl-[116px]");
@@ -231,7 +267,7 @@ describe("ResumeDecks", () => {
   // Two-up only where two rows clear their own fixed content.
   it("stacks the rows until the column can hold two of them", () => {
     const { container } = render(
-      <ResumeDecks decks={[deck(), deck({ id: "d2" })]} shopping={rollup()} />,
+      <ResumeDecks decks={[deck(), deck({ id: "d2" })]} shopping={rollup()} total={1} now={NOW} />,
     );
     const rows = container.querySelector<HTMLElement>('a[href^="/decks/"]')!.parentElement!;
     expect(rows.className).toContain("flex-col");

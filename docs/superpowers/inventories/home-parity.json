@@ -1,0 +1,36 @@
+{
+  "feature": "Home parity — one page, drawn twice",
+  "note": "One route, photographed at both widths, because the whole claim of this round is that the two widths draw the same page. Desktop and mobile had drifted into two: the resume block and Commitments existed on desktop only, and `Your decks` — a second, worse /decks — carried the phone. The contact sheet is the artefact that shows it, since a review reads a diff and cannot see a block that is absent at one width. The `shares` block names `CommitmentsCard`, whose whole point this round is that the phone mounts the SAME component rather than a phone copy of it — so both rows name Home's own view, which is where it is rendered. The resume block cannot be checked that way: one route draws it, so an import-equality check would assert a sameness the feature does not claim. Its two widths are a geometry question, and `pnpm probe:home` answers it — four rows 2×2 above 1000px and stacked below, the stamp in every row, and Commitments last on the phone.",
+  "shares": {
+    "binding": "CommitmentsCard",
+    "module": "src/components/home/commitments-card"
+  },
+  "rows": [
+    {
+      "id": "home-desktop",
+      "label": "/ — the whole page, desktop",
+      "view": "src/components/home/dashboard.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "main, [role=main], h1",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "home-phone",
+      "label": "/ — the whole page, 390px",
+      "view": "src/components/home/dashboard.tsx",
+      "widths": ["phone"],
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "main, [role=main], h1",
+          "settle": 4000
+        }
+      ]
+    }
+  ]
+}

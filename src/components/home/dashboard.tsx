@@ -14,7 +14,6 @@ import type { Commitments } from "../../lib/home/commitments";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { ReadySlice } from "../../lib/recs/ready-to-build";
 import { CommitmentsCard } from "./commitments-card";
-import { DeckRail } from "./deck-rail";
 import { ReadyToBuild } from "./ready-to-build";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
 
@@ -103,20 +102,31 @@ export function Dashboard(props: DashboardProps) {
       </header>
 
       {/* §HomeBody. One row of two columns on desktop; on a phone the same two
-          columns stack, and what phone drops it drops inside each section
-          rather than here — the resume rows and Commitments carry their own
-          `hidden sm:*`, so the order the reader gets is heroes, then decks. */}
-      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:flex-row sm:gap-[20px] sm:p-[20px_26px_26px]">
-        <div className="flex min-w-0 flex-col gap-[12px] sm:flex-auto sm:gap-[11px]">
+          columns stack, and nothing drops at either width — that is the whole
+          point of this round. The order is the same both ways: CTAs, Ready to
+          build, the resume block, Commitments. On desktop Commitments IS the
+          right rail now, the deck list that sat above it having left. */}
+      {/* Two columns at 1000px, not at `sm`. The resume block pairs its rows at
+          exactly that width, and between 640 and 999 the old `sm:flex-row` put
+          Commitments in a 316px rail BESIDE the rows — so the reader at 900px
+          met a different block order from the reader at either width the
+          handoff draws. One column until the page is wide enough for two. */}
+      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 min-[1000px]:flex-row min-[1000px]:gap-[20px] sm:p-[20px_26px_26px]">
+        <div className="flex min-w-0 flex-col gap-[12px] min-[1000px]:flex-auto sm:gap-[11px]">
           <ReadyToBuild ready={props.ready} inUse={props.inUse} />
-          {/* Sliced here rather than inside the section: the rail beside it
-              renders the same array in `listDecksWithStats`'s own order, and
-              one list cannot be in two orders at once. */}
-          <ResumeDecks decks={resumeDecks(props.decks)} shopping={props.shopping} />
+          {/* Sliced here rather than inside the section, so the section draws
+              what it is handed and the ordering stays testable without a DOM.
+              `decks.length` rides alongside as the footer's total — the figure
+              the deleted `Your decks · 17` heading used to carry. */}
+          <ResumeDecks
+            decks={resumeDecks(props.decks)}
+            shopping={props.shopping}
+            total={props.decks.length}
+            now={new Date(props.now)}
+          />
         </div>
 
-        <div className="flex flex-col gap-[12px] sm:w-[316px] sm:flex-none sm:gap-[11px]">
-          <DeckRail decks={props.decks} shopping={props.shopping} />
+        <div className="flex flex-col gap-[12px] min-[1000px]:w-[316px] min-[1000px]:flex-none sm:gap-[11px]">
           {/* Null when the availability read failed. Three zeroes after a
               failed query is a lie, so the card leaves rather than guessing. */}
           {props.commitments !== null && (

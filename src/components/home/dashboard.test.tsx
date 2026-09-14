@@ -62,19 +62,78 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
 });
 
 describe("Dashboard body", () => {
-  it("draws the rail against every deck and the resume rows against two", () => {
+  // `Your decks` is gone from both widths — heading, rows, count and footer
+  // link. It was a second, worse /decks one tap from the real one, and the rail
+  // and the tab bar both carry Decks.
+  it("draws no deck rail", () => {
     const decks = [
       deck({ id: "a", name: "Alpha", lastPlayedAt: new Date("2026-09-01T00:00:00Z") }),
       deck({ id: "b", name: "Beta", lastPlayedAt: new Date("2026-09-05T00:00:00Z") }),
       deck({ id: "c", name: "Gamma" }),
     ];
     render(<Dashboard {...BASE} decks={decks} />);
-    // The heading counts what the player has, not what either section drew.
-    expect(screen.getByText("Your decks · 3")).toBeInTheDocument();
-    // Two resume rows, most recently played first — and the rail beside them
-    // still holds the loader's own order, which is why Home slices a copy.
-    expect(screen.getAllByRole("link", { name: /Beta/ })).not.toHaveLength(0);
-    expect(screen.getAllByRole("link", { name: /Gamma/ })).toHaveLength(2);
+    expect(screen.queryByText(/Your decks/)).toBeNull();
+    // One link per deck, not two: the rail is not drawing them a second time.
+    expect(screen.getAllByRole("link", { name: /Gamma/ })).toHaveLength(1);
+  });
+
+  // The count `Your decks · 3` used to carry now rides inside the control that
+  // goes to /decks, so the number is a destination rather than a label.
+  it("carries the deck total in the resume block's footer", () => {
+    const decks = [1, 2, 3, 4, 5, 6].map((n) =>
+      deck({
+        id: `d${n}`,
+        name: `Deck ${n}`,
+        lastPlayedAt: null,
+        lastEditedAt: new Date(`2026-09-0${n}T00:00:00Z`),
+      }),
+    );
+    render(<Dashboard {...BASE} decks={decks} />);
+    expect(screen.getByText("2 more decks")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "All 6 decks" })).toHaveAttribute("href", "/decks");
+  });
+
+  // Four rows, because the resume block is the only route back into a deck now.
+  it("draws four resume rows, most recently touched first", () => {
+    const decks = [1, 2, 3, 4, 5].map((n) =>
+      deck({
+        id: `d${n}`,
+        name: `Deck ${n}`,
+        lastPlayedAt: null,
+        lastEditedAt: new Date(`2026-09-0${n}T00:00:00Z`),
+      }),
+    );
+    render(<Dashboard {...BASE} decks={decks} />);
+    expect(screen.getByRole("link", { name: /Deck 5/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Deck 1/ })).toBeNull();
+  });
+
+  // The order is a claim, so each row prints its evidence — and the verb names
+  // the act that won the sort rather than restating the block's heading.
+  it("stamps each row with the act that touched it", () => {
+    const decks = [
+      deck({
+        id: "a", name: "Edited", lastPlayedAt: null,
+        lastEditedAt: new Date("2026-09-12T12:00:00Z"),
+      }),
+      deck({
+        id: "b", name: "Played", lastPlayedAt: new Date("2026-09-11T12:00:00Z"),
+        lastEditedAt: new Date("2026-01-01T00:00:00Z"),
+      }),
+    ];
+    render(<Dashboard {...BASE} decks={decks} now="2026-09-13T12:00:00Z" />);
+    // Exactly 24 hours is `yesterday`, not `1d ago` — the ladder reads hours
+    // below a day, then yesterday, then days.
+    expect(screen.getByText("· edited yesterday")).toBeInTheDocument();
+    expect(screen.getByText("· played 2d ago")).toBeInTheDocument();
+  });
+
+  // The block says what its order means once, in a caption. Not a control: the
+  // block has one order, and a dropdown would imply it is a list.
+  it("captions the block with its order", () => {
+    render(<Dashboard {...BASE} decks={[deck({ id: "a", name: "Alpha" })]} />);
+    expect(screen.getByText("last touched")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sort/i })).toBeNull();
   });
 
   it("leaves the Commitments card out when the availability read failed", () => {

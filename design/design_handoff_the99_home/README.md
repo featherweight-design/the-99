@@ -95,6 +95,30 @@ geometry, the 44px phone targets — is the brand sheet's, unchanged.
 
 ---
 
+## Errata — measured against the shipped code, 2026-09-13
+
+The build corrected six figures. In every case the drawing is right and this document's tables are
+the thing that was wrong: the handoff's own stated intent is "shipped geometry, unchanged", and
+these are the shipped figures.
+
+| # | This document says | Shipped / canonical | Built |
+|---|---|---|---|
+| E1 | Resume row art bleed `74px` desktop / `62px` phone | `99px`. `docs/superpowers/design-tables/art-wash.md` keys portrait width to **band × 1.37**, so a 72px band is 99. 74 is legal at no band; 62 implies a 45px band | `99` at both widths |
+| E2 | Row `min-height: 64` desktop / `72` phone | `h-[72px]` **stated, not a floor** — the wash root is a hard 72 and a taller row shows an unwashed strip | Stated `72` at both widths |
+| E3 | "3px status rule on the left edge" | That is the **rail's** keyline — the block this round deletes. The resume row has never had one | No rule; the status pill is the row's status signal |
+| E4 | Deck name `15.5px` | `14.5px` | `14.5` |
+| E5 | STATES §C prints `imported {t} ago` for a never-edited deck, while §B excludes creation from the sort key — so such a deck has no key value and cannot appear at all | — | `decks.last_edited_at` is seeded from `created_at`, making creation the stamp's floor rather than a sort term. The verb is `edited`; `imported` is dropped, because nothing distinguishes an import from an edit once seeded and a verb that cannot be derived would be a guess |
+| E6 | The stamp sits under the count on desktop | — | It sits in the meta line at **both** widths. "Under the count" cannot coexist with this handoff's own two other rulings — the row is a stated 72px band, and no row may grow a line at either width. In the meta line it is "one resume row, drawn at two widths", which is what §Consistency asks for in prose |
+
+Two things the build added that this document did not ask for, both forced by the fourth row:
+
+- **The row is `flex: none` below 1000px.** The container is a column there, so `flex: 1` applies to
+  height and four rows in a short column each shrink below the stated 72. Two rows never overflowed,
+  which is why the defect arrives with the fourth.
+- **The two-column body starts at 1000px**, not at `sm`. Between 640 and 999 the old split put
+  Commitments in a rail beside the rows, so a reader at 900px met a different block order from a
+  reader at either width this handoff draws.
+
 ## Decisions log
 
 ### 1. Delete `Your decks` rather than fix its sort

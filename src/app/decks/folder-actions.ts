@@ -31,9 +31,9 @@ import { validateFolderName } from "../../lib/decks/folder-name";
 // changes hands, no deck's contents move, and no availability marker anywhere
 // reads `decks.folder_id` — so `deckSurfaces`' wider set would invalidate routes
 // that cannot tell the difference. Home is in that set: it renders decks through
-// `ResumeDecks` and `DeckRail`, neither of which draws a folder, and evicting it
-// would make the next visit pay for its collection, ranking and availability
-// reads to render output that did not change.
+// `ResumeDecks`, which draws no folder, and evicting it would make the next
+// visit pay for its collection, ranking and availability reads to render output
+// that did not change.
 const folderSurfaces = () => {
   revalidatePath("/decks");
 };
