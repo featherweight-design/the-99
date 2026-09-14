@@ -1,5 +1,12 @@
 # Gap report — Commanders / Discover two lanes
 
+> **Historical record, read as of its own date.** This report verifies the tree it was
+> written against and is not maintained afterwards. The dead `commandersCopy.row.*` keys it
+> names below were **deleted on 2026-09-13** for exactly the reason it gives — a named key
+> with no call site — so its "defined in `src/lib/copy/lanes.ts`" is true of the tree it
+> read and false of the tree now. The live spec is the design table it verifies against;
+> that table carries the RETIRED markers.
+
 Verification of the shipped implementation against
 `docs/superpowers/design-tables/commanders-discover.md`, row by row.
 
