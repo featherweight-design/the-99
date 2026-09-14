@@ -15,18 +15,9 @@
 // The turn is only checked on a two-faced card, and the script says so rather than
 // passing quietly. Run it a second time against a `transform` card with
 // PROBE_TWO_FACED=1, which makes a missing turn control a failure.
-// Point PROBE_CARD at a card the signed-in account owns in MORE THAN TWELVE
-// printings AND that the feed has priced — `OVERFLOW_THRESHOLD` is 12 and the
-// header collapses only past it, and the compact check asks whether a figure
-// SURVIVES that collapse, so it needs a figure to begin with. A basic land is the
-// reliable choice for the printings half.
-//
-// Where the card supplies neither, the run says `NOT EXERCISED` and does not fail.
-// That is not leniency: a state the run never entered is a state it cannot report
-// on, and `local-dev` holds no card with both halves — every owned holding misses
-// `printing_prices` — so a FAIL there was a standing red about data that no change
-// to this app could clear. A card that HAS a figure and loses it in the collapse
-// still fails.
+// PROBE_CARD can be any card the signed-in account owns. It no longer has to
+// reach the compact header: that check moved to `card-modal-price.test.tsx`,
+// where it can actually run — see the note at the foot of the phone pass.
 // Not part of `pnpm test`: it needs a browser and a signed-in session.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -39,8 +30,6 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
   "CLERK_SECRET_KEY",
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-/** `OVERFLOW_THRESHOLD` in `cards/printing-region.tsx`, past which the header collapses. */
-const OVERFLOW_THRESHOLD = 12;
 const CARD = process.env.PROBE_CARD;
 if (!CARD) throw new Error("Set PROBE_CARD to a card the account owns.");
 
@@ -538,119 +527,30 @@ try {
   await phonePage.keyboard.press("Escape");
   await phonePage.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
 
-  // THE COMPACT HEADER: A GATE, THEN ASSERTIONS.
+  // THE COMPACT HEADER IS NOT PROBED HERE, AND THAT IS THE RULING.
   //
-  // Three review rounds went into a tree of five conditions — figure present,
-  // header collapsed, printings owned, compact node present, node reachable —
-  // each new branch closing a state the previous shape could not tell from
-  // another. The tree was the problem. The check has exactly two preconditions,
-  // and once they hold every remaining question is an assertion with no
-  // qualifier: the run either could not ask, or it asked and got an answer.
-  const phoneTrigger = phonePage.locator('button[aria-label*="printings owned"]').first();
-  if ((await phoneTrigger.count()) === 0) {
-    // A FAILURE, not a skip. `count() === 0` cannot be told apart from a picker
-    // that regressed or a trigger whose accessible name moved, and the probe's
-    // own contract is that PROBE_CARD is owned in more than twelve printings —
-    // so a run pointed at such a card that finds no trigger has found something.
-    console.log(
-      "\nFAIL: no printing picker. Either PROBE_CARD is owned in one printing — point it"
-        + " at a card owned in more than twelve, which is what a basic land is for — or the"
-        + " trigger regressed. This probe cannot tell those apart, so it reports the one"
-        + " that matters.",
-    );
-    process.exitCode = 1;
-  } else {
-    // Read BEFORE the press. The trigger states the count in its own accessible
-    // name, and opening the region rewrites that name — so a read afterwards
-    // finds nothing and every check that leans on the figure quietly stops
-    // asking. `1,024 printings owned`; the copy separates thousands.
-    const owned = Number(
-      (/([\d,]+) printings owned/.exec(await phoneTrigger.getAttribute("aria-label") ?? "")?.[1]
-        ?? "").replace(/,/g, ""),
-    ) || null;
-    // A figure to move, read before the picker opened. A card the feed has never
-    // priced has nothing to survive the collapse.
-    const hadPrice = Boolean(phoneRead.mobile);
-
-    await phoneTrigger.click();
-    // Same reason as the open above: waited for, not slept through. The compact
-    // header is the state being measured, so the wait is for the thumb collapsing.
-    await phonePage
-      .waitForFunction(
-        () => {
-          const art = document.querySelector('[data-testid="modal-art-mobile"]');
-          return art !== null && art.getBoundingClientRect().width < 100;
-        },
-        null,
-        { timeout: 10_000 },
-      )
-      .catch(() => {});
-    const compact = await readPrice(phonePage);
-    const collapsed = await phonePage.evaluate(() => {
-      const art = document.querySelector('[data-testid="modal-art-mobile"]');
-      return art !== null && art.getBoundingClientRect().width < 100;
-    });
-    console.log(`\n── phone · printing region open (compact header past ${OVERFLOW_THRESHOLD}) ──`);
-    console.log(JSON.stringify(
-      {
-        ...compact,
-        hadPriceBeforeCollapse: hadPrice,
-        headerCollapsed: collapsed,
-        printingsOwned: owned,
-        overflowThreshold: OVERFLOW_THRESHOLD,
-      },
-      null,
-      2,
-    ));
-
-    // TWO GATES, because there are two claims and they need different things.
-    //
-    // Folding them into one is what a first attempt did, and it swallowed a real
-    // catch: an unpriced card past the threshold stopped collapsing and the run
-    // said "no figure to check" rather than "the header is broken".
-
-    // CLAIM 1 — a card past the threshold collapses. A property of the render,
-    // gated only on the count, which is a property of the card.
-    const mustCollapse = owned !== null && owned > OVERFLOW_THRESHOLD;
-    if (mustCollapse && !collapsed) {
-      console.log(
-        `\nFAIL: owned in ${owned} printings, past the ${OVERFLOW_THRESHOLD} threshold, and`
-          + " the header did not collapse. The compact state is broken, not unreachable.",
-      );
-      process.exitCode = 1;
-    }
-
-    // CLAIM 2 — a figure survives that collapse. Needs the collapse to have
-    // happened AND a figure to have existed, both of which the run measured.
-    // `local-dev` holds no card with more than twelve owned printings that the
-    // feed has also priced — every owned holding misses `printing_prices` — so
-    // this says so rather than failing about data no change to this app can
-    // produce.
-    const why = !mustCollapse
-      ? `owned in ${owned ?? "?"} printings, which is not past ${OVERFLOW_THRESHOLD}`
-      : !hadPrice
-        ? "the feed carries no figure for the printing it resolves to"
-        : !collapsed
-          ? "the header did not collapse, which is the failure above"
-          : null;
-    if (why !== null) {
-      console.log(
-        `\nNOT EXERCISED: ${why}, so the compact figure was not checked. PROBE_CARD needs`
-          + " BOTH — more than twelve owned printings and a price row. On `local-dev` no"
-          + " card has both, so this check earns its keep on staging.",
-      );
-    } else if (!compact.compact) {
-      console.log(
-        "\nFAIL: the header collapsed on a card that HAD a figure, and no price came"
-          + " with it. The tag has to survive the move out of the art into the name"
-          + " block (erratum E12).",
-      );
-      process.exitCode = 1;
-    } else if (compact.compact.hiddenFromScreenReaders) {
-      console.log("\nFAIL: the figure is inside the aria-hidden heading (erratum E10).");
-      process.exitCode = 1;
-    }
-  }
+  // It was: the run opened the printing region past the overflow threshold and
+  // asserted the tag survived the move out of the art into the name block (E12)
+  // without being sealed in the `aria-hidden` heading (E10).
+  //
+  // It never executed. Not once, on any database this repo can reach — the state
+  // needs a card owned in more than twelve printings that the feed has ALSO
+  // priced, and no collection here holds both at once. What the check produced
+  // instead was four rounds of review across two PRs, every one of them about
+  // how to word the fact that it had not run: a tree of five conditions, each
+  // branch added to tell one un-run state from another.
+  //
+  // Both claims are covered where they can actually be exercised —
+  // `card-modal-price.test.tsx` § "the compact art header", against a 14-printing
+  // fixture with a real price. It asserts the tag is a SIBLING of the mana cost
+  // rather than merely somewhere in the column, and that it sits outside the
+  // aria-hidden heading. Neither is a fact about laid-out geometry, which is the
+  // only thing this file exists for.
+  //
+  // What a browser still answers here and a test cannot: where the stack sits
+  // under the art, in what order, whether it fits a short window, whether the
+  // card turns, and whether the zoom is the dialog's rectangle. All of that is
+  // above, and all of it runs.
   await phone.close();
 } finally {
   await browser.close();
