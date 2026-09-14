@@ -9,8 +9,9 @@ import { frontFaceCost } from "../../lib/cards/faces";
 // rather than a white pip claiming to be free.
 //
 // A bare mana value is not a fallback for a long cost: `{W}{W}{U}{U}{B}{B}{R}{R}{G}{G}`
-// and `{10}` are the same integer and different cards. Long costs shingle, and
-// past the cap the last slot becomes a generic pip counting what it left out.
+// and `{10}` are the same integer and different cards. A long cost is CAPPED rather than
+// compressed: past the cap the last slot becomes a generic pip counting what it left out,
+// and the pips it does draw are always a real 3px apart.
 
 // "{2}{U}{B}" → ["2", "U", "B"]. Hybrid and Phyrexian symbols come back whole
 // ("U/B", "G/P"), which is why the cost is carried as Scryfall's string rather

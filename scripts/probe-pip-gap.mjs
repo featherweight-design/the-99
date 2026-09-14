@@ -87,7 +87,10 @@ const MEASURE = () => {
       worst = Math.min(worst, rects[i].left - rects[i - 1].right);
     }
   }
-  return { pips: pips.length, runs, pairs, worst: worst === Infinity ? null : Math.round(worst) };
+  // RAW, not rounded. `Math.round(-0.4)` is `-0`, which compares `>= 0` — so a real overlap
+  // of less than half a pixel would have passed the check that exists to catch overlaps. The
+  // rounding belongs in the sentence, not in the measurement.
+  return { pips: pips.length, runs, pairs, worst: worst === Infinity ? null : worst };
 };
 
 async function run() {
@@ -127,7 +130,8 @@ async function run() {
           m.runs > 0 && m.worst !== null && m.worst >= 0,
           m.runs === 0
             ? `no run of two or more pips was on the page (${m.pips} pips) — nothing measured`
-            : `${m.runs} runs, ${m.pairs} neighbouring pairs, tightest gap ${m.worst}px`,
+            : `${m.runs} runs, ${m.pairs} neighbouring pairs, tightest gap`
+              + ` ${Math.round(m.worst * 100) / 100}px`,
         );
       }
       await context.close();

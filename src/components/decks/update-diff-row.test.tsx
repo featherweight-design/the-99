@@ -146,7 +146,7 @@ describe("the review page's mounting", () => {
     cleanup();
     // The same width a costed removal ends on, which is the point: the name is
     // the row's only flexible item, so a land that drew no track put its
-    // availability slot 40px right of every spell above it.
+    // availability slot a whole track right of every spell above it.
     const spell = draw(<DiffRowOut review card={card({ manaCost: "{1}{U}" })} />);
     expect((spell.lastElementChild as HTMLElement).style.width).toBe(`${COST_TRACK}px`);
   });

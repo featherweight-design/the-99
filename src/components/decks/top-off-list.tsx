@@ -521,7 +521,16 @@ export function TopOffList({
         <span className="w-[18px] flex-none" />
         <span className="w-[7px] flex-none" />
         <span className="flex-auto min-w-0">{topOffCopy.list.colCard}</span>
-        <span className="w-[40px] flex-none text-right">{topOffCopy.list.colCost}</span>
+        {/* The same shared track the rows draw into, never a literal beside it: the cost
+            column widened from 40 to 72 when the pips stopped overlapping, and a header
+            carrying its own copy of the old number put this heading and every one after it
+            32px left of the data underneath. */}
+        <span
+          className="flex-none text-right"
+          style={{ width: COST_TRACK }}
+        >
+          {topOffCopy.list.colCost}
+        </span>
         <span className="w-[84px] flex-none" />
         {/* Both figures narrow to pay for the decline's 60px slot, measured
             against the string the row actually renders — `+147 pts`, eight
