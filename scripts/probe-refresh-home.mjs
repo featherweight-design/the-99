@@ -19,9 +19,11 @@
 //   5. The row's geometry is the shipped one: a stated 72px band, a 99px
 //      portrait (errata E1/E2 — the handoff's 74/62 and 64px are legal at no
 //      band, the wash table keys the portrait to band × 1.37).
-//   6. `All {n} decks` is a real route to /decks, CLICKED rather than counted.
+//   6. `All {n} decks` is a real route to /decks, CLICKED rather than counted,
+//      at desktop AND phone — the footer is part of the parity claim.
 //   7. The 900px band nobody drew: rows stack rather than clipping their names.
-//   8. Phone controls clear 44px.
+//   8. Phone controls clear 44px, and both header CTAs are on the page at every
+//      width — the pair mobile Home did not draw before this round.
 //
 // Run: `node scripts/probe-refresh-home.mjs`, against local dev.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -121,7 +123,15 @@ const READ_ROWS = `() => {
       portrait: cropLayer ? Math.round(cropLayer.getBoundingClientRect().width) : null,
       stamp,
       stampClipped,
+      // Whether the NAME element exists and is laid out at all, plus whether the
+      // row leaves the first line any room. A width threshold would fail a deck
+      // honestly called Elf; what the 640px defect actually did was leave the
+      // element with no box to be in. (No backticks here: template literal.)
       nameWidth: name ? Math.round(name.getBoundingClientRect().width) : 0,
+      namePresent: name !== null,
+      nameRoom: name
+        ? Math.round(name.parentElement.getBoundingClientRect().width) > 0
+        : false,
     };
   });
 }`;
@@ -173,8 +183,9 @@ async function main() {
     // among the reader's own — so it asks for an account that has one.
     if (rows === null || rows.length < 4) {
       console.error(
-        `PREREQUISITE: ${BASE} must be signed in to an account with a collection read and at least ` +
-        `four decks. Home drew ${rows === null ? "no resume block at all" : `${rows.length} row(s)`}.`,
+        `PREREQUISITE: ${BASE} must be signed in to an account with a collection read and MORE THAN ` +
+        `four decks — at four exactly the footer is correctly absent and its link is never pressed. ` +
+        `Home drew ${rows === null ? "no resume block at all" : `${rows.length} row(s)`}.`,
       );
       failures += 1;
       await context.close();
@@ -221,6 +232,17 @@ async function main() {
         .map((a) => a.getAttribute('href'));
     })()`);
     check(`${vp.label}: no deck link outside the resume block`, strayDeckLinks, []);
+
+    // The two CTAs. Claimed at the top of this file and asserted nowhere until
+    // now: a regression that dropped either at one width — which is exactly the
+    // drift this round exists to undo — passed every other check here.
+    for (const [label, href] of [["New deck", "/decks/new"], ["Update collection", "/collection/replace"]]) {
+      check(
+        `${vp.label}: the ${label} control is on the page`,
+        await onPage(page, `a[href="${href}"]:visible`).count(),
+        1,
+      );
+    }
 
     // 3. Four rows, and how they are laid out.
     check(`${vp.label}: four resume rows`, rows.length, 4);
@@ -273,7 +295,10 @@ async function main() {
         const el = a.querySelector('[data-resume-stamp]');
         if (!el) return true;
         const b = el.getBoundingClientRect();
-        return b.right > r.right + 0.5 || b.width < 1;
+        // Both edges: the stamp is right-aligned, so one too wide for the line
+        // keeps its right edge inside the row and loses its LEFT to the row's
+        // overflow — the failure this check exists for, invisible from the right.
+        return b.right > r.right + 0.5 || b.left < r.left - 0.5 || b.width < 1;
       }).length;
       for (const [el, text] of originals) el.textContent = text;
       return clipped;
@@ -299,7 +324,11 @@ async function main() {
     // 7. The widths nobody drew. A name clipped to nothing is the defect this
     //    block already shipped once, at 640px, and the reason 1180 is arithmetic
     //    rather than a Tailwind stop.
-    check(`${vp.label}: every row has room for its name`, rows.every((r) => r.nameWidth > 40), true);
+    check(
+      `${vp.label}: every row draws its name, in a line with room`,
+      rows.every((r) => r.namePresent && r.nameRoom && r.nameWidth > 0),
+      true,
+    );
 
     // 8. The phone's floor.
     if (vp.label === "phone") {
@@ -321,7 +350,7 @@ async function main() {
 
     // 6. The footer's link, pressed rather than counted. A link that renders and
     //    does not navigate is exactly what counting cannot tell apart.
-    if (vp.label === "desktop") {
+    if (vp.label === "desktop" || vp.label === "phone") {
       // The footer is absent when every deck is already drawn — a figure of
       // nought is an absence, not a zero — so an account with exactly four decks
       // correctly has none. `rows.length` is 4 either way; the total is what
@@ -330,14 +359,14 @@ async function main() {
       const found = await all.count();
       const moreThanShown = await page.evaluate(`(() => [...document.querySelectorAll('main span')]
         .some((el) => el.getClientRects().length && /^\\d+ more decks?$/.test((el.textContent ?? '').trim())))()`);
-      check("desktop: the footer appears exactly when decks remain", found, moreThanShown ? 1 : 0);
+      check(`${vp.label}: the footer appears exactly when decks remain`, found, moreThanShown ? 1 : 0);
       // Only where there is exactly one to press. A missing or doubled footer is
       // already the failure above, and clicking into it would throw here — before
       // the summary line and before the remaining viewports ever run.
       if (found === 1) {
         await all.first().click();
         await page.waitForURL(/\/decks$/, { timeout: 10_000 });
-        check("desktop: it lands on /decks", new URL(page.url()).pathname, "/decks");
+        check(`${vp.label}: it lands on /decks`, new URL(page.url()).pathname, "/decks");
         await page.goBack({ waitUntil: "networkidle" });
       }
     }
