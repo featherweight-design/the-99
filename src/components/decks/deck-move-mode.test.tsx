@@ -130,8 +130,9 @@ describe("MoveMode", () => {
     expect(onMoved).not.toHaveBeenCalled();
     expect(say).not.toHaveBeenCalled();
     // The action revalidates on its false path for a reason: what this list
-    // shows is what went stale.
-    expect(onRefused).toHaveBeenCalled();
+    // shows is what went stale — so the view is told this was NOT a rejection,
+    // and does not refetch the route on top of that revalidation.
+    expect(onRefused).toHaveBeenCalledWith({ threw: false });
   });
 
   it("reports nothing until the action has answered", async () => {
@@ -151,7 +152,9 @@ describe("MoveMode", () => {
     mode(null);
     fireEvent.click(screen.getByRole("button", { name: "Cube night" }));
     await waitFor(() => expect(say).toHaveBeenCalledWith("That did not save. Try again."));
-    expect(onRefused).toHaveBeenCalled();
+    // And the view is told it threw: the action may have committed with its
+    // response lost, and then nothing else is coming to update the grid.
+    expect(onRefused).toHaveBeenCalledWith({ threw: true });
   });
 
   it("refuses a second click while the first move is in flight", async () => {

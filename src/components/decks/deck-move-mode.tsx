@@ -47,7 +47,7 @@ export function MoveMode({
    */
   say: (announcement: string) => void;
   /** A refused move: refresh, because what this list shows is what went stale. */
-  onRefused: () => void;
+  onRefused: (outcome: { threw: boolean }) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const first = useRef<HTMLButtonElement>(null);
@@ -78,11 +78,15 @@ export function MoveMode({
       inFlight.current = false;
       if (answer === "threw") {
         say(folderCopy.move.failed);
-        onRefused();
+        // THREW, which is the one outcome nothing else reconciles. A `false`
+        // came from an action that ran and revalidated `/decks` on its way back;
+        // a rejection may have committed on the server with its response lost,
+        // and then no payload is coming.
+        onRefused({ threw: true });
         return;
       }
       if (!answer) {
-        onRefused();
+        onRefused({ threw: false });
         return;
       }
       say(name ? folderCopy.move.announceFiled(name) : folderCopy.move.announceUnfiled);

@@ -2,6 +2,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 const routerStub = vi.hoisted(() => ({ refresh: vi.fn() }));
+// Hoisted so a test can make the move refuse: the create-from-move path reads
+// the move's own answer, and refusing is a different outcome from filing.
+const actionStub = vi.hoisted(() => ({ move: vi.fn(async () => true) }));
+
+// The folder actions reach the database through the module they import, so the
+// view's own tests stub them. Their behaviour is covered in
+// `src/app/decks/folder-actions.test.ts` and against a real Postgres in
+// `pnpm probe:folders`.
+vi.mock("../../app/decks/folder-actions", () => ({
+  createFolderAction: async (name: string) => ({
+    ok: true,
+    folder: { id: "f-new", name },
+  }),
+  moveDeckAction: (...args: unknown[]) => actionStub.move(...(args as [])),
+  renameFolderAction: async (_id: string, name: string) => ({
+    ok: true,
+    folder: { id: "f-new", name },
+  }),
+  deleteFolderAction: async () => true,
+}));
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -63,6 +83,9 @@ function view(decks: DeckListItem[], folders: DeckFolderWithCount[] = []) {
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/decks");
+  actionStub.move.mockClear();
+  routerStub.refresh.mockClear();
+  actionStub.move.mockResolvedValue(true);
   // `renderWide` replaces this stub; restore the phone default every test, or
   // the first wide render silently re-forms every test after it.
   Object.defineProperty(window, "matchMedia", {
@@ -546,6 +569,202 @@ describe("DecksView", () => {
     window.history.replaceState(null, "", "/decks?folder=none");
     const { container } = renderWide(view(shelvedDecks(), twoFolders));
     expect(shelfActions(container)).toHaveLength(0);
+  });
+
+  it("does not move the reader when a folder is created", async () => {
+    // Hugh's call, 2026-09-13 (errata E20): the new shelf is empty, so walking
+    // the reader to it confirms nothing. The segment appears in the line and
+    // the region says it was made.
+    //
+    // Started on a NAMED shelf on purpose. From All decks the URL is already
+    // empty, so asserting it is still empty passes whether the reader moved or
+    // not — the assertion has to be able to fail.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /New folder/ }));
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() =>
+      expect(
+        [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Folder “Draft pile” created."),
+    );
+    expect(new URLSearchParams(window.location.search).get("folder")).toBe(FOLDER_A);
+    // And the shelf the reader is still on is the one whose decks are shown.
+    expect(screen.getByText("Filed one")).toBeInTheDocument();
+    // The new segment is in the line without a refresh landing first.
+    expect(
+      [...container.querySelectorAll("[data-shelf-line] button")].some((b) =>
+        b.textContent?.startsWith("Draft pile"),
+      ),
+    ).toBe(true);
+  });
+
+  it("closes the panel that asked for a folder once the deck is filed", async () => {
+    // The other half of errata E21. A move from the destination list closes the
+    // panel in `deck-card-overflow`; a move performed BY THE CREATE DIALOG never
+    // reaches that handler, so without the signal this panel sits open in move
+    // mode behind a dialog that already did the work.
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    // The move list's own last row, not the shelf line's button beside it.
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    // The trigger, not the Move row: the row only exists in the panel's MENU
+    // mode, so it is already absent while the destination list is up and an
+    // assertion against it would pass with no fix at all.
+    const trigger = screen.getAllByRole("button", { name: /^Actions for/ })[0];
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
+  });
+
+  it("leaves the panel open when the move the create asked for is refused", async () => {
+    // M6: a refused move changes nothing, so the panel goes back to its menu
+    // rather than closing. The folder was still made, and the announcement says
+    // that and nothing about a shelf the deck is not on.
+    actionStub.move.mockResolvedValueOnce(false);
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    const trigger = screen.getAllByRole("button", { name: /^Actions for/ })[0];
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() =>
+      expect(
+        [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Folder “Draft pile” created."),
+    );
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    // And back at its MENU, not left on the destination list behind a dialog
+    // that has been dismissed. The Move row exists only in menu mode.
+    // The menu and its focus both land a frame after the dialog's trap lets go,
+    // so they are waited for rather than read straight away.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: /^Move / })),
+    );
+  });
+
+  it("says the move failed when it threw, and keeps the panel open", async () => {
+    // A throw is not a refusal: the reader can act on it. The folder was made
+    // either way, so both halves are said.
+    actionStub.move.mockRejectedValueOnce(new Error("outage"));
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    const trigger = screen.getAllByRole("button", { name: /^Actions for/ })[0];
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() =>
+      expect(
+        [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Folder “Draft pile” created. That did not save. Try again."),
+    );
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    // And the route is refetched, for the same reason the destination list
+    // refetches on a throw: the action may have committed with its response
+    // lost, and nothing else is coming.
+    expect(routerStub.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("files the deck, and says so, when the create came from a move", async () => {
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    // The deck whose panel asked — read off the tile the panel belongs to,
+    // because the grid's order is the sort's and not this test's — onto the
+    // folder the create returned.
+    const first = screen.getAllByRole("listitem")[0].querySelector("h3")?.textContent;
+    const asked = shelvedDecks().find((d) => d.name === first)?.id;
+    // Both in the same wait: the call proves the action was reached, and the
+    // announcement proves `onCreate` resumed after awaiting it.
+    await waitFor(() => {
+      expect(actionStub.move).toHaveBeenCalledWith(asked, "f-new");
+      expect(
+        [...document.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Filed under Draft pile.");
+    });
+    // E21's other half: focus goes back to the card's own ⋯, which survives on
+    // All decks. Not left on the dismissed dialog, and not on the body.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getAllByRole("button", { name: /^Actions for/ })[0]),
+    );
+  });
+
+  it("refetches the route only when a move threw", async () => {
+    // Every other outcome reaches this view through the action's own
+    // `revalidatePath`, and asking for the route again on top of that fetched an
+    // expensive payload twice per write. A rejection is the exception: it may
+    // have committed with its response lost, so no payload is coming.
+    actionStub.move.mockResolvedValueOnce(false);
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
+    await waitFor(() => expect(actionStub.move).toHaveBeenCalled());
+    expect(routerStub.refresh).not.toHaveBeenCalled();
+
+    actionStub.move.mockRejectedValueOnce(new Error("outage"));
+    // The panel is still open on its menu — a refusal returns it there — so the
+    // Move row is the one to click, not the ⋯ again.
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
+    await waitFor(() => expect(routerStub.refresh).toHaveBeenCalledTimes(1));
+  });
+
+  it("reports a refused move as one, so the view can rescue focus", async () => {
+    // `false` means the deck or the folder is gone, which on All decks can take
+    // this card with it. A throw means nothing moved, so the card stays and the
+    // flag stays false.
+    actionStub.move.mockResolvedValueOnce(false);
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
+    // The selected segment in the line, which is where `focusShelfControl`
+    // puts it at this width.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector("[data-shelf-line] button[aria-current='true']"),
+      ),
+    );
+  });
+
+  it("closes the panel and hands focus to the shelf when the card leaves the grid", async () => {
+    // The named-shelf half of E21. The deck moves OFF the shelf being viewed, so
+    // the card unmounts with the panel on it and there is no ⋯ left to focus —
+    // the view puts focus on the shelf instead.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    renderWide(view(shelvedDecks(), twoFolders));
+    // A DECK's menu. The shelf line's own menu carries the same label prefix and
+    // comes first on a selected shelf, and it opens rename and delete.
+    const card = screen.getAllByRole("listitem")[0];
+    fireEvent.click(within(card).getByRole("button", { name: /^Actions for/ }));
+    fireEvent.click(within(card).getByRole("button", { name: /^Move / }));
+    fireEvent.click(within(card).getByRole("button", { name: "Commander night" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector("[data-shelf-line] button[aria-current='true']"),
+      ),
+    );
+    // And the panel went with it rather than staying open on a card that is
+    // still in the grid because the payload has not landed yet. The TRIGGER
+    // says so: the Move row exists only in the panel's menu mode, so its absence
+    // is also what an open destination list looks like.
+    expect(within(card).getByRole("button", { name: /^Actions for/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 
   it("ignores a hand-edited folder id", () => {

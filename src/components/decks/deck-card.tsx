@@ -122,8 +122,10 @@ interface DeckCardProps {
   /** Passed through to the menu's move mode — see `DeckCardOverflow`. */
   onCreateFolder: () => void;
   say: (announcement: string) => void;
-  onMoved: (result: { refused: boolean }) => void;
+  onMoved: (result: { refused: boolean; threw?: boolean }) => void;
   keepsFocus: boolean;
+  /** The outcome of a create started from this card's move mode, once it lands. */
+  closeAfterCreate: { seq: number; filed: boolean } | null;
 }
 
 /**
@@ -150,7 +152,7 @@ interface DeckCardProps {
  * pass a property check on both columns while being wrong.
  */
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, say, onMoved, keepsFocus,
+  deck, shopping, now, folders, onCreateFolder, say, onMoved, keepsFocus, closeAfterCreate,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -279,6 +281,7 @@ export function DeckCard({
           say={say}
           onMoved={onMoved}
           keepsFocus={keepsFocus}
+          closeAfterCreate={closeAfterCreate}
         />
         {/* The block at the foot, carrying identity alone: the deck's name, its
             commander and its colour. The chip and the bar are both statements
