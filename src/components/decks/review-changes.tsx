@@ -355,7 +355,16 @@ function Column({
           height and cost every row on those lines the width its own contents
           need: a name, a cost track and a `Put back` do not fit across 276px, so
           the control wrapped under the name and the two halves of the column
-          disagreed about what a row looks like. Hugh's ruling of 2026-09-14. */}
+          disagreed about what a row looks like. Hugh's ruling of 2026-09-14.
+
+          The gap between groups is now `mb-[16px]` at EVERY boundary and every
+          width. It already was, except between the two halves of a pair: each
+          paired group was the only child of its own wrapper, so `last:mb-0`
+          zeroed its margin and the wrapper's `gap-[22px]` stood in. That 22px
+          was the flex gap a desktop row needed, inherited by the phone rather
+          than chosen for it — a column whose group rhythm was 16px almost
+          everywhere and 22px at the boundaries that happened to have been
+          folded. One value, and it is the one the column already mostly had. */}
       {(groupByCardType(rows) as TypeGroup[]).map(renderGroup)}
     </section>
   );
