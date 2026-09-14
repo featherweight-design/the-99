@@ -407,7 +407,7 @@ is the click target; the pull control is its one nested action and stops propaga
 |----------|--------|---------|
 | slot display | `flex`, `align-items: center`, `justify-content: flex-end`, `gap 3px`, `flex: none` | same |
 | slot width (canvas) | `76px` | `90px` plain · `56px` on a pull row · `46px` / `44px` / `34px` / `22px` in nested sub-columns |
-| slot width (governing) | pass `track` / `cap` from the shipped constants — `COST_TRACK = 72`, `PIP_CAP = 5` (§Errata) | same (Discrepancies 11) — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
+| slot width (governing) | pass `track` / `cap` from the shipped constants — `COST_TRACK = 72`, `PIP_CAP = 5` (§Errata) | same (Discrepancies 11) — **`COST_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
 | generic-cost disc | `17px × 17px`, radius `999px`, background `#2A241D`, `1px solid #3A3229`, mono `9.5px` `#C6B79A` | `18px × 18px`, radius `999px`, background `#2A241D`, `1px solid #3A3229`, mono `10px` `#C6B79A` |
 | disc absent | when the cost has no generic component | when the cost has no generic component |
 | identity pip | `10px × 10px`, radius `999px` | `11px × 11px`, radius `999px` |
@@ -643,7 +643,7 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 |---|---|---|
 | Review-page grouping | **Card type**, both columns, via the shipped `groupByCardType` | the five availability buckets in README §3 and `STATES-pending.md`'s copy table (§Errata) |
 | Buy-tag density here | **`density="full"`** (§Errata ratified) | READINESS 33's "one judgement to ratify", and the phone frame's single-segment tag |
-| Cost-track geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) | the canvas's `90px` / `56px` / `46px` / `44px` / `34px` / `22px` slots, §Surfaces' `90px` / `76px`, and `COST-TRACK.md`'s `110px` / `76px` — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
+| Cost-track geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) | the canvas's `90px` / `56px` / `46px` / `44px` / `34px` / `22px` slots, §Surfaces' `90px` / `76px`, and `COST-TRACK.md`'s `110px` / `76px` — **`COST_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
 | Strip cell inventory and order | **mana value, ramp, draw, removal, wipes, land** (`changed.cells`, §Errata) | README §3b's "mana value, removal, draw, ramp, body" and the canvas's drawn order |
 | The pull mutation's name | **`pullCardFromDeck`** (§Errata) | `pullFromDeck` in §Modules and in the eng notes |
 | Revalidation | **`revalidateClaims(deckId, userId)`** (§Errata) | the `deckSurfaces()` call named later in the same eng notes |

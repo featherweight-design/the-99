@@ -288,7 +288,8 @@ sentence is replaced by the name lines, and the button hierarchy inverts.
 | `CostPips` props | (same rule) | pass `track` and `cap` **explicitly** — the component defaults neither (§Errata); mount the shipped constants `COST_TRACK` (72px) and `COST_PIP_CAP` (5), never a literal |
 
 > **Amendment, 2026-09-14 (PR #621), taken on Hugh's instruction and not through a design
-> round.** The pips overlapped. `PIP_TRACK` was 40px, which cannot hold three 12px pips at the
+> round.** The pips overlapped. The track — `COST_TRACK` in the code, `PIP_TRACK` in this
+> table's own §Errata — was 40px, which cannot hold three 12px pips at the
 > 3px gap this table also specifies — so every pip past the second stepped 5px into its
 > neighbour, and two black pips overlapping read as one, which on these rows is the difference
 > between a two-drop and a four-drop. The track is the cap's five slots at their real gap now:
@@ -554,7 +555,7 @@ height. `pending add` goes in the row's **accessible name only** and is never re
 | cost track slot — display / align / justify / gap | `flex` · `center` · `flex-end` · `3px` | `flex` · `center` · `flex-end` · `3px` |
 | cost track — generic disc | `17px × 17px`, radius `999px`, background `#2A241D`, border `1px solid #3A3229`, mono `9.5px`, color `#C6B79A` | `18px × 18px`, radius `999px`, background `#2A241D`, border `1px solid #3A3229`, mono `10px`, color `#C6B79A` |
 | cost track — coloured pip | `10px × 10px`, radius `999px`, WUBRG hex fill | `11px × 11px`, radius `999px`, WUBRG hex fill |
-| cost track governing geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) — the 90/76px above is the canvas drawing, and `COST-TRACK.md`'s 110/76 proposal governs nothing here | same — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
+| cost track governing geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) — the 90/76px above is the canvas drawing, and `COST-TRACK.md`'s 110/76 proposal governs nothing here | same — **`COST_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
 | remove `×` control — width / color / size / text-align | not drawn at 390px | `14px` · `#5C5346` · `13px` · `right`, `flex: none` |
 | row hover | `--elevated-hover` with `open card →` in the meta slot | same |
 | row click target | the whole row opens the card | same |
@@ -807,7 +808,7 @@ states, which live in this banner's box). Diff source: `deck_cards` against the 
 | Change-name row height | canvas `min-height 34px` | Component notes' `32px` |
 | Change-name name size | canvas `13px` | Component notes' `13.5px` |
 | Group heading size | canvas `16px` desktop / `14px` phone | Component notes' `14px` (and `13px` in a version diff) |
-| Cost-track geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) | the canvas's `90px` / `76px` slots, `COST-TRACK.md`'s `110px` / `76px`, and §Surfaces' `90px` / `76px` — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
+| Cost-track geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) | the canvas's `90px` / `76px` slots, `COST-TRACK.md`'s `110px` / `76px`, and §Surfaces' `90px` / `76px` — **`COST_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
 | Row min-height desktop | canvas `38px`; Contract frame says "rows 38–44px desktop, 44–52px phone"; READINESS says "diff rows 40–46px desktop" | ranges disagree; the canvas figure is recorded |
 | Pending sentence placement | **both recorded** — toolbar right slot (canvas, mono `11.5px` `#6A6152`) and caption above the list (Component notes, mono `10px` `--fg-faint`) | unresolved: the copy module ships `addListCaption` **and** `toolbarNote` as separate strings |
 | Ownership dot a11y | the **row's own accessible name** carries the availability word | Component notes' "the bucket heading is the accessible statement" (buckets withdrawn) |
