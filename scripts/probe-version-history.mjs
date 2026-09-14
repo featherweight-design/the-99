@@ -436,9 +436,20 @@ try {
   const retiredBody = await page.evaluate(() => document.body.innerText);
   console.log(`\n########## the retired route · /decks/<id>/versions`);
   console.log(`  url: ${retiredUrl}  status: ${retired?.status() ?? "?"}`);
+  // Two checks, not one, because "did not forward to the tab" and "did not
+  // forward at all" are different claims and only the second is the retirement.
+  // The status below cannot separate them either: `page.goto` follows
+  // redirects and reports the FINAL response, so a route redirecting to
+  // something that 404s would satisfy it. The address bar is what tells them
+  // apart — after a redirect it holds the destination, not what was asked for.
   check(
-    "the retired route no longer forwards",
+    "the retired route no longer forwards to the tab",
     retiredUrl !== `/decks/${deck.deckId}?tab=versions`,
+    retiredUrl,
+  );
+  check(
+    "and does not redirect anywhere else either",
+    retiredUrl === `/decks/${deck.deckId}/versions`,
     retiredUrl,
   );
   check(
