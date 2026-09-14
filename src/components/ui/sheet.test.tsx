@@ -10,9 +10,9 @@ const props = {
 
 /** A pointer gesture the handle can read. jsdom has no PointerEvent geometry. */
 const drag = (handle: Element, distance: number) => {
-  fireEvent.pointerDown(handle, { clientY: 0 });
-  fireEvent.pointerMove(handle, { clientY: distance });
-  fireEvent.pointerUp(handle, { clientY: distance });
+  fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+  fireEvent.pointerMove(handle, { clientY: distance, pointerId: 1 });
+  fireEvent.pointerUp(handle, { clientY: distance, pointerId: 1 });
 };
 
 const handle = () => document.querySelector("[aria-hidden]")!;
@@ -58,6 +58,21 @@ describe("Sheet", () => {
     drag(handle(), 79);
     expect(onDismiss).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog")).not.toHaveAttribute("style", expect.stringContaining("translateY"));
+  });
+
+  it("captures the pointer, so a drag off the handle still reports", () => {
+    // The handle is 4px tall and a drag is mostly vertical, so the pointer
+    // leaves it almost immediately. Without capture, move and up stop arriving
+    // and the sheet sticks part-way down with no way to finish or cancel.
+    const setPointerCapture = vi.fn();
+    const releasePointerCapture = vi.fn();
+    render(<Sheet {...props} open />);
+    const h = handle() as HTMLElement;
+    h.setPointerCapture = setPointerCapture;
+    h.releasePointerCapture = releasePointerCapture;
+    drag(h, 80);
+    expect(setPointerCapture).toHaveBeenCalledWith(1);
+    expect(releasePointerCapture).toHaveBeenCalledWith(1);
   });
 
   it("follows the pointer mid-drag", () => {

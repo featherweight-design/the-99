@@ -178,3 +178,25 @@ describe("DeckFilterSheet", () => {
     );
   });
 });
+
+describe("DeckFilterSheet mounting", () => {
+  it("runs no effects while closed", () => {
+    // The body owns a focus trap and a debounced announcement. Mounted while
+    // closed, the trap runs against a hidden panel and the announcement fires
+    // where nothing can read it — which is what moving the gate into `Sheet`
+    // quietly did until review caught it.
+    const { container } = render(
+      <DeckFilterSheet
+        open={false}
+        filters={EMPTY_FILTERS}
+        onChange={() => {}}
+        shown={3}
+        total={9}
+        onDismiss={() => {}}
+        autoFocusSearch={false}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+});

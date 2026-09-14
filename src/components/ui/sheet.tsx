@@ -109,6 +109,11 @@ export function Sheet({
 
   const onHandlePointerDown = (e: React.PointerEvent) => {
     dragStartY.current = e.clientY;
+    // Captured, so the gesture still reports once the finger leaves the handle.
+    // A drag is mostly vertical and the handle is 4px tall, so without this the
+    // pointer exits almost immediately: move and up stop arriving, and the sheet
+    // sticks part-way down with no way to finish or cancel the drag.
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const onHandlePointerMove = (e: React.PointerEvent) => {
     if (dragStartY.current === null) return;
@@ -119,6 +124,7 @@ export function Sheet({
     const travelled = Math.max(0, e.clientY - dragStartY.current);
     dragStartY.current = null;
     setDragY(0);
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
     if (travelled >= DRAG_DISMISS_PX) onDismiss();
   };
 
