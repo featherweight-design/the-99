@@ -135,6 +135,33 @@ describe("Sheet", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
+  it("ignores a second pointer, and measures only its own", () => {
+    // A second touch overwrote the origin, so lifting the FIRST measured from
+    // the second's start and could dismiss a sheet nobody dragged far.
+    const onDismiss = vi.fn();
+    render(<Sheet {...props} open onDismiss={onDismiss} />);
+    const h = handle();
+    fireEvent.pointerDown(h, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerDown(h, { clientY: 300, pointerId: 2 });
+    fireEvent.pointerMove(h, { clientY: 320, pointerId: 2 });
+    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
+    fireEvent.pointerUp(h, { clientY: 10, pointerId: 1 });
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it("does not take a reopened sheet's first move as a drag", () => {
+    // Closed mid-drag, the old pointer is still down. Its move must not reach a
+    // fresh handle as though it had pressed there.
+    const onDismiss = vi.fn();
+    const { rerender } = render(<Sheet {...props} open onDismiss={onDismiss} />);
+    fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
+    rerender(<Sheet {...props} open={false} onDismiss={onDismiss} />);
+    rerender(<Sheet {...props} open onDismiss={onDismiss} />);
+    fireEvent.pointerMove(handle(), { clientY: 200, pointerId: 1 });
+    fireEvent.pointerUp(handle(), { clientY: 200, pointerId: 1 });
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
   it("carries no gesture across a close", () => {
     // A caller that keeps this mounted and flips `open` mid-drag would reopen to
     // a stale offset, with the next gesture measured from the old coordinate.

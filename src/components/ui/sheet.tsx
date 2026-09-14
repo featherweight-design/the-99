@@ -38,7 +38,7 @@
 // search field by design, and the collection sheet takes `useDialogA11y`
 // wholesale. A shell that imposed one would break at least one of them, so it
 // takes the `panelRef` and `onKeyDown` a caller has already decided on.
-import { useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
@@ -116,6 +116,26 @@ export function Sheet({
   // Live offset under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef<number | null>(null);
+  // WHICH pointer owns the gesture. Six review rounds found symptoms of this
+  // being absent and one cause: a gesture with no identity. A second touch
+  // overwrote the origin, so lifting the first measured from the second's
+  // start and could dismiss. A sheet closed mid-drag left an origin behind, so
+  // reopening before the finger lifted delivered that pointer's move to a fresh
+  // handle as though it had pressed. With an id, an event from any other
+  // pointer is simply not this gesture, and a stale origin cannot be reached
+  // because every gesture begins by claiming the id.
+  const activePointer = useRef<number | null>(null);
+
+  // Forget the gesture once the sheet is closed. A ref cannot be written during
+  // render, so this is an effect — and it has to exist, because the refs outlive
+  // the closed branch: a sheet closed mid-drag kept the pointer id, and the same
+  // finger's move after reopening matched it and was measured from the old
+  // origin. Cleared here, that move belongs to no gesture and is ignored.
+  useEffect(() => {
+    if (open) return;
+    dragStartY.current = null;
+    activePointer.current = null;
+  }, [open]);
 
   // Closed returns null rather than hiding: a hidden duplicate would put a
   // second copy of every control in the accessibility tree, which is the rule
@@ -126,13 +146,16 @@ export function Sheet({
     // `translateY`, with the next gesture measured from the old coordinate.
     // Adjusted during render rather than in an effect: React re-runs this pass
     // before touching the DOM, so nothing paints with the stale value. Only the
-    // state — a ref must not be written during render, and `dragStartY` needs no
-    // clearing because every gesture overwrites it on pointerdown.
+    // state — a ref must not be written during render, which is what the effect
+    // above is for.
     if (dragY !== 0) setDragY(0);
     return null;
   }
 
   const onHandlePointerDown = (e: React.PointerEvent) => {
+    // First finger down owns it until it ends. A second is not a new drag.
+    if (activePointer.current !== null) return;
+    activePointer.current = e.pointerId;
     dragStartY.current = e.clientY;
     // Captured, so the gesture still reports once the finger leaves the handle.
     // A drag is mostly vertical and the handle is 4px tall, so without this the
@@ -141,13 +164,14 @@ export function Sheet({
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const onHandlePointerMove = (e: React.PointerEvent) => {
-    if (dragStartY.current === null) return;
+    if (e.pointerId !== activePointer.current || dragStartY.current === null) return;
     setDragY(Math.max(0, e.clientY - dragStartY.current));
   };
   const onHandlePointerUp = (e: React.PointerEvent) => {
-    if (dragStartY.current === null) return;
+    if (e.pointerId !== activePointer.current || dragStartY.current === null) return;
     const travelled = Math.max(0, e.clientY - dragStartY.current);
     dragStartY.current = null;
+    activePointer.current = null;
     setDragY(0);
     e.currentTarget.releasePointerCapture?.(e.pointerId);
     if (travelled >= DRAG_DISMISS_PX) onDismiss();
@@ -155,8 +179,10 @@ export function Sheet({
   // A cancel is the gesture being TAKEN AWAY — by a scroll claiming it, or a
   // system interaction — not a drag completing. Sharing the up handler meant a
   // cancel past 80px dismissed a sheet the reader never let go of.
-  const onHandlePointerCancel = () => {
+  const onHandlePointerCancel = (e: React.PointerEvent) => {
+    if (e.pointerId !== activePointer.current) return;
     dragStartY.current = null;
+    activePointer.current = null;
     setDragY(0);
     // No release here. `pointercancel` IS the user agent ending the pointer, so
     // capture is already gone by the time this runs and asking again throws
