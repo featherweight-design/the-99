@@ -191,6 +191,28 @@ describe("FilterPanel", () => {
     expect(focus).toHaveBeenCalledWith({ preventScroll: false });
   });
 
+  // The sheet has four pointer ways out and they must not drift apart: Done, the ✕, the
+  // scrim and the drag handle. A regression in any one of them jumps the page for a thumb
+  // while the others keep passing.
+  it.each([
+    ["the ✕", () => fireEvent.click(screen.getByRole("button", { name: /close/i }), { detail: 1 })],
+    ["the scrim", () => fireEvent.click(document.querySelector('[role="presentation"]')!, { detail: 1 })],
+    ["a drag past the threshold", () => {
+      const handle = document.querySelector('[role="dialog"] .touch-none')!;
+      fireEvent.pointerDown(handle, { clientY: 0 });
+      fireEvent.pointerMove(handle, { clientY: 90 });
+      fireEvent.pointerUp(handle, { clientY: 90 });
+    }],
+  ])("keeps the reader's place when %s dismisses the sheet", (_name, dismiss) => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    dismiss();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
   it("returns focus the visible way when Escape dismisses it", () => {
     setViewport(false);
     renderPanel();
