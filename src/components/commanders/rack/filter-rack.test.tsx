@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultParams, type Lane, type LaneParams } from "@/lib/commanders/lane-params";
 import { FilterRack } from "./filter-rack";
@@ -15,6 +15,29 @@ function stubWidth(wide: boolean) {
   );
 }
 
+function rackEl(
+  lane: Lane,
+  params: LaneParams = defaultParams(lane),
+  shown = 148,
+  total = 148,
+  orderPending = false,
+  excludedByExactly: number | null = null,
+  sleevedByFree: number | null = null,
+) {
+  return (
+    <FilterRack
+      params={params}
+      lane={lane}
+      onChange={() => {}}
+      shown={shown}
+      total={total}
+      excludedByExactly={excludedByExactly}
+      sleevedByFree={sleevedByFree}
+      orderPending={orderPending}
+    />
+  );
+}
+
 function renderRack(
   lane: Lane,
   params: LaneParams = defaultParams(lane),
@@ -23,18 +46,33 @@ function renderRack(
   orderPending = false,
   excludedByExactly: number | null = null,
 ) {
-  return render(
-    <FilterRack
-      params={params}
-      lane={lane}
-      onChange={() => {}}
-      shown={shown}
-      total={total}
-      excludedByExactly={excludedByExactly}
-      orderPending={orderPending}
-    />,
-  );
+  return render(rackEl(lane, params, shown, total, orderPending, excludedByExactly));
 }
+
+// The sheet is MOUNTED only while open, rather than mounted and returning null.
+// Both look identical in the DOM while it is shut, and the difference is the
+// announcement inside it: kept alive across a closing, the status node held the
+// last sentence and read it out again the instant the sheet came back — on a
+// reopening where nothing had changed. Three review rounds went into managing
+// that lifetime before it was removed instead.
+describe("FilterRack sheet lifetime", () => {
+  it("starts each opening of the sheet silent", async () => {
+    stubWidth(false);
+    const open = () => fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const { rerender } = render(rackEl("owned", defaultParams("owned"), 148, 148, false, null, null));
+
+    open();
+    rerender(rackEl("owned", defaultParams("owned"), 12, 148, false, null, 3));
+    await waitFor(() =>
+      expect(within(screen.getByRole("dialog")).getByRole("status")).toHaveTextContent(/sleeved/),
+    );
+
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    open();
+    expect(within(screen.getByRole("dialog")).getByRole("status")).toHaveTextContent("");
+  });
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
