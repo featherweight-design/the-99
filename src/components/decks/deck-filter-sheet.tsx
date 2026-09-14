@@ -129,10 +129,9 @@ function Group({ heading, children }: { heading: string; children: React.ReactNo
 export function DeckFilterSheet({ open, ...rest }: DeckFilterSheetProps) {
   // The gate stays HERE as well as inside `Sheet`, and they are not the same
   // gate. `Sheet` decides what is painted; this decides what is MOUNTED — and
-  // the body owns a focus trap, a debounced announcement and, on `/collection`,
-  // the nested set panel's open state. Mounted while closed, the trap runs
-  // against a hidden panel, the announcement effect fires where nothing can
-  // read it, and the nested panel stays open across a dismiss.
+  // the body owns a focus trap and a debounced announcement. Mounted while
+  // closed, the trap runs against a hidden panel and the announcement effect
+  // fires where nothing can read it.
   // `{ open, ... }` destructured, never `props.open` read off a bare `open`:
   // an unbound `open` resolves to `window.open`, which is a function and so
   // always truthy. No ReferenceError, no type error — `open` is a DOM global —
