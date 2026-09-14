@@ -272,7 +272,10 @@ export function Decklist({
     ).size;
 
     // Build shopping groups: only roles that have ROLE_TARGETS (no land or other).
-    const shoppingGroups = SHOPPING_ROLE_ORDER.flatMap((role) => {
+    // Under `By type` these are not built at all — the sections below come from
+    // the card types instead. The gap clause is role arithmetic ("closes 7→10"
+    // is a statement about a role's target), so a type section carries none.
+    const shoppingRoleGroups = SHOPPING_ROLE_ORDER.flatMap((role) => {
       const roleCards = missingCards.filter((c) => c.role === role);
       if (roleCards.length === 0) return [];
       const from = roleCounts[role];
@@ -289,7 +292,7 @@ export function Decklist({
         String(from),
         String(to),
       );
-      return [{ role, label: SHOPPING_ROLE_LABELS[role], cards: roleCards, gapClause }];
+      return [{ key: role, label: SHOPPING_ROLE_LABELS[role], cards: roleCards, gapClause }];
     });
 
     // Also include unowned cards in roles without ROLE_TARGETS — "other", and
@@ -307,6 +310,40 @@ export function Decklist({
     // purchase, so they move together.
     const spokenForN = cardCopies(spokenForCards.filter(notSpent));
     const missingN = cardCopies(missingCards.filter(notSpent));
+
+    // The sections this list draws, in the order it draws them — and the one
+    // place the grouping toggle reaches Shopping. `By role` is the list the
+    // design draws: the four targeted roles, then everything else, then the
+    // contested rows pinned last with the clause that says why they close
+    // nothing. `By type` asks a different question of the same rows, so it
+    // groups all of them — missing and spoken-for alike — by card type and
+    // carries no arithmetic, the roles being what that arithmetic is about.
+    const shoppingSections: {
+      key: string;
+      label: string;
+      cards: DeckDetailCard[];
+      gapClause?: string;
+    }[] =
+      grouping === "type"
+        ? groupByCardType([...missingCards, ...spokenForCards]).map(([group, groupCards]) => ({
+            key: group,
+            label: group,
+            cards: groupCards,
+          }))
+        : [
+            ...shoppingRoleGroups,
+            ...(otherShoppingCards.length > 0
+              ? [{ key: "other", label: "Other", cards: otherShoppingCards }]
+              : []),
+            ...(spokenForCards.length > 0
+              ? [{
+                  key: "spoken-for",
+                  label: recommendationsCopy.shopping.spokenForGroupLabel,
+                  cards: spokenForCards,
+                  gapClause: recommendationsCopy.shopping.spokenForGroupClause(String(spokenForN)),
+                }]
+              : []),
+          ];
 
     // The open slots the player kept for themselves (not filled by auto).
     // Clamped because a deck past its body size has none: the copy this feeds
@@ -398,11 +435,9 @@ export function Decklist({
     // Prev/Next in the card detail modal walks the list the eye does, so the
     // ids come from the rendered groups rather than from `shoppingCards`, whose
     // deck order the role grouping below discards.
-    const shoppingOrderedIds = [
-      ...shoppingGroups.flatMap((g) => g.cards.map((c) => c.oracleId)),
-      ...otherShoppingCards.map((c) => c.oracleId),
-      ...spokenForCards.map((c) => c.oracleId),
-    ].filter((id) => id !== spentCard?.oracleId);
+    const shoppingOrderedIds = shoppingSections
+      .flatMap((section) => section.cards.map((c) => c.oracleId))
+      .filter((id) => id !== spentCard?.oracleId);
 
     return (
       <div className="flex flex-col">
@@ -458,9 +493,13 @@ export function Decklist({
             </p>
           )}
 
-          {/* Role groups */}
-          {shoppingGroups.map(({ role, label, cards: groupCards, gapClause }) => (
-            <div key={role} className="mb-[16px] md:mb-[20px]">
+          {/* The list's sections — role groups under `By role`, card types under
+              `By type`. One map, because the only difference between a role
+              section and a type one is the label and whether a clause rides
+              beside it; three near-identical blocks is how the two groupings
+              came to disagree about what a Shopping row looks like. */}
+          {shoppingSections.map(({ key, label, cards: groupCards, gapClause }) => (
+            <div key={key} className="mb-[16px] md:mb-[20px]">
               <DecklistGroupHeader
                 label={label}
                 count={cardCopies(groupCards.filter(notSpent))}
@@ -470,69 +509,7 @@ export function Decklist({
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
                 style={{ gridTemplateColumns: "1fr 1fr" }}
               >
-                {groupCards.map((card) => {
-                  const shoppingFigure = figureFor(card.oracleId);
-                  return (
-                    <DecklistRow
-                      key={card.oracleId}
-                      deckId={deckId}
-                      card={card}
-                      siblings={shoppingOrderedIds}
-                      spent={card.oracleId === spentCard?.oracleId}
-                      shoppingFigure={shoppingFigure}
-                      inShopping
-                      newestAsOf={newestAsOf}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* Other/non-targeted roles (e.g. "other") */}
-          {otherShoppingCards.length > 0 && (
-            <div className="mb-[16px] md:mb-[20px]">
-              <DecklistGroupHeader
-                label="Other"
-                count={cardCopies(otherShoppingCards.filter(notSpent))}
-              />
-              <div
-                className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
-                style={{ gridTemplateColumns: "1fr 1fr" }}
-              >
-                {otherShoppingCards.map((card) => {
-                  const shoppingFigure = figureFor(card.oracleId);
-                  return (
-                    <DecklistRow
-                      key={card.oracleId}
-                      deckId={deckId}
-                      card={card}
-                      siblings={shoppingOrderedIds}
-                      spent={card.oracleId === spentCard?.oracleId}
-                      shoppingFigure={shoppingFigure}
-                      inShopping
-                      newestAsOf={newestAsOf}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Spoken for — pinned last, after Other. The clause slot carries why
-              this group closes nothing instead of arithmetic it cannot honour. */}
-          {spokenForCards.length > 0 && (
-            <div className="mb-[16px] md:mb-[20px]">
-              <DecklistGroupHeader
-                label={recommendationsCopy.shopping.spokenForGroupLabel}
-                count={spokenForN}
-                gapClause={recommendationsCopy.shopping.spokenForGroupClause(String(spokenForN))}
-              />
-              <div
-                className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
-                style={{ gridTemplateColumns: "1fr 1fr" }}
-              >
-                {spokenForCards.map((card) => (
+                {groupCards.map((card) => (
                   <DecklistRow
                     key={card.oracleId}
                     deckId={deckId}
@@ -546,7 +523,7 @@ export function Decklist({
                 ))}
               </div>
             </div>
-          )}
+          ))}
 
           {/* Footer — above a 1px --border rule */}
           <div

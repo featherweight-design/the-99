@@ -944,6 +944,24 @@ async function run() {
         `top ${shyState.top}px at ${PAST_COLLAPSE} — ${restState.top}px unscrolled, which is the app`
         + " chrome above it and not this head's doing",
       );
+      // The OPEN head leaves with the cards. Pinned open it sat over the grid for the
+      // whole band below the threshold — a phone read a screen of cards under a header
+      // that never moved, and then it snapped. Measured while the head is still open and
+      // BELOW its own threshold, which is the only band where the two behaviours differ:
+      // above it nothing has scrolled, past it the bar is what is pinned. A single
+      // assertion on `top` cannot say it alone, so the head's open state is asserted too —
+      // a build that collapsed at 120px would read a top of 0 here and pass.
+      await scrollTo(150);
+      const partway = await headNow();
+      failures += !report(
+        "the open head scrolls away with the cards rather than staying pinned",
+        partway !== null && !partway.shy && partway.top <= restState.top - 140,
+        partway === null
+          ? "the head was not on the page — the check measured nothing"
+          : `top ${partway.top}px at y=150 against ${restState.top}px at rest, shy=${partway.shy}`,
+      );
+      await scrollTo(depth.target);
+
       failures += !report(
         "the collapsed bar is the one-row form, not the full block with members hidden",
         shyState.bar === 52 && shyState.height <= 80,
