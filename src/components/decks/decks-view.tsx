@@ -9,7 +9,7 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
@@ -267,7 +267,14 @@ export function DecksView({
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   // Which card's overflow panel a finished create-from-move should close, and a
   // sequence so a second create on the same card closes it again.
-  const [createFiled, setCreateFiled] = useState<{ deckId: string; seq: number } | null>(null);
+  // Set when a create came from a card's move panel and that card survives, so
+  // the dialog's own focus rescue stands down and lets the panel place focus.
+  const panelTakesFocus = useRef(false);
+  const [createFiled, setCreateFiled] = useState<{
+    deckId: string;
+    seq: number;
+    filed: boolean;
+  } | null>(null);
 
   const [creating, setCreating] = useState(false);
   /**
@@ -859,6 +866,15 @@ export function DecksView({
                 // while the dialog was open. The hook focuses a surviving
                 // trigger itself; this catches the case where there is none.
                 requestAnimationFrame(() => {
+                  // Unless the panel that asked for this folder is taking focus
+                  // itself — it survives on All decks, and its ⋯ or its Move row
+                  // is a better answer than the shelf control. Both rescues test
+                  // for the body, so without this the winner would be whichever
+                  // frame callback was queued first.
+                  if (panelTakesFocus.current) {
+                    panelTakesFocus.current = false;
+                    return;
+                  }
                   if (document.activeElement === document.body) focusShelfControl();
                 });
               }}
@@ -882,9 +898,16 @@ export function DecksView({
                 // is persisted either way, but the deck is only on it if the
                 // move said so, and saying otherwise is a claim about someone
                 // else's shelf.
-                const filed = creatingFor
-                  ? await moveDeckAction(creatingFor, result.folder.id).catch(() => false)
-                  : false;
+                // THREE OUTCOMES, not two. `false` is a conflict the reader
+                // cannot act on — the deck or the folder is gone — and a throw is
+                // a failure they can, which is why `MoveMode` says so and this
+                // path has to as well rather than folding both into "not filed".
+                const answer = creatingFor
+                  ? await moveDeckAction(creatingFor, result.folder.id).catch(
+                      () => "threw" as const,
+                    )
+                  : null;
+                const filed = answer === true;
                 // THE READER DOES NOT MOVE. STATES CR4 selected the new shelf,
                 // landing them on S2; Hugh overruled that on 2026-09-13 (errata
                 // E20) — the shelf is empty, so there is nothing to go and look
@@ -896,16 +919,26 @@ export function DecksView({
                 // from the destination list closes it (errata E21). This path
                 // never reaches that handler — the move happens here — so the
                 // card is told directly.
-                // ONLY WHEN THE MOVE LANDED. A refused or thrown move both read
-                // as `filed: false`, and M6 says the panel goes back to its menu
-                // then, because nothing happened — so the close signal is gated
-                // on the move's own answer rather than on having asked.
-                if (creatingFor && filed)
-                  setCreateFiled((prev) => ({ deckId: creatingFor, seq: (prev?.seq ?? 0) + 1 }));
+                // The panel is told what happened, not just that it is over. It
+                // closes on a move that landed (errata E21) and returns to its
+                // MENU on one that did not (M6) — the state it would be in had
+                // the destination list performed the move itself.
+                if (creatingFor) panelTakesFocus.current = state.shelf === ALL_DECKS;
+                if (creatingFor)
+                  setCreateFiled((prev) => ({
+                    deckId: creatingFor,
+                    seq: (prev?.seq ?? 0) + 1,
+                    filed,
+                  }));
                 say(
                   filed
                     ? folderCopy.move.announceFiled(result.folder.name)
-                    : folderCopy.create.created(result.folder.name),
+                    : answer === "threw"
+                      ? // The folder was made and the deck was not filed. Both
+                        // halves are said, because the reader can act on the
+                        // second and the first is not in doubt.
+                        `${folderCopy.create.created(result.folder.name)} ${folderCopy.move.failed}`
+                      : folderCopy.create.created(result.folder.name),
                 );
                 return null;
               }}
@@ -967,7 +1000,9 @@ export function DecksView({
                     say={say}
                     keepsFocus={state.shelf === ALL_DECKS}
                     closeAfterCreate={
-                      createFiled?.deckId === deck.id ? createFiled.seq : null
+                      createFiled?.deckId === deck.id
+                        ? { seq: createFiled.seq, filed: createFiled.filed }
+                        : null
                     }
                     onMoved={({ refused }) => {
                       // Focus goes to the shelf whenever this card may not

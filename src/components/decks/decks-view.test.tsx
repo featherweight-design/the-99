@@ -639,6 +639,33 @@ describe("DecksView", () => {
       ).toContain("Folder “Draft pile” created."),
     );
     expect(trigger).toHaveAttribute("aria-expanded", "true");
+    // And back at its MENU, not left on the destination list behind a dialog
+    // that has been dismissed. The Move row exists only in menu mode.
+    // The menu and its focus both land a frame after the dialog's trap lets go,
+    // so they are waited for rather than read straight away.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: /^Move / })),
+    );
+  });
+
+  it("says the move failed when it threw, and keeps the panel open", async () => {
+    // A throw is not a refusal: the reader can act on it. The folder was made
+    // either way, so both halves are said.
+    actionStub.move.mockRejectedValueOnce(new Error("outage"));
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    const trigger = screen.getAllByRole("button", { name: /^Actions for/ })[0];
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() =>
+      expect(
+        [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Folder “Draft pile” created. That did not save. Try again."),
+    );
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
   });
 
   it("files the deck, and says so, when the create came from a move", async () => {
@@ -657,6 +684,11 @@ describe("DecksView", () => {
     await waitFor(() => expect(actionStub.move).toHaveBeenCalledWith(asked, "f-new"));
     const said = [...document.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent);
     expect(said).toContain("Filed under Draft pile.");
+    // E21's other half: focus goes back to the card's own ⋯, which survives on
+    // All decks. Not left on the dismissed dialog, and not on the body.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getAllByRole("button", { name: /^Actions for/ })[0]),
+    );
   });
 
   it("ignores a hand-edited folder id", () => {

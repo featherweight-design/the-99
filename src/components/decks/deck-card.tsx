@@ -124,8 +124,8 @@ interface DeckCardProps {
   say: (announcement: string) => void;
   onMoved: (result: { refused: boolean }) => void;
   keepsFocus: boolean;
-  /** Bumped when a create started from this card's move mode has filed it. */
-  closeAfterCreate: number | null;
+  /** The outcome of a create started from this card's move mode, once it lands. */
+  closeAfterCreate: { seq: number; filed: boolean } | null;
 }
 
 /**

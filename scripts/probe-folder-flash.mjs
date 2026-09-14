@@ -41,6 +41,12 @@ const madeFolderIds = [];
 // The signed-in account, read off Clerk rather than assumed: folder names are
 // unique PER USER, so a name alone can name another account's folder.
 let userId = null;
+// The deck this run borrows, and the shelf it was on BEFORE. Cleanup restores
+// that exact value rather than unfiling: the fixture account's decks may already
+// be filed, and a probe that loses a real folder assignment costs more than it
+// measures.
+let borrowedDeck = null;
+const RENAMED = `${FOLDER}-renamed`;
 
 let failures = 0;
 const check = (label, actual, expected) => {
@@ -163,6 +169,16 @@ async function run(browser) {
   );
   check("creating a folder does not move the reader", onShelf, null);
 
+  // The deck about to be borrowed, and the shelf it is on now. Read before the
+  // move, so the `finally` can put it back where it was.
+  const firstName = await onPage(page, "li h3").first().textContent();
+  const borrowed = await pool.query(
+    "select id, folder_id from decks where user_id = $1 and name = $2 limit 1",
+    [userId, firstName?.trim()],
+  );
+  check("the borrowed deck was found in the database", borrowed.rows.length, 1);
+  borrowedDeck = borrowed.rows[0] ?? null;
+
   // File the first deck into it, from All decks.
   // The DECK's own menu, inside the grid: the shelf line's trigger carries the
   // same `Actions for …` prefix, and it opens rename and delete, not Move.
@@ -226,7 +242,7 @@ async function run(browser) {
   await onPage(page, "[data-shelf-line] button[aria-label^='Actions for']").first().click();
   const rscBeforeRename = rsc;
   await page.getByRole("button", { name: "Rename" }).click();
-  await page.getByLabel("Folder name").fill(`${FOLDER}-renamed`);
+  await page.getByLabel("Folder name").fill(RENAMED);
   await page.getByRole("button", { name: "Save" }).click();
   await page.waitForTimeout(2000);
   check("the rename costs one server round trip", rsc - rscBeforeRename, 1);
@@ -235,7 +251,7 @@ async function run(browser) {
       [...document.querySelectorAll("[data-shelf-line] button")].some((b) =>
         b.textContent?.startsWith(name),
       ),
-    `${FOLDER}-renamed`,
+    RENAMED,
   );
   check("the renamed shelf shows its new name without a client refresh", renamed, true);
 
@@ -244,12 +260,14 @@ async function run(browser) {
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete folder" }).click();
   await page.waitForTimeout(2500);
+  // THE RENAMED NAME. Checking the original would pass whatever the delete did:
+  // the rename already took that name off the line.
   const gone = await page.evaluate(
     (name) =>
       [...document.querySelectorAll("[data-shelf-line] button")].every(
         (b) => !b.textContent?.startsWith(name),
       ),
-    FOLDER,
+    RENAMED,
   );
   check("the deleted shelf leaves the line without a client refresh", gone, true);
   check("the delete costs one server round trip", rsc - rscBeforeDelete, 1);
@@ -267,6 +285,24 @@ main()
     const c = await pool.connect();
     // By id, and only the ids this run made. A `like` on the name would reach a
     // concurrent run's folder and unfile decks belonging to it.
+    // A fallback lookup, because the id list is written after the create's own
+    // assertions: anything throwing between the two would otherwise leave the
+    // folder behind, against this script's own promise to clean up after itself.
+    if (madeFolderIds.length === 0 && userId) {
+      const late = await c.query(
+        "select id from deck_folders where user_id = $1 and name = any($2::text[])",
+        [userId, [FOLDER, RENAMED]],
+      );
+      late.rows.forEach((r) => madeFolderIds.push(r.id));
+    }
+    if (borrowedDeck) {
+      // Back to the shelf it was on, which may well have been a real one.
+      await c.query("update decks set folder_id = $1 where id = $2 and user_id = $3", [
+        borrowedDeck.folder_id,
+        borrowedDeck.id,
+        userId,
+      ]);
+    }
     if (madeFolderIds.length > 0) {
       await c.query(
         "update decks set folder_id = null where folder_id = any($1::uuid[]) and user_id = $2",
