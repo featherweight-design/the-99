@@ -337,7 +337,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   just scores against it. The rule is decided in `rankFree` and unit-tested there; what only a
   browser can answer is whether a commander the reader can see actually leaves the list once a
   finished deck has sleeved its card, and whether the result line accounts for the row it
-  removed. It checks both widths, because the rack draws inline above 1024px and inside a sheet
+  removed. It checks both widths, because the rack draws inline from `CHASSIS_WIDE_MIN_PX`
+  (1000px) up and inside a sheet
   below it.
 
   It exists because the contact sheet cannot cover this. On the dev account every claim is

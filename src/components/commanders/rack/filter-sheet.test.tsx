@@ -100,6 +100,23 @@ describe("FilterSheet", () => {
     );
   });
 
+  // Reopening is a new opening, whatever the sentence says. With the identity
+  // carried on the sentence alone, a reader who closed and reopened on unchanged
+  // filters heard the sheet read its own count out at them.
+  it("starts silent on a reopening, even on the sentence it last announced", async () => {
+    const line = resultLineWithAside(12, 12, "owned", null, 3);
+    const sheet = (open: boolean, resultLine: string) => (
+      <FilterSheet open={open} onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={resultLine} />
+    );
+    const { rerender } = render(sheet(true, resultLineWithAside(15, 15, "owned", null, null)));
+    rerender(sheet(true, line));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/sleeved/));
+
+    rerender(sheet(false, line));
+    rerender(sheet(true, line));
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
   it("applies a tap immediately rather than staging it behind an Apply", () => {
     const onChange = vi.fn();
     render(

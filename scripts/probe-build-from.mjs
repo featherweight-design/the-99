@@ -290,9 +290,9 @@ async function run() {
       deckId = id;
     });
 
-    // AFTER, at both widths: the rack draws inline above 1024px and inside a
-    // sheet below it, and the result line is the rack's — so a line that only
-    // reaches one of the two forms is a half-shipped fix.
+    // AFTER, at both widths: the rack draws inline at `CHASSIS_WIDE_MIN_PX` and
+    // above, and inside a sheet below it, and the result line is the rack's — so
+    // a line that only reaches one of the two forms is a half-shipped fix.
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
 

@@ -68,14 +68,26 @@ export function FilterSheet({
 }) {
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
-  // Stamped with the sentence it describes, and rendered only while that is
-  // still the sentence on screen. This sheet stays mounted at `open={false}`, so
-  // a plain string would sit in the status node the instant it reopens —
-  // including an aside naming commanders free mode hid, after the reader changed
-  // modes with the sheet shut. Carrying the line is what makes the stale case
-  // render nothing, with no second `setState` to clear it: an effect that calls
-  // one synchronously is what the compiler's cascading-render rule forbids.
-  const [announcement, setAnnouncement] = useState<{ line: string; text: string } | null>(null);
+  // An announcement belongs to ONE OPENING and ONE SENTENCE, and this pair is
+  // its identity. Rendered only while both still hold.
+  //
+  // Both halves were paid for. The sheet stays mounted at `open={false}`, so a
+  // plain string sat in the status node the instant it reopened — a stale count,
+  // or an aside naming commanders free mode hid, after the reader changed modes
+  // with the sheet shut. Carrying the LINE fixed that for a sentence that had
+  // since changed and not for one that had not: reopen on the same filters and
+  // the sheet read its own count out again, which is the thing `null` was
+  // supposed to prevent. Carrying the OPENING closes the case the line cannot
+  // see, because a second opening is a different opening whatever the sentence
+  // says.
+  //
+  // It is a stamp rather than a `setState` on close because an effect that calls
+  // one synchronously is what the compiler's cascading-render rule forbids —
+  // the first attempt at this did exactly that and was rejected.
+  const opening = useRef(0);
+  const [announcement, setAnnouncement] = useState<
+    { opening: number; line: string; text: string } | null
+  >(null);
   const dragStartY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   // The count as last announced. Null means "not announced yet this opening",
@@ -113,6 +125,7 @@ export function FilterSheet({
   useEffect(() => {
     if (!open) {
       lastLine.current = null;
+      opening.current += 1;
       return;
     }
     if (lastLine.current === null || lastLine.current === resultLine) {
@@ -120,7 +133,10 @@ export function FilterSheet({
       return;
     }
     lastLine.current = resultLine;
-    const t = setTimeout(() => setAnnouncement({ line: resultLine, text: resultLine }), 300);
+    const t = setTimeout(
+      () => setAnnouncement({ opening: opening.current, line: resultLine, text: resultLine }),
+      300,
+    );
     return () => clearTimeout(t);
   }, [open, resultLine]);
 
@@ -284,7 +300,9 @@ export function FilterSheet({
         </div>
 
         <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-          {announcement?.line === resultLine ? announcement.text : ""}
+          {announcement?.opening === opening.current && announcement.line === resultLine
+            ? announcement.text
+            : ""}
         </span>
       </div>
     </>
