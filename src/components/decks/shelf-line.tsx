@@ -201,7 +201,7 @@ export function ShelfTrigger({
   return (
     <div
       data-shelf-trigger
-      className="flex items-center gap-[8px] bg-[color:var(--bg)] px-[16px] py-[8px]"
+      className="flex items-center gap-[8px] overflow-hidden bg-[color:var(--bg)] px-[16px] py-[8px]"
     >
       <button
         type="button"
@@ -209,17 +209,21 @@ export function ShelfTrigger({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={folderCopy.shelves.triggerAria(label, count)}
-        className="flex h-[44px] cursor-pointer items-center gap-[8px] rounded-[10px] border-none bg-transparent px-0 font-sans text-[15px] font-semibold text-[color:var(--fg)]"
+        className="flex h-[44px] min-w-0 cursor-pointer items-center gap-[8px] rounded-[10px] border-none bg-transparent px-0 font-sans text-[15px] font-semibold text-[color:var(--fg)]"
       >
-        {label}
+        {/* Truncated, with the whole name in the accessible name above: one
+            long single-token name would otherwise push the 44px action target
+            past the edge of a phone and make it unreachable. */}
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
         <span className="font-mono text-[11px] font-normal text-[color:var(--fg-faint)]">
           {count}
         </span>
-        <span aria-hidden className="text-[color:var(--fg-faint)]">
+        <span aria-hidden className="flex-none text-[color:var(--fg-faint)]">
           ▾
         </span>
       </button>
-      {menu}
+      {/* `flex-none`, so the label yields before the action does. */}
+      {menu && <span className="flex-none">{menu}</span>}
     </div>
   );
 }
