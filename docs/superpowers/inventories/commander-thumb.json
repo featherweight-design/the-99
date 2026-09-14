@@ -1,0 +1,73 @@
+{
+  "feature": "One commander image — the thumb renders",
+  "note": "The other leaf of the same round. `ArtWash` covers every band; these three surfaces draw a commander at thumb size instead, and five renders converged on the two boxes `CommanderThumb` owns. Separate inventory because `check:shared` takes one binding, and a row whose view renders a different leaf would have to be dropped rather than checked. The partner row photographs the slot's empty plate: reaching its FILLED render needs pairing mode entered and a partner chosen, which these steps do not do. Said plainly rather than counted as coverage of a render nobody looked at — `check:shared` still proves that file renders the shared thumb, which is the half a picture cannot answer.",
+  "shares": {
+    "binding": "CommanderThumb",
+    "module": "src/components/ui/commander-thumb.tsx"
+  },
+  "rows": [
+    {
+      "id": "picker-rows",
+      "label": "/decks/new — the picker's candidate rows",
+      "view": "src/components/decks/create-picker.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    },
+    {
+      "id": "picker-partner",
+      "label": "/decks/new — the partner slot's EMPTY plate, after a commander is picked",
+      "view": "src/components/decks/partner-slot.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "click": "ul li button, ul li [role=radio], input[type=radio]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "prefilled-door",
+      "label": "/decks/new?commander=… — the pre-filled door's summary",
+      "view": "src/components/decks/create-pre-filled.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "settle": 3000,
+          "wait": "main, [role=main], h1"
+        },
+        {
+          "click": "a[href^=\"/commanders/\"]",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "link",
+          "name": "^Build this deck",
+          "settle": 3500,
+          "wait": "main, [role=main], h1"
+        }
+      ]
+    }
+  ],
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ]
+}

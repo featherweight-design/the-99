@@ -1,10 +1,11 @@
 {
   "feature": "One commander image — every render of a commander's art",
-  "note": "Written at close-out rather than before implementation, which is the wrong order and is recorded as such: the round shipped before this repository had a contact sheet. Every row here is a surface the round changed, and the two the corrections round changed are marked. A row's ids come from the environment so no account's data is committed.",
+  "note": "Written at close-out rather than before implementation, which is the wrong order and is recorded as such: the round shipped before this repository had a contact sheet. Every row is a surface the round changed. One row per VIEW rather than per route, because `check:shared` reads a row's own file and does not follow composition — Home draws two of these washes from two components, and the deck header draws one from each spine. The commander picker's thumbs are a different leaf and have their own inventory (`commander-thumb.json`). A row carries its own `widths` where its render only exists at some of them: `sm:hidden` on the detail band, `md:hidden` and `md:block` on the two spines, `hidden sm:flex` on the resume rows. Without that a cell photographs the OTHER breakpoint's component and is counted as evidence for this row — the sheet would show three cells per row and two of them would be about something else.",
   "rows": [
     {
-      "id": "home",
-      "label": "/ — the hero and the resume rows (both changed by #556)",
+      "id": "home-hero",
+      "label": "/ — the ready-to-build hero",
+      "view": "src/components/home/hero-commander.tsx",
       "steps": [
         {
           "goto": "/",
@@ -14,8 +15,25 @@
       ]
     },
     {
+      "id": "home-resume",
+      "label": "/ — the resume rows (`hidden sm:flex`, so they do not exist at phone width)",
+      "view": "src/components/home/resume-decks.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "settle": 2500,
+          "wait": "main, [role=main], h1"
+        }
+      ],
+      "widths": [
+        "narrow",
+        "desktop"
+      ]
+    },
+    {
       "id": "commanders",
       "label": "/commanders — the owned lane's rows",
+      "view": "src/components/commanders/rec-card.tsx",
       "steps": [
         {
           "goto": "/commanders",
@@ -27,6 +45,7 @@
     {
       "id": "discover",
       "label": "/discover — the discovery rows",
+      "view": "src/components/commanders/discovery-row.tsx",
       "steps": [
         {
           "goto": "/discover",
@@ -37,7 +56,8 @@
     },
     {
       "id": "commander-detail",
-      "label": "/commanders/<slug> — the detail hero (phone band, desktop card)",
+      "label": "/commanders/<slug> — the detail hero (phone band; `sm:hidden`, so the desktop card face is a different render)",
+      "view": "src/components/commanders/detail.tsx",
       "steps": [
         {
           "goto": "/commanders",
@@ -49,11 +69,15 @@
           "wait": "h1",
           "settle": 3000
         }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
       "id": "decks",
-      "label": "/decks — the deck tiles, at the widths the container query splits",
+      "label": "/decks — the deck tiles",
+      "view": "src/components/decks/deck-card.tsx",
       "steps": [
         {
           "goto": "/decks",
@@ -63,8 +87,9 @@
       ]
     },
     {
-      "id": "deck-header",
-      "label": "/decks/<id> — the deck header spine (changed by #577)",
+      "id": "deck-header-phone",
+      "label": "/decks/<id> — the phone spine (`md:hidden`)",
+      "view": "src/components/decks/spine-mobile.tsx",
       "steps": [
         {
           "goto": "/decks",
@@ -76,17 +101,30 @@
           "wait": "h1",
           "settle": 3500
         }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
-      "id": "deck-new",
-      "label": "/decks/new — the commander picker's rows and its selected summary",
+      "id": "deck-header-desktop",
+      "label": "/decks/<id> — the desktop spine (`md:block`, both its portrait widths)",
+      "view": "src/components/decks/spine-desktop.tsx",
       "steps": [
         {
-          "goto": "/decks/new",
+          "goto": "/decks",
           "settle": 3000,
-          "wait": "main, [role=main], h1"
+          "wait": "ul a[href^=\"/decks/\"]"
+        },
+        {
+          "click": "ul a[href^=\"/decks/\"]:not([href$=\"/new\"]):not([href$=\"/import\"])",
+          "wait": "h1",
+          "settle": 3500
         }
+      ],
+      "widths": [
+        "narrow",
+        "desktop"
       ]
     }
   ],
@@ -106,5 +144,9 @@
       "width": 1300,
       "height": 900
     }
-  ]
+  ],
+  "shares": {
+    "binding": "ArtWash",
+    "module": "src/components/ui/art-wash.tsx"
+  }
 }

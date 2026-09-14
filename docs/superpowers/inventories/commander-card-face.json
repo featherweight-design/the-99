@@ -1,0 +1,27 @@
+{
+  "feature": "One commander image — the two card faces",
+  "note": "The third leaf. Rows 5 and 14 of the brief's inventory draw a full 63/88 card face rather than a band or a thumb, and the round left their geometry alone while converging what surrounds them: one ring value, `CARD_ART_RING`, exported beside `CommanderThumb`. That shared value is what this checks — a face that hard-codes its own `rgba(0,0,0,0.4)` inset would look identical in a diff and drift at the next tuning pass.",
+  "shares": { "binding": "CARD_ART_RING", "module": "src/components/ui/commander-thumb.tsx" },
+  "rows": [
+    {
+      "id": "detail-desktop-face",
+      "label": "/commanders/<slug> — the sticky desktop card face",
+      "view": "src/components/commanders/detail.tsx",
+      "steps": [
+        { "goto": "/commanders", "settle": 3000, "wait": "main, [role=main], h1" },
+        { "click": "a[href^=\"/commanders/\"]", "wait": "h1", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "prefilled-desktop-face",
+      "label": "/decks/new?commander=… — the pre-filled door's 220px card",
+      "view": "src/components/decks/create-pre-filled.tsx",
+      "steps": [
+        { "goto": "/commanders", "settle": 3000, "wait": "main, [role=main], h1" },
+        { "click": "a[href^=\"/commanders/\"]", "wait": "h1", "settle": 2500 },
+        { "clickRole": "link", "name": "^Build this deck", "settle": 3500, "wait": "main, [role=main], h1" }
+      ]
+    }
+  ],
+  "widths": [{ "label": "desktop", "width": 1300, "height": 900 }]
+}
