@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 const stub = vi.hoisted(() => ({
   rename: null as null | (() => unknown),
   deleted: true as boolean,
+  deleteThrows: false,
   calls: [] as unknown[][],
 }));
 
@@ -15,6 +16,7 @@ vi.mock("../../app/decks/folder-actions", () => ({
   },
   deleteFolderAction: async (...args: unknown[]) => {
     stub.calls.push(["delete", ...args]);
+    if (stub.deleteThrows) throw new Error("connection terminated");
     return stub.deleted;
   },
 }));
@@ -28,6 +30,7 @@ const onDeleted = vi.fn();
 beforeEach(() => {
   stub.rename = null;
   stub.deleted = true;
+  stub.deleteThrows = false;
   stub.calls = [];
   say.mockClear();
   onRenamed.mockClear();
@@ -142,6 +145,42 @@ describe("ShelfMenu", () => {
     // No error surface: `false` means already gone, and the UI must not invent
     // a failure the query refused to (decision 25).
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("does not report a deletion that threw", async () => {
+    // `false` is already-gone and is done; a rejection is an outage, and
+    // treating it as done would walk the reader off to All decks reporting a
+    // deletion that never happened.
+    stub.deleteThrows = true;
+    menu();
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete folder" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(onDeleted).not.toHaveBeenCalled();
+  });
+
+  it("says nothing when the rename is refused because the folder is gone", async () => {
+    stub.rename = () => ({ ok: false, reason: "refused" });
+    menu();
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Anything" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    // Refreshed, because the page is stale — but nothing was renamed, so
+    // nothing is announced as though it had been.
+    await waitFor(() => expect(onRenamed).toHaveBeenCalled());
+    expect(say).not.toHaveBeenCalled();
+  });
+
+  it("focuses the first control on every mode change", () => {
+    // The hook focuses on mount and this panel swaps its contents in place, so
+    // without this the button the reader pressed is removed while the dialog
+    // stays and focus falls to the body inside an aria-modal.
+    menu();
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(screen.getByLabelText("Folder name")).toHaveFocus();
   });
 
   it("cancels back to the menu rather than closing", () => {

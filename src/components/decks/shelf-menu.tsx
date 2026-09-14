@@ -11,7 +11,7 @@
 // a panel form blur lands before the button's click and double-submits
 // (`rename-form.tsx:21-23`).
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -61,15 +61,35 @@ export function ShelfMenu({
    * chassis opens". A fixed box escapes every clipping ancestor.
    */
   const [at, setAt] = useState<{ top: number; right: number } | null>(null);
+  /**
+   * A write in flight. Closing is not cancelling — the action lands either way
+   * and its callback still moves the page — so neither Escape, nor the trigger,
+   * nor an outside press may hide one (the confirm modal's own rule).
+   */
+  const [busy, setBusy] = useState(false);
+  const wrapper = useRef<HTMLDivElement>(null);
 
   function close() {
+    if (busy) return;
     setOpen(false);
     setMode("menu");
     trigger.current?.focus();
   }
 
+  // An outside press dismisses, because this popover has no backdrop —
+  // `account-menu.tsx`'s rule, scoped to the wrapper so a press on the trigger
+  // reaches its own toggle rather than being closed here and reopened.
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!wrapper.current?.contains(e.target as Node)) close();
+    }
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  });
+
   return (
-    <span className="relative inline-flex">
+    <span ref={wrapper} className="relative inline-flex">
       <button
         ref={trigger}
         type="button"
@@ -79,6 +99,7 @@ export function ShelfMenu({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (busy) return;
           const box = trigger.current?.getBoundingClientRect();
           if (box) setAt({ top: box.bottom + 6, right: window.innerWidth - box.right });
           setOpen((o) => !o);
@@ -95,6 +116,7 @@ export function ShelfMenu({
         <Panel
           ref={panel}
           at={at}
+          mode={mode}
           onDismiss={close}
           label={
             mode === "delete" ? folderCopy.del.heading(name) : folderCopy.shelves.menuTrigger(name)
@@ -123,10 +145,23 @@ export function ShelfMenu({
             <RenameFolder
               folderId={folderId}
               name={name}
+              onBusy={setBusy}
               onDone={(next) => {
                 say(folderCopy.shelves.aria(next, deckCount));
                 onRenamed(next);
-                close();
+                setBusy(false);
+                setOpen(false);
+                setMode("menu");
+                trigger.current?.focus();
+              }}
+              onGone={() => {
+                // Refused: the folder is gone or not theirs. The page is stale
+                // and needs the refresh, but nothing was renamed and nothing may
+                // be announced as though it had been.
+                onRenamed(name);
+                setBusy(false);
+                setOpen(false);
+                setMode("menu");
               }}
               onCancel={() => setMode("menu")}
             />
@@ -137,9 +172,12 @@ export function ShelfMenu({
               folderId={folderId}
               name={name}
               deckCount={deckCount}
+              onBusy={setBusy}
               onDone={() => {
                 onDeleted();
-                close();
+                setBusy(false);
+                setOpen(false);
+                setMode("menu");
               }}
               onCancel={() => setMode("menu")}
             />
@@ -155,16 +193,28 @@ function Panel({
   ref,
   label,
   at,
+  mode,
   onDismiss,
   children,
 }: {
   ref: React.RefObject<HTMLDivElement | null>;
   label: string;
   at: { top: number; right: number } | null;
+  mode: Mode;
   onDismiss: () => void;
   children: React.ReactNode;
 }) {
   useDialogA11y(ref, onDismiss, {});
+
+  // The hook focuses on MOUNT, and this panel swaps its contents without
+  // unmounting — so the button a reader pressed to get here is removed while
+  // the dialog stays, and focus falls to the body inside an `aria-modal`. Every
+  // mode change lands on its own first control.
+  useEffect(() => {
+    ref.current?.querySelector<HTMLElement>(
+      "input, button:not([disabled])",
+    )?.focus();
+  }, [mode, ref]);
   return (
     <div
       ref={ref}
@@ -188,11 +238,15 @@ function RenameFolder({
   folderId,
   name,
   onDone,
+  onGone,
+  onBusy,
   onCancel,
 }: {
   folderId: string;
   name: string;
   onDone: (next: string) => void;
+  onGone: () => void;
+  onBusy: (busy: boolean) => void;
   onCancel: () => void;
 }) {
   const [value, setValue] = useState(name);
@@ -208,18 +262,23 @@ function RenameFolder({
   function submit() {
     if (!canSave || inFlight.current) return;
     inFlight.current = true;
+    onBusy(true);
     startTransition(async () => {
       const result = await renameFolderAction(folderId, trimmed).catch(() => null);
       inFlight.current = false;
       if (result?.ok) return onDone(result.folder.name);
+      onBusy(false);
       // The typed value survives every refusal (R3): a reader who typed a
       // near-miss needs to see what they typed.
       if (result?.ok === false && result.reason === "duplicate") {
         setError(folderCopy.rename.duplicate(trimmed));
       } else if (result?.ok === false && result.reason === "refused") {
-        // Gone or not theirs. Nothing to rename and nothing to fix here.
-        onDone(name);
+        // Gone or not theirs. Nothing was renamed, so nothing is announced —
+        // the page is refreshed and the panel closes.
+        onGone();
       } else {
+        // A throw: an outage or a timeout, not a name problem, and the reader
+        // can try again.
         setError(folderCopy.create.failed);
       }
     });
@@ -283,25 +342,37 @@ function DeleteFolder({
   name,
   deckCount,
   onDone,
+  onBusy,
   onCancel,
 }: {
   folderId: string;
   name: string;
   deckCount: number;
   onDone: () => void;
+  onBusy: (busy: boolean) => void;
   onCancel: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
 
   function confirm() {
     if (inFlight.current) return;
     inFlight.current = true;
+    onBusy(true);
     startTransition(async () => {
-      // `false` is DONE, not an error (decision 25): the folder is already
-      // gone, and the UI must not invent a failure the query refused to.
-      await deleteFolderAction(folderId).catch(() => false);
+      // `false` is DONE, not an error (decision 25): the folder is already gone,
+      // and the UI must not invent a failure the query refused to. A THROW is
+      // the other thing entirely — an outage — and treating it as done would
+      // walk the reader off to All decks reporting a deletion that never
+      // happened.
+      const answer = await deleteFolderAction(folderId).catch(() => "threw" as const);
       inFlight.current = false;
+      if (answer === "threw") {
+        onBusy(false);
+        setError(folderCopy.create.failed);
+        return;
+      }
       onDone();
     });
   }
@@ -314,6 +385,11 @@ function DeleteFolder({
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
         {deckCount > 0 ? folderCopy.del.body(deckCount) : folderCopy.del.bodyEmpty}
       </p>
+      {error && (
+        <p role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
+          {error}
+        </p>
+      )}
       <div className="flex gap-[8px]">
         <button
           type="button"
