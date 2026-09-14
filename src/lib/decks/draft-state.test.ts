@@ -3,7 +3,8 @@ import type { Availability, DeckClaim } from "./availability";
 import { summarisePrices } from "./price";
 import {
   anyBasicMoved,
-  bucketDraftAdds, changeCount, hasChanges, pullCandidate, pullHints, releasableClaims,
+  bucketDraftAdds, changeCount, hasChanges, heldElsewhere, pullCandidate, pullHints,
+  releasableClaims,
   releasedCopies, unfreeAdds, type DraftAdd, type DraftState,
 } from "./draft-state";
 
@@ -223,6 +224,46 @@ describe("pullCandidate", () => {
     expect(pullCandidate(undefined)).toBeNull();
   });
 
+});
+
+// The ownership dot's third state. The bucket cannot answer it: `claimed` means
+// "a pull would relieve this", so a card whose only sleeved holder is junior to
+// this deck buckets `unowned` while its copy sits in somebody's box.
+describe("heldElsewhere", () => {
+  const claim = (over: Partial<DeckClaim> = {}): DeckClaim => ({
+    id: "d-1", name: "Prismari Artistry", quantity: 1,
+    mature: true, pending: false, commander: false, senior: true, ...over,
+  });
+  const availability = (claims: DeckClaim[]): Availability =>
+    ({ owned: 1, hard: 1, soft: 0, free: -1, claims });
+
+  // The row the defect painted as a free owned copy: the one copy is sleeved in a
+  // deck junior to this one, so no pull can relieve the shortfall and the card is
+  // still spoken for.
+  it("reads a short row held only by a junior deck as held", () => {
+    expect(heldElsewhere(availability([claim({ senior: false })]), 1)).toBe(true);
+  });
+
+  it("reads a short row held by a releasable deck as held", () => {
+    expect(heldElsewhere(availability([claim()]), 1)).toBe(true);
+  });
+
+  // Four copies owned and one added is not short. Another deck holding one of the
+  // four says nothing about this row, and painting it committed would be a lie.
+  it("reads a row with no shortfall as free, however many decks hold the card", () => {
+    expect(heldElsewhere(availability([claim(), claim({ id: "d-2" })]), 0)).toBe(false);
+  });
+
+  // A brew sleeves nothing: its claim is soft, so the copy is still available.
+  it("reads a card held only by a brew as free", () => {
+    expect(heldElsewhere(availability([claim({ mature: false })]), 1)).toBe(false);
+  });
+
+  it("reads a card nobody holds, and a failed claim read, as free", () => {
+    expect(heldElsewhere(availability([]), 1)).toBe(false);
+    expect(heldElsewhere(undefined, 1)).toBe(false);
+    expect(heldElsewhere(null, 1)).toBe(false);
+  });
 });
 
 // The flag the review page's last-row routing turns on. `basicsChanged` cannot

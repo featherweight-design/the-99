@@ -17,7 +17,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { pullCandidate, releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
+import {
+  heldElsewhere, pullCandidate, releasedCopies, type DraftState,
+} from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state";
@@ -255,9 +257,10 @@ function Column({
             price: claimsKnown ? row.price ?? null : null,
             newestAsOf,
             // An owned card whose free copies are all sleeved somewhere else.
-            // The bucket is the server's answer to exactly that question, so
-            // the dot is not left to re-derive it from the rollup.
-            committed: row.bucket === "claimed",
+            // Not `bucket === "claimed"`: that bucket now means "a pull would
+            // relieve this", and a card held only by a deck junior to this one
+            // buckets `unowned` while its copy is still in somebody's box.
+            committed: heldElsewhere(row.availability, row.shortfall),
             // The buy tag's own question, and not one `owned` can answer: a
             // partially covered add with no claimant is filed `unowned` while
             // being a card the player owns a copy of. Zeroed with the price when

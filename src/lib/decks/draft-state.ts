@@ -31,7 +31,7 @@ import { cardTypeGroup, primaryRole } from "./read";
 // caller has one import for the whole model.
 export type { DraftAdd, DraftState } from "./draft-shape";
 export {
-  changeCount, hasChanges, pullCandidate, releasableClaims, releasedCopies,
+  changeCount, hasChanges, heldElsewhere, pullCandidate, releasableClaims, releasedCopies,
 } from "./draft-shape";
 
 /**

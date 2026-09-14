@@ -166,6 +166,18 @@ try {
   await commit(older.id, cmdA, 2, true);
   check("the later commit buys rather than taking the copy", await free(older.id), -1);
 
+  // 3a. THE SAME RULE, PER CLAIM. `senior` is what decides whether a pull is
+  //     offered at all, and it is the one flag that has to disagree between the
+  //     two vantages on the same pair of decks: the newer deck's `since` is
+  //     earlier, so it is senior to the older deck and its copy is worth asking
+  //     for, while the older deck is junior and releasing its copy would move no
+  //     figure. A flag computed from the decks' own ages rather than from `since`
+  //     would read true from both vantages and offer a pull that cannot help.
+  check("the earlier holder is senior from the later deck's vantage",
+    (await claim(card, older.id, newer.id))?.senior, true);
+  check("the later holder is junior from the earlier deck's vantage",
+    (await claim(card, newer.id, older.id))?.senior, false);
+
   // 4. An accepted pull settles it at once: the source commits a version
   //    without the card, and the asking deck stops being short.
   await commit(newer.id, cmdB, 2, false);

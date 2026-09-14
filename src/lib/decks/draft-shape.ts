@@ -186,3 +186,24 @@ export function pullCandidate(a: Availability | undefined): DeckClaim | null {
   const sleeved = (a?.claims ?? []).filter((c) => c.mature);
   return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.pending) ?? null;
 }
+
+/**
+ * The ownership dot's third state: the player owns a copy of this card and every
+ * copy that could have covered the add is sleeved in another deck.
+ *
+ * The bucket cannot answer it. `claimed` now means "a pull would relieve this",
+ * which is a narrower question: a card whose only sleeved holder is junior to
+ * this deck buckets `unowned`, because taking that copy would move no figure —
+ * and the copy is spoken for all the same. Reading the dot off the bucket paints
+ * that row as a free owned copy, which is the one thing it is not.
+ *
+ * `shortfall` is part of the question rather than a second test beside it. A
+ * player owning four copies and adding one is not short, and another deck
+ * holding one of the four says nothing about this row.
+ */
+export function heldElsewhere(
+  a: Availability | undefined | null,
+  shortfall: number,
+): boolean {
+  return shortfall > 0 && (a?.claims ?? []).some((c) => c.mature);
+}
