@@ -101,7 +101,7 @@ describe("Sheet", () => {
     // ending the pointer, so capture is already gone and asking again throws
     // `NotFoundError` on a cancelled touch.
     expect(releasePointerCapture).not.toHaveBeenCalled();
-    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
+    expect(offset()).toBe(0);
   });
 
   it("captures the pointer, so a drag off the handle still reports", () => {
@@ -129,14 +129,32 @@ describe("Sheet", () => {
     expect(screen.getByRole("dialog").getAttribute("style")).toContain("animation: none");
   });
 
-  it("keeps the animation off after dragging back to the origin", () => {
-    // Tied to the offset, returning to 0 mid-gesture re-enabled `anim-sheet-in`
-    // and the keyframe reasserted its own transform — the panel jumped.
+  it("ends the entrance animation at first touch, and keeps it ended", () => {
+    // Suppressing on the offset let a drag back to the origin restart the
+    // keyframe mid-gesture; suppressing on the gesture let RELEASING a
+    // sub-threshold drag restart it on the way back to zero. Same bug, asked at
+    // a different moment — so the answer is not a moment. A sheet a reader has
+    // touched has arrived, and an entrance plays once.
     render(<Sheet {...props} open />);
+    const style = () => screen.getByRole("dialog").getAttribute("style") ?? "";
     fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(handle(), { clientY: 40, pointerId: 1 });
+    expect(style()).toContain("animation: none");
     fireEvent.pointerMove(handle(), { clientY: 0, pointerId: 1 });
-    expect(screen.getByRole("dialog").getAttribute("style")).toContain("animation: none");
+    expect(style()).toContain("animation: none");
+    // Released under the threshold: the sheet stays, and so does the suppression.
+    fireEvent.pointerUp(handle(), { clientY: 10, pointerId: 1 });
+    expect(style()).toContain("animation: none");
+    expect(offset()).toBe(0);
+  });
+
+  it("forgets the touch when the sheet closes, so the next open animates", () => {
+    const { rerender } = render(<Sheet {...props} open />);
+    fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerUp(handle(), { clientY: 5, pointerId: 1 });
+    rerender(<Sheet {...props} open={false} />);
+    rerender(<Sheet {...props} open />);
+    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("animation");
   });
 
   it("follows the pointer mid-drag", () => {
