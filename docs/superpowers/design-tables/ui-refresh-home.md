@@ -1269,8 +1269,8 @@ Targets that must be interactive per the design text:
 
 4. ~~**Resume status pill contradicts `STATES-deck-statuses.md`.**~~ **CLOSED 2026-09-14**, and the
    contradiction was between two documents rather than between a document and the code. The `80`
-   alpha border that doc specified was retired by the art-wash readability amendment and ratified on
-   2026-09-12; `STATES-deck-statuses.md` simply never caught up. It is corrected to the shipped
+   alpha border that doc specified was retired by the art-wash readability amendment and **ratified
+   2026-09-08**; `STATES-deck-statuses.md` simply never caught up. It is corrected to the shipped
    component: one opaque `1px solid var(--border-strong)` for every status, dashed on Building
    alone, fills at 18% with Draft at 16% and Building at 14%. No pixel moved — the pill is
    `StatusPillBadge`, shared with every surface that draws a status, and `status-style.ts` has been

@@ -8,7 +8,8 @@ shipped code wins and this table is the thing to correct.
 
 **Corrected 2026-09-14 to the shipped component, and sent for ratification.** The pill column below
 described a `50%` / `80`-alpha border of the status colour. That edge was retired by the art-wash
-readability amendment on 2026-09-11 and ratified on 2026-09-12: every status now takes **one opaque
+readability amendment and **ratified 2026-09-08** (`design/design_handoff_the99_art_wash/README.md`
+§"Status pill borders", `docs/superpowers/gap-report-art-wash.md`): every status now takes **one opaque
 `1px solid var(--border-strong)` hairline**, because a 50% fade of the status colour was the
 worst-reading edge in that report. Building keeps a **dashed** line of the same colour and weight —
 a line style is not an alpha fade, so the readability rule never reached it, and with colour living
