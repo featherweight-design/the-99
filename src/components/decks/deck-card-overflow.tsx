@@ -314,7 +314,11 @@ export function DeckCardOverflow({
                 setMovedTo(null);
                 wantsMoveRowFocus.current = true;
                 setMode("menu");
-                onMoved({ refused: false, threw });
+                // A `false` IS the refusal, and the view reads that flag to
+                // decide whether this card may have gone: the deck being absent
+                // is one of the two things it means. A throw is not — nothing
+                // moved — so only the refetch it asks for is reported.
+                onMoved({ refused: !threw, threw });
               }}
               onMoved={(next) => {
                 setMovedTo({ ...next, from: folderId });

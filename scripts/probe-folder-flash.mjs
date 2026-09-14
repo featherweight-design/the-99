@@ -171,6 +171,10 @@ async function run(browser) {
   const fresh = made.rows.filter((r) => !idsBefore.has(r.id));
   fresh.forEach((r) => madeFolderIds.push(r.id));
   check("the create wrote exactly one folder row", fresh.length, 1);
+  // AND STOP THERE. Continuing would rename and delete a shelf this run does not
+  // own — the name is a timestamp, so the only way to miss here is a create that
+  // was refused because somebody already holds that name.
+  if (fresh.length !== 1) throw new Error("the create did not produce exactly one new folder");
 
   const onShelf = await page.evaluate(
     () => new URLSearchParams(window.location.search).get("folder"),
@@ -209,8 +213,10 @@ async function run(browser) {
   check("filing a deck reloads the document", loads, 0);
   check("the move costs one server round trip", rsc - rscBeforeMove, 1);
 
-  // And the menu is gone, rather than back at its first mode.
-  const menuOpen = await onPage(page, "[role=dialog] button[aria-label^='Move ']").count();
+  // And the menu is gone, rather than back at its first mode. THE MOVE ROW
+  // ITSELF: the panel is a plain div, so a `[role=dialog]` scope matched nothing
+  // whatever the panel was doing, and this check could not fail.
+  const menuOpen = await onPage(page, "li button[aria-label^='Move ']").count();
   check("the deck menu closes after the move", menuOpen, 0);
 
   // THE GRID MUST NOT GO STALE. Whatever invalidates the route, the segment's

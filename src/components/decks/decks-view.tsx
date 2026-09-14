@@ -913,6 +913,10 @@ export function DecksView({
                     )
                   : null;
                 const filed = answer === true;
+                // Same exception the destination list makes: a rejected action
+                // may have committed with its response lost, and nothing else is
+                // coming to update the grid.
+                if (answer === "threw") router.refresh();
                 // THE READER DOES NOT MOVE. STATES CR4 selected the new shelf,
                 // landing them on S2; Hugh overruled that on 2026-09-13 (errata
                 // E20) — the shelf is empty, so there is nothing to go and look

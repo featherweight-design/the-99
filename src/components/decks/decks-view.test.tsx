@@ -667,6 +667,10 @@ describe("DecksView", () => {
       ).toContain("Folder “Draft pile” created. That did not save. Try again."),
     );
     expect(trigger).toHaveAttribute("aria-expanded", "true");
+    // And the route is refetched, for the same reason the destination list
+    // refetches on a throw: the action may have committed with its response
+    // lost, and nothing else is coming.
+    expect(routerStub.refresh).toHaveBeenCalledTimes(1);
   });
 
   it("files the deck, and says so, when the create came from a move", async () => {
@@ -711,9 +715,29 @@ describe("DecksView", () => {
     expect(routerStub.refresh).not.toHaveBeenCalled();
 
     actionStub.move.mockRejectedValueOnce(new Error("outage"));
+    // The panel is still open on its menu — a refusal returns it there — so the
+    // Move row is the one to click, not the ⋯ again.
     fireEvent.click(screen.getByRole("button", { name: /^Move / }));
     fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
     await waitFor(() => expect(routerStub.refresh).toHaveBeenCalledTimes(1));
+  });
+
+  it("reports a refused move as one, so the view can rescue focus", async () => {
+    // `false` means the deck or the folder is gone, which on All decks can take
+    // this card with it. A throw means nothing moved, so the card stays and the
+    // flag stays false.
+    actionStub.move.mockResolvedValueOnce(false);
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
+    // The selected segment in the line, which is where `focusShelfControl`
+    // puts it at this width.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector("[data-shelf-line] button[aria-current='true']"),
+      ),
+    );
   });
 
   it("ignores a hand-edited folder id", () => {
