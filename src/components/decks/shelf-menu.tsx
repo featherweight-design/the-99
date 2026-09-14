@@ -1,0 +1,341 @@
+"use client";
+
+// The selected shelf's own `…` — two rows, `Rename` and `Delete` (STATES R1),
+// and the acts behind them.
+//
+// NEVER ON `All decks` OR `Unfiled`, and never on an unselected segment: both
+// rows act on a folder, and neither of those is one (errata E7). The caller
+// decides that by not mounting this.
+//
+// NO BLUR COMMIT in the rename field. That is the deck header's ruling, and in
+// a panel form blur lands before the button's click and double-submits
+// (`rename-form.tsx:21-23`).
+
+import { useRef, useState, useTransition } from "react";
+import { PrimaryButton } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
+import { useDialogA11y } from "../../lib/a11y/dialog";
+import { folderCopy } from "../../lib/copy/folders";
+import { deleteFolderAction, renameFolderAction } from "../../app/decks/folder-actions";
+import { FOLDER_NAME_MAX } from "../../lib/decks/folder-name";
+import { stripControlChars } from "./folder-create-dialog";
+
+const ROW =
+  "flex h-[38px] w-full cursor-pointer items-center border-x-0 border-b-0 border-t border-solid "
+  + "border-t-[color:var(--elevated)] bg-transparent px-[13px] text-left font-sans text-[13px] "
+  + "hover:bg-[color:var(--elevated)]";
+
+type Mode = "menu" | "rename" | "delete";
+
+export function ShelfMenu({
+  folderId,
+  name,
+  deckCount,
+  onRenamed,
+  onDeleted,
+  say,
+  size = "wide",
+}: {
+  folderId: string;
+  name: string;
+  /** Decks on this shelf, for the delete confirmation's own sentence. */
+  deckCount: number;
+  onRenamed: (name: string) => void;
+  onDeleted: () => void;
+  say: (announcement: string) => void;
+  /** 22px inside the segment on the wide line; a 44px target on the phone. */
+  size?: "wide" | "compact";
+}) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>("menu");
+  const panel = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  /**
+   * FIXED, POSITIONED FROM THE TRIGGER'S RECT — not absolute inside the line.
+   *
+   * The shelf line is a scroll container (its two-row ceiling needs one), and an
+   * absolutely positioned popover inside a scrolling ancestor is CLIPPED by it:
+   * the contact sheet caught this one, with the delete confirmation sliced off
+   * against the top of the line. It is the same trap `filter-chassis.tsx`
+   * records for its own control row — "clipping this group hides every panel the
+   * chassis opens". A fixed box escapes every clipping ancestor.
+   */
+  const [at, setAt] = useState<{ top: number; right: number } | null>(null);
+
+  function close() {
+    setOpen(false);
+    setMode("menu");
+    trigger.current?.focus();
+  }
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        ref={trigger}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={folderCopy.shelves.menuTrigger(name)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const box = trigger.current?.getBoundingClientRect();
+          if (box) setAt({ top: box.bottom + 6, right: window.innerWidth - box.right });
+          setOpen((o) => !o);
+          setMode("menu");
+        }}
+        className={`flex cursor-pointer items-center justify-center rounded-[6px] border-none bg-transparent p-0 text-[color:var(--fg-muted)] ${
+          size === "wide" ? "ml-[6px] h-[22px] w-[22px] text-[13px]" : "h-[44px] w-[44px] text-[15px]"
+        }`}
+      >
+        …
+      </button>
+
+      {open && (
+        <Panel
+          ref={panel}
+          at={at}
+          onDismiss={close}
+          label={
+            mode === "delete" ? folderCopy.del.heading(name) : folderCopy.shelves.menuTrigger(name)
+          }
+        >
+          {mode === "menu" && (
+            <div className="flex flex-col">
+              <button
+                type="button"
+                onClick={() => setMode("rename")}
+                className={`${ROW} first:border-t-0 text-[color:var(--fg)]`}
+              >
+                {folderCopy.rename.action}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("delete")}
+                className={`${ROW} text-[color:var(--danger)]`}
+              >
+                {folderCopy.del.action}
+              </button>
+            </div>
+          )}
+
+          {mode === "rename" && (
+            <RenameFolder
+              folderId={folderId}
+              name={name}
+              onDone={(next) => {
+                say(folderCopy.shelves.aria(next, deckCount));
+                onRenamed(next);
+                close();
+              }}
+              onCancel={() => setMode("menu")}
+            />
+          )}
+
+          {mode === "delete" && (
+            <DeleteFolder
+              folderId={folderId}
+              name={name}
+              deckCount={deckCount}
+              onDone={() => {
+                onDeleted();
+                close();
+              }}
+              onCancel={() => setMode("menu")}
+            />
+          )}
+        </Panel>
+      )}
+    </span>
+  );
+}
+
+/** The popover shell both modes sit in, with the app's shared focus trap. */
+function Panel({
+  ref,
+  label,
+  at,
+  onDismiss,
+  children,
+}: {
+  ref: React.RefObject<HTMLDivElement | null>;
+  label: string;
+  at: { top: number; right: number } | null;
+  onDismiss: () => void;
+  children: React.ReactNode;
+}) {
+  useDialogA11y(ref, onDismiss, {});
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      tabIndex={-1}
+      style={at ? { position: "fixed", top: at.top, right: at.right } : undefined}
+      // `whitespace-normal` because the wide segment this lives inside sets
+      // `whitespace-nowrap`, and fixed positioning changes where a box is drawn,
+      // not what it inherits — the delete sentence was running off the panel's
+      // edge mid-word. The contact sheet caught that too.
+      className="absolute top-full right-0 z-50 mt-[6px] w-[248px] overflow-hidden rounded-[10px] whitespace-normal border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)]"
+    >
+      {children}
+    </div>
+  );
+}
+
+function RenameFolder({
+  folderId,
+  name,
+  onDone,
+  onCancel,
+}: {
+  folderId: string;
+  name: string;
+  onDone: (next: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(name);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const inFlight = useRef(false);
+
+  const trimmed = value.trim();
+  // Unchanged reverts rather than writing: R2's rule, and it also keeps the
+  // unique index from being asked about a name the folder already has.
+  const canSave = trimmed.length > 0 && trimmed !== name && !pending;
+
+  function submit() {
+    if (!canSave || inFlight.current) return;
+    inFlight.current = true;
+    startTransition(async () => {
+      const result = await renameFolderAction(folderId, trimmed).catch(() => null);
+      inFlight.current = false;
+      if (result?.ok) return onDone(result.folder.name);
+      // The typed value survives every refusal (R3): a reader who typed a
+      // near-miss needs to see what they typed.
+      if (result?.ok === false && result.reason === "duplicate") {
+        setError(folderCopy.rename.duplicate(trimmed));
+      } else if (result?.ok === false && result.reason === "refused") {
+        // Gone or not theirs. Nothing to rename and nothing to fix here.
+        onDone(name);
+      } else {
+        setError(folderCopy.create.failed);
+      }
+    });
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      className="flex flex-col gap-[8px] p-[12px]"
+    >
+      <TextField
+        autoFocus
+        value={value}
+        onChange={(e) => {
+          setValue(stripControlChars(e.target.value));
+          setError(null);
+        }}
+        maxLength={FOLDER_NAME_MAX}
+        aria-label={folderCopy.rename.fieldAria}
+        aria-invalid={error ? true : undefined}
+        readOnly={pending}
+        className="w-full rounded-[6px] px-[10px] py-[7px] font-sans text-[13px]"
+      />
+      {error && (
+        <p role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
+          {error}
+        </p>
+      )}
+      <div className="flex gap-[8px]">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onCancel}
+          className="h-[32px] flex-1 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-transparent font-sans text-[12.5px] text-[color:var(--fg-body)]"
+        >
+          {folderCopy.rename.cancel}
+        </button>
+        <PrimaryButton
+          type="submit"
+          disabled={!canSave}
+          className="h-[32px] flex-1 rounded-[6px] text-[12.5px]"
+        >
+          {folderCopy.rename.submit}
+        </PrimaryButton>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * The confirmation, and its second sentence is the whole design (decision 23):
+ * the decks return to Unfiled and none is deleted. That is a promise the foreign
+ * key keeps however the folder goes, so it is stated as a fact rather than as
+ * reassurance — and it is confirmed either way, because there is no undo.
+ */
+function DeleteFolder({
+  folderId,
+  name,
+  deckCount,
+  onDone,
+  onCancel,
+}: {
+  folderId: string;
+  name: string;
+  deckCount: number;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const inFlight = useRef(false);
+
+  function confirm() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    startTransition(async () => {
+      // `false` is DONE, not an error (decision 25): the folder is already
+      // gone, and the UI must not invent a failure the query refused to.
+      await deleteFolderAction(folderId).catch(() => false);
+      inFlight.current = false;
+      onDone();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-[10px] p-[12px]">
+      <p className="m-0 font-display text-[14px] font-semibold text-[color:var(--fg)]">
+        {folderCopy.del.heading(name)}
+      </p>
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
+        {deckCount > 0 ? folderCopy.del.body(deckCount) : folderCopy.del.bodyEmpty}
+      </p>
+      <div className="flex gap-[8px]">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onCancel}
+          className="h-[32px] flex-1 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-transparent font-sans text-[12.5px] text-[color:var(--fg-body)]"
+        >
+          {folderCopy.del.cancel}
+        </button>
+        {/* `--danger`, unlike the keep-all confirm that was amended away from
+            it: that one destroyed nothing, and this destroys a thing the player
+            named, with no undo. What is safe is the decks, and the sentence
+            above is what says so. */}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={confirm}
+          className="h-[32px] flex-1 cursor-pointer rounded-[6px] border-none bg-[color:var(--danger)] font-sans text-[12.5px] font-semibold text-[color:var(--bg)]"
+        >
+          {folderCopy.del.confirm}
+        </button>
+      </div>
+    </div>
+  );
+}

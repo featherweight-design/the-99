@@ -131,6 +131,64 @@
           "settle": 800
         }
       ]
+    },
+    {
+      "id": "shelf-menu",
+      "label": "/decks — the shelf's own actions",
+      "steps": [
+        {
+          "goto": "/decks?folder=${DECK_FOLDER_ID}",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-shelf-line] button[aria-label^='Actions for'], [data-shelf-trigger] button[aria-label^='Actions for']",
+          "wait": "[role=dialog]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "shelf-delete",
+      "label": "/decks — the delete confirmation",
+      "steps": [
+        {
+          "goto": "/decks?folder=${DECK_FOLDER_ID}",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-shelf-line] button[aria-label^='Actions for'], [data-shelf-trigger] button[aria-label^='Actions for']",
+          "wait": "[role=dialog]",
+          "settle": 700
+        },
+        {
+          "clickRole": "button",
+          "name": "^Delete$",
+          "settle": 700
+        }
+      ]
+    },
+    {
+      "id": "shelf-rename",
+      "label": "/decks — renaming a shelf",
+      "steps": [
+        {
+          "goto": "/decks?folder=${DECK_FOLDER_ID}",
+          "wait": "[data-shelf-line], [data-shelf-trigger]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-shelf-line] button[aria-label^='Actions for'], [data-shelf-trigger] button[aria-label^='Actions for']",
+          "wait": "[role=dialog]",
+          "settle": 700
+        },
+        {
+          "clickRole": "button",
+          "name": "^Rename$",
+          "settle": 700
+        }
+      ]
     }
   ]
 }

@@ -502,6 +502,32 @@ describe("DecksView", () => {
     expect(regions).toContain("Cube night, 2 decks");
   });
 
+  // Scoped to the line: every deck tile carries an `Actions for <deck>` trigger
+  // of its own, so an unscoped query finds those instead.
+  const shelfActions = (container: HTMLElement) =>
+    [...container.querySelectorAll("[data-shelf-line] button[aria-label^='Actions for']")];
+
+  it("gives the selected named shelf its own actions, and nothing else one", () => {
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    // Never on an unselected segment (W2), and never on the two that are not
+    // folders (W4, errata E7).
+    expect(shelfActions(container).map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Actions for Cube night",
+    ]);
+  });
+
+  it("draws no shelf actions on All decks", () => {
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    expect(shelfActions(container)).toHaveLength(0);
+  });
+
+  it("draws no shelf actions on Unfiled", () => {
+    window.history.replaceState(null, "", "/decks?folder=none");
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    expect(shelfActions(container)).toHaveLength(0);
+  });
+
   it("ignores a hand-edited folder id", () => {
     window.history.replaceState(null, "", "/decks?folder=nope");
     renderWide(view(shelvedDecks(), twoFolders));

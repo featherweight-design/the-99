@@ -72,12 +72,20 @@ export function ShelfLine({
   shelf,
   onSelect,
   onCreate,
+  menu,
 }: {
   folders: readonly DeckFolderWithCount[];
   counts: ShelfCounts;
   shelf: Shelf;
   onSelect: (next: Shelf) => void;
   onCreate: () => void;
+  /**
+   * The selected shelf's own `…`, drawn INSIDE its segment (STATES W3). Only a
+   * named folder gets one — `All decks` and `Unfiled` have nothing to rename or
+   * delete — so the caller returns null for those and for every unselected
+   * segment.
+   */
+  menu?: (segment: ShelfSegment) => React.ReactNode;
 }) {
   return (
     <div
@@ -109,7 +117,29 @@ export function ShelfLine({
     >
       {shelfSegments(folders, counts).map((segment) => {
         const selected = segment.shelf === shelf;
-        return (
+        const actions = selected ? menu?.(segment) : null;
+        return actions ? (
+          <span
+            key={segment.shelf ?? "all"}
+            className={`${SEGMENT} border-[color:var(--border-strong)] bg-[color:var(--elevated)] pr-[5px] font-medium text-[color:var(--fg)]`}
+          >
+            <button
+              type="button"
+              aria-current="true"
+              aria-label={folderCopy.shelves.aria(segment.label, segment.count)}
+              onClick={() => onSelect(segment.shelf)}
+              className="flex cursor-pointer items-center border-none bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--fg)]"
+            >
+              <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
+                {segment.label}
+              </span>
+              <span className="ml-[7px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                {segment.count}
+              </span>
+            </button>
+            {actions}
+          </span>
+        ) : (
           <button
             key={segment.shelf ?? "all"}
             type="button"
@@ -158,19 +188,23 @@ export function ShelfLine({
  * chassis's hairline, which is one of the four carriers keeping it out of the
  * filter register (decision 11).
  *
- * No `…` beside it in this round: that control opens rename and delete, and it
- * is absent on `All decks` and `Unfiled` in every round (errata E7).
+ * The `…` beside it belongs to a named folder alone — it opens rename and
+ * delete, and `All decks` and `Unfiled` have neither (STATES C1/C2, errata E7).
+ * The caller passes nothing for those, and nothing is what draws: a disabled
+ * control would be a dead one.
  */
 export function ShelfTrigger({
   label,
   count,
   onOpen,
   open,
+  menu,
 }: {
   label: string;
   count: number;
   onOpen: () => void;
   open: boolean;
+  menu?: React.ReactNode;
 }) {
   return (
     <div
@@ -193,6 +227,7 @@ export function ShelfTrigger({
           ▾
         </span>
       </button>
+      {menu}
     </div>
   );
 }
