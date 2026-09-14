@@ -323,6 +323,16 @@ const readReview = (page) =>
                 barVisible: visible(bar),
                 groupWidth: spans[0] ? Math.round(spans[0].getBoundingClientRect().width) : null,
                 groupClipped: spans[0] ? spans[0].scrollWidth > spans[0].clientWidth + 1 : null,
+                // The name's own text, not its box. `scrollWidth` reports the box
+                // whenever the text fits, so it cannot answer whether the fixture
+                // moved a group long enough to have clipped in the retired slot; a
+                // range over the text node is laid out either way.
+                groupContent: (() => {
+                  if (!spans[0]) return null;
+                  const range = document.createRange();
+                  range.selectNodeContents(spans[0]);
+                  return Math.round(range.getBoundingClientRect().width);
+                })(),
               };
             })
           : null;
@@ -856,7 +866,8 @@ try {
       console.log(
         `    ${move.group}: ${move.pair} ${move.delta} · pair ${move.pairColor} · ` +
           `after ${move.afterColor} · bar ${move.barVisible ? "drawn" : "hidden"} · ` +
-          `name ${move.groupWidth}px${move.groupClipped ? " CLIPPED" : ""}`,
+          `name ${move.groupWidth}px, text ${move.groupContent}px` +
+          `${move.groupClipped ? " CLIPPED" : ""}`,
       );
       if (move.groupClipped) {
         clippedGroups.push(`${label} · "${move.group}" clipped in a ${move.groupWidth}px slot`);
@@ -867,6 +878,21 @@ try {
     // rather than a deck whose shape held.
     if ((seen.shape.moves ?? []).length === 0) {
       clippedGroups.push(`${label} · no type-move row to measure a name against`);
+    }
+    // And a row whose name fits in the slot this fix removed proves nothing either:
+    // the draft cuts whatever cards the fixture picked, so a run that happened to
+    // move only `Lands` would pass against the 74px slot as readily as against the
+    // flexible one. Demand a name whose own text is wider than that slot before the
+    // phone's result counts as coverage.
+    const phoneSlot = 74;
+    if (width < 768 && (seen.shape.moves ?? []).length > 0) {
+      const widest = Math.max(...seen.shape.moves.map((m) => m.groupContent ?? 0));
+      if (widest <= phoneSlot) {
+        clippedGroups.push(
+          `${label} · widest moved name is ${widest}px of text, which the retired ` +
+            `${phoneSlot}px slot would have fitted — nothing here can clip`,
+        );
+      }
     }
 
     // 2b-ii. The availability marker's own type. A marker larger than the card

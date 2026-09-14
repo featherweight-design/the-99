@@ -183,7 +183,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   whole, so a truncated `Enchantment` reads back intact and every assertion on the row's text
   passes while the reader sees `Enchantme...`; what tells them apart is `scrollWidth` against
   `clientWidth` on the name itself. An empty move list FAILS rather than passing quietly — the
-  fixture is built to move a type group, so no row means the check lost its subject.
+  fixture is built to move a type group, so no row means the check lost its subject. So does a
+  phone run whose widest moved name holds less text than the retired 74px slot: the draft cuts
+  whatever cards the fixture picked, and a run that happened to move only `Lands` would pass
+  against the old slot as readily as against the flexible one.
 
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.
