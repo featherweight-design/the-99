@@ -120,7 +120,11 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   proof it behaves. It writes a fixture under a per-run `user_id` and deletes it in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**. On a deck's own page
   `free` is a surplus, not a count of copies: 0 means "holds what it needs and no spare", and a
-  negative figure is the number of copies that deck has to buy.
+  negative figure is the number of copies that deck has to buy. The claim it subtracts for the
+  deck itself is that deck's **draft** ask — its `deck_cards` rows plus its live commander
+  columns — not what its committed version asked for. A card staged into the draft therefore
+  counts against the supply the moment it is added, which is what makes a shortfall visible
+  before the commit rather than after it.
 - `pnpm probe:folders` proves deck folders against a real Postgres by calling the real
   queries — a deck files and unfiles, a cross-user move is refused from either side, and
   deleting a folder unfiles its decks without deleting any of them. That last rule is the
@@ -222,8 +226,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm probe:review` walks `/decks/[id]/changes` at 390x844 and 1300x900: the route's guard on
   a clean deck, `?commit=1` arriving as a URL, the phone's segmented column pair, the `Pull it`
   control against a real claim, the what-changed strip drawing all six cells at both widths,
-  its type-move rows not clipping their own names, the discard confirm at both doors, and the
-  type of the availability marker on a diff row.
+  its type-move rows not clipping their own names, the discard confirm at both doors, the
+  type of the availability marker on a diff row, and a held row keeping both of its lines and
+  both of its names.
 
   That last one needs a fixture no other check does. An `in` row buys by default, so an add
   that is unowned or hard-claimed draws a buy tag; an `out` row excludes its own claim, so a
@@ -248,6 +253,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   phone run whose widest moved name holds less text than the retired 74px slot: the draft cuts
   whatever cards the fixture picked, and a run that happened to move only `Lands` would pass
   against the old slot as readily as against the flexible one.
+
+  The held row is read at the run's own width and then again at 820px, the narrowest desktop,
+  because the shortfall relocates rather than resolving. A single line demands about 561px; a
+  paired type column offers 574px at 1300px and 165px at 820px, so a wide viewport reports a
+  healthy name on the build that erased it. Three clauses, each closing a failure the others
+  cannot see: the two names sharing a vertical means the row collapsed back to one line, a card
+  name under 40px means the name went to zero, and a deck name under 40px means the fix pushed
+  the collapse onto the other name instead of curing it. That last one is the whole reason for
+  the second width — reverting the deck name's floor reads `deck 0px` at 820px and `deck 91px`
+  at 1300px.
 
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.
