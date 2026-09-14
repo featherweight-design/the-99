@@ -25,7 +25,7 @@
       "steps": [
         {
           "goto": "/decks/${PROBE_DECK}",
-          "wait": "main",
+          "wait": "main, [role=main], h1",
           "settle": 8000
         }
       ]
