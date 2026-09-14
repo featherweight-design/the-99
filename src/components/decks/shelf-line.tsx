@@ -53,9 +53,13 @@ export function shelfSegments(
   return segments;
 }
 
+// No horizontal padding here: the segment's own padding depends on what it
+// holds — a bare button pays it inside, and a button plus a `…` splits it — and
+// an `px-` on the shared base fought whatever the case set, doubling it on the
+// segments with no actions.
 const SEGMENT =
   "inline-flex h-[34px] cursor-pointer items-center whitespace-nowrap rounded-[8px] "
-  + "border border-solid px-[11px] font-sans text-[13px]";
+  + "border border-solid font-sans text-[13px]";
 
 /**
  * The wide form. A plain button group carrying `aria-current` — not a tablist:
@@ -72,12 +76,20 @@ export function ShelfLine({
   shelf,
   onSelect,
   onCreate,
+  menu,
 }: {
   folders: readonly DeckFolderWithCount[];
   counts: ShelfCounts;
   shelf: Shelf;
   onSelect: (next: Shelf) => void;
   onCreate: () => void;
+  /**
+   * The selected shelf's own `…`, drawn INSIDE its segment (STATES W3). Only a
+   * named folder gets one — `All decks` and `Unfiled` have nothing to rename or
+   * delete — so the caller returns null for those and for every unselected
+   * segment.
+   */
+  menu?: (segment: ShelfSegment) => React.ReactNode;
 }) {
   return (
     <div
@@ -109,30 +121,40 @@ export function ShelfLine({
     >
       {shelfSegments(folders, counts).map((segment) => {
         const selected = segment.shelf === shelf;
+        const actions = selected ? menu?.(segment) : null;
+        // A `div` either way, so the element type does not change under a
+        // keyboard reader when they select a shelf — and so the panel's own
+        // `div` is not phrasing content inside a `span`, which a browser would
+        // close early and hydrate differently from React's tree.
         return (
-          <button
+          <div
             key={segment.shelf ?? "all"}
-            type="button"
-            aria-current={selected ? "true" : undefined}
-            aria-label={folderCopy.shelves.aria(segment.label, segment.count)}
-            onClick={() => onSelect(segment.shelf)}
-            className={`${SEGMENT} ${
+            className={`${SEGMENT} ${actions ? "pr-[5px]" : "px-0"} ${
               selected
                 ? "border-[color:var(--border-strong)] bg-[color:var(--elevated)] font-medium text-[color:var(--fg)]"
                 : "border-transparent bg-transparent text-[color:var(--fg-muted)]"
             }`}
           >
-            {/* Truncated, and the whole name stays in the accessible name and
-                the tooltip. Folder names run to 120 characters: unconstrained,
-                one long name makes this row wider than the viewport, and
-                wrapping cannot help because it moves whole segments. */}
-            <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
-              {segment.label}
-            </span>
-            <span className="ml-[7px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-              {segment.count}
-            </span>
-          </button>
+            <button
+              type="button"
+              aria-current={selected ? "true" : undefined}
+              aria-label={folderCopy.shelves.aria(segment.label, segment.count)}
+              onClick={() => onSelect(segment.shelf)}
+              // The padding stays on the BUTTON: put on the wrapper it became a
+              // dead zone, where the segment looked pressable and was not.
+              className={`flex h-[32px] cursor-pointer items-center border-none bg-transparent px-[11px] font-sans text-[13px] ${
+                selected ? "font-medium text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"
+              }`}
+            >
+              <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
+                {segment.label}
+              </span>
+              <span className="ml-[7px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                {segment.count}
+              </span>
+            </button>
+            {actions}
+          </div>
         );
       })}
 
@@ -143,7 +165,7 @@ export function ShelfLine({
       <button
         type="button"
         onClick={onCreate}
-        className={`${SEGMENT} gap-[6px] border-dashed border-[color:var(--border-dashed)] bg-transparent text-[12.5px] text-[color:var(--fg-body)]`}
+        className={`${SEGMENT} gap-[6px] px-[11px] border-dashed border-[color:var(--border-dashed)] bg-transparent text-[12.5px] text-[color:var(--fg-body)]`}
       >
         <span className="font-mono text-[13px]">+</span>
         {folderCopy.create.action}
@@ -158,24 +180,28 @@ export function ShelfLine({
  * chassis's hairline, which is one of the four carriers keeping it out of the
  * filter register (decision 11).
  *
- * No `…` beside it in this round: that control opens rename and delete, and it
- * is absent on `All decks` and `Unfiled` in every round (errata E7).
+ * The `…` beside it belongs to a named folder alone — it opens rename and
+ * delete, and `All decks` and `Unfiled` have neither (STATES C1/C2, errata E7).
+ * The caller passes nothing for those, and nothing is what draws: a disabled
+ * control would be a dead one.
  */
 export function ShelfTrigger({
   label,
   count,
   onOpen,
   open,
+  menu,
 }: {
   label: string;
   count: number;
   onOpen: () => void;
   open: boolean;
+  menu?: React.ReactNode;
 }) {
   return (
     <div
       data-shelf-trigger
-      className="flex items-center gap-[8px] bg-[color:var(--bg)] px-[16px] py-[8px]"
+      className="flex items-center gap-[8px] overflow-hidden bg-[color:var(--bg)] px-[16px] py-[8px]"
     >
       <button
         type="button"
@@ -183,16 +209,21 @@ export function ShelfTrigger({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={folderCopy.shelves.triggerAria(label, count)}
-        className="flex h-[44px] cursor-pointer items-center gap-[8px] rounded-[10px] border-none bg-transparent px-0 font-sans text-[15px] font-semibold text-[color:var(--fg)]"
+        className="flex h-[44px] min-w-0 cursor-pointer items-center gap-[8px] rounded-[10px] border-none bg-transparent px-0 font-sans text-[15px] font-semibold text-[color:var(--fg)]"
       >
-        {label}
+        {/* Truncated, with the whole name in the accessible name above: one
+            long single-token name would otherwise push the 44px action target
+            past the edge of a phone and make it unreachable. */}
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
         <span className="font-mono text-[11px] font-normal text-[color:var(--fg-faint)]">
           {count}
         </span>
-        <span aria-hidden className="text-[color:var(--fg-faint)]">
+        <span aria-hidden className="flex-none text-[color:var(--fg-faint)]">
           ▾
         </span>
       </button>
+      {/* `flex-none`, so the label yields before the action does. */}
+      {menu && <span className="flex-none">{menu}</span>}
     </div>
   );
 }

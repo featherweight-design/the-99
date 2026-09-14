@@ -49,6 +49,7 @@ import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
 import { ShelfLine, ShelfTrigger, shelfSegments } from "./shelf-line";
+import { ShelfMenu } from "./shelf-menu";
 import { ShelfSheet } from "./shelf-sheet";
 import { ShelfEmpty, UnfiledEmpty } from "./shelf-empty";
 import { FolderCreateDialog } from "./folder-create-dialog";
@@ -522,6 +523,48 @@ export function DecksView({
   // that draws must not offer to clear one (STATES N2/N3 versus N4).
   const shelfEmpty = state.shelf !== ALL_DECKS && narrowed.length === 0;
 
+  /**
+   * The selected shelf's own actions, or nothing. A named folder gets them;
+   * `All decks` and `Unfiled` are not folders and have neither act (errata E7),
+   * and an unselected segment never carries them (STATES W2).
+   */
+  const shelfMenu = (
+    shelf: Shelf,
+    label: string,
+    count: number,
+    size: "wide" | "compact",
+  ) => {
+    if (shelf === ALL_DECKS || shelf === UNFILED) return null;
+    return (
+      <ShelfMenu
+        key={shelf}
+        folderId={shelf}
+        name={label}
+        deckCount={count}
+        size={size}
+        say={say}
+        onRenamed={refresh}
+        onGone={() => {
+          // The folder went while the panel was open: this segment, and the
+          // focused trigger inside it, are removed by the refresh.
+          onShelf(ALL_DECKS);
+          refresh();
+          requestAnimationFrame(focusShelfControl);
+        }}
+        onDeleted={() => {
+          // Selection falls back to All decks (STATES D3): the shelf the reader
+          // was standing on has gone, and landing them on it is the one thing
+          // that cannot happen.
+          onShelf(ALL_DECKS);
+          refresh();
+          // The segment carrying this menu — and the focused trigger inside it —
+          // is removed by that same render, so focus would fall to the body.
+          requestAnimationFrame(focusShelfControl);
+        }}
+      />
+    );
+  };
+
   const onShelf = useCallback(
     (shelf: Shelf) => {
       apply({ filters: state.filters, sort: state.sort, shelf });
@@ -608,6 +651,7 @@ export function DecksView({
               folders={folders}
               counts={counts}
               shelf={state.shelf}
+              menu={(segment) => shelfMenu(segment.shelf, segment.label, segment.count, "wide")}
               onSelect={onShelf}
               onCreate={() => {
                 setCreating(true);
@@ -617,6 +661,12 @@ export function DecksView({
             <ShelfTrigger
               label={selectedShelf.label}
               count={selectedShelf.count}
+              menu={shelfMenu(
+                selectedShelf.shelf,
+                selectedShelf.label,
+                selectedShelf.count,
+                "compact",
+              )}
               open={shelfSheet.open}
               onOpen={() => setShelfSheet({ open: true })}
             />

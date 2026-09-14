@@ -504,6 +504,50 @@ describe("DecksView", () => {
     expect(regions).toContain("Cube night, 2 decks");
   });
 
+  // Scoped to the line: every deck tile carries an `Actions for <deck>` trigger
+  // of its own, so an unscoped query finds those instead.
+  const shelfActions = (container: HTMLElement) =>
+    [...container.querySelectorAll("[data-shelf-line] button[aria-label^='Actions for']")];
+
+  it("gives the selected named shelf its own actions, and nothing else one", () => {
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    // Never on an unselected segment (W2), and never on the two that are not
+    // folders (W4, errata E7).
+    expect(shelfActions(container).map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Actions for Cube night",
+    ]);
+  });
+
+  it("gives the compact form the same shelf actions", () => {
+    // The phone gets rename and delete too: the wide assertions above run under
+    // renderWide, so without this a regression could take the actions off the
+    // phone with every other test green.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    expect(
+      container.querySelectorAll("[data-shelf-trigger] button[aria-label^='Actions for']"),
+    ).toHaveLength(1);
+  });
+
+  it("draws no compact shelf actions on All decks", () => {
+    const { container } = render(view(shelvedDecks(), twoFolders));
+    expect(
+      container.querySelectorAll("[data-shelf-trigger] button[aria-label^='Actions for']"),
+    ).toHaveLength(0);
+  });
+
+  it("draws no shelf actions on All decks", () => {
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    expect(shelfActions(container)).toHaveLength(0);
+  });
+
+  it("draws no shelf actions on Unfiled", () => {
+    window.history.replaceState(null, "", "/decks?folder=none");
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    expect(shelfActions(container)).toHaveLength(0);
+  });
+
   it("ignores a hand-edited folder id", () => {
     window.history.replaceState(null, "", "/decks?folder=nope");
     renderWide(view(shelvedDecks(), twoFolders));
