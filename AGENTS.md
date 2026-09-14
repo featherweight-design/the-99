@@ -276,9 +276,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `docs/superpowers/inventories/*.json`.
 
   Every step verb — `click`, `clickRole`, `fill` — reaches page content through
-  `lib/surface.mjs`, so an inventory never spells `main` itself. An unknown step key
-  THROWS rather than being skipped: a key the runner does not read is a step that silently
-  did not happen, which photographs a route in the wrong state and reads as coverage. A row that exists at one
+  `lib/surface.mjs`, so an inventory never spells `main` itself. An inventory is validated
+  before the browser launches, by `lib/steps.mjs`, against one rule: A STEP MUST DO
+  SOMETHING, AND THE RUNNER MUST BE ABLE TO SEE WHAT. An unknown key, an empty selector, a
+  `name` with no `clickRole` to belong to, a row with no steps — each is a step that
+  silently did not happen, which photographs a route in the wrong state and reads as
+  coverage. `STEP_SPEC` there is the whole vocabulary; a verb added to `run` and not to it
+  throws on the inventory that first uses it. A row that exists at one
   width only says so with `"widths": ["phone"]` or `["desktop"]`; the other width is skipped
   and reported as such rather than counted a failure. There is deliberately no optional
   click: a step that may find nothing cannot fail, and a cell that photographs a closed route

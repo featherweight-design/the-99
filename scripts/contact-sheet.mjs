@@ -97,7 +97,7 @@ async function signIn(page) {
  */
 async function run(page, steps) {
   for (const step of steps ?? []) {
-    if (step.goto) {
+    if (step.goto !== undefined) {
       // `${VAR}` in a path comes from the environment, so an inventory can name a
       // route that needs an id without committing one account's id to the
       // repository — where it would 404 on anybody else's data.
@@ -119,8 +119,13 @@ async function run(page, steps) {
     // A surface that exists at one width only says so with `widths` on its row.
     // There is no optional click: a step that finds nothing is a failed cell,
     // which is the whole point of pressing it.
-    if (step.click) await onPage(page, step.click).first().click({ timeout: 15_000 });
-    if (step.clickRole) {
+    // PRESENCE, not truthiness. `inventoryProblems` has already refused an empty
+    // selector, and a truthiness check here would silently skip one anyway — the
+    // second half of the same bug, in the file that is supposed to be strict.
+    if (step.click !== undefined) {
+      await onPage(page, step.click).first().click({ timeout: 15_000 });
+    }
+    if (step.clickRole !== undefined) {
       await page
         .locator(PAGE)
         .getByRole(step.clickRole, { name: new RegExp(step.name) })
@@ -132,8 +137,8 @@ async function run(page, steps) {
     if (step.fill !== undefined) {
       await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
     }
-    if (step.wait) await page.waitForSelector(step.wait, { timeout: 15_000 });
-    if (step.settle) await page.waitForTimeout(step.settle);
+    if (step.wait !== undefined) await page.waitForSelector(step.wait, { timeout: 15_000 });
+    if (step.settle !== undefined) await page.waitForTimeout(step.settle);
     // A surface that only exists part-way down the page — the set head's collapsed bar, the
     // foot of a long column — is reached by scrolling to it, which is a step like any other
     // rather than a reason for a second script.
