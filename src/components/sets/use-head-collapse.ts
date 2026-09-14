@@ -133,6 +133,11 @@ export function useHeadCollapse({
    */
   const runningRef = useRef<Animation[]>([]);
   /**
+   * Set when a step ends because something interrupted it rather than because it finished.
+   * The next run reads it to know it has a reader mid-step to carry on from.
+   */
+  const interruptedRef = useRef(false);
+  /**
    * The head's height as it last stood, refreshed on every measurement. The transition needs
    * where the head is coming FROM, and by the time a layout effect can ask, the swap has
    * already happened in that same commit — the head is already the height it is going to.
@@ -351,7 +356,13 @@ export function useHeadCollapse({
 
     // Whatever was running is over the moment the target moves. `cancel()` fires the
     // handler below, which records where the head had reached and re-reads the reserve.
-    const wasRunning = runningRef.current.length > 0;
+    //
+    // `interruptedRef` is how that fact survives into this run. React tears the previous
+    // effect down BEFORE setting the new one up, so by the time this line is reached the
+    // list has already been emptied by that cleanup — reading its length here always said
+    // "nothing was running", and the restart this enables never happened once.
+    const wasRunning = interruptedRef.current || runningRef.current.length > 0;
+    interruptedRef.current = false;
     for (const running of runningRef.current) running.cancel();
     runningRef.current = [];
 
@@ -415,14 +426,16 @@ export function useHeadCollapse({
     // Clipped for the length of the step only. The open head carries controls that open
     // above and below it, and a head that clipped at rest would cut them off.
     el.style.overflow = "hidden";
-    // Both boxes put where the step BEGINS, in this commit rather than on the animation's
-    // first frame. A cancelled run reverts its element to the natural height immediately, so
-    // between that revert and the new animation taking effect there is one frame where the
-    // head is its full height and the reserve is still the one the reader was looking at —
-    // the document grows by the difference for that frame and drops back. Writing both up
-    // front closes it.
-    el.style.height = `${from}px`;
-    spacer.style.height = `${spacerFrom}px`;
+    // Both boxes pinned at where the step ENDS, in this commit.
+    //
+    // The END rather than the start, and that is the whole subtlety. `Element.animate`
+    // defaults to `fill: "none"`, so the keyframes stop contributing the moment the step
+    // finishes and the box falls back to whatever the inline height says: pinned to the
+    // start, a completed step lands back where it began for the frame before the handler
+    // clears it. Pinned to the target, the fallback IS the target, the keyframe at time 0
+    // still paints the start, and nothing jumps at either end.
+    el.style.height = `${to}px`;
+    spacer.style.height = `${spacerTo}px`;
     animatingRef.current = true;
 
     const timing = { duration: COLLAPSE_MS, easing: "ease" } as const;
@@ -436,7 +449,7 @@ export function useHeadCollapse({
     );
     runningRef.current = [headAnim, spacerAnim];
 
-    const done = () => {
+    const done = (interrupted: boolean) => {
       // `cancel()` and `finish` both arrive here, and the guard is what makes the pair
       // safe: cancelling the head fires this, which cancels the spacer, which fires it
       // again.
@@ -466,15 +479,20 @@ export function useHeadCollapse({
       // there.
       lastHeightRef.current = reachedHead;
       spacer.style.height = `${reachedSpacer}px`;
+      interruptedRef.current = interrupted;
       evaluateCollapse(isDesktop);
     };
-    headAnim.addEventListener("finish", done);
-    headAnim.addEventListener("cancel", done);
+    const onFinish = () => done(false);
+    const onCancel = () => done(true);
+    headAnim.addEventListener("finish", onFinish);
+    headAnim.addEventListener("cancel", onCancel);
 
     return () => {
-      headAnim.removeEventListener("finish", done);
-      headAnim.removeEventListener("cancel", done);
-      done();
+      headAnim.removeEventListener("finish", onFinish);
+      headAnim.removeEventListener("cancel", onCancel);
+      // A teardown is an interruption by definition: either the reader reversed, or
+      // something moved the head's size under a step that was still running.
+      done(true);
     };
     // `deltaFiring` is a dependency again, and safe to be one now: a change while a step is
     // running re-derives and restarts it rather than tearing it down with nothing to pick it

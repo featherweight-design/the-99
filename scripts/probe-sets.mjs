@@ -1215,15 +1215,15 @@ async function run() {
           requestAnimationFrame(tick);
         }, 60);
       }));
-      // The bound is 8px rather than 1px, and the figure it replaces says why. Carrying the
-      // two in-flight heights into the reversal costs a few pixels of sub-frame rounding as
-      // the reserve and the head hand over; NOT carrying them costs nothing here and snaps
-      // the head through its whole 213px instead, because the cancelled run leaves the two
-      // steady-state figures behind and the step that follows has `from === to`. The
-      // measured pair is 6px against 213px.
+      // A pixel, not a bound with a story. It was 6px while the animation pinned its inline
+      // height to the START — `fill: "none"` then dropped each box back there for the frame
+      // between the step finishing and the handler clearing it — and the fix for that is
+      // what brought this to 1. Without the in-flight pair being carried at all it reads
+      // clean here and snaps the head through its whole 213px instead, which is why this
+      // check is paired with the animation one above rather than standing alone.
       failures += !report(
         "reversing mid-step does not move the grid in the document",
-        reversal !== null && reversal.shift <= 8,
+        reversal !== null && reversal.shift <= 2,
         reversal === null
           ? "the head or the grid was not on the page — the check measured nothing"
           : `${reversal.shift}px at its worst across the reversal, ending shy=${reversal.shy}`,
