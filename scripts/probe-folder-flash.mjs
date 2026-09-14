@@ -18,6 +18,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import { randomUUID } from "node:crypto";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -25,14 +26,17 @@ const {
   E2E_AUDIT_USER_EMAIL: EMAIL,
   E2E_AUDIT_USER_PASSWORD: PASSWORD,
   DATABASE_URL,
-} = requireEnv([
-  "E2E_AUDIT_USER_EMAIL",
-  "E2E_AUDIT_USER_PASSWORD",
-  "CLERK_SECRET_KEY",
-  "DATABASE_URL",
-]);
+} = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+// Not required: a `+clerk_test` account signs in with a code and has no password,
+// and that is the account this repository's browser probes use.
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
+  throw new Error("E2E_AUDIT_USER_PASSWORD is required for an account without +clerk_test");
+}
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const FOLDER = `probe-flash-${Date.now()}`;
+// A UUID, not a timestamp. Two runs can share a millisecond, and then one
+// create is refused and the loser reads the winner's row as its own — which its
+// cleanup would delete.
+const FOLDER = `probe-flash-${randomUUID()}`;
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 // The rows THIS run made, so cleanup names them instead of matching a prefix:
@@ -126,8 +130,14 @@ async function run(browser) {
       [...document.querySelectorAll("[role=status]")].some((n) =>
         n.textContent?.includes("Shuffling up"),
       );
+    // ON THE TRANSITION, not on every mutation while it is up. One loading
+    // screen that sits through a few DOM writes is one flash, and counting each
+    // write reports refreshes that never happened.
+    let was = seen();
     new MutationObserver(() => {
-      if (seen()) window.__flashes += 1;
+      const now = seen();
+      if (now && !was) window.__flashes += 1;
+      was = now;
     }).observe(document.body, { childList: true, subtree: true });
   });
 
