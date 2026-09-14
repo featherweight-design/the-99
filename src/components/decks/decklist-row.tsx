@@ -298,9 +298,18 @@ export function DecklistRow({
     // press usually lands on a glyph or a label inside the control rather than on it.
     const target = event.target as HTMLElement | null;
     if (target?.closest("button, a, input, select, textarea, [role='button']")) return;
-    // Nor a drag over the row's own text: a reader selecting a card name has not asked for
-    // a modal over the thing they were reading.
-    if ((window.getSelection()?.toString().length ?? 0) > 0) return;
+    // Nor a drag over THIS row's own text: a reader selecting a card name has not asked for a
+    // modal over the thing they were reading. Scoped to the row, and to a selection that is
+    // actually a range — a page-wide check leaves every row inert after a selection anywhere
+    // on the page, including one made in a row the reader has since scrolled past, and a
+    // collapsed selection is just a caret.
+    const selection = window.getSelection();
+    const selectedHere = selection !== null
+      && !selection.isCollapsed
+      && selection.toString().length > 0
+      && (event.currentTarget.contains(selection.anchorNode)
+        || event.currentTarget.contains(selection.focusNode));
+    if (selectedHere) return;
     open(card.oracleId, siblings);
   }
 

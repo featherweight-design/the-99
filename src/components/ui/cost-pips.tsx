@@ -26,10 +26,12 @@ export function parseManaCost(cost: string): string[] {
 }
 
 // Pips never overlap. They did: a 40px track could not hold three 12px pips at a 3px gap, so
-// every pip past the second stepped 5px into its neighbour and five fitted exactly. It was
-// unreadable at the only width it ever applied to — the phone runs are uncapped and have
-// always drawn a real gap — and a desktop row has the room, which is the whole reason the
-// track can simply be as wide as the run it holds.
+// every pip past the second stepped 5px into its neighbour and five fitted exactly, and two
+// black pips overlapping read as one. It applied wherever a caller passed `cap` — the
+// decklist's desktop track, the pending banner, the top-off list, `/collection`'s rows — and
+// not to the uncapped runs, which is why the phone's meta line always drew a real gap. Every
+// one of those surfaces has the room for the full run, which is the whole reason the track
+// can simply be as wide as what it holds.
 //
 // 5 × 12 + 4 × 3 = 72, so the track is 72: the cap's five slots at their real gap, and no
 // arithmetic left over to get wrong.

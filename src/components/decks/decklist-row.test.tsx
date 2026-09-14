@@ -821,6 +821,27 @@ describe("DecklistRow — the row is the click target", () => {
       .toHaveAttribute("aria-busy", "true");
   });
 
+  // A selection somewhere else on the page is not this row's business: the guard used to read
+  // the document's selection, so a name highlighted in one row left every other row inert.
+  it("still opens when the selection belongs to another row", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistRow deckId="d1" card={card} />
+        <DecklistRow deckId="d1" card={{ ...card, oracleId: "mox", name: "Mox Diamond" }} />
+      </CardDetailProvider>,
+    );
+    const [first, second] = [...container.querySelectorAll("div.group")];
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(first.querySelector("button")!);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    fireEvent.click(second.querySelector("span[aria-hidden]") ?? second);
+    expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Mox Diamond") }))
+      .toHaveAttribute("aria-busy", "true");
+    selection?.removeAllRanges();
+  });
+
   it("leaves the row's own controls to do their own job", () => {
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>

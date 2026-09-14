@@ -73,7 +73,7 @@ Scope: exactly five components, across the two surfaces.
 Governing-value rule from the handoff: **§Errata at the foot of `README.md` wins over every
 other sentence in the bundle, and where the canvas and R1-era prose disagree the canvas wins
 on chrome.** Two §Errata rows bear directly on these surfaces: the cost track on versioning's
-rows is **`PIP_TRACK = 40` / `PIP_CAP = 5` as shipped** (so the canvas's 90px/76px track
+rows is **`COST_TRACK = 72` / `PIP_CAP = 5` as shipped** (so the canvas's 90px/76px track — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1**
 governs nothing — Discrepancy 39), and the version history table has **no `ver` header row**
 (Discrepancy 45). Every row below records the canvas value and names the contradiction where
 one exists.
@@ -585,7 +585,7 @@ reads as a canvas state label rather than product chrome (Discrepancy 40).
 | container display | `flex`, `align-items: center`, `justify-content: flex-end` | same |
 | container width | `76px`, `flex: none` | `90px`, `flex: none` |
 | container gap | `3px` — the Contract says **2px phone** (Discrepancy 52) | `3px` |
-| governing width | **Neither.** §Errata: versioning mounts `CostPips` with the shipped `PIP_TRACK = 40` / `PIP_CAP = 5`, so 76px/90px is drawn geometry that governs nothing (Discrepancy 39) | same |
+| governing width | **Neither.** §Errata: versioning mounts `CostPips` with the shipped `COST_TRACK = 72` / `PIP_CAP = 5`, so 76px/90px is drawn geometry that governs nothing (Discrepancy 39) | same — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
 | generic-cost disc — size | `17px` × `17px` | `18px` × `18px` |
 | disc border-radius | `999px` | `999px` |
 | disc background | `#2A241D` (`--elevated`) | `#2A241D` (`--elevated`) |
@@ -851,7 +851,7 @@ not positions in one flat 1–45 sequence.
 ## Contradictions inside the bundle
 
 - The cost track's width: **90px desktop / 76px phone** on the canvas, **110px / 76px** in
-  `COST-TRACK.md`, and **`PIP_TRACK = 40` / `PIP_CAP = 5`** in §Errata, which governs and makes
+  `COST-TRACK.md`, and **`COST_TRACK = 72` / `PIP_CAP = 5`** in §Errata, which governs and makes — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1**
   the other two dead figures for versioning's rows.
 - The type-group heading's size: **13px in a version diff** per Component notes, **13px**
   desktop and **14px** phone on the canvas.
@@ -931,7 +931,7 @@ not positions in one flat 1–45 sequence.
     that it takes "the pending-add marker's shape".
 39. **The cost track has three different widths, and the governing one is neither drawn
     figure.** Canvas 90px desktop / 76px phone; `COST-TRACK.md` 110px / 76px; §Errata rules
-    versioning mounts `CostPips` with the shipped `PIP_TRACK = 40` and `PIP_CAP = 5`. The
+    versioning mounts `CostPips` with the shipped `COST_TRACK = 72` and `PIP_CAP = 5`. The — **`PIP_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1**
     Contract's "no cap, no overflow rule" also contradicts `PIP_CAP = 5` directly.
 40. **The `v2 opened — against v1` and `v1 opened — there is no predecessor` captions match no
     copy key.** Both are drawn in the same mono `0.16em` uppercase `--fg-faint` treatment as

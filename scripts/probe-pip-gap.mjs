@@ -138,7 +138,11 @@ async function run() {
         // route here draws costs, so an empty sweep is a probe that did not reach the page.
         failures += !report(
           `${width}px · ${route}`,
-          m.runs > 0 && m.worst !== null && m.worst >= MIN_GAP - 0.5,
+          // The floor itself, less a hundredth of a pixel for the sub-pixel rounding a
+          // fractional device pixel ratio leaves on a `getBoundingClientRect`. A half-pixel
+          // allowance was wrong by three orders of magnitude: it would have passed a run
+          // that had closed to 2.5px, which is a regression this check exists to catch.
+          m.runs > 0 && m.worst !== null && m.worst >= MIN_GAP - 0.01,
           m.runs === 0
             ? `no run of two or more pips was drawn — a collection of single-pip costs, or a`
               + ` page this probe did not reach. NOT a pass: pick a fuller fixture, or a deck`
