@@ -95,9 +95,13 @@ export function filterDecks<T extends FilterableDeck>(
     // The UNION, through the same helper every surface words its colour with. A
     // pair whose red comes only from its partner reads `Jeskai` on its own tile
     // and used to vanish when Red was ticked.
-    const identity = deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity);
-    if (f.colours.length && !f.colours.every((c) => identity.includes(c))) {
-      return false;
+    //
+    // Composed INSIDE the guard: `/decks` calls this once for the grid and again
+    // for every status and play option's count, so building a Set and two arrays
+    // per deck on the common unfiltered render would be work for no result.
+    if (f.colours.length) {
+      const identity = deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity);
+      if (!f.colours.every((c) => identity.includes(c))) return false;
     }
     if (f.played === "never" && d.lastPlayedAt) return false;
     if (f.played === "thisMonth" && (!d.lastPlayedAt || !inCurrentMonth(d.lastPlayedAt, now))) {
