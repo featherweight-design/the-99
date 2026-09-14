@@ -299,7 +299,7 @@ inside the sheet, which overrides both the Component notes' "two lists" and stat
 | line-height | `1.55` | `1.55` |
 | color | `#8E8269` (`--fg-faint`) | `#8E8269` (`--fg-faint`) |
 | lead phrase | `No action required` in `#C6B79A` (`--fg-body`), `font-weight: 400` inside a `<b>` | same |
-| text as drawn | `No action required — committing releases them.` (shortened) | `No action required — committing is what releases them. Take them out of the box whenever you next open it.` (Discrepancy 12) |
+| text as drawn | `No action required: committing releases them.` (shortened) | `No action required: committing is what releases them. Take them out of the box whenever you next open it.` (Discrepancy 12) |
 
 ### Apply bar
 
@@ -843,8 +843,10 @@ two the strip owns.
     phone, so the desktop label is not a copy-module string.
 12. **`commit.pullNote` is shortened on the phone.** Phone draws `No action required —
     committing releases them.`; the copy module and the desktop frame both carry `No action
-    required — committing is what releases them. Take them out of the box whenever you next
-    open it.` No responsive copy variant is specified.
+    required: committing is what releases them. Take them out of the box whenever you next
+    open it.` No responsive copy variant is specified. (**Amended 2026-09-13**: both strings
+    were drawn with an em dash; the copy module now ships a colon. The canvas quote above is
+    left as the drawing's own record.)
 13. **The apply bar's footer note changes position by width.** Desktop: `Commit v3`, `Cancel`,
     then the note, in a `center`-aligned wrapping row. Phone: the note **first**, above both
     buttons. The bundle states no ordering rule for it, unlike the discard pair.

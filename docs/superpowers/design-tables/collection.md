@@ -1552,7 +1552,7 @@ literals in the components.
 | Element | Copy |
 |---------|------|
 | Helper (mobile) | `Only a Name and Quantity column are required. Paste a list instead` |
-| Helper (desktop) | `We only need a Name and Quantity column — most exports already include them.` |
+| Helper (desktop) | `We only need a Name and Quantity column: most exports already include them.` |
 | Link | `Paste a list instead →` |
 
 ---
@@ -1659,7 +1659,7 @@ literals in the components.
 | Element | Copy |
 |---------|------|
 | Matched label (mobile) | `cards matched & ready` |
-| Matched label (desktop) | `cards matched to the Oracle database — ready to import` |
+| Matched label (desktop) | `cards matched to the Oracle database: ready to import` |
 
 ### Issue Summary Mini Stats (mobile)
 | Property | Mobile | Desktop |
@@ -2187,7 +2187,7 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 
 ### Replace — Step 2 Copy
 - `STEP 2 OF 3 · the-vault.csv · 2,933 rows`
-- `[N] cards matched to the Oracle database — ready to import`
+- `[N] cards matched to the Oracle database: ready to import`
 - `[N] unmatched names`
 - `[N] parse errors`
 - `[N] rows will be skipped`

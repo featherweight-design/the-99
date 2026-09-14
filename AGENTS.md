@@ -74,9 +74,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   It exists because the 2026-09-13 em-dash sweep spent FOUR consecutive review rounds on this,
   each round naming a different partial list. Every fix was right and every round found more,
-  because a list assembled by reading has a tail. On its first clean run it found six stale
-  quotations across four tables that three hand-built inventories had all missed, because each
-  of those was scoped to one PR's diff while the drift came from another PR entirely.
+  because a list assembled by reading has a tail. On its first clean run it found nine stale
+  quotations across six tables that three hand-built inventories had all missed, because each
+  of those was scoped to one PR's diff while the drift came from another PR entirely. Four of
+  those nine were invisible to the check's own first version, which is the more useful lesson:
+  it reported "no design table quotes a form the code stopped emitting" over rows that plainly
+  did. **Run a guard's failure path before believing its green.**
 
   **Nothing is synthesised.** The first version put a dash back where the punctuation now is
   and searched for that; it reported 46 findings, every one false, having rewritten
@@ -84,6 +87,20 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   loose enough to absorb the difference. Instead both sides reduce to their WORDS — `${…}` and
   every swept mark dropped — and a quotation is a finding only when its words match a shipped
   string exactly while its punctuation does not.
+
+  **It reads components, not only `src/lib/copy`.** The convention here is copy-in-definitions
+  and the app does not fully obey it, so `src/components/**/*.tsx` is scanned too — including
+  JSX TEXT NODES, which are not string literals and which no amount of careful literal-scanning
+  would ever see. `review-screen.tsx` draws its matched-count label that way, and two tables
+  quoted the pre-sweep form of it.
+
+  **Three parsing mechanics, each paid for by a miss.** Template literals nest, so an
+  interpolation is skipped as a balanced `${ }` region rather than closed on the next backtick.
+  A sentence assembled across `+` is folded into one string, because that is one sentence on
+  screen and a table quotes it whole. And a table's quoted spans are paired by PARITY, never by
+  regex search: a search-based matcher re-pairs from the next delimiter whenever a span falls
+  outside its length window, and from there it reads the GAPS BETWEEN code spans as though they
+  were the quotations. That one is why the first version reported clean over real drift.
 
   Two exclusions are deliberate. A quotation whose only extra mark is a LEADING dash is the
   component's label-joiner, not drift: `resolution-expander.tsx` renders `— {copy.prompt}`
