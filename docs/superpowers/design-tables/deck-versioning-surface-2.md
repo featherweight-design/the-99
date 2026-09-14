@@ -495,7 +495,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | tag color | `#E0913C` (`--warning`) | `#E0913C` |
 | tag border / radius / padding | `1px solid #4A3A1C`, radius `4px`, `1px 5px` — `BuyTag`'s shape | `1px solid #4A3A1C`, radius `4px`, `1px 5px` |
 | tag text | `deck in draft` (`review.pullGuardTag`) — see the amendment below | `deck in draft` |
-| tag placement | beside the deck name on the meta line | beside the deck name, grouped `flex; gap 5px` |
+| tag placement | beside the deck name on the meta line, spaced by that line's `9px` gap | same — the `gap 5px` grouping went with the withdrawn action |
 | action label | **withdrawn** — see the amendment below | **withdrawn** |
 | action font | **withdrawn** | **withdrawn** |
 | action box | **withdrawn** | **withdrawn** |
@@ -518,7 +518,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 |----------|--------|---------|
 | rendered on the canvas | **— (not drawn)** | **— (not drawn)** |
 | tag text | `commander` (`review.commanderGuardTag`) | `commander` |
-| tag shape | the same mono tag as `pending` | the same mono tag |
+| tag shape | the same mono tag as variant 1's `deck in draft` | the same mono tag |
 | control | **none at all** — no route releases a commander | **none** |
 | price | stays (state 21) | stays |
 | accessible name | `{card} is {deck}'s commander. It cannot be pulled.` (`review.commanderGuardA11y`) | same |
@@ -606,7 +606,7 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 | B17 — No removes | `removes.length === 0` | `Going out` absent; adds take the full width; nothing about the row changes | `adds`, `removes` |
 | B18 — A type group is empty on one side | a type has rows on one side only | The heading is absent **on that side only**; the columns do not align their groups and no spacer is drawn | per-type row sets per column |
 | B19 — A pull is available | add is sleeved in a deck with no pending changes and is not its commander | `Pull it` in the action slot, the holding deck named beside the name, the price beside that. One per card | `holdingDeck`, `price`, `canPull` |
-| B20 — A pull is guarded, the deck has pending changes | holding deck's own diff is non-empty | No `Pull it`; mono `pending` tag on the deck name; `Open →` at the same geometry; **the price stays**; the sentence is the control's accessible name | `holdingDeck`, `holdingDeckHasPendingChanges` (**server flag that does not exist yet**), `price` |
+| B20 — A pull is guarded, the deck has pending changes | holding deck's own diff is non-empty | No `Pull it`; mono `deck in draft` tag on the deck name; **no anchor** (see the 2026-09-14 amendment); **the price stays**; the sentence is the row's accessible description | `holdingDeck`, `holdingDeckHasPendingChanges`, `price` |
 | B21 — A pull is guarded, the card is that deck's commander | the claim is a commander claim | The same tag reading `commander`, **no control at all**; the price stays | `holdingDeck`, `isCommanderOf`, `price` |
 | B22 — A pull in flight | mutation dispatched | The row's control reads `Pulling…`, disabled, **in place**; the row does not move and nothing unmounts | `isPending` per row |
 | B23 — A pull succeeded | mutation resolved | Dot goes to free; marker and price leave the row; pullable, to-buy and total re-print; **the row does not move**; announced once, no animation | `bucket`, `chipCounts`, `buyTotal`, announcement |
@@ -688,7 +688,7 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 1. **The in-flight, success and refused pull states are prose only.** States 22, 23 and 24 are
    described in `STATES-pending.md` and drawn nowhere: there is no `Pulling…` control, no
    post-pull row, and no `MutationError` placement on the canvas for this surface.
-2. **The commander guard (state 21) is not drawn either** — only the `pending` variant is.
+2. **The commander guard (state 21) is not drawn either** — only variant 1 is.
 3. **The discard confirm in the apply bar (D32) is not drawn** on this surface; it is inferred
    from the banner's confirm, with "no second wording" as the only instruction.
 4. **No hover, focus-visible, active or disabled styling** for `Pull it`, `Open →`,
@@ -772,7 +772,8 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
     `{name} {from} → {to}`.
 18. **The pull-guard sentence.** `STATES-pending.md`'s copy table still lists the R1 string
     `that deck has its own pending changes →`, which README §Decisions 4 and the copy module
-    both replaced with the `pending` tag plus `Open →`.
+    both replaced — first with a `pending` tag plus `Open →`, and since the 2026-09-14
+    amendment with the `deck in draft` tag alone.
 19. **State numbers 21–25 are used twice.** Table B (review page) and table C (commit sheet)
     both number states 21–25. The errata's "section-scoped" ruling makes this legal, and it
     still means "state 21" is ambiguous without its table letter — and README §Decisions 4

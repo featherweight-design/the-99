@@ -48,7 +48,14 @@ const copy = deckImportCopy.update.diff;
  * whose alignment is its whole legibility.
  */
 const ROW_BOX = "min-h-[44px] md:min-h-[40px] px-[8px] md:px-[9px]";
-const ROW_BOX_ACTION = "min-h-[44px] p-[8px] md:pl-[9px] md:pr-[6px]";
+const ROW_BOX_ACTION = "min-h-[44px] p-[8px] md:py-0 md:pl-[9px] md:pr-[6px]";
+
+/** The stacked row's box. It keeps the phone's 8px vertical padding at every
+ *  width, because two lines inside a 44px plate with no padding is what the
+ *  desktop reset was written against: `md:py-0` belongs to the single-line rows
+ *  that still draw a 34px control on a 44px plate, and applying it here would
+ *  press the two lines against the plate's edges. */
+const ROW_BOX_STACKED = "min-h-[44px] p-[8px] md:pl-[9px] md:pr-[6px]";
 
 /** A pull-bearing row is two lines at EVERY width: the card name on the first,
  *  the holding deck, the price and the control on the second.
@@ -554,7 +561,7 @@ export function DiffRowIn({
       onClick={openRow}
       className={[
         stacked ? ROW_SHELL_STACKED : ROW_SHELL,
-        review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_IN_IMPORT,
+        stacked ? ROW_BOX_STACKED : review ? ROW_BOX : ROW_BOX_IN_IMPORT,
         ROW_PLATE,
         review ? ROW_PLATE_HOVER : "",
       ].join(" ")}

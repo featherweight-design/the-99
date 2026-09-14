@@ -235,8 +235,13 @@ export async function loadAvailability(
     own_claims as (
       select t.oracle_id, sum(t.quantity)::int as own_claim
       from (
+        -- Joined to decks and scoped to this reader, as both commander arms
+        -- below are. excludeDeckId reaches here from a route parameter, and an
+        -- unscoped arm would let another player's deck_cards subtract from this
+        -- reader's own free figures.
         select dc.oracle_id, dc.quantity
         from deck_cards dc
+        join decks d on d.id = dc.deck_id and d.user_id = ${userId}
         where ${skip}::uuid is not null and dc.deck_id = ${skip}::uuid
         union all
         -- Both commanders, for the reason the claim model unions them: neither is
