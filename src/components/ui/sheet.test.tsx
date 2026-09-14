@@ -77,18 +77,22 @@ describe("Sheet", () => {
     expect(wrapper.firstElementChild?.className).toContain("w-[38px]");
   });
 
-  it("releases the pointer when the gesture is cancelled", () => {
-    // A cancel arrives when the browser takes the gesture over — a scroll
-    // claiming it, a call arriving. Without a release the capture outlives the
-    // drag and the handle keeps swallowing pointer events.
+  it("never dismisses on a cancelled gesture, however far it travelled", () => {
+    // A cancel is the gesture being TAKEN AWAY — a scroll claiming it, a system
+    // interaction — not a drag completing. Sharing the up handler meant a cancel
+    // past the threshold closed a sheet the reader never let go of.
+    const onDismiss = vi.fn();
     const releasePointerCapture = vi.fn();
-    render(<Sheet {...props} open />);
+    render(<Sheet {...props} open onDismiss={onDismiss} />);
     const h = handle() as HTMLElement;
     h.setPointerCapture = vi.fn();
     h.releasePointerCapture = releasePointerCapture;
     fireEvent.pointerDown(h, { clientY: 0, pointerId: 1 });
-    fireEvent.pointerCancel(h, { clientY: 30, pointerId: 1 });
+    fireEvent.pointerMove(h, { clientY: 200, pointerId: 1 });
+    fireEvent.pointerCancel(h, { clientY: 200, pointerId: 1 });
+    expect(onDismiss).not.toHaveBeenCalled();
     expect(releasePointerCapture).toHaveBeenCalledWith(1);
+    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
   });
 
   it("captures the pointer, so a drag off the handle still reports", () => {
@@ -120,11 +124,12 @@ describe("Sheet", () => {
     expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
   });
 
-  it("holds the page while it is up, and lets go when it closes", () => {
-    const { rerender } = render(<Sheet {...props} open />);
-    expect(document.body.style.overflow).toBe("hidden");
-    rerender(<Sheet {...props} open={false} />);
-    expect(document.body.style.overflow).not.toBe("hidden");
+  it("does not hold the page — every caller already does", () => {
+    // Three callers lock through `useDialogA11y`, which locks by default, and
+    // `filter-panel` calls `useScrollLock` itself. A lock here was a second
+    // counted lock per sheet rather than a fix.
+    render(<Sheet {...props} open />);
+    expect(document.body.style.overflow).toBe("");
   });
 
   it("draws no header of its own when the caller gives none", () => {

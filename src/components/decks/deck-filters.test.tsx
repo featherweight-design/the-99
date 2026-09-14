@@ -197,6 +197,8 @@ describe("DeckFilterSheet mounting", () => {
       />,
     );
     expect(container).toBeEmptyDOMElement();
+    // The lock belongs to `useDialogA11y` inside the body, so a body that never
+    // mounts is also a page that was never held.
     expect(document.body.style.overflow).not.toBe("hidden");
   });
 });

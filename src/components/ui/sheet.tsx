@@ -9,8 +9,16 @@
 // and let the page scroll under the scrim. That is the divergence a reader
 // feels on a phone and a diff cannot show.
 //
-// WHAT THIS OWNS: the scrim, the panel and its box, the drag handle and the
-// 80px dismissal, and the scroll lock. A caller renders its own body and footer.
+// WHAT THIS OWNS: the scrim, the panel and its box, and the drag handle with its
+// 80px dismissal. A caller renders its own body and footer.
+//
+// NOT the scroll lock, though an earlier draft of this took it. Every caller
+// already holds the page — three through `useDialogA11y`, which locks by
+// default, and `filter-panel` through `useScrollLock` directly — so a lock here
+// was a SECOND counted lock per sheet rather than a fix. The locks are counted,
+// so nothing visibly broke; it was simply an owner too many, and the claim that
+// two routes gained the behaviour was wrong. One owner, and it is the a11y
+// layer that already had it.
 //
 // WHAT IT ALSO DOES NOT OWN, FOR NOW: the box. Two vocabularies are in the
 // tree — `filter-panel` and the rack draw 16px on `--surface-rail` at 78vh,
@@ -30,7 +38,6 @@
 // wholesale. A shell that imposed one would break at least one of them, so it
 // takes the `panelRef` and `onKeyDown` a caller has already decided on.
 import { useRef, useState, type ReactNode, type RefObject } from "react";
-import { useScrollLock } from "../../lib/a11y/dialog";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
@@ -109,10 +116,6 @@ export function Sheet({
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef<number | null>(null);
 
-  // An `aria-modal` sheet over a page that scrolls behind it reads as broken.
-  // Counted inside the hook, so two sheets up at once still release correctly.
-  useScrollLock(open);
-
   // Closed returns null rather than hiding: a hidden duplicate would put a
   // second copy of every control in the accessibility tree, which is the rule
   // the rack's sheet states first and the one most easily lost in a rewrite.
@@ -137,6 +140,14 @@ export function Sheet({
     setDragY(0);
     e.currentTarget.releasePointerCapture?.(e.pointerId);
     if (travelled >= DRAG_DISMISS_PX) onDismiss();
+  };
+  // A cancel is the gesture being TAKEN AWAY — by a scroll claiming it, or a
+  // system interaction — not a drag completing. Sharing the up handler meant a
+  // cancel past 80px dismissed a sheet the reader never let go of.
+  const onHandlePointerCancel = (e: React.PointerEvent) => {
+    dragStartY.current = null;
+    setDragY(0);
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
   };
 
   const body = (
@@ -168,7 +179,7 @@ export function Sheet({
           onPointerDown={onHandlePointerDown}
           onPointerMove={onHandlePointerMove}
           onPointerUp={onHandlePointerUp}
-          onPointerCancel={onHandlePointerUp}
+          onPointerCancel={onHandlePointerCancel}
           className={handleClassName}
         >
           <span className={handleBarClassName} />
