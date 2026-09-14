@@ -81,9 +81,10 @@ describe("ShelfLine", () => {
     // chassis's own "this filter is on" — which is what keeps the two lines
     // from reading as the same kind of control.
     const { container } = line("f1");
+    // The ground is on the segment's wrapper now, since the selected segment
+    // also carries its own actions.
     const selected = screen.getByRole("button", { name: /Commander night, 2 decks/ });
-    expect(selected.className).toContain("var(--elevated)");
-    expect(selected.className).not.toContain("accent");
+    expect(selected.parentElement?.className).toContain("var(--elevated)");
     expect(container.innerHTML).not.toContain("--accent");
   });
 

@@ -550,6 +550,9 @@ export function DecksView({
           // that cannot happen.
           onShelf(ALL_DECKS);
           refresh();
+          // The segment carrying this menu — and the focused trigger inside it —
+          // is removed by that same render, so focus would fall to the body.
+          requestAnimationFrame(focusShelfControl);
         }}
       />
     );

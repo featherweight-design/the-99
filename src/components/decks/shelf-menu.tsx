@@ -118,8 +118,14 @@ export function ShelfMenu({
           at={at}
           mode={mode}
           onDismiss={close}
+          // Named for the mode it is in. Left at the menu's name, the rename
+          // form told assistive tech it was still an action list.
           label={
-            mode === "delete" ? folderCopy.del.heading(name) : folderCopy.shelves.menuTrigger(name)
+            mode === "delete"
+              ? folderCopy.del.heading(name)
+              : mode === "rename"
+                ? folderCopy.rename.heading
+                : folderCopy.shelves.menuTrigger(name)
           }
         >
           {mode === "menu" && (

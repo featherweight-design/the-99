@@ -118,17 +118,27 @@ export function ShelfLine({
       {shelfSegments(folders, counts).map((segment) => {
         const selected = segment.shelf === shelf;
         const actions = selected ? menu?.(segment) : null;
-        return actions ? (
-          <span
+        // A `div` either way, so the element type does not change under a
+        // keyboard reader when they select a shelf — and so the panel's own
+        // `div` is not phrasing content inside a `span`, which a browser would
+        // close early and hydrate differently from React's tree.
+        return (
+          <div
             key={segment.shelf ?? "all"}
-            className={`${SEGMENT} border-[color:var(--border-strong)] bg-[color:var(--elevated)] pr-[5px] font-medium text-[color:var(--fg)]`}
+            className={`${SEGMENT} ${actions ? "pr-[5px]" : "p-0"} ${
+              selected
+                ? "border-[color:var(--border-strong)] bg-[color:var(--elevated)] font-medium text-[color:var(--fg)]"
+                : "border-transparent bg-transparent text-[color:var(--fg-muted)]"
+            }`}
           >
             <button
               type="button"
-              aria-current="true"
+              aria-current={selected ? "true" : undefined}
               aria-label={folderCopy.shelves.aria(segment.label, segment.count)}
               onClick={() => onSelect(segment.shelf)}
-              className="flex cursor-pointer items-center border-none bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--fg)]"
+              className={`flex h-[32px] cursor-pointer items-center border-none bg-transparent font-sans text-[13px] ${
+                actions ? "pl-0" : "px-[11px]"
+              } ${selected ? "font-medium text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
             >
               <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
                 {segment.label}
@@ -138,31 +148,7 @@ export function ShelfLine({
               </span>
             </button>
             {actions}
-          </span>
-        ) : (
-          <button
-            key={segment.shelf ?? "all"}
-            type="button"
-            aria-current={selected ? "true" : undefined}
-            aria-label={folderCopy.shelves.aria(segment.label, segment.count)}
-            onClick={() => onSelect(segment.shelf)}
-            className={`${SEGMENT} ${
-              selected
-                ? "border-[color:var(--border-strong)] bg-[color:var(--elevated)] font-medium text-[color:var(--fg)]"
-                : "border-transparent bg-transparent text-[color:var(--fg-muted)]"
-            }`}
-          >
-            {/* Truncated, and the whole name stays in the accessible name and
-                the tooltip. Folder names run to 120 characters: unconstrained,
-                one long name makes this row wider than the viewport, and
-                wrapping cannot help because it moves whole segments. */}
-            <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
-              {segment.label}
-            </span>
-            <span className="ml-[7px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-              {segment.count}
-            </span>
-          </button>
+          </div>
         );
       })}
 
