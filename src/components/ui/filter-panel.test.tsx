@@ -137,6 +137,92 @@ describe("FilterPanel", () => {
     unmount();
   });
 
+  // Focus returns to the trigger on every close, and a browser scrolls a focused element into
+  // view — which put a reader who had scrolled away back at the top of the list for having
+  // dismissed a sheet. The distinction is who dismissed it: the keyboard has to see where
+  // focus went, a thumb has not asked to be moved.
+  it("returns focus without scrolling when a pointer dismisses the sheet", () => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    // `detail: 1` is a real press. `fireEvent.click` defaults it to 0, which is what a
+    // native button reports for Enter and Space — so the default is the KEYBOARD case, and
+    // a test that omits it is testing the other branch.
+    fireEvent.click(screen.getByRole("button", { name: "Done" }), { detail: 1 });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  // A native button fires `onClick` for Enter and Space too, so `Done` pressed from the
+  // keyboard arrives looking exactly like a click. `detail` is the only thing that separates
+  // them: 0 for the synthetic click, 1 or more for a press.
+  it("returns focus the visible way when Done is pressed from the keyboard", () => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }), { detail: 0 });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: false });
+  });
+
+  // Single-select dismisses on the row itself, which is the third way out of the sheet and
+  // the one neither test above reaches.
+  it("keeps the reader's place when a tap commits a single-select", () => {
+    setViewport(false);
+    renderPanel({ selectionMode: "single", options: OPTIONS.slice(0, 2) });
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getAllByRole("option")[0], { detail: 1 });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("returns focus the visible way when the keyboard commits a single-select", () => {
+    setViewport(false);
+    renderPanel({ selectionMode: "single", options: OPTIONS.slice(0, 2) });
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    fireEvent.keyDown(dialog, { key: "Enter" });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: false });
+  });
+
+  // The sheet has four pointer ways out and they must not drift apart: Done, the ✕, the
+  // scrim and the drag handle. A regression in any one of them jumps the page for a thumb
+  // while the others keep passing.
+  it.each([
+    ["the ✕", () => fireEvent.click(screen.getByRole("button", { name: /close/i }), { detail: 1 })],
+    ["the scrim", () => fireEvent.click(document.querySelector('[role="presentation"]')!, { detail: 1 })],
+    ["a drag past the threshold", () => {
+      const handle = document.querySelector('[role="dialog"] .touch-none')!;
+      fireEvent.pointerDown(handle, { clientY: 0 });
+      fireEvent.pointerMove(handle, { clientY: 90 });
+      fireEvent.pointerUp(handle, { clientY: 90 });
+    }],
+  ])("keeps the reader's place when %s dismisses the sheet", (_name, dismiss) => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    dismiss();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("returns focus the visible way when Escape dismisses it", () => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: false });
+  });
+
   it("mounts only the desktop popover above the breakpoint", () => {
     setViewport(true);
     renderPanel();
