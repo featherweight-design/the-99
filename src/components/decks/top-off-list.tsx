@@ -26,7 +26,7 @@ import {
   type PriceFact,
 } from "../../lib/decks/price";
 import { availabilityState } from "../../lib/decks/availability";
-import { CostPips } from "../ui/cost-pips";
+import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { BuyTag } from "./buy-tag";
@@ -127,7 +127,7 @@ function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
 }
 
 /** Mounted twice, and only here. The phone track is uncapped and unshingled
- *  while the desktop track caps at five slots inside a fixed 40px column —
+ *  while the desktop track caps at five slots inside the shared `COST_TRACK` column —
  *  both are `cap`/`track` props, which no responsive class can reach. The two
  *  mounts read the same `cost`, so they cannot drift; both are aria-hidden and
  *  the cost is spoken once from the row's own label. */
@@ -138,9 +138,9 @@ function CostTrack({ cost }: { cost: string | null }) {
       <CostPips cost={cost} size={13} className="flex gap-[3px] md:hidden" />
       <CostPips
         cost={cost}
-        size={12}
-        cap={5}
-        track={40}
+        size={COST_PIP_SIZE}
+        cap={COST_PIP_CAP}
+        track={COST_TRACK}
         className="hidden md:flex gap-[3px]"
       />
     </span>

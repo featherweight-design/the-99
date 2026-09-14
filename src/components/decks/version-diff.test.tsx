@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VersionDiff } from "./version-diff";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
+import { COST_TRACK } from "../ui/cost-pips";
 
 const getVersionDiff = vi.fn<
   (deckId: string, versionId: string) => Promise<{
@@ -100,7 +101,7 @@ describe("VersionDiff", () => {
     mount();
     const row = (await screen.findByText("Wastes")).parentElement!;
     const track = row.lastElementChild as HTMLElement;
-    expect(track.style.width).toBe("40px");
+    expect(track.style.width).toBe(`${COST_TRACK}px`);
     expect(track.textContent).toBe("");
   });
 

@@ -26,7 +26,7 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
@@ -100,6 +100,8 @@ export function DecklistRow({
   inShopping = false,
   newestAsOf = null,
 }: DecklistRowProps) {
+  const { open } = useCardDetail();
+
   // The name is a flex item of its own block, not of the row: `flex-auto` on
   // the trigger itself would grow the trigger's box past its text and strand a
   // count rendered after it at the far right of the row.
@@ -281,6 +283,27 @@ export function DecklistRow({
   // key would draw the receipt over a card that is in the deck.
   if (spent) return <UndoRow deckId={deckId} card={card} />;
 
+  /**
+   * The whole row opens the card, not only its name — which is how `/collection`'s rows have
+   * always behaved, and a row with a 40px name and 500px of space beside it taught nobody
+   * that the name was the only live part of it.
+   *
+   * A handler on the container rather than a `<button>` around the row: the row carries its
+   * own controls — remove, undo, the buy link — and a button cannot contain them. So the
+   * name keeps the real trigger, which is what the keyboard and the accessibility tree see,
+   * and this adds the pointer target the rest of the row already looked like.
+   */
+  function openFromRow(event: React.MouseEvent<HTMLDivElement>) {
+    // Anything with its own job keeps it. `closest` rather than a target check, because the
+    // press usually lands on a glyph or a label inside the control rather than on it.
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("button, a, input, select, textarea, [role='button']")) return;
+    // Nor a drag over the row's own text: a reader selecting a card name has not asked for
+    // a modal over the thing they were reading.
+    if ((window.getSelection()?.toString().length ?? 0) > 0) return;
+    open(card.oracleId, siblings);
+  }
+
   return (
     // Wrapper keeps the row and any error message as a single grid item.
     <div>
@@ -291,7 +314,8 @@ export function DecklistRow({
           a real border would add 2px to one row's height and shunt the list. */}
       <div
         {...previewHandlers}
-        className={`group ${rowShell} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
+        onClick={openFromRow}
+        className={`group ${rowShell} cursor-pointer bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
         style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
       >

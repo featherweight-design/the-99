@@ -13,6 +13,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { DiffRowIn, DiffRowOut, type DiffRowCard } from "./update-diff-row";
+import { COST_TRACK } from "../ui/cost-pips";
 
 const copy = deckImportCopy.update.diff;
 
@@ -140,14 +141,14 @@ describe("the review page's mounting", () => {
   it("holds the cost track's width on a costless removal", () => {
     const land = draw(<DiffRowOut review card={card({ name: "Swamp" })} />);
     const empty = land.lastElementChild as HTMLElement;
-    expect(empty.style.width).toBe("40px");
+    expect(empty.style.width).toBe(`${COST_TRACK}px`);
     expect(empty.textContent).toBe("");
     cleanup();
     // The same width a costed removal ends on, which is the point: the name is
     // the row's only flexible item, so a land that drew no track put its
     // availability slot 40px right of every spell above it.
     const spell = draw(<DiffRowOut review card={card({ manaCost: "{1}{U}" })} />);
-    expect((spell.lastElementChild as HTMLElement).style.width).toBe("40px");
+    expect((spell.lastElementChild as HTMLElement).style.width).toBe(`${COST_TRACK}px`);
   });
 
   it("types the availability marker itself, having no meta line to lend it one", () => {

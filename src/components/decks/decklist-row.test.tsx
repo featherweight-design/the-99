@@ -11,6 +11,7 @@ import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { PendingChangeProvider } from "./pending-change";
+import { COST_TRACK } from "../ui/cost-pips";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -605,7 +606,7 @@ describe("DecklistRow cost pips (#350)", () => {
   it("holds the desktop track at a fixed width whatever the cost costs", () => {
     renderRow(<DecklistRow deckId="d1" card={withCost} />);
     const track = document.querySelector(".hidden.md\\:flex > span")!;
-    expect(track).toHaveStyle({ width: "40px" });
+    expect(track).toHaveStyle({ width: `${COST_TRACK}px` });
   });
 
   it("puts the cost alone on the All tab's meta line, and before the figure in Shopping", () => {
@@ -799,5 +800,36 @@ describe("DecklistRow pending change (#389)", () => {
     ).not.toHaveAccessibleDescription(
       new RegExp(deckVersioningCopy.pending.addMarkA11y),
     );
+  });
+});
+
+// The whole row opens the card, which is how `/collection`'s rows have always behaved. The
+// name keeps the real trigger — a button, focusable, named — and the container adds the
+// pointer target the rest of the row already looked like.
+describe("DecklistRow — the row is the click target", () => {
+  it("opens the card when the press lands beside the name, not on it", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistRow deckId="d1" card={card} />
+      </CardDetailProvider>,
+    );
+    // The ownership dot: inside the row, part of no control, and exactly the kind of place a
+    // thumb lands when it means "this card".
+    const dot = container.querySelector("span[aria-hidden]");
+    fireEvent.click(dot ?? container.firstElementChild!);
+    expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }))
+      .toHaveAttribute("aria-busy", "true");
+  });
+
+  it("leaves the row's own controls to do their own job", () => {
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistRow deckId="d1" card={card} />
+      </CardDetailProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") });
+    fireEvent.click(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") }));
+    // The remove button removes. It does not also open the card underneath it.
+    expect(trigger).not.toHaveAttribute("aria-busy", "true");
   });
 });
