@@ -1,6 +1,6 @@
 {
   "feature": "One commander image — every render of a commander's art",
-  "note": "Written at close-out rather than before implementation, which is the wrong order and is recorded as such: the round shipped before this repository had a contact sheet. Every row is a surface the round changed. One row per VIEW rather than per route, because `check:shared` reads a row's own file and does not follow composition — Home draws two of these washes from two components, and the deck header draws one from each spine. The commander picker's thumbs are a different leaf and have their own inventory (`commander-thumb.json`).",
+  "note": "Written at close-out rather than before implementation, which is the wrong order and is recorded as such: the round shipped before this repository had a contact sheet. Every row is a surface the round changed. One row per VIEW rather than per route, because `check:shared` reads a row's own file and does not follow composition — Home draws two of these washes from two components, and the deck header draws one from each spine. The commander picker's thumbs are a different leaf and have their own inventory (`commander-thumb.json`). A row carries its own `widths` where its render only exists at some of them: `sm:hidden` on the detail band, `md:hidden` and `md:block` on the two spines, `hidden sm:flex` on the resume rows. Without that a cell photographs the OTHER breakpoint's component and is counted as evidence for this row — the sheet would show three cells per row and two of them would be about something else.",
   "rows": [
     {
       "id": "home-hero",
@@ -16,7 +16,7 @@
     },
     {
       "id": "home-resume",
-      "label": "/ — the resume rows",
+      "label": "/ — the resume rows (`hidden sm:flex`, so they do not exist at phone width)",
       "view": "src/components/home/resume-decks.tsx",
       "steps": [
         {
@@ -24,6 +24,10 @@
           "settle": 2500,
           "wait": "main, [role=main], h1"
         }
+      ],
+      "widths": [
+        "narrow",
+        "desktop"
       ]
     },
     {
@@ -52,7 +56,7 @@
     },
     {
       "id": "commander-detail",
-      "label": "/commanders/<slug> — the detail hero",
+      "label": "/commanders/<slug> — the detail hero (phone band; `sm:hidden`, so the desktop card face is a different render)",
       "view": "src/components/commanders/detail.tsx",
       "steps": [
         {
@@ -65,6 +69,9 @@
           "wait": "h1",
           "settle": 3000
         }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
@@ -81,7 +88,7 @@
     },
     {
       "id": "deck-header-phone",
-      "label": "/decks/<id> — the phone spine",
+      "label": "/decks/<id> — the phone spine (`md:hidden`)",
       "view": "src/components/decks/spine-mobile.tsx",
       "steps": [
         {
@@ -94,11 +101,14 @@
           "wait": "h1",
           "settle": 3500
         }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
       "id": "deck-header-desktop",
-      "label": "/decks/<id> — the desktop spine",
+      "label": "/decks/<id> — the desktop spine (`md:block`, both its portrait widths)",
       "view": "src/components/decks/spine-desktop.tsx",
       "steps": [
         {
@@ -111,6 +121,10 @@
           "wait": "h1",
           "settle": 3500
         }
+      ],
+      "widths": [
+        "narrow",
+        "desktop"
       ]
     }
   ],

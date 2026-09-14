@@ -290,10 +290,19 @@ the deck header draws one from each spine.
 that rail was replaced in a later round — so fourteen of the fifteen renders are
 accounted for and the fifteenth is retired rather than unchecked.
 
-**2 · Contact sheets.** 24 cells for the bands (390 / 900 / 1300), 6 for the
-thumbs, 2 for the card faces. Every cell reached its surface. The 900px column is
-deliberate: it is where the deck tile's container query takes the 168 band and
-where the resume rows are stacked.
+**2 · Contact sheets.** 18 cells for the bands, 6 for the thumbs, 2 for the card
+faces. Every cell reached its surface. The 900px column is deliberate: it is
+where the deck tile's container query takes the 168 band and where the resume
+rows are stacked.
+
+Eighteen rather than twenty-four because **a row is scoped to the widths its
+render actually exists at**. The detail band is `sm:hidden`, the phone spine
+`md:hidden`, the desktop spine `md:block` and the resume rows `hidden sm:flex` —
+photographing those rows at every width would have counted the OTHER
+breakpoint's component as evidence for this one. The partner row photographs the
+slot's empty plate; its filled render needs pairing mode entered and a partner
+chosen, which the steps do not do, so it is recorded as uncovered rather than
+counted.
 
 **3 · Cross-route sameness.** All 13 views import and use their leaf — no route
 reaches a treatment through its own copy.
