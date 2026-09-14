@@ -235,6 +235,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `scripts/lib/surface.test.mts` parses every `probe-*.mjs` and sweeps its string literals for
   the unscoped forms, the same way `env.test.mts` enforces the env convention.
 
+- `pnpm.overrides` in `package.json` pins seven transitive packages to their patched versions.
+  They are overrides rather than dependency bumps because not one of the seven is declared here.
+  Two rules learned from the round that added them: an override can force a version the PARENT
+  never tested against, so it has to be exercised, not assumed — forcing `brace-expansion@5`
+  broke ESLint outright (`minimatch@3.1.5` calls `expand` as a function and 5.x changed its
+  export shape), and the `esbuild` pin rewires `drizzle-kit` from 0.18.20 across several
+  breaking 0.x boundaries on a path CI never runs, so `pnpm db:generate` and `drizzle-kit check`
+  are the proof for that one and both pass.
+
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the `pr-review` skill (`~/.claude/skills/pr-review/SKILL.md`), which is the single source of truth across every repo — invoke it rather than working from memory or from any copy. UI features additionally run `feature-acceptance` per PR and again at feature close. This repo merges via **squash**.
 
