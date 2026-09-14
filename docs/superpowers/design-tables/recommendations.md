@@ -454,7 +454,7 @@ from the prose files; nothing is inferred from the codebase.
 | Glyph | `12 × 12`, `background:#3A3229`, `transform: rotate(45deg)`, `display:block` | same |
 | Glyph count | **3** in state 10; **2** in state 12 | same |
 | Heading (state 10) | Cinzel 600, 18px, #EDE6D8 — `Back to just the commander` (`sweptEmpty.heading`) | same |
-| Body (state 10) | 13.5px, #C6B79A, `line-height:1.6`, `margin: 8px auto 0`, `max-width: 330px` — `{name} and 99 empty slots. Everything we suggested is in Consider if you want any of it back — or start typing and build it your way.` (`sweptEmpty.body`) | same |
+| Body (state 10) | 13.5px, #C6B79A, `line-height:1.6`, `margin: 8px auto 0`, `max-width: 330px` — `{name} and 99 empty slots. Everything we suggested is in Consider if you want any of it back, or start typing and build it your way.` (`sweptEmpty.body`) | same |
 | CTA (state 10) | `See what we suggested` (`sweptEmpty.cta`), `display:inline-flex; margin-top:18px`, 13px, #C6B79A, `1px solid #3A3229`, `border-radius:8px`, `padding:9px 15px` | same |
 | Heading (state 15) | Cinzel 600, 17px, #EDE6D8 — `99 empty slots` | *(not drawn)* |
 | Body (state 15) | 13px, #C6B79A, `margin: 7px auto 0`, `max-width: 290px` — `Consider is stocked either way — the suggestions don’t depend on the fill landing.` | *(not drawn)* |

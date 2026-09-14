@@ -221,7 +221,7 @@ dismiss ✕** (README:154–157, 304).
 | Property | Mobile | Desktop | Source |
 |---|---|---|---|
 | construct | single sentence | two-column grid under a top rule | Canvas:216, 243 |
-| mobile text | `We'll leave the sideboard behind — Commander doesn't have one.` | — | copy.entry.footnoteMobile |
+| mobile text | `We'll leave the sideboard behind: Commander doesn't have one.` | — | copy.entry.footnoteMobile |
 | mobile type | 12.5px, line-height 1.55, `--fg-faint`, margin `16px 0 0` | — | Canvas:216 |
 | container | — | `border-top: 1px solid --border`, `margin-top:26px`, `padding-top:20px`, `grid-template-columns: 1fr 1fr`, `gap:24px` | Canvas:243 |
 | column heading type | — | mono 10px, `letter-spacing:0.16em`, `text-transform:uppercase`, `--fg-faint`, `margin-bottom:7px` | Canvas:245, 249 |

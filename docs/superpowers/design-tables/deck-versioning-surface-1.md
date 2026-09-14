@@ -99,7 +99,7 @@ a live region.
 | text-transform | `uppercase` | `uppercase` |
 | color | `#C9A24B` (`--accent`) | `#C9A24B` (`--accent`) |
 | margin-bottom | `9px` | — (row gap supplies it) |
-| text | canvas draws `Pending changes`; copy `pending.label` is `Pending changes — not yet a version` | `Pending changes — not yet a version` |
+| text | canvas draws `Pending changes`; copy `pending.label` is `Pending changes: not yet a version` | `Pending changes: not yet a version` |
 
 ### Header — counts group (`+19 / −17`)
 
