@@ -181,11 +181,17 @@ async function main() {
     // four decks cannot satisfy the row checks. It does not build that fixture —
     // Home renders the whole account, so a probe-owned deck would be four rows
     // among the reader's own — so it asks for an account that has one.
-    if (rows === null || rows.length < 4) {
+    // `rows.length` is capped at four by the block itself, so it cannot say
+    // whether the account has MORE than four — the footer can, and the check
+    // below needs it to exist or its navigation assertion never runs.
+    const hasFooter = await page.evaluate(`(() => [...document.querySelectorAll('main span')]
+      .some((el) => el.getClientRects().length && /^\\d+ more decks?$/.test((el.textContent ?? '').trim())))()`);
+    if (rows === null || rows.length < 4 || !hasFooter) {
       console.error(
         `PREREQUISITE: ${BASE} must be signed in to an account with a collection read and MORE THAN ` +
         `four decks — at four exactly the footer is correctly absent and its link is never pressed. ` +
-        `Home drew ${rows === null ? "no resume block at all" : `${rows.length} row(s)`}.`,
+        `Home drew ${rows === null ? "no resume block at all" : `${rows.length} row(s)`}` +
+        `${rows !== null && rows.length >= 4 && !hasFooter ? " and no footer, so the account has exactly four" : ""}.`,
       );
       failures += 1;
       await context.close();
@@ -357,9 +363,10 @@ async function main() {
       // decides, and it is read off the footer's own copy where there is one.
       const all = onPage(page, 'a[href="/decks"]').filter({ hasText: /All \d+ decks/ });
       const found = await all.count();
-      const moreThanShown = await page.evaluate(`(() => [...document.querySelectorAll('main span')]
-        .some((el) => el.getClientRects().length && /^\\d+ more decks?$/.test((el.textContent ?? '').trim())))()`);
-      check(`${vp.label}: the footer appears exactly when decks remain`, found, moreThanShown ? 1 : 0);
+      // `hasFooter` is read per viewport above, and the prerequisite has already
+      // refused an account that draws none — so this is the footer being present
+      // where it must be, rather than a branch that can excuse its absence.
+      check(`${vp.label}: the footer appears exactly when decks remain`, found, hasFooter ? 1 : 0);
       // Only where there is exactly one to press. A missing or doubled footer is
       // already the failure above, and clicking into it would throw here — before
       // the summary line and before the remaining viewports ever run.

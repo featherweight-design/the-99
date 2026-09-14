@@ -1,11 +1,17 @@
 // #364 decisions 19, 21 and 23: what Home says about a pair deck. Creates a
-// pair deck through the picker so it is the newest one, then reports the resume
-// row and the rail row at the width decision 23 was measured at, at `sm`, and
-// on a phone.
+// pair deck through the picker so it is the newest one, then reports its resume
+// row at the width decision 23 was measured at, at the pair threshold, and on a
+// phone.
 //
-// The handles are structural: the resume row is the link whose meta line
-// contains a ` + `, and the rail row is a link inside `[data-rail=...]`. No
-// class name in either is stable.
+// The rail half is GONE. `Your decks` was deleted at both widths by the
+// home-parity round, and the `[data-rail]` queries that read it would have
+// reported an empty list without failing — a probe that passes while measuring
+// nothing, which is the one outcome worth less than no probe. Decision 21's
+// rule, that a rail row prints the denominator and never the partner's name,
+// went with the rows it was about.
+//
+// The handle is structural: the resume row is the link whose meta line contains
+// a ` + `. No class name in it is stable.
 //
 // Run by hand: `node scripts/probe-partner-home.mjs`.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -96,26 +102,6 @@ async function resumeRow(page, label, kind = "pair") {
   console.log(`    accessible: ${seen.accessible}`);
 }
 
-// Decision 21: the denominator and nothing else. The partner's name appearing
-// anywhere in a rail row is the failure it forbids.
-async function railRow(page, variant, deckName) {
-  const seen = await page.evaluate(
-    ([v, name]) => {
-      const rows = [...document.querySelectorAll(`[data-rail="${v}"] a`)];
-      const row = rows.find((n) => n.textContent?.includes(name));
-      // The rail is a directory in `listDecksWithStats` order and draws four
-      // rows on desktop against three on phone, so a deck can be absent from
-      // one list and present in the other. Reporting the whole list makes that
-      // visible rather than reading as a defect.
-      return row
-        ? row.innerText.replace(/\n/g, " · ")
-        : `absent — list reads ${rows.map((n) => n.innerText.replace(/\n/g, " ")).join(" / ")}`;
-    },
-    [variant, deckName],
-  );
-  console.log(`  rail ${variant}: ${seen}`);
-}
-
 const browser = await clerkSetup().then(() => chromium.launch());
 const context = await browser.newContext({ viewport: { width: 1026, height: 950 } });
 const page = await context.newPage();
@@ -159,9 +145,9 @@ await page.locator("button:visible").filter({ hasText: /^Won$/ }).first().click(
 await page.locator("button:visible").filter({ hasText: /^Save this game$/ }).first().click();
 await page.waitForTimeout(1500);
 
-// 1026 is the width decision 23 measured its 200px meta line at; 640 is `sm`,
-// the narrowest width that draws the resume section at all.
-for (const width of [1280, 1026, 640]) {
+// 1026 is the width decision 23 measured its 200px meta line at; 1200 is the
+// narrowest pair the block draws, and 640 a stacked row with the width to spare.
+for (const width of [1200, 1026, 640]) {
   await page.setViewportSize({ width, height: 950 });
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
   await page.waitForTimeout(800);
@@ -171,16 +157,14 @@ for (const width of [1280, 1026, 640]) {
   // gives there too: the clause is now the shrinking child, so a long name is
   // no longer the thing that loses characters.
   await resumeRow(page, `single ${width}`, "single");
-  await railRow(page, "desktop", name);
 }
 
 console.log("\nmobile 390");
 await page.setViewportSize({ width: 390, height: 844 });
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForTimeout(800);
-// The section is `hidden sm:block`, so phone gives the ordering up entirely and
-// the rail's row is the whole of what Home says about the pair.
+// The phone draws the same block now — four rows, same order, same row — so this
+// is the same reading as the three above rather than a different surface.
 await resumeRow(page, "resume 390");
-await railRow(page, "phone", name);
 
 await browser.close();
