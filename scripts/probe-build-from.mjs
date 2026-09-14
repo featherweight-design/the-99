@@ -245,6 +245,24 @@ function hiddenCount(line) {
   return match ? Number(match[1].replace(/,/g, "")) : 0;
 }
 
+/**
+ * The commander's own detail link, read off the list in `All my cards` — the one
+ * mode that still holds the row. Slugs carry dedup suffixes, so this asks the
+ * page rather than deriving one from the name.
+ */
+async function detailHref(page, name) {
+  await readLane(page, { avail: "all", query: name });
+  // Found by ROW, then by the row's link. A row wraps more than one anchor to
+  // the same page and none of them need carry the name as their own text, so
+  // matching on link text finds nothing; the row is what holds the heading.
+  for (const row of await onPage(page, "li").all()) {
+    if (!norm(await row.innerText()).includes(norm(name))) continue;
+    const link = row.locator('a[href*="/commanders/"]').first();
+    if ((await link.count()) > 0) return link.getAttribute("href");
+  }
+  return null;
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -307,6 +325,26 @@ async function run() {
       const allLine = (await readLane(page, { avail: "all" })).line;
       if (/sleeved into/.test(allLine)) {
         failures.push(`${viewport.label} · All my cards prints the aside: "${allLine}"`);
+      }
+
+      // The detail page for a commander free mode no longer lists. The list
+      // cannot link here any more, but a bookmark can, and the page drops to the
+      // canonical score either way — so the mode has to come off the URL rather
+      // than sit over a score from the other pool. Read at both widths because
+      // the redirect is the server's and must not depend on the viewport.
+      const href = await detailHref(page, target.name);
+      if (!href) {
+        failures.push(`${viewport.label} · no detail link for ${target.name} under All my cards`);
+      } else {
+        await page.goto(`${BASE}${href.split("?")[0]}?avail=free`, {
+          waitUntil: "domcontentloaded",
+        });
+        await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
+        if (new URL(page.url()).searchParams.get("avail") !== null) {
+          failures.push(
+            `${viewport.label} · the detail page kept avail=free over a canonical score: ${page.url()}`,
+          );
+        }
       }
     }
   } finally {

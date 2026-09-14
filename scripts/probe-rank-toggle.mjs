@@ -34,6 +34,10 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPageRole, openSheet } from "./lib/surface.mjs";
 
+// Mirrored from `src/components/ui/filter-chassis.tsx`, which a .mjs probe
+// cannot import. Kept as a named constant so the next reader sees what it is.
+const CHASSIS_WIDE_MIN_PX = 1000;
+
 // CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
 // environment itself.
 const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
@@ -198,7 +202,11 @@ for (const { label, width, height } of VIEWPORTS) {
   // phone this locator matched nothing whatever it was called, and every
   // assertion past it was skipped on one of the two widths this probe advertises.
   // Opening the sheet first is what makes the compact run measure the flip.
-  if (width < 1024) await openSheet(page);
+  //
+  // The figure is `CHASSIS_WIDE_MIN_PX` from `filter-chassis.tsx`, not a round
+  // 1024: between 1000 and 1023 the rack is already wide and mounts no sheet, so
+  // a probe that guessed would open a sheet that does not exist.
+  if (width < CHASSIS_WIDE_MIN_PX) await openSheet(page);
 
   // Through `onPageRole`, never `page.getByRole`: the shell mounts its own
   // controls before `<main>`, and `scripts/lib/surface.mjs` is the single

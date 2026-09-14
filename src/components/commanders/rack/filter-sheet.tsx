@@ -62,13 +62,20 @@ export function FilterSheet({
       line behind the scrim is showing, and a second call to compose it is a
       second place the two could drift. They did — the sheet recomposed the
       sentence alone, so both asides went missing the moment the reader opened
-      Filters, which below 1024px is the only place four of the lane's controls
-      exist. */
+      Filters, which below `CHASSIS_WIDE_MIN_PX` is the only place four of the
+      lane's controls exist. */
   resultLine: string;
 }) {
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
-  const [announcement, setAnnouncement] = useState("");
+  // Stamped with the sentence it describes, and rendered only while that is
+  // still the sentence on screen. This sheet stays mounted at `open={false}`, so
+  // a plain string would sit in the status node the instant it reopens —
+  // including an aside naming commanders free mode hid, after the reader changed
+  // modes with the sheet shut. Carrying the line is what makes the stale case
+  // render nothing, with no second `setState` to clear it: an effect that calls
+  // one synchronously is what the compiler's cascading-render rule forbids.
+  const [announcement, setAnnouncement] = useState<{ line: string; text: string } | null>(null);
   const dragStartY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   // The count as last announced. Null means "not announced yet this opening",
@@ -91,11 +98,18 @@ export function FilterSheet({
   // waits, so a reader tapping four pips hears one message, not four.
   //
   // The SENTENCE, and keyed on the sentence — it used to announce the dismiss
-  // label and fire only when `shown` moved. Below 1024px this sheet is the only
-  // place `Build from` exists, and the page's own region is silenced while it is
-  // open (`silentResult`), so a count alone told a reader that rows had gone and
-  // never that free mode had taken them. It also said nothing at all when a
-  // filter changed which rows were shown without changing how many.
+  // label and fire only when `shown` moved. Below `CHASSIS_WIDE_MIN_PX` this
+  // sheet is the only place `Build from` exists, and the page's own region is
+  // silenced while it is open (`silentResult`), so a count alone told a reader
+  // that rows had gone and never that free mode had taken them. It also said
+  // nothing at all when a filter changed which rows were shown without changing
+  // how many.
+  //
+  // Two sentences that are IDENTICAL still do not re-announce — two colour
+  // filters each leaving four rows, say. That hole predates this change and is
+  // strictly smaller than it was; closing it needs the shared `ResultLine`'s
+  // `revision` threaded through the rack to both surfaces, which is its own
+  // piece of work. See the PR's Settled section.
   useEffect(() => {
     if (!open) {
       lastLine.current = null;
@@ -106,7 +120,7 @@ export function FilterSheet({
       return;
     }
     lastLine.current = resultLine;
-    const t = setTimeout(() => setAnnouncement(resultLine), 300);
+    const t = setTimeout(() => setAnnouncement({ line: resultLine, text: resultLine }), 300);
     return () => clearTimeout(t);
   }, [open, resultLine]);
 
@@ -270,7 +284,7 @@ export function FilterSheet({
         </div>
 
         <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-          {announcement}
+          {announcement?.line === resultLine ? announcement.text : ""}
         </span>
       </div>
     </>

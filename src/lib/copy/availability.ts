@@ -106,7 +106,12 @@ export const availabilityCopy = {
     // renders. A second set here said "Score against · Everything I own ·
     // What’s free" and reached no screen, so it read as the shipped name for a
     // control that has never carried it. Removed with the rename rather than
-    // left to contradict it; the rest of this block still ships.
+    // left to contradict it.
+    //
+    // Only those five. `freeNoteLong`, `subtitleAll` and `subtitleFree` below
+    // are dead too — the two-lane split retired the subtitle they fed — but
+    // they do not NAME this control, so they belong to the dead-key cleanup
+    // this change deliberately leaves alone rather than to the rename.
     //
     // Shown only in the `free` state, under the control.
     freeNote:
