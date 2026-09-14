@@ -311,6 +311,14 @@ export function Decklist({
     const spokenForN = cardCopies(spokenForCards.filter(notSpent));
     const missingN = cardCopies(missingCards.filter(notSpent));
 
+    // The spent slot draws an UNDO RECEIPT rather than a row — `DecklistRow`
+    // returns `UndoRow` before it reaches the buy tag — so it shows no figure at
+    // all while still carrying the card's price. Ranked on that price it would
+    // sit among the priced rows with nothing on it, which is the reading the
+    // rule below exists to prevent. It is ranked as drawn: no figure, so last.
+    const rankAsDrawn = (c: DeckDetailCard) =>
+      c.oracleId === spentCard?.oracleId ? { ...c, price: null } : c;
+
     // The sections this list draws, in the order it draws them — and the one
     // place the grouping toggle reaches Shopping. `By role` is the list the
     // design draws: the four targeted roles, then everything else, then the
@@ -354,7 +362,8 @@ export function Decklist({
     // computed already and reads the same rows in any order.
     ).map((section) => ({
       ...section,
-      cards: section.cards.slice().sort((a, b) => comparePriceDesc(a, b, newestAsOf)),
+      cards: section.cards.slice().sort((a, b) =>
+        comparePriceDesc(rankAsDrawn(a), rankAsDrawn(b), newestAsOf)),
     }));
 
     // The open slots the player kept for themselves (not filled by auto).

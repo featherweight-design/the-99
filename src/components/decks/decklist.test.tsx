@@ -203,6 +203,27 @@ describe("the Shopping list reads dearest first", () => {
 
   // The rows the feed has nothing for. A sold-out row keeps a stale figure and
   // a never-stocked row has none at all; neither is cheap, and both sort last.
+  // The spent slot draws the undo receipt rather than a row, and the receipt has
+  // no buy tag on it — so a dear card whose slot has just been spent shows no
+  // figure while still carrying one. Ranked on its price it would sit at the top
+  // of the group with nothing on it.
+  it("ranks a spent slot as the figure-less row it draws", () => {
+    const spent = buyable("crypt", "Mana Crypt", priced(18999), { role: "ramp" });
+    renderDecklist([
+      buyable("signet", "Arcane Signet", priced(85), { role: "ramp" }),
+      buyable("sol", "Sol Ring", priced(3410), { role: "ramp" }),
+    ], { spentSlot: spent, newestAsOf: NEWEST });
+
+    // Dearest first among the rows that draw a figure, and the receipt after
+    // the 85c row it would otherwise outrank by a hundredfold.
+    const seen = [...document.querySelectorAll("*")]
+      .filter((el) => el.children.length === 0)
+      .map((el) => el.textContent?.trim() ?? "");
+    const at = (needle: string) => seen.findIndex((t) => t.includes(needle));
+    expect(at("Sol Ring")).toBeLessThan(at("Arcane Signet"));
+    expect(at("Arcane Signet")).toBeLessThan(at("Mana Crypt"));
+  });
+
   it("puts the rows with no live figure at the end of their group", () => {
     renderDecklist([
       buyable("soldout", "Zuran Orb", priced(9999, OLDER), { role: "ramp" }),

@@ -180,9 +180,12 @@ describe("parseAsOf", () => {
 // `priceState` and `priceOf`, the same pair the tag renders — so a row and its
 // place in the list can never disagree about what this card costs.
 describe("comparePriceDesc", () => {
-  const card = (name: string, price: PriceFact | null) => ({ name, price });
+  // The id doubles as the fixture's handle and as the comparator's last clause,
+  // so a case that needs two rows to differ only by id says so by name.
+  const card = (name: string, price: PriceFact | null, oracleId = name) =>
+    ({ oracleId, name, price });
 
-  const order = (cards: { name: string; price: PriceFact | null }[]) =>
+  const order = (cards: { oracleId: string; name: string; price: PriceFact | null }[]) =>
     cards.slice().sort((a, b) => comparePriceDesc(a, b, NEWEST)).map((c) => c.name);
 
   it("puts the dearest card first", () => {
@@ -230,6 +233,32 @@ describe("comparePriceDesc", () => {
       card("Zealot", null),
       card("Acolyte", null),
     ])).toEqual(["Acolyte", "Zealot"]);
+  });
+
+  // `cards.name` carries no uniqueness constraint and the rows are keyed by
+  // `oracleId`, so two same-named cards at one price would still order by
+  // arrival without this last clause.
+  it("breaks a tie between two cards of the same name on the id", () => {
+    const pair = [
+      card("Forest Bear", fact({ cents: 250 }), "zzz"),
+      card("Forest Bear", fact({ cents: 250 }), "aaa"),
+    ];
+    expect(pair.slice().sort((a, b) => comparePriceDesc(a, b, NEWEST)).map((c) => c.oracleId))
+      .toEqual(["aaa", "zzz"]);
+  });
+
+  // The server renders this list and the browser renders it again. `localeCompare`
+  // reads the runtime's own locale, so a pair it orders one way in Node can come
+  // back the other way in a reader's browser — a hydration difference rather than
+  // a preference. The comparison is by code point for that reason.
+  it("orders equal prices by code point rather than by the runtime's locale", () => {
+    // `ä` sorts beside `a` under most locales' collation and after `z` by code
+    // point, so the two rules disagree on this pair and the assertion can tell
+    // them apart.
+    expect(order([
+      card("äther", fact({ cents: 100 })),
+      card("zephyr", fact({ cents: 100 })),
+    ])).toEqual(["zephyr", "äther"]);
   });
 
   // The whole table unreadable is not the same as every card being free: with

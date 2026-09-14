@@ -155,6 +155,15 @@ export function formatPriceFigure(fact: PriceFact, state: PriceState): string | 
  * The name tiebreak is not decoration. Without it the order of two equal prices
  * falls out of however the rows happened to arrive, so two renders of one
  * unchanged list can differ — and any test pinning the order passes by luck.
+ * The name is not unique either — `cards.name` carries no constraint and the
+ * rows are keyed by `oracleId` — so the id is the last clause rather than the
+ * name being trusted to separate every pair.
+ *
+ * BY CODE POINT, NEVER `localeCompare`, for the same reason `sortDecks` spells
+ * out: this list is rendered on the server and again in the browser, and
+ * `localeCompare` reads whichever locale the runtime holds. Two equal prices
+ * could land in one order in Node and another in a reader's browser, which is a
+ * hydration difference rather than a preference.
  */
 export function comparePriceDesc(
   a: PricedRank,
@@ -172,8 +181,12 @@ export function comparePriceDesc(
     if (right === null) return -1;
     return right - left;
   }
-  return a.name.localeCompare(b.name);
+  return byCodePoint(a.name.toLowerCase(), b.name.toLowerCase())
+    || byCodePoint(a.oracleId, b.oracleId);
 }
+
+/** See `comparePriceDesc`: locale-free, so the server and the browser agree. */
+const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
  * What `comparePriceDesc` needs of a row: the fact the tag reads, and the name
@@ -181,7 +194,7 @@ export function comparePriceDesc(
  * `grouping.ts` imports this module for `PriceFact`, so naming its type here
  * would close the cycle.
  */
-type PricedRank = { name: string; price?: PriceFact | null };
+type PricedRank = { oracleId: string; name: string; price?: PriceFact | null };
 
 export type PricedCard = {
   quantity: number;
