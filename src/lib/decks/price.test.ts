@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PRICE_STALE_AFTER_DAYS,
+  comparePriceDesc,
   formatCents,
   formatPriceFigure,
   parseAsOf,
@@ -172,5 +173,71 @@ describe("parseAsOf", () => {
   // would read a whole deck as sold out rather than as unreadable.
   it("throws rather than returning an Invalid Date", () => {
     expect(() => parseAsOf("not a timestamp")).toThrow(/not a readable timestamp/);
+  });
+});
+
+// The Shopping list's order. It ranks on the figure the row DRAWS — through
+// `priceState` and `priceOf`, the same pair the tag renders — so a row and its
+// place in the list can never disagree about what this card costs.
+describe("comparePriceDesc", () => {
+  const card = (name: string, price: PriceFact | null) => ({ name, price });
+
+  const order = (cards: { name: string; price: PriceFact | null }[]) =>
+    cards.slice().sort((a, b) => comparePriceDesc(a, b, NEWEST)).map((c) => c.name);
+
+  it("puts the dearest card first", () => {
+    expect(order([
+      card("cheap", fact({ cents: 85 })),
+      card("dear", fact({ cents: 18999 })),
+      card("middling", fact({ cents: 3410 })),
+    ])).toEqual(["dear", "middling", "cheap"]);
+  });
+
+  // A foil-only row draws the foil figure, so that is the figure it is ranked
+  // on. Ranking it at zero would file a $40 foil under the 85c commons.
+  it("ranks a foil-only row by the figure its tag prints", () => {
+    expect(order([
+      card("normal", fact({ cents: 500 })),
+      card("foil only", fact({ foilCents: 4000 })),
+      card("etched only", fact({ etchedCents: 100 })),
+    ])).toEqual(["foil only", "normal", "etched only"]);
+  });
+
+  // Neither is a price of zero: one has sold out and the other was never
+  // stocked. Sorted as 0 they would read as the cheapest things on the list,
+  // which is the one reading the feed's absence must never produce. The two are
+  // ranked EQUAL and fall to the name — the list draws no figure for either, so
+  // ordering one above the other would state a difference nothing on screen
+  // shows. The stale row's own last price is deliberately not used: it is what
+  // the card cost when it was last stocked, not what buying it costs today.
+  it("sends a sold-out row and a never-stocked row to the end, in name order", () => {
+    expect(order([
+      card("sold out", fact({ cents: 9999, asOf: OLDER })),
+      card("priced", fact({ cents: 1 })),
+      card("never stocked", null),
+    ])).toEqual(["priced", "never stocked", "sold out"]);
+  });
+
+  // Without a tiebreak the order falls out of however the rows arrived, so two
+  // reads of one unchanged list can differ — and the test that pins the order
+  // passes or fails by luck.
+  it("breaks a tie on the name, so the order is stable", () => {
+    expect(order([
+      card("Zealot", fact({ cents: 250 })),
+      card("Acolyte", fact({ cents: 250 })),
+    ])).toEqual(["Acolyte", "Zealot"]);
+    expect(order([
+      card("Zealot", null),
+      card("Acolyte", null),
+    ])).toEqual(["Acolyte", "Zealot"]);
+  });
+
+  // The whole table unreadable is not the same as every card being free: with
+  // no newest timestamp every row is `absent`, and the list keeps the order it
+  // would have had without a feed at all.
+  it("falls back to the name when there is no table to compare against", () => {
+    const cards = [card("Zealot", fact({ cents: 9999 })), card("Acolyte", fact({ cents: 1 }))];
+    expect(cards.slice().sort((a, b) => comparePriceDesc(a, b, null)).map((c) => c.name))
+      .toEqual(["Acolyte", "Zealot"]);
   });
 });

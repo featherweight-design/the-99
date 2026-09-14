@@ -12,7 +12,7 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
-import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
+import { comparePriceDesc, summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
@@ -323,7 +323,7 @@ export function Decklist({
       label: string;
       cards: DeckDetailCard[];
       gapClause?: string;
-    }[] =
+    }[] = (
       grouping === "type"
         ? groupByCardType([...missingCards, ...spokenForCards]).map(([group, groupCards]) => ({
             key: group,
@@ -343,7 +343,19 @@ export function Decklist({
                   gapClause: recommendationsCopy.shopping.spokenForGroupClause(String(spokenForN)),
                 }]
               : []),
-          ];
+          ]
+    // Dearest first, inside whichever grouping is open. A shopping list is read
+    // to decide what to buy, and the decision is made on the figures — so the
+    // rows carrying them come first, and the ones the feed has nothing for go
+    // last rather than sorting as though they were free. Applied here, to the
+    // sections rather than inside either branch, so the role groups, the type
+    // groups, `Other` and the pinned spoken-for group all order the same way
+    // and none of them can be forgotten. Every count, clause and total above is
+    // computed already and reads the same rows in any order.
+    ).map((section) => ({
+      ...section,
+      cards: section.cards.slice().sort((a, b) => comparePriceDesc(a, b, newestAsOf)),
+    }));
 
     // The open slots the player kept for themselves (not filled by auto).
     // Clamped because a deck past its body size has none: the copy this feeds

@@ -137,6 +137,52 @@ export function formatPriceFigure(fact: PriceFact, state: PriceState): string | 
   return qualifier ? `${formatCents(cents)} ${qualifier}` : formatCents(cents);
 }
 
+/**
+ * The Shopping list's order: dearest first, then everything with no figure at
+ * all, and the name as the tiebreak.
+ *
+ * IT RANKS ON THE FIGURE THE ROW DRAWS. The rank comes out of `priceState` and
+ * `priceOf` — the same pair the buy tag renders through — so a row's place in
+ * the list and the number printed on it cannot disagree. A foil-only row is
+ * ranked on its foil figure for that reason: it is the figure on screen.
+ *
+ * A `soldOut` or `absent` row has no figure, and that is NOT a price of zero.
+ * One has sold out and the other was never stocked; ranked as 0 they would file
+ * at the cheap end and read as the bargains of the list, which is the one
+ * reading the feed's absence must never produce. They go last, among themselves
+ * by name.
+ *
+ * The name tiebreak is not decoration. Without it the order of two equal prices
+ * falls out of however the rows happened to arrive, so two renders of one
+ * unchanged list can differ — and any test pinning the order passes by luck.
+ */
+export function comparePriceDesc(
+  a: PricedRank,
+  b: PricedRank,
+  newestAsOf: Date | null,
+): number {
+  const rank = (c: PricedRank) => {
+    const state = priceState(c.price, newestAsOf);
+    return c.price ? priceOf(c.price, state) : null;
+  };
+  const left = rank(a);
+  const right = rank(b);
+  if (left !== right) {
+    if (left === null) return 1;
+    if (right === null) return -1;
+    return right - left;
+  }
+  return a.name.localeCompare(b.name);
+}
+
+/**
+ * What `comparePriceDesc` needs of a row: the fact the tag reads, and the name
+ * that breaks a tie. Structural rather than `Pick<DeckDetailCard, …>` —
+ * `grouping.ts` imports this module for `PriceFact`, so naming its type here
+ * would close the cycle.
+ */
+type PricedRank = { name: string; price?: PriceFact | null };
+
 export type PricedCard = {
   quantity: number;
   price?: PriceFact | null;
