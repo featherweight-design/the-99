@@ -25,6 +25,7 @@ const FREE_TO_PULL: DeckClaim = {
   mature: true,
   pending: false,
   commander: false,
+  senior: true,
 };
 const noop = () => {};
 

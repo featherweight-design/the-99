@@ -403,6 +403,12 @@ export function DiffRowOut({
       onClick={openRow}
       className={[
         ROW_SHELL,
+        // Same wrap, and the same reason, as the adds column's first line: a
+        // costless card draws the marker box, and the name, that box, the 54px
+        // cost track and a control do not fit a paired type column. `flex-wrap`
+        // sizes items at their hypothetical width rather than their shrunk one,
+        // so the trailing items drop below instead of squeezing the name out.
+        review && action ? "flex-wrap" : "",
         review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_OUT_IMPORT,
         kept ? ROW_PLATE_KEPT : ROW_PLATE,
         review && !kept ? ROW_PLATE_HOVER : "",

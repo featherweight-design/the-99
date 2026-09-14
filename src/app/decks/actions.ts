@@ -12,7 +12,7 @@ import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
-import { hardDecks } from "../../lib/decks/availability";
+import { hardDecks, pullSources } from "../../lib/decks/availability";
 import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt, type VersionDiffCard,
@@ -1294,9 +1294,11 @@ export async function commitDeckVersion(
     // Caught rather than allowed to propagate, because this read is the RECEIPT and
     // not the write: the page keeps the commit CTA live when its own claim read
     // fails (`claimsKnown`), so a version the player is invited to cut must not be
-    // refused by a transient failure to price it. hardDecks, not the raw claims: a
+    // refused by a transient failure to price it. pullSources, not the raw claims: a
     // BREW "holding" a card holds nothing, and naming it would offer a pull against
-    // a list that was never sleeved.
+    // a list that was never sleeved — and a JUNIOR sleeved holder is already outside
+    // this deck's `free`, so pulling from it would empty that deck's slot and leave
+    // the shortfall where it was.
     let buy: BucketedAdd[] | null = [];
     if (previous) {
       try {
@@ -1309,7 +1311,7 @@ export async function commitDeckVersion(
           new Map(
             [...availability].map(([oracleId, a]) => [
               oracleId,
-              { free: a.free, claims: hardDecks(a) },
+              { free: a.free, claims: pullSources(a) },
             ]),
           ),
         ).filter((a) => a.bucket !== "free");
@@ -1574,8 +1576,14 @@ export async function pullCardFromDeck(
       return { ok: false, message: "Another deck claimed that card. Open the changes again." };
     }
 
+    // `pullSources` here and `hardDecks` above, deliberately. The guard above asks
+    // "is every claimant locked", so it must see every claimant — narrowing it would
+    // let an unlocked junior deck move under the write. This asks "would taking a
+    // copy relieve the shortfall", and a junior claim is already outside this deck's
+    // `free`, so the answer over one is no: the copy would leave that deck's box and
+    // the figure would not move. Refused, and the purchase stands.
     const [bucketed] = bucketAdds([add], new Map(
-      [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: hardDecks(a) }]),
+      [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: pullSources(a) }]),
     ));
     if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
       return { ok: false, message: "That deck already has the copies it needs." };

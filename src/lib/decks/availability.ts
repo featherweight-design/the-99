@@ -38,6 +38,20 @@ export type DeckClaim = {
    * guard draws no control at all.
    */
   commander: boolean;
+  /**
+   * `free` counts this claim, so releasing it could relieve the vantage deck's
+   * shortfall. False for a sleeved deck that is JUNIOR to the vantage on this
+   * card: seniority already leaves a junior claim out of `free`, so taking its
+   * copy away moves no figure and costs that deck its slot for nothing.
+   *
+   * True for every sleeved claim when there is no vantage deck, and when the
+   * vantage has not sleeved this card — both cases where `free` subtracts the
+   * lot.
+   *
+   * It gates the PULL only. A marker still names every hard claimant, because
+   * "this card is in Prismari Artistry" is true whoever is senior.
+   */
+  senior: boolean;
 };
 
 /** A deck holding a hard claim. The projection every marker string reads. */
@@ -50,6 +64,19 @@ export type HardDeck = { id: string; name: string };
  */
 export function hardDecks(a: Pick<Availability, "claims">): HardDeck[] {
   return a.claims.filter((c) => c.mature).map(({ id, name }) => ({ id, name }));
+}
+
+/**
+ * The hard claimants a pull could take a copy from and move the figure.
+ *
+ * `hardDecks` answers "who has it" and is what every marker string reads.
+ * This answers "who could give it up to us", which is a narrower question with
+ * one extra term: a junior claim is not counted against this deck's `free`, so
+ * releasing it leaves the shortfall exactly where it was. Every surface that
+ * buckets an add or authorizes a pull reads this one; the markers do not.
+ */
+export function pullSources(a: Pick<Availability, "claims">): HardDeck[] {
+  return a.claims.filter((c) => c.mature && c.senior).map(({ id, name }) => ({ id, name }));
 }
 
 export type Availability = {

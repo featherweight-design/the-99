@@ -53,7 +53,15 @@ export type BucketedAdd = {
    */
   shortfall: number;
   bucket: AddBucket;
-  /** Decks whose committed version holds a copy. Empty unless `claimed`. */
+  /**
+   * The decks the caller passed as claimants. Empty unless `claimed`.
+   *
+   * Whose claims those are is the caller's choice and it decides this bucket:
+   * every caller here passes `pullSources`, so a card held only by decks a pull
+   * could not relieve the shortfall from is `unowned` rather than `claimed`.
+   * Passing `hardDecks` instead would offer a pull that empties another deck's
+   * slot and leaves the figure where it was.
+   */
   heldBy: { id: string; name: string }[];
 };
 

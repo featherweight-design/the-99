@@ -320,11 +320,36 @@ export async function loadAvailability(
             -- The two pull guards. Both are render-time facts: a control that
             -- can only fail must not be drawn, and the refusal string the
             -- transaction returns arrives far too late to decide that.
-            'pending', cd.pending, 'commander', cd.commander
+            'pending', cd.pending, 'commander', cd.commander,
+            -- Whether free COUNTS this claim, which is the same question as
+            -- whether releasing it could relieve the vantage deck's shortfall.
+            -- The expression is senior_hard's own test, deliberately: free
+            -- subtracts exactly the sleeved claims ahead of this deck, so a
+            -- junior claimant's copy is already not counted against it and
+            -- taking that copy out of its box leaves free where it was.
+            --
+            -- Without this a deck raising a quantity it already holds — one
+            -- owned copy, this deck senior with one, another deck junior with
+            -- one, the draft asking for two — read free = -1 and offered a pull
+            -- from the junior deck, which emptied that deck's slot and left the
+            -- shortfall exactly as it was. The purchase was always the honest
+            -- answer there.
+            --
+            -- Both fallbacks mean "free counts every sleeved claim, so any of
+            -- them is a source": an absent vantage, where free is owned - hard,
+            -- and a vantage that has not sleeved this card, which is behind
+            -- everyone who has.
+            'senior', cd.sleeved and (
+              not coalesce((select s.sleeved from skip_deck s), false)
+              or m.since is null
+              or (cd.since, cd.deck_id) < (m.since, (select s.id from skip_deck s))
+            )
           )
           order by cd.name, cd.deck_id
         ) as claims
       from claim_decks cd
+      -- One row per oracle_id at most, so this cannot fan the aggregate out.
+      left join mine m on m.oracle_id = cd.oracle_id
       group by cd.oracle_id
     )
     select

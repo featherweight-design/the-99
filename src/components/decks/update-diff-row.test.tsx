@@ -117,7 +117,7 @@ describe("the review page's mounting", () => {
       hard: 0,
       soft: 1,
       free: 0,
-      claims: [{ id: "d1", name: "Kess Storm", quantity: 1, mature: false, pending: false, commander: false }],
+      claims: [{ id: "d1", name: "Kess Storm", quantity: 1, mature: false, pending: false, commander: false, senior: true }],
     };
     const row = draw(<DiffRowIn review card={card({ owned: true, availability })} sourceLine={null} />);
     expect(row.textContent).toContain(availabilityCopy.marker.soft(1));
@@ -201,6 +201,7 @@ describe("the review page's mounting", () => {
                 mature: false,
                 pending: false,
                 commander: false,
+                senior: true,
               },
             ],
           },

@@ -69,6 +69,38 @@ describe("bucketDraftAdds / unfreeAdds", () => {
     expect(unfreeAdds(bucketed).map((a) => a.oracleId)).toEqual(["b"]);
   });
 
+  // The shape that shipped a pull nobody could act on usefully. One owned copy,
+  // this deck sleeved with the senior claim on it, another deck sleeved behind it,
+  // and the draft raising its ask to two. `free` already excludes the junior
+  // claim, so taking that copy out of its box would leave this deck one short all
+  // the same — the honest answer is a purchase, not an offer.
+  it("offers no pull when the only holder is junior to this deck", () => {
+    const junior: DeckClaim = {
+      id: "d-junior", name: "Prismari Artistry", quantity: 1,
+      mature: true, pending: false, commander: false, senior: false,
+    };
+    const bucketed = bucketDraftAdds([{ oracleId: "b", from: 1, to: 2 }], new Map([
+      ["b", { owned: 1, hard: 1, soft: 0, free: -1, claims: [junior] }],
+    ]));
+    expect(bucketed.map((a) => a.bucket)).toEqual(["unowned"]);
+    expect(bucketed[0].heldBy).toEqual([]);
+    expect(bucketed[0].shortfall).toBe(1);
+  });
+
+  // The same figures with the holder senior — the Fabled Passage case, where this
+  // deck has not sleeved the card at all. Releasing that copy does move `free`.
+  it("offers the pull when the holder is senior", () => {
+    const senior: DeckClaim = {
+      id: "d-senior", name: "Prismari Artistry", quantity: 1,
+      mature: true, pending: false, commander: false, senior: true,
+    };
+    const bucketed = bucketDraftAdds([{ oracleId: "b", from: 0, to: 1 }], new Map([
+      ["b", { owned: 1, hard: 1, soft: 0, free: -1, claims: [senior] }],
+    ]));
+    expect(bucketed.map((a) => a.bucket)).toEqual(["claimed"]);
+    expect(bucketed[0].heldBy.map((d) => d.name)).toEqual(["Prismari Artistry"]);
+  });
+
   it("calls nothing unowned when the read failed, and quotes no purchase", () => {
     const bucketed = bucketDraftAdds(adds, null);
     // Every add keeps its place, `needed` still states the ask, and neither the
@@ -87,7 +119,7 @@ describe("bucketDraftAdds / unfreeAdds", () => {
 describe("releasableClaims", () => {
   const claim = (over: Partial<DeckClaim> = {}): DeckClaim => ({
     id: "d-1", name: "Kykar, Wind's Fury", quantity: 1,
-    mature: true, pending: false, commander: false, ...over,
+    mature: true, pending: false, commander: false, senior: true, ...over,
   });
   const availability = (claims: DeckClaim[]): Availability =>
     ({ owned: 1, hard: 1, soft: 0, free: 0, claims });
@@ -108,6 +140,12 @@ describe("releasableClaims", () => {
     expect(releasableClaims(availability([claim({ commander: true })]))).toEqual([]);
   });
 
+  // Seniority already leaves a junior claim out of this deck's `free`, so the
+  // server would take the copy and the shortfall would not move.
+  it("excludes a holder junior to this deck on the card", () => {
+    expect(releasableClaims(availability([claim({ senior: false })]))).toEqual([]);
+  });
+
   // A brew's claim is soft: nothing has to be released for the card to be used.
   it("excludes an immature claim", () => {
     expect(releasableClaims(availability([claim({ mature: false })]))).toEqual([]);
@@ -121,7 +159,7 @@ describe("releasableClaims", () => {
 describe("pullHints", () => {
   const claim = (over: Partial<DeckClaim> = {}): DeckClaim => ({
     id: "d-1", name: "Kykar, Wind's Fury", quantity: 1,
-    mature: true, pending: false, commander: false, ...over,
+    mature: true, pending: false, commander: false, senior: true, ...over,
   });
   const add = (over: Partial<DraftAdd> = {}): DraftAdd => ({
     oracleId: "o1", needed: 1, shortfall: 1, bucket: "claimed", heldBy: [], ...over,
@@ -157,7 +195,7 @@ describe("pullHints", () => {
 describe("pullCandidate", () => {
   const claim = (over: Partial<DeckClaim> = {}): DeckClaim => ({
     id: "d-1", name: "Kykar, Wind's Fury", quantity: 1,
-    mature: true, pending: false, commander: false, ...over,
+    mature: true, pending: false, commander: false, senior: true, ...over,
   });
   const availability = (claims: DeckClaim[]): Availability =>
     ({ owned: 1, hard: 1, soft: 0, free: 0, claims });

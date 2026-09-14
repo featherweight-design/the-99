@@ -3,7 +3,7 @@ import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import type { Availability, DeckClaim } from "./availability";
 
 function claim(id: string, mature: boolean): DeckClaim {
-  return { id, name: id, quantity: 1, mature, pending: false, commander: false };
+  return { id, name: id, quantity: 1, mature, pending: false, commander: false, senior: true };
 }
 
 function card(over: Partial<Availability> = {}): Availability {

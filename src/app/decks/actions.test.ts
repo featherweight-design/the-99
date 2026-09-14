@@ -1443,7 +1443,7 @@ describe("pullCardFromDeck", () => {
    *  would say the collection covers the ask, and the pull would be refused as
    *  unnecessary. */
   function claimedBySource() {
-    const claim = { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false };
+    const claim = { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false, commander: false, senior: true };
     return new Map([CARD_A, CARD_B].map((oracleId) => [
       oracleId,
       { owned: 1, hard: 1, soft: 0, free: -1, claims: [claim] },
@@ -1498,8 +1498,8 @@ describe("pullCardFromDeck", () => {
         new Map([[CARD_A, {
           owned: 2, hard: 2, soft: 0, free: -1,
           claims: [
-            { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false },
-            { id: THIRD_ID, name: "Latecomer", quantity: 1, mature: true, pending: false },
+            { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false, commander: false, senior: true },
+            { id: THIRD_ID, name: "Latecomer", quantity: 1, mature: true, pending: false, commander: false, senior: true },
           ],
         }]]) as unknown as Awaited<ReturnType<typeof loadAvailability>>,
       );

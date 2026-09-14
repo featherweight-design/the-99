@@ -4,6 +4,14 @@ Verified against `docs/superpowers/design-tables/deck-versioning-surface-2.md`, 
 2026-09-11. Implementation: `review-changes.tsx`, `update-diff-row.tsx`, `pull-control.tsx`,
 `app/decks/[id]/changes/page.tsx`.
 
+**Superseded in part, 2026-09-14 (PR #622).** Two findings below describe a build that no longer
+ships. The `md:contents` desktop rows of Fixed 2 are gone — each line is now a wrapping flex line
+at every width, because `md:contents` promoted the phone's two lines into one desktop line whose
+items could squeeze the card name to zero. And the `open card →` hint of Deviations-kept 5 was
+removed outright, along with the row's `Open →` control; the card name is the only trigger. The
+amended rows are in `docs/superpowers/design-tables/deck-versioning-surface-2.md`, which is the
+table of record for both.
+
 Seven table rows came back as mismatches. Four were real and are fixed; three are deviations
 this PR keeps deliberately, each with its reason. Two further deviations were decided during
 implementation and are recorded below.

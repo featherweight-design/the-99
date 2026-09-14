@@ -62,7 +62,7 @@ const row = (over: Partial<Row> = {}): Row => ({
 });
 
 /** A card sleeved in one other deck. The flags are the guards `pullCandidate`
- *  reads: a mature, unpending, non-commander claim is the releasable one. */
+ *  reads: a mature, unpending, non-commander, senior claim is the releasable one. */
 const claimed = (over: Partial<Availability["claims"][number]> = {}): Availability =>
   ({
     free: 0,
@@ -74,6 +74,7 @@ const claimed = (over: Partial<Availability["claims"][number]> = {}): Availabili
         mature: true,
         pending: false,
         commander: false,
+        senior: true,
         ...over,
       },
     ],

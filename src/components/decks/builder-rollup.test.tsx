@@ -28,8 +28,8 @@ const OVER: Avail = {
   soft: 0,
   free: -1,
   claims: [
-    { id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false },
-    { id: "d2", name: "Kykar", quantity: 1, mature: true, pending: false, commander: false },
+    { id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true },
+    { id: "d2", name: "Kykar", quantity: 1, mature: true, pending: false, commander: false, senior: true },
   ],
 };
 const SOFT: Avail = { owned: 2, hard: 0, soft: 2, free: 2, claims: [] };
@@ -40,7 +40,7 @@ const SELF: Avail = {
   hard: 1,
   soft: 0,
   free: 0,
-  claims: [{ id: "d1", name: "This deck", quantity: 1, mature: true, pending: false, commander: false }],
+  claims: [{ id: "d1", name: "This deck", quantity: 1, mature: true, pending: false, commander: false, senior: true }],
 };
 
 function makeDeck(size: number, availabilities: (Avail | undefined)[] = []): DeckDetail {
