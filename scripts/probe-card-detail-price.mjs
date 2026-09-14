@@ -16,10 +16,17 @@
 // passing quietly. Run it a second time against a `transform` card with
 // PROBE_TWO_FACED=1, which makes a missing turn control a failure.
 // Point PROBE_CARD at a card the signed-in account owns in MORE THAN TWELVE
-// printings — `OVERFLOW_THRESHOLD` is 12 and the header collapses only past it, so
-// a card owned in two opens the picker and never reaches the compact state. A basic
-// land is the reliable choice. The probe fails rather than passes quietly if the
-// card it is pointed at cannot reach that state.
+// printings AND that the feed has priced — `OVERFLOW_THRESHOLD` is 12 and the
+// header collapses only past it, and the compact check asks whether a figure
+// SURVIVES that collapse, so it needs a figure to begin with. A basic land is the
+// reliable choice for the printings half.
+//
+// Where the card supplies neither, the run says `NOT EXERCISED` and does not fail.
+// That is not leniency: a state the run never entered is a state it cannot report
+// on, and `local-dev` holds no card with both halves — every owned holding misses
+// `printing_prices` — so a FAIL there was a standing red about data that no change
+// to this app could clear. A card that HAS a figure and loses it in the collapse
+// still fails.
 // Not part of `pnpm test`: it needs a browser and a signed-in session.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -545,36 +552,47 @@ try {
       )
       .catch(() => {});
     const compact = await readPrice(phonePage);
-    // Whether this card had a figure to move in the first place, read BEFORE the
-    // picker opened. That is the discriminator, not whether the header collapsed:
-    // the check is that the tag SURVIVES the move out of the art into the name
-    // block, and a card the feed has never priced has nothing to survive it.
+    // TWO preconditions, both measured, because the check is that a figure
+    // SURVIVES the move out of the art into the name block: there has to be a
+    // figure, and there has to be a move.
+    //
+    // `hadPrice` is read BEFORE the picker opened — a card the feed has never
+    // priced has nothing to survive. `collapsed` is the thumbnail's own width,
+    // because the header collapses past `OVERFLOW_THRESHOLD` and a card owned in
+    // two printings opens the picker without ever reaching the state.
     const hadPrice = Boolean(phoneRead.mobile);
+    const collapsed = await phonePage.evaluate(() => {
+      const art = document.querySelector('[data-testid="modal-art-mobile"]');
+      return art !== null && art.getBoundingClientRect().width < 100;
+    });
     console.log("\n── phone · printing region open (compact header past 12 entries) ──");
-    console.log(JSON.stringify({ ...compact, hadPriceBeforeCollapse: hadPrice }, null, 2));
-    // THREE OUTCOMES, not two.
-    //
-    // A missing figure in a collapsed header is a failure: the tag moves out of
-    // the art and into the name block there, and it has to survive the move.
-    //
-    // A missing figure in a header that never collapsed is NOT — the run did not
-    // reach the state, and calling that a failure is a red nobody can act on. It
-    // is the standing state of `local-dev`, where no owned holding of a card with
-    // more than twelve printings joins a `printing_prices` row, so every run has
-    // ended on a FAIL about data. Reported as not exercised instead, in the words
-    // that say what to do about it.
+    console.log(JSON.stringify(
+      { ...compact, hadPriceBeforeCollapse: hadPrice, headerCollapsed: collapsed },
+      null,
+      2,
+    ));
+    // THREE OUTCOMES, not two, and each precondition names itself. A single
+    // "no compact price" message covered all three and was wrong about two of
+    // them: it reported a failure for a state the run never entered.
     if (!compact.compact && !hadPrice) {
       console.log(
         "\nNOT EXERCISED: this card carries no figure at either size, so nothing was"
-          + " asked to survive the collapse. PROBE_CARD must be owned in MORE THAN TWELVE"
-          + " printings AND have a `printing_prices` row for the printing it resolves to."
-          + " On `local-dev` no card holds both at once — every owned holding misses the"
-          + " price table — so this check earns its keep on staging.",
+          + " asked to survive the collapse. PROBE_CARD needs a `printing_prices` row for"
+          + " the printing it resolves to. On `local-dev` no card has that AND more than"
+          + " twelve printings — every owned holding misses the price table — so this"
+          + " check earns its keep on staging.",
+      );
+    } else if (!compact.compact && !collapsed) {
+      console.log(
+        "\nNOT EXERCISED: the header never collapsed, so there was no move to survive."
+          + " PROBE_CARD must be owned in MORE THAN TWELVE printings; a basic land is"
+          + " what that is for.",
       );
     } else if (!compact.compact) {
       console.log(
-        "\nFAIL: the header collapsed and no price came with it. The tag has to survive"
-          + " the move out of the art into the name block (erratum E12).",
+        "\nFAIL: the header collapsed on a card that HAD a figure, and no price came"
+          + " with it. The tag has to survive the move out of the art into the name"
+          + " block (erratum E12).",
       );
       process.exitCode = 1;
     } else if (compact.compact.hiddenFromScreenReaders) {
