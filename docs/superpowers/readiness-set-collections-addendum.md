@@ -157,8 +157,9 @@ where the measured rule puts every later one.
 **The step between the two heights is animated, over 180ms, honouring
 `prefers-reduced-motion`.** §31 specifies two heights and says nothing about the step between
 them, and the swap by `display` was instant by construction — which is what Hugh reported as
-sudden. The head and its reserve animate in one call with mirror-image keyframes, so the
-document's height is constant across the step. **ADDENDUM-README's "must not animate the
+sudden. The head and its reserve are animated by a pair of `Element.animate` calls with
+mirror-image keyframes and identical timing, so the document's height is constant across the
+step — two animations, moving as one, rather than a single combined operation. **ADDENDUM-README's "must not animate the
 title's size" is untouched**: the head's box animates, the `h1` never does, and a breakpoint
 crossing is explicitly not a step.
 
@@ -171,8 +172,10 @@ restores it afterwards — permanently off would cost the reader their place on 
 which is the case anchoring exists for.
 
 `pnpm probe:sets` carries all three as checks, each run against the old behaviour first: the
-empty band (213px, now 0), the animated step (2 heights, now 16), and the stepped scroll
-(293px, now 80). The handoff files under
+empty band (213px, now 0), the animated step (two distinct heights in each direction before,
+a run of a dozen or more in each now — the check asserts "more than a snap" and reports the
+collapse and the restore separately, because the exact count is a function of the frame rate
+it happened to sample), and the stepped scroll (293px, now 80). The handoff files under
 `design/design_handoff_the99_set_collections/` still state the 120/40 pair — they are the
 historical record and are not edited; this entry supersedes them.
 
