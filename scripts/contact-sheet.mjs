@@ -264,10 +264,9 @@ try {
   console.log(`\nsheet: ${sheet}`);
   // THE BACKSTOP. A run that photographed nothing is a silent success whatever
   // caused it — no rows, an empty `widths`, every row skipped by its own
-  // `widths`, or something nobody has thought of yet. `lib/steps.mjs` catches
-  // the causes it can name, before the browser launches, because a named cause
-  // is a better message; this catches the class, and needs no maintaining as the
-  // list of causes grows.
+  // `widths`, or something nobody has thought of yet. Naming those causes one by
+  // one is a list that needs maintaining and is never finished; this catches the
+  // class, and the `widths` loop above still names the one cause it can.
   if (shots.length === 0) {
     console.log(
       "\nNOTHING WAS PHOTOGRAPHED. A sheet with no cells in it is not coverage —"
