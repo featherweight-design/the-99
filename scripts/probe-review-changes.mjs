@@ -581,6 +581,13 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
        join cards c on c.oracle_id = ci.oracle_id
       where ci.user_id = $1
         and c.type_line not like 'Basic Land%'
+        -- COSTLESS, deliberately. markerDrawn is auto || !manaCost and this
+        -- fixture inserts with auto = false, so a costed card draws no marker
+        -- and the stacked name line loses the 46px box that is the whole reason
+        -- it needs a floor. On a costed card the name measures about 46px at
+        -- 820px and clears the check either way, so a run that took one would
+        -- report a pass over the regression it exists to catch.
+        and coalesce(c.mana_cost, '') = ''
         and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $2)
         and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $3)
         -- Not sleeved anywhere else either: another committed deck's claim on the
@@ -608,7 +615,8 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
       limit 1`,
     [userId, excludeDeckId, holderDeckId],
   );
-  if (rows.length === 0) throw new Error("No singly-owned unsleeved card to claim.");
+  if (rows.length === 0)
+    throw new Error("No singly-owned, unsleeved, costless card to claim.");
   const { oracle_id: oracleId, name } = rows[0];
   // Into the holder's draft AND its version, or the holder reads as pending and
   // the pull is refused before it is offered.

@@ -693,7 +693,8 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
    from the banner's confirm, with "no second wording" as the only instruction.
 4. **No hover, focus-visible, active or disabled styling** for `Pull it`, `Open →`,
    `Commit as v{n}`, `Discard`, the phone segments or the count chips. Row hover is the only
-   interactive state drawn.
+   interactive state drawn. (`Open →` and the row's hover hint were both withdrawn by the
+   2026-09-14 amendment above, so nothing is owed for either; the rest stands.)
 5. **The phone frame draws no count chips**, no lede, no strip verdict notes, no `Going out`
    column content, no apply-bar confirm and no third/fourth/fifth/sixth strip cell. Every
    Mobile cell above reading `— (not drawn)` has no drawn source.
@@ -737,7 +738,8 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
    a shipped shape") and which §Errata overrides with `density="full"`.
 6. **Phone guard row price.** States 20 and 21 both say "the price stays"; the phone guard row
    (`Birds of Paradise` / `Kinnan Ramp`) drops it, keeping only the `pending` tag and `Open →`.
-   The desktop guard row keeps it.
+   The desktop guard row keeps it. Both of those the canvas draws and neither ships: the
+   2026-09-14 amendment above reworded the tag to `deck in draft` and withdrew the anchor.
 7. **Strip cell order.** Canvas: mana value, Removal, Draw, Ramp, Wipes, Land. `changed.cells`:
    `manaValue, ramp, draw, removal, wipes, land`. README §3b names a third list — "mana value,
    removal, draw, ramp, **body**" — and `body` is not a role at all (§Errata).

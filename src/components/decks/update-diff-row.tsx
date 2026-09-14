@@ -311,6 +311,7 @@ function DiffRowName({
   siblings,
   describedBy,
   recount,
+  floor,
 }: {
   oracleId: string;
   name: string;
@@ -318,6 +319,12 @@ function DiffRowName({
   siblings?: string[];
   describedBy?: string;
   recount?: DiffRowRecount;
+  /** Hold a minimum width instead of shrinking away. `truncate` sets a
+   *  min-content width of zero, so the name is the item a short line takes its
+   *  shortfall out of, and a flex line whose items can all reach zero never
+   *  wraps — it just prints nothing. On a stacked row the line is allowed to
+   *  wrap, so a floor here is what makes it do so. */
+  floor?: boolean;
 }) {
   const trigger = (
     <CardDetailTrigger
@@ -326,7 +333,11 @@ function DiffRowName({
       title={name}
       siblings={siblings}
       describedBy={describedBy}
-      className={`min-w-0 truncate text-left text-[12.5px] md:text-[13px] ${recount ? "" : "flex-auto"}`}
+      className={[
+        floor ? "min-w-[90px]" : "min-w-0",
+        "truncate text-left text-[12.5px] md:text-[13px]",
+        recount ? "" : "flex-auto",
+      ].join(" ")}
       style={{ color: tone }}
     >
       {name}
@@ -334,7 +345,9 @@ function DiffRowName({
   );
   if (!recount) return trigger;
   return (
-    <span className="flex-auto min-w-0 flex items-baseline gap-[6px]">
+    <span
+      className={`flex-auto flex items-baseline gap-[6px] ${floor ? "min-w-[90px]" : "min-w-0"}`}
+    >
       {trigger}
       {/* The counts are the shipped recount's shape with the name taken off the
           front, because the name is the element beside it: one arrow and one
@@ -499,8 +512,15 @@ export function DiffRowIn({
         siblings={siblings}
         describedBy={describedBy}
         recount={recount}
+        floor={stacked}
       />
-      {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
+      {/* The invisible half of the marker box is the update flow's rhythm, so a
+          stacked row gives it back: it costs 46px of a column that is about
+          150px wide inside its padding at the narrowest desktop, and the name is
+          what pays. A row that has a tag to draw still draws it. */}
+      {markerDrawn(card) && (!stacked || card.auto) ? (
+        <Marker auto={card.auto} />
+      ) : null}
     </>
   );
   const metaLine = (
@@ -568,7 +588,11 @@ export function DiffRowIn({
     >
       {stacked ? (
         <>
-          <span className={`${STACK_LINE} min-w-0`}>
+          {/* Wraps for the same reason the meta line does. With the name holding
+              a floor, a costless add whose marker draws cannot fit its name, its
+              tag and the 54px cost track on one 150px line, so the track drops
+              below rather than the name printing an ellipsis and nothing else. */}
+          <span className={`${STACK_LINE} min-w-0 flex-wrap`}>
             {nameLine}
             {trailing}
           </span>
