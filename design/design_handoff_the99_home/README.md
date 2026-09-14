@@ -56,8 +56,9 @@ doing. Ties break on deck name, ascending, so the order is stable between render
 
 **And because the order is now a claim, each row prints its evidence** — one mono stamp, `edited 2h
 ago` / `played yesterday` / `committed 3d ago`. It is the only element this handoff adds to a
-shipped row, it lands in a slot the row already has (under the count on desktop, beside the status
-chip at 390px), and **no row grows a line at either width**.
+shipped row, it lands in a slot the row already has (**errata E6: the row's first line, right-aligned, beside the deck name, at both widths** — the meta line
+cannot hold it, which is a measurement rather than a judgement), and **no row grows a line at either
+width**.
 
 ### 3. Four rows, not two
 
@@ -176,7 +177,7 @@ grown, one mono line added to a shipped row.
 | Component | Spec |
 |---|---|
 | **Resume row** | Shipped geometry. Flex row, radius 12, `--surface-raised` on `1px --border`, **3px status rule on the left edge**, art bleeding flush left (74px desktop, 62px at 390px) at full row height, min-height 64px desktop / 72px phone. Content: deck name (Cinzel 600, 15.5px) over one meta line — status chip, commander name (mono 11px, truncating), count right-aligned. |
-| **Touched stamp** | **The one addition.** Mono 10px `--fg-locked`. Desktop: under the count, right-aligned. Phone: beside the status chip. Never wraps, never its own line. |
+| **Touched stamp** | **The one addition.** Mono 10.5px `--fg-locked`, on the row's first line, right-aligned, beside the deck name, at both widths — see errata E6 for why not the meta line. Never wraps, never shrinks, never its own line; the deck name beside it is what gives. |
 | **Ready-to-build card** | Shipped geometry, restored. 300px crop (270px at 390px), scrim from 44%, name + pips + type line + fit chip inside the crop, fit line and `See the pool` on the panel beneath. |
 | **`Your decks` block** | **Deleted at both widths**, with its rows, its heading, its count and its `All decks` footer. |
 | **Commitments** | Shipped panel, unchanged, now also mounted on the phone as the last block. |

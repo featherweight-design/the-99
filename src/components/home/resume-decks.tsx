@@ -63,10 +63,10 @@ function toBuyCopies(shopping: ShoppingRollup, deckId: string): number | null {
 /**
  * The touched stamp: `edited 2h ago`, `committed 3d ago`, `played yesterday`.
  *
- * The only element this round adds to a shipped row. It lands in the slot the
- * to-buy clause uses and never takes a line of its own — decisions 19 and 23
- * already rule that the count never truncates and the clause is what gives, and
- * the stamp is why the block is in this order, so it outranks the clause.
+ * The only element this round adds to a shipped row. It sits on the row's first
+ * line, right-aligned beside the deck name, at both widths — never on a line of
+ * its own, and never in the meta line, which cannot hold it: see the note at the
+ * name row below for the measurement that moved it.
  *
  * `now` is the page's one server clock, threaded down rather than read here: two
  * clocks on one page disagree, and every relative date on Home measures against
@@ -289,7 +289,7 @@ export function ResumeDecks({
   if (decks.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-[12px] sm:gap-[11px]">
+    <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
       <div className="mt-[6px] flex flex-none items-baseline gap-[8px]">
         {/* §SectionLabel, with this instance's own `margin-top: 6`. */}
         <h2 className="m-0 font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">

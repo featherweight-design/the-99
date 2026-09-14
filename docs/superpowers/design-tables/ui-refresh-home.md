@@ -561,7 +561,10 @@ No CTA on the row — the row itself opens the builder (README decision 4).
 
 ### Section
 
-| Property | Mobile | Desktop |
+The 11px rhythm belongs to the two-column layout, so it switches at 1180 with everything else. Left
+at `sm` it gave the 640–1179 band desktop spacing inside a mobile stack.
+
+| Property | Mobile (<1180) | Desktop (≥1180) |
 |----------|--------|---------|
 | display | flex | flex |
 | flex-direction | column | column |
@@ -661,9 +664,10 @@ supposed to.
 
 ### ResumeRow — meta line
 
-Status pill, commander name, then the figure group: the built count, the touched stamp, and the
-to-buy clause. **The figure never truncates and the clause is what gives** (decisions 19 and 23),
-and the stamp outranks the clause — it is the block's evidence for the order it drew.
+Status pill, commander name, then the figure group: the built count and the to-buy clause. **The
+figure never truncates and the clause is what gives** (decisions 19 and 23). The touched stamp is
+NOT here — it is on the first line beside the deck name, because three non-shrinking children do not
+fit this line at 390px; see §ResumeRow — touched stamp.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|

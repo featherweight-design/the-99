@@ -237,8 +237,14 @@ stamp each fail exactly the check written for them.
 
 ### Task 9 — the stamp
 
-Mono 10px `--fg-locked`, never wrapping, never its own line. Desktop: under the count,
-right-aligned. Phone: in the meta line where the to-buy clause sits (constraint 4).
+Mono 10.5px `--fg-locked`, never wrapping, never shrinking, never its own line. On the row's first line, right-aligned, beside the deck name, at both widths
+— corrected here on round 4 of review, from this plan's first draft, which put it under the count on
+desktop and in the meta line on the phone.
+
+The meta line cannot hold it, and that is a measurement. With the longest verb and figure —
+`committed 10mo ago` — the status pill, the count and the stamp are three non-shrinking children
+needing 243px of the 240 that line has at 390px, and the row's own overflow ate the stamp. Beside
+the deck name it sits next to the one child that truncates by design.
 
 Copy from the handoff's file into `refreshCopy.home.touched` and `.elapsed`, verbatim, minus
 `imported` (E5). Elapsed is `hours` / `yesterday` / `days` / `weeks` / `months`, lower case, and
