@@ -703,7 +703,11 @@ export function ReviewChanges({
             fallback.focus();
           }
         }
-        router.refresh();
+        // No refresh here. `addCardToDeck` ends in `revalidateClaims`, and
+        // `claimSurfaces` names this very route, so the server has already told
+        // this client to re-read — a second call is a second full pass over the
+        // draft rows, the availability read and the price join. The catch path
+        // below keeps its refresh, because a throw may have revalidated nothing.
       });
     },
     [
