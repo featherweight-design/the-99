@@ -1520,6 +1520,33 @@ describe("pullCardFromDeck", () => {
     expect(commitVersion).toHaveBeenCalled();
   });
 
+  // The bucket check answers for the card, not for the deck this call named. On a
+  // card two decks hold — one senior to the asking deck, one junior — the senior
+  // claim alone keeps the bucket `claimed`, so a request naming the junior deck
+  // would ride in on it and empty a box whose copy was already outside this
+  // deck's `free`. The named source has to be releasable itself.
+  it("refuses a source whose own claim is junior to the asking deck", async () => {
+    const THIRD_ID = "77777777-7777-4777-8777-777777777777";
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    // Both holders are named by both reads, so both are inside the locked set and
+    // the unlocked-claimant guard has nothing to say — this refusal is the
+    // membership test's alone.
+    vi.mocked(loadAvailability).mockResolvedValue(
+      new Map([[CARD_A, {
+        owned: 2, hard: 2, soft: 0, free: -1,
+        claims: [
+          { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false, commander: false, senior: false },
+          { id: THIRD_ID, name: "Senior deck", quantity: 1, mature: true, pending: false, commander: false, senior: true },
+        ],
+      }]]) as unknown as Awaited<ReturnType<typeof loadAvailability>>,
+    );
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
   // The pre-transaction read only chooses locks, so losing it costs no pull the
   // claim still supports: the set falls back to the two decks in hand, and the
   // authorization refuses only if a third deck turns out to be holding a copy.

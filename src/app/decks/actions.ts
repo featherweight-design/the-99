@@ -1582,11 +1582,21 @@ export async function pullCardFromDeck(
     // copy relieve the shortfall", and a junior claim is already outside this deck's
     // `free`, so the answer over one is no: the copy would leave that deck's box and
     // the figure would not move. Refused, and the purchase stands.
+    const sources = pullSources(askingAvailability.get(oracleId) ?? { claims: [] });
     const [bucketed] = bucketAdds([add], new Map(
       [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: pullSources(a) }]),
     ));
     if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
       return { ok: false, message: "That deck already has the copies it needs." };
+    }
+
+    // The bucket above answers for the CARD: some releasable holder exists. It
+    // says nothing about the deck this call named, so on a card with two holders
+    // — one senior, one junior — a request naming the junior one would pass on
+    // the senior one's strength and decrement a deck whose copy was never this
+    // deck's to take. The named source has to be a releasable holder itself.
+    if (!sources.some((d) => d.id === sourceDeckId)) {
+      return { ok: false, message: "That deck's copy wouldn't cover the shortfall." };
     }
 
     const version = await newestVersion(sourceDeckId, tx);
