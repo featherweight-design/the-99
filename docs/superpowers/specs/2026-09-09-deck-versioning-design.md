@@ -140,7 +140,7 @@ source.
 a one-click action. Committing automatically would sweep somebody's half-finished tinkering into
 a version they never asked for.
 
-> **Amendment, 2026-09-14, taken on Hugh's instruction.** This guard originally turned the offer
+> **Amendment, 2026-09-14 (PR #622), taken on Hugh's instruction.** This guard originally turned the offer
 > into a link to the source deck. The link is withdrawn: on a paired type column it claimed the
 > width the card name needed, and the row printed a deck while printing no card. The guard is now
 > a `deck in draft` tag plus an accessible description on the row, and nothing links to the

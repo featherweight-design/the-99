@@ -359,7 +359,7 @@ is the click target; the pull control is its one nested action and stops propaga
 | focus-visible | not specified | not specified |
 | active | not specified | not specified |
 
-> **Amendment, 2026-09-14, taken on Hugh's instruction and not through a design round.** Two
+> **Amendment, 2026-09-14 (PR #622), taken on Hugh's instruction and not through a design round.** Two
 > things change on a row that names the deck sleeving the copy: the row keeps **two lines at
 > every width**, and it draws **no `open card →` hint and no trailing anchor**.
 >
@@ -505,7 +505,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | disabled button alternative | rejected — but so is the link now; the guard is a tag and a description (READINESS 13 is satisfied by drawing no control at all) | same |
 | server dependency | a per-holding-deck *has a draft* flag; the client must not infer it | same |
 
-> **Amendment, 2026-09-14, taken on Hugh's instruction and not through a design round.** The tag
+> **Amendment, 2026-09-14 (PR #622), taken on Hugh's instruction and not through a design round.** The tag
 > read `pending`, and beside a card name it was taken for a pending change to **that card** — on
 > a row where the card is not being touched at all. It names the deck now: `deck in draft`. The
 > `Open →` anchor is withdrawn with the hover hint above, for the same reason, and the sentence
