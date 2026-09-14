@@ -68,26 +68,16 @@ export function FilterSheet({
 }) {
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
-  // An announcement belongs to ONE OPENING and ONE SENTENCE, and this pair is
-  // its identity. Rendered only while both still hold.
-  //
-  // Both halves were paid for. The sheet stays mounted at `open={false}`, so a
-  // plain string sat in the status node the instant it reopened — a stale count,
-  // or an aside naming commanders free mode hid, after the reader changed modes
-  // with the sheet shut. Carrying the LINE fixed that for a sentence that had
-  // since changed and not for one that had not: reopen on the same filters and
-  // the sheet read its own count out again, which is the thing `null` was
-  // supposed to prevent. Carrying the OPENING closes the case the line cannot
-  // see, because a second opening is a different opening whatever the sentence
-  // says.
-  //
-  // It is a stamp rather than a `setState` on close because an effect that calls
-  // one synchronously is what the compiler's cascading-render rule forbids —
-  // the first attempt at this did exactly that and was rejected.
-  const opening = useRef(0);
-  const [announcement, setAnnouncement] = useState<
-    { opening: number; line: string; text: string } | null
-  >(null);
+  // Plain, and it survives nothing, because THIS COMPONENT survives nothing: the
+  // rack mounts it only while it is open. Three review rounds went into keeping
+  // an announcement honest across a closed sheet — a stale count on reopen, then
+  // an aside naming commanders free mode hid, then the same sentence read out
+  // again on a reopening that had changed nothing — and each fix was a better
+  // answer to "what is this announcement's identity". The scope answer is that
+  // it has no identity to manage. A sheet that unmounts when it closes starts
+  // every opening silent by construction, and the two stamps that were tracking
+  // that by hand are gone with it.
+  const [announcement, setAnnouncement] = useState("");
   const dragStartY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   // The count as last announced. Null means "not announced yet this opening",
@@ -125,7 +115,6 @@ export function FilterSheet({
   useEffect(() => {
     if (!open) {
       lastLine.current = null;
-      opening.current += 1;
       return;
     }
     if (lastLine.current === null || lastLine.current === resultLine) {
@@ -133,10 +122,7 @@ export function FilterSheet({
       return;
     }
     lastLine.current = resultLine;
-    const t = setTimeout(
-      () => setAnnouncement({ opening: opening.current, line: resultLine, text: resultLine }),
-      300,
-    );
+    const t = setTimeout(() => setAnnouncement(resultLine), 300);
     return () => clearTimeout(t);
   }, [open, resultLine]);
 
@@ -300,9 +286,7 @@ export function FilterSheet({
         </div>
 
         <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-          {announcement?.opening === opening.current && announcement.line === resultLine
-            ? announcement.text
-            : ""}
+          {announcement}
         </span>
       </div>
     </>

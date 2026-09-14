@@ -211,11 +211,14 @@ export function FilterRack({
       )
       }
       after={
-        /* Closed, this returns null: the sheet is never a hidden duplicate of
-           the controls it replaces. */
-        !wide && (
+        /* Mounted only while open, rather than mounted-and-returning-null. It is
+           still never a hidden duplicate of the controls it replaces, and now it
+           also carries no state across a closing: the announcement inside it
+           belongs to one opening, and unmounting is what makes that true without
+           a stamp tracking it. */
+        !wide && sheetOpen && (
         <FilterSheet
-          open={sheetOpen}
+          open
           onOpenChange={setSheetOpen}
           params={params}
           lane={lane}

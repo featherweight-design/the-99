@@ -100,20 +100,22 @@ describe("FilterSheet", () => {
     );
   });
 
-  // Reopening is a new opening, whatever the sentence says. With the identity
-  // carried on the sentence alone, a reader who closed and reopened on unchanged
-  // filters heard the sheet read its own count out at them.
+  // The rack mounts this sheet only while it is open, so a reopening is a fresh
+  // mount and starts silent whatever the sentence says. Asserted as the unmount
+  // the rack performs, not as an `open={false}` rerender, because that is the
+  // lifecycle the component actually has — and it is the whole reason it no
+  // longer tracks an announcement's identity by hand.
   it("starts silent on a reopening, even on the sentence it last announced", async () => {
     const line = resultLineWithAside(12, 12, "owned", null, 3);
-    const sheet = (open: boolean, resultLine: string) => (
-      <FilterSheet open={open} onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={resultLine} />
+    const sheet = (resultLine: string) => (
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={resultLine} />
     );
-    const { rerender } = render(sheet(true, resultLineWithAside(15, 15, "owned", null, null)));
-    rerender(sheet(true, line));
+    const first = render(sheet(resultLineWithAside(15, 15, "owned", null, null)));
+    first.rerender(sheet(line));
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/sleeved/));
+    first.unmount();
 
-    rerender(sheet(false, line));
-    rerender(sheet(true, line));
+    render(sheet(line));
     expect(screen.getByRole("status")).toHaveTextContent("");
   });
 

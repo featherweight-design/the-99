@@ -13,6 +13,15 @@ frames (A–D, I). The design's own rack breakpoint is **1024px**, driven by
 below whose Mobile and Desktop values differ is a **1024px** difference unless the row
 says otherwise.
 
+> **Implementation erratum, 2026-09-14.** Every `1024px` in this table is the
+> DESIGN's breakpoint and is left as drawn. The shipped rack switches at
+> `CHASSIS_WIDE_MIN_PX = 1000` (`src/components/ui/filter-chassis.tsx`), so
+> between 1000 and 1023 the inline rack is already mounted and there is no sheet
+> to open — a divergence that predates this table and is documented at the
+> constant and at `filter-rack.tsx`. Read every "below 1024px" row here as
+> "below the chassis breakpoint". Noted once rather than edited into eleven rows,
+> because the rows are a record of what Design specified.
+
 `—` means the property is explicitly absent at that breakpoint. Properties the handoff
 does not set are omitted rather than guessed.
 
