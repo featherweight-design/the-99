@@ -42,7 +42,10 @@ const STEP_SPEC = {
   // Owned fields are type-checked too. `name` skipping validation is how
   // `{ clickRole: "button", name: "" }` passed: `new RegExp("")` matches every
   // accessible name, and `.first()` presses whatever is at the top of the page.
-  name: { type: "string", ownedBy: "clickRole" },
+  // `regex`, not `string`: `run` passes it to `new RegExp`, so `"["` is a valid
+  // non-empty string that throws AFTER sign-in — which is a preflight that let
+  // the thing through.
+  name: { type: "regex", ownedBy: "clickRole" },
   text: { type: "string", ownedBy: "fill" },
 };
 
@@ -53,6 +56,18 @@ function typeProblem(key, value) {
   if (type === "string") {
     if (typeof value !== "string") return `must be a string, got ${JSON.stringify(value)}`;
     if (value === "") return "must not be empty — an empty selector is a step the runner skips";
+    return null;
+  }
+  if (type === "regex") {
+    if (typeof value !== "string") return `must be a string, got ${JSON.stringify(value)}`;
+    if (value === "") {
+      return "must not be empty — an empty pattern matches every name on the page";
+    }
+    try {
+      new RegExp(value);
+    } catch (error) {
+      return `is not a valid regular expression: ${error.message}`;
+    }
     return null;
   }
   if (type === "number") {

@@ -263,6 +263,19 @@ try {
   const sheet = path.join(outDir, "sheet.png");
   await sheetPage.screenshot({ path: sheet, fullPage: true });
   console.log(`\nsheet: ${sheet}`);
+  // THE BACKSTOP. A run that photographed nothing is a silent success whatever
+  // caused it — no rows, an empty `widths`, every row skipped by its own
+  // `widths`, or something nobody has thought of yet. `lib/steps.mjs` catches
+  // the causes it can name, before the browser launches, because a named cause
+  // is a better message; this catches the class, and needs no maintaining as the
+  // list of causes grows.
+  if (shots.length === 0) {
+    console.log(
+      "\nNOTHING WAS PHOTOGRAPHED. A sheet with no cells in it is not coverage —"
+        + " check the inventory's rows and their `widths`.",
+    );
+    process.exitCode = 1;
+  }
   const failed = shots.filter((s) => s.note);
   if (failed.length) {
     console.log(

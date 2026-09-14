@@ -69,8 +69,17 @@ describe("inventoryProblems", () => {
     // `new RegExp("")` matches every accessible name, and `.first()` presses
     // whatever is at the top of the page.
     expect(first({ clickRole: "button", name: "" })).toContain("must not be empty");
+    expect(first({ clickRole: "button", name: "" })).toContain("every name on the page");
     expect(first({ clickRole: "button", name: 7 })).toContain("must be a string");
     expect(first({ fill: "input", text: 7 })).toContain("must be a string");
+  });
+
+  it("refuses a name that is not a valid pattern", () => {
+    // `run` hands it to `new RegExp`, so `"["` is a valid non-empty string that
+    // throws AFTER sign-in — a preflight that let the thing through.
+    expect(first({ clickRole: "button", name: "[" }))
+      .toContain("is not a valid regular expression");
+    expect(first({ clickRole: "button", name: "^Filters$" })).toBe("");
   });
 
   it("refuses an inventory with no rows", () => {
