@@ -91,7 +91,10 @@ describe("Sheet", () => {
     fireEvent.pointerMove(h, { clientY: 200, pointerId: 1 });
     fireEvent.pointerCancel(h, { clientY: 200, pointerId: 1 });
     expect(onDismiss).not.toHaveBeenCalled();
-    expect(releasePointerCapture).toHaveBeenCalledWith(1);
+    // And it does NOT ask for the release: `pointercancel` is the user agent
+    // ending the pointer, so capture is already gone and asking again throws
+    // `NotFoundError` on a cancelled touch.
+    expect(releasePointerCapture).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
   });
 

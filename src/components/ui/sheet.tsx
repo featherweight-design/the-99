@@ -4,10 +4,11 @@
 // Four surfaces drew this same chrome independently — `filter-panel.tsx`, the
 // commander rack's filter sheet, the deck filter sheet and the collection filter
 // sheet — and two of them drew it without the gesture. `DeckFilterSheet` and
-// `CollectionFilterSheet` had no drag-to-dismiss and did not hold the page
-// behind them, so the same control on two routes answered a drag differently
-// and let the page scroll under the scrim. That is the divergence a reader
-// feels on a phone and a diff cannot show.
+// `CollectionFilterSheet` drew a handle that did nothing, so the same control on
+// two routes answered a drag differently — dismissing on `/commanders`, inert on
+// `/decks` and `/collection`. The gesture is the whole of what they were
+// missing; both already held the page, through `useDialogA11y`. That is the
+// divergence a reader feels on a phone and a diff cannot show.
 //
 // WHAT THIS OWNS: the scrim, the panel and its box, and the drag handle with its
 // 80px dismissal. A caller renders its own body and footer.
@@ -154,10 +155,12 @@ export function Sheet({
   // A cancel is the gesture being TAKEN AWAY — by a scroll claiming it, or a
   // system interaction — not a drag completing. Sharing the up handler meant a
   // cancel past 80px dismissed a sheet the reader never let go of.
-  const onHandlePointerCancel = (e: React.PointerEvent) => {
+  const onHandlePointerCancel = () => {
     dragStartY.current = null;
     setDragY(0);
-    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    // No release here. `pointercancel` IS the user agent ending the pointer, so
+    // capture is already gone by the time this runs and asking again throws
+    // `NotFoundError` on a cancelled touch — turning a snap-back into an error.
   };
 
   const body = (
