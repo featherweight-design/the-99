@@ -136,6 +136,46 @@ URL parameter is `q` either way, which is what §29 rules and what a reader sees
   ~302px — about 334px of viewport, since the rail is hidden below `md` and the padding is
   16px a side there. A probe asserting it must measure the viewport, not the content box.
 
+## Finding 6's two thresholds and its motion, amended after shipping. Ratified with Hugh 2026-09-14.
+
+The collapse shipped on §31's fixed pair — collapse at 120px, restore at 40px — and the pair
+produced a defect its own arithmetic could not have predicted. The reserve the collapsed bar
+leaves is the open head's height less the bar, so everywhere above `grid top − bar` the strip
+under the bar is empty. On `Avatar: The Last Airbender` that is **213px of nothing**, held all
+the way down to y=40 before the head popped open: the reader scrolls back up into a blank
+band and watches the head arrive underneath them. Reported by Hugh, fixed in PR #591.
+
+**Both thresholds are measured now, not stated.** Restore at `grid top − bar`, which is ~325px
+on that set; collapse an 80px band past it, ~405px. Read live off the spacer's bottom edge and
+the bar's own height on every scroll event, so a head one line taller with a wrapped title
+moves its own thresholds with it. §31's **band is unchanged at 80px**, and so is its rule that
+the head is **never interpolated with the scroll offset** — it still has exactly two heights.
+The first collapse of a visit, before any bar has been drawn to measure, uses the grid's own
+top: the head collapses once it has scrolled entirely past, which lands within a few pixels of
+where the measured rule puts every later one.
+
+**The step between the two heights is animated, over 180ms, honouring
+`prefers-reduced-motion`.** §31 specifies two heights and says nothing about the step between
+them, and the swap by `display` was instant by construction — which is what Hugh reported as
+sudden. The head and its reserve animate in one call with mirror-image keyframes, so the
+document's height is constant across the step. **ADDENDUM-README's "must not animate the
+title's size" is untouched**: the head's box animates, the `h1` never does, and a breakpoint
+crossing is explicitly not a step.
+
+**A third defect came out of measuring the second, and it pre-dated the finding.** Scroll
+anchoring ignores sticky boxes, so at the crossing it saw the reserve grow by the head's own
+shrink, never saw the shrink, and compensated for a change that had not happened: an 80px
+wheel step moved the reader **293px**, on `main` as much as on the branch. The container
+holding the head, the reserve and the grid suspends anchoring for the length of a step and
+restores it afterwards — permanently off would cost the reader their place on a filter change,
+which is the case anchoring exists for.
+
+`pnpm probe:sets` carries all three as checks, each run against the old behaviour first: the
+empty band (213px, now 0), the animated step (2 heights, now 16), and the stepped scroll
+(293px, now 80). The handoff files under
+`design/design_handoff_the99_set_collections/` still state the 120/40 pair — they are the
+historical record and are not edited; this entry supersedes them.
+
 ## Three corrections from building finding 6, all measured
 
 Recorded here rather than sent back to Design: the ruling's intent survives both, and only
