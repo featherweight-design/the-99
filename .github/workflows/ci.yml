@@ -30,6 +30,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Copy drift
+        run: pnpm check:copy-drift
+
       - name: Test
         run: pnpm test
 

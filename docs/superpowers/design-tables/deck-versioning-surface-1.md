@@ -99,7 +99,7 @@ a live region.
 | text-transform | `uppercase` | `uppercase` |
 | color | `#C9A24B` (`--accent`) | `#C9A24B` (`--accent`) |
 | margin-bottom | `9px` | — (row gap supplies it) |
-| text | canvas draws `Pending changes`; copy `pending.label` is `Pending changes — not yet a version` | `Pending changes — not yet a version` |
+| text | canvas draws `Pending changes`; copy `pending.label` is `Pending changes: not yet a version` | `Pending changes: not yet a version` |
 
 ### Header — counts group (`+19 / −17`)
 
@@ -450,7 +450,7 @@ State 2. Placement: **in the spine, beside `Export`** — not in a banner.
 | button text | (same rule) | `Commit as v1` (`pending.firstCommitCta`) |
 | note font-family / size / color | (same rule) | `var(--font-mono)` · `10px` · `#6A6152` (`--fg-locked`) |
 | note line-height | (same rule) | `1.45` |
-| note text | (same rule) | `locks this list as v1 — nothing about the deck changes` (`pending.firstCommitNote`) |
+| note text | (same rule) | `locks this list as v1: nothing about the deck changes` (`pending.firstCommitNote`) |
 | gate | `deckBodySize(hasPartner)` — 99, or **98 with a partner** (§Errata); read exactly once, the only place this UI knows the number | same |
 
 ---

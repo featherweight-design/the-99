@@ -221,7 +221,7 @@ dismiss ✕** (README:154–157, 304).
 | Property | Mobile | Desktop | Source |
 |---|---|---|---|
 | construct | single sentence | two-column grid under a top rule | Canvas:216, 243 |
-| mobile text | `We'll leave the sideboard behind — Commander doesn't have one.` | — | copy.entry.footnoteMobile |
+| mobile text | `We'll leave the sideboard behind: Commander doesn't have one.` | — | copy.entry.footnoteMobile |
 | mobile type | 12.5px, line-height 1.55, `--fg-faint`, margin `16px 0 0` | — | Canvas:216 |
 | container | — | `border-top: 1px solid --border`, `margin-top:26px`, `padding-top:20px`, `grid-template-columns: 1fr 1fr`, `gap:24px` | Canvas:243 |
 | column heading type | — | mono 10px, `letter-spacing:0.16em`, `text-transform:uppercase`, `--fg-faint`, `margin-bottom:7px` | Canvas:245, 249 |
@@ -721,7 +721,7 @@ and returns focus to the row (README:236–240).
 | line-number type | (inline in the same string) | mono 10.5px, `#6E6353`, margin-top 5px | Canvas:899 |
 | Delete button | `Delete this line` — `flex:1`, 600/13px, `--fg`, transparent, `1px --border-strong`, radius 8px, padding `12px 0`, **min-height 44px** | width 100%, 600/13px, transparent, `1px --border-strong`, radius 8px, padding `10px 0`, margin-top 12px | copy.resolve.delete; Canvas:833, 900 |
 | Delete hover | `border-color:--brass`, `color:--brass-hover` | same | Canvas:833, 900 |
-| Delete note | — | `Deleting drops it from the deck's total too — 100 becomes 99.` — 11.5px, line-height 1.55, `--fg-faint`, margin-top 10px | copy.resolve.deleteNote; Canvas:901 |
+| Delete note | — | `Deleting drops it from the deck's total too: 100 becomes 99.` — 11.5px, line-height 1.55, `--fg-faint`, margin-top 10px | copy.resolve.deleteNote; Canvas:901 |
 | Dismiss button | `Leave it for now` — `flex:1`, same chrome as Delete, min-height 44px, row gap 9px, margin-top 14px | — (not drawn in state 16 desktop) | copy.resolve.dismiss; Canvas:834 |
 | Editing the raw text | **not offered** at either width | not offered | README:250–252 |
 

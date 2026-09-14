@@ -633,7 +633,7 @@
 | color | `#8E8269` (token: **faint**) | `#8E8269` (token: **faint**) |
 | line-height | `1.5` | `1.5` |
 | margin-top | `12px` | — |
-| content | `Needs a Name and Quantity column — most exports already have them.` | `We only need a Name and Quantity column — most exports already include them.` |
+| content | `Needs a Name and Quantity column — most exports already have them.` | `We only need a Name and Quantity column: most exports already include them.` |
 | "Name" / "Quantity" emphasis color | `#C6B79A` (token: **secondary**) | `#C6B79A` (token: **secondary**) |
 | "Name" / "Quantity" font-weight | `600` | `600` |
 

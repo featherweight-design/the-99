@@ -66,6 +66,53 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   generated before an id joined the list still holds that sentence, so the copy is the one
   path that could put a pulled sentence back.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
+- `pnpm check:copy-drift` fails when a design table still quotes a string the code stopped
+  emitting. The property tables ARE the spec someone implements from and they quote copy
+  exactly, so a table that has drifted tells the next reader to ship a sentence the app no
+  longer says. It runs in CI beside the other checks: static, no server, no browser, about a
+  second.
+
+  It exists because the 2026-09-13 em-dash sweep spent FOUR consecutive review rounds on this,
+  each round naming a different partial list. Every fix was right and every round found more,
+  because a list assembled by reading has a tail. It found **13 stale quotations across seven
+  tables** that three hand-built inventories had all missed, because each of those was scoped
+  to one PR's diff while the drift came from another PR entirely.
+
+  Eleven of the 13 were invisible to the check's OWN first version, which is the more useful
+  lesson: it printed "no design table quotes a form the code stopped emitting" over rows that
+  plainly did, and review found that, not the check. **Run a guard's failure path before
+  believing its green.** `scripts/lib/copy-drift.test.mts` now pins one case per failure path,
+  each written as the shape that defeated the parser; every one of them was confirmed to fail
+  against the version it was written for.
+
+  **Nothing is synthesised.** The first version put a dash back where the punctuation now is
+  and searched for that; it reported 46 findings, every one false, having rewritten
+  `plural(n, "card", "cards")` into `plural(n — "card", …)` and matched it through wildcards
+  loose enough to absorb the difference. Instead both sides reduce to their WORDS — `${…}` and
+  every swept mark dropped — and a quotation is a finding only when its words match a shipped
+  string exactly while its punctuation does not.
+
+  **It reads components, not only `src/lib/copy`.** The convention here is copy-in-definitions
+  and the app does not fully obey it, so `src/components/**/*.tsx` is scanned too — including
+  JSX TEXT NODES, which are not string literals and which no amount of careful literal-scanning
+  would ever see. `review-screen.tsx` draws its matched-count label that way, and two tables
+  quoted the pre-sweep form of it.
+
+  **Three parsing mechanics, each paid for by a miss.** Template literals nest, so an
+  interpolation is skipped as a balanced `${ }` region rather than closed on the next backtick.
+  A sentence assembled across `+` is folded into one string, because that is one sentence on
+  screen and a table quotes it whole. And a table's quoted spans are paired by PARITY, never by
+  regex search: a search-based matcher re-pairs from the next delimiter whenever a span falls
+  outside its length window, and from there it reads the GAPS BETWEEN code spans as though they
+  were the quotations. That one is why the first version reported clean over real drift.
+
+  Two exclusions are deliberate. A quotation whose only extra mark is a LEADING dash is the
+  component's label-joiner, not drift: `resolution-expander.tsx` renders `— {copy.prompt}`
+  where `prompt` carries no dash, and those joiners were ruled deliberate on 2026-09-13. And
+  prose that makes a CLAIM about the copy without quoting it — a module header saying
+  "transcribed verbatim from the handoff" — is invisible to any string matcher; four of those
+  were found by grepping for the claim instead, and no check covers them.
+
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The

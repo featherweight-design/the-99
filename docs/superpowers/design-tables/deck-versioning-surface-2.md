@@ -697,7 +697,7 @@ discard confirm reached from this page). Diff source: `deck_cards` against the n
 
 1. **The lede.** Canvas: `Nothing here is a decision except the pulls. Tap any card to open it.
    Commit turns this into v3 and hands you the buy list.` Copy module `review.lede(version)`:
-   `Nothing here is a decision except the pulls. The deck page already shows this list — this is
+   `Nothing here is a decision except the pulls. The deck page already shows this list: this is
    what it costs to lock in as v{n}.` Same first sentence, different body, and the canvas's
    "Tap" is a touch verb on a 1180px frame. (**Amended 2026-09-13**: the shipped body dropped
    `this page exists to show you what it costs`, which restated the sentence before it. Hugh's
