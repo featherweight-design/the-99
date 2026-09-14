@@ -72,6 +72,7 @@ function renderDecklist(
     fetchCard?: (oracleId: string) => Promise<unknown>;
     spentSlot?: DeckDetailCard | null;
     filter?: "all" | "shopping";
+    grouping?: "type" | "role";
     pendingChanges?: ReadonlyMap<string, { from: number; to: number }>;
   } = {},
 ) {
@@ -102,7 +103,7 @@ function renderDecklist(
           filled={opts.filled ?? false}
           spentSlot={opts.spentSlot ?? null}
           filter={opts.filter ?? "shopping"}
-          grouping="role"
+          grouping={opts.grouping ?? "role"}
           onFilterChange={vi.fn()}
           onGroupingChange={vi.fn()}
           pendingChanges={opts.pendingChanges}
@@ -150,6 +151,64 @@ describe("Shopping groups by role and heads each group with the gap it closes", 
     renderDecklist([rampOwned, rampUnowned]);
     expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
     expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+  });
+});
+
+describe("the grouping toggle reaches Shopping", () => {
+  // The toggle's own pills sit above this list in both filters, so a Shopping
+  // list that answered only to `role` left the reader pressing a control that
+  // did nothing.
+  const spokenFor = makeCard({
+    oracleId: "cultivate",
+    name: "Cultivate",
+    role: "ramp",
+    typeLine: "Sorcery",
+    cardTypeGroup: "Sorceries",
+    owned: true,
+    // `over` from this deck's own vantage: a negative `free` is what makes an
+    // owned card a shopping row (isSpokenFor).
+    availability: { owned: 1, free: -1, hard: 1, soft: 0, claims: [] },
+  });
+
+  it("groups by card type when the reader asks for By type", () => {
+    renderDecklist([rampOwned, rampUnowned, drawUnowned, spokenFor], { grouping: "type" });
+
+    // The type groups these rows fall into, and no role heading.
+    expect(screen.getByText("Artifacts")).toBeInTheDocument();
+    expect(screen.getByText("Sorceries")).toBeInTheDocument();
+    expect(screen.queryByText("Ramp")).not.toBeInTheDocument();
+    expect(screen.queryByText("Draw")).not.toBeInTheDocument();
+  });
+
+  it("still lists the same cards, contested rows included, under By type", () => {
+    renderDecklist([rampOwned, rampUnowned, drawUnowned, spokenFor], { grouping: "type" });
+
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+    expect(screen.getByText("Mystic Remora")).toBeInTheDocument();
+    // Spoken for: owned, and on the list because its copies are claimed.
+    expect(screen.getByText("Cultivate")).toBeInTheDocument();
+    // An owned, unclaimed card is not a shopping row under either grouping.
+    expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
+  });
+
+  // The clause is role arithmetic — "closes 1→2" is a statement about a role's
+  // target — so a type section carries none rather than one it cannot honour.
+  it("draws no gap clause on a type section", () => {
+    renderDecklist([rampOwned, rampUnowned], { grouping: "type" });
+
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.groupGap("1", "1", "2")),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the role list, Other and the pinned spoken-for group under By role", () => {
+    renderDecklist([rampOwned, rampUnowned, spokenFor], { grouping: "role" });
+
+    expect(screen.getByText("Ramp")).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.spokenForGroupLabel),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Artifacts")).not.toBeInTheDocument();
   });
 });
 
