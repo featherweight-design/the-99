@@ -44,10 +44,16 @@ describe("availabilityState, on a deck's own decklist (selfExcluded)", () => {
     expect(availabilityState({ owned: 1, free: 0, soft: 0 }, self)).toBe("free");
   });
 
-  // free === 0 is silence even with brews waiting: there is a copy for each of
-  // them, so nothing is owed.
-  it("is free at free === 0 regardless of soft claims", () => {
-    expect(availabilityState({ owned: 2, free: 0, soft: 3 }, self)).toBe("free");
+  // Self-excluded `free === 0` is the comfortable reading, the same as `free > 0`
+  // off-decklist — and there a soft claim still wins. A brew holding the copy is
+  // the most severe thing true about it, so the soft state survives the vantage.
+  it("is soft at free === 0 when a brew wants the card", () => {
+    expect(availabilityState({ owned: 2, free: 0, soft: 3 }, self)).toBe("soft");
+  });
+
+  // And silent when nothing unfinished wants it, exactly as before.
+  it("is free at free === 0 with no soft claims", () => {
+    expect(availabilityState({ owned: 2, free: 0, soft: 0 }, self)).toBe("free");
   });
 
   // The hard branch is unreachable in this vantage. A real conflict goes

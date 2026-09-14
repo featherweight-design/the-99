@@ -170,19 +170,23 @@ export const deckVersioningCopy = {
     // deck. The visible text stays two words because the row prints both names
     // beside it; only the name spoken out of context has to carry them.
     pullA11y: (card: string, deck: string) => `Pull ${card} from ${deck}.`,
-    // The guard: the source deck has pending changes of its own, so committing it
+    // The guard: the source deck has a draft of its own, so committing it
     // automatically would sweep somebody's half-finished tinkering into a version.
-    // The deck NAME is already on the row, so the reason is a four-letter tag beside
-    // it and the action is the same width as `Pull it`. R1's two-line sentence
-    // ("that deck has its own pending changes →") was too long visually and in copy.
-    pullGuardTag: "pending",
-    pullGuardAction: "Open →",
-    // Never rendered — the action's accessible name.
+    // The deck NAME is already on the row, so the reason is a tag beside it.
+    //
+    // The tag names the DECK, because a bare `pending` did not: read next to a
+    // card name it was taken for a pending change to that card, on a row where
+    // the card is not being touched at all. R1's two-line sentence ("that deck
+    // has its own pending changes →") was too long visually and in copy.
+    pullGuardTag: "deck in draft",
+    // Never rendered — the row's accessible description, the way the commander
+    // guard's is. It names no action because there is none: the `Open →` link
+    // that used to carry this sentence pushed the card name off the desktop row.
     pullGuardA11y: (deck: string, card: string) =>
-      `${deck} has pending changes of its own. Open it to release ${card}.`,
+      `${deck} has a draft of its own, so ${card} cannot be pulled from it.`,
     // Third guard: commander claims are in the availability model, so `Pull it` would
-    // otherwise be offered on a row where it can only ever fail. Same tag shape, NO
-    // action — no route releases it, so an "Open →" would lead somewhere that cannot help.
+    // otherwise be offered on a row where it can only ever fail. Same tag shape, and
+    // the same silence — no route releases it, so there is nothing to offer.
     commanderGuardTag: "commander",
     commanderGuardA11y: (deck: string, card: string) =>
       `${card} is ${deck}'s commander. It cannot be pulled.`,

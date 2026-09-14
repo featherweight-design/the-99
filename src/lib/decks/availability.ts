@@ -114,6 +114,13 @@ export type AvailabilityState = "free" | "soft" | "hard" | "over";
  * matching `excludeDeckId`; passing it against an unexcluded figure silently
  * converts every genuine hard claim into silence.
  *
+ * The soft state survives that vantage. `free === 0` self-excluded is the same
+ * comfortable reading `free > 0` is off-decklist — the collection covers every
+ * claim, this deck's included — so a soft claim on the copy is still the most
+ * severe thing true about it, and returning silence before reading `soft` hid a
+ * state the design draws. It is reached only where `soft > 0`, so a card no
+ * unfinished deck wants is silent exactly as before.
+ *
  * The `owned <= 0` guard is tested against TRUE owned, never the excluded
  * supply, and it stays first: it keeps the marker off cards the player does not
  * own, which are reachable on the Add panel.
@@ -124,7 +131,7 @@ export function availabilityState(
 ): AvailabilityState {
   if (a.owned <= 0) return "free";
   if (a.free < 0) return "over";
-  if (a.free === 0) return opts?.selfExcluded ? "free" : "hard";
+  if (a.free === 0 && !opts?.selfExcluded) return "hard";
   if (a.soft > 0) return "soft";
   return "free";
 }

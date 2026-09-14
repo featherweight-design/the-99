@@ -23,10 +23,9 @@ import { MutationError } from "./mutation-error";
 
 const copy = deckVersioningCopy.review;
 
-/** The box both actions stand in: 44px on phone, 34px above it. One geometry,
- *  because a guarded row and a pullable one have to be the same width and the
- *  same height — that is the whole reason the guard is a tag and a link rather
- *  than R1's sentence. */
+/** The box the pull stands in: 44px on phone, 34px above it. It was shared with
+ *  the guards' own link, which is gone — a guarded row now draws a tag and no
+ *  control, so the two rows no longer have to be the same width. */
 const ACTION_BOX =
   "inline-flex items-center justify-center min-h-[44px] md:min-h-[34px] px-[16px] md:px-[11px] " +
   "rounded-[7px] font-sans font-semibold text-[12.5px] md:text-[12px] bg-transparent " +
@@ -36,14 +35,10 @@ const ACTION_BOX =
  *  thing on this page that writes. */
 const PULL_BUTTON = `${ACTION_BOX} text-[color:var(--accent)]`;
 
-/** The same box in the reading ink, because leaving a deck to release a card is
- *  navigation and not the decision the accent stands for. */
-const GUARD_ACTION = `${ACTION_BOX} text-[color:var(--fg)] no-underline`;
-
 /** The guard's word, in the buy tag's shape: mono, uppercase, on a flat plate.
- *  Four letters beside a deck name the row already prints, rather than R1's
- *  two-line sentence — which made a guarded row a different width from a
- *  pullable one. The sentence lives in the action's accessible name. */
+ *  Three words beside a deck name the row already prints, rather than R1's
+ *  two-line sentence. The sentence itself lives in the row's own accessible
+ *  description, because the tag has no control to hang it on. */
 const GUARD_TAG =
   "font-mono rounded-[4px] px-[5px] py-[1px] text-[9.5px] uppercase tracking-[0.1em] flex-none " +
   "[border:1px_solid_var(--accent-shadow)]";
@@ -113,10 +108,17 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
 
   // The source deck has a draft of its own. Committing it here would sweep
   // somebody's half-finished tinkering into a version they never asked for, so
-  // the way forward is that deck — a live link, not a disabled `Pull it`.
+  // no pull is offered — the tag names the reason and nothing more.
+  //
+  // It drew an `Open →` link to that deck, and the link is what broke the row:
+  // the plate's desktop items are all unshrinkable, so an anchor beside the tag
+  // took its width out of the card name. The holding deck is named on the row,
+  // and reaching it is a search away; a row whose card cannot be read is worse.
   if (claim.pending) {
     return (
-      <span className="inline-flex items-center gap-[5px] flex-none">
+      <span className="inline-flex items-center flex-none">
+        {/* Unnamed, like the commander tag above it: the sentence behind it is
+            the row's, carried in the name trigger's `aria-describedby`. */}
         <span
           className={GUARD_TAG}
           aria-hidden="true"
@@ -124,13 +126,6 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
         >
           {copy.pullGuardTag}
         </span>
-        <a
-          href={`/decks/${claim.id}`}
-          className={GUARD_ACTION}
-          aria-label={copy.pullGuardA11y(claim.name, card.name)}
-        >
-          {copy.pullGuardAction}
-        </a>
       </span>
     );
   }
