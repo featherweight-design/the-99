@@ -137,6 +137,30 @@ describe("FilterPanel", () => {
     unmount();
   });
 
+  // Focus returns to the trigger on every close, and a browser scrolls a focused element into
+  // view — which put a reader who had scrolled away back at the top of the list for having
+  // dismissed a sheet. The distinction is who dismissed it: the keyboard has to see where
+  // focus went, a thumb has not asked to be moved.
+  it("returns focus without scrolling when a pointer dismisses the sheet", () => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("returns focus the visible way when Escape dismisses it", () => {
+    setViewport(false);
+    renderPanel();
+    const trigger = screen.getByRole("button", { name: /Filter by set/ });
+    const focus = vi.spyOn(trigger, "focus");
+    fireEvent.click(trigger);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: false });
+  });
+
   it("mounts only the desktop popover above the breakpoint", () => {
     setViewport(true);
     renderPanel();

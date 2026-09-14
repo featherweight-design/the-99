@@ -90,12 +90,12 @@ const SURFACES = [
     label: "/collection · Sort panel",
     path: "/collection",
     trigger: (page) => onPage(page, 'button[aria-label^="Sort cards"]:visible').first(),
-    // Closing returns focus to the trigger, which sits above the list and is off-screen by
-    // the time the reader has scrolled — so the browser scrolls it back into view. That is
-    // the focus-return contract, not the lock failing, and it is what `FilterPanel`'s own
-    // `preventScroll` path already documents for the scroll-dismiss case. The lock is still
-    // asserted while the panel is up; only the offset it releases to is not.
-    returnsToTrigger: true,
+    // Dismissed by its own `Done` rather than by Escape, and the offset IS asserted.
+    // Focus returns to the trigger either way — but a pointer dismissal suppresses the
+    // scroll that focus would otherwise cause, because the trigger is off-screen precisely
+    // because the reader scrolled away from it. Escape keeps the scroll, so that the
+    // keyboard can see where focus went; that path is the unit tests'.
+    dismiss: (page) => onPage(page, "button:visible").filter({ hasText: /^Done$/ }).first().click(),
   },
   {
     label: "/collection · card modal",
@@ -243,19 +243,17 @@ async function run() {
       }
 
       // Released on close, or the route the reader goes back to cannot scroll at all.
-      await page.keyboard.press("Escape");
+      if (surface.dismiss) await surface.dismiss(page);
+      else await page.keyboard.press("Escape");
       await page.waitForTimeout(400);
       const released = await page.evaluate(() => ({
         overflow: document.body.style.overflow,
         y: Math.round(window.scrollY),
       }));
       failures += !report(
-        surface.returnsToTrigger
-          ? `${surface.label} · releases the page`
-          : `${surface.label} · releases the page where it was`,
-        released.overflow !== "hidden" && (surface.returnsToTrigger || released.y === start),
-        `body overflow "${released.overflow || "(none)"}", back at y ${released.y} from ${start}`
-        + (surface.returnsToTrigger ? " — offset not asserted: focus returns to the trigger" : ""),
+        `${surface.label} · releases the page where it was`,
+        released.overflow !== "hidden" && released.y === start,
+        `body overflow "${released.overflow || "(none)"}", back at y ${released.y} from ${start}`,
       );
     }
   } finally {

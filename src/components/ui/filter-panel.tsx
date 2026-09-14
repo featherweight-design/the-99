@@ -240,8 +240,18 @@ export function FilterPanel({
     [options, selected, searchable, widthPx],
   );
 
-  // `preventScroll` is for the scroll-dismiss path only: the panel closes because
-  // the user scrolled, so yanking the page back to the trigger would fight them.
+  /**
+   * `preventScroll` is for every dismissal a POINTER made, and for none a keyboard made.
+   *
+   * Focus returns to the trigger on close, and a browser scrolls a focused element into
+   * view — so a reader who opened the sheet 400px down was put back at the top of the list
+   * for having closed it. That is the right behaviour for the keyboard, which has to be able
+   * to see where focus went, and the wrong one for a thumb: the trigger is off-screen
+   * precisely because the reader scrolled away from it, and they did not ask to go back.
+   *
+   * So Escape keeps the scroll and every pointer path suppresses it — the scroll-dismiss
+   * path this flag was added for is one of them rather than the only one.
+   */
   const close = useCallback((opts?: { preventScroll?: boolean }) => {
     setOpen(false);
     setActiveCode(null);
@@ -327,13 +337,19 @@ export function FilterPanel({
     return () => clearTimeout(t);
   }, [open, hasQuery, matches.length, query, onAnnounce, copy]);
 
-  function toggle(option: FilterPanelOption) {
+  /**
+   * @param byPointer  Which of the two ways this row was activated. It decides only whether
+   *   the dismissal that follows a single-select puts the reader back at the trigger: a
+   *   keyboard user has to be able to see where focus went, and a thumb has not asked to be
+   *   returned to a control it deliberately scrolled away from.
+   */
+  function toggle(option: FilterPanelOption, byPointer: boolean) {
     if (option.disabled) return; // 0-count rows never toggle, by pointer or by key
     onToggle(option.code);
     // Single-select commits and dismisses: with one row always chosen there is
     // nothing further to do in the panel, and leaving it up invites a second
     // choice that would silently discard the first.
-    if (selectionMode === "single") close();
+    if (selectionMode === "single") close({ preventScroll: byPointer });
   }
 
   // Mobile only: aria-modal means focus must not escape the sheet.
@@ -395,7 +411,7 @@ export function FilterPanel({
       const option = visibleOptions().find((o) => o.code === activeCode);
       if (option) {
         e.preventDefault();
-        toggle(option);
+        toggle(option, false);
       }
       return;
     }
@@ -433,7 +449,7 @@ export function FilterPanel({
     const travelled = Math.max(0, e.clientY - dragStartY.current);
     dragStartY.current = null;
     setDragY(0);
-    if (travelled >= DRAG_DISMISS_PX) close();
+    if (travelled >= DRAG_DISMISS_PX) close({ preventScroll: true });
   }
 
   function optionAria(option: FilterPanelOption, isSelected: boolean): string {
@@ -499,7 +515,7 @@ export function FilterPanel({
         aria-setsize={setSize}
         title={option.label}
         style={isDesktop ? { minHeight: desktopRowMinPx } : undefined}
-        onClick={() => toggle(option)}
+        onClick={() => toggle(option, true)}
         className={[
           // items-center per §Option row, at the cost of a wrapped two-line name
           // centring its checkbox instead of aligning it to the first line —
@@ -729,7 +745,10 @@ export function FilterPanel({
           clearButton
         ) : (
           // Dismiss only — it commits nothing.
-          <PrimaryButton onClick={() => close()} className="px-[22px] py-[10px] text-[13.5px]">
+          <PrimaryButton
+            onClick={() => close({ preventScroll: true })}
+            className="px-[22px] py-[10px] text-[13.5px]"
+          >
             {copy.done}
           </PrimaryButton>
         )}
@@ -939,7 +958,7 @@ export function FilterPanel({
             {/* Scrim — the same one the shipped card modal uses. Tap dismisses. */}
             <div
               role="presentation"
-              onClick={() => close()}
+              onClick={() => close({ preventScroll: true })}
               className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]"
             />
             <div
@@ -981,7 +1000,7 @@ export function FilterPanel({
                 </h2>
                 <button
                   type="button"
-                  onClick={() => close()}
+                  onClick={() => close({ preventScroll: true })}
                   aria-label={copy.closeLabel}
                   className="flex h-[30px] w-[30px] items-center justify-center rounded-full text-[13px] bg-[color:var(--surface-raised)] text-[color:var(--fg-muted)] border border-solid border-[color:var(--border-strong)]"
                 >
