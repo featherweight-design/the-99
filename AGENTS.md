@@ -136,7 +136,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   updated payload**; the client refresh was pure duplication, and removing it halved the traffic
   with no staleness, which the probe proves by asserting the segment's count, the renamed shelf
   and the deleted one. It files, unfiles, renames and deletes its own folder in a `finally`, and
-  counts loads across nine writes rather than one, because the fault was intermittent. One caveat
+  counts loads across twelve writes — a create, nine moves, a rename and a delete — rather than
+  one, because the fault was intermittent. One caveat
   it taught: the FIRST create after a cold `pnpm dev` does reload the document, and that is Next
   compiling the route, not the app.
 - `pnpm probe:stats` proves the deck-stats loader against a real Postgres by calling the

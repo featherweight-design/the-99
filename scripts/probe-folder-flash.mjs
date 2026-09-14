@@ -24,11 +24,19 @@ const {
   E2E_AUDIT_USER_EMAIL: EMAIL,
   E2E_AUDIT_USER_PASSWORD: PASSWORD,
   DATABASE_URL,
-} = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+} = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "E2E_AUDIT_USER_PASSWORD",
+  "CLERK_SECRET_KEY",
+  "DATABASE_URL",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const FOLDER = `probe-flash-${Date.now()}`;
 
 const pool = new Pool({ connectionString: DATABASE_URL });
+// The rows THIS run made, so cleanup names them instead of matching a prefix:
+// a name prefix would reach another run's folder, and unfile decks it owns.
+const madeFolderIds = [];
 
 let failures = 0;
 const check = (label, actual, expected) => {
@@ -40,6 +48,16 @@ const check = (label, actual, expected) => {
 async function main() {
   await clerkSetup();
   const browser = await chromium.launch();
+  try {
+    await run(browser);
+  } finally {
+    // Teardown belongs here rather than at the end of the happy path: any
+    // selector wait that throws would otherwise orphan Chromium.
+    await browser.close();
+  }
+}
+
+async function run(browser) {
   const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
   const page = await context.newPage();
 
@@ -73,7 +91,14 @@ async function main() {
   );
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 
-  await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
+  // TWO VISITS, deliberately. The FIRST create after a cold `pnpm dev` reloads
+  // the document while Next compiles the route, and that is the bundler rather
+  // than the app — so the route is compiled and its chunks are in cache before
+  // any counter starts. Without this the probe fails a build with no defect in
+  // it, which is worse than not checking at all.
+  await page.goto(`${BASE}/decks`, { waitUntil: "load" });
+  await page.waitForSelector("[data-shelf-line]", { timeout: 30_000 });
+  await page.goto(`${BASE}/decks`, { waitUntil: "load" });
   await page.waitForSelector("[data-shelf-line]", { timeout: 30_000 });
 
   // Every appearance of the route's loading screen, and every RSC round trip.
@@ -112,10 +137,18 @@ async function main() {
   const createFlashes = await page.evaluate(() => window.__flashes ?? "context was replaced");
   check("creating a folder flashes no loading screen", createFlashes, 0);
   check("creating a folder reloads the document", loads, 0);
-  console.log(`      server round trips for the create: ${rsc - rscBeforeCreate}`);
+  // THE POINT OF THE PROBE. One fetch of `/decks` per write: the Server Action's
+  // own `revalidatePath`. A reintroduced `router.refresh()` makes it two, and a
+  // final DOM that happens to be current would hide that from every other check
+  // here — so the count is asserted, not printed.
+  check("the create costs one server round trip", rsc - rscBeforeCreate, 1);
   console.log(`      navigations: ${JSON.stringify(loadUrls)}`);
 
   // The shelf the reader is on after a create. Hugh's call: it must not move.
+  const made = await pool.query("select id from deck_folders where name = $1", [FOLDER]);
+  made.rows.forEach((r) => madeFolderIds.push(r.id));
+  check("the create wrote exactly one folder row", made.rows.length, 1);
+
   const onShelf = await page.evaluate(
     () => new URLSearchParams(window.location.search).get("folder"),
   );
@@ -137,7 +170,7 @@ async function main() {
   const moveFlashes = await page.evaluate(() => window.__flashes ?? "context was replaced");
   check("filing a deck flashes no loading screen", moveFlashes, 0);
   check("filing a deck reloads the document", loads, 0);
-  console.log(`      server round trips for the move: ${rsc - rscBeforeMove}`);
+  check("the move costs one server round trip", rsc - rscBeforeMove, 1);
 
   // And the menu is gone, rather than back at its first mode.
   const menuOpen = await page.locator("[role=dialog] button[aria-label^='Move ']").count();
@@ -155,6 +188,7 @@ async function main() {
 
   // Repeat the round trip a few times: the reload was intermittent, so one
   // clean pass proves nothing.
+  const rscBeforeRepeats = rsc;
   for (let i = 0; i < 4; i += 1) {
     await page.locator("li button[aria-label^='Actions for']").first().click();
     await page.locator("button[aria-label^='Move ']").first().click();
@@ -166,6 +200,8 @@ async function main() {
     await page.waitForTimeout(1200);
   }
   check("eight more moves reload the document", loads, 0);
+  // Eight writes, eight revalidations, and nothing else.
+  check("eight more moves cost eight server round trips", rsc - rscBeforeRepeats, 8);
 
   // Rename and delete lean on the same invalidation. If the action's own
   // `revalidatePath` is the only refresh in the round, these are where a
@@ -177,10 +213,12 @@ async function main() {
       await page.waitForTimeout(800);
       await page.locator("[data-shelf-line] button[aria-label^='Actions for']").first().click();
     });
+  const rscBeforeRename = rsc;
   await page.getByRole("button", { name: "Rename" }).click();
   await page.getByLabel("Folder name").fill(`${FOLDER}-renamed`);
   await page.getByRole("button", { name: "Save" }).click();
   await page.waitForTimeout(2000);
+  check("the rename costs one server round trip", rsc - rscBeforeRename, 1);
   const renamed = await page.evaluate(
     (name) =>
       [...document.querySelectorAll("[data-shelf-line] button")].some((b) =>
@@ -191,6 +229,7 @@ async function main() {
   check("the renamed shelf shows its new name without a client refresh", renamed, true);
 
   await page.locator("[data-shelf-line] button[aria-label^='Actions for']").first().click();
+  const rscBeforeDelete = rsc;
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete folder" }).click();
   await page.waitForTimeout(2500);
@@ -202,11 +241,10 @@ async function main() {
     FOLDER,
   );
   check("the deleted shelf leaves the line without a client refresh", gone, true);
+  check("the delete costs one server round trip", rsc - rscBeforeDelete, 1);
   check("and the whole sequence reloaded the document never", loads, 0);
   const lateFlashes = await page.evaluate(() => window.__flashes ?? "context was replaced");
   check("eight more moves flash no loading screen", lateFlashes, 0);
-
-  await browser.close();
 }
 
 main()
@@ -216,11 +254,14 @@ main()
   })
   .finally(async () => {
     const c = await pool.connect();
-    await c.query(
-      "update decks set folder_id = null where folder_id in (select id from deck_folders where name like $1)",
-      [`${FOLDER}%`],
-    );
-    await c.query("delete from deck_folders where name like $1", [`${FOLDER}%`]);
+    // By id, and only the ids this run made. A `like` on the name would reach a
+    // concurrent run's folder and unfile decks belonging to it.
+    if (madeFolderIds.length > 0) {
+      await c.query("update decks set folder_id = null where folder_id = any($1::uuid[])", [
+        madeFolderIds,
+      ]);
+      await c.query("delete from deck_folders where id = any($1::uuid[])", [madeFolderIds]);
+    }
     c.release();
     await pool.end();
     console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);

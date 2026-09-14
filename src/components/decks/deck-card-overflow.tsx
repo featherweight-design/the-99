@@ -45,6 +45,14 @@ interface DeckCardOverflowProps {
    * a named shelf, where the deck leaves the grid and the view takes focus.
    */
   keepsFocus: boolean;
+  /**
+   * Bumped when the route's create dialog, opened from THIS card's move mode,
+   * has finished filing the deck into the folder it made. That path never
+   * reaches `onMoved` below — the move is performed by the dialog, not by the
+   * destination list — so without this the panel would sit open in move mode
+   * behind a dialog that already did the work. Null for every other card.
+   */
+  closeAfterCreate: number | null;
 }
 
 /**
@@ -64,6 +72,7 @@ export function DeckCardOverflow({
   say,
   onMoved,
   keepsFocus,
+  closeAfterCreate,
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename" | "move">("menu");
@@ -120,6 +129,22 @@ export function DeckCardOverflow({
   if (movedTo && movedTo.from !== folderId) setMovedTo(null);
   const shelf = movedTo ?? { id: folderId, name: folderName };
   const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
+
+  // The seq already acted on. A ref because this is a one-shot instruction
+  // after a commit, and holding it in state would set state inside the effect
+  // that reads it — the cascading render this repo's lint rejects.
+  const closedSeq = useRef(closeAfterCreate);
+  useEffect(() => {
+    if (closeAfterCreate === null || closeAfterCreate === closedSeq.current) return;
+    closedSeq.current = closeAfterCreate;
+    // Same close as a move from the destination list (errata E21): the act is
+    // finished, so the panel goes. Focus returns to this card's ⋯ where the
+    // card survives; where it does not, the dialog's own dismissal hands focus
+    // to the shelf control instead.
+    setOpen(false);
+    setMode("menu");
+    if (keepsFocus) buttonRef.current?.focus();
+  }, [closeAfterCreate, keepsFocus]);
 
   useEffect(() => {
     if (mode !== "menu" || !wantsMoveRowFocus.current) return;

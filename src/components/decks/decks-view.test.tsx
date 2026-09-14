@@ -569,13 +569,50 @@ describe("DecksView", () => {
     // Hugh's call, 2026-09-13 (errata E20): the new shelf is empty, so walking
     // the reader to it confirms nothing. The segment appears in the line and
     // the region says it was made.
+    //
+    // Started on a NAMED shelf on purpose. From All decks the URL is already
+    // empty, so asserting it is still empty passes whether the reader moved or
+    // not — the assertion has to be able to fail.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
     const { container } = renderWide(view(shelvedDecks(), twoFolders));
     fireEvent.click(screen.getByRole("button", { name: /New folder/ }));
     fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
-    await waitFor(() => expect(window.location.search).toBe(""));
-    const said = [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent);
-    expect(said).toContain("Folder “Draft pile” created.");
+    await waitFor(() =>
+      expect(
+        [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Folder “Draft pile” created."),
+    );
+    expect(new URLSearchParams(window.location.search).get("folder")).toBe(FOLDER_A);
+    // And the shelf the reader is still on is the one whose decks are shown.
+    expect(screen.getByText("Filed one")).toBeInTheDocument();
+    // The new segment is in the line without a refresh landing first.
+    expect(
+      [...container.querySelectorAll("[data-shelf-line] button")].some((b) =>
+        b.textContent?.startsWith("Draft pile"),
+      ),
+    ).toBe(true);
+  });
+
+  it("closes the panel that asked for a folder once the deck is filed", async () => {
+    // The other half of errata E21. A move from the destination list closes the
+    // panel in `deck-card-overflow`; a move performed BY THE CREATE DIALOG never
+    // reaches that handler, so without the signal this panel sits open in move
+    // mode behind a dialog that already did the work.
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    // The move list's own last row, not the shelf line's button beside it.
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    // The trigger, not the Move row: the row only exists in the panel's MENU
+    // mode, so it is already absent while the destination list is up and an
+    // assertion against it would pass with no fix at all.
+    const trigger = screen.getAllByRole("button", { name: /^Actions for/ })[0];
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
   });
 
   it("ignores a hand-edited folder id", () => {

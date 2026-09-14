@@ -265,6 +265,9 @@ export function DecksView({
    * unfiled while the page walks off to the new empty shelf.
    */
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
+  // Which card's overflow panel a finished create-from-move should close, and a
+  // sequence so a second create on the same card closes it again.
+  const [createFiled, setCreateFiled] = useState<{ deckId: string; seq: number } | null>(null);
 
   const [creating, setCreating] = useState(false);
   /**
@@ -889,6 +892,12 @@ export function DecksView({
                 // made is a worse answer than saying it was made. The new
                 // segment appearing in the line is the visible half; the
                 // sentence below is the spoken one.
+                // The panel that asked for this folder closes, exactly as a move
+                // from the destination list closes it (errata E21). This path
+                // never reaches that handler — the move happens here — so the
+                // card is told directly.
+                if (creatingFor)
+                  setCreateFiled((prev) => ({ deckId: creatingFor, seq: (prev?.seq ?? 0) + 1 }));
                 say(
                   filed
                     ? folderCopy.move.announceFiled(result.folder.name)
@@ -953,6 +962,9 @@ export function DecksView({
                     }}
                     say={say}
                     keepsFocus={state.shelf === ALL_DECKS}
+                    closeAfterCreate={
+                      createFiled?.deckId === deck.id ? createFiled.seq : null
+                    }
                     onMoved={({ refused }) => {
                       // Focus goes to the shelf whenever this card may not
                       // survive: on a named shelf a successful move takes it off
