@@ -544,6 +544,13 @@ export function DecksView({
         size={size}
         say={say}
         onRenamed={refresh}
+        onGone={() => {
+          // The folder went while the panel was open: this segment, and the
+          // focused trigger inside it, are removed by the refresh.
+          onShelf(ALL_DECKS);
+          refresh();
+          requestAnimationFrame(focusShelfControl);
+        }}
         onDeleted={() => {
           // Selection falls back to All decks (STATES D3): the shelf the reader
           // was standing on has gone, and landing them on it is the one thing

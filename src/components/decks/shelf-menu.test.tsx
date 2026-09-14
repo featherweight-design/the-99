@@ -26,6 +26,7 @@ const { ShelfMenu } = await import("./shelf-menu");
 const say = vi.fn();
 const onRenamed = vi.fn();
 const onDeleted = vi.fn();
+const onGone = vi.fn();
 
 beforeEach(() => {
   stub.rename = null;
@@ -35,6 +36,7 @@ beforeEach(() => {
   say.mockClear();
   onRenamed.mockClear();
   onDeleted.mockClear();
+  onGone.mockClear();
 });
 
 const menu = (deckCount = 4) =>
@@ -45,6 +47,7 @@ const menu = (deckCount = 4) =>
       deckCount={deckCount}
       onRenamed={onRenamed}
       onDeleted={onDeleted}
+      onGone={onGone}
       say={say}
     />,
   );
@@ -167,10 +170,11 @@ describe("ShelfMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
     fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Anything" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    // Refreshed, because the page is stale — but nothing was renamed, so
-    // nothing is announced as though it had been.
-    await waitFor(() => expect(onRenamed).toHaveBeenCalled());
+    // Its own path: the route refreshes and rescues focus, and nothing is
+    // announced as though a rename had happened.
+    await waitFor(() => expect(onGone).toHaveBeenCalled());
     expect(say).not.toHaveBeenCalled();
+    expect(onRenamed).not.toHaveBeenCalled();
   });
 
   it("focuses the first control on every mode change", () => {

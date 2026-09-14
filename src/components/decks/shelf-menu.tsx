@@ -33,6 +33,7 @@ export function ShelfMenu({
   deckCount,
   onRenamed,
   onDeleted,
+  onGone,
   say,
   size = "wide",
 }: {
@@ -42,6 +43,8 @@ export function ShelfMenu({
   deckCount: number;
   onRenamed: (name: string) => void;
   onDeleted: () => void;
+  /** The folder was gone when the rename landed: refresh, and rescue focus. */
+  onGone: () => void;
   say: (announcement: string) => void;
   /** 22px inside the segment on the wide line; a 44px target on the phone. */
   size?: "wide" | "compact";
@@ -60,7 +63,7 @@ export function ShelfMenu({
    * records for its own control row — "clipping this group hides every panel the
    * chassis opens". A fixed box escapes every clipping ancestor.
    */
-  const [at, setAt] = useState<{ top: number; right: number } | null>(null);
+  const [at, setAt] = useState<{ top: number; left: number } | null>(null);
   /**
    * A write in flight. Closing is not cancelling — the action lands either way
    * and its callback still moves the page — so neither Escape, nor the trigger,
@@ -69,11 +72,31 @@ export function ShelfMenu({
   const [busy, setBusy] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
 
-  function close() {
+  /**
+   * CLAMPED TO THE VIEWPORT. Right-anchoring alone put the panel's left edge
+   * off-screen on a phone: the trigger sits just after a left-aligned shelf
+   * name, and 248px to the left of it is negative at 390px. The panel is placed
+   * from the left, aligned to the trigger's right edge where there is room and
+   * pushed back inside the margin where there is not.
+   */
+  function place() {
+    const box = trigger.current?.getBoundingClientRect();
+    if (!box) return;
+    const width = 248;
+    const margin = 8;
+    const wanted = box.right - width;
+    const left = Math.min(Math.max(margin, wanted), window.innerWidth - width - margin);
+    setAt({ top: box.bottom + 6, left: Math.max(margin, left) });
+  }
+
+  function close(restoreFocus = true) {
     if (busy) return;
     setOpen(false);
     setMode("menu");
-    trigger.current?.focus();
+    // Not on an outside press: the thing pressed takes focus itself, and if it
+    // was another shelf, this trigger is about to be unmounted with the segment
+    // that carries it.
+    if (restoreFocus) trigger.current?.focus();
   }
 
   // The anchor moves: the page scrolls, the line's own scrollport scrolls, the
@@ -82,10 +105,6 @@ export function ShelfMenu({
   // now.
   useEffect(() => {
     if (!open) return;
-    function place() {
-      const box = trigger.current?.getBoundingClientRect();
-      if (box) setAt({ top: box.bottom + 6, right: window.innerWidth - box.right });
-    }
     window.addEventListener("scroll", place, true);
     window.addEventListener("resize", place);
     return () => {
@@ -100,7 +119,7 @@ export function ShelfMenu({
   useEffect(() => {
     if (!open) return;
     function onPointerDown(e: PointerEvent) {
-      if (!wrapper.current?.contains(e.target as Node)) close();
+      if (!wrapper.current?.contains(e.target as Node)) close(false);
     }
     window.addEventListener("pointerdown", onPointerDown);
     return () => window.removeEventListener("pointerdown", onPointerDown);
@@ -121,8 +140,7 @@ export function ShelfMenu({
           e.preventDefault();
           e.stopPropagation();
           if (busy) return;
-          const box = trigger.current?.getBoundingClientRect();
-          if (box) setAt({ top: box.bottom + 6, right: window.innerWidth - box.right });
+          place();
           setOpen((o) => !o);
           setMode("menu");
         }}
@@ -184,11 +202,12 @@ export function ShelfMenu({
               onGone={() => {
                 // Refused: the folder is gone or not theirs. The page is stale
                 // and needs the refresh, but nothing was renamed and nothing may
-                // be announced as though it had been.
-                onRenamed(name);
+                // be announced as though it had been — and the segment carrying
+                // this menu is about to go with it, so the route rescues focus.
                 setBusy(false);
                 setOpen(false);
                 setMode("menu");
+                onGone();
               }}
               onCancel={() => setMode("menu")}
             />
@@ -226,7 +245,7 @@ function Panel({
 }: {
   ref: React.RefObject<HTMLDivElement | null>;
   label: string;
-  at: { top: number; right: number } | null;
+  at: { top: number; left: number } | null;
   mode: Mode;
   onDismiss: () => void;
   children: React.ReactNode;
@@ -252,7 +271,7 @@ function Panel({
       aria-modal="true"
       aria-label={label}
       tabIndex={-1}
-      style={at ? { position: "fixed", top: at.top, right: at.right } : undefined}
+      style={at ? { position: "fixed", top: at.top, left: at.left } : undefined}
       // `whitespace-normal` because the wide segment this lives inside sets
       // `whitespace-nowrap`, and fixed positioning changes where a box is drawn,
       // not what it inherits — the delete sentence was running off the panel's
