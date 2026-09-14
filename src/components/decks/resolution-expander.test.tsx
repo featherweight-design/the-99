@@ -410,7 +410,7 @@ describe("the resolution row's availability marker", () => {
     hard: names.length,
     soft: 0,
     free: 0,
-    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
+    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false, senior: true })),
   });
 
   const mount = (r: SearchResult, deckOracleIds: string[] = [], commanderOracleId?: string) => {

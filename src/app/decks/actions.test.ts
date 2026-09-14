@@ -1436,12 +1436,17 @@ describe("pullCardFromDeck", () => {
 
   /** Both movable cards owned, both entirely spoken for, and the source deck is
    *  the deck holding them. This is the claim shape a pull is offered against;
-   *  without it there is nothing in anybody's box to take. */
+   *  without it there is nothing in anybody's box to take.
+   *
+   *  `free` is −1 from the asking deck's vantage: one copy owned, sleeved senior
+   *  in the source deck, and this deck's own draft asking for it. A figure of 0
+   *  would say the collection covers the ask, and the pull would be refused as
+   *  unnecessary. */
   function claimedBySource() {
-    const claim = { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false };
+    const claim = { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false, commander: false, senior: true };
     return new Map([CARD_A, CARD_B].map((oracleId) => [
       oracleId,
-      { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] },
+      { owned: 1, hard: 1, soft: 0, free: -1, claims: [claim] },
     ])) as unknown as Awaited<ReturnType<typeof loadAvailability>>;
   }
 
@@ -1468,7 +1473,7 @@ describe("pullCardFromDeck", () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
     vi.mocked(loadAvailability).mockResolvedValue(
-      new Map([[CARD_A, { owned: 1, hard: 0, soft: 0, free: 1, claims: [] }]]),
+      new Map([[CARD_A, { owned: 1, hard: 0, soft: 0, free: 0, claims: [] }]]),
     );
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(false);
@@ -1491,10 +1496,10 @@ describe("pullCardFromDeck", () => {
       .mockResolvedValueOnce(claimedBySource())
       .mockResolvedValueOnce(
         new Map([[CARD_A, {
-          owned: 2, hard: 2, soft: 0, free: 0,
+          owned: 2, hard: 2, soft: 0, free: -1,
           claims: [
-            { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false },
-            { id: THIRD_ID, name: "Latecomer", quantity: 1, mature: true, pending: false },
+            { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false, commander: false, senior: true },
+            { id: THIRD_ID, name: "Latecomer", quantity: 1, mature: true, pending: false, commander: false, senior: true },
           ],
         }]]) as unknown as Awaited<ReturnType<typeof loadAvailability>>,
       );
@@ -1513,6 +1518,33 @@ describe("pullCardFromDeck", () => {
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(true);
     expect(commitVersion).toHaveBeenCalled();
+  });
+
+  // The bucket check answers for the card, not for the deck this call named. On a
+  // card two decks hold — one senior to the asking deck, one junior — the senior
+  // claim alone keeps the bucket `claimed`, so a request naming the junior deck
+  // would ride in on it and empty a box whose copy was already outside this
+  // deck's `free`. The named source has to be releasable itself.
+  it("refuses a source whose own claim is junior to the asking deck", async () => {
+    const THIRD_ID = "77777777-7777-4777-8777-777777777777";
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    // Both holders are named by both reads, so both are inside the locked set and
+    // the unlocked-claimant guard has nothing to say — this refusal is the
+    // membership test's alone.
+    vi.mocked(loadAvailability).mockResolvedValue(
+      new Map([[CARD_A, {
+        owned: 2, hard: 2, soft: 0, free: -1,
+        claims: [
+          { id: SOURCE_ID, name: "Source deck", quantity: 1, mature: true, pending: false, commander: false, senior: false },
+          { id: THIRD_ID, name: "Senior deck", quantity: 1, mature: true, pending: false, commander: false, senior: true },
+        ],
+      }]]) as unknown as Awaited<ReturnType<typeof loadAvailability>>,
+    );
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.any(String) });
+    expect(commitVersion).not.toHaveBeenCalled();
+    expect(stub.state.deleteCalls).toHaveLength(0);
   });
 
   // The pre-transaction read only chooses locks, so losing it costs no pull the

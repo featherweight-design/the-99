@@ -280,7 +280,7 @@ describe("UpdateDiff groups", () => {
       hard: 1,
       soft: 0,
       free: 0,
-      claims: [{ id: "d2", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false }],
+      claims: [{ id: "d2", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }],
     };
     const namesClaimant = (group: "out" | "in") => {
       const { container } = renderDiff({

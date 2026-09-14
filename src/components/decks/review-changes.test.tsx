@@ -62,7 +62,7 @@ const row = (over: Partial<Row> = {}): Row => ({
 });
 
 /** A card sleeved in one other deck. The flags are the guards `pullCandidate`
- *  reads: a mature, unpending, non-commander claim is the releasable one. */
+ *  reads: a mature, unpending, non-commander, senior claim is the releasable one. */
 const claimed = (over: Partial<Availability["claims"][number]> = {}): Availability =>
   ({
     free: 0,
@@ -74,6 +74,7 @@ const claimed = (over: Partial<Availability["claims"][number]> = {}): Availabili
         mature: true,
         pending: false,
         commander: false,
+        senior: true,
         ...over,
       },
     ],
@@ -243,13 +244,12 @@ describe("ReviewChanges", () => {
     ).toBeNull();
   });
 
-  // The pending guard is an `Open →` rather than a pull, because committing that
-  // deck's half-finished draft from here would sweep in changes its owner never
-  // asked for. The sentence explaining that is the LINK's accessible name, so the
-  // row does not carry it a second time — a description repeating a control inside
-  // the row reads one sentence twice. "can be pulled" goes with it: it is the
-  // opposite of what this row is.
-  it("leaves a pending holder's guard to the control, and says it once", () => {
+  // The pending guard draws a tag and no control, because committing that deck's
+  // half-finished draft from here would sweep in changes its owner never asked
+  // for. The sentence explaining that is the ROW's description now that the
+  // `Open →` link which used to carry it is gone. "can be pulled" is dropped
+  // with the offer: it is the opposite of what this row is.
+  it("describes a pending holder's guard on the row, and offers no control", () => {
     render(
       <ReviewChanges
         deckId="d"
@@ -261,12 +261,16 @@ describe("ReviewChanges", () => {
     );
     const guard = deckVersioningCopy.review.pullGuardA11y("Kykar", "Sol Ring");
     expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
-    expect(screen.getByRole("link", { name: guard })).toBeInTheDocument();
+    // The page's own back link stays; what is gone is any way out of the ROW.
+    expect(screen.queryByRole("link", { name: guard })).toBeNull();
     expect(
-      screen
-        .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
-        .getAttribute("aria-describedby"),
-    ).toBeNull();
+      screen.queryAllByRole("link").filter((a) => a.getAttribute("href") === "/decks/holder"),
+    ).toHaveLength(0);
+    const describedBy = screen
+      .getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })
+      .getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy as string)?.textContent).toBe(guard);
     expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
   });
 

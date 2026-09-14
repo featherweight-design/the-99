@@ -10,7 +10,7 @@ const a = (owned: number, hard: number, soft: number, names: string[] = []) => (
   hard,
   soft,
   free: owned - hard,
-  claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
+  claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false, senior: true })),
 });
 
 const root = (c: HTMLElement) => c.firstElementChild as HTMLElement;
@@ -392,7 +392,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     hard: names.length,
     soft,
     free,
-    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
+    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false, senior: true })),
   });
 
   // The ruling that makes the whole vantage worth having: free === 0 means

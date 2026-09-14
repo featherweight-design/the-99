@@ -36,11 +36,6 @@ import { BuyTag } from "./buy-tag";
 
 const copy = deckImportCopy.update.diff;
 
-// The affordance the row writes under the pointer. No copy module owns it: both
-// modules a diff row reads are a flow's copy, and this string belongs to the row
-// itself — it wants a key of its own the next time either is opened.
-const OPEN_CARD_HINT = "open card →";
-
 /**
  * The review page's box: 40px desktop, 44px phone, and 44px at both widths on a
  * row carrying an action, because the control is 44px on the phone and the plate
@@ -55,12 +50,27 @@ const OPEN_CARD_HINT = "open card →";
 const ROW_BOX = "min-h-[44px] md:min-h-[40px] px-[8px] md:px-[9px]";
 const ROW_BOX_ACTION = "min-h-[44px] p-[8px] md:py-0 md:pl-[9px] md:pr-[6px]";
 
-/** A pull-bearing row is two lines on the phone and one above it: the control is
- *  44px and the holding deck, the price and the button together are wider than
- *  390px leaves after a card name. The `md:contents` on each line dissolves the
- *  grouping, so the desktop row is the same flat flex line every other row is. */
-const ROW_SHELL_STACKED = `flex flex-col items-stretch gap-[8px] md:flex-row md:items-center md:gap-[10px] ${ROW_RADIUS}`;
-const STACK_LINE = "flex items-center gap-[9px] md:contents";
+/** The stacked row's box. It keeps the phone's 8px vertical padding at every
+ *  width, because two lines inside a 44px plate with no padding is what the
+ *  desktop reset was written against: `md:py-0` belongs to the single-line rows
+ *  that still draw a 34px control on a 44px plate, and applying it here would
+ *  press the two lines against the plate's edges. */
+const ROW_BOX_STACKED = "min-h-[44px] p-[8px] md:pl-[9px] md:pr-[6px]";
+
+/** A pull-bearing row is two lines at EVERY width: the card name on the first,
+ *  the holding deck, the price and the control on the second.
+ *
+ *  It was one line above 768px, with `md:contents` dissolving both groupings into
+ *  the flat flex row every other row is, and that row does not fit. A column
+ *  pairs two short type groups into sub-columns of about 276px (`pairGroups`), and
+ *  even an unpaired column at 1300px leaves about 574px against a line asking for
+ *  a dot, a card name, a deck name, a price tag, a 44px control and the cost
+ *  track. Whichever item was the flexible one went to zero: first the card name,
+ *  which is the reported bug, then the deck name once the row split in two.
+ *  Two lines is what the phone already draws and what the row can honour, and
+ *  both of those lines wrap for the same reason. */
+const ROW_SHELL_STACKED = `flex flex-col items-stretch gap-[8px] ${ROW_RADIUS}`;
+const STACK_LINE = "flex items-center gap-[9px]";
 
 /** What the update flow has always drawn. `DiffRowOut` reserves its right edge
  *  for the keep control; `DiffRowIn` has no action in that flow. */
@@ -182,8 +192,14 @@ function Marker({ auto }: { auto: boolean }) {
  * allowed to mean: does THIS deck's own claim account for the shortfall? The
  * rollup was read with `excludeDeckId`, so a removal — a card the deck holds
  * today — reaches `free === 0` by having its own claim subtracted, and must not
- * be called hard. An addition is not on the deck yet, so nothing of its was
- * subtracted and a `free === 0` there is a genuine claim by another deck.
+ * be called hard.
+ *
+ * An addition's answer depends on which flow is drawing it, which is why the
+ * review page's adds pass `review` here. A staged draft's add is already a
+ * `deck_cards` row, so the deck's own claim on it WAS subtracted and a
+ * `free === 0` means the collection covers the add. The update flow's adds are a
+ * proposed import that has written nothing, so nothing of theirs was subtracted
+ * and a `free === 0` there is a genuine claim by another deck.
  *
  * `buyable` is false where the card is leaving: the review page's out column is
  * cards going back to the pool, and its header says so, so a `buy` tag there
@@ -222,31 +238,19 @@ function AvailabilitySlot({
   );
 }
 
-/** What the row does, said only while the pointer is on it and never to a screen
- *  reader: the name's own accessible name already says it opens the card, so this
- *  is a second utterance of one fact and a sighted reader's only clue that a row
- *  with no chevron is a way in. */
-function OpenHint() {
-  return (
-    <span
-      aria-hidden="true"
-      className="hidden md:group-hover:inline flex-none font-mono text-[10px] text-[color:var(--fg-faint)]"
-    >
-      {OPEN_CARD_HINT}
-    </span>
-  );
-}
-
 /**
  * The plate's own way into the card, and the review page's alone — the hover fill
- * and the hint above make the whole row read as a target, and until this only the
- * name was one.
+ * makes the whole row read as a target, and until this only the name was one.
+ *
+ * There is no pointer hint beside the name. One drew `open card →` on hover, and
+ * it arrived as a new inline item on a row whose items are all `flex-none`: the
+ * trailing column and the control were pushed past the plate's right edge, so a
+ * row the pointer merely touched lost the button it was meant to explain.
  *
  * A POINTER affordance and nothing more: the row takes no `role` and no
  * `tabIndex`. The name inside it is already a real button, so a second control
  * wrapping the first would either nest two interactive elements illegally or make
- * every row two tab stops for one card. The keyboard path is the name, unchanged,
- * and `OpenHint` is aria-hidden for the same reason.
+ * every row two tab stops for one card. The keyboard path is the name, unchanged.
  *
  * A click that started on a control of its own is left to that control: the name's
  * trigger would otherwise open the card a second time over its own fetch, and the
@@ -269,18 +273,20 @@ function useRowOpen(
  *  where it is the subject of the pull beside it — the reader is deciding whether
  *  to take a card out of a named deck, and the name is the whole question.
  *
- *  It takes the phone's second line, so the tag and the control beside it sit at
- *  the row's right edge rather than bunching against the deck name; above that
- *  width the line dissolves and the name is an inline item like every other.
+ *  It takes the row's second line at every width, and is the flexible item on it,
+ *  so the tag and the control beside it sit at the row's right edge rather than
+ *  bunching against the deck name. A deck name is accepted up to `DECK_NAME_MAX`
+ *  — 120 characters — so it truncates rather than pushing the control off the
+ *  line. The card name above it is never competing for these pixels, which is the
+ *  point of the two lines.
  *
- *  `flex-none` is the design table's desktop rule, and it is what needs the cap
- *  beside it: at max-content width `truncate` has nothing to act on, and a deck
- *  name is accepted up to `DECK_NAME_MAX` — 120 characters, which would push the
- *  cost and the control off the row rather than ellipsize. 220px holds every
- *  ordinary name whole, so the cap is only ever reached by an extreme one. */
+ *  The floor is what makes `flex-1` safe. A basis of 0 shrinks to nothing, and in
+ *  a paired type column — about 165px at the narrowest desktop — the tag and the
+ *  control alone fill the line, so the name went to zero and the row named a deck
+ *  it did not print. With a floor it truncates and the line wraps instead. */
 function HeldBy({ deck }: { deck: string }) {
   return (
-    <span className="flex-1 md:flex-none md:max-w-[220px] min-w-0 truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
+    <span className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
       {deckVersioningCopy.review.heldBy(deck)}
     </span>
   );
@@ -321,7 +327,11 @@ function DiffRowName({
       title={name}
       siblings={siblings}
       describedBy={describedBy}
-      className={`min-w-0 truncate text-left text-[12.5px] md:text-[13px] ${recount ? "" : "flex-auto"}`}
+      className={[
+        "min-w-0",
+        "truncate text-left text-[12.5px] md:text-[13px]",
+        recount ? "" : "flex-auto",
+      ].join(" ")}
       style={{ color: tone }}
     >
       {name}
@@ -329,7 +339,9 @@ function DiffRowName({
   );
   if (!recount) return trigger;
   return (
-    <span className="flex-auto min-w-0 flex items-baseline gap-[6px]">
+    <span
+      className="flex-auto flex items-baseline gap-[6px] min-w-0"
+    >
       {trigger}
       {/* The counts are the shipped recount's shape with the name taken off the
           front, because the name is the element beside it: one arrow and one
@@ -391,6 +403,12 @@ export function DiffRowOut({
       onClick={openRow}
       className={[
         ROW_SHELL,
+        // Same wrap, and the same reason, as the adds column's first line: a
+        // costless card draws the marker box, and the name, that box, the 54px
+        // cost track and a control do not fit a paired type column. `flex-wrap`
+        // sizes items at their hypothetical width rather than their shrunk one,
+        // so the trailing items drop below instead of squeezing the name out.
+        review && action ? "flex-wrap" : "",
         review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_OUT_IMPORT,
         kept ? ROW_PLATE_KEPT : ROW_PLATE,
         review && !kept ? ROW_PLATE_HOVER : "",
@@ -405,7 +423,6 @@ export function DiffRowOut({
         describedBy={describedBy}
         recount={recount}
       />
-      {review ? <OpenHint /> : null}
       {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
       <AvailabilitySlot card={card} selfClaimed buyable={!review} />
       {/* The removes column draws the same anatomy as the adds, cost track and
@@ -496,7 +513,6 @@ export function DiffRowIn({
         describedBy={describedBy}
         recount={recount}
       />
-      {review ? <OpenHint /> : null}
       {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
     </>
   );
@@ -507,7 +523,7 @@ export function DiffRowIn({
           only flexible item, so anything that can disappear has to sit on the
           name's side of the fixed column — with the slot trailing, an owned row's
           line number landed a tag's width right of an unowned row's. */}
-      <AvailabilitySlot card={card} selfClaimed={false} />
+      <AvailabilitySlot card={card} selfClaimed={review} />
       {/* Between the tag and the trailing column, for the reason above it: the
           action is the row's other item that can be absent, so it sits on the
           name's side of the one fixed column. */}
@@ -535,9 +551,6 @@ export function DiffRowIn({
           card.manaCost ? "flex" : "hidden md:flex",
           "items-center justify-end font-mono text-[11px] min-w-[54px] flex-none",
           "text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]",
-          // The cost rides the name line on a stacked phone row, and stays the
-          // row's last item above it — the one place the two orders disagree.
-          stacked ? "md:order-last" : "",
         ].join(" ")}
       >
         {card.manaCost ? (
@@ -561,14 +574,19 @@ export function DiffRowIn({
       onClick={openRow}
       className={[
         stacked ? ROW_SHELL_STACKED : ROW_SHELL,
-        review ? (action ? ROW_BOX_ACTION : ROW_BOX) : ROW_BOX_IN_IMPORT,
+        stacked ? ROW_BOX_STACKED : review ? ROW_BOX : ROW_BOX_IN_IMPORT,
         ROW_PLATE,
         review ? ROW_PLATE_HOVER : "",
       ].join(" ")}
     >
       {stacked ? (
         <>
-          <span className={`${STACK_LINE} min-w-0`}>
+          {/* Wraps for the same reason the meta line does. A costless card draws
+              the marker box, and the name, that box and the 54px cost track do
+              not fit one 150px line, so without this the name shrank to 13px.
+              `flex-wrap` measures items at their hypothetical size rather than
+              their shrunk one, so the track drops below instead. */}
+          <span className={`${STACK_LINE} min-w-0 flex-wrap`}>
             {nameLine}
             {trailing}
           </span>
@@ -576,7 +594,12 @@ export function DiffRowIn({
               raided reads as a fact about the card above it. A `div` because the
               action on it is one: `PullControl` draws a block, and its refusal a
               paragraph under that, neither of which is legal inside a span. */}
-          <div className={`${STACK_LINE} pl-[16px] md:pl-0`}>{metaLine}</div>
+          {/* It WRAPS. A paired type column is about 165px wide at the narrowest
+              desktop, and the deck name, the buy tag and a 44px control do not fit
+              on one line there — the name is the flexible item, so it went to zero
+              and the row named a deck it could not print. Wrapped, the control
+              drops to a line of its own and the name keeps its own floor. */}
+          <div className={`${STACK_LINE} flex-wrap pl-[16px]`}>{metaLine}</div>
         </>
       ) : (
         <>

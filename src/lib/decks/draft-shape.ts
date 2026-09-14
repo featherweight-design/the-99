@@ -70,11 +70,10 @@ export type DraftState = {
   /**
    * The deck a pull could actually be taken from, per add that offers one.
    *
-   * NOT `DraftAdd.heldBy`, which is every mature claimant and includes the two
-   * holders no pull can come out of: a deck with pending changes of its own, and
-   * a deck holding the card as its commander. `heldBy` answers "who has it" — the
-   * question the availability marker asks — and naming one of those decks in an
-   * offer to pull promises an act the server refuses. Filtered through
+   * NOT `DraftAdd.heldBy`, which includes the two holders no pull can come out
+   * of: a deck with pending changes of its own, and a deck holding the card as
+   * its commander. Naming one of those decks in an offer to pull promises an act
+   * the server refuses. Filtered through
    * `releasableClaims`, the same guard `pullableCount` counts with, so the hint
    * and the count can never disagree. Absent when no holder is releasable.
    */
@@ -156,16 +155,20 @@ export function hasChanges(state: DraftState): boolean {
 /**
  * The holders a pull could actually be offered against.
  *
- * Both guards, and both of them the server's own: a deck with pending changes
+ * Two of the three guards are the server's own: a deck with pending changes
  * would have them swept into a version nobody asked for, and no route releases a
  * commander. A control that can only fail is worse than no control.
  *
+ * `senior` is the third, and it is arithmetic rather than a refusal. A junior
+ * sleeved claim is already outside this deck's `free`, so the server would take
+ * the copy, empty that deck's slot, and leave the shortfall exactly where it was.
+ *
  * Filtered off `claims` rather than through `hardDecks`, whose projection drops
- * the two guard flags — the maturity test is repeated here for that reason.
+ * all three flags — the maturity test is repeated here for that reason.
  */
 export function releasableClaims(a: Availability | undefined): DeckClaim[] {
   if (!a) return [];
-  return a.claims.filter((c) => c.mature && !c.pending && !c.commander);
+  return a.claims.filter((c) => c.mature && c.senior && !c.pending && !c.commander);
 }
 
 /**
@@ -182,4 +185,25 @@ export function pullCandidate(a: Availability | undefined): DeckClaim | null {
   if (releasable) return releasable;
   const sleeved = (a?.claims ?? []).filter((c) => c.mature);
   return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.pending) ?? null;
+}
+
+/**
+ * The ownership dot's third state: the player owns a copy of this card and every
+ * copy that could have covered the add is sleeved in another deck.
+ *
+ * The bucket cannot answer it. `claimed` now means "a pull would relieve this",
+ * which is a narrower question: a card whose only sleeved holder is junior to
+ * this deck buckets `unowned`, because taking that copy would move no figure —
+ * and the copy is spoken for all the same. Reading the dot off the bucket paints
+ * that row as a free owned copy, which is the one thing it is not.
+ *
+ * `shortfall` is part of the question rather than a second test beside it. A
+ * player owning four copies and adding one is not short, and another deck
+ * holding one of the four says nothing about this row.
+ */
+export function heldElsewhere(
+  a: Availability | undefined | null,
+  shortfall: number,
+): boolean {
+  return shortfall > 0 && (a?.claims ?? []).some((c) => c.mature);
 }

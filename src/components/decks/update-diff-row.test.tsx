@@ -39,7 +39,7 @@ function draw(node: React.ReactNode) {
 afterEach(cleanup);
 
 describe("the review page's mounting", () => {
-  it("names the deck sleeving the copy, and stacks the row on the phone", () => {
+  it("names the deck sleeving the copy, and stacks the row at every width", () => {
     const row = draw(
       <DiffRowIn
         review
@@ -49,24 +49,28 @@ describe("the review page's mounting", () => {
         action={<button type="button">Pull it</button>}
       />,
     );
-    // The name takes the phone line, so the tag and the control beside it sit at
-    // the row's right edge; above that width it is an inline item like any other.
+    // The deck name is the flexible item on the second line at every width, so a
+    // long one ellipsizes rather than pushing the price and the control off the row.
     const held = screen.getByText(deckVersioningCopy.review.heldBy("Kess Storm"));
     expect(held.className).toContain("flex-1");
-    expect(held.className).toContain("md:flex-none");
-    // `flex-none` at desktop takes its max-content width, so `truncate` needs a
-    // ceiling to act against: a deck name is accepted up to 120 characters, and
-    // without the cap one would push the cost and the control off the row.
-    expect(held.className).toContain("md:max-w-[220px]");
     expect(held.className).toContain("truncate");
-    expect(held.className).toContain("min-w-0");
-    // Two lines on the phone, one flat flex line above it — the wrappers
-    // dissolve at `md`, so the desktop row keeps every other row's anatomy.
+    expect(held.className).toContain("min-w-[90px]");
+    // Nothing about it is width-conditional now that it never shares a line with
+    // the card name: the desktop row that dissolved these lines could not fit them.
+    expect(held.className).not.toContain("md:");
+    const name = screen.getByRole("button", {
+      name: cardDetailCopy.triggerAria("Cyclonic Rift"),
+    });
+    expect(name.className).toContain("truncate");
+    // Two lines at EVERY width. A single desktop line asks for a dot, a card name,
+    // a deck name, a price tag, a 44px control and the cost track against the ~276px
+    // a paired type column gets, so whichever item was flexible went to zero: first
+    // the card name, then the deck name once the name had a floor.
     expect(row.className).toContain("flex-col");
-    expect(row.className).toContain("md:flex-row");
+    expect(row.className).not.toContain("md:flex-row");
     const lines = Array.from(row.children) as HTMLElement[];
     expect(lines).toHaveLength(2);
-    for (const line of lines) expect(line.className).toContain("md:contents");
+    for (const line of lines) expect(line.className).not.toContain("md:contents");
     // The meta line is indented to the name's own text.
     expect(lines[1].className).toContain("pl-[16px]");
   });
@@ -101,6 +105,29 @@ describe("the review page's mounting", () => {
     // alternative the pull is weighed against.
     expect(row.textContent).toContain("$28.40");
     expect(row.querySelector(".bg-\\[color\\:var\\(--avail-hard-fg\\)\\]")).toBeTruthy();
+  });
+
+  // A staged add IS a `deck_cards` row, so the figures the review page reads
+  // already have this deck's own claim subtracted: `free === 0` there means the
+  // collection covers the add, and a brew holding the copy is a soft claim rather
+  // than the hard one the un-excluded vantage would report.
+  it("reads a review add's availability with this deck's own claim excluded", () => {
+    const availability = {
+      owned: 1,
+      hard: 0,
+      soft: 1,
+      free: 0,
+      claims: [{ id: "d1", name: "Kess Storm", quantity: 1, mature: false, pending: false, commander: false, senior: true }],
+    };
+    const row = draw(<DiffRowIn review card={card({ owned: true, availability })} sourceLine={null} />);
+    expect(row.textContent).toContain(availabilityCopy.marker.soft(1));
+    cleanup();
+    // The update flow's adds are a proposed import that has written nothing, so
+    // nothing of theirs was subtracted and the same figures are a hard claim.
+    const update = draw(<DiffRowIn card={card({ owned: true, availability })} sourceLine={null} />);
+    // The claim is a brew's, so it is not among `hardDecks` and the hard state has
+    // no name to print: the base form is what a nameless hard read draws.
+    expect(update.textContent).toContain(availabilityCopy.marker.hard);
   });
 
   // §Surfaces 2 gives the out column a dot, a name and a cost track, and its
@@ -174,6 +201,7 @@ describe("the review page's mounting", () => {
                 mature: false,
                 pending: false,
                 commander: false,
+                senior: true,
               },
             ],
           },
@@ -212,9 +240,9 @@ describe("the review page's mounting", () => {
   });
 });
 
-// The whole plate opens the card on the review page, because the hover fill and
-// the `open card →` hint say it does. What is tested is the three answers the
-// plate has to a click: its own, the name's, and the action's.
+// The whole plate opens the card on the review page, because the hover fill says
+// it does. What is tested is the three answers the plate has to a click: its own,
+// the name's, and the action's.
 describe("the review page's plate as the card's target", () => {
   function fetching(node: React.ReactNode) {
     const asked: string[] = [];
@@ -276,11 +304,11 @@ describe("the review page's plate as the card's target", () => {
 });
 
 describe("the update flow's mounting", () => {
-  // The box, the hover fill and the pointer hint are the review page's, and this
-  // flow draws six row kinds in one list: four of them are other components on
-  // the shipped 44px / 12px box, so a pair retuned to the newer geometry would
-  // stand 4px shorter and 3px narrower than its own neighbours.
-  it("keeps the shipped box, and neither hovers nor hints", () => {
+  // The box and the hover fill are the review page's, and this flow draws six row
+  // kinds in one list: four of them are other components on the shipped 44px /
+  // 12px box, so a pair retuned to the newer geometry would stand 4px shorter and
+  // 3px narrower than its own neighbours.
+  it("keeps the shipped box and does not hover", () => {
     const row = draw(<DiffRowIn card={card()} sourceLine={3} />);
     expect(row.className).toContain("px-[12px]");
     expect(row.className).not.toContain("md:min-h-[40px]");

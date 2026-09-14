@@ -25,6 +25,7 @@ const FREE_TO_PULL: DeckClaim = {
   mature: true,
   pending: false,
   commander: false,
+  senior: true,
 };
 const noop = () => {};
 
@@ -132,7 +133,11 @@ describe("PullControl", () => {
     expect(PULL_NAME).not.toBe(copy.pull);
   });
 
-  it("replaces the action with a tag and a route when that deck has its own draft", () => {
+  // The tag and nothing else. It drew an `Open →` link to the holding deck, and
+  // that link is what broke the desktop row: every item on the plate is
+  // unshrinkable except the card name, so an anchor here took its width out of
+  // the name until the name reached zero and the row printed no card at all.
+  it("replaces the action with a tag and no control when that deck has its own draft", () => {
     render(
       <PullControl
         deckId="d"
@@ -142,9 +147,14 @@ describe("PullControl", () => {
       />,
     );
     expect(screen.getByText(copy.pullGuardTag)).toBeTruthy();
-    // A live link, not a disabled `Pull it`: that deck is the way forward.
-    expect(screen.getByRole("link", { name: /Open it to release Sol Ring/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  // The tag says whose draft it is. A bare `pending` beside a card name was read
+  // as a pending change to that CARD, on a row where the card is untouched.
+  it("names the deck in the guard tag rather than the state alone", () => {
+    expect(copy.pullGuardTag).toContain("deck");
   });
 
   it("offers no control at all on a commander claim — no route releases it", () => {
@@ -234,40 +244,23 @@ describe("PullControl", () => {
     expect(screen.getByRole("button", { name: PULL_NAME })).toBeTruthy();
   });
 
-  // Both actions stand in one box, so a guarded row is the same width and the
-  // same height as a pullable one. Only the ink differs: the accent belongs to
-  // the one control on this page that writes, and leaving for another deck is
-  // navigation.
-  it("gives the guard's route the pull's geometry and the reading ink", () => {
+  // The pull's own box: a 44px target on the phone, 34px above it, in the accent
+  // that belongs to the one control on this page that writes. Sans, never the
+  // mono this page sets its meta in — this is a control, not a figure.
+  it("gives the pull a phone-sized target in the writing accent", () => {
     render(<PullControl deckId="d" card={CARD} claim={FREE_TO_PULL} onPulled={noop} />);
     const pull = screen.getByRole("button", { name: PULL_NAME }).className;
-    cleanup();
-    render(
-      <PullControl
-        deckId="d"
-        card={CARD}
-        claim={{ ...FREE_TO_PULL, pending: true }}
-        onPulled={noop}
-      />,
-    );
-    const open = screen.getByRole("link", { name: /Open it to release Sol Ring/ }).className;
     for (const geometry of ["min-h-[44px]", "md:min-h-[34px]", "px-[16px]", "md:px-[11px]"]) {
       expect(pull).toContain(geometry);
-      expect(open).toContain(geometry);
     }
     expect(pull).toContain("text-[color:var(--accent)]");
-    expect(open).toContain("text-[color:var(--fg)]");
-    expect(open).not.toContain("text-[color:var(--accent)]");
-    // Sans on both, never the mono this page sets its meta in: these are controls.
     expect(pull).toContain("font-sans");
-    expect(open).toContain("font-sans");
   });
 
   // The guard tag is the buy tag's shape — a bordered mono plate, not a fill of
-  // its own — and it is grouped 5px from the action beside it, so a guarded row
-  // is the same width class as a pullable one.
+  // its own.
   it("draws the guard tag in the buy tag's shape", () => {
-    const { container } = render(
+    render(
       <PullControl
         deckId="d"
         card={CARD}
@@ -278,6 +271,5 @@ describe("PullControl", () => {
     const tag = screen.getByText(copy.pullGuardTag);
     expect(tag.className).toContain("[border:1px_solid_var(--accent-shadow)]");
     expect(tag.className).toContain("tracking-[0.1em]");
-    expect((container.firstElementChild as HTMLElement).className).toContain("gap-[5px]");
   });
 });

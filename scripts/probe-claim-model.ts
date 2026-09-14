@@ -129,8 +129,12 @@ try {
   //    while its version still lists it, and the copy stays spoken for.
   await fixture.execute(sql`delete from deck_cards where deck_id = ${newer.id}`);
   check("pending remove still claims", await free(older.id), 0);
-  // …and it is still the newer deck's own claim, so its own page reads 0 free.
-  check("the pending remove is still the holder's own claim", await free(newer.id), 0);
+  // …while the holder's OWN page reads a surplus of 1, because own_claim is what
+  // its draft asks for and its draft has cut the card. The claim it keeps against
+  // every other deck (the check above) and the surplus it reports to itself are
+  // different questions: the version is what holds the copy, the draft is what
+  // this deck is asking for.
+  check("the holder's own draft no longer asks for the copy", await free(newer.id), 1);
 
   // 2a. THE PULL GUARDS, which are render-time facts rather than refusals from
   //     inside a transaction. The newer deck's draft now differs from the
@@ -142,16 +146,37 @@ try {
   //     The commander itself is: no route releases it, so no control is drawn.
   check("the commander claim is flagged", (await claim(cmdB, older.id, newer.id))?.commander, true);
 
-  // 3. THE HEADLINE. Between two sleeved versions the earlier `since` holds the
-  //    card, whatever the decks' ages. The older deck drafts it and commits
-  //    SECOND, so it is told to buy — a negative free — instead of quietly
-  //    emptying the newer deck's box.
+  // 2b. A DRAFT ADD ON A SLEEVED DECK. The older deck commits a version without
+  //     the card, then its draft adds it. own_claim is read from deck_cards, so
+  //     the add is measured like any other copy this deck is asking for and the
+  //     deck is told it is short — the figure loadDeckBuyRows has always billed.
+  //     Read from the version instead, the add contributed nothing, free came
+  //     back 0, and the decklist went silent while the receipt charged for it.
+  await commit(older.id, cmdA, 1, false);
   await fixture.execute(sql`
     insert into deck_cards (deck_id, oracle_id, quantity)
     values (${older.id}, ${card}, 1)
   `);
-  await commit(older.id, cmdA, 1, true);
+  check("a draft add on a sleeved deck is short a copy", await free(older.id), -1);
+
+  // 3. THE HEADLINE. Between two sleeved versions the earlier `since` holds the
+  //    card, whatever the decks' ages. The older deck commits the add SECOND, so
+  //    it is told to buy — a negative free — instead of quietly emptying the
+  //    newer deck's box.
+  await commit(older.id, cmdA, 2, true);
   check("the later commit buys rather than taking the copy", await free(older.id), -1);
+
+  // 3a. THE SAME RULE, PER CLAIM. `senior` is what decides whether a pull is
+  //     offered at all, and it is the one flag that has to disagree between the
+  //     two vantages on the same pair of decks: the newer deck's `since` is
+  //     earlier, so it is senior to the older deck and its copy is worth asking
+  //     for, while the older deck is junior and releasing its copy would move no
+  //     figure. A flag computed from the decks' own ages rather than from `since`
+  //     would read true from both vantages and offer a pull that cannot help.
+  check("the earlier holder is senior from the later deck's vantage",
+    (await claim(card, older.id, newer.id))?.senior, true);
+  check("the later holder is junior from the earlier deck's vantage",
+    (await claim(card, newer.id, older.id))?.senior, false);
 
   // 4. An accepted pull settles it at once: the source commits a version
   //    without the card, and the asking deck stops being short.

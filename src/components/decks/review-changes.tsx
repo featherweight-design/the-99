@@ -17,7 +17,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { pullCandidate, releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
+import {
+  heldElsewhere, pullCandidate, releasedCopies, type DraftState,
+} from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state";
@@ -227,21 +229,18 @@ function Column({
           // Wherever the control is refusing to offer a pull, the word behind
           // the colour is the guard it drew instead: a commander's copy is
           // claimed and no route releases it, and a holder with a draft of its
-          // own is a deck to open rather than a copy to take. "can be pulled"
+          // own has to be committed before the copy can move. "can be pulled"
           // on either would name an act this page will not perform.
           //
-          // The pending guard is the one that says nothing here: `PullControl`
-          // gives its `Open →` link that exact sentence as the link's accessible
-          // name, so describing the row with it as well reads one sentence twice
-          // — once for the row, then again for the control inside it. Its bucket
-          // word is dropped with it rather than falling through, because "can be
-          // pulled" is the opposite of what that row is. The commander guard has
-          // no control at all (no route releases a commander) and a one-word
-          // visible tag, so the row is the only place its sentence can live.
+          // Both guards draw a tag and no control, so the row is the only place
+          // either sentence can live. The pending one used to be the accessible
+          // name of an `Open →` link inside the row, and was left off the row so
+          // that a reader would not hear it twice; that link is gone, and with it
+          // the reason for the silence.
           const word = pullClaim?.commander
             ? copy.commanderGuardA11y(pullClaim.name, row.name)
             : pullClaim?.pending
-              ? null
+              ? copy.pullGuardA11y(pullClaim.name, row.name)
               : bucketWord(row.bucket);
           const wordId = `${descriptionId}-${row.oracleId}`;
           const card = {
@@ -258,9 +257,10 @@ function Column({
             price: claimsKnown ? row.price ?? null : null,
             newestAsOf,
             // An owned card whose free copies are all sleeved somewhere else.
-            // The bucket is the server's answer to exactly that question, so
-            // the dot is not left to re-derive it from the rollup.
-            committed: row.bucket === "claimed",
+            // Not `bucket === "claimed"`: that bucket now means "a pull would
+            // relieve this", and a card held only by a deck junior to this one
+            // buckets `unowned` while its copy is still in somebody's box.
+            committed: heldElsewhere(row.availability, row.shortfall),
             // The buy tag's own question, and not one `owned` can answer: a
             // partially covered add with no claimant is filed `unowned` while
             // being a card the player owns a copy of. Zeroed with the price when

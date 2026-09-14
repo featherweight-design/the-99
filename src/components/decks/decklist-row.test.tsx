@@ -219,7 +219,7 @@ describe("DecklistRow availability marker (#43)", () => {
     hard: names.length,
     soft: 0,
     free,
-    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
+    claims: names.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false, senior: true })),
   });
 
   it("carries no marker when the card is free", () => {

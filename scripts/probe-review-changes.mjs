@@ -37,6 +37,19 @@
 //      the decklist row's own size at that width — 11px under 768px, 11.5px
 //      above it. It also fails when the fixture's own row draws no marker at
 //      all, because a run that measures nothing must not read as a pass.
+//   8. THE HELD ROW IS TWO LINES AT EVERY WIDTH, AND BOTH NAMES KEEP A BOX. It was
+//      one line above 768px, and that line does not fit: a dot, a card name, a deck
+//      name, a price tag, a 44px control and the cost track against the ~276px a
+//      paired type column gets. Whichever item was flexible went to zero — first the
+//      card name, which is the reported bug, then the deck name once the name had a
+//      floor. The two names sharing a VERTICAL is what says the row dissolved, and
+//      the BOX is what says a name gave way: a box shrunk to zero still reads back
+//      its whole string, and `scrollWidth` reports the box rather than the text. The
+//      row is read at 820px as well as 1300px, because a wide viewport leaves the
+//      fixture's short deck names spare width and reports a healthy name on the
+//      broken build. The run also fails on any anchor inside a diff row: the
+//      `Open →` link to the holding deck is what put the row under pressure, and the
+//      plate opens the card for any click landing outside a control.
 //
 // THE FIXTURE IS THIS SCRIPT'S OWN. The probe account is not the account that owns
 // local-dev's decks, and a deck page the signed-in player does not own is a 404 —
@@ -107,6 +120,20 @@ const mistypedMarkers = [];
  *  variable-length thing in the row and left `2 → 3` sitting in space it had no
  *  use for. */
 const clippedGroups = [];
+
+/** Held rows that dissolved into one line or lost a name's box, and any anchor
+ *  still drawn inside a diff row. All three are the desktop defect Hugh reported:
+ *  the row was a single flex line above 768px, the names were the only shrinkable
+ *  items on it, and an anchor beside the deck name took the last of the width.
+ *  jsdom lays nothing out and applies no media query, so a component test can
+ *  assert a class list and never the box a name ended up with. */
+const erasedNames = [];
+
+/** The narrowest desktop: one step above the `md` breakpoint the erased row used
+ *  to dissolve at. The bug needs the row to overflow, and a 1300px viewport gives
+ *  each column enough width that a short fixture deck name never gets there — a
+ *  run at 1300px alone passes on the build that erased the name. */
+const SQUEEZE = 820;
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
@@ -372,6 +399,44 @@ const readReview = (page) =>
             nameSize: name ? Number.parseFloat(getComputedStyle(name).fontSize) : null,
           };
         }),
+      // Every row naming the deck that already sleeves the copy, with the box and
+      // the vertical of both names on it. The row is two lines at every width, and
+      // the tops are what prove it: dissolved into one line, the card name and the
+      // deck name share a vertical and whichever of them is flexible goes to zero,
+      // because the line asks for a dot, two names, a price tag, a 44px control and
+      // the cost track against roughly 276px in a paired type column.
+      //
+      // The BOX is the reading, not the text. A flex item shrunk to zero still
+      // returns its whole string from `textContent`, and `scrollWidth` on a
+      // truncating box reports the box rather than the text, so both read as
+      // healthy on the build that erased the name. The range is here to say
+      // whether what survived is truncated, which is the acceptable outcome.
+      heldRows: [...(columns?.querySelectorAll("span") ?? [])]
+        .filter((s) => /^in \S/.test(text(s)) && /mono/i.test(getComputedStyle(s).fontFamily))
+        .map((s) => {
+          // The row's card name is its titled trigger. Walk out until one is in
+          // reach: on the phone it is a line above this span, and above 768px a
+          // sibling of it.
+          let name = null;
+          for (let node = s.parentElement; node && !name; node = node.parentElement) {
+            name = node.querySelector("button[title]");
+          }
+          const range = document.createRange();
+          if (name) range.selectNodeContents(name);
+          return {
+            deck: text(s),
+            deckBox: Math.round(s.getBoundingClientRect().width),
+            deckTop: Math.round(s.getBoundingClientRect().top),
+            card: name?.getAttribute("title") ?? null,
+            cardBox: name ? Math.round(name.getBoundingClientRect().width) : null,
+            cardText: name ? Math.round(range.getBoundingClientRect().width) : null,
+            cardTop: name ? Math.round(name.getBoundingClientRect().top) : null,
+          };
+        }),
+      // Anchors inside the columns. A diff row carries none: the `Open →` link to
+      // the holding deck was what put the row under pressure in the first place,
+      // and the plate itself opens the card for any click outside a control.
+      rowLinks: [...(columns?.querySelectorAll("a") ?? [])].map((a) => text(a)),
       discardTriggers: buttons
         .filter((b) => b.innerText.trim() === "Discard")
         .map((b) => ({
@@ -415,6 +480,57 @@ const readReview = (page) =>
       })(),
     };
   });
+
+/** Neither name may fall below this. It is not a design figure — the two names
+ *  own separate lines and compete with nothing, so the only failure left is a
+ *  collapse, and a box this narrow holds no readable word either way. */
+const NAME_FLOOR = 40;
+
+/** Judge the held rows of one reading. A reading with no held row FAILS: the
+ *  fixture sleeves the one copy it owns into a second deck precisely so this row
+ *  exists, so its absence means the check lost its subject rather than passing. */
+function readHeld(seen, label) {
+  for (const link of seen.rowLinks) {
+    // The row's own way out, gone. It carried the pending guard's sentence as its
+    // accessible name, which now rides the row's description instead.
+    if (/^Open/.test(link)) {
+      erasedNames.push(`${label} · a diff row still draws an "${link}" link`);
+    }
+  }
+  if (seen.heldRows.length === 0) {
+    erasedNames.push(`${label} · no row names a holding deck, so no card name was measured`);
+    return;
+  }
+  for (const row of seen.heldRows) {
+    console.log(
+      `    ${row.card ?? "NO CARD NAME"} · ${row.deck} · name ${row.cardBox}px box / ` +
+        `${row.cardText}px text · deck ${row.deckBox}px`,
+    );
+    if (row.card === null) {
+      erasedNames.push(`${label} · "${row.deck}" is on a row with no card trigger at all`);
+      continue;
+    }
+    // The stacking itself, measured rather than assumed: on one line the two names
+    // share a vertical, and that is the layout neither of them fits on.
+    if (row.cardTop === row.deckTop) {
+      erasedNames.push(
+        `${label} · "${row.card}" and "${row.deck}" share a vertical, so the row is one line`,
+      );
+    }
+    if (row.cardBox < NAME_FLOOR) {
+      erasedNames.push(
+        `${label} · "${row.card}" has a ${row.cardBox}px box, under the ${NAME_FLOOR}px floor`,
+      );
+    }
+    // The relocation the first fix caused: flooring the card name made the deck
+    // name the one shrinkable item with a real basis, and it went to zero instead.
+    if (row.deckBox < NAME_FLOOR) {
+      erasedNames.push(
+        `${label} · "${row.deck}" has a ${row.deckBox}px box, under the ${NAME_FLOOR}px floor`,
+      );
+    }
+  }
+}
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 
@@ -465,6 +581,13 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
        join cards c on c.oracle_id = ci.oracle_id
       where ci.user_id = $1
         and c.type_line not like 'Basic Land%'
+        -- COSTLESS, deliberately. markerDrawn is auto || !manaCost and this
+        -- fixture inserts with auto = false, so a costed card draws no marker
+        -- and the stacked name line loses the 46px box that is the whole reason
+        -- it needs a floor. On a costed card the name measures about 46px at
+        -- 820px and clears the check either way, so a run that took one would
+        -- report a pass over the regression it exists to catch.
+        and coalesce(c.mana_cost, '') = ''
         and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $2)
         and ci.oracle_id not in (select oracle_id from deck_cards where deck_id = $3)
         -- Not sleeved anywhere else either: another committed deck's claim on the
@@ -492,7 +615,8 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
       limit 1`,
     [userId, excludeDeckId, holderDeckId],
   );
-  if (rows.length === 0) throw new Error("No singly-owned unsleeved card to claim.");
+  if (rows.length === 0)
+    throw new Error("No singly-owned, unsleeved, costless card to claim.");
   const { oracle_id: oracleId, name } = rows[0];
   // Into the holder's draft AND its version, or the holder reads as pending and
   // the pull is refused before it is offered.
@@ -939,6 +1063,19 @@ try {
       }
     }
 
+    // 2b-iii. The held row's two lines, and the anchors it no longer draws. Read at
+    // this width, then again at the narrowest desktop: the fixture's deck names are
+    // short enough that a wide viewport leaves a dissolved row spare width and
+    // reports a healthy name on the build that erased it.
+    readHeld(seen, label);
+    if (width >= 768) {
+      await vpPage.setViewportSize({ width: SQUEEZE, height });
+      await vpPage.waitForTimeout(300);
+      readHeld(await readReview(vpPage), `squeezed · ${SQUEEZE}x${height}`);
+      await vpPage.setViewportSize({ width, height });
+      await vpPage.waitForTimeout(300);
+    }
+
     // 2c. Discard, raised from the apply bar. The question replaces the bar's own
     // body, so the trigger is gone while it is up and the way out holds focus —
     // neither is reachable from jsdom, where nothing has a box.
@@ -1182,5 +1319,11 @@ if (mistypedMarkers.length > 0) {
 if (clippedGroups.length > 0) {
   console.log(`\n########## FAIL · a type-move row clips its own name`);
   for (const line of clippedGroups) console.log(`  ${line}`);
+  process.exitCode = 1;
+}
+
+if (erasedNames.length > 0) {
+  console.log(`\n########## FAIL · a held row lost a line or a name`);
+  for (const line of erasedNames) console.log(`  ${line}`);
   process.exitCode = 1;
 }

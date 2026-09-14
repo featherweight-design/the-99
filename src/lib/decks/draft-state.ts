@@ -17,7 +17,7 @@ import {
 } from "./draft-diff";
 import type { DraftAdd, DraftState } from "./draft-shape";
 import { releasableClaims } from "./draft-shape";
-import { hardDecks, type Availability } from "./availability";
+import { pullSources, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, type PriceRead } from "./price-query";
 import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./price";
@@ -31,7 +31,7 @@ import { cardTypeGroup, primaryRole } from "./read";
 // caller has one import for the whole model.
 export type { DraftAdd, DraftState } from "./draft-shape";
 export {
-  changeCount, hasChanges, pullCandidate, releasableClaims, releasedCopies,
+  changeCount, hasChanges, heldElsewhere, pullCandidate, releasableClaims, releasedCopies,
 } from "./draft-shape";
 
 /**
@@ -55,8 +55,11 @@ export function bucketDraftAdds(
   return bucketAdds(adds, new Map(
     [...availability].map(([oracleId, a]) => [
       oracleId,
-      // hardDecks, not the raw claims: a brew "holding" a card holds nothing.
-      { free: a.free, claims: hardDecks(a) },
+      // pullSources, not the raw claims and not hardDecks: a brew "holding" a
+      // card holds nothing, and a junior sleeved holder's copy is already
+      // outside this deck's `free`, so taking it moves no figure. A bucket is
+      // `claimed` only where a pull would actually relieve the shortfall.
+      { free: a.free, claims: pullSources(a) },
     ]),
   ));
 }
