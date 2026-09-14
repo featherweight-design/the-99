@@ -630,7 +630,10 @@ export function ReviewChanges({
         // admitted for a basics-only draft. So a page whose sheet is open over
         // a draft that still moves a basic stays exactly where it is, and the
         // focus handoff is owed.
-        const staysForBasics = commitSheetOpen && state.basicsMoved;
+        // The ARRIVAL, not the sheet's current state: opening the sheet from
+        // the Commit button carries no `?commit=1`, so that page is refused the
+        // moment its last named row goes, exactly like any other.
+        const staysForBasics = commitOpen === true && state.basicsMoved;
         const redirecting = alone && outAfter === 0 && inCount === 0 && !staysForBasics;
         // The DECK matches its version again only if nothing else moved, and a
         // basic that moved is something else. "Matches v1" over a draft that
@@ -639,9 +642,13 @@ export function ReviewChanges({
         draftAnnouncer().textContent =
           matchesVersion
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
-            : outAfter === 0
+            : outAfter === 0 && alone
+              // `alone` here for the same reason it gates the sentence above:
+              // with another restore still in the air, "nothing going out" is a
+              // claim about a column the other write may yet put a row back
+              // into, and this sentence has already been spoken by then.
               ? restoreCopy.announcedLastOut(card.name, cardsAfter)
-              : restoreCopy.announced(card.name, cardsAfter, outAfter);
+              : restoreCopy.announced(card.name, cardsAfter, Math.max(outAfter, 0));
         // Focus before the refresh, while the tree this render built is still
         // in the document. The group heading the row left, never the next row's
         // control.
@@ -679,7 +686,7 @@ export function ReviewChanges({
       });
     },
     [
-      addRestoredId, commitSheetOpen, deckId, descriptionId, inCount, liveCardCount,
+      addRestoredId, commitOpen, deckId, descriptionId, inCount, liveCardCount,
       outCount, restoring, rows.out, router, state.basicsMoved, state.version,
     ],
   );

@@ -1144,6 +1144,23 @@ describe("ReviewChanges", () => {
       await held.release();
     });
 
+    // With another restore still in the air, "nothing going out" is a claim
+    // about a column the other write may yet put a row back into — and the
+    // sentence has already been spoken by then.
+    it("does not say the column is empty while another write is in flight", async () => {
+      const held = hold();
+      mount({ in: [row()], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await act(async () => {
+        fireEvent.click(putBack("Chrome Mox"));
+      });
+      await held.release();
+      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
+      expect(spoken).not.toContain("nothing going out");
+    });
+
     // The whole row is a button that opens the card. Without `stopPropagation`
     // putting a card back also opens it.
     it("does not open the card it puts back", async () => {
