@@ -39,6 +39,8 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
   "CLERK_SECRET_KEY",
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+/** `OVERFLOW_THRESHOLD` in `cards/printing-region.tsx`, past which the header collapses. */
+const OVERFLOW_THRESHOLD = 12;
 const CARD = process.env.PROBE_CARD;
 if (!CARD) throw new Error("Set PROBE_CARD to a card the account owns.");
 
@@ -538,6 +540,14 @@ try {
 
   const phoneTrigger = phonePage.locator('button[aria-label*="printings owned"]').first();
   if (await phoneTrigger.count()) {
+    // Read BEFORE the press. The trigger states the count in its own accessible
+    // name, and opening the region rewrites that name — so a read afterwards
+    // finds nothing and every check that leans on the figure quietly stops
+    // asking. `1,024 printings owned`; the copy separates thousands.
+    const owned = Number(
+      (/([\d,]+) printings owned/.exec(await phoneTrigger.getAttribute("aria-label") ?? "")?.[1]
+        ?? "").replace(/,/g, ""),
+    ) || null;
     await phoneTrigger.click();
     // Same reason as the open above: waited for, not slept through. The compact
     // header is the state being measured, so the wait is for the thumb collapsing.
@@ -565,12 +575,33 @@ try {
       const art = document.querySelector('[data-testid="modal-art-mobile"]');
       return art !== null && art.getBoundingClientRect().width < 100;
     });
+    // `owned` is read above, before the press. Without it, `!collapsed` would
+    // read as "the card has twelve or fewer" — so a card that HAS thirteen and
+    // stopped collapsing would report itself not exercised, which is the broken
+    // transition hiding behind the wording that excuses it.
     console.log("\n── phone · printing region open (compact header past 12 entries) ──");
     console.log(JSON.stringify(
-      { ...compact, hadPriceBeforeCollapse: hadPrice, headerCollapsed: collapsed },
+      {
+        ...compact,
+        hadPriceBeforeCollapse: hadPrice,
+        headerCollapsed: collapsed,
+        printingsOwned: owned,
+        overflowThreshold: OVERFLOW_THRESHOLD,
+      },
       null,
       2,
     ));
+
+    // A card past the threshold MUST collapse. Checked before the outcomes
+    // below, because "not exercised" is only honest for a card that never had
+    // to reach the state.
+    if (owned !== null && owned > OVERFLOW_THRESHOLD && !collapsed) {
+      console.log(
+        `\nFAIL: owned in ${owned} printings, past the ${OVERFLOW_THRESHOLD} threshold, and`
+          + " the header did not collapse. The compact state is broken, not unreachable.",
+      );
+      process.exitCode = 1;
+    }
     // THREE OUTCOMES, not two, and each precondition names itself. A single
     // "no compact price" message covered all three and was wrong about two of
     // them: it reported a failure for a state the run never entered.
@@ -593,6 +624,15 @@ try {
         "\nFAIL: the header collapsed on a card that HAD a figure, and no price came"
           + " with it. The tag has to survive the move out of the art into the name"
           + " block (erratum E12).",
+      );
+      process.exitCode = 1;
+    } else if (!collapsed) {
+      // The mirror of the branch above. A compact figure in an EXPANDED header
+      // means the tag moved without the header doing so — the node exists, so
+      // every check below would pass while the placement is wrong.
+      console.log(
+        "\nFAIL: the compact price rendered while the header was still expanded. The"
+          + " figure belongs in the name block only once the art has collapsed to a thumb.",
       );
       process.exitCode = 1;
     } else if (compact.compact.hiddenFromScreenReaders) {
