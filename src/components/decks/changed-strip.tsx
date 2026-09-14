@@ -233,14 +233,20 @@ export function ChangedStrip({ before, after }: ChangedStripProps) {
               const headroom = scale - Math.max(move.before, move.after);
               return (
                 <div key={move.group} className="flex items-center gap-[8px] md:gap-[12px]">
-                  <span className="shrink-0 truncate w-[74px] md:w-[110px] text-[12px] md:text-[12.5px] text-[color:var(--fg-body)]">
+                  {/* The name takes the row's spare width on a phone and the
+                      figure beside it sizes to its digits: a type name is the
+                      variable-length half of the pair, and a fixed slot for it
+                      truncated `Enchantment` while `2 → 3` sat in space it had
+                      no use for. Desktop keeps its fixed columns, where the bar
+                      is what absorbs the slack. */}
+                  <span className="min-w-0 flex-1 truncate md:flex-none md:shrink-0 md:w-[110px] text-[12px] md:text-[12.5px] text-[color:var(--fg-body)]">
                     {move.group}
                   </span>
                   {/* The after figure carries the row's ink and the before figure
                       is the faint one, exactly as in the cells above: the pair is
                       one measurement, and which end of it is the deck's shape now
                       should not need the arrow to be read. */}
-                  <span className="flex-1 md:flex-none md:w-[96px] font-mono text-[11px] md:text-[11.5px] text-[color:var(--fg-faint)]">
+                  <span className="shrink-0 md:w-[96px] font-mono text-[11px] md:text-[11.5px] text-[color:var(--fg-faint)]">
                     {move.before} → <span className="text-[color:var(--fg)]">{move.after}</span>
                   </span>
                   {/* Desktop only, and the one thing here that is not a figure:
