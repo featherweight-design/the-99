@@ -6,9 +6,9 @@ describe("readBuilderView", () => {
     expect(readBuilderView("consider")).toBe("consider");
     expect(readBuilderView("games")).toBe("games");
     expect(readBuilderView("deck")).toBe("deck");
-    // The retired `/decks/[id]/versions` redirects to `?tab=versions`, so a
-    // fallback here would land every link shipped before this change on
-    // `Your deck` with nothing to say it had missed the rail.
+    // `versions` is a tab like any other and an arrival may name it, so a
+    // fallback here would land a link meant for the rail on `Your deck` with
+    // nothing to say it had missed.
     expect(readBuilderView("versions")).toBe("versions");
   });
 

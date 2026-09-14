@@ -1,5 +1,5 @@
-// The tab the arrival opens on. `/decks/[id]/versions` draws the deck's tab row,
-// and its Consider and Games cells are links back to the builder carrying
+// The tab the arrival opens on. The deck page draws its own tab row, and the
+// Consider and Games cells are links back to the builder carrying
 // `?tab=`. Parsing that parameter is covered in `builder-view.test.ts`; what is
 // only answerable through the shell is whether the parsed value actually decides
 // which tab is selected on the first render.

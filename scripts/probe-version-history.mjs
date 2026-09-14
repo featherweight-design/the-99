@@ -6,7 +6,8 @@
 //
 //   1. THE TAB IS THE WAY IN, AND THE DECK STAYS ON SCREEN. The rail is the deck
 //      page's fourth tab: pressing it draws one row per committed version below the
-//      deck's own head, the retired `/decks/<id>/versions` forwards there, and a
+//      deck's own head, the retired `/decks/<id>/versions` is gone and answers
+//      not-found rather than forwarding, and a
 //      deck the reader does not own is refused. Server reads and laid out geometry,
 //      neither of which jsdom sees.
 //   2. THE DIFF IS FETCHED ON OPEN. A closed rail fires no read; clicking one row
@@ -422,31 +423,39 @@ try {
   await logGames(userId, deck.deckId, deck.versions[1].id);
   console.log(`signed in as ${userId} · deck ${deck.deckId}`);
 
-  // ── The retired route, once: it forwards rather than drawing anything, which
-  // is how a link shipped before the rail became a tab still lands on the rail.
-  await page.goto(`${BASE}/decks/${deck.deckId}/versions`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(700);
-  const forwarded = await readRail(page);
+  // ── The retired route, once. It forwarded to the tab for a while after the
+  // rail moved; it is GONE now, so the only thing to prove is that it answers
+  // not-found rather than still serving or still redirecting. A route deleted
+  // from the tree and a route that quietly kept working look identical from the
+  // outside until something asks.
+  const retired = await page.goto(`${BASE}/decks/${deck.deckId}/versions`, {
+    waitUntil: "networkidle",
+  });
+  await page.waitForTimeout(500);
+  const retiredUrl = await page.evaluate(() => location.pathname + location.search);
+  const retiredBody = await page.evaluate(() => document.body.innerText);
   console.log(`\n########## the retired route · /decks/<id>/versions`);
-  console.log(`  url: ${forwarded.url}`);
+  console.log(`  url: ${retiredUrl}  status: ${retired?.status() ?? "?"}`);
   check(
-    "the old route forwards to the deck page's Versions tab",
-    forwarded.url === `/decks/${deck.deckId}?tab=versions`,
-    forwarded.url,
+    "the retired route no longer forwards",
+    retiredUrl !== `/decks/${deck.deckId}?tab=versions`,
+    retiredUrl,
   );
   check(
-    "and the rail is what it lands on",
-    forwarded.rows.length === 3 && forwarded.inPanel,
-    `${forwarded.rows.length} rows${forwarded.inPanel ? " in the panel" : " outside the panel"}`,
+    "it draws the not-found page",
+    /There's no page here\./.test(retiredBody),
+    retiredUrl,
   );
 
-  // ── The guard, once: a rail is not width-dependent in whom it refuses. The
-  // forward carries no guard of its own beyond the uuid shape, so the refusal
-  // is the deck page's — which is where the rail now lives.
+  // ── The guard, once: a rail is not width-dependent in whom it refuses. This
+  // asked through the retired route while it existed, because the forward
+  // carried no guard of its own and the refusal was always the deck page's. The
+  // route is gone, so it asks the deck page directly — the same assertion about
+  // the same guard, through the door that still exists.
   // `networkidle`, not `domcontentloaded`: the deck page streams behind a
   // loading boundary, so the document is "loaded" while the skeleton is still on
   // screen and the refusal has not arrived yet.
-  const refused = await page.goto(`${BASE}/decks/${foreignDeckId}/versions`, {
+  const refused = await page.goto(`${BASE}/decks/${foreignDeckId}`, {
     waitUntil: "networkidle",
   });
   await page.waitForTimeout(500);
@@ -454,7 +463,7 @@ try {
   const refusedBody = await page.evaluate(() => document.body.innerText);
   const leaked = /v1|committed/i.test(refusedBody);
   const notFoundPage = /There's no page here\./.test(refusedBody);
-  console.log(`\n########## another player's deck · /decks/<id>/versions`);
+  console.log(`\n########## another player's deck · /decks/<id>`);
   check("no rail drawn for a deck the reader does not own", !leaked);
   check("the not-found page is drawn instead", notFoundPage);
   // Reported, not asserted. `decks/[id]/loading.tsx` makes the forwarded-to page

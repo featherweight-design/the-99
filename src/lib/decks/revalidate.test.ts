@@ -6,18 +6,16 @@ describe("deckSurfaces", () => {
   // Home lists the three most recent decks, so it goes stale on a rename or a
   // create just as surely as /decks does.
   it("names the home dashboard alongside the deck and the index", () => {
-    expect(deckSurfaces("deck-1")).toEqual([
-      "/decks/deck-1",
-      "/decks/deck-1/versions",
-      "/decks",
-      "/",
-    ]);
+    expect(deckSurfaces("deck-1")).toEqual(["/decks/deck-1", "/decks", "/"]);
   });
 
-  // The rail carries the deck's name, a row per version and a games-held tally per
-  // row — none of which is claim-shaped, and all of which a plain deck write moves.
-  it("names the version rail, which every deck write can change", () => {
-    expect(deckSurfaces("deck-1")).toContain("/decks/deck-1/versions");
+  // The rail carries the deck's name, a row per version and a games-held tally
+  // per row — none of which is claim-shaped, and all of which a plain deck write
+  // moves. It is a TAB on the deck page now, so the deck's own path covers it;
+  // the retired `/decks/[id]/versions` must NOT be named, because no route fills
+  // that cache entry any more.
+  it("does not name the retired version route", () => {
+    expect(deckSurfaces("deck-1")).not.toContain("/decks/deck-1/versions");
   });
 });
 

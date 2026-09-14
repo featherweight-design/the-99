@@ -1038,7 +1038,6 @@ describe("logGame", () => {
     await logGame("deck_1", { result: "draw", podSize: 3, worked: [], hurt: [] });
     expect(stub.state.revalidated).toEqual([
       "/decks/deck_1",
-      "/decks/deck_1/versions",
       "/decks",
       "/",
     ]);
@@ -1059,7 +1058,6 @@ describe("deleteGame", () => {
     expect(stub.state.deleteCalls).toEqual([{ table: "deck_games", id: "game_1" }]);
     expect(stub.state.revalidated).toEqual([
       "/decks/deck_1",
-      "/decks/deck_1/versions",
       "/decks",
       "/",
     ]);

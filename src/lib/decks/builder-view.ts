@@ -2,8 +2,10 @@
 //
 // The tab is component state on the builder itself — switching tabs is not a
 // navigation, and making it one would push a history entry per click. But a URL
-// may still name the tab on arrival: `/decks/[id]/versions` redirects here
-// naming `versions`, which is how an old link to that route lands on the rail.
+// may still name the tab on arrival — the tab row's own cells link back carrying
+// `?tab=`, and a link can name any tab including `versions`. This used to be
+// justified by `/decks/[id]/versions` redirecting here; that route is retired,
+// and the parameter is read for its own sake now.
 // Only the arrival is read: nothing writes this parameter back as the reader
 // switches.
 

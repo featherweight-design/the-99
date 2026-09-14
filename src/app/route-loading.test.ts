@@ -19,7 +19,6 @@ const NO_BOUNDARY_NEEDED = new Set([
   "decks/import",
   // Redirects to the deck page's `Versions` tab and reads nothing, so there is
   // no fetch to paint a boundary over.
-  "decks/[id]/versions",
 ]);
 
 // Includes the directory it is handed, so the root segment — `src/app/page.tsx`,
