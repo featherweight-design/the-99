@@ -26,7 +26,7 @@ import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage } from "./lib/surface.mjs";
+import { onPage, onPageRole } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -35,6 +35,7 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLE
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const inventoryPath = process.argv[2];
+
 if (!inventoryPath) throw new Error("Pass the inventory JSON path.");
 const inventory = JSON.parse(await readFile(inventoryPath, "utf8"));
 // Relative to the repository by default, so the command in a checked-in inventory
@@ -90,7 +91,7 @@ async function signIn(page) {
  */
 async function run(page, steps) {
   for (const step of steps ?? []) {
-    if (step.goto) {
+    if (step.goto !== undefined) {
       // `${VAR}` in a path comes from the environment, so an inventory can name a
       // route that needs an id without committing one account's id to the
       // repository — where it would 404 on anybody else's data.
@@ -101,32 +102,42 @@ async function run(page, steps) {
       });
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
     }
-    if (step.click) await page.locator(step.click).first().click({ timeout: 15_000 });
-    // A control one width has and the other does not. `/commanders` draws its
-    // colour control inline above 1000px and inside a sheet below it, so one
-    // steps list serves both widths only if the step that opens the sheet may
-    // find nothing. A missing control is skipped, never a failed cell.
-    if (step.clickIfPresent) {
-      const target = page.locator(step.clickIfPresent).first();
-      if (await target.count()) await target.click({ timeout: 15_000 });
+    // EVERY verb reaches page content through `lib/surface.mjs`. The shell
+    // renders around `<main>` and carries the same ARIA selectors a page's
+    // controls do — its account menu is a `button[aria-haspopup="dialog"]`, the
+    // same selector a filter-sheet trigger has, and it comes first in document
+    // order. That substitution has already produced two false findings in
+    // `probe-sets.mjs`, and here it would be worse: a contact sheet photographs
+    // the wrong thing and nothing about the cell looks failed.
+    //
+    // A surface that exists at one width only says so with `widths` on its row.
+    // There is no optional click: a step that finds nothing is a failed cell,
+    // which is the whole point of pressing it.
+    // PRESENCE, not truthiness. An empty selector is a step that would silently
+    // not happen, and a step that does nothing photographs the route in the
+    // previous state while the cell is counted as reached. Playwright rejects
+    // `""` loudly, which is the outcome to want.
+    if (step.click !== undefined) {
+      await onPage(page, step.click).first().click({ timeout: 15_000 });
     }
-    if (step.clickRole) {
-      await page.getByRole(step.clickRole, { name: new RegExp(step.name) }).first().click({ timeout: 15_000 });
+    if (step.clickRole !== undefined) {
+      await onPageRole(page, step.clickRole, new RegExp(step.name))
+        .first()
+        .click({ timeout: 15_000 });
     }
     // A field a surface only reaches its interesting state through typing — the
     // set panel narrows its list as you type, and an empty field shows every set.
-    //
-    // Scoped through `onPage`, the contract `lib/surface.mjs` states: the shell
-    // renders around `<main>` and carries the same selectors page controls do,
-    // so an unscoped field lookup is a substitution waiting for a shell input.
-    // `click` and `clickRole` above predate that helper and are still unscoped;
-    // sweeping them is a change to every inventory's steps at once and belongs
-    // in its own pass, not in the one that adds a third verb.
     if (step.fill !== undefined) {
       await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
     }
-    if (step.wait) await page.waitForSelector(step.wait, { timeout: 15_000 });
-    if (step.settle) await page.waitForTimeout(step.settle);
+    // Scoped like the actions above it, and for the same reason: `wait:
+    // "[role=dialog]"` is in every inventory, and the shell's account sheet is
+    // also a `role="dialog"` sitting before `<main>` — so an unscoped wait can
+    // resolve against it and hand the next step a page that never opened.
+    if (step.wait !== undefined) {
+      await onPage(page, step.wait).first().waitFor({ state: "visible", timeout: 15_000 });
+    }
+    if (step.settle !== undefined) await page.waitForTimeout(step.settle);
     // A surface that only exists part-way down the page — the set head's collapsed bar, the
     // foot of a long column — is reached by scrolling to it, which is a step like any other
     // rather than a reason for a second script.
@@ -251,6 +262,18 @@ try {
   const sheet = path.join(outDir, "sheet.png");
   await sheetPage.screenshot({ path: sheet, fullPage: true });
   console.log(`\nsheet: ${sheet}`);
+  // THE BACKSTOP. A run that photographed nothing is a silent success whatever
+  // caused it — no rows, an empty `widths`, every row skipped by its own
+  // `widths`, or something nobody has thought of yet. Naming those causes one by
+  // one is a list that needs maintaining and is never finished; this catches the
+  // class, and the `widths` loop above still names the one cause it can.
+  if (shots.length === 0) {
+    console.log(
+      "\nNOTHING WAS PHOTOGRAPHED. A sheet with no cells in it is not coverage —"
+        + " check the inventory's rows and their `widths`.",
+    );
+    process.exitCode = 1;
+  }
   const failed = shots.filter((s) => s.note);
   if (failed.length) {
     console.log(

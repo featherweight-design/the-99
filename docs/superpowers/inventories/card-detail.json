@@ -1,9 +1,9 @@
 {
-  "feature": "Card detail \u2014 price, zoom, flip",
+  "feature": "Card detail — price, zoom, flip",
   "rows": [
     {
       "id": "collection-rows",
-      "label": "/collection (rows) \u2014 modal",
+      "label": "/collection (rows) — modal",
       "steps": [
         {
           "goto": "/collection?view=rows&q=Gravelgill",
@@ -19,7 +19,7 @@
     },
     {
       "id": "collection-rows-zoom",
-      "label": "/collection \u2014 the zoom",
+      "label": "/collection — the zoom",
       "steps": [
         {
           "goto": "/collection?view=rows&q=Gravelgill",
@@ -41,7 +41,7 @@
     },
     {
       "id": "collection-grid",
-      "label": "/collection (grid) \u2014 modal",
+      "label": "/collection (grid) — modal",
       "steps": [
         {
           "goto": "/collection?view=grid&q=Safewright",
@@ -57,7 +57,7 @@
     },
     {
       "id": "sets-cell",
-      "label": "/collection/sets/tla \u2014 a cell opens the modal",
+      "label": "/collection/sets/tla — a cell opens the modal",
       "steps": [
         {
           "goto": "/collection/sets/tla",
@@ -74,11 +74,11 @@
     },
     {
       "id": "deck-row",
-      "label": "/decks/[id] \u2014 decklist row",
+      "label": "/decks/[id] — decklist row",
       "steps": [
         {
           "goto": "/decks/${PROBE_DECK}",
-          "wait": "main",
+          "wait": "main, [role=main], h1",
           "settle": 7000
         },
         {
@@ -91,7 +91,7 @@
     },
     {
       "id": "commander-detail",
-      "label": "/commanders/[slug] \u2014 Card details opens the modal",
+      "label": "/commanders/[slug] — Card details opens the modal",
       "steps": [
         {
           "goto": "/commanders",
@@ -113,7 +113,7 @@
     },
     {
       "id": "two-faced-zoom",
-      "label": "two-faced card \u2014 the turn, in the zoom",
+      "label": "two-faced card — the turn, in the zoom",
       "steps": [
         {
           "goto": "/collection?view=rows&q=Toralf",
@@ -139,5 +139,5 @@
       ]
     }
   ],
-  "note": "Steps are Playwright verbs. Every `goto` carries a `wait` for something the finished page has, because `settle` is a delay rather than a readiness check. No account's ids are committed: the deck row takes PROBE_DECK from the environment \u2014 any deck the signed-in account owns, e.g. `PROBE_DECK=<uuid> node scripts/contact-sheet.mjs ...`."
+  "note": "Steps are Playwright verbs. Every `goto` carries a `wait` for something the finished page has, because `settle` is a delay rather than a readiness check. No account's ids are committed: the deck row takes PROBE_DECK from the environment — any deck the signed-in account owns, e.g. `PROBE_DECK=<uuid> node scripts/contact-sheet.mjs ...`."
 }

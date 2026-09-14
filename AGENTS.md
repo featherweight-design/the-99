@@ -288,6 +288,19 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   while the desktop is right, is visible in a glance. Inventories live in
   `docs/superpowers/inventories/*.json`.
 
+  Every step verb — `click`, `clickRole`, `fill`, and the selector `wait` — reaches page
+  content through `lib/surface.mjs` (`onPage`, `onPageRole`), so an inventory never spells
+  `main` itself and the scope has ONE definition. A second prefix would chain `main` inside
+  `main` and match nothing. `wait` is scoped for the same reason as the rest:
+  `wait: "[role=dialog]"` is in every inventory, and the shell's account sheet is also a
+  `role="dialog"` sitting before `<main>`.
+
+  A row that exists at one width only says so with `"widths": ["phone"]` or `["desktop"]`;
+  the other width is skipped and reported as such rather than counted a failure. There is
+  deliberately no optional click: a step that may find nothing cannot fail, and a cell that
+  photographs a closed route reads as coverage. And a run that photographs NOTHING fails,
+  whatever the cause — no rows, an empty `widths`, every row skipped by its own.
+
   `pnpm check:shared <inventory>` answers the half a picture cannot: whether routes that are
   supposed to carry the same control do it by rendering the same component. It reads the same
   inventories, and does nothing for one with no `shares` block. When a `shares` block is present

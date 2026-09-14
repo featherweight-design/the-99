@@ -30,7 +30,7 @@
           "settle": 900
         },
         {
-          "click": "main div.group:has(button[aria-label^='View details for']) .flex-auto",
+          "click": "div.group:has(button[aria-label^='View details for']) .flex-auto",
           "wait": "[role=dialog]",
           "settle": 2500
         }
@@ -67,5 +67,5 @@
       ]
     }
   ],
-  "note": "Steps are Playwright verbs. The deck takes PROBE_DECK from the environment, so no account's id is committed. `/collection` is visited as `?view=rows` because the desktop default is the grid, which draws no pips — the surface the defect was reported on has to be asked for by name. Each row scrolls to where the cards are: the deck page opens on its hero and its tabs, so a sheet shot at the top photographs no cost column at all."
+  "note": "Steps are Playwright verbs. The deck takes PROBE_DECK from the environment, so no account's id is committed. `/collection` is visited as `?view=rows` because the desktop default is the grid, which draws no pips — the surface the defect was reported on has to be asked for by name. Each row scrolls to where the cards are: the deck page opens on its hero and its tabs, so a sheet shot at the top photographs no cost column at all. Selectors carry no `main` of their own: `contact-sheet.mjs` scopes every verb through `lib/surface.mjs`, and a second prefix would chain `main` inside `main` and match nothing."
 }

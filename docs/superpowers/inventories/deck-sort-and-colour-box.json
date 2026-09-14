@@ -1,6 +1,6 @@
 {
   "feature": "The deck order's memory, and the colour control's box",
-  "note": "Two small rulings on three routes. The `/decks` rows open the sort menu, because that is where the capitalised labels are drawn and a closed trigger only shows the one in force. The colour rows press `Filters` where there is one: below 1000px the rack has NO wide form and `FilterSheet` returns null until it is opened, so a bare `goto` photographed a phone cell with no control in it. At 1300 the trigger is absent and the step is skipped, which is why it is `clickIfPresent` — the box that was lopsided is the wide form, and the sheet form draws no box at all. No `shares` block: the colour control is already one component (`ui/colour-pips.tsx` inside `rack/colour-control.tsx`), which is why one 6px padding fixed both lanes at once. Steps are Playwright verbs.",
+  "note": "Two small rulings on three routes. The `/decks` rows open the sort menu, because that is where the capitalised labels are drawn and a closed trigger only shows the one in force.\n\nThe colour control is TWO rows per lane, split on `widths`, because it is two controls: above 1000px the rack draws it inline inside a bordered box, and below that `FilterSheet` returns null until `Filters` is pressed. The wide rows are the evidence — the box that was lopsided is that one — and the sheet rows show the same pips with no box at all. Split rather than one row with an optional click: a step that may find nothing cannot fail, so a regressed `Filters` trigger would photograph a closed route and read as coverage.\n\nNo `shares` block: the colour control is already one component (`ui/colour-pips.tsx` inside `rack/colour-control.tsx`), which is why one 6px padding fixed both lanes at once. Steps are Playwright verbs, and every one of them is scoped to the page.",
   "rows": [
     {
       "id": "decks-sort-menu",
@@ -20,8 +20,25 @@
       ]
     },
     {
-      "id": "commanders-colour",
+      "id": "commanders-colour-wide",
       "label": "/commanders — the colour control's box",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "main, [role=main], h1",
+          "settle": 14000
+        }
+      ]
+    },
+    {
+      "id": "commanders-colour-sheet",
+      "label": "/commanders — the same control, in the sheet",
+      "widths": [
+        "phone"
+      ],
       "steps": [
         {
           "goto": "/commanders",
@@ -29,14 +46,33 @@
           "settle": 14000
         },
         {
-          "clickIfPresent": "main button[aria-haspopup='dialog']:visible",
+          "clickRole": "button",
+          "name": "^Filters$",
+          "wait": "[role=dialog]",
           "settle": 1200
         }
       ]
     },
     {
-      "id": "discover-colour",
+      "id": "discover-colour-wide",
       "label": "/discover — the same control, the other lane",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/discover",
+          "wait": "main, [role=main], h1",
+          "settle": 14000
+        }
+      ]
+    },
+    {
+      "id": "discover-colour-sheet",
+      "label": "/discover — the same control, in the sheet",
+      "widths": [
+        "phone"
+      ],
       "steps": [
         {
           "goto": "/discover",
@@ -44,7 +80,9 @@
           "settle": 14000
         },
         {
-          "clickIfPresent": "main button[aria-haspopup='dialog']:visible",
+          "clickRole": "button",
+          "name": "^Filters$",
+          "wait": "[role=dialog]",
           "settle": 1200
         }
       ]
