@@ -202,7 +202,13 @@ function NameLine({
       {/* The slot is drawn whether or not there is a cost to put in it: it is
           what holds every line's pips on one vertical line. A card the catalog
           gives no cost draws nothing inside it, never a zero. */}
-      <span className="flex-none w-[56px] flex items-center justify-end gap-[3px]">
+      {/* The shared track, not a slot of its own: a five-pip run is `COST_TRACK` wide, and a
+          56px slot held it only while the pips overlapped — it would have overflowed into the
+          name beside it the moment they stopped. */}
+      <span
+        className="flex-none flex items-center justify-end gap-[3px]"
+        style={{ width: COST_TRACK }}
+      >
         {/* The shared track, so a card's cost lands on the same vertical line here
             and in the decklist below. `CostPips` defaults neither, so both pass. */}
         {cost ? (

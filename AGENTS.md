@@ -250,6 +250,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   that locator rather than against a selector string of its own, so `onPage` keeps owning
   what "the page" means.
 
+- `pnpm probe:pip-gap` measures the horizontal gap between every neighbouring pair of mana
+  pips on `/decks/[id]`, `/decks/[id]/changes` and `/collection`, at 1300 and 390. The pips
+  used to overlap by 5px each past the second — a 40px track cannot hold three 12px pips at a
+  3px gap — and two black pips overlapping read as one, which on these rows is the difference
+  between a two-drop and a four-drop. jsdom lays nothing out, so a unit test can assert the
+  absence of a negative margin and nothing more; whether two discs cover each other is a
+  question for a layout engine. `/collection` is visited as `?view=rows` on purpose: its
+  desktop default is the grid, which draws no pips, and a run that took the default would
+  sweep nothing clean at the width the defect was reported on. Point it at `local-dev`.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does

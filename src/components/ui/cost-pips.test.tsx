@@ -1,9 +1,10 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { CostPips } from "./cost-pips";
+import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "./cost-pips";
 
-// The desktop decklist track: 12px pips, gap 3, fixed 40px, five slots.
-const TRACK = { size: 12, track: 40, cap: 5 } as const;
+// The desktop decklist track: 12px pips, gap 3, five slots, and a track wide enough to hold
+// all five at that gap — 5 × 12 + 4 × 3 = 72.
+const TRACK = { size: COST_PIP_SIZE, track: COST_TRACK, cap: COST_PIP_CAP } as const;
 
 function runOf(ui: React.ReactElement) {
   const { container } = render(ui);
@@ -15,16 +16,13 @@ function pipsOf(ui: React.ReactElement) {
 }
 
 /**
- * What the run measures, in px, from the drawn sizes and the shingle inset.
- * A shingled run sets `gap: 0` inline; otherwise the 3px gap comes from a class
- * jsdom does not compute, so it is passed in.
+ * What the run measures, in px, from the drawn sizes and the gap. The 3px gap comes from a
+ * class jsdom does not compute, so it is passed in.
  */
 function widthOf(ui: React.ReactElement, gap: number) {
   const run = runOf(ui);
-  const step = run.style.gap === "" ? gap : Number.parseFloat(run.style.gap);
   return [...run.querySelectorAll<HTMLElement>("span.rounded-full")].reduce((total, pip, i) => {
-    const advance = i === 0 ? 0 : step + Number.parseFloat(pip.style.marginLeft || "0");
-    return total + Number.parseFloat(pip.style.width) + advance;
+    return total + Number.parseFloat(pip.style.width) + (i === 0 ? 0 : gap);
   }, 0);
 }
 
@@ -33,13 +31,13 @@ describe("CostPips — the pip ladder", () => {
   const ladder: Array<{ cost: string; slots: number; measured: number; label?: string }> = [
     { cost: "{U}", slots: 1, measured: 12 },
     { cost: "{2}{W}", slots: 2, measured: 27 },
-    { cost: "{1}{W}{B}", slots: 3, measured: 26 },
-    { cost: "{2}{U}{B}{R}", slots: 4, measured: 33 },
-    { cost: "{W}{U}{B}{R}{G}", slots: 5, measured: 40 },
+    { cost: "{1}{W}{B}", slots: 3, measured: 42 },
+    { cost: "{2}{U}{B}{R}", slots: 4, measured: 57 },
+    { cost: "{W}{U}{B}{R}{G}", slots: 5, measured: 72 },
     {
       cost: "{W}{W}{U}{U}{B}{B}{R}{R}{G}{G}",
       slots: 5,
-      measured: 40,
+      measured: 72,
       // Ten symbols over four drawn pips. STATES prints "+7" in this one cell,
       // but the README's rule is the count of symbols NOT drawn, so it is +6.
       label: "+6",
@@ -57,7 +55,7 @@ describe("CostPips — the pip ladder", () => {
 
   it("never bursts the track, whatever the cost", () => {
     for (const { cost } of ladder) {
-      expect(widthOf(<CostPips cost={cost} {...TRACK} />, 3)).toBeLessThanOrEqual(40);
+      expect(widthOf(<CostPips cost={cost} {...TRACK} />, 3)).toBeLessThanOrEqual(COST_TRACK);
     }
   });
 
@@ -70,28 +68,33 @@ describe("CostPips — the pip ladder", () => {
     expect(six[4].textContent).toBe("+2");
   });
 
-  it("keeps the gap real below three and shingles from three", () => {
-    expect(pipsOf(<CostPips cost="{2}{W}" {...TRACK} />)[1].style.marginLeft).toBe("");
-    expect(pipsOf(<CostPips cost="{1}{W}{B}" {...TRACK} />)[1].style.marginLeft).toBe("-5px");
+  // Pips never overlap, at any length. They did past two, by 5px each, inside a 40px track —
+  // and a five-pip cost was four overlaps deep and unreadable at the one width it applied to.
+  it("keeps the gap real at every length", () => {
+    for (const { cost } of ladder) {
+      for (const pip of pipsOf(<CostPips cost={cost} {...TRACK} />)) {
+        expect(pip.style.marginLeft).toBe("");
+      }
+    }
   });
 
-  // A shingled run used to set `display: flex` inline, which outranks a
-  // `hidden` utility class — so a track its caller hid at phone width drew
-  // anyway, over the top of the run that was meant to be showing.
-  it("leaves display to the caller's class when it shingles", () => {
+  // The run used to set `display: flex` inline, which outranks a `hidden` utility class — so
+  // a track its caller hid at phone width drew anyway, over the top of the run that was meant
+  // to be showing. Nothing about the run's layout is inline now except its width.
+  it("leaves display and gap to the caller's class", () => {
     const { container } = render(
       <CostPips cost="{1}{W}{B}" {...TRACK} className="hidden md:flex gap-[3px]" />,
     );
     const run = container.firstElementChild as HTMLElement;
     expect(run.style.display).toBe("");
     expect(run.className).toContain("hidden");
-    expect(run.style.gap).toBe("0px");
+    expect(run.style.gap).toBe("");
   });
 
   it("right-aligns inside a fixed track rather than widening it", () => {
     const { container } = render(<CostPips cost="{U}" {...TRACK} />);
     const run = container.firstElementChild as HTMLElement;
-    expect(run.style.width).toBe("40px");
+    expect(run.style.width).toBe(`${COST_TRACK}px`);
     expect(run.style.justifyContent).toBe("flex-end");
   });
 

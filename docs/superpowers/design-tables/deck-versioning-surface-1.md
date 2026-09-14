@@ -282,10 +282,21 @@ sentence is replaced by the name lines, and the button hierarchy inverts.
 | price tag — content | (same rule) | `$28.40` — the banner's inline names **keep the price** (not the collapsed `$`) |
 | cost track slot — display / align / justify | (same rule) | `flex` · `center` · `flex-end` |
 | cost track slot — gap | (same rule) | `3px` |
-| cost track slot — width | (same rule) | `56px`, `flex: none` |
+| cost track slot — width | (same rule) | `COST_TRACK` (72px), `flex: none` — **amended 2026-09-14, see below** |
 | cost track — generic disc | (same rule) | `18px × 18px`, `border-radius 999px`, background `#2A241D`, border `1px solid #3A3229`, mono `10px`, color `#C6B79A`, centred; **absent when the cost has no generic component** |
 | cost track — coloured pip | (same rule) | `11px × 11px`, `border-radius 999px`, background = WUBRG hex (`U #4A7FB5`, `B #5B5566`, `G #6B9E63`, `W #E8E4D6`, `R #C05A48`), `flex: none` |
-| `CostPips` props | (same rule) | pass `track` and `cap` **explicitly** — the component defaults neither (§Errata); mount the shipped constants `PIP_TRACK = 40`, `PIP_CAP = 5` |
+| `CostPips` props | (same rule) | pass `track` and `cap` **explicitly** — the component defaults neither (§Errata); mount the shipped constants `COST_TRACK` (72px) and `COST_PIP_CAP` (5), never a literal |
+
+> **Amendment, 2026-09-14 (PR #621), taken on Hugh's instruction and not through a design
+> round.** The pips overlapped. The track — `COST_TRACK` in the code, `PIP_TRACK` in this
+> table's own §Errata — was 40px, which cannot hold three 12px pips at the
+> 3px gap this table also specifies — so every pip past the second stepped 5px into its
+> neighbour, and two black pips overlapping read as one, which on these rows is the difference
+> between a two-drop and a four-drop. The track is the cap's five slots at their real gap now:
+> `5 × 12 + 4 × 3 = 72`. The gap, the cap, the disc and the pip sizes are all unchanged; only
+> the slot they sit in is wider, and this banner's 56px slot would have overflowed into the
+> name beside it the moment the pips stopped overlapping. `pnpm probe:pip-gap` holds every
+> surface that draws a cost to that 3px floor.
 
 ### Name line — remove variant
 
@@ -298,7 +309,7 @@ sentence is replaced by the name lines, and the button hierarchy inverts.
 | hint — font-family / size / color | (same rule) | `var(--font-mono)` · `10px` · `#6A6152` (`--fg-locked`) |
 | hint text | (same rule) | `back in the pool on commit` (`pending.removeHint`) |
 | price / buy tag | (same rule) | **absent** on a remove |
-| cost track slot | (same rule) | identical to the add variant — `56px`, gap `3px`, disc + pips |
+| cost track slot | (same rule) | identical to the add variant — `COST_TRACK` (72px, amended above), gap `3px`, disc + pips |
 
 ### Controls row (inverted hierarchy)
 
@@ -544,7 +555,7 @@ height. `pending add` goes in the row's **accessible name only** and is never re
 | cost track slot — display / align / justify / gap | `flex` · `center` · `flex-end` · `3px` | `flex` · `center` · `flex-end` · `3px` |
 | cost track — generic disc | `17px × 17px`, radius `999px`, background `#2A241D`, border `1px solid #3A3229`, mono `9.5px`, color `#C6B79A` | `18px × 18px`, radius `999px`, background `#2A241D`, border `1px solid #3A3229`, mono `10px`, color `#C6B79A` |
 | cost track — coloured pip | `10px × 10px`, radius `999px`, WUBRG hex fill | `11px × 11px`, radius `999px`, WUBRG hex fill |
-| cost track governing geometry | **shipped `PIP_TRACK = 40`, `PIP_CAP = 5`** (§Errata) — the 90/76px above is the canvas drawing, and `COST-TRACK.md`'s 110/76 proposal governs nothing here | same |
+| cost track governing geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) — the 90/76px above is the canvas drawing, and `COST-TRACK.md`'s 110/76 proposal governs nothing here | same — **`COST_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
 | remove `×` control — width / color / size / text-align | not drawn at 390px | `14px` · `#5C5346` · `13px` · `right`, `flex: none` |
 | row hover | `--elevated-hover` with `open card →` in the meta slot | same |
 | row click target | the whole row opens the card | same |
@@ -797,7 +808,7 @@ states, which live in this banner's box). Diff source: `deck_cards` against the 
 | Change-name row height | canvas `min-height 34px` | Component notes' `32px` |
 | Change-name name size | canvas `13px` | Component notes' `13.5px` |
 | Group heading size | canvas `16px` desktop / `14px` phone | Component notes' `14px` (and `13px` in a version diff) |
-| Cost-track geometry | **shipped `PIP_TRACK = 40`, `PIP_CAP = 5`** (§Errata) | the canvas's `90px` / `76px` slots, `COST-TRACK.md`'s `110px` / `76px`, and §Surfaces' `90px` / `76px` |
+| Cost-track geometry | **shipped `COST_TRACK = 72`, `PIP_CAP = 5`** (§Errata) | the canvas's `90px` / `76px` slots, `COST-TRACK.md`'s `110px` / `76px`, and §Surfaces' `90px` / `76px` — **`COST_TRACK` is 72 since 2026-09-14 (PR #621); see the amendment on surface 1** |
 | Row min-height desktop | canvas `38px`; Contract frame says "rows 38–44px desktop, 44–52px phone"; READINESS says "diff rows 40–46px desktop" | ranges disagree; the canvas figure is recorded |
 | Pending sentence placement | **both recorded** — toolbar right slot (canvas, mono `11.5px` `#6A6152`) and caption above the list (Component notes, mono `10px` `--fg-faint`) | unresolved: the copy module ships `addListCaption` **and** `toolbarNote` as separate strings |
 | Ownership dot a11y | the **row's own accessible name** carries the availability word | Component notes' "the bucket heading is the accessible statement" (buckets withdrawn) |

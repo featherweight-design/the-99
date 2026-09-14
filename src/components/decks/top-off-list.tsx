@@ -26,7 +26,7 @@ import {
   type PriceFact,
 } from "../../lib/decks/price";
 import { availabilityState } from "../../lib/decks/availability";
-import { CostPips } from "../ui/cost-pips";
+import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { BuyTag } from "./buy-tag";
@@ -127,7 +127,7 @@ function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
 }
 
 /** Mounted twice, and only here. The phone track is uncapped and unshingled
- *  while the desktop track caps at five slots inside a fixed 40px column —
+ *  while the desktop track caps at five slots inside the shared `COST_TRACK` column —
  *  both are `cap`/`track` props, which no responsive class can reach. The two
  *  mounts read the same `cost`, so they cannot drift; both are aria-hidden and
  *  the cost is spoken once from the row's own label. */
@@ -138,9 +138,9 @@ function CostTrack({ cost }: { cost: string | null }) {
       <CostPips cost={cost} size={13} className="flex gap-[3px] md:hidden" />
       <CostPips
         cost={cost}
-        size={12}
-        cap={5}
-        track={40}
+        size={COST_PIP_SIZE}
+        cap={COST_PIP_CAP}
+        track={COST_TRACK}
         className="hidden md:flex gap-[3px]"
       />
     </span>
@@ -521,7 +521,16 @@ export function TopOffList({
         <span className="w-[18px] flex-none" />
         <span className="w-[7px] flex-none" />
         <span className="flex-auto min-w-0">{topOffCopy.list.colCard}</span>
-        <span className="w-[40px] flex-none text-right">{topOffCopy.list.colCost}</span>
+        {/* The same shared track the rows draw into, never a literal beside it: the cost
+            column widened from 40 to 72 when the pips stopped overlapping, and a header
+            carrying its own copy of the old number put this heading and every one after it
+            32px left of the data underneath. */}
+        <span
+          className="flex-none text-right"
+          style={{ width: COST_TRACK }}
+        >
+          {topOffCopy.list.colCost}
+        </span>
         <span className="w-[84px] flex-none" />
         {/* Both figures narrow to pay for the decline's 60px slot, measured
             against the string the row actually renders — `+147 pts`, eight

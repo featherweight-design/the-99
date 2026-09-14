@@ -9,8 +9,9 @@ import { frontFaceCost } from "../../lib/cards/faces";
 // rather than a white pip claiming to be free.
 //
 // A bare mana value is not a fallback for a long cost: `{W}{W}{U}{U}{B}{B}{R}{R}{G}{G}`
-// and `{10}` are the same integer and different cards. Long costs shingle, and
-// past the cap the last slot becomes a generic pip counting what it left out.
+// and `{10}` are the same integer and different cards. A long cost is CAPPED rather than
+// compressed: past the cap the last slot becomes a generic pip counting what it left out,
+// and the pips it does draw are always a real 3px apart.
 
 // "{2}{U}{B}" → ["2", "U", "B"]. Hybrid and Phyrexian symbols come back whole
 // ("U/B", "G/P"), which is why the cost is carried as Scryfall's string rather
@@ -24,22 +25,26 @@ export function parseManaCost(cost: string): string[] {
   return [...frontFaceCost(cost).matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
 }
 
-// Three plain 12px pips at gap 3 measure 42px and burst the 40px track, so
-// shingling engages at three: each pip after the first steps 5px into its
-// neighbour, which puts five pips at exactly 40px. Below three the gap is real.
-const SHINGLE_FROM = 3;
-const SHINGLE_OVERLAP = 5;
+// Pips never overlap. They did: a 40px track could not hold three 12px pips at a 3px gap, so
+// every pip past the second stepped 5px into its neighbour and five fitted exactly, and two
+// black pips overlapping read as one. It applied wherever a caller passed `cap` — the
+// decklist's desktop track, the pending banner, the top-off list, `/collection`'s rows — and
+// not to the uncapped runs, which is why the phone's meta line always drew a real gap. Every
+// one of those surfaces has the room for the full run, which is the whole reason the track
+// can simply be as wide as what it holds.
+//
+// 5 × 12 + 4 × 3 = 72, so the track is 72: the cap's five slots at their real gap, and no
+// arithmetic left over to get wrong.
 
 /**
  * The cost track every surface that draws costs in a column shares.
  *
- * Exported rather than repeated per caller because the shingle arithmetic above
- * is derived from exactly these three numbers: five `COST_PIP_SIZE` pips
- * overlapping by `SHINGLE_OVERLAP` measure `COST_TRACK` precisely. A caller that
- * picked its own track would either misalign against the rows beside it or burst
- * a track this module still believes is 40px wide.
+ * Exported rather than repeated per caller because the arithmetic above is derived from
+ * exactly these three numbers: `COST_PIP_CAP` pips of `COST_PIP_SIZE` at the 3px gap measure
+ * `COST_TRACK` precisely. A caller that picked its own track would either misalign against
+ * the rows beside it or burst one this module still believes is 72px wide.
  */
-export const COST_TRACK = 40;
+export const COST_TRACK = 72;
 export const COST_PIP_CAP = 5;
 export const COST_PIP_SIZE = 12;
 
@@ -69,7 +74,7 @@ type CostPipsProps = {
   track?: number;
   /**
    * Slots drawn before the run is capped. At the cap the last slot is a generic
-   * pip carrying `+N`. Omitted, nothing is capped and nothing shingles.
+   * pip carrying `+N`. Omitted, nothing is capped and the run is as long as its cost.
    */
   cap?: number;
   /**
@@ -89,39 +94,23 @@ export function CostPips({ cost, size = 14, track, cap, spoken, className }: Cos
   const capped = cap !== undefined && symbols.length > cap;
   const drawn = capped ? symbols.slice(0, cap - 1) : symbols;
   const omitted = symbols.length - drawn.length;
-  const slots = drawn.length + (capped ? 1 : 0);
-  const shingled = cap !== undefined && slots >= SHINGLE_FROM;
 
   return (
     <>
       <span
         aria-hidden
         className={className ?? "flex gap-[3px]"}
-        style={{
-          // Gap only. `display` was set here too, and an inline display beats a
-          // `hidden` utility class, so a track hidden at one width by its own
-          // className drew anyway the moment it shingled — two runs of pips
-          // overprinting each other. Every caller's className carries a display,
-          // including the default below.
-          ...(shingled ? { gap: 0 } : null),
-          ...(track === undefined ? null : { width: track, justifyContent: "flex-end" }),
-        }}
+        // Width only, and never `display`: an inline display outranks a `hidden` utility
+        // class, so a track hidden at one width by its own className drew anyway — two runs
+        // of pips overprinting each other. Every caller's className carries a display,
+        // including the default below.
+        style={track === undefined ? undefined : { width: track, justifyContent: "flex-end" }}
       >
         {drawn.map((sym, i) => (
-          <Pip
-            key={i}
-            symbol={sym}
-            size={size}
-            inset={shingled && i > 0 ? SHINGLE_OVERLAP : 0}
-          />
+          <Pip key={i} symbol={sym} size={size} />
         ))}
         {capped ? (
-          <Pip
-            symbol={null}
-            label={manaCopy.pipOverflow(omitted)}
-            size={size}
-            inset={shingled ? SHINGLE_OVERLAP : 0}
-          />
+          <Pip symbol={null} label={manaCopy.pipOverflow(omitted)} size={size} />
         ) : null}
       </span>
       {spoken ? <span className="sr-only">{spokenManaCost(cost)}</span> : null}
@@ -133,12 +122,10 @@ function Pip({
   symbol,
   label,
   size,
-  inset,
 }: {
   symbol: string | null;
   label?: string;
   size: number;
-  inset: number;
 }) {
   const parts = symbol?.split("/") ?? [];
   const colours = parts.filter((p) => /^[WUBRG]$/.test(p));
@@ -159,7 +146,6 @@ function Pip({
         background,
         color: "var(--bg)",
         boxShadow: "inset 0 0 0 1px rgba(0,0,0,.45)",
-        ...(inset ? { marginLeft: -inset } : null),
       }}
     >
       {label ?? (colours.length > 0 ? (numeral ?? "") : symbol)}
