@@ -79,16 +79,16 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | text | `optional` (shortened) | `one line, in your words` |
+| font-family | `IBM Plex Mono` | `IBM Plex Mono` |
+| font-size | 9.5 | 10 |
+| color | `var(--fg-locked)` `#6A6152` | `var(--fg-locked)` `#6A6152` |
+| text-transform | none | none |
 
 > **Errata (2026-09-13).** The desktop gloss drops "optional". At `md:` the footer
 > under the buttons already says "marks and the note are optional", so the word
 > appeared twice on one screen. The PHONE keeps `optional` because that footer is
 > `hidden md:block` — there the gloss is the only marker, and without it the field
 > reads as required.
-| font-family | `IBM Plex Mono` | `IBM Plex Mono` |
-| font-size | 9.5 | 10 |
-| color | `var(--fg-locked)` `#6A6152` | `var(--fg-locked)` `#6A6152` |
-| text-transform | none | none |
 
 ### Counter — "78 / 140"
 
