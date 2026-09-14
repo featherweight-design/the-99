@@ -811,43 +811,71 @@ async function stage(deckId, versionId, addOracleIds, cuts) {
  *
  *  That add has to be a basic the collection holds NO copy of, and this account
  *  owns them all — so the fixture takes its rows for one basic out and puts them
- *  back in the run's `finally`. `AvailabilitySlot` draws the tag on `!owned`,
- *  and `owned` comes off a collection read: an added basic the player happens to
- *  own reads as owned whether or not the model forces it, so the tag reading
- *  passes over a build with the rule taken out. A basic the collection has never
- *  heard of is the only add that tells the two apart, and it is also the exact
- *  row a player was told to go and buy five Forests on.
+ *  back. `AvailabilitySlot` draws the tag on `!owned`, and `owned` comes off a
+ *  collection read: an added basic the player happens to own reads as owned
+ *  whether or not the model forces it, so the tag reading passes over a build
+ *  with the rule taken out. A basic the collection has never heard of is the
+ *  only add that tells the two apart, and it is also the exact row a player was
+ *  told to go and buy five Forests on.
  *
  *  The version is written rather than the draft alone: a cut needs something to
- *  be cut FROM, and `deck_version_cards` is what the diff reads. Returns null
- *  when the catalog holds fewer than three basics, so the block reports itself
- *  skipped rather than as a pass. */
-async function stageBasics(deckId, versionId, userId) {
+ *  be cut FROM, and `deck_version_cards` is what the diff reads. Every version
+ *  row this overwrites is captured first and put back with the rest — the
+ *  template is a real 99-card deck and may already sleeve any of these basics,
+ *  and deleting its rows outright would leave every later block in the run
+ *  measuring a corrupted version.
+ *
+ *  `undo` is the caller's cleanup handle and is populated BEFORE each write it
+ *  covers, never after: this function is a sequence of statements, and a throw
+ *  between one of them and the return would otherwise strand whatever the
+ *  previous statement removed. A version of it that returned the handle at the
+ *  end could take a player's collection rows away permanently.
+ *
+ *  Returns null when the catalog cannot supply three distinct basics that are
+ *  usable here, so the block reports itself skipped rather than as a pass. */
+async function stageBasics(deckId, versionId, userId, undo) {
   const { rows } = await pool.query(
     `select oracle_id, name from cards where type_line ilike 'basic land%'
       order by name limit 2`,
   );
   if (rows.length < 2) return null;
   const [gone, trimmed] = rows;
-  // The add, and it has to be a basic the collection holds none of — see the
-  // header. A third basic is picked and its collection rows are lifted out, to
-  // be put back in the run's `finally`: substituting an owned card instead would
-  // report the tag absent while proving nothing about why.
+  // The add has to be a basic that is NOT already in this version: one that is
+  // would be a recount rather than an add, and a quantity that happens to be 5
+  // already would be no change at all — the row would simply not be there, and
+  // the block would report it missing while the page was right.
   const { rows: addRows } = await pool.query(
-    `select oracle_id, name from cards
-      where type_line ilike 'basic land%' and oracle_id <> all($1::uuid[])
-      order by name limit 1`,
-    [[gone.oracle_id, trimmed.oracle_id]],
+    `select c.oracle_id, c.name from cards c
+      where c.type_line ilike 'basic land%'
+        and c.oracle_id <> all($1::uuid[])
+        and not exists (
+          select 1 from deck_version_cards v
+           where v.version_id = $2 and v.oracle_id = c.oracle_id
+        )
+      order by c.name limit 1`,
+    [[gone.oracle_id, trimmed.oracle_id], versionId],
   );
   const added = addRows[0] ?? null;
-  // Every column, so the rows go back exactly as they were. `returning *` rather
-  // than a read-then-delete: one statement cannot leave a half-lifted card.
-  const liftedRows = added
-    ? (await pool.query(
-        `delete from collection_items where user_id = $1 and oracle_id = $2 returning *`,
-        [userId, added.oracle_id],
-      )).rows
-    : [];
+  // Three distinct basics or nothing. The contract above says so, and a run that
+  // staged only the two cuts would record a failed probe for an add it never
+  // meant to have.
+  if (!added) return null;
+  // Every column, so the rows go back exactly as they were, and `returning *`
+  // rather than a read-then-delete: one statement cannot leave a half-lifted
+  // card. Handed to `undo` in the same breath — see the header.
+  const { rows: liftedRows } = await pool.query(
+    `delete from collection_items where user_id = $1 and oracle_id = $2 returning *`,
+    [userId, added.oracle_id],
+  );
+  undo.collection.push(...liftedRows);
+  // What the version already held for the two cut basics, captured before the
+  // upsert overwrites it. An absent one leaves nothing to put back, which is why
+  // `clearVersionBasics` deletes the ids it was given and then re-inserts these.
+  const { rows: priorVersionRows } = await pool.query(
+    `select * from deck_version_cards where version_id = $1 and oracle_id = any($2::uuid[])`,
+    [versionId, [gone.oracle_id, trimmed.oracle_id]],
+  );
+  undo.versionCards.push(...priorVersionRows);
   await pool.query(
     `insert into deck_version_cards (version_id, oracle_id, quantity, since)
        select $1, unnest($2::uuid[]), 5, now()
@@ -868,30 +896,27 @@ async function stageBasics(deckId, versionId, userId) {
     [deckId, trimmed.oracle_id],
   );
   // The five lands that replace them. Not in the version, so this is an add.
-  if (added) {
-    await pool.query(
-      `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 5, false)
-         on conflict (deck_id, oracle_id) do update set quantity = 5`,
-      [deckId, added.oracle_id],
-    );
-  }
+  await pool.query(
+    `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 5, false)
+       on conflict (deck_id, oracle_id) do update set quantity = 5`,
+    [deckId, added.oracle_id],
+  );
   return {
     gone: gone.name,
     trimmed: trimmed.name,
-    added: added?.name ?? null,
+    added: added.name,
     oracleIds: [gone.oracle_id, trimmed.oracle_id],
-    lifted: liftedRows,
   };
 }
 
-/** Put back whatever `stageBasics` lifted out of the collection. Called from the
- *  run's `finally` as well as inline, because a run that dies between the two
- *  would otherwise leave the account short of a basic land it owns. */
-async function restoreLifted(rows) {
+/** Re-insert rows exactly as they were read, column for column. Both things
+ *  `stageBasics` displaces are whole rows of tables this script does not own, so
+ *  neither is rebuilt from remembered fields. */
+async function putRowsBack(table, rows) {
   for (const row of rows ?? []) {
     const columns = Object.keys(row);
     await pool.query(
-      `insert into collection_items (${columns.map((c) => `"${c}"`).join(", ")})
+      `insert into "${table}" (${columns.map((c) => `"${c}"`).join(", ")})
          values (${columns.map((_, i) => `$${i + 1}`).join(", ")})
        on conflict do nothing`,
       columns.map((c) => row[c]),
@@ -899,9 +924,25 @@ async function restoreLifted(rows) {
   }
 }
 
+/** Undo everything `stageBasics` displaced outside its own decks: the account's
+ *  collection rows for the added basic, and whatever the version already held
+ *  for the two cut ones. Idempotent and safe to call twice — the block calls it
+ *  inline, and the run's `finally` calls it again for a run that died first. */
+async function undoBasicsFixture(undo) {
+  await putRowsBack("collection_items", undo.collection);
+  await putRowsBack("deck_version_cards", undo.versionCards);
+  undo.collection.length = 0;
+  undo.versionCards.length = 0;
+}
+
 /** Take the fixture's basics back out of the version. Every block after this one
  *  counts rows, and `stage`'s `cuts` takes the first n by oracle id — left in,
- *  a basic could be one of them and every figure below would move. */
+ *  a basic could be one of them and every figure below would move.
+ *
+ *  It removes the ids it was given and nothing else; whatever the version held
+ *  for them BEFORE the fixture wrote is put back by `undoBasicsFixture`, which
+ *  the caller runs straight after. The template is a real 99-card deck, so a
+ *  version that already sleeved a Forest keeps it. */
 async function clearVersionBasics(versionId, oracleIds) {
   await pool.query(
     `delete from deck_version_cards where version_id = $1 and oracle_id = any($2::uuid[])`,
@@ -951,9 +992,11 @@ let underReview = null;
 let holder = null;
 let claimed = null;
 let brewed = null;
-/** Collection rows `stageBasics` lifted and has not yet put back. Held outside
- *  the try so the `finally` can restore them whatever killed the run. */
-let lifted = [];
+/** Rows `stageBasics` displaced in tables this script does not own, and has not
+ *  yet put back. Held outside the try so the `finally` can restore them whatever
+ *  killed the run, and populated BEFORE each write rather than on return, so a
+ *  throw part-way through the fixture cannot strand a player's collection. */
+const undo = { collection: [], versionCards: [] };
 let userId = null;
 try {
   const context = await browser.newContext({ viewport: VIEWPORTS[0] });
@@ -1013,28 +1056,19 @@ try {
     // version, the admission is a server decision, and the buy tag and the
     // availability marker are drawn off reads this fixture deliberately keeps a
     // basic out of.
-    const basicsFixture = await stageBasics(underReview.deckId, underReview.versionId, userId);
-    lifted = basicsFixture?.lifted ?? [];
+    const basicsFixture = await stageBasics(
+      underReview.deckId, underReview.versionId, userId, undo,
+    );
     console.log(`\n########## ${label} · BASICS-ONLY draft`);
     if (!basicsFixture) {
-      console.log(`  fewer than two basics in the catalog — block skipped`);
+      console.log(`  no three usable basics in the catalog — block skipped`);
     } else {
       console.log(`  cut whole: ${basicsFixture.gone} 5 → 0`);
       console.log(`  cut by one: ${basicsFixture.trimmed} 5 → 4`);
       console.log(
-        `  added: ${basicsFixture.added
-          ? `${basicsFixture.added} 0 → 5 (${basicsFixture.lifted.length} collection`
-            + ` row(s) lifted, restored after)`
-          : "NONE"}`,
+        `  added: ${basicsFixture.added} 0 → 5`
+        + ` (${undo.collection.length} collection row(s) lifted, restored after)`,
       );
-      // A run with no add proves nothing about the buy tag, and must not read as
-      // one that did.
-      if (!basicsFixture.added) {
-        basicFindings.push(
-          `${label} · fewer than three basics in the catalog, so no add could be`
-          + ` staged and the buy tag was never tested`,
-        );
-      }
       await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
         waitUntil: "networkidle",
       });
@@ -1054,9 +1088,7 @@ try {
         { name: basicsFixture.trimmed, pair: "5 → 4", putBack: true },
         // An add offers no put-back on any row: the reverse of an add is a
         // removal, and the deck page does that.
-        ...(basicsFixture.added
-          ? [{ name: basicsFixture.added, pair: "0 → 5", putBack: false }]
-          : []),
+        { name: basicsFixture.added, pair: "0 → 5", putBack: false },
       ]) {
         const row = basics.diffRows.find((r) => r.card === want.name);
         if (!row) {
@@ -1088,16 +1120,14 @@ try {
       }
       // And no marker on either: a basic never reaches the availability read, so
       // there is no figure for one to draw.
-      const basicNames = [basicsFixture.gone, basicsFixture.trimmed, basicsFixture.added]
-        .filter(Boolean);
+      const basicNames = [basicsFixture.gone, basicsFixture.trimmed, basicsFixture.added];
       const basicMarkers = basics.markers.filter((m) => basicNames.includes(m.name));
       console.log(`  availability markers on the basics: ${basicMarkers.length} (expect 0)`);
       for (const m of basicMarkers) {
         basicFindings.push(`${label} · ${m.name} draws an availability marker ("${m.label}")`);
       }
       await clearVersionBasics(underReview.versionId, basicsFixture.oracleIds);
-      await restoreLifted(basicsFixture.lifted);
-      lifted = [];
+      await undoBasicsFixture(undo);
     }
 
     // 2. Both columns, the hard-claimed add and the softly claimed one among
@@ -1516,9 +1546,9 @@ try {
   for (const deck of [underReview, holder, brewed]) {
     if (deck) await pool.query(`delete from decks where id = $1`, [deck.deckId]);
   }
-  // Whatever the basics block lifted out of the collection, if it died before
+  // Whatever the basics block displaced outside its own decks, if it died before
   // putting it back. Empty on a run that got that far.
-  await restoreLifted(lifted);
+  await undoBasicsFixture(undo);
   await pool.end();
   await browser.close();
 }

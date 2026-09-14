@@ -298,7 +298,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   catalog — so an added basic reads as owned whether or not the model forces it, and the
   reading passes over a build with the rule taken out. The block lifts that one basic's
   `collection_items` rows with `delete ... returning *`, puts them back inline and again in
-  the run's `finally`, and prints how many it moved. Four mutations were run against it and
+  the run's `finally`, and prints how many it moved. Two rules the fixture follows because
+  the alternative is permanent data loss: the cleanup handle is populated BEFORE each write
+  it covers rather than returned at the end, so a throw part-way through cannot strand a
+  player's collection; and every version row the fixture overwrites is captured first and put
+  back, because the template is a real 99-card deck that may already sleeve any of these
+  basics. The add is also chosen from basics the version does NOT hold — one it does would
+  be a recount rather than an add, or no change at all. Four mutations were run against it and
   all four fail: reverting `printsPair`, dropping the `Put back` quantity gate, restoring the
   basics filter in `readDraft`, and taking the `owned` override off a basic row.
 
