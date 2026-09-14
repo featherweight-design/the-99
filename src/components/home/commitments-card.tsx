@@ -1,9 +1,12 @@
-// "Commitments" — the three figures the collection owes, desktop only.
+// "Commitments" — the three figures the collection owes, at both widths.
 //
 // Property table: docs/superpowers/design-tables/ui-refresh-home.md
-// §CommitmentsCard. The phone frame draws no such card; the figures are not
-// lost there, because /collection prints them at full size and `Review
-// commitments` is the route to it.
+// §CommitmentsCard. The same component, the same three figures and the same
+// control on a phone as on a desktop; it is mounted last there, because it is
+// the block you read rather than the one you act on, and the two CTAs and the
+// buildable commanders are above it on desktop too — so the phone order matches
+// rather than being invented. On desktop it is now the whole right rail, the
+// deck list that sat above it having left.
 //
 // Nothing is computed here. `commitmentFigures` and `loadShoppingRollup` are
 // the two sources, and both are read once per page — a figure recomputed in a
@@ -58,7 +61,7 @@ export function CommitmentsCard({
 }) {
   const c = refreshCopy.home;
   return (
-    <section className="hidden sm:flex sm:flex-col sm:gap-[11px]">
+    <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
       {/* §SectionLabel, with this instance's own `margin-top: 4`. */}
       <h2 className="m-0 mt-[4px] flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
         {c.commitmentsHeading}
@@ -97,7 +100,10 @@ export function CommitmentsCard({
             collection, which is not what "review" means here. */}
         <GhostButton
           href="/collection?avail=inuse,over"
-          className="mt-[2px] flex h-[32px] w-full items-center justify-center rounded-[8px] text-[12.5px] font-normal"
+          // 44 on a phone, 32 above it. The card was desktop-only when this was
+          // written, so it kept the desktop form at every width; it is the last
+          // block on the phone now and its control is a tap target.
+          className="mt-[2px] flex h-[44px] w-full items-center justify-center rounded-[8px] text-[12.5px] font-normal sm:h-[32px]"
         >
           {c.reviewCommitments}
         </GhostButton>

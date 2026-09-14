@@ -14,7 +14,6 @@ import type { Commitments } from "../../lib/home/commitments";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { ReadySlice } from "../../lib/recs/ready-to-build";
 import { CommitmentsCard } from "./commitments-card";
-import { DeckRail } from "./deck-rail";
 import { ReadyToBuild } from "./ready-to-build";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
 
@@ -103,30 +102,46 @@ export function Dashboard(props: DashboardProps) {
       </header>
 
       {/* §HomeBody. One row of two columns on desktop; on a phone the same two
-          columns stack, and what phone drops it drops inside each section
-          rather than here — the resume rows and Commitments carry their own
-          `hidden sm:*`, so the order the reader gets is heroes, then decks. */}
-      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:flex-row sm:gap-[20px] sm:p-[20px_26px_26px]">
-        <div className="flex min-w-0 flex-col gap-[12px] sm:flex-auto sm:gap-[11px]">
+          columns stack, and nothing drops at either width — that is the whole
+          point of this round. The order is the same both ways: CTAs, Ready to
+          build, the resume block, Commitments. On desktop Commitments IS the
+          right rail now, the deck list that sat above it having left. */}
+      {/* Two columns at 1180px, not at `sm` — the same threshold the resume rows
+          pair at, because the rail is what takes the width away from them.
+          Between 640 and 1179 the old `sm:flex-row` put Commitments in a 316px
+          rail BESIDE the rows, so a reader at 900px met a different block order
+          from a reader at either width the handoff draws. The PADDING moves with
+          the split rather than staying at `sm`: left behind, it gave 640–1179 a
+          third layout, one column wide with desktop padding. */}
+      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
+        <div className="flex min-w-0 flex-col gap-[12px] min-[1180px]:flex-auto min-[1180px]:gap-[11px]">
           <ReadyToBuild ready={props.ready} inUse={props.inUse} />
-          {/* Sliced here rather than inside the section: the rail beside it
-              renders the same array in `listDecksWithStats`'s own order, and
-              one list cannot be in two orders at once. */}
-          <ResumeDecks decks={resumeDecks(props.decks)} shopping={props.shopping} />
+          {/* Sliced here rather than inside the section, so the section draws
+              what it is handed and the ordering stays testable without a DOM.
+              `decks.length` rides alongside as the footer's total — the figure
+              the deleted `Your decks · 17` heading used to carry. */}
+          <ResumeDecks
+            decks={resumeDecks(props.decks)}
+            shopping={props.shopping}
+            total={props.decks.length}
+            now={new Date(props.now)}
+          />
         </div>
 
-        <div className="flex flex-col gap-[12px] sm:w-[316px] sm:flex-none sm:gap-[11px]">
-          <DeckRail decks={props.decks} shopping={props.shopping} />
-          {/* Null when the availability read failed. Three zeroes after a
-              failed query is a lie, so the card leaves rather than guessing. */}
-          {props.commitments !== null && (
+        {/* The column exists only when the card does. Null when the availability
+            read failed — three zeroes after a failed query is a lie, so the card
+            leaves rather than guessing — and an empty column reserving 316px
+            would leave a blank rail squeezing the resume rows beside it for a
+            block that is not there. */}
+        {props.commitments !== null && (
+          <div className="flex flex-col gap-[12px] min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:gap-[11px]">
             <CommitmentsCard
               commitments={props.commitments}
               shopping={props.shopping}
               totalCards={props.stats.totalCards}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

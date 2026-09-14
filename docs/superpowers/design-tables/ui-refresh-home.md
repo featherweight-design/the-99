@@ -241,10 +241,17 @@ Copy: `home.newDeck`. **Mobile: not rendered** (see §Ambiguities).
 
 ## Component: HomeBody (two-column region)
 
-| Property | Mobile | Desktop |
+**The split is at 1180px, not `sm`** — re-enumerated 2026-09-13. The resume block pairs its rows at
+exactly that width (see §ResumeRows for the arithmetic), and the rail is what takes the width away
+from them, so the two move together. Between 640 and 1179 a `sm:flex-row` body put Commitments in a
+316px rail BESIDE the rows: the reader at 900px met a different block order from the reader at
+either width the handoff draws. The PADDING moves with the split too — left at `sm` it gave that
+band a third layout, one column wide with desktop padding.
+
+| Property | Mobile (<1180) | Desktop (≥1180) |
 |----------|--------|---------|
 | display | flex | flex |
-| flex-direction | column | row (default) |
+| flex-direction | column | row |
 | gap | 12 | 20 |
 | flex | auto | auto |
 | min-height | 0 | 0 |
@@ -263,7 +270,7 @@ Copy: `home.newDeck`. **Mobile: not rendered** (see §Ambiguities).
 | flex | — | auto |
 | min-width | — | 0 |
 
-### Desktop — right column (rail + Commitments)
+### Desktop — right column (Commitments alone, since the rail left)
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -277,7 +284,7 @@ Copy: `home.newDeck`. **Mobile: not rendered** (see §Ambiguities).
 
 ## Component: SectionLabel (shared)
 
-Used by "Ready to build", "Pick up where you left off", "Your decks · n", "Commitments".
+Used by "Ready to build", "Pick up where you left off", "Commitments".
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -294,7 +301,6 @@ Per-instance margin overrides (desktop only):
 |---|---|
 | Ready to build (`home.readyHeading`) | — |
 | Pick up where you left off (`home.resumeHeading`) | 6 |
-| Your decks · n (`home.decksHeading(n)`) | — |
 | Commitments (`home.commitmentsHeading`) | 4 |
 
 ---
@@ -540,115 +546,209 @@ Copy: `home.allCommanders`.
 
 ## Component: ResumeRows ("Pick up where you left off")
 
-**Desktop only.** Not rendered in the phone frame (see §Ambiguities).
+**Both widths, four rows.** Re-enumerated 2026-09-13 by the home-parity round
+(`design/design_handoff_the99_home/`), which mounted the block on the phone and grew it from two
+rows to four — it is the only route back into a deck from Home now that `Your decks` is deleted.
+
+The row itself is the art-wash lift's, not this table's earlier 30×42 spine: one row drawn at two
+widths, on a stated 72px band with a 99px portrait. **Handoff errata E1–E4** — its component table
+asks for a 74px bleed, a 62px phone bleed, a 64px min-height and a 15.5px name, and those figures
+are shipped at none of them; `art-wash.md` keys the portrait to band × 1.37, so 74 is legal at no
+band at all and 62 implies a 45px band. The handoff's own stated intent is "shipped geometry,
+unchanged", and these are the shipped figures.
+
 No CTA on the row — the row itself opens the builder (README decision 4).
+
+### Section
+
+The 11px rhythm belongs to the two-column layout, so it switches at 1180 with everything else. Left
+at `sm` it gave the 640–1179 band desktop spacing inside a mobile stack.
+
+| Property | Mobile (<1180) | Desktop (≥1180) |
+|----------|--------|---------|
+| display | flex | flex |
+| flex-direction | column | column |
+| gap | 12 | 11 |
+| Rows rendered | 4 | 4 |
+
+### Section head
+
+The label and, beside it, the caption naming the order. The caption is **not a control**: the block
+has one order and always has, and a `Sort · …` trigger here would imply a list — which is the thing
+this round deleted.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | baseline | baseline |
+| gap | 8 | 8 |
+| margin-top | 6 | 6 |
+| label | §SectionLabel, `home.resumeHeading` | same |
+| caption font-family | `var(--font-mono)` | same |
+| caption font-size | 10 | 10 |
+| caption letter-spacing | 0.14em | 0.14em |
+| caption text-transform | lowercase | lowercase |
+| caption color | `var(--fg-locked)` | `var(--fg-locked)` |
+| caption copy | `home.resumeSortCaption` — `last touched` | same |
 
 ### Row container
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | — | flex |
-| gap | — | 12 |
-| Rows rendered | — | 2 |
+2×2 above 1180px, stacked below. The threshold is arithmetic, not a Tailwind stop, and it is 180px
+wider than the block carried before the stamp existed: the meta line's fixed content is a status
+pill at ~62, two 14px gaps, a non-shrinking count at ~45 and a non-shrinking stamp at ~78 — 213px
+before the commander's name gets a pixel, on top of the 116px inset and 18px of right padding. A row
+needs ~347, a pair ~706, and with the page padding, the gap and the 316px rail that is 1106px of
+viewport. At 1024 the stamp was clipped away entirely by the row's own overflow.
+
+| Property | Mobile | Desktop (≥1180) |
+|----------|--------|-----------------|
+| display | flex | flex |
+| flex-direction | column | row |
+| flex-wrap | — | wrap |
+| gap | 12 | 12 |
 
 ### ResumeRow — root
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| flex | — | 1 |
-| min-width | — | 0 |
-| display | — | flex |
-| align-items | — | center |
-| gap | — | 11 |
-| background | — | `var(--surface-inset)` |
-| border-width | — | 1 |
-| border-style | — | solid |
-| border-color | — | `var(--border)` |
-| border-radius | — | 12 |
-| padding-top / bottom | — | 10 |
-| padding-left / right | — | 12 |
+| Property | Mobile | Desktop (≥1180) |
+|----------|--------|-----------------|
+| flex | none | 1 |
+| flex-basis | — | `calc(50% - 6px)` |
+| height | 72 (stated, not a floor) | 72 (stated, not a floor) |
+| min-width | 0 | 0 |
+| display | flex | flex |
+| align-items | center | center |
+| background | `var(--surface-inset)` | `var(--surface-inset)` |
+| border-width | 1 | 1 |
+| border-color | `var(--border)` | `var(--border)` |
+| border-radius | 12 | 12 |
+| overflow | hidden | hidden |
+| padding-top / bottom | 10 | 10 |
+| padding-right | 10 | 18 |
+| status rule | **none** — errata E3. The 3px keyline was the deck rail's, and the rail is deleted; the status pill is this row's status signal | same |
 
-### ResumeRow — art spine
+**`flex: none` below 1180px is load-bearing.** The container is a column there, so `flex: 1` applies
+to HEIGHT: four rows in a short column each shrink below the stated 72 and show a strip of unwashed
+band under the portrait. Two rows never overflowed, which is why the defect arrives with the fourth.
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | — | 30 |
-| height | — | 42 |
-| border-radius | — | 5 |
-| background | — | commander art (mockup: `linear-gradient(150deg,…)`) |
-| flex | — | none |
-
-### ResumeRow — text column
+### ResumeRow — portrait
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| flex | — | auto |
-| min-width | — | 0 |
-| display | — | flex |
-| flex-direction | — | column |
-| gap | — | 4 |
+| strategy | `left-portrait` (`<ArtWash>`) | same |
+| band height | 72 | 72 |
+| portrait width | 99 (= band × 1.37, `art-wash.md`) | 99 |
+| type inset | 108 below 1000px, 116 above — unchanged, and deliberately not moved to 1180: it is keyed to the row's own width, which a stacked row has all of | 116 |
 
-#### ResumeRow — deck / commander name
+### ResumeRow — first line: deck name and stamp
 
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | — | `var(--font-display)` |
-| font-weight | — | 600 |
-| font-size | — | 14.5 |
-| color | — | `var(--fg)` |
-| white-space | — | nowrap |
-| overflow | — | hidden |
-| text-overflow | — | ellipsis |
-
-#### ResumeRow — meta row
+The name truncates; the stamp does not. They share the row's first line, which is why the stamp can
+be non-shrinking without a tight row eating it: the only child that gives is the one that is
+supposed to.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | — | flex |
-| align-items | — | center |
-| gap | — | 8 |
+| display | flex | flex |
+| align-items | baseline | baseline |
+| gap | 8 | 8 |
+| stamp position | `margin-left: auto` — the line's right edge | same |
 
-#### ResumeRow — status pill
-
-Copy: `status.{draft|building|over|unresolved|toBuy|complete}`.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | — | flex |
-| align-items | — | center |
-| height | — | 19 |
-| padding-top / bottom | — | 0 |
-| padding-left / right | — | 7 |
-| border-radius | — | 5 |
-| border-width | — | 0 |
-| background | — | status colour at 14–16% alpha (canvas: To buy `rgba(201,162,75,0.16)`, Building `rgba(198,183,154,0.14)`) |
-| color | — | status colour |
-| font-family | — | `var(--font-mono)` |
-| font-size | — | 10 |
-
-Note: `STATES-deck-statuses.md` specifies pill fills as the status colour at `2E` alpha (≈18%)
-with an `80` alpha border. The resume pill in the frame has no border and a lower alpha
-(see §Ambiguities).
-
-#### ResumeRow — count + detail
-
-Structure: `"{matched} / 99"`, optionally followed by ` · ` and the one detail figure that
-explains the status (frame shows `99 / 99 · 3 unowned` for To buy, bare `87 / 99` for Building).
-Detail vocabulary is `decks.detail*` in the copy file. No percentages, denominator always printed.
+#### Deck name
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| font-family | — | `var(--font-mono)` |
-| font-size | — | 10.5 |
-| color | — | `var(--fg-faint)` |
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 600 | 600 |
+| font-size | 14.5 | 14.5 |
+| color | `var(--fg)` | `var(--fg)` |
+| overflow | truncate | truncate |
 
----
+### ResumeRow — meta line
 
-## Component: DeckRail ("Your decks · n")
+Status pill, commander name, then the figure group: the built count and the to-buy clause. **The
+figure never truncates and the clause is what gives** (decisions 19 and 23). The touched stamp is
+NOT here — it is on the first line beside the deck name, because three non-shrinking children do not
+fit this line at 390px; see §ResumeRow — touched stamp.
 
-Copy: heading `home.decksHeading(n)`.
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 14 | 14 |
+| count / clause / stamp font | mono 10.5 | mono 10.5 |
+| count colour | `var(--fg-faint)` | `var(--fg-faint)` |
 
-### Rail container
+### ResumeRow — touched stamp
+
+The one element this round adds to a shipped row, and it sits on the FIRST line, right-aligned, at
+both widths.
+
+**Errata E6:** the handoff draws it under the count on desktop, which cannot coexist with its own
+two other rulings — the row is a stated 72px band, and no row may grow a line at either width. The
+meta line cannot hold it either, which is a measurement rather than a judgement: with the longest
+verb and figure, `committed 10mo ago`, the pill, the count and the stamp are three non-shrinking
+children needing 243px of the 240 that line has at 390px, and the row's own overflow ate the stamp.
+Beside the deck name it sits next to the one child that truncates by design.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10.5 | 10.5 |
+| color | `var(--fg-locked)` | `var(--fg-locked)` |
+| flex | none | none |
+| white-space | nowrap | nowrap |
+| copy | `home.touched[verb](home.elapsed…)` — `edited 2h ago` / `committed 3d ago` / `played yesterday` | same |
+
+The verb names the event that won the sort, so the server returns which column was most recent and
+not only the date. No `imported` — **errata E5**: `decks.last_edited_at` is seeded from the deck's
+creation, so nothing distinguishes an import from an edit once seeded.
+
+### Footer
+
+Absent when `{n} more` is nought: a block whose figure is nought is absent, not zeroed. Drawn from
+§ReadyToBuild's own "more above" row rather than a second set of classes that merely looks like it —
+the block ends the way its neighbour does (README decision 2).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 10 | 12 |
+| figure font | mono 10.5 | mono 11 |
+| figure colour | `var(--fg-faint)` | `var(--fg-faint)` |
+| figure copy | `home.moreDecks(total − shown)` | same |
+| control | `GhostButton` → `/decks`, h 44 | h 32 |
+| control copy | `home.allDecks(total)` — `All 34 decks` | same |
+
+
+## Component: DeckRail ("Your decks · n") — **DELETED 2026-09-13**
+
+Deleted at both widths by the home-parity round (`design/design_handoff_the99_home/`), with its
+rows, its heading, its count and its `All decks` footer. It was a second, worse `/decks` one tap
+from the real one, and the rail and the tab bar both carry Decks; what it was actually doing for
+the player — getting them back into a deck they were working in — is the resume block's job, done
+better, because `/decks`' order has no idea what you touched last.
+
+The heading's count survives as the resume block's footer, `{n} more decks` / `All {total} decks`:
+same number, same one tap, no second list. `home.decksHeading`, `home.decksMore` and the old
+`home.allDecks` string are retired with it.
+
+Its property tables are removed rather than left standing: a table that specifies a component
+nothing renders is the defect the art-wash round recorded, and the next reader would build from it.
+`git log` holds what it said.
+
+## Component: CommitmentsCard
+
+**Both widths, and mounted LAST on the phone** — re-enumerated 2026-09-13 by the home-parity round.
+The same component, the same three figures and the same control at either width: it is the block you
+read rather than the one you act on, and the two CTAs and the buildable commanders are above it on
+desktop too, so the phone order matches rather than being invented. On desktop it is now the whole
+right rail, the deck list that sat above it having left.
+
+Its `Review commitments` control takes the 44px phone floor and the 32px desktop form. It was drawn
+for a desktop-only card, so it carried 32 at every width until the phone mounted it.
+Copy: heading `home.commitmentsHeading`.
+
+### Card root
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -657,148 +757,18 @@ Copy: heading `home.decksHeading(n)`.
 | border-style | solid | solid |
 | border-color | `var(--border)` | `var(--border)` |
 | border-radius | 14 | 14 |
-| overflow | hidden | hidden |
-| flex | none | — |
-| width | 100% (of the phone column) | 316 (the right column's width) |
-| Rows rendered | 3 | 4 |
-
-### DeckRailRow — root
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
+| padding (all sides) | 14 | 14 |
 | display | flex | flex |
-| align-items | center | center |
-| gap | 10 | 10 |
-| padding-top / bottom | 12 | 10 |
-| padding-left / right | 13 | 13 |
-| min-height | 56 | — |
-| border-left-width | 3 | 3 |
-| border-left-style | solid | solid |
-| border-left-color | status colour (`--fg-faint` / `--fg-body` / `--danger` / `--warning` / `--accent` / `--success`) | same |
-| border-bottom-width | 1 (omitted on the last row) | 1 (present on every row, including the last before the footer) |
-| border-bottom-style | solid | solid |
-| border-bottom-color | `var(--border)` (`#211C16`) | `var(--border)` (`#211C16`) |
-
-### DeckRailRow — art spine
-
-**Mobile only.** The desktop rail row has no art spine.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 26 | — |
-| height | 36 | — |
-| border-radius | 4 | — |
-| background | commander art | — |
-| flex | none | — |
-
-### DeckRailRow — text column (mobile) / name (desktop)
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | — |
-| flex-direction | column | — |
-| gap | 3 | — |
-| flex | auto | auto |
-| min-width | 0 | 0 |
-
-#### DeckRailRow — deck name
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `var(--font-display)` | `var(--font-display)` |
-| font-weight | 600 | 600 |
-| font-size | 14.5 | 14 |
-| color | `var(--fg)` | `var(--fg)` |
-| white-space | nowrap | nowrap |
-| overflow | hidden | hidden |
-| text-overflow | ellipsis | ellipsis |
-
-#### DeckRailRow — status line
-
-Copy: `status.*`, plus (mobile only) ` · ` and an abbreviated detail clause
-(frame: `To buy · 3 unowned`, `Unresolved · 2 lines`). Desktop prints the status word alone.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `var(--font-mono)` | `var(--font-mono)` |
-| font-size | 10.5 | 10 |
-| color | status colour | status colour |
-| flex | — | none |
-| position | second line of the text column | right-aligned end of the row |
-
-#### DeckRailRow — count (mobile only)
-
-Structure: `"{matched} / 99"`.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | `var(--font-mono)` | — |
-| font-size | 12 | — |
-| color | `var(--fg)` | — |
-| flex | none | — |
-
-### DeckRail — footer row
-
-**Desktop only.** The phone rail has no footer (see §Ambiguities).
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | — | flex |
-| align-items | — | center |
-| justify-content | — | space-between |
-| padding-top / bottom | — | 9 |
-| padding-left / right | — | 13 |
-
-#### Footer — "n more"
-
-Copy: `home.decksMore(n)`.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | — | `var(--font-mono)` |
-| font-size | — | 11 |
-| color | — | `var(--fg-faint)` |
-
-#### Footer — "All decks"
-
-Copy: `home.allDecks`. Rendered as plain text, not a pill.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | — | `var(--font-sans)` |
-| font-size | — | 12.5 |
-| color | — | `var(--fg-body)` |
-| border-width | — | 0 |
-| background | — | — |
-
----
-
-## Component: CommitmentsCard
-
-**Desktop only.** Not rendered in the phone frame (see §Ambiguities).
-Copy: heading `home.commitmentsHeading`.
-
-### Card root
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| background | — | `var(--surface-inset)` |
-| border-width | — | 1 |
-| border-style | — | solid |
-| border-color | — | `var(--border)` |
-| border-radius | — | 14 |
-| padding (all sides) | — | 14 |
-| display | — | flex |
-| flex-direction | — | column |
-| gap | — | 11 |
+| flex-direction | column | column |
+| gap | 11 | 11 |
 
 ### Commitments row (each of 3)
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | — | flex |
-| align-items | — | baseline |
-| justify-content | — | space-between |
+| display | flex | flex |
+| align-items | baseline | baseline |
+| justify-content | space-between | space-between |
 
 #### Row label
 
@@ -806,21 +776,25 @@ Copy: row 1 `home.inUseRow`, row 2 `home.overCommittedRow`, row 3 `home.toBuyRow
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| font-family | — | `var(--font-sans)` |
-| font-size | — | 13 |
-| color | — | `var(--fg-body)` |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 13 | 13 |
+| color | `var(--fg-body)` | `var(--fg-body)` |
 
 #### Row value
 
 Copy: row 1 `home.inUseValue(n, total)`, row 2 `home.overCommittedValue(n)` (singular/plural),
 row 3 `home.toBuyValue(n, cost)`.
 
-| Property | Mobile | Row 1 (Cards in use) | Row 2 (Spoken for twice) | Row 3 (To buy, all decks) |
-|----------|--------|---|---|---|
-| font-family | — | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` |
-| font-size | — | 13 | 13 | 13 |
-| font-variant-numeric | — | tabular-nums | tabular-nums | tabular-nums |
-| color | — | `var(--accent)` | `var(--danger)` | `var(--fg)` |
+One set of values, at both widths — the phone mounts this same card, so the three rows are not
+re-stated per width. (This table lost its shape for one round when the mirroring that re-enumerated
+the rest of §CommitmentsCard treated its five columns as two.)
+
+| Property | Row 1 (Cards in use) | Row 2 (Spoken for twice) | Row 3 (To buy, all decks) |
+|----------|---|---|---|
+| font-family | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 13 | 13 | 13 |
+| font-variant-numeric | tabular-nums | tabular-nums | tabular-nums |
+| color | `var(--accent)` | `var(--danger)` | `var(--fg)` |
 
 ### "Review commitments" button
 
@@ -828,26 +802,26 @@ Copy: `home.reviewCommitments`.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | — | flex |
-| align-items | — | center |
-| justify-content | — | center |
-| width | — | 100% (stretched by the column) |
-| height | — | 32 |
-| border-width | — | 1 |
-| border-style | — | solid |
-| border-color | — | `var(--border-strong)` |
-| border-radius | — | 8 |
-| font-family | — | `var(--font-sans)` |
-| font-size | — | 12.5 |
-| color | — | `var(--fg)` |
-| margin-top | — | 2 |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| width | 100% (stretched by the column) | 100% (stretched by the column) |
+| height | **44** — the phone floor. The card was desktop-only when this control was drawn, so it carried 32 at every width until the phone mounted it | 32 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| border-radius | 8 | 8 |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 12.5 | 12.5 |
+| color | `var(--fg)` | `var(--fg)` |
+| margin-top | 2 | 2 |
 
 ---
 
 ## Component: HomeFirstRun (zero state — collection unread, no decks)
 
 Desktop frame is 768px wide (not 1180). No `Update collection` / `New deck` header buttons;
-no Ready-to-build, resume, deck rail or Commitments.
+no Ready-to-build, resume or Commitments.
 
 ### First-run content column
 
@@ -1234,22 +1208,22 @@ Derived from the frames plus the conditional notes in `refresh · copy strings.t
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
 | First run | No collection read AND no decks | `HomeFirstRun` — three-step checklist, step 1 live, steps 2–3 locked, Import escape hatch, nav dimmed | `step`(1,3), `heading`, `step1Title`, `step1Body`/`step1BodyShort`, `step2Title`+`step2Locked`, `step3Title`+`step3Locked`, `importPrompt` (desktop) |
-| Populated | Collection read AND ≥1 buildable commander AND ≥1 deck | `HomeHeader` + `ReadyToBuild` + `ResumeRows` (desktop) + `DeckRail` + `CommitmentsCard` (desktop) | `kicker(cards, when)`, ready candidates, resume decks, deck list, commitments aggregate |
+| Populated | Collection read AND ≥1 buildable commander AND ≥1 deck | `HomeHeader` + `ReadyToBuild` + `ResumeRows` + `CommitmentsCard`, all four at BOTH widths | `kicker(cards, when)`, ready candidates, resume decks, commitments aggregate |
 | Ready card, commander has cards in use | `inUse > 0` | in-use clause rendered in the meta row, `var(--accent)` | `inUse(n)` |
 | Ready card, nothing in use | `inUse === 0` | in-use clause **omitted entirely** — free says nothing (copy file comment; `availability.ts` rule) | — |
 | More candidates above the floor | `moreCount > 0` | "more above" row: text + `All commanders` | `moreAbove(n, floor)`, `allCommanders` |
 | No further candidates | `moreCount === 0` | **not drawn** — is the row hidden, or does `All commanders` stand alone? | — |
 | No buildable commanders at all | Collection read, zero candidates above the threshold | **not drawn** | — |
-| Deck rail with more decks than shown | `total > rowsRendered` (4 desktop / 3 mobile) | footer row with `n more` + `All decks` (desktop only) | `decksMore(n)`, `allDecks` |
-| Deck rail, all decks shown | `total <= rowsRendered` | **not drawn** — footer presence unspecified | — |
-| Home with collection read but zero decks | `deckCount === 0` | **not drawn on Home.** `zero.*` covers the *Decks page*; Home's rail/resume behaviour at zero decks has no frame | `zero.decksHeading`, `zero.decksBody`, `zero.browseCommanders`, `zero.importDeck`, `zero.buildableFrom(buildable, cards)` (Decks page) |
-| Deck row per status | one of the six shipped values | status colour drives the 3px left keyline, the status word and (desktop resume) the pill fill | `status.draft` … `status.complete` |
+| More decks than the resume block shows | `total > 4` | the block's footer: `{n} more decks` + `All {total} decks`, at BOTH widths | `moreDecks(n)`, `allDecks(total)` |
+| Four decks or fewer | `total <= 4` | every deck is drawn and the footer is absent — a figure of nought is an absence, not a zero | — |
+| Home with collection read but zero decks | `deckCount === 0` | **the resume block is absent, heading and all.** The two CTAs carry the empty case; an empty box under "pick up where you left off" is the app asserting a history the player has not got. This was the handoff's own open question and it is the shipped behaviour it was asking about | — |
+| Deck row per status | one of the six shipped values | the status pill's fill. The 3px left keyline was the deck rail's and went with it | `status.draft` … `status.complete` |
 | Over-committed cards present | `overCommitted > 0` | Commitments row 2, `var(--danger)` | `overCommittedValue(n)` — singular/plural |
 | No over-committed cards | `overCommitted === 0` | **not drawn** — does the row show `0 cards`, or vanish? | — |
 | Nothing to buy | `toBuyCount === 0` | **not drawn** — same question for Commitments row 3 | — |
 | To-buy aggregate unavailable | No all-decks shopping roll-up exists | **not drawn.** READINESS blocker 5: either the aggregate gets built or the row goes; must not sum client-side over a paginated deck list | `toBuyValue(n, cost)` |
 | Update collection running / partial | Collection read in flight or partially resolved | **not drawn.** READINESS blocker 4 — reuse the manifest-wait pattern | — |
-| Never played | `lastPlayedAt === null` | `decks.lastPlayedNever` — used on deck **tiles** (Decks page). Home's rail and resume rows do not print last-played | `lastPlayedNever` |
+| Never played | `lastPlayedAt === null` | `decks.lastPlayedNever` — used on deck **tiles** (Decks page). A resume row prints the act that touched it, which for a deck nobody has played is `edited`, never a "never" | `lastPlayedNever` |
 | Loading | Data in flight | **not drawn.** README gap 5 / READINESS: layouts kept, never re-rendered against the new display faces and the 32px button | — |
 
 ---
@@ -1269,7 +1243,6 @@ Targets that must be interactive per the design text:
 | ReadyCard "See the pool" | Opens the pool for that commander; mobile is icon-only and needs an `aria-label` |
 | "All commanders" | Navigates to the commanders list |
 | ResumeRow (whole row) | Opens the builder. No per-row button — README decision 4 |
-| DeckRailRow (whole row) | Opens the deck. No per-row button |
 | "All decks" | Navigates to the Decks index |
 | "Review commitments" | Navigates to the commitments view |
 | "Update collection" | Starts a collection read (state machine unspecified) |
@@ -1280,24 +1253,25 @@ Targets that must be interactive per the design text:
 
 ## Ambiguities and underspecified items
 
-1. **Mobile Home drops four whole regions.** The 390px Home frame renders header → Ready to build →
-   more-above → deck rail → tab bar. It has **no** `Update collection` button, **no** `New deck`
-   button, **no** "Pick up where you left off" section, **no** deck-rail footer (`n more` /
-   `All decks`) and **no** Commitments card. Nothing in `README.md` or `READINESS.md` says these are
-   deliberately dropped on phone, and Commitments carries figures a phone reader would want.
-   Design call required: are they cut, collapsed, or below the visible fold of the frame?
+1. ~~**Mobile Home drops four whole regions.**~~ **CLOSED 2026-09-13** by the home-parity round.
+   The answer was that they were not deliberately dropped: the two widths had drifted into two
+   pages. Both CTAs, the resume block and Commitments are drawn at 390 now, in the same order as
+   desktop, and the deck rail that carried the phone is deleted at both widths.
 
 2. **Mobile fit-line copy has no key.** Desktop renders `home.fitLine(n)` (`"92 of your cards fit"`);
    the phone frame renders `"92 fit · 12 in use"`. No short-form key exists in
    `refresh · copy strings.ts`, and the ` · ` joins two keys that are separate spans on desktop.
 
-3. **Art spine placement contradicts README decision 7.** The README says commander art appears as
-   "a 30×42 spine in list rows". Mobile deck-rail rows carry a 26×36 spine; **desktop** deck-rail
-   rows carry none at all; desktop resume rows carry the 30×42. Three different answers.
+3. ~~**Art spine placement contradicts README decision 7.**~~ **CLOSED** — twice over. The art-wash
+   lift replaced every spine with `<ArtWash>`, and the two rail rows that carried the other two
+   answers are deleted. One row remains, drawn at two widths: a 72px band with a 99px portrait,
+   keyed by `art-wash.md`'s band × 1.37.
 
 4. **Resume status pill contradicts `STATES-deck-statuses.md`.** That doc specifies pill fills as
    the status colour at `2E` alpha (≈18%) with an `80` alpha border. The Home resume pill in the
-   frame has no border and uses 16% (To buy) / 14% (Building). Which rule wins?
+   frame has no border and uses 16% (To buy) / 14% (Building). Which rule wins? — still open, and
+   untouched by this round: the pill is `StatusPillBadge`, shared with every other surface, and
+   changing it here would change it everywhere.
 
 5. **Two border weights, one token.** Home uses `#2A241D` for outer card hairlines and `#211C16`
    for inner dividers and the rail's right edge. R6 offers only `--border` and `--border-strong`,

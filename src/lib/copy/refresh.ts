@@ -42,10 +42,43 @@ export const refreshCopy = {
     allCommanders: 'All commanders',
 
     resumeHeading: 'Pick up where you left off',
+    // How the block says what its order means. A caption, not a control: the
+    // block has one order and always has, and a dropdown here would imply it is
+    // a list — which is the thing this round deleted.
+    resumeSortCaption: 'last touched',
 
-    decksHeading: (n: number) => `Your decks · ${n}`,
-    decksMore: (n: number) => `${n} more`,
-    allDecks: 'All decks',
+    /**
+     * The touched stamp. The verb names the event that won the sort, so the row
+     * prints its own evidence for the order it is in.
+     *
+     * No `imported`: `decks.last_edited_at` is seeded from the deck's creation,
+     * so nothing distinguishes an import from an edit once seeded, and a verb
+     * that cannot be derived would be a guess. Handoff errata E5.
+     */
+    touched: {
+      edited: (t: string) => `edited ${t}`,
+      committed: (t: string) => `committed ${t}`,
+      played: (t: string) => `played ${t}`,
+    },
+    // Lower case, and no "just now" — a stamp of 0 is not news, so anything
+    // under an hour reads `0h ago`.
+    elapsed: {
+      hours: (h: number) => `${h}h ago`,
+      yesterday: 'yesterday',
+      days: (d: number) => `${d}d ago`,
+      weeks: (w: number) => `${w}w ago`,
+      months: (m: number) => `${m}mo ago`,
+    },
+
+    // The resume block's footer. It carries the total the deleted `Your decks`
+    // heading used to print, inside the control that goes there — so the number
+    // is a destination rather than a label. Absent when `more` is 0.
+    moreDecks: (more: number) => `${more} more deck${more === 1 ? '' : 's'}`,
+    // Singular-aware, though the footer that prints it is absent below five
+    // decks — the figure beside it would be nought, and a block whose figure is
+    // nought is absent rather than zeroed. The string is exported, and `All 1
+    // decks` is not a sentence this app would print anywhere.
+    allDecks: (total: number) => `All ${total} deck${total === 1 ? '' : 's'}`,
 
     commitmentsHeading: 'Commitments',
     inUseRow: 'Cards in use',

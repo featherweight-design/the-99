@@ -56,8 +56,9 @@ doing. Ties break on deck name, ascending, so the order is stable between render
 
 **And because the order is now a claim, each row prints its evidence** — one mono stamp, `edited 2h
 ago` / `played yesterday` / `committed 3d ago`. It is the only element this handoff adds to a
-shipped row, it lands in a slot the row already has (under the count on desktop, beside the status
-chip at 390px), and **no row grows a line at either width**.
+shipped row, it lands in a slot the row already has (**errata E6: the row's first line, right-aligned, beside the deck name, at both widths** — the meta line
+cannot hold it, which is a measurement rather than a judgement), and **no row grows a line at either
+width**.
 
 ### 3. Four rows, not two
 
@@ -94,6 +95,34 @@ Art blocks stand in for the commander crops throughout. Everything else — hexe
 geometry, the 44px phone targets — is the brand sheet's, unchanged.
 
 ---
+
+## Errata — measured against the shipped code, 2026-09-13
+
+The build corrected six figures. In every case the drawing is right and this document's tables are
+the thing that was wrong: the handoff's own stated intent is "shipped geometry, unchanged", and
+these are the shipped figures.
+
+| # | This document says | Shipped / canonical | Built |
+|---|---|---|---|
+| E1 | Resume row art bleed `74px` desktop / `62px` phone | `99px`. `docs/superpowers/design-tables/art-wash.md` keys portrait width to **band × 1.37**, so a 72px band is 99. 74 is legal at no band; 62 implies a 45px band | `99` at both widths |
+| E2 | Row `min-height: 64` desktop / `72` phone | `h-[72px]` **stated, not a floor** — the wash root is a hard 72 and a taller row shows an unwashed strip | Stated `72` at both widths |
+| E3 | "3px status rule on the left edge" | That is the **rail's** keyline — the block this round deletes. The resume row has never had one | No rule; the status pill is the row's status signal |
+| E4 | Deck name `15.5px` | `14.5px` | `14.5` |
+| E5 | STATES §C prints `imported {t} ago` for a never-edited deck, while §B excludes creation from the sort key — so such a deck has no key value and cannot appear at all | — | `decks.last_edited_at` is seeded from `created_at`, making creation the stamp's floor rather than a sort term. The verb is `edited`; `imported` is dropped, because nothing distinguishes an import from an edit once seeded and a verb that cannot be derived would be a guess |
+| E6 | The stamp sits under the count on desktop | — | It sits on the row's **first line, right-aligned, at both widths**. "Under the count" cannot coexist with this handoff's own two other rulings — the row is a stated 72px band, and no row may grow a line at either width. The meta line cannot hold it either, and that is a measurement: with `committed 10mo ago` the pill, the count and the stamp are three non-shrinking children needing 243px of the 240 that line has at 390px. Beside the deck name it sits next to the one child that truncates by design |
+
+Two things the build added that this document did not ask for, both forced by the fourth row:
+
+- **The row is `flex: none` below the two-up threshold.** The container is a column there, so
+  `flex: 1` applies to height and four rows in a short column each shrink below the stated 72. Two
+  rows never overflowed, which is why the defect arrives with the fourth.
+- **The pair, and the two-column body with it, start at 1180px** — not at `sm`, and not at the 1000
+  this block carried before the stamp existed. The stamp adds ~78px of non-shrinking mono to a meta
+  line that already held 255, so a row needs ~347, a pair ~706, and with the page padding, the gap
+  and the 316px rail that is 1106px of viewport. At 1024 the stamp was clipped away entirely by the
+  row's own overflow. Between 640 and 1179 the old split also put Commitments in a rail beside the
+  rows, so a reader there met a different block order from a reader at either width this handoff
+  draws.
 
 ## Decisions log
 
@@ -148,7 +177,7 @@ grown, one mono line added to a shipped row.
 | Component | Spec |
 |---|---|
 | **Resume row** | Shipped geometry. Flex row, radius 12, `--surface-raised` on `1px --border`, **3px status rule on the left edge**, art bleeding flush left (74px desktop, 62px at 390px) at full row height, min-height 64px desktop / 72px phone. Content: deck name (Cinzel 600, 15.5px) over one meta line — status chip, commander name (mono 11px, truncating), count right-aligned. |
-| **Touched stamp** | **The one addition.** Mono 10px `--fg-locked`. Desktop: under the count, right-aligned. Phone: beside the status chip. Never wraps, never its own line. |
+| **Touched stamp** | **The one addition.** Mono 10.5px `--fg-locked`, on the row's first line, right-aligned, beside the deck name, at both widths — see errata E6 for why not the meta line. Never wraps, never shrinks, never its own line; the deck name beside it is what gives. |
 | **Ready-to-build card** | Shipped geometry, restored. 300px crop (270px at 390px), scrim from 44%, name + pips + type line + fit chip inside the crop, fit line and `See the pool` on the panel beneath. |
 | **`Your decks` block** | **Deleted at both widths**, with its rows, its heading, its count and its `All decks` footer. |
 | **Commitments** | Shipped panel, unchanged, now also mounted on the phone as the last block. |
