@@ -24,6 +24,7 @@ import { neon, neonConfig } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import ws from "ws";
 import { requireEnv } from "./lib/env.mjs";
+import { PAGE, onPage } from "./lib/surface.mjs";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -118,11 +119,14 @@ async function seed(userId) {
 
 /** Everything the column says about itself, before and after a press. */
 async function readColumn(page) {
-  return page.evaluate(() => {
-    const controls = [...document.querySelectorAll("button")].filter((b) =>
+  // Scoped to `<main>`, never the document: the shell's own controls come first
+  // in document order, and a probe that reaches past the page measures the
+  // shell while naming the surface it meant to measure. See `lib/surface.mjs`.
+  return page.locator(PAGE).evaluate((main) => {
+    const controls = [...main.querySelectorAll("button")].filter((b) =>
       (b.getAttribute("aria-label") ?? "").startsWith("Put "),
     );
-    const heading = [...document.querySelectorAll("*")]
+    const heading = [...main.querySelectorAll("*")]
       .map((e) => e.textContent ?? "")
       .find((t) => /^Going out · \d+$/.test(t.trim()));
     const rows = controls.map((control) => {
@@ -142,6 +146,8 @@ async function readColumn(page) {
       controls: controls.length,
       heading: heading?.trim() ?? null,
       rows,
+      // The document's own overflow, which is a page-level fact rather than a
+      // control's — the one measurement here that is deliberately unscoped.
       overflowsX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     };
   });
@@ -166,20 +172,20 @@ try {
     await page.goto(`${BASE}/decks/${deckId}/changes`, { waitUntil: "networkidle" });
     // The phone puts the two directions behind a segmented pair; the column is
     // only on screen once its segment is.
-    const outTab = page.locator("button", { hasText: /^Going out · \d+$/ }).first();
+    const outTab = onPage(page, "button").filter({ hasText: /^Going out · \d+$/ }).first();
     if (vp.phone && (await outTab.count()) > 0) await outTab.click();
-    await page.waitForSelector("button[aria-label^='Put ']", { timeout: 15_000 });
+    await onPage(page, "button[aria-label^='Put ']").first().waitFor({ timeout: 15_000 });
 
     const before = await readColumn(page);
-    await page.click("button[aria-label^='Put ']");
+    await onPage(page, "button[aria-label^='Put ']").first().click();
     // Optimistic: the row is gone before the server answers, so this waits on
     // the count rather than on a navigation.
     await page.waitForFunction(
-      (was) =>
-        [...document.querySelectorAll("button")].filter((b) =>
+      ([was, scope]) =>
+        [...(document.querySelector(scope)?.querySelectorAll("button") ?? [])].filter((b) =>
           (b.getAttribute("aria-label") ?? "").startsWith("Put "),
         ).length < was,
-      before.controls,
+      [before.controls, PAGE],
       { timeout: 10_000 },
     );
     const after = await readColumn(page);
@@ -201,16 +207,17 @@ try {
     await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "networkidle" });
     const receipt = {};
     for (const view of ["List view", "Card view"]) {
-      const toggle = page.locator(`button[aria-label="${view}"]`).first();
+      const toggle = onPage(page, `button[aria-label="${view}"]`).first();
       if ((await toggle.count()) > 0) await toggle.click();
-      const remove = page.locator("button[aria-label^='Remove ']").first();
+      const remove = onPage(page, "button[aria-label^='Remove ']").first();
       if ((await remove.count()) === 0) {
         receipt[view] = "no removable row";
         continue;
       }
       await remove.click();
-      receipt[view] = await page
-        .waitForSelector("button[aria-label^='Undo']", { timeout: 10_000 })
+      receipt[view] = await onPage(page, "button[aria-label^='Undo']")
+        .first()
+        .waitFor({ timeout: 10_000 })
         .then(() => "undo offered")
         .catch(() => "NO UNDO");
     }

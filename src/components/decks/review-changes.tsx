@@ -625,10 +625,13 @@ export function ReviewChanges({
         //
         // Two different questions, and they were one flag by mistake.
         //
-        // The ROUTE leaves whenever no named row is left: `admitsReview` admits
-        // a basics-only draft only as `?commit=1`, so a normal visit redirects
-        // whether or not a basic moved.
-        const redirecting = alone && outAfter === 0 && inCount === 0;
+        // The ROUTE leaves whenever no named row is left — `admitsReview`
+        // refuses an empty pair — EXCEPT on a `?commit=1` arrival, which is
+        // admitted for a basics-only draft. So a page whose sheet is open over
+        // a draft that still moves a basic stays exactly where it is, and the
+        // focus handoff is owed.
+        const staysForBasics = commitSheetOpen && state.basicsMoved;
+        const redirecting = alone && outAfter === 0 && inCount === 0 && !staysForBasics;
         // The DECK matches its version again only if nothing else moved, and a
         // basic that moved is something else. "Matches v1" over a draft that
         // still changes the mana base is a claim about the deck, not the page.
@@ -676,8 +679,8 @@ export function ReviewChanges({
       });
     },
     [
-      addRestoredId, deckId, descriptionId, inCount, liveCardCount, outCount,
-      restoring, rows.out, router, state.basicsMoved, state.version,
+      addRestoredId, commitSheetOpen, deckId, descriptionId, inCount, liveCardCount,
+      outCount, restoring, rows.out, router, state.basicsMoved, state.version,
     ],
   );
 
