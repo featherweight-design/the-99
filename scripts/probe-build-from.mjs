@@ -209,7 +209,12 @@ async function readLane(page, { avail, query }) {
 
   const rows = onPage(page, "li h3, li h2, li [data-commander-name]");
   const names = await rows.allInnerTexts();
-  const line = await onPage(page, "[data-chassis-row] p, [data-chassis-form] p")
+  // The RESULT ROW, not every paragraph the rack draws. `[data-chassis-row]`
+  // unqualified also collects the control legends — which is why a desktop
+  // reading used to come back with `BUILD FROM` glued to the front of the
+  // sentence — and a legend that ever held the word `sleeved` would satisfy
+  // `hiddenCount` with the result line saying nothing at all.
+  const line = await onPage(page, '[data-chassis-row="result"]')
     .allInnerTexts()
     .catch(() => []);
   return {
@@ -348,12 +353,30 @@ async function run() {
       }
     }
   } finally {
-    if (deckId) {
-      // Versions, version cards and deck cards cascade off the deck row.
-      await pool.query(`delete from decks where id = $1 and user_id = $2`, [deckId, userId]);
+    // The delete gets its own `try`, and the shutdown its own `finally`. With
+    // them in one block a delete that rejects — a database away at exactly the
+    // wrong moment — skipped `browser.close()` and `pool.end()`, so the probe
+    // hung instead of reporting whatever failure sent it here, AND left the
+    // fixture behind. A stranded fixture is not a private problem: this database
+    // is shared, and a deck holding a hard claim changes what every other run
+    // measures. If the delete fails, say so loudly enough that someone removes
+    // it by hand.
+    try {
+      if (deckId) {
+        // Versions, version cards and deck cards cascade off the deck row.
+        await pool.query(`delete from decks where id = $1 and user_id = $2`, [deckId, userId]);
+      }
+    } catch (error) {
+      console.error(
+        `\n!! Could not delete fixture deck ${deckId}. It is still claiming cards on this ` +
+          `database and must be removed by hand.\n`,
+        error,
+      );
+      process.exitCode = 1;
+    } finally {
+      await browser.close();
+      await pool.end();
     }
-    await browser.close();
-    await pool.end();
   }
 
   console.log("");
