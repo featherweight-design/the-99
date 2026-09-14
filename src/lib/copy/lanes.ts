@@ -81,9 +81,6 @@ export const commandersCopy = {
     // Row figures, unchanged from the shipped row.
     roleCounter: (label: string, have: number, target: number) =>
       [label, `${have}/${target}`] as const,
-    ownOfTop: (own: number, top: number) => `own ${own} of top ${top}`,
-    freeCards: (count: number) => `${n(count)} of your cards are free`,
-    alreadyInUse: (count: number) => `${count} already in use`,
     receipts: (names: string[], more: number) =>
       `receipts: ${names.join(" · ")}${more > 0 ? ` +${more}` : ""}`,
     fitDenominator: "/100 FIT",
@@ -93,9 +90,6 @@ export const commandersCopy = {
     delta: (d: number, from: number) => `${d < 0 ? "↓" : "↑"}${Math.abs(d)} from ${from}`,
     splitLegend: ["Pool", "Roles", "Synergy"] as const,
     fit: (score: number) => `${score} /100 fit`,
-    cardsFit: (count: number) => `${count} of your cards fit`,
-    cardsFitShort: (count: number) => `${count} fit`,
-    freeCardsFit: (count: number) => `${count} free cards fit`,
     inUse: (count: number) => `${count} in use`,
     action: "Start this deck",
   },
@@ -167,7 +161,6 @@ export const discoverCopy = {
     popularity: (decks: number) => `${n(decks)} decks tracked`,
     novelty: (count: number) => `${count} of its top cards new to you`,
     notOwned: "not in your collection",
-    ownOfTop: (own: number, top: number) => `own ${own} of top ${top}`,
   },
 
   empty: {

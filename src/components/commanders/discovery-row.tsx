@@ -20,6 +20,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatCents } from "../../lib/decks/price";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { discoverCopy } from "../../lib/copy/lanes";
 import { planeCopy } from "../../lib/copy/commanders-plane";
@@ -335,7 +336,7 @@ export function DiscoveryRow({
           outline inherited from globals.css. */}
       <Link
         href={href}
-        aria-label={`${rowLabel}: view commander details`}
+        aria-label={explainedCopy.home.cardAria(rowLabel)}
         className="absolute inset-0 z-[1]"
       />
 

@@ -102,11 +102,21 @@ export const gameLogCopy = {
     // nothing until the app can count across games, so 'Track your wins' would
     // be selling the worthless half.
     heading: 'Three games is a pattern.',
-    // Quotes the aggregate panel's real output. Showing the output is the only
-    // honest way to pitch an output — the italicised clause is rendered as
-    // <i>, and it is the app talking.
+    // Quotes the panel's real output, and the quote has to STAY quotable: this
+    // is the one string here that makes a promise the app must then keep.
+    //
+    // It used to read 'ran out of gas, 3 of 3 games' and nothing printed that.
+    // The per-column glosses (`axisCopy[key].worked` / `.hurt`) render only on
+    // the log form's checkboxes; the aggregate cell draws the axis LABEL, the
+    // `M of N` figure and `N up · N down`. So the pitch demonstrated an output
+    // no surface produced. Found by review on #585 and #590.
+    //
+    // `headline.finding` is quoted instead, verbatim, because it is what the
+    // tab writes at N >= PATTERN_MIN today AND what it will still write once
+    // #10's tuning suggestions land on their own surface. Change this only
+    // alongside the sentence it quotes.
     body: 'One game you already remember. The third one is where this tab earns its keep. It starts saying things like',
-    bodyQuote: 'ran out of gas, 3 of 3 games',
+    bodyQuote: 'Cards in hand is letting this deck down',
     // The sentence closes on the quote. Telling the reader the quote is worth
     // acting on explains a demonstration they have just read.
     bodyAfter: '.',

@@ -132,7 +132,7 @@ export function RecCard(props: RecCardProps) {
           on z-[2]. Brand focus-visible outline inherited from globals.css. */}
       <Link
         href={commanderDetailHref(c.slug, avail)}
-        aria-label={`${c.name}: view commander details`}
+        aria-label={explainedCopy.home.cardAria(c.name)}
         className="absolute inset-0 z-[1]"
       />
 

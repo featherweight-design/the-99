@@ -49,7 +49,6 @@ describe("locale formatting", () => {
     expect(filterCopy.sheet.dismiss(3301)).toContain("3,301");
     expect(commandersCopy.result.rest(1234)).toContain("1,234");
     expect(commandersCopy.result.filtered(1234, 5678)).toContain("5,678");
-    expect(commandersCopy.row.freeCards(1234)).toContain("1,234");
     expect(discoverCopy.result.rest(1234)).toContain("1,234");
     expect(discoverCopy.row.popularity(1234)).toContain("1,234");
     expect(discoverCopy.empty.body("jodah", 3301)).toContain("3,301");
