@@ -187,8 +187,16 @@ export const deckVersioningCopy = {
     commanderGuardA11y: (deck: string, card: string) =>
       `${card} is ${deck}'s commander. It cannot be pulled.`,
 
+    // #587 cut the old second sentence for two reasons: it explained a per-row
+    // toggle that did not exist, and it was long enough to crush the GOING OUT
+    // heading beside it into three stacked lines. The toggle exists now, so the
+    // first reason is spent; the second is why the replacement is six words and
+    // not twenty-two, and why the heading keeps the `flex-none` that sweep gave
+    // it. The handoff writes this in its plural head only — the singular arm is
+    // kept, because "all 1 go back in the pool" is not a sentence.
     outNote: (n: number) =>
-      `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit.`,
+      `${n === 1 ? "it goes" : `all ${n} go`} back in the pool when you commit. ` +
+      "Put one back and it never left.",
 
     // The breakdown and the footer each carry a purchase figure, and a failed
     // claim read leaves every add's bucket null — so all three terms of the
@@ -202,6 +210,41 @@ export const deckVersioningCopy = {
 
     footer: (cards: number, buy: number, released: number) =>
       `${plural(cards, "card")} · ${buy} to buy · ${released} back in the pool`,
+  },
+
+  /* ---- Putting a cut card back (the `Going out` row) ----
+   *
+   * Derived from `draftDiff.removes`, which already enumerates every cut, so
+   * this lives until the draft is committed and is stored nowhere. Nothing
+   * expires — only #185's shortcut does — so there is no "restorable until"
+   * string, no timer and no countdown.
+   *
+   * THERE ARE NO REFUSAL STRINGS, and that is a ruling rather than an omission.
+   * A restore is an ADD, and adds in this app never refuse on claims — they
+   * price them. `DeckAddRejection` is three values and all three are closed for
+   * a row in this column: the card was in the deck's committed list, so
+   * legality and colour identity already passed, and a commander is not a
+   * `deck_cards` row so it never appears here. Refusing would make a restore
+   * stricter than adding the same card from the deck page one route away.
+   */
+  restore: {
+    cta: "Put back",
+    ctaA11y: (card: string) => `Put ${card} back in the deck`,
+
+    // Which of the three fires depends on what is left behind it, and no count
+    // of nought is ever drawn — including in an announcement.
+    announced: (card: string, cards: number, out: number) =>
+      `${card} is back in the deck. ${plural(cards, "card")}, ${out} going out.`,
+    announcedLastOut: (card: string, cards: number) =>
+      `${card} is back in the deck. ${plural(cards, "card")}, nothing going out.`,
+    // A restore can dissolve the draft entirely, which deletes the banner and
+    // redirects the route. The absence IS the news, so this is the only notice.
+    announcedLastChange: (card: string, version: number) =>
+      `${card} is back in the deck. This deck matches v${version} again.`,
+
+    // Not `DECK_REMOVE_FALLBACK_MESSAGE`, which says the card is still in the
+    // deck: here the card is OUT, and the restore is what did not happen.
+    failed: "We couldn't put that card back. It's still going out.",
   },
 
   /* ---- §Surfaces 3 · commit ---- */

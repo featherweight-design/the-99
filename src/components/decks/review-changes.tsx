@@ -15,7 +15,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { pullCandidate, releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
 // Types only: `draft-state.ts` reaches `src/db`, which throws at module init in
@@ -27,12 +27,16 @@ import { PrimaryButton } from "../ui/button";
 import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
-import { DISCARD_RECEIPT_HASH } from "./draft-announcer";
+import { DISCARD_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { PullControl } from "./pull-control";
+import { PutBackControl } from "./put-back-control";
+import { MutationError } from "./mutation-error";
+import { addCardToDeck } from "../../app/decks/actions";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
 
 const copy = deckVersioningCopy.review;
+const restoreCopy = deckVersioningCopy.restore;
 
 type ReviewChangesProps = {
   /** The deck being reviewed — the one a pull moves a copy INTO, which is why
@@ -70,6 +74,13 @@ type ReviewChangesProps = {
  * word to be the alternative to, and "free" on a row drawn as nothing would be
  * the description of an element that is not there.
  */
+/** The id a group heading takes focus by, scoped to its column: both columns can
+ *  hold an `Artifacts` group, and two elements with one id is a focus target
+ *  that lands on whichever came first. */
+function groupHeadingId(prefix: string, column: "in" | "out", group: string): string {
+  return `${prefix}-${column}-${group.replace(/\W+/g, "-").toLowerCase()}`;
+}
+
 function bucketWord(bucket: DraftRow["bucket"]): string | null {
   if (bucket === "unowned") return copy.chipBuy;
   if (bucket === "claimed") return copy.chipPullable;
@@ -79,6 +90,12 @@ function bucketWord(bucket: DraftRow["bucket"]): string | null {
 /** A row whose copy count moved rather than a card arriving or leaving whole.
  *  `draftDiff` files a change only when the counts differ, so the only pair this
  *  excludes is one where a side is zero — which the column heading has said. */
+/** Stable, so `useOptimistic`'s base identity never changes between renders. */
+const EMPTY_RESTORED: string[] = [];
+
+/** The `Coming in` column's error map, which is always empty. */
+const EMPTY_ERRORS: Record<string, string> = {};
+
 function isQuantityMove(row: DraftRow): boolean {
   return row.from > 0 && row.to > 0;
 }
@@ -138,6 +155,9 @@ function Column({
   hiddenOnPhone,
   phoneHeading,
   onPulled,
+  onRestore,
+  restoreErrors,
+  columnKey,
   newestAsOf,
   claimsKnown,
 }: {
@@ -157,6 +177,16 @@ function Column({
    *  pair naming the direction and the heading has to. */
   phoneHeading: boolean;
   onPulled: () => void;
+  /** Null in the `Coming in` column, which has nothing to put back. The list
+   *  owns the write because the row is what leaves. */
+  onRestore: ((card: { oracleId: string; name: string }) => void) | null;
+  /** What to say on each row whose restore came back refused or threw, keyed by
+   *  oracle id. Empty in the `Coming in` column, which has no restore. */
+  restoreErrors: Record<string, string>;
+  /** Which column this is, so its group headings get ids of their own. Both
+   *  columns can hold an `Artifacts` group, and two elements with one id is a
+   *  focus target that lands on whichever came first. */
+  columnKey: "in" | "out";
   /** The newest `as_of` in the price table, so a row can tell a live price from
    *  a sold-out printing's last one. */
   newestAsOf: Date | null;
@@ -169,7 +199,17 @@ function Column({
 }) {
   const renderGroup = ([group, groupRows]: TypeGroup) => (
     <div key={group} className="mb-[16px] last:mb-0">
-      <DecklistGroupHeader label={group} count={groupRows.length} />
+      {/* The heading itself, not a wrapper around it: a reader landing on a
+          bare div after a restore is told nothing about where they are, and the
+          whole point of the target is that it names the group the row left.
+          tabIndex −1 so it can receive focus without joining the tab order — it
+          is a landing place after a write, not a stop on the way through. */}
+      <DecklistGroupHeader
+        label={group}
+        count={groupRows.length}
+        headingId={groupHeadingId(descriptionId, columnKey, group)}
+        focusable
+      />
       <div className="flex flex-col gap-[4px]">
         {groupRows.map((row) => {
           // The claim the row's control is drawn against, guards and all —
@@ -276,6 +316,25 @@ function Column({
                   siblings={siblings}
                   describedBy={word ? wordId : undefined}
                   recount={recount}
+                  // The slot `DiffRowOut` already reserves, and draws nothing in
+                  // when it is null. A column, because a refusal is written
+                  // underneath the control rather than beside it — the same
+                  // shape `PullControl` uses on the other side of the page.
+                  action={
+                    onRestore
+                      ? (
+                          <div className="inline-flex flex-col items-end flex-none">
+                            <PutBackControl
+                              card={{ oracleId: row.oracleId, name: row.name }}
+                              onRestore={onRestore}
+                            />
+                            {restoreErrors[row.oracleId] && (
+                              <MutationError message={restoreErrors[row.oracleId]} />
+                            )}
+                          </div>
+                        )
+                      : null
+                  }
                 />
               )}
             </div>
@@ -372,6 +431,11 @@ export function ReviewChanges({
   // rather than hiding it, which is what leaves the note empty if it is opened
   // again — a half-typed reason for a version nobody committed is not a draft.
   const [commitSheetOpen, setCommitSheetOpen] = useState(commitOpen === true);
+  // The `?commit=1` arrival, and only while it lasts. The prop never changes,
+  // but closing the sheet drops the query — so a page that arrived that way,
+  // closed and reopened the sheet from the Commit button is an ordinary visit
+  // again, and `admitsReview` will refuse it the moment its last named row goes.
+  const [arrivedForCommit, setArrivedForCommit] = useState(commitOpen === true);
   // Cancelling takes `?commit=1` off the URL as well as closing the sheet. The
   // query is an instruction to open, and left behind it re-fires on a reload or
   // a back-forward return — the reader would be handed back the sheet they just
@@ -379,6 +443,10 @@ export function ReviewChanges({
   // mirror rule: the point is to avoid a navigation, not to make one.
   const closeCommitSheet = useCallback(() => {
     setCommitSheetOpen(false);
+    // The arrival is spent with the query it came in on: reopening the sheet
+    // from the Commit button is an ordinary visit, whatever brought the reader
+    // here first.
+    setArrivedForCommit(false);
     const url = new URL(window.location.href);
     if (!url.searchParams.has("commit")) return;
     url.searchParams.delete("commit");
@@ -390,6 +458,35 @@ export function ReviewChanges({
   // width would put every card name, every buy tag and every card-modal trigger
   // in the DOM twice.
   const [shown, setShown] = useState<"in" | "out">("in");
+
+  // The first optimistic write on this surface. `PullControl` beside it is
+  // deliberately NOT optimistic, and the difference is the whole reason: a
+  // pull's row STAYS — it changes the row's availability — while a restore's
+  // row LEAVES, because the list is derived from `draftDiff.removes` and the
+  // card is no longer in it. A row that leaves has nothing to hold a spinner.
+  //
+  // Oracle ids rather than rows: the rows come back from the server on the next
+  // render and this list only has to say which of them to hide meanwhile. React
+  // discards it when the transition settles, which is also the revert.
+  const [restoredIds, addRestoredId] = useOptimistic<string[], string>(
+    EMPTY_RESTORED,
+    (current, oracleId) => [...current, oracleId],
+  );
+  // Keyed per row, not one slot: the controls stay live while another restore
+  // is going, so two failures in flight would otherwise leave the first row
+  // back on screen with the second row's message — or with none at all.
+  const [restoreErrors, setRestoreErrors] = useState<Record<string, string>>({});
+  // Kept, not dropped. Commit and discard serialize with this add on the deck
+  // lock, so a commit that wins the race snapshots the cut the optimistic row
+  // has already hidden — and the restore then lands as a fresh draft on the
+  // other side of the navigation. The two doors are shut for the round trip.
+  const [restoring, startRestore] = useTransition();
+  // Rows already in the air. `PutBackControl` stays enabled by design — R3 rules
+  // a disabled state out — so nothing stops a second click on the SAME row
+  // before the transition re-renders, and a duplicate id would have every
+  // projection counting that card twice. A ref rather than state: it has to be
+  // true for the next click in the same tick, before any render.
+  const inFlight = useRef<Set<string>>(new Set());
   // The same hook the banner's control uses, so the question asked from either
   // door is one construct with one set of answers.
   const discard = useDiscardConfirm(state);
@@ -401,12 +498,26 @@ export function ReviewChanges({
   const versionCards = (before ?? []).reduce((n, card) => n + card.quantity, 0);
 
   const inCount = rows.in.length;
-  const outCount = rows.out.length;
+  // Every figure below reads the OPTIMISTIC list, not `rows.out`. Reading the
+  // server list for any one of them leaves that figure a round trip behind the
+  // row that just left — and on the phone it leaves a stale `Going out · 1` tab
+  // selected over a hidden `Coming in` list.
+  const outRows = rows.out.filter((row) => !restoredIds.includes(row.oracleId));
+  const outCount = outRows.length;
+  // Copies the restores took back out of the pool. Every row here is a whole
+  // removal — basics never reach this list and no other card can hold a second
+  // copy — so `from - to` is `from`, but it is written as the subtraction
+  // `releasedCopies` does, so the two cannot drift.
+  const restoredCopies = rows.out
+    .filter((row) => restoredIds.includes(row.oracleId))
+    .reduce((sum, row) => sum + (row.from - row.to), 0);
   // One list across both columns, so the card modal's Prev/Next pages the whole
   // change set in the order the page draws it rather than stopping at a column.
   // Grouped order, not the payload's: the columns group by type, and Prev/Next
   // stepping to a row three groups down is a list the reader cannot follow.
-  const siblings = [...orderedIds(rows.in), ...orderedIds(rows.out)];
+  // `outRows`, not `rows.out`: a row that has optimistically left the column is
+  // not somewhere Prev/Next should be able to page back to.
+  const siblings = [...orderedIds(rows.in), ...orderedIds(outRows)];
 
   // Counted off the state's own buckets rather than off `rows.in`, because the
   // state is what every other surface's figure is counted off: the banner, this
@@ -425,11 +536,185 @@ export function ReviewChanges({
   // A draft that moved only basic lands: a version to cut, and no row either
   // column can draw. Counting changes on it would print a nought standing for a
   // real edit, so the heading and the lede name the edit instead.
-  const basicsOnly = !firstCommit && inCount === 0 && outCount === 0 && state.basicsChanged;
+  // `basicsMoved` as well as `basicsChanged`: on a mixed draft the narrower flag
+  // is false by design, so restoring the last non-basic row would empty both
+  // lists and this would claim "0 changes" over a draft that still moves a
+  // basic. The two together are "nothing is left but the mana base".
+  const basicsOnly =
+    !firstCommit && inCount === 0 && outCount === 0 && (state.basicsChanged || state.basicsMoved);
+  // The draft's own size, which a restore grows: the card is back in the deck.
+  const liveCardCount = cardCount + restoredCopies;
+
+  // The strip's `after` is the draft's shape, so a restored card belongs in it:
+  // its role, its type and its mana value are all back in the deck and every
+  // cell the strip draws counts them. Without this the row leaves the column
+  // while the curve beside it still describes a deck the card is out of.
+  const liveAfter =
+    restoredCopies === 0
+      ? after
+      : [
+          ...after,
+          ...rows.out
+            .filter((row) => restoredIds.includes(row.oracleId))
+            .map((row) => ({
+              role: row.role,
+              quantity: row.from - row.to,
+              typeLine: row.typeLine,
+              cmc: row.cmc,
+            })),
+        ];
 
   // Copies going back in the pool, never rows: one remove of `3 → 1` releases
   // two, and this figure is printed beside `buyCount`, which counts copies.
-  const released = releasedCopies(state);
+  // Clamped, because the two terms come from different reads: `state.removes`
+  // is the server's and the rows are this render's. In production they agree —
+  // the rows ARE that diff — so the clamp only ever catches a test fixture or a
+  // payload that disagrees with itself, and a negative "back in the pool" is
+  // the one thing the figure must never say.
+  const released = Math.max(0, releasedCopies(state) - restoredCopies);
+
+  // The write. `addCardToDeck` unwrapped, exactly as the handoff says: every row
+  // here is a whole removal of a single copy, so there is no quantity to carry
+  // and no bespoke action to write. It already ends in `revalidateClaims`, which
+  // is the helper a claim write owes every other deck's availability.
+  const restore = useCallback(
+    (card: { oracleId: string; name: string }) => {
+      // Different rows may go at once; the same row may not go twice.
+      if (inFlight.current.has(card.oracleId)) return;
+      inFlight.current.add(card.oracleId);
+      setRestoreErrors((current) => {
+        if (!(card.oracleId in current)) return current;
+        const next = { ...current };
+        delete next[card.oracleId];
+        return next;
+      });
+      const groupOfRow = rows.out.find((row) => row.oracleId === card.oracleId)?.cardTypeGroup;
+      // Read BEFORE the write, from the figures this render already has: after
+      // it, the row is gone from both the optimistic list and the server's.
+      const outAfter = outCount - 1;
+      const cardsAfter = liveCardCount + 1;
+      // Whether another restore is already going. Read at the click, because
+      // both figures above are this render's snapshot: tap two rows inside one
+      // round trip and each would compute `outAfter === 0` from a column the
+      // other has not left yet, and both would announce a dissolution that has
+      // not happened. The stronger sentence is only earned when this write is
+      // the only one in the air.
+      const alone = !restoring;
+      // How many OTHER rows were in the air when this one was pressed. Measured
+      // here rather than at the announcement, where the set has already been
+      // emptied by whichever write settled first.
+      const othersInFlight = Math.max(inFlight.current.size - 1, 0);
+      startRestore(async () => {
+        addRestoredId(card.oracleId);
+        let result: Awaited<ReturnType<typeof addCardToDeck>>;
+        try {
+          result = await addCardToDeck(deckId, card.oracleId);
+        } catch {
+          inFlight.current.delete(card.oracleId);
+          // A throw is a transport or database failure, not a refusal: nothing
+          // was decided and trying again is the whole remedy. React drops the
+          // optimistic id when this transition settles, so the row returns and
+          // this message lands on it.
+          setRestoreErrors((current) => ({ ...current, [card.oracleId]: restoreCopy.failed }));
+          // The outcome is UNKNOWN, not failed: a lost response after the
+          // transaction committed looks identical here, and without this the
+          // row would sit saying "still going out" over a card already back in
+          // `deck_cards` until something else navigated. Re-reading the route
+          // is what the commit and discard paths do with the same ambiguity.
+          router.refresh();
+          return;
+        }
+        inFlight.current.delete(card.oracleId);
+        if (!result.ok) {
+          // `addCardToDeck` can still refuse on its own vocabulary — an
+          // off-identity card, say, if the catalogue moved under a committed
+          // list. Passed through rather than re-worded: it is a sentence about
+          // the card, not about this surface.
+          setRestoreErrors((current) => ({ ...current, [card.oracleId]: result.message }));
+          return;
+        }
+        // Announced into the region that outlives this row, because the row is
+        // removed by its own success. Which sentence depends on what is left.
+        //
+        // Two different questions, and they were one flag by mistake.
+        //
+        // The ROUTE leaves whenever no named row is left — `admitsReview`
+        // refuses an empty pair — EXCEPT on a `?commit=1` arrival, which is
+        // admitted for a basics-only draft. So a page whose sheet is open over
+        // a draft that still moves a basic stays exactly where it is, and the
+        // focus handoff is owed.
+        // The ARRIVAL, not the sheet's current state: opening the sheet from
+        // the Commit button carries no `?commit=1`, so that page is refused the
+        // moment its last named row goes, exactly like any other.
+        const staysForBasics = arrivedForCommit && state.basicsMoved;
+        const redirecting = alone && outAfter === 0 && inCount === 0 && !staysForBasics;
+        // The DECK matches its version again only if nothing else moved, and a
+        // basic that moved is something else. "Matches v1" over a draft that
+        // still changes the mana base is a claim about the deck, not the page.
+        const matchesVersion = redirecting && !state.basicsMoved;
+        draftAnnouncer().textContent =
+          matchesVersion
+            ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
+            : outAfter === 0 && alone
+              // `alone` for the same reason it gates the sentence above: with
+              // another restore in the air, "nothing going out" is a claim about
+              // a column that write may yet put a row back into, and this
+              // sentence has already been spoken by then.
+              ? restoreCopy.announcedLastOut(card.name, cardsAfter)
+              // The rows still on screen PLUS the ones another write is holding
+              // optimistically hidden. Never a nought — the copy promises one is
+              // never drawn — and honest: those rows are going out as far as
+              // this write knows, and it is the one speaking.
+              : restoreCopy.announced(
+                  card.name,
+                  cardsAfter,
+                  outAfter + othersInFlight,
+                );
+        // Focus before the refresh, while the tree this render built is still
+        // in the document. The group heading the row left, never the next row's
+        // control.
+        //
+        // NOT when this was the last change of any kind: the route redirects to
+        // the deck page, and focusing a node about to be unmounted by a
+        // navigation is a no-op that reads like a promise kept. The
+        // announcement above is the receipt for that case, and a landing hash
+        // like the commit and discard receipts is a separate piece of work.
+        if (!redirecting) {
+          // The row's own group first. It may have gone with the row — a group
+          // of one empties when its row leaves — in which case any other
+          // heading still in the column is the nearest true answer, and only
+          // then the page heading.
+          const heading =
+            outAfter > 0
+              ? (groupOfRow &&
+                  document.getElementById(groupHeadingId(descriptionId, "out", groupOfRow))) ||
+                document.querySelector<HTMLElement>(
+                  `[id^="${CSS.escape(descriptionId)}-out-"]`,
+                )
+              : null;
+          // The page heading is the fallback when the column itself is going.
+          // It carries no tabindex of its own — a heading nothing focuses does
+          // not need one — so it is given one for the landing, the way the
+          // discard receipt does it.
+          const fallback = document.querySelector("h1");
+          if (heading) heading.focus();
+          else if (fallback) {
+            fallback.setAttribute("tabindex", "-1");
+            fallback.focus();
+          }
+        }
+        // No refresh here. `addCardToDeck` ends in `revalidateClaims`, and
+        // `claimSurfaces` names this very route, so the server has already told
+        // this client to re-read — a second call is a second full pass over the
+        // draft rows, the availability read and the price join. The catch path
+        // below keeps its refresh, because a throw may have revalidated nothing.
+      });
+    },
+    [
+      addRestoredId, arrivedForCommit, deckId, descriptionId, inCount, liveCardCount,
+      outCount, restoring, rows.out, router, state.basicsMoved, state.version,
+    ],
+  );
 
   // Four figures, each dropped at nought rather than drawn as one. The purchase
   // rides on the to-buy chip because the two are one fact: a count of copies and
@@ -454,7 +739,13 @@ export function ReviewChanges({
   // Both columns present is the only case with anything to switch between, and
   // its absence is also what keeps a one-column page from drawing a control
   // whose other segment leads nowhere.
+  // Both counts are the optimistic ones. Restoring the last `out` row while the
+  // reader is standing on the Out segment would otherwise leave a stale
+  // `Going out · 1` tab selected over a hidden `Coming in` list.
   const segmented = inCount > 0 && outCount > 0;
+  // The segment a restore emptied is no longer a place to stand. Derived rather
+  // than set in the write, so it cannot disagree with the counts beside it.
+  const shownColumn = outCount === 0 ? "in" : inCount === 0 ? "out" : shown;
 
   return (
     // The rows open the card modal, and the builder's provider does not reach
@@ -477,7 +768,7 @@ export function ReviewChanges({
           </Link>
           <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
             {firstCommit
-              ? copy.firstHeading(cardCount)
+              ? copy.firstHeading(liveCardCount)
               : basicsOnly
                 ? copy.basicsHeading(state.version?.number ?? 1)
                 : copy.heading(inCount + outCount, state.version?.number ?? 1)}
@@ -498,7 +789,7 @@ export function ReviewChanges({
           {/* Under the lede and above the columns, because it answers the other
               question the page is asked: the columns say which cards moved, and
               this says where the deck's shape went. */}
-          <ChangedStrip before={before} after={after} />
+          <ChangedStrip before={before} after={liveAfter} />
 
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
               standing for a purchase, a pull or a column that is not there. */}
@@ -526,7 +817,7 @@ export function ReviewChanges({
                   key={value}
                   type="button"
                   onClick={() => setShown(value)}
-                  aria-pressed={shown === value}
+                  aria-pressed={shownColumn === value}
                   // Verbatim the builder bar's filter pill: selection is bone on
                   // `--elevated`, never an accent fill, and it drops the ring the
                   // unselected segment carries. `ViewToggle` is the app's other
@@ -536,7 +827,7 @@ export function ReviewChanges({
                   className={[
                     "font-sans transition-[filter] hover:brightness-125 text-[12.5px]",
                     "flex-1 rounded-full px-[11px] py-[6px] min-h-[38px]",
-                    shown === value
+                    shownColumn === value
                       ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]"
                       : "font-medium text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
                   ].join(" ")}
@@ -569,10 +860,15 @@ export function ReviewChanges({
               rows={rows.in}
               siblings={siblings}
               descriptionId={descriptionId}
-              hiddenOnPhone={segmented && shown !== "in"}
+              hiddenOnPhone={segmented && shownColumn !== "in"}
               phoneHeading={!segmented}
               newestAsOf={state.newestAsOf}
               claimsKnown={state.claimsKnown}
+              // Nothing to put back in this column: the reverse of an add is a
+              // removal, and the deck page does that.
+              onRestore={null}
+              restoreErrors={EMPTY_ERRORS}
+              columnKey="in"
               // Every figure on this page is the server's — the breakdown beside
               // the heading, the buy count, the row's own tag — so a pull that
               // moved a copy is read again rather than patched in place.
@@ -584,14 +880,14 @@ export function ReviewChanges({
               deckId={deckId}
               heading={copy.groupOut(outCount)}
               headingTone="var(--warning)"
-              // Said once beside the heading, never per row: there is no Keep on
-              // a removal here, because putting one back is adding it to the
-              // deck and the deck page already does that.
               note={copy.outNote(released)}
-              rows={rows.out}
+              rows={outRows}
+              onRestore={restore}
+              restoreErrors={restoreErrors}
+              columnKey="out"
               siblings={siblings}
               descriptionId={descriptionId}
-              hiddenOnPhone={segmented && shown !== "out"}
+              hiddenOnPhone={segmented && shownColumn !== "out"}
               phoneHeading={!segmented}
               newestAsOf={state.newestAsOf}
               claimsKnown={state.claimsKnown}
@@ -603,9 +899,13 @@ export function ReviewChanges({
           {commitSheetOpen ? (
             <CommitSheet
               deckId={deckId}
+              // Same race, one door further in: a sheet already open when a
+              // restore starts can commit the draft the row has left.
+              commitDisabled={restoring}
               state={state}
               rows={rows}
-              cardCount={cardCount}
+              cardCount={liveCardCount}
+              releasedOverride={released}
               onCancel={closeCommitSheet}
             />
           ) : (
@@ -624,6 +924,10 @@ export function ReviewChanges({
                   deckId={deckId}
                   state={state}
                   versionCards={versionCards}
+                  // The question can already be open when a restore starts, and
+                  // the trigger's own guard cannot reach it: the trigger is
+                  // unmounted while the question is up.
+                  disabled={restoring}
                   onCancel={discard.cancel}
                   // This page is a page about a draft, so once the draft is gone
                   // there is nothing here to read: the route's own guard would
@@ -647,6 +951,12 @@ export function ReviewChanges({
                         button. */}
                     <PrimaryButton
                       onClick={() => setCommitSheetOpen(true)}
+                      // Shut for the length of a restore's round trip. The two
+                      // writes serialize on the deck lock, so a commit that wins
+                      // the race freezes the cut the optimistic row has already
+                      // taken off the screen — and the restore then lands as a
+                      // fresh draft on the far side of the navigation.
+                      disabled={restoring}
                       className="inline-flex flex-1 md:flex-none items-center justify-center min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]"
                     >
                       {deckVersioningCopy.pending.commitCta((state.version?.number ?? 0) + 1)}
@@ -654,7 +964,11 @@ export function ReviewChanges({
                     {/* Withheld on a brew, where there is no version for a discard
                         to land on — the rendering half of the server's own refusal. */}
                     {discard.offered && (
-                      <DiscardTrigger onOpen={discard.open} triggerRef={discard.triggerRef} />
+                      <DiscardTrigger
+                        onOpen={discard.open}
+                        triggerRef={discard.triggerRef}
+                        disabled={restoring}
+                      />
                     )}
                   </div>
                   <span className="order-first md:order-last font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]">
@@ -662,8 +976,8 @@ export function ReviewChanges({
                         the sheet one click down counts: two figures under each other
                         that disagreed would be the same commit priced twice. */}
                     {state.claimsKnown
-                      ? copy.footer(cardCount, state.buyCount, released)
-                      : copy.footerUnknown(cardCount, released)}
+                      ? copy.footer(liveCardCount, state.buyCount, released)
+                      : copy.footerUnknown(liveCardCount, released)}
                   </span>
                 </>
               )}

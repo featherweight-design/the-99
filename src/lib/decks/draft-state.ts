@@ -92,6 +92,22 @@ export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
 }
 
 /**
+ * Whether any basic land moved in this diff, alone or alongside other cards.
+ *
+ * Pulled out of `readDraft` so it can be tested without a database: the mixed
+ * case — a basic moved AND a card cut — is the one the flag exists for, and it
+ * is also the one `basicsChanged` cannot see, because that flag is set only
+ * when nothing else moved. Get this wrong and restoring the last drawn row
+ * sends the reader to the deck page while their draft is still there.
+ */
+export function anyBasicMoved(
+  diff: { adds: DraftChange[]; removes: DraftChange[] },
+  basics: ReadonlySet<string>,
+): boolean {
+  return [...diff.adds, ...diff.removes].some((c) => basics.has(c.oracleId));
+}
+
+/**
  * The newest version, its cards and the deck's own rows as of one instant.
  *
  * One read-only `repeatable read` transaction, because these three reads ARE the
@@ -192,7 +208,7 @@ async function readDraft(
   const { version, before, draft } = await readSnapshot(deckId);
 
   const empty: DraftState = {
-    version, adds: [], addChanges: [], removes: [], basicsChanged: false,
+    version, adds: [], addChanges: [], removes: [], basicsChanged: false, basicsMoved: false,
     names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
     claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
@@ -218,12 +234,19 @@ async function readDraft(
   const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
   const adds = diff.adds.filter((a) => !basics.has(a.oracleId));
   const removes = diff.removes.filter((r) => !basics.has(r.oracleId));
+  // Whether ANY basic moved, which `basicsChanged` cannot answer: that flag is
+  // set only on a draft where nothing else moved, so a mixed draft reports
+  // false and a reader cannot tell "no basics" from "basics alongside the
+  // rest". The review page needs the difference — restoring its last drawn row
+  // leaves a draft that still exists when a basic moved, and one that does not
+  // when none did, and those two land on different routes.
+  const basicsMoved = anyBasicMoved(diff, basics);
 
   // A basics-only edit: real, committable, and priceable by nothing. Every list
   // and every figure stays empty, and `basicsChanged` is the one signal that
   // says the draft differs — see `hasChanges`.
   if (adds.length === 0 && removes.length === 0) {
-    return bare({ ...empty, basicsChanged: true });
+    return bare({ ...empty, basicsChanged: true, basicsMoved: true });
   }
 
   const changed = [...adds, ...removes].map((c) => c.oracleId);
@@ -312,6 +335,7 @@ async function readDraft(
       addChanges: adds,
       removes,
       basicsChanged: false,
+      basicsMoved,
       names,
       costs,
       prices: priceTags,

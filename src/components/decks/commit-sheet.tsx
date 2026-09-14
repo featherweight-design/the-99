@@ -69,12 +69,29 @@ export type CommitSheetProps = {
   /** The server's count of the cards in the list being frozen. Never recounted
    *  here — see the header. */
   cardCount: number;
+  /** The review page's own released figure, which is optimistic: a sheet open
+   *  while the last removal is put back must not keep quoting a release the
+   *  reader has just undone. Absent from every other caller, which has no list
+   *  of its own to be ahead of the server. */
+  releasedOverride?: number;
+  /** Shut while another write to the same draft is in flight — the review page
+   *  passes this during a restore. The two serialize on the deck lock, and a
+   *  commit that wins the race freezes a cut the reader has just undone. */
+  commitDisabled?: boolean;
   /** Folds the sheet away. The sheet is unmounted rather than hidden, which is
    *  what leaves the note empty when it is opened again. */
   onCancel: () => void;
 };
 
-export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: CommitSheetProps) {
+export function CommitSheet({
+  deckId,
+  state,
+  rows,
+  cardCount,
+  releasedOverride,
+  commitDisabled = false,
+  onCancel,
+}: CommitSheetProps) {
   const router = useRouter();
   const noteId = useId();
   const [pending, startTransition] = useTransition();
@@ -90,7 +107,11 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
 
   const version = (state.version?.number ?? 0) + 1;
   // Copies, not rows — `3 → 1` releases two. See `releasedCopies`.
-  const released = releasedCopies(state);
+  //
+  // Taken from the caller when it has a figure of its own: the review page's
+  // `Going out` list is optimistic, and a sheet open while the last removal is
+  // put back would otherwise keep quoting a release the reader has just undone.
+  const released = releasedOverride ?? releasedCopies(state);
 
   // Copies, not rows: the two terms have to add up to the figure drawn above
   // them, and that figure is `buyCount`. `shortfall` rather than `needed` is the
@@ -265,7 +286,7 @@ export function CommitSheet({ deckId, state, rows, cardCount, onCancel }: Commit
               `--fg` on `--bg` are those two colours. Its hover and its disabled
               appearance come with it rather than being restated here. */}
           <PrimaryButton
-            disabled={pending}
+            disabled={pending || commitDisabled}
             className={`${BAR_BUTTON} min-h-[48px] md:min-h-0 md:py-[11px] md:px-[20px] text-[14px]`}
             onClick={() => {
               setError(null);

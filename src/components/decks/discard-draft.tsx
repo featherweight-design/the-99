@@ -87,12 +87,24 @@ export function useDiscardConfirm(state: DraftState) {
 export function DiscardTrigger({
   onOpen,
   triggerRef,
+  disabled = false,
 }: {
   onOpen: () => void;
   triggerRef?: Ref<HTMLButtonElement>;
+  /** Shut while another write to the same draft is in flight. The review page
+   *  passes this during a restore: the two serialize on the deck lock, and a
+   *  discard that wins the race throws away a card the reader has just put
+   *  back. */
+  disabled?: boolean;
 }) {
   return (
-    <button ref={triggerRef} type="button" onClick={onOpen} className={GHOST_CTA}>
+    <button
+      ref={triggerRef}
+      type="button"
+      onClick={onOpen}
+      disabled={disabled}
+      className={`${GHOST_CTA} disabled:opacity-50 disabled:cursor-default`}
+    >
       {deckVersioningCopy.pending.discardCta}
     </button>
   );
@@ -120,6 +132,11 @@ export interface DiscardConfirmProps {
   onDiscarded?: () => void;
   /** Spacing the host needs around the box, never its own surface. */
   className?: string;
+  /** Shut while another write to the same draft is in flight. The question can
+   *  be open before that write starts — the trigger's own guard cannot reach it,
+   *  because the trigger is unmounted while the question is up — and a discard
+   *  that wins the race throws away a card the reader has just put back. */
+  disabled?: boolean;
 }
 
 /**
@@ -159,6 +176,7 @@ export function DiscardConfirm({
   onCancel,
   onDiscarded,
   className = "",
+  disabled = false,
 }: DiscardConfirmProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -247,7 +265,9 @@ export function DiscardConfirm({
         </button>
         <button
           type="button"
-          disabled={pending}
+          // The destructive half only. The way out stays live: a reader who
+          // cannot discard right now should still be able to stop asking.
+          disabled={pending || disabled}
           aria-describedby={whyId}
           onClick={() => {
             if (inFlightRef.current) return;

@@ -15,6 +15,7 @@ export const BREW: DraftState = {
   addChanges: [],
   removes: [],
   basicsChanged: false,
+  basicsMoved: false,
   names: new Map(),
   costs: new Map(),
   prices: new Map(),

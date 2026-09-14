@@ -74,6 +74,7 @@ const DRAFT: DraftState = {
     { oracleId: "gone", from: 1, to: 0 },
   ],
   basicsChanged: false,
+  basicsMoved: false,
   names: new Map(),
   costs: new Map(),
   prices: new Map(),

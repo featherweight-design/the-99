@@ -5,7 +5,7 @@
 // asserted here is only which rows are given one.
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -15,7 +15,18 @@ import { cardDetailCopy } from "../cards/card-detail-provider";
 import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<{ ok: boolean; message?: string }>>(
+  async () => ({ ok: true }),
+);
+vi.mock("../../app/decks/actions", () => ({
+  addCardToDeck: (deckId: string, oracleId: string) => addCardToDeck(deckId, oracleId),
+  commitDeckVersion: vi.fn(async () => ({ ok: true })),
+  discardDeckDraft: vi.fn(async () => ({ ok: true })),
+  pullCardFromDeck: vi.fn(async () => ({ ok: true, buy: 0, total: null })),
+}));
 
 // The page mounts its own provider, so the modal's paging is reachable only
 // through the read that provider does — there is no `fetchCard` to inject.
@@ -773,5 +784,425 @@ describe("ReviewChanges", () => {
       />,
     );
     expect(headingOf().className).toContain("hidden");
+  });
+
+  // ── Putting a cut card back ────────────────────────────────────────────────
+  //
+  // The one write this column has. It always succeeds — a restore is an add,
+  // and adds never refuse on claims — so what is asserted is where the row goes
+  // and which figures follow it, not a guard.
+  describe("Put back", () => {
+    const cut = (over: Partial<Row> = {}) =>
+      row({ oracleId: "o2", name: "Mox Diamond", direction: "out", from: 1, to: 0, ...over });
+    const putBack = (name = "Mox Diamond") =>
+      screen.getByRole("button", { name: deckVersioningCopy.restore.ctaA11y(name) });
+
+    /** A transition does not re-render until it settles, and `findByText`'s own
+     *  polling will not advance one. Everything after a tap waits on this. */
+    const settle = () => act(async () => { await Promise.resolve(); });
+
+    /** Holds the write open so the optimistic paint can be read, then lets it
+     *  finish. A promise left unsettled keeps its transition pending for the
+     *  rest of the file, and every test after it stops re-rendering. */
+    function hold() {
+      // Every resolver, not the last one: the concurrent-restore test starts two
+      // writes, and releasing only the second would leave the first pending and
+      // its transition open for the rest of the file.
+      const answers: Array<(r: { ok: boolean }) => void> = [];
+      addCardToDeck.mockImplementation(
+        () => new Promise((resolve) => { answers.push(resolve); }),
+      );
+      return {
+        release: () => act(async () => {
+          for (const answer of answers) answer({ ok: true });
+        }),
+      };
+    }
+
+    // `mockResolvedValue` does not clear a `mockImplementation`, so a held write
+    // would otherwise hang every test after it.
+    beforeEach(() => {
+      addCardToDeck.mockReset();
+      addCardToDeck.mockResolvedValue({ ok: true });
+      // Or an assertion that the catch re-reads the route passes on the refresh
+      // a previous test's success already made.
+      refresh.mockClear();
+    });
+
+    function mount(rows: { in: Row[]; out: Row[] }) {
+      return render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={rows}
+          {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+        />,
+      );
+    }
+
+    it("offers it on every row going out, and on none coming in", () => {
+      mount({ in: [row()], out: [cut()] });
+      expect(putBack()).toBeInTheDocument();
+      // The reverse of an add is a removal, and the deck page does that.
+      expect(
+        screen.queryByRole("button", { name: deckVersioningCopy.restore.ctaA11y("Sol Ring") }),
+      ).toBeNull();
+    });
+
+    it("takes the row out of the column on tap, before the server answers", async () => {
+      const held = hold();
+      mount({ in: [row()], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      // The row is gone with the write still in flight, which is the whole of
+      // what optimistic means here.
+      expect(screen.queryByText("Mox Diamond")).toBeNull();
+      await held.release();
+    });
+
+    // Asserted with the write still in flight, which is the only window these
+    // figures are the optimistic ones: `useOptimistic` drops its value when the
+    // transition settles, and in the app the refreshed server list is what
+    // replaces it. Here the props are static, so the row would come back.
+    it("moves every figure the row was counted in", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      expect(screen.getAllByText(deckVersioningCopy.review.groupOut(2)).length).toBeGreaterThan(0);
+      // The deck's own size, before the card comes back into it.
+      expect(document.body.textContent).toContain(`${CARD_COUNT} cards`);
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      expect(screen.getAllByText(deckVersioningCopy.review.groupOut(1)).length).toBeGreaterThan(0);
+      // The card is in the deck again, so the deck is one bigger — in the same
+      // paint the row left, not a round trip later.
+      expect(document.body.textContent).toContain(`${CARD_COUNT + 1} cards`);
+      await held.release();
+    });
+
+    // The copies going back into the collection on commit. A restore takes one
+    // out of that number, because the card is staying in the deck after all.
+    it("takes the restored copy out of the released figure", async () => {
+      const held = hold();
+      // A state whose removes agree with the rows, which the shared fixture's
+      // empty lists do not: `releasedCopies` reads the state, the rows are this
+      // render's, and only a state that holds the cut has a figure to move.
+      const withRemoves = { ...STATE, removes: [{ oracleId: "o2", from: 1, to: 0 }] };
+      render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE} state={withRemoves} cardCount={CARD_COUNT}
+        />,
+      );
+      expect(document.body.textContent).toContain("1 back in the pool");
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      expect(document.body.textContent).toContain("0 back in the pool");
+      await held.release();
+    });
+
+    // Decision 6: a restored card is in neither list, so there is nothing to
+    // buy and nothing that could move the money. A figure that moved would be
+    // a bug rather than a lag, which is why this is asserted and not projected.
+    it("moves no money figure", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut()] });
+      const buy = document.body.textContent?.match(/\d+ to buy/)?.[0] ?? null;
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(document.body.textContent?.match(/\d+ to buy/)?.[0] ?? null).toBe(buy);
+      await held.release();
+    });
+
+    it("returns the row and says so when the write refuses", async () => {
+      addCardToDeck.mockImplementation(async () => ({ ok: false, message: "nope" }));
+      mount({ in: [], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      await screen.findByText("nope");
+      // The row came back with it — a refusal is not a removal.
+      expect(screen.getByText("Mox Diamond")).toBeInTheDocument();
+    });
+
+    it("says the restore failed when the write throws, not that the card is in the deck", async () => {
+      addCardToDeck.mockImplementation(async () => {
+        throw new Error("network");
+      });
+      mount({ in: [], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      await screen.findByText(deckVersioningCopy.restore.failed);
+    });
+
+    // Focus lands on the heading of the group the row left — never on the next
+    // row's control, which would put a live restore under a finger that has
+    // just used one.
+    it("puts focus on the group heading the row left", async () => {
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      // After the server confirms, not before: the landing place is the answer
+      // to a write that happened. The heading is the only thing in the column
+      // carrying a tabindex, so it is the only element focus could have taken.
+      expect(document.activeElement?.getAttribute("tabindex")).toBe("-1");
+      expect(document.activeElement?.textContent).toContain("Artifacts");
+    });
+
+    // The phone's segmented pair reads the same counts the columns do. Without
+    // that, restoring the last cut while standing on the Out segment leaves a
+    // stale tab selected over a hidden `Coming in` list.
+    it("stands the reader back on Coming in when the last cut goes", async () => {
+      const held = hold();
+      mount({ in: [row()], out: [cut()] });
+      const outTab = screen.getByRole("button", { name: deckVersioningCopy.review.groupOut(1) });
+      await act(async () => {
+        fireEvent.click(outTab);
+      });
+      expect(outTab).toHaveAttribute("aria-pressed", "true");
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      // The pair is gone with the column, and the add is what is on screen.
+      expect(
+        screen.queryByRole("button", { name: deckVersioningCopy.review.groupOut(1) }),
+      ).toBeNull();
+      expect(screen.getByText("Sol Ring")).toBeInTheDocument();
+      // And the restored card is in NEITHER list: appending it to `Coming in`
+      // would satisfy the assertion above while breaking the contract.
+      expect(screen.queryByText("Mox Diamond")).toBeNull();
+      await held.release();
+    });
+
+    // The sheet computes its own released figure from `state.removes`, so an
+    // open sheet would keep quoting a release the reader has just undone.
+    it("moves the released figure inside an open commit sheet", async () => {
+      const held = hold();
+      const withRemoves = { ...STATE, removes: [{ oracleId: "o2", from: 1, to: 0 }] };
+      render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE} state={withRemoves} cardCount={CARD_COUNT} commitOpen
+        />,
+      );
+      // The sheet's own wording for the same figure.
+      expect(document.body.textContent).toContain("1 released");
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      expect(document.body.textContent).toContain("0 released");
+      await held.release();
+    });
+
+    // Commit and discard serialize with this add on the deck lock. A commit
+    // that wins the race freezes the cut the optimistic row has already taken
+    // off the screen, and the restore then lands as a fresh draft on the far
+    // side of the navigation.
+    it("shuts the commit and discard doors while the write is in flight", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      const commit = screen.getByRole("button", {
+        name: deckVersioningCopy.pending.commitCta(2),
+      });
+      expect(commit).toBeEnabled();
+
+      const discard = screen.getByRole("button", {
+        name: deckVersioningCopy.pending.discardCta,
+      });
+      expect(discard).toBeEnabled();
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      expect(commit).toBeDisabled();
+      // Both doors, not one: the discard guard could otherwise be deleted with
+      // this test still green, and the race it exists for is the destructive
+      // half.
+      expect(discard).toBeDisabled();
+
+      await held.release();
+      expect(
+        screen.getByRole("button", { name: deckVersioningCopy.pending.commitCta(2) }),
+      ).toBeEnabled();
+    });
+
+    // A row that has optimistically left is not somewhere Prev/Next should be
+    // able to page back to.
+    it("drops the restored row out of the modal's sibling list", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      // The row is gone from the column, so the card behind it is gone from the
+      // list the modal pages through.
+      expect(screen.queryByText("Mox Diamond")).toBeNull();
+      await held.release();
+    });
+
+    // A throw is an UNKNOWN outcome, not a failed one: a response lost after
+    // the transaction committed looks identical from here. Without the re-read
+    // the row would sit saying "still going out" over a card already back in
+    // the deck.
+    it("re-reads the route when the outcome is unknown", async () => {
+      addCardToDeck.mockImplementation(async () => {
+        throw new Error("network");
+      });
+      mount({ in: [], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      await screen.findByText(deckVersioningCopy.restore.failed);
+      expect(refresh).toHaveBeenCalled();
+    });
+
+    // Two taps inside one round trip: each computes its own "how many are left"
+    // from a column the other has not left yet, so both would otherwise claim
+    // to be the last and announce a dissolution that has not happened.
+    it("does not let two restores both claim to be the last", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await act(async () => {
+        fireEvent.click(putBack("Chrome Mox"));
+      });
+      await held.release();
+      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
+      expect(spoken).not.toContain("matches v");
+    });
+
+    // The shape strip describes the DRAFT, so a restored card belongs in it.
+    // With an empty shape the projection could be deleted and every other test
+    // here would stay green.
+    it("puts the restored card back into the shape the strip draws", async () => {
+      const held = hold();
+      const shape = {
+        before: [{ role: "ramp" as const, quantity: 1, typeLine: "Artifact", cmc: 1 }],
+        after: [] as typeof SHAPE.after,
+      };
+      render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] }}
+          {...shape} state={STATE} cardCount={CARD_COUNT}
+        />,
+      );
+      // The draft holds none of that type before the restore, and one after.
+      const ramp = () => document.body.textContent?.match(/Ramp\s*(\d+)→(\d+)/)?.[2];
+      expect(ramp()).toBe("0");
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      expect(ramp()).toBe("1");
+      await held.release();
+    });
+
+    // The column goes with its last row, so the heading cannot receive focus —
+    // and the page heading carries no tabindex of its own. Without a case that
+    // empties the column, that whole branch could be deleted.
+    it("puts focus on the page heading when the column itself goes", async () => {
+      mount({ in: [row()], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      expect(document.activeElement?.tagName).toBe("H1");
+    });
+
+    // The controls stay enabled by design, so nothing stops a second click on
+    // the SAME row before the transition re-renders — and a duplicate id would
+    // have every projection counting that card twice.
+    it("files one restore per row, however many times it is pressed", async () => {
+      const held = hold();
+      mount({ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      const control = putBack();
+      await act(async () => {
+        fireEvent.click(control);
+        fireEvent.click(control);
+      });
+      // One write, and the deck grew by one card rather than two.
+      expect(addCardToDeck).toHaveBeenCalledTimes(1);
+      expect(document.body.textContent).toContain(`${CARD_COUNT + 1} cards`);
+      await held.release();
+    });
+
+    // With another restore still in the air, "nothing going out" is a claim
+    // about a column the other write may yet put a row back into — and the
+    // sentence has already been spoken by then.
+    it("does not say the column is empty while another write is in flight", async () => {
+      const held = hold();
+      mount({ in: [row()], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await act(async () => {
+        fireEvent.click(putBack("Chrome Mox"));
+      });
+      await held.release();
+      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
+      expect(spoken).not.toContain("nothing going out");
+      // And never a nought, which the copy promises is never drawn: the figure
+      // counts the rows another write is still holding hidden.
+      expect(spoken).not.toMatch(/\b0 going out\b/);
+    });
+
+    // The mixed draft — a basic moved AND a card cut — is the case `basicsMoved`
+    // was added for, and it is invisible to `basicsChanged`, which is false by
+    // design whenever anything else moved. Restoring the last named row leaves
+    // a draft that still changes the mana base.
+    it("calls a mixed draft's leftovers the mana base, not no changes", async () => {
+      const held = hold();
+      render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE}
+          state={{ ...STATE, basicsChanged: false, basicsMoved: true }}
+          cardCount={CARD_COUNT}
+        />,
+      );
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      // Not "0 changes": the deck still differs from its version.
+      expect(document.body.textContent).toContain(
+        deckVersioningCopy.review.basicsHeading(STATE.version?.number ?? 1),
+      );
+      await held.release();
+      // And it never claims the deck matches the version again, because a basic
+      // that moved is something that moved.
+      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
+      expect(spoken).not.toContain("matches v");
+    });
+
+    // The whole row is a button that opens the card. Without `stopPropagation`
+    // putting a card back also opens it.
+    it("does not open the card it puts back", async () => {
+      mount({ in: [], out: [cut()] });
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      expect(screen.queryByText(cardDetailCopy.loading)).toBeNull();
+    });
   });
 });
