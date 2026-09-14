@@ -266,6 +266,60 @@ figure landed with the slice that drew its surface. Both checks ship now —
 compares each against the block it measures on the laid-out page, which is what
 caught two of the figures above being wrong.*
 
+## §6b Close-out — the acceptance artifacts, and what they found
+
+Produced 2026-09-13, after the corrections merged, and **out of order**: this
+round shipped before the repository had a contact sheet, so the inventory was
+written at close-out rather than before implementation. Recorded that way rather
+than presented as though the sequence had been followed.
+
+**1 · Route inventory.** Three, one per shared leaf, because `check:shared`
+takes one binding and every row must render it:
+
+| Inventory | Leaf | Views | Brief's renders |
+| --- | --- | --- | --- |
+| `commander-image.json` | `ArtWash` | 8 | 1, 2, 4, 6, 7, 8, 9, 10 |
+| `commander-thumb.json` | `CommanderThumb` | 3 | 11, 12, 13, 15 |
+| `commander-card-face.json` | `CARD_ART_RING` | 2 | 5, 14 |
+
+One row per VIEW rather than per route: `check:shared` reads a row's own file and
+does not follow composition, and Home draws two washes from two components while
+the deck header draws one from each spine.
+
+**Row 3 is gone.** The brief's `home/deck-rail.tsx` 26×36 span no longer exists —
+that rail was replaced in a later round — so fourteen of the fifteen renders are
+accounted for and the fifteenth is retired rather than unchecked.
+
+**2 · Contact sheets.** 24 cells for the bands (390 / 900 / 1300), 6 for the
+thumbs, 2 for the card faces. Every cell reached its surface. The 900px column is
+deliberate: it is where the deck tile's container query takes the 168 band and
+where the resume rows are stacked.
+
+**3 · Cross-route sameness.** All 13 views import and use their leaf — no route
+reaches a treatment through its own copy.
+
+**4 · What the artifacts found that review had not.** Three things, and none of
+them is visible in a diff:
+
+- **`probe-art-wash.mjs` had not parsed since PR #538.** Its own startup guard
+  was throwing: a regex lost its escapes inside a template literal when the
+  vertical-ramp count was added. The probe was unrunnable for the whole round,
+  and running it is what said so.
+- **A second dev server, from another worktree, owned port 3000.** The first full
+  contact sheet photographed a different branch. Check the `Local:` line before
+  trusting a sheet.
+- **Two inventory rows clicked the wrong link** — `/decks/new` instead of a deck —
+  so those cells showed the commander picker while claiming to be the deck
+  header. The sheet showed it at a glance, which is the artifact working.
+
+Both probes now report 0 failures, and the round's figures are confirmed against
+a browser rather than arithmetic: 288 and 72 bands on the deck page, 248 on the
+tiles, 208 on both rows, a 253px column drawing the 168 band, the desktop
+control's plate 26 tall with its words, the portrait at 340 on a 364px inset.
+Measured across twelve decks at 390px, a two-line deck title puts the rename
+glyph 3px after its last word and every title sits flush at its block's left
+edge.
+
 ## §6a Overturned after shipping — §A4, the resume row
 
 Recorded here because a reader of §A4, of the aspect rule, or of the tracker
