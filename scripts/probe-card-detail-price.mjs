@@ -1,9 +1,15 @@
 // The price under the art, and the zoom, in the card modal (card-detail R2, §1-§3).
 //
-// What a browser proves and a test cannot: that the tag paints at all, WHERE it sits
-// relative to the art it belongs to (10px under at desktop, 9px at phone), and that
-// the compact header — the one state R1 did not draw — moves the figure out of the
-// art without sealing it inside the aria-hidden heading.
+// What a browser proves and a test cannot — LAID-OUT GEOMETRY, and nothing else:
+// that the tag paints at all; where the stack under the card begins relative to the
+// art (10px desktop, 9px phone) and in what order its rows sit; that it fits a
+// short window rather than being clipped by the dialog; that the art turns; and
+// that the zoom is the DIALOG's rectangle rather than the viewport's.
+//
+// The compact header is NOT among them any more. It asks whether the tag survives
+// a move, which is a fact about the tree — `card-modal-price.test.tsx` asserts it
+// against a 14-printing fixture with a real price, and the state needs data no
+// database here holds. See the note at the foot of the phone pass.
 //
 // It makes no writes. It used to pick a different printing to prove the figure
 // follows the art; that is proved by `card-modal-price.test.tsx` instead, and picking

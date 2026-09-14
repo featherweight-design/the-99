@@ -39,8 +39,11 @@ const STEP_SPEC = {
   click: { type: "string" },
   clickRole: { type: "string", needs: "name" },
   fill: { type: "string" },
-  name: { ownedBy: "clickRole" },
-  text: { ownedBy: "fill" },
+  // Owned fields are type-checked too. `name` skipping validation is how
+  // `{ clickRole: "button", name: "" }` passed: `new RegExp("")` matches every
+  // accessible name, and `.first()` presses whatever is at the top of the page.
+  name: { type: "string", ownedBy: "clickRole" },
+  text: { type: "string", ownedBy: "fill" },
 };
 
 export const STEP_KEYS = new Set(Object.keys(STEP_SPEC));
@@ -77,7 +80,15 @@ export function inventoryProblems(inventory) {
   const problems = [];
   const at = (id, sentence) => problems.push(`${id}: ${sentence}`);
 
-  for (const row of inventory.rows ?? []) {
+  // An inventory with no rows walks nothing, writes a blank sheet and exits 0 —
+  // a silent success with no evidence in it, which is this file's own rule
+  // applied one level up.
+  if (!Array.isArray(inventory.rows) || inventory.rows.length === 0) {
+    return [`${inventory.feature ?? "(unnamed inventory)"}: has no rows, so a run would`
+      + " write a blank sheet and report success without walking anything."];
+  }
+
+  for (const row of inventory.rows) {
     const id = row.id ?? "(unnamed row)";
     // `contact-sheet.mjs` reuses one page across rows, so a row that does
     // nothing screenshots whatever the row before it left on screen — and is
@@ -110,6 +121,8 @@ export function inventoryProblems(inventory) {
       for (const key of keys) {
         const spec = STEP_SPEC[key];
         if (spec === undefined) continue;
+        const problem = typeProblem(key, step[key]);
+        if (problem !== null) at(id, `\`${key}\` ${problem}.`);
         if (spec.ownedBy !== undefined) {
           if (step[spec.ownedBy] === undefined) {
             at(id, `\`${key}\` belongs to \`${spec.ownedBy}\`, which this step does not`
@@ -117,8 +130,6 @@ export function inventoryProblems(inventory) {
           }
           continue;
         }
-        const problem = typeProblem(key, step[key]);
-        if (problem !== null) at(id, `\`${key}\` ${problem}.`);
         if (spec.needs !== undefined && step[spec.needs] === undefined) {
           at(id, `\`${key}\` needs \`${spec.needs}\`. Without it the match is`
             + " unconstrained and the first control on the page wins.");

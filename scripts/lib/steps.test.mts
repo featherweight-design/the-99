@@ -64,6 +64,22 @@ describe("inventoryProblems", () => {
     expect(first({ text: "hobbi" })).toContain("belongs to `fill`");
   });
 
+  it("refuses an empty or non-string name, which would match everything", () => {
+    // An owned field skipping validation is how `{ clickRole, name: "" }` passed:
+    // `new RegExp("")` matches every accessible name, and `.first()` presses
+    // whatever is at the top of the page.
+    expect(first({ clickRole: "button", name: "" })).toContain("must not be empty");
+    expect(first({ clickRole: "button", name: 7 })).toContain("must be a string");
+    expect(first({ fill: "input", text: 7 })).toContain("must be a string");
+  });
+
+  it("refuses an inventory with no rows", () => {
+    // It walks nothing, writes a blank sheet and exits 0 — the same silent
+    // success one level up.
+    expect(inventoryProblems({ feature: "x", rows: [] })[0]).toContain("has no rows");
+    expect(inventoryProblems({ feature: "x" })[0]).toContain("has no rows");
+  });
+
   it("refuses an empty step and a row with no steps", () => {
     // The page is shared between rows, so either one photographs whatever the
     // row before left on screen.
