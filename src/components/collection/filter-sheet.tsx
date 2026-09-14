@@ -161,6 +161,12 @@ function SheetBody({
       // left 640-999px opening a dialog CSS had already hidden.
       frameClassName="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex"
       scrimClassName="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
+      // This route's handle and its offset, to the pixel. The shell's default is
+      // 36px round in a 9px/4px wrapper; this is 38px at 2px radius under 12px
+      // of padding, which with the 14px below puts the first heading 30px from
+      // the panel top exactly as it did before.
+      handleClassName="flex touch-none justify-center pt-[12px] pb-0"
+      handleBarClassName="h-[4px] w-[38px] rounded-[2px] bg-[color:var(--border-strong)]"
       // This route's box, kept as it is: the chassis handoff specifies the
       // anchored panel and not the sheet, so collapsing the two vocabularies is
       // a design ruling rather than a refactor.
@@ -183,7 +189,7 @@ function SheetBody({
         )
       }
     >
-      <div className="flex flex-col gap-[14px] px-[16px] pt-[4px] pb-[16px]">
+      <div className="flex flex-col gap-[14px] px-[16px] pt-[14px] pb-[16px]">
         <div className="flex items-baseline gap-[10px]">
           <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
             {copy.title}

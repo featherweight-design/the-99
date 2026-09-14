@@ -60,6 +60,37 @@ describe("Sheet", () => {
     expect(screen.getByRole("dialog")).not.toHaveAttribute("style", expect.stringContaining("translateY"));
   });
 
+  it("lets a route keep its own handle and offset", () => {
+    // The routes differ to the pixel — 36px round under 9px here, 38px at 2px
+    // radius under 12px on /decks and /collection — and a shell that imposed one
+    // would move every heading on two routes by 9px.
+    render(
+      <Sheet
+        {...props}
+        open
+        handleClassName="flex touch-none justify-center pt-[12px] pb-0"
+        handleBarClassName="h-[4px] w-[38px] rounded-[2px]"
+      />,
+    );
+    const wrapper = handle() as HTMLElement;
+    expect(wrapper.className).toContain("pt-[12px]");
+    expect(wrapper.firstElementChild?.className).toContain("w-[38px]");
+  });
+
+  it("releases the pointer when the gesture is cancelled", () => {
+    // A cancel arrives when the browser takes the gesture over — a scroll
+    // claiming it, a call arriving. Without a release the capture outlives the
+    // drag and the handle keeps swallowing pointer events.
+    const releasePointerCapture = vi.fn();
+    render(<Sheet {...props} open />);
+    const h = handle() as HTMLElement;
+    h.setPointerCapture = vi.fn();
+    h.releasePointerCapture = releasePointerCapture;
+    fireEvent.pointerDown(h, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerCancel(h, { clientY: 30, pointerId: 1 });
+    expect(releasePointerCapture).toHaveBeenCalledWith(1);
+  });
+
   it("captures the pointer, so a drag off the handle still reports", () => {
     // The handle is 4px tall and a drag is mostly vertical, so the pointer
     // leaves it almost immediately. Without capture, move and up stop arriving

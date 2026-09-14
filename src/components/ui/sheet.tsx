@@ -40,6 +40,9 @@ const PANEL =
 
 const SCRIM = "fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]";
 
+const HANDLE = "flex touch-none justify-center pt-[9px] pb-[4px]";
+const HANDLE_BAR = "h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)]";
+
 export type SheetProps = {
   open: boolean;
   /** Dismiss. The scrim, the ✕, the handle drag and Escape are one action. */
@@ -47,9 +50,11 @@ export type SheetProps = {
   ariaLabel: string;
   /**
    * The row above the body. A slot rather than a title string: the sheets
-   * legitimately differ here — `filter-panel` and the rack draw a count badge
-   * and a ✕, the deck sheet draws a match sentence and no ✕ — and each is
-   * specified copy. `SheetHeader` below is the badge-and-✕ form.
+   * legitimately differ here — `filter-panel` draws a count badge and a ✕, while
+   * the rack, the deck sheet and the collection sheet each draw a live match
+   * sentence and keep their one dismiss control in the footer — and each is
+   * specified copy. `SheetHeader` below is the badge-and-✕ form, for the one
+   * surface whose design calls for it.
    */
   header?: ReactNode;
   /** The caller's panel ref, so its own focus policy still reaches the panel. */
@@ -68,6 +73,10 @@ export type SheetProps = {
   panelClassName?: string;
   /** Override the scrim's ink. Same reason. */
   scrimClassName?: string;
+  /** Override the handle's wrapper — its padding is what sets content offset. */
+  handleClassName?: string;
+  /** Override the handle bar itself. The routes differ: 36px round, 38px 2px. */
+  handleBarClassName?: string;
   /** Wraps scrim and panel — for a caller that gates the sheet on a breakpoint. */
   frameClassName?: string;
   /**
@@ -91,6 +100,8 @@ export function Sheet({
   footer,
   panelClassName = PANEL,
   scrimClassName = SCRIM,
+  handleClassName = HANDLE,
+  handleBarClassName = HANDLE_BAR,
   frameClassName,
   beside,
 }: SheetProps) {
@@ -158,9 +169,9 @@ export function Sheet({
           onPointerMove={onHandlePointerMove}
           onPointerUp={onHandlePointerUp}
           onPointerCancel={onHandlePointerUp}
-          className="flex touch-none justify-center pt-[9px] pb-[4px]"
+          className={handleClassName}
         >
-          <span className="h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)]" />
+          <span className={handleBarClassName} />
         </div>
 
         {header}
