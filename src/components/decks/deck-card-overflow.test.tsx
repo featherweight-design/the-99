@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const { deleteDeck, renameDeck } = vi.hoisted(() => ({
@@ -6,6 +6,8 @@ const { deleteDeck, renameDeck } = vi.hoisted(() => ({
   renameDeck: vi.fn(),
 }));
 vi.mock("../../app/decks/actions", () => ({ deleteDeck, renameDeck }));
+
+vi.mock("../../app/decks/folder-actions", () => ({ moveDeckAction: async () => true }));
 
 const { DeckCardOverflow } = await import("./deck-card-overflow");
 
@@ -16,6 +18,31 @@ const trigger = (deckName = "Atraxa") =>
   screen.getByRole("button", { name: `Actions for ${deckName}` });
 
 describe("DeckCardOverflow", () => {
+  it("closes the whole menu after a move, rather than returning to it", async () => {
+    // Hugh's call, 2026-09-13 (errata E21): the act is finished, so the panel
+    // that performed it goes. Design had it return to the menu with the Move
+    // row as the receipt.
+    render(
+      <DeckCardOverflow
+        deckId="d1"
+        deckName="Atraxa"
+        built={99}
+        folders={[{ id: "f1", name: "Cube night" }]}
+        folderId={null}
+        folderName={null}
+        onCreateFolder={() => {}}
+        say={() => {}}
+        onMoved={() => {}}
+        keepsFocus
+      />,
+    );
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Cube night" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: /^Move / })).toBeNull());
+    expect(screen.queryByRole("button", { name: "Rename" })).toBeNull();
+  });
+
   it("names the deck's current shelf on the Move row", () => {
     render(
       <DeckCardOverflow

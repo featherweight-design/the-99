@@ -73,6 +73,13 @@ export const folderCopy = {
     submit: 'Create',
     cancel: 'Cancel',
     /**
+     * ENGINEERING ADDITION, 2026-09-13. The round originally answered "was it
+     * made?" by walking the reader to the new shelf (STATES CR4). Hugh overruled
+     * that — the shelf is empty, so there is nothing to go and see — which
+     * leaves the confirmation to say it instead (errata E20).
+     */
+    created: (name: string) => `Folder “${name}” created.`,
+    /**
      * The one refusal that must be stated. It is the unique index's answer, and
      * the name is quoted because the reader may have typed a near-miss.
      */

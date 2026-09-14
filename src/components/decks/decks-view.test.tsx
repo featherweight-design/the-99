@@ -3,6 +3,23 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 
 const routerStub = vi.hoisted(() => ({ refresh: vi.fn() }));
 
+// The folder actions reach the database through the module they import, so the
+// view's own tests stub them. Their behaviour is covered in
+// `src/app/decks/folder-actions.test.ts` and against a real Postgres in
+// `pnpm probe:folders`.
+vi.mock("../../app/decks/folder-actions", () => ({
+  createFolderAction: async (name: string) => ({
+    ok: true,
+    folder: { id: "f-new", name },
+  }),
+  moveDeckAction: async () => true,
+  renameFolderAction: async (_id: string, name: string) => ({
+    ok: true,
+    folder: { id: "f-new", name },
+  }),
+  deleteFolderAction: async () => true,
+}));
+
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
   // The view refreshes the route after a folder write: the server revalidates
@@ -546,6 +563,19 @@ describe("DecksView", () => {
     window.history.replaceState(null, "", "/decks?folder=none");
     const { container } = renderWide(view(shelvedDecks(), twoFolders));
     expect(shelfActions(container)).toHaveLength(0);
+  });
+
+  it("does not move the reader when a folder is created", async () => {
+    // Hugh's call, 2026-09-13 (errata E20): the new shelf is empty, so walking
+    // the reader to it confirms nothing. The segment appears in the line and
+    // the region says it was made.
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getByRole("button", { name: /New folder/ }));
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() => expect(window.location.search).toBe(""));
+    const said = [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent);
+    expect(said).toContain("Folder “Draft pile” created.");
   });
 
   it("ignores a hand-edited folder id", () => {

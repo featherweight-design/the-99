@@ -127,6 +127,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   foreign key's `on delete set null`, which no unit test in this repository can reach. It
   writes a fixture under a per-run `user_id` and deletes it in a `finally`; point it at
   `local-dev` or a scratch Neon branch, **never production**.
+- `pnpm probe:folder-flash` answers a question about round trips rather than pixels: how many
+  times one folder write refetches `/decks`, and whether the route's `loading.tsx` or a document
+  load appears between the filters and the decks. It was written for a report of "a loader screen
+  shows briefly" and found the cause — the round called `router.refresh()` on top of a Server
+  Action that already calls `revalidatePath("/decks")`, so every write fetched an expensive route
+  twice. **A Server Action that revalidates the route it was called from already returns the
+  updated payload**; the client refresh was pure duplication, and removing it halved the traffic
+  with no staleness, which the probe proves by asserting the segment's count, the renamed shelf
+  and the deleted one. It files, unfiles, renames and deletes its own folder in a `finally`, and
+  counts loads across nine writes rather than one, because the fault was intermittent. One caveat
+  it taught: the FIRST create after a cold `pnpm dev` does reload the document, and that is Next
+  compiling the route, not the app.
 - `pnpm probe:stats` proves the deck-stats loader against a real Postgres by calling the
   real `loadDeckStats` — a deck the player does not own is refused, both commanders are
   folded into the curve and the spread despite not being `deck_cards` rows, a grouped game

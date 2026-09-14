@@ -9,8 +9,7 @@
 // list a reader flips between" asks for on a re-parameterised list.
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
@@ -268,26 +267,36 @@ export function DecksView({
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
 
   const [creating, setCreating] = useState(false);
-  const router = useRouter();
   /**
    * The folder this reader just made, held until the refreshed payload carries
    * it. Without it the create flow eats itself: `onShelf` selects an id that is
    * not in `folders` yet, and the missing-shelf reconciliation below reads that
    * as a deleted folder and drops the reader back on All decks — instead of the
-   * empty shelf CR4 requires them to land on.
+   * shelf the create dialog just made.
    */
   const [justMade, setJustMade] = useState<
     (DeckFolderWithCount & { against: readonly DeckFolderWithCount[] }) | null
   >(null);
-  const [, startRefresh] = useTransition();
 
   /**
-   * A folder write revalidates `/decks` on the server, and this component is a
-   * client component holding the payload it was rendered with — so without a
-   * refresh a folder created here is invisible until the reader navigates. The
-   * refresh runs in a transition so the list does not blank while it lands.
+   * THERE IS NO CLIENT REFRESH IN THIS ROUND, and that is deliberate.
+   *
+   * Every folder action calls `revalidatePath("/decks")`, and a Server Action
+   * that revalidates the route it was called from already sends the updated RSC
+   * payload back with its own response. Calling `router.refresh()` on top asked
+   * for the same expensive route a SECOND time — measured at two round trips per
+   * write against one — and that extra fetch is what could land as the route's
+   * `loading.tsx` flashing between the filters and the decks.
+   *
+   * Proved rather than assumed: `scripts/probe-folder-flash.mjs` files, unfiles,
+   * renames and deletes against a real browser, asserts the segment's count and
+   * the renamed and deleted shelves, and counts both round trips and document
+   * loads.
+   *
+   * `justMade` still earns its place: the action's payload arrives a moment
+   * after the dialog closes, and without it the new segment would appear a beat
+   * late.
    */
-  const refresh = useCallback(() => startRefresh(() => router.refresh()), [router]);
 
   /**
    * THE ONE ANSWER TO "WHAT I WAS STANDING ON IS GONE". Three paths can remove
@@ -543,12 +552,11 @@ export function DecksView({
         deckCount={count}
         size={size}
         say={say}
-        onRenamed={refresh}
+        onRenamed={() => {}}
         onGone={() => {
           // The folder went while the panel was open: this segment, and the
           // focused trigger inside it, are removed by the refresh.
           onShelf(ALL_DECKS);
-          refresh();
           requestAnimationFrame(focusShelfControl);
         }}
         onDeleted={() => {
@@ -556,7 +564,6 @@ export function DecksView({
           // was standing on has gone, and landing them on it is the one thing
           // that cannot happen.
           onShelf(ALL_DECKS);
-          refresh();
           // The segment carrying this menu — and the focused trigger inside it —
           // is removed by that same render, so focus would fall to the body.
           requestAnimationFrame(focusShelfControl);
@@ -867,30 +874,26 @@ export function DecksView({
                   // refresh arriving, and this entry has done its job.
                   against: serverFolders,
                 });
-                // CR4: the new shelf is selected, which lands the reader on S2 —
-                // create, land on the empty shelf, and the state says how to
-                // fill it. Announced from the action's own answer rather than
-                // through `segments`, which this callback closed over one render
-                // before the new folder existed in it. A new shelf holds nothing.
                 // Made from the act: the deck whose panel asked for this folder
-                // is filed into it, and only then does the page follow. Without
-                // this the new shelf is selected, the card leaves the grid with
-                // its move panel, and the deck the reader was filing is left
-                // exactly where it was.
-                //
-                // THE MOVE'S OWN ANSWER IS READ. The folder is made either way —
-                // it is persisted before this runs — but the deck is only on it
-                // if the move said so, and announcing a count that assumes it
-                // did is a claim about someone else's shelf.
+                // is filed into it. THE MOVE'S OWN ANSWER IS READ — the folder
+                // is persisted either way, but the deck is only on it if the
+                // move said so, and saying otherwise is a claim about someone
+                // else's shelf.
                 const filed = creatingFor
                   ? await moveDeckAction(creatingFor, result.folder.id).catch(() => false)
                   : false;
-                onShelf(result.folder.id);
-                // Named from the action's own answer: `segments` in this
-                // callback closed over the render before the folder existed. A
-                // new shelf holds nothing.
-                say(folderCopy.shelves.aria(result.folder.name, filed ? 1 : 0));
-                refresh();
+                // THE READER DOES NOT MOVE. STATES CR4 selected the new shelf,
+                // landing them on S2; Hugh overruled that on 2026-09-13 (errata
+                // E20) — the shelf is empty, so there is nothing to go and look
+                // at, and being moved somewhere blank to confirm a thing was
+                // made is a worse answer than saying it was made. The new
+                // segment appearing in the line is the visible half; the
+                // sentence below is the spoken one.
+                say(
+                  filed
+                    ? folderCopy.move.announceFiled(result.folder.name)
+                    : folderCopy.create.created(result.folder.name),
+                );
                 return null;
               }}
             />
@@ -951,7 +954,6 @@ export function DecksView({
                     say={say}
                     keepsFocus={state.shelf === ALL_DECKS}
                     onMoved={({ refused }) => {
-                      refresh();
                       // Focus goes to the shelf whenever this card may not
                       // survive: on a named shelf a successful move takes it off
                       // the grid, and a REFUSAL can mean the deck itself is gone

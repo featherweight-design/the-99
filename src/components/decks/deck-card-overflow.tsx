@@ -268,19 +268,21 @@ export function DeckCardOverflow({
               }}
               onMoved={(next) => {
                 setMovedTo({ ...next, from: folderId });
-                // The menu's Move row is the receipt, so it is also where focus
-                // belongs — but only when this card SURVIVES the refresh. On a
-                // named shelf the moved deck leaves the grid, and the view
-                // focuses the shelf control instead; asking for the row here
-                // would put focus on a node about to be removed.
-                if (keepsFocus) wantsMoveRowFocus.current = true;
+                // THE MENU CLOSES. Design made the Move row the receipt and had
+                // the panel return to it; Hugh overruled that on 2026-09-13 —
+                // the act is finished, so the panel that performed it goes
+                // (errata E21). The receipt is the announcement, plus the tile
+                // leaving the grid on a named shelf.
+                //
+                // `handleClose` returns focus to this card's own ⋯ trigger,
+                // which survives on All decks; on a named shelf the card leaves
+                // and the view focuses the shelf control instead.
+                if (keepsFocus) handleClose();
+                else setOpen(false);
                 // The list, its counts and both denominators live in the view;
                 // without this a deck moved off the shelf being viewed stays in
                 // the grid and every figure above it is stale.
                 onMoved({ refused: false });
-                // Back to the menu, not closed: the row now reads the new shelf,
-                // and that is the receipt.
-                setMode("menu");
               }}
             />
           ) : (
