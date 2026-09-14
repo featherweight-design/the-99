@@ -14,7 +14,7 @@ describe("FilterSheet", () => {
   // behind the scrim, and availability belongs to the other lane.
   it("leads with colour on the discover lane, and mounts nothing else", () => {
     render(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("discover")} lane="discover" onChange={() => {}} shown={3301} total={3301} resultLine="3301 of 3301" />,
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("discover")} lane="discover" onChange={() => {}} shown={3301} resultLine="3301 of 3301" />,
     );
     const legends = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
     expect(legends).toEqual(["Colour identity"]);
@@ -25,7 +25,7 @@ describe("FilterSheet", () => {
   it("keeps order out of the sheet, on both lanes", () => {
     for (const lane of ["owned", "discover"] as const) {
       const { unmount } = render(
-        <FilterSheet open onOpenChange={() => {}} params={defaultParams(lane)} lane={lane} onChange={() => {}} shown={9} total={9} resultLine="9 of 9" />,
+        <FilterSheet open onOpenChange={() => {}} params={defaultParams(lane)} lane={lane} onChange={() => {}} shown={9} resultLine="9 of 9" />,
       );
       expect(screen.queryByRole("radiogroup", { name: "Order" })).not.toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /^Order · / })).not.toBeInTheDocument();
@@ -35,7 +35,7 @@ describe("FilterSheet", () => {
 
   it("keeps search out of the sheet, which is why the badge does not count it", () => {
     render(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} total={148} resultLine="148 of 148" />,
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} resultLine="148 of 148" />,
     );
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
@@ -44,14 +44,14 @@ describe("FilterSheet", () => {
   // In the sheet the contrast has to be said, so the sheet is where it is tested.
   it("carries the availability explainer the rack leaves out", () => {
     render(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} total={148} resultLine="148 of 148" />,
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} resultLine="148 of 148" />,
     );
     expect(screen.getByText(commandersCopy.availability.hint)).toBeInTheDocument();
   });
 
   it("labels the footer with the live count", () => {
     render(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={4} total={148} resultLine="4 of 148" />,
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={4} resultLine="4 of 148" />,
     );
     expect(screen.getByRole("button", { name: "Show 4 commanders" })).toBeInTheDocument();
   });
@@ -61,7 +61,7 @@ describe("FilterSheet", () => {
   it("heads the sheet with the live result sentence, not the filter count", () => {
     const line = resultLineWithAside(4, 148, "owned", null, null);
     render(
-      <FilterSheet open onOpenChange={() => {}} params={{ ...defaultParams("owned"), colors: ["b"] }} lane="owned" onChange={() => {}} shown={4} total={148} resultLine={line} />,
+      <FilterSheet open onOpenChange={() => {}} params={{ ...defaultParams("owned"), colors: ["b"] }} lane="owned" onChange={() => {}} shown={4} resultLine={line} />,
     );
     expect(screen.getByText("4 of 148 commanders match")).toBeInTheDocument();
   });
@@ -74,7 +74,7 @@ describe("FilterSheet", () => {
   it("carries the rack's asides, not just its sentence", () => {
     const line = resultLineWithAside(12, 12, "owned", null, 3);
     render(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} total={12} resultLine={line} />,
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={line} />,
     );
     expect(
       screen.getByText(/3 more are sleeved into decks you've built/),
@@ -84,7 +84,7 @@ describe("FilterSheet", () => {
   it("applies a tap immediately rather than staging it behind an Apply", () => {
     const onChange = vi.fn();
     render(
-      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={onChange} shown={148} total={148} resultLine="148 of 148" />,
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={onChange} shown={148} resultLine="148 of 148" />,
     );
     fireEvent.click(screen.getByRole("radio", { name: "Free cards only" }));
     expect(onChange).toHaveBeenCalled();
@@ -94,7 +94,7 @@ describe("FilterSheet", () => {
     const onOpenChange = vi.fn();
     const onChange = vi.fn();
     render(
-      <FilterSheet open onOpenChange={onOpenChange} params={{ ...defaultParams("owned"), avail: "free" }} lane="owned" onChange={onChange} shown={4} total={148} resultLine="4 of 148" />,
+      <FilterSheet open onOpenChange={onOpenChange} params={{ ...defaultParams("owned"), avail: "free" }} lane="owned" onChange={onChange} shown={4} resultLine="4 of 148" />,
     );
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -103,7 +103,7 @@ describe("FilterSheet", () => {
 
   it("renders nothing when closed, leaving no duplicate controls in the a11y tree", () => {
     const { container } = render(
-      <FilterSheet open={false} onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} total={148} resultLine="148 of 148" />,
+      <FilterSheet open={false} onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} resultLine="148 of 148" />,
     );
     expect(container).toBeEmptyDOMElement();
   });

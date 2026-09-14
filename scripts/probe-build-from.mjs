@@ -129,10 +129,10 @@ async function pickCandidates(userId) {
         )
         -- And the COMMITTED versions, which is where a claim actually comes
         -- from. A deck whose draft has since dropped a card still holds it in
-        -- the version it is sleeved as, so a picker that read `deck_cards`
-        -- alone could choose a card that is already unavailable — and the
-        -- pre-check below would then stop the run over a card the fixture never
-        -- touched. Newest version per deck, matching `loadAvailability`.
+        -- the version it is sleeved as, so a picker that read deck_cards alone
+        -- could choose a card that is already unavailable, and the pre-check
+        -- below would then stop the run over a card the fixture never touched.
+        -- Newest version per deck, matching loadAvailability.
         and not exists (
           select 1 from deck_version_cards dvc
             join deck_versions v on v.id = dvc.version_id

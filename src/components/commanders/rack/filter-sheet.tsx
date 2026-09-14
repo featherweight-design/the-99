@@ -46,7 +46,6 @@ export function FilterSheet({
   lane,
   onChange,
   shown,
-  total,
   resultLine,
 }: {
   open: boolean;
@@ -54,10 +53,10 @@ export function FilterSheet({
   params: LaneParams;
   lane: Lane;
   onChange: (next: LaneParams) => void;
-  /** Rows the current parameters would show. The header and footer both say it,
-      live — nothing here is staged. */
+  /** Rows the current parameters would show. The footer's dismiss label says it,
+      live — nothing here is staged. The header says it too, but through
+      `resultLine`, which is the rack's whole composed sentence. */
   shown: number;
-  total: number;
   /** The rack's composed sentence, asides and all. Passed in rather than rebuilt
       here: the header's own promise is that it is the SAME sentence the result
       line behind the scrim is showing, and a second call to compose it is a

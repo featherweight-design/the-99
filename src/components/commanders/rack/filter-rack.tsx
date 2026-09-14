@@ -221,7 +221,6 @@ export function FilterRack({
           lane={lane}
           onChange={onChange}
           shown={shown}
-          total={total}
           resultLine={resultLine}
         />
       )
