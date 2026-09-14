@@ -609,13 +609,14 @@ export function SetGridView(props: SetGridViewProps) {
         data-set-head-shy={shy ? "" : undefined}
         data-set-head
         data-set-head-collapsed={shy ? "" : undefined}
-        /* STICKY ONLY WHEN THERE IS SOMETHING TO PIN. The open head is 388px of a
-           844px phone, and pinned it sat over the grid for the whole band before
-           the collapse — the reader scrolled a screen of cards under a header
-           that never moved, and then it snapped. Scrolling out of the flow like
-           any other block, it leaves gracefully, the bar takes over at the offset
-           where the last of it goes, and on the way back up the open head slides
-           in from the top edge instead of appearing over a cut-off first row.
+        /* STICKY ONLY WHEN THERE IS SOMETHING TO PIN. The open head is 288px of an
+           844px phone on the set `probe:sets` measures, and pinned it sat over the
+           grid for the whole band before the collapse — the reader scrolled a
+           screen of cards under a header that never moved, and then it snapped.
+           Scrolling out of the flow like any other block, it leaves gracefully,
+           the bar takes over at the offset where the last of it goes, and on the
+           way back up the open head slides in from the top edge instead of
+           appearing over a cut-off first row.
            Desktop never collapses, so its head stays pinned as it always was. */
         className={`${shy ? "sticky" : ""} md:sticky top-0 z-[2] pb-[12px] pt-[10px]`}
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
