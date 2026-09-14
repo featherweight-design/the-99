@@ -275,6 +275,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   while the desktop is right, is visible in a glance. Inventories live in
   `docs/superpowers/inventories/*.json`.
 
+  Every step verb — `click`, `clickRole`, `fill` — reaches page content through
+  `lib/surface.mjs`, so an inventory never spells `main` itself. A row that exists at one
+  width only says so with `"widths": ["phone"]` or `["desktop"]`; the other width is skipped
+  and reported as such rather than counted a failure. There is deliberately no optional
+  click: a step that may find nothing cannot fail, and a cell that photographs a closed route
+  reads as coverage.
+
   `pnpm check:shared <inventory>` answers the half a picture cannot: whether routes that are
   supposed to carry the same control do it by rendering the same component. It reads the same
   inventories, and does nothing for one with no `shares` block. When a `shares` block is present

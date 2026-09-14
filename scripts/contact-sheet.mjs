@@ -26,7 +26,7 @@ import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage } from "./lib/surface.mjs";
+import { onPage, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -101,27 +101,27 @@ async function run(page, steps) {
       });
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
     }
-    if (step.click) await page.locator(step.click).first().click({ timeout: 15_000 });
-    // A control one width has and the other does not. `/commanders` draws its
-    // colour control inline above 1000px and inside a sheet below it, so one
-    // steps list serves both widths only if the step that opens the sheet may
-    // find nothing. A missing control is skipped, never a failed cell.
-    if (step.clickIfPresent) {
-      const target = page.locator(step.clickIfPresent).first();
-      if (await target.count()) await target.click({ timeout: 15_000 });
-    }
+    // EVERY verb reaches page content through `lib/surface.mjs`. The shell
+    // renders around `<main>` and carries the same ARIA selectors a page's
+    // controls do — its account menu is a `button[aria-haspopup="dialog"]`, the
+    // same selector a filter-sheet trigger has, and it comes first in document
+    // order. That substitution has already produced two false findings in
+    // `probe-sets.mjs`, and here it would be worse: a contact sheet photographs
+    // the wrong thing and nothing about the cell looks failed.
+    //
+    // A surface that exists at one width only says so with `widths` on its row.
+    // There is no optional click: a step that finds nothing is a failed cell,
+    // which is the whole point of pressing it.
+    if (step.click) await onPage(page, step.click).first().click({ timeout: 15_000 });
     if (step.clickRole) {
-      await page.getByRole(step.clickRole, { name: new RegExp(step.name) }).first().click({ timeout: 15_000 });
+      await page
+        .locator(PAGE)
+        .getByRole(step.clickRole, { name: new RegExp(step.name) })
+        .first()
+        .click({ timeout: 15_000 });
     }
     // A field a surface only reaches its interesting state through typing — the
     // set panel narrows its list as you type, and an empty field shows every set.
-    //
-    // Scoped through `onPage`, the contract `lib/surface.mjs` states: the shell
-    // renders around `<main>` and carries the same selectors page controls do,
-    // so an unscoped field lookup is a substitution waiting for a shell input.
-    // `click` and `clickRole` above predate that helper and are still unscoped;
-    // sweeping them is a change to every inventory's steps at once and belongs
-    // in its own pass, not in the one that adds a third verb.
     if (step.fill !== undefined) {
       await onPage(page, step.fill).first().fill(step.text ?? "", { timeout: 15_000 });
     }

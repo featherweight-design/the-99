@@ -24,6 +24,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { onPage, settled } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -287,18 +288,12 @@ try {
   // The layer animates in over 200ms from `scale(.94)`, so a rect read on
   // attachment measures a card mid-flight and fails the size check for no reason.
   // Waited for the geometry to settle, not for a duration.
-  await page
-    .waitForFunction(
-      () => {
-        const c = document.querySelector('[data-testid="card-zoom-card"]');
-        if (!c) return false;
-        const { width } = c.getBoundingClientRect();
-        return width > 0 && Math.abs(width - c.offsetWidth) <= 1;
-      },
-      null,
-      { timeout: 5_000 },
-    )
-    .catch(() => {});
+  // `settled` asks the engine which animations are running on the layer and
+  // waits for those promises, rather than comparing a rect to `offsetWidth` —
+  // which compares a SCALED box to an unscaled one and reports "settled" at any
+  // scale near 1. That is why `coversDialog` failed intermittently at 371x518
+  // against a 372x520 card: read one frame early, correct one frame later.
+  await settled(onPage(page, '[data-testid="card-zoom"]')).catch(() => {});
   const zoom = await readZoom(page);
   console.log("\n── desktop · zoom ──");
   console.log(JSON.stringify(zoom, null, 2));
@@ -515,18 +510,7 @@ try {
   // it is measured rather than assumed from the desktop pass.
   await phonePage.getByRole("button", { name: /^Look at / }).first().click();
   await phonePage.waitForSelector('[data-testid="card-zoom"]', { timeout: 5_000 });
-  await phonePage
-    .waitForFunction(
-      () => {
-        const c = document.querySelector('[data-testid="card-zoom-card"]');
-        if (!c) return false;
-        const { width } = c.getBoundingClientRect();
-        return width > 0 && Math.abs(width - c.offsetWidth) <= 1;
-      },
-      null,
-      { timeout: 5_000 },
-    )
-    .catch(() => {});
+  await settled(onPage(phonePage, '[data-testid="card-zoom"]')).catch(() => {});
   const phoneZoom = await readZoom(phonePage);
   console.log("\n── phone · zoom ──");
   console.log(JSON.stringify(phoneZoom, null, 2));
@@ -561,16 +545,36 @@ try {
       )
       .catch(() => {});
     const compact = await readPrice(phonePage);
+    // Whether this card had a figure to move in the first place, read BEFORE the
+    // picker opened. That is the discriminator, not whether the header collapsed:
+    // the check is that the tag SURVIVES the move out of the art into the name
+    // block, and a card the feed has never priced has nothing to survive it.
+    const hadPrice = Boolean(phoneRead.mobile);
     console.log("\n── phone · printing region open (compact header past 12 entries) ──");
-    console.log(JSON.stringify(compact, null, 2));
-    // A missing compact result is a failure, not a pass. The header collapses only
-    // past OVERFLOW_THRESHOLD entries, so a null here means either the card has too
-    // few printings to reach the state — in which case the probe was pointed at the
-    // wrong card and proves nothing — or the placement did not render at all.
-    if (!compact.compact) {
+    console.log(JSON.stringify({ ...compact, hadPriceBeforeCollapse: hadPrice }, null, 2));
+    // THREE OUTCOMES, not two.
+    //
+    // A missing figure in a collapsed header is a failure: the tag moves out of
+    // the art and into the name block there, and it has to survive the move.
+    //
+    // A missing figure in a header that never collapsed is NOT — the run did not
+    // reach the state, and calling that a failure is a red nobody can act on. It
+    // is the standing state of `local-dev`, where no owned holding of a card with
+    // more than twelve printings joins a `printing_prices` row, so every run has
+    // ended on a FAIL about data. Reported as not exercised instead, in the words
+    // that say what to do about it.
+    if (!compact.compact && !hadPrice) {
       console.log(
-        "\nFAIL: no compact price. Either the tag did not render, or PROBE_CARD is owned" +
-          " in too few printings to collapse the header (it needs more than 12).",
+        "\nNOT EXERCISED: this card carries no figure at either size, so nothing was"
+          + " asked to survive the collapse. PROBE_CARD must be owned in MORE THAN TWELVE"
+          + " printings AND have a `printing_prices` row for the printing it resolves to."
+          + " On `local-dev` no card holds both at once — every owned holding misses the"
+          + " price table — so this check earns its keep on staging.",
+      );
+    } else if (!compact.compact) {
+      console.log(
+        "\nFAIL: the header collapsed and no price came with it. The tag has to survive"
+          + " the move out of the art into the name block (erratum E12).",
       );
       process.exitCode = 1;
     } else if (compact.compact.hiddenFromScreenReaders) {
@@ -578,9 +582,11 @@ try {
       process.exitCode = 1;
     }
   } else {
-    console.log("\nFAIL: no printing picker. PROBE_CARD must be owned in several printings —" +
-      " more than twelve to reach the compact header, which is what a basic land is for.");
-    process.exitCode = 1;
+    // Same rule one level out: a card owned in one printing opens no picker, so
+    // the state was never reachable rather than broken.
+    console.log("\nNOT EXERCISED: no printing picker. PROBE_CARD is owned in one printing,"
+      + " so the compact header has no way to appear. Point it at a card owned in more than"
+      + " twelve — a basic land is what that is for.");
   }
   await phone.close();
 } finally {

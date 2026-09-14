@@ -16,9 +16,18 @@
 // inside `<main>` and nothing of the shell does.
 export const PAGE = "main";
 
-/** A locator scoped to the page, never the shell around it. */
+/**
+ * A locator scoped to the page, never the shell around it.
+ *
+ * CHAINED, not concatenated. `page.locator("main " + selector)` is parsed as one
+ * CSS selector, so it rejects every other engine Playwright accepts — a contact
+ * sheet step of `text=Safewright Cavalry` becomes `main text=Safewright Cavalry`
+ * and fails with `Unexpected token "=" while parsing css selector`. Chaining
+ * scopes the same way, means the same thing for a CSS selector, and leaves the
+ * inner engine alone.
+ */
 export function onPage(page, selector) {
-  return page.locator(`${PAGE} ${selector}`);
+  return page.locator(PAGE).locator(selector);
 }
 
 /**

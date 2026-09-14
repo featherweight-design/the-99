@@ -183,7 +183,7 @@
           "settle": 700
         },
         {
-          "click": "main button[aria-haspopup=\"dialog\"]:visible",
+          "click": "button[aria-haspopup=\"dialog\"]:visible",
           "wait": "[role=dialog]",
           "settle": 800
         }
@@ -235,5 +235,5 @@
       ]
     }
   ],
-  "note": "Steps are Playwright verbs, and a row may name the widths it exists at. No account's ids are committed: the set page takes PROBE_SET and the commander page PROBE_COMMANDER_SLUG from the environment. The filter sheets are phone surfaces — at 1300 the same controls are popovers or an inline row, so those rows are shot at 390 only and the desktop form has a row of its own. A trigger selector is scoped to `main`: the shell's account control carries the same `aria-haspopup=\"dialog\"` at phone width and comes first in document order, so an unscoped row photographs the account sheet and reports success."
+  "note": "Steps are Playwright verbs, and a row may name the widths it exists at. No account's ids are committed: the set page takes PROBE_SET and the commander page PROBE_COMMANDER_SLUG from the environment. The filter sheets are phone surfaces — at 1300 the same controls are popovers or an inline row, so those rows are shot at 390 only and the desktop form has a row of its own. Every selector is scoped to the page by `contact-sheet.mjs` itself: the shell's account control carries the same `aria-haspopup=\"dialog\"` at phone width and comes first in document order, so an unscoped row photographs the account sheet and reports success. The rows no longer spell `main` themselves — the verb does it."
 }
