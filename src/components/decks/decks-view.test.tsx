@@ -740,6 +740,33 @@ describe("DecksView", () => {
     );
   });
 
+  it("closes the panel and hands focus to the shelf when the card leaves the grid", async () => {
+    // The named-shelf half of E21. The deck moves OFF the shelf being viewed, so
+    // the card unmounts with the panel on it and there is no ⋯ left to focus —
+    // the view puts focus on the shelf instead.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    renderWide(view(shelvedDecks(), twoFolders));
+    // A DECK's menu. The shelf line's own menu carries the same label prefix and
+    // comes first on a selected shelf, and it opens rename and delete.
+    const card = screen.getAllByRole("listitem")[0];
+    fireEvent.click(within(card).getByRole("button", { name: /^Actions for/ }));
+    fireEvent.click(within(card).getByRole("button", { name: /^Move / }));
+    fireEvent.click(within(card).getByRole("button", { name: "Commander night" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector("[data-shelf-line] button[aria-current='true']"),
+      ),
+    );
+    // And the panel went with it rather than staying open on a card that is
+    // still in the grid because the payload has not landed yet. The TRIGGER
+    // says so: the Move row exists only in the panel's menu mode, so its absence
+    // is also what an open destination list looks like.
+    expect(within(card).getByRole("button", { name: /^Actions for/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
   it("ignores a hand-edited folder id", () => {
     window.history.replaceState(null, "", "/decks?folder=nope");
     renderWide(view(shelvedDecks(), twoFolders));

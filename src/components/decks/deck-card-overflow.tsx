@@ -138,8 +138,7 @@ export function DeckCardOverflow({
   const closedSeq = useRef(closeAfterCreate?.seq ?? null);
   useEffect(() => {
     if (closeAfterCreate === null || closeAfterCreate.seq === closedSeq.current) return;
-    closedSeq.current = closeAfterCreate.seq;
-    const filed = closeAfterCreate.filed;
+    const { seq, filed } = closeAfterCreate;
     // EVERYTHING A FRAME LATER, and for one reason: the dialog that performed
     // this move is unmounting in the same commit, and its focus trap restores
     // focus to the control that opened it — a destination row that has gone with
@@ -147,6 +146,11 @@ export function DeckCardOverflow({
     // only ordering that holds, and keeping the state with it means nothing is
     // set synchronously inside an effect.
     const frame = requestAnimationFrame(() => {
+      // MARKED HERE, not in the effect body. Cleanup cancels an undelivered
+      // frame, and an effect that re-ran before it fired — the parent's
+      // callbacks are inline, so it does — would then see its own instruction as
+      // already handled and drop it.
+      closedSeq.current = seq;
       if (!filed) {
         // M6, the answer `onRefused` gives: nothing happened, so the panel
         // returns to the row naming the shelf this deck is still on, rather than
@@ -312,7 +316,11 @@ export function DeckCardOverflow({
                 // menu — not a destination list whose focused button is about
                 // to be refreshed away.
                 setMovedTo(null);
-                wantsMoveRowFocus.current = true;
+                // ONLY WHERE THE VIEW IS NOT RESCUING. A `false` is reported as
+                // a refusal below, and the view answers that by focusing the
+                // shelf, because the deck may be gone and this card with it —
+                // two focus calls in one commit, and the later one wins.
+                wantsMoveRowFocus.current = threw;
                 setMode("menu");
                 // A `false` IS the refusal, and the view reads that flag to
                 // decide whether this card may have gone: the deck being absent

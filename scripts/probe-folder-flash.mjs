@@ -46,6 +46,8 @@ let userId = null;
 // be filed, and a probe that loses a real folder assignment costs more than it
 // measures.
 let borrowedDeck = null;
+// Every folder the account held BEFORE this run. Nothing in it is ever touched.
+const idsBefore = new Set();
 const RENAMED = `${FOLDER}-renamed`;
 
 let failures = 0;
@@ -115,7 +117,7 @@ async function run(browser) {
   // Every folder this account already has. Anything outside this set after the
   // create is this run's, and nothing inside it is ever touched by cleanup.
   const before = await pool.query("select id from deck_folders where user_id = $1", [userId]);
-  const idsBefore = new Set(before.rows.map((r) => r.id));
+  before.rows.forEach((r) => idsBefore.add(r.id));
 
   // Every appearance of the route's loading screen, and every RSC round trip.
   await page.evaluate(() => {
@@ -273,7 +275,7 @@ async function run(browser) {
   );
   check("the renamed shelf shows its new name without a client refresh", renamed, true);
 
-  await page.locator("[data-shelf-line] button[aria-label^='Actions for']").first().click();
+  await onPage(page, "[data-shelf-line] button[aria-label^='Actions for']").first().click();
   const rscBeforeDelete = rsc;
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete folder" }).click();
@@ -311,7 +313,10 @@ main()
         "select id from deck_folders where user_id = $1 and name = any($2::text[])",
         [userId, [FOLDER, RENAMED]],
       );
-      late.rows.forEach((r) => madeFolderIds.push(r.id));
+      // Still only rows that did not exist before this run. A name collision is
+      // the case this fallback exists for and also the case where the name names
+      // somebody else's folder, so the name alone can never authorise a delete.
+      late.rows.filter((r) => !idsBefore.has(r.id)).forEach((r) => madeFolderIds.push(r.id));
     }
     if (borrowedDeck) {
       // Back to the shelf it was on, which may well have been a real one.
