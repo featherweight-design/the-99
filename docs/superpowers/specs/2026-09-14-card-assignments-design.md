@@ -28,9 +28,12 @@ default allocation.
 
 ## Why not an override of seniority
 
-`since` means "when this deck sleeved this card". In the case this feature exists for,
-neither deck has ever sleeved the contested card — both committed a list carrying a buy on
-it. Three approaches were considered and two rejected:
+`since` means "when this card entered this deck's committed version". The claim model treats
+that as a hard claim whether or not the player owns a copy, so in the case this feature
+exists for both decks hold a hard claim on a card **neither of them physically has** — each
+committed a list carrying a buy on it. An assignment therefore overrides a hard claim; what
+it must not do is falsify the record of when that claim was made. Three approaches were
+considered and two rejected:
 
 - **Cutting the card from the senior deck** (what `pullCardFromDeck` already does) is wrong
   here. Giving a copy to another deck is not a change to the senior deck's list, and it must
@@ -52,24 +55,42 @@ with it.
 | `user_id` | The owning player. |
 | `oracle_id` | The card. Oracle-level, like every other figure in the claim model. |
 | `deck_id` | The deck receiving the copies. FK to `decks`, `on delete cascade`. |
-| `copies` | Default 1. One assignment reserves this many copies for this deck. |
-| `created_at` | For ordering between assignments and for debugging. |
+| `copies` | Default 1, `check (copies > 0)`. One assignment reserves this many copies for this deck. A zero or negative value would be a durable row that inverts the supply arithmetic, so it is refused at the database boundary rather than by the caller. |
+| `created_at` | Orders reservations against each other when they compete for the same copies. Not decoration — see the allocation rule below. |
 
 Unique on `(user_id, oracle_id, deck_id)`: a deck's reservation on a card is one row, and
 assigning again to the same deck updates it rather than accumulating.
 
-### Two-phase supply
+`user_id` and `deck_id` must agree — the deck named has to belong to the user named. Every
+claim read is scoped by `user_id`, so a row pairing a user with another player's deck would
+reserve copies out of a collection the deck cannot draw on. The write validates the pair in
+the same transaction as the upsert (see **The chooser**), which is where the rest of the
+target's eligibility is checked.
 
-`claimModel` today distributes the supply by one seniority queue. It gains a phase in front
-of it:
+### Three-phase supply
 
-1. **Reservations.** Each assignment reserves `copies` off the top, capped at that deck's
-   own ask — a reservation larger than what the deck wants reserves only what it wants. A
-   deck's claim thereby splits into a reserved part, guaranteed whatever its `since`, and an
-   unreserved remainder.
-2. **Seniority over what is left.** `remainder = owned − sum(reserved)`, distributed across
-   the unreserved parts of every claim by the existing `(since, deck_id)` order. That
-   ordering is unchanged.
+`claimModel` today distributes the supply by one seniority queue. It gains two phases in
+front of it:
+
+1. **Commander claims.** A committed deck's commander and partner take their copies first,
+   ahead of every reservation. This is what actually enforces the commander rule below; a
+   chooser that renders a commander holder as unpickable protects the screen and not the
+   arithmetic, and with one copy owned an assignment taken purely off the top would empty a
+   commander's slot in a way no surface can render. Both commander columns, and the
+   commander-plus-list-copy case, where the deck's single folded claim is part commander and
+   part list card and only the commander half is protected here.
+2. **Reservations**, over what phase 1 left. Each assignment reserves `copies`, capped twice:
+   at the target deck's own ask, and at the supply still unallocated when its turn comes.
+   Reservations take their turns in `(created_at, deck_id)` order, so two decks each assigned
+   one copy of a card with one copy left resolve deterministically — the earlier assignment is
+   honoured and the later one reserves nothing. Without the cumulative cap the remainder below
+   goes negative and nothing says which reservation won.
+3. **Seniority over what is left.** `remainder = owned − commander_claims − reserved`, floored
+   at zero, distributed across the unreserved parts of every claim by the existing
+   `(since, deck_id)` order. That ordering is unchanged.
+
+A deck's claim therefore splits into a commander part, a reserved part guaranteed whatever its
+`since`, and an unreserved remainder that queues as it always did.
 
 A quantity model rather than a reordering is what makes "one assignment equals one copy"
 expressible. The queue sums whole claims, so a deck wanting four copies with one assigned to
@@ -82,11 +103,22 @@ reservation of one against an ask of four.
   bills the purchase, and no new version is cut. This is the whole reason for the approach.
 - **Inert without a shortage.** Two copies and two claimants: reservations move no figure.
   Assignments only bite under contention, which is why they need no expiry.
-- **Lifetime.** An assignment lives until the deck stops listing the card, or the deck is
-  deleted (cascade). There is no expiry to explain and no per-import reset.
-- **Committed decks only.** The write refuses a deck with no committed version. A brew
-  claims softly by design, and letting one win a reservation would let a brew make a sleeved
-  deck short — an inversion of the hard/soft rule.
+- **Lifetime.** An assignment is about a **committed** claim, so "still wanted" means the
+  deck's newest committed version still lists the card. The row is deleted in the commit
+  transaction that produces a version without it, and cascades when the deck is deleted. Two
+  reasons it is deleted rather than left to go inert: a deck that drops a card and later adds
+  it back would otherwise reactivate a reservation the player made about a different list, and
+  a row nobody can see is worse than no row. It is also inert by construction in between — the
+  phase-2 cap is the deck's own ask, so a reservation for a card the deck no longer asks for
+  reserves nothing even before cleanup runs. There is no expiry and no per-import reset.
+- **Hard claimants only, not merely committed decks.** The write refuses a deck with no
+  committed version, because a brew claims softly by design and letting one win a reservation
+  would let a brew make a sleeved deck short. But "has a version" is not enough on its own:
+  a committed deck can hold the card as a **draft add** its version does not contain, and
+  reserving on that basis would let a draft-only ask displace a hard claimant — the precise
+  thing seniority exists to prevent. The write therefore requires a current hard claim: the
+  card is in the target's newest committed version (or is its commander, which is refused for
+  a different reason below), checked in the same transaction as the upsert.
 - **Three read sites move together.** `senior_hard` and the `senior` flag in
   `loadAvailability`, and `supply.senior` in `loadDeckBuyRows`. They mirror each other by
   hand today; the reserved term has to land in all three or the deck page and the buy
@@ -96,31 +128,52 @@ reservation of one against an ask of four.
 
 ### Computing what arrived
 
-`confirmUpload` calls `loadDeckBuyRows(userId)` before the replace and again after, and
-diffs the two sets.
+Three reads, because no single one answers all three questions the summary asks.
 
-The diff is taken over buy rows rather than over `collection_items` deliberately. A card can
-arrive and still be bought by a given deck, because a senior deck takes the copy; only the
-buy rows know that. Diffing the collection alone would announce an arrival the deck pages
-then contradict.
+**How many copies arrived.** An oracle-level sum of `collection_items` before and after the
+replace. The buy rows cannot supply this: `DeckBuyRow.quantity` is a positive deficit, so a
+deck asking for one copy reads `[{quantity: 1}]` before and `[]` after whether one copy
+arrived or five. The summary says how many arrived, so it has to read what arrived.
 
-Three sets come out of it:
+**Which decks cleared, and which incurred.** `loadDeckBuyRows(userId)` before the replace
+and again after, diffed **by `(deckId, oracleId)` and quantity**, not by membership. A deck
+asking for two copies whose deficit falls from 2 to 1 keeps its row, so a membership-only diff
+would report nothing at all for a real arrival. Each pair is classified: gone (deficit cleared),
+reduced (deficit smaller, card partly covered), raised or new (deficit larger or appeared —
+the **lost** case, since a replace removes cards as well as adding them).
 
-- **Cleared** — the deck owed the card and now does not.
-- **Contested** — the card arrived, and committed demand still exceeds supply. These are the
-  chooser's rows.
-- **Lost** — a replace is a full replace, so cards leave as well as arrive, and a deck can
-  come out of an import owing something it did not owe before. The same diff read the other
-  way; silence about it would be the more surprising half.
+**Who is contesting what.** `loadAvailability(userId, {oracleIds: arrived})`, which the buy
+rows cannot answer either: a deck that is fully funded has no buy row at all, so the senior
+holder — the deck the chooser most needs to name — disappears from that source exactly when
+there is something to choose. `loadAvailability` returns `claims`, carrying each claimant's
+name, quantity, `mature` and `commander` flags, which is what the chooser rows render.
+
+**A note on whose demand.** `loadDeckBuyRows` builds `list_claims` from live `deck_cards`, so
+its figures are **draft** demand: they include a deck's draft adds and exclude its pending
+removals even when its committed version is untouched. That is the right source for the
+cleared and lost lines, which answer "what will this deck have to buy" — the same question the
+deck page bills. It is the wrong source for contention, which is a question about hard claims,
+and the availability read above is version-shaped for exactly that reason. The two figures can
+legitimately disagree about a card, and the summary's copy must not imply otherwise.
 
 ### Where the summary lives
 
 A new `summary_payload` jsonb column on `csv_uploads` holds the computed diff, and
-`/collection/replace/summary/[uploadId]` renders it. `ReplaceFlow` pushes there on confirm
-instead of `/collection`.
+`/collection/replace/summary/[uploadId]` renders it.
 
 Stored rather than returned to the client because the chooser acts against these rows: a
 reload or a back navigation must not drop the decision surface.
+
+**`confirmUpload` becomes idempotent, which it is not today.** It accepts an already-confirmed
+upload and will happily run the whole replace again, so a lost response or a double submit runs
+a second before/after diff — one that finds nothing, because the first one already landed — and
+overwrites the stored summary with an empty one, destroying the decision surface this section
+exists to keep. The confirm therefore short-circuits on a row that already carries
+`confirmed_at`, returning the stored summary rather than recomputing it.
+
+**The rows are a record of one import, not live state.** A contested row can be overtaken: the
+deck can commit a removal, or a later import can change the supply. The chooser's write is what
+guards that, not the payload — see below.
 
 ### The invalidation fix
 
@@ -140,10 +193,25 @@ The contested block of the summary renders one row per contested card: how many 
 arrived, and every committed deck claiming it with the copies each currently gets. The
 default order is seniority, so a row already shows what happens if the player does nothing.
 
-Picking a deck writes one `card_assignments` row and revalidates the claim surfaces. Picking
-a different deck moves the reservation; picking the same deck again clears it. The action is
-reversible because a mis-click on a screen seen once would otherwise be unfixable without
-finding the row by hand.
+Picking a deck writes one `card_assignments` row. Picking a different deck moves the
+reservation; picking the same deck again clears it. The action is reversible because a mis-click
+on a screen seen once would otherwise be unfixable without finding the row by hand.
+
+**The write authorizes itself, in its own transaction**, exactly as `pullCardFromDeck` does and
+for the same reason: a stored summary row may describe a state that has since moved. Inside the
+transaction it re-reads the target's ownership by this user, its newest committed version's claim
+on the card, and the current supply, and refuses with a named reason when any of them no longer
+holds — the deck no longer asks for the card, the deck is not this user's, the card is the
+target's own commander, or there is nothing left to reserve. A refusal is reported on the row
+rather than swallowed, because the row's default allocation is still the truth and the player
+needs to know their pick did not take.
+
+**Revalidation covers every claimant, not just the chosen deck.** One reservation changes the
+allocation figures of every deck claiming that card, and `revalidateClaims(deckId, userId)`
+names `/decks/${deckId}` literally — the `/decks` index does not invalidate the detail pages
+underneath it. The assignment write therefore revalidates `/decks/[id]` and
+`/decks/[id]/changes` in pattern form, as `revalidateClaims` already does for the review page,
+so a losing deck's page cannot go on drawing the marker and buy state it had before the pick.
 
 ### What it refuses, and what it does not
 
@@ -171,9 +239,13 @@ Design call.
 
 The reservation term is raw SQL that no unit test in this repository can reach, so
 `pnpm probe:claims` is the gate. It gains: a reservation beating an earlier `since`; a
-reservation capped at the deck's own ask; two copies with two assignments; no shortage, so
-no figure moves; an assignment to a brew refused; a commander claim not displaced; and the
-row vanishing when its deck is deleted.
+reservation capped at the deck's own ask; a reservation capped at the supply left after an
+earlier reservation, so two decks assigned one copy of a single-copy card resolve to the
+earlier assignment and not to a negative remainder; two copies with two assignments; no
+shortage, so no figure moves; an assignment to a brew refused; an assignment on a draft-only
+add refused; a commander claim not displaced **in the arithmetic** with one copy owned, and
+again for a deck holding the card as both commander and list card; a reservation for a card
+the deck no longer asks for reserving nothing; and the row vanishing when its deck is deleted.
 
 Each new check is run against the unfixed build before being believed. A claim check that
 measures nothing reports green exactly as loudly as one that measures the right thing.
@@ -191,14 +263,29 @@ one merges.
 
 1. Migration, `card_assignments`, the reservation term in all three read sites, and the new
    probe cases. No UI and no behaviour change until something writes a row.
-2. The arrivals diff, `summary_payload`, the `confirmUpload` wiring, and the `/decks`
-   invalidation fix. The invalidation half is separable if this runs long.
+2. The arrivals diff, `summary_payload`, the confirm's idempotency, and the `/decks`
+   invalidation fix. `ReplaceFlow` keeps navigating to `/collection` here: the summary route
+   ships in PR 3, and flipping the navigation before it exists would send every confirmed
+   upload to a 404 for however long PR 2 is deployed alone. The navigation flips in PR 3,
+   beside the route it depends on. The invalidation half is separable if this runs long.
 3. *(Gated on a design handoff.)* The summary route, the chooser, and the assignment server
    action.
 4. *(Gated on the same handoff.)* The second door on `/decks/[id]/changes` and the deck page.
 
 PRs 3 and 4 are new UI and so are blocked by the pipeline rule: no UI until a handoff exists
 and carries a READINESS verdict. PRs 1 and 2 carry no such gate.
+
+## Settled
+
+- **The before/after reads are not one serialized snapshot, deliberately.** Review asked for
+  the replace and both diff reads to run under one serialized transaction or a generation
+  check. Declined. `loadDeckBuyRows` takes no transaction handle, and the hazard it guards
+  against is the same player editing a deck in a second tab during their own import. The cost
+  of that race is a mis-stated line in a summary, never a wrong claim figure: every claim
+  figure in the app is recomputed live on read, and the chooser's write re-validates in its own
+  transaction. Serializing a user-wide read around a delete-and-reinsert of the whole
+  collection is real complexity bought against a one-player app. Revisit if the summary ever
+  becomes a record something else acts on.
 
 ## Settled during design
 
