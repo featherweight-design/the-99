@@ -104,10 +104,13 @@ async function readPrice(page) {
         })(),
       };
     };
+    // No `compact` key. The compact header is not probed here any more — see the
+    // note at the foot of the phone pass — and a `compact: null` in every dump
+    // reads as a figure that failed to render rather than a state nobody asked
+    // about.
     return {
       desktop: read("modal-price-desktop"),
       mobile: read("modal-price-mobile"),
-      compact: read("modal-price-compact"),
     };
   });
 }
@@ -526,6 +529,15 @@ try {
   }
   await phonePage.keyboard.press("Escape");
   await phonePage.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
+
+  // Said out loud, in the run's own output. A reader scanning a green log should
+  // not have to know what this file stopped doing to know what it covered.
+  console.log(
+    "\n── phone · the compact header ──\nNOT PROBED HERE. Both its claims — the tag is a"
+      + " sibling of the mana cost (E12), and outside the aria-hidden heading (E10) — are"
+      + " asserted in `card-modal-price.test.tsx` § \"the compact art header\", against a"
+      + " 14-printing fixture with a real price. Neither is a fact about laid-out geometry.",
+  );
 
   // THE COMPACT HEADER IS NOT PROBED HERE, AND THAT IS THE RULING.
   //

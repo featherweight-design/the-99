@@ -27,6 +27,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, PAGE } from "./lib/surface.mjs";
+import { inventoryProblems } from "./lib/steps.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -36,20 +37,13 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const inventoryPath = process.argv[2];
 
-/**
- * Every key a step may carry. `name` belongs to `clickRole` and `text` to `fill`,
- * which is why they are listed rather than nested — a step is a flat object and
- * validating it is a set membership.
- *
- * Derived by reading every `step.` in `run` below, and it has to stay that way:
- * a verb added there and not here throws on the inventory that first uses it,
- * which is the loud half of this trade and much better than the quiet one.
- */
-const STEP_KEYS = new Set([
-  "goto", "wait", "settle", "scroll", "click", "clickRole", "name", "fill", "text",
-]);
 if (!inventoryPath) throw new Error("Pass the inventory JSON path.");
 const inventory = JSON.parse(await readFile(inventoryPath, "utf8"));
+const problems = inventoryProblems(inventory);
+if (problems.length > 0) {
+  console.error(`${inventoryPath} cannot be walked:\n  ${problems.join("\n  ")}`);
+  process.exit(1);
+}
 // Relative to the repository by default, so the command in a checked-in inventory
 // runs the same way on anyone's machine. An absolute `out` still wins, for a run
 // that wants to write somewhere specific.
@@ -103,19 +97,6 @@ async function signIn(page) {
  */
 async function run(page, steps) {
   for (const step of steps ?? []) {
-    // An unknown key is a SILENT SKIP, which is the failure mode this whole file
-    // is about: `clickIfPresent` was removed because a step that may find nothing
-    // photographs a closed route and reads as coverage, and an inventory still
-    // carrying that key — or carrying a typo — would do exactly the same thing
-    // while looking like it had been updated.
-    const unknown = Object.keys(step).filter((key) => !STEP_KEYS.has(key));
-    if (unknown.length > 0) {
-      throw new Error(
-        `unknown step ${unknown.length === 1 ? "key" : "keys"} ${unknown.join(", ")}.`
-          + ` Known: ${[...STEP_KEYS].join(", ")}. \`clickIfPresent\` was removed — a step`
-          + " that may find nothing cannot fail; say which widths the row exists at instead.",
-      );
-    }
     if (step.goto) {
       // `${VAR}` in a path comes from the environment, so an inventory can name a
       // route that needs an id without committing one account's id to the
