@@ -216,11 +216,20 @@ stamp each fail exactly the check written for them.
 ### Task 8 — the resume block
 
 - `RESUME_COUNT` 2 → 4.
-- The section loses `hidden sm:flex` and becomes `flex`. The `min-[1000px]:flex-row` on the row
-  container stays and gains `min-[1000px]:flex-wrap` with `min-[1000px]:basis-[calc(50%-6px)]` on
-  the row, which is what makes four rows 2×2 above 1000px and stacked below. **The 1000px threshold
-  is not a guess** — `resume-decks.tsx:268-280` derives it: each row needs 255px before the
-  commander's name gets a pixel, and at 640px a two-up row had negative room and was clipped away.
+- The section loses `hidden sm:flex` and becomes `flex`. The row container takes `flex-wrap` and
+  each row a `basis-[calc(50%-6px)]`, which is what makes four rows 2×2 above the threshold and
+  stacked below.
+
+  **The threshold is 1180, not the shipped 1000** — corrected here on round 1 of review, and the
+  arithmetic is the reason. The old figure was derived for a row with no stamp: 255px of fixed
+  content before the commander's name got a pixel. The stamp adds ~78 of non-shrinking mono, so a
+  row needs ~347, a pair ~706, and with 52px of page padding, the 20px gap, the 316px rail and the
+  12px gap between the two rows that is 1106px of viewport. At 1024 the stamp was clipped away
+  entirely by the row's own overflow — `pnpm probe:home` measures exactly that.
+
+  **The body's two columns and its padding move with it.** Both were at `sm`, which gave 640–1179 a
+  third layout: one column wide, with desktop padding, and Commitments beside the rows rather than
+  after them.
 - The row is unchanged: same 72px band, same 99px portrait, same inset (E1–E4).
 - The footer line: `moreDecks(total − shown)` + `allDecks(total)`, absent when the figure is nought.
   `total` is `decks.length`, the same count the deleted heading printed.

@@ -241,12 +241,14 @@ Copy: `home.newDeck`. **Mobile: not rendered** (see §Ambiguities).
 
 ## Component: HomeBody (two-column region)
 
-**The split is at 1000px, not `sm`** — re-enumerated 2026-09-13. The resume block pairs its rows at
-exactly that width, and between 640 and 999 a `sm:flex-row` body put Commitments in a 316px rail
-BESIDE the rows: the reader at 900px met a different block order from the reader at either width the
-handoff draws. One column until the page is wide enough for two.
+**The split is at 1180px, not `sm`** — re-enumerated 2026-09-13. The resume block pairs its rows at
+exactly that width (see §ResumeRows for the arithmetic), and the rail is what takes the width away
+from them, so the two move together. Between 640 and 1179 a `sm:flex-row` body put Commitments in a
+316px rail BESIDE the rows: the reader at 900px met a different block order from the reader at
+either width the handoff draws. The PADDING moves with the split too — left at `sm` it gave that
+band a third layout, one column wide with desktop padding.
 
-| Property | Mobile (<1000) | Desktop (≥1000) |
+| Property | Mobile (<1180) | Desktop (≥1180) |
 |----------|--------|---------|
 | display | flex | flex |
 | flex-direction | column | row |
@@ -588,11 +590,14 @@ this round deleted.
 
 ### Row container
 
-2×2 above 1000px, stacked below. The threshold is arithmetic, not a Tailwind stop: each row needs
-255px before the commander's name gets a pixel, and at 640px a two-up row had negative room and was
-clipped away entirely.
+2×2 above 1180px, stacked below. The threshold is arithmetic, not a Tailwind stop, and it is 180px
+wider than the block carried before the stamp existed: the meta line's fixed content is a status
+pill at ~62, two 14px gaps, a non-shrinking count at ~45 and a non-shrinking stamp at ~78 — 213px
+before the commander's name gets a pixel, on top of the 116px inset and 18px of right padding. A row
+needs ~347, a pair ~706, and with the page padding, the gap and the 316px rail that is 1106px of
+viewport. At 1024 the stamp was clipped away entirely by the row's own overflow.
 
-| Property | Mobile | Desktop (≥1000) |
+| Property | Mobile | Desktop (≥1180) |
 |----------|--------|-----------------|
 | display | flex | flex |
 | flex-direction | column | row |
@@ -601,7 +606,7 @@ clipped away entirely.
 
 ### ResumeRow — root
 
-| Property | Mobile | Desktop (≥1000) |
+| Property | Mobile | Desktop (≥1180) |
 |----------|--------|-----------------|
 | flex | none | 1 |
 | flex-basis | — | `calc(50% - 6px)` |
@@ -618,7 +623,7 @@ clipped away entirely.
 | padding-right | 10 | 18 |
 | status rule | **none** — errata E3. The 3px keyline was the deck rail's, and the rail is deleted; the status pill is this row's status signal | same |
 
-**`flex: none` below 1000px is load-bearing.** The container is a column there, so `flex: 1` applies
+**`flex: none` below 1180px is load-bearing.** The container is a column there, so `flex: 1` applies
 to HEIGHT: four rows in a short column each shrink below the stated 72 and show a strip of unwashed
 band under the portrait. Two rows never overflowed, which is why the defect arrives with the fourth.
 
@@ -629,7 +634,7 @@ band under the portrait. Two rows never overflowed, which is why the defect arri
 | strategy | `left-portrait` (`<ArtWash>`) | same |
 | band height | 72 | 72 |
 | portrait width | 99 (= band × 1.37, `art-wash.md`) | 99 |
-| type inset | 108 below 1000px, 116 above | 116 |
+| type inset | 108 below 1000px, 116 above — unchanged, and deliberately not moved to 1180: it is keyed to the row's own width, which a stacked row has all of | 116 |
 
 ### ResumeRow — deck name
 
@@ -758,12 +763,16 @@ Copy: row 1 `home.inUseRow`, row 2 `home.overCommittedRow`, row 3 `home.toBuyRow
 Copy: row 1 `home.inUseValue(n, total)`, row 2 `home.overCommittedValue(n)` (singular/plural),
 row 3 `home.toBuyValue(n, cost)`.
 
-| Property | Mobile | Row 1 (Cards in use) | Row 2 (Spoken for twice) | Row 3 (To buy, all decks) |
-|----------|--------|---|---|---|
-| font-family | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` |
-| font-size | 13 | 13 | 13 | 13 | 13 | 13 |
-| font-variant-numeric | tabular-nums | tabular-nums | tabular-nums | tabular-nums | tabular-nums | tabular-nums |
-| color | `var(--accent)` | `var(--danger)` | `var(--fg)` | `var(--accent)` | `var(--danger)` | `var(--fg)` |
+One set of values, at both widths — the phone mounts this same card, so the three rows are not
+re-stated per width. (This table lost its shape for one round when the mirroring that re-enumerated
+the rest of §CommitmentsCard treated its five columns as two.)
+
+| Property | Row 1 (Cards in use) | Row 2 (Spoken for twice) | Row 3 (To buy, all decks) |
+|----------|---|---|---|
+| font-family | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 13 | 13 | 13 |
+| font-variant-numeric | tabular-nums | tabular-nums | tabular-nums |
+| color | `var(--accent)` | `var(--danger)` | `var(--fg)` |
 
 ### "Review commitments" button
 
