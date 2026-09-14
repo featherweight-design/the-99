@@ -318,6 +318,25 @@ describe("GameLogForm", () => {
       expect(screen.queryByRole("alert")).toBeNull();
     });
 
+    // Both hints are in the DOM and the breakpoint hides one, so jsdom sees
+    // both whatever the width. That is what makes them assertable at all — and
+    // it is also why nothing caught this: every other test here reads the
+    // field, the counter or the footer, so dropping "optional" from the desktop
+    // gloss, or restoring it, left the whole suite green.
+    //
+    // The two are pinned TOGETHER and against the copy keys, because the rule
+    // is a relationship rather than two strings: the phone says "optional"
+    // because its footer is `hidden md:block` and the gloss is the only marker
+    // there; the desktop does not, because that footer already says it.
+    it("draws both note hints, and only the phone's says optional", () => {
+      mount();
+      open();
+      expect(screen.getByText(deckTuningCopy.note.hintShort)).toBeInTheDocument();
+      expect(screen.getByText(deckTuningCopy.note.hint)).toBeInTheDocument();
+      expect(deckTuningCopy.note.hintShort).toMatch(/optional/i);
+      expect(deckTuningCopy.note.hint).not.toMatch(/optional/i);
+    });
+
     it("never requires a note, not even on a loss", () => {
       mount();
       open();
