@@ -223,6 +223,10 @@ try {
         fail("mobile: the phone column or the Build bar was not on the page — nothing measured");
       } else if (foot.lastText === "") {
         fail(`mobile: the column ends in an empty ${foot.lastHeight}px box — a dead spacer`);
+      } else if (foot.gap < 0) {
+        // A bar drawn OVER the last section is the other way for this to be wrong, and a
+        // one-sided bound reported it as a pass — the gap simply went negative.
+        fail(`mobile: the Build bar overlaps "${foot.lastText}" by ${-foot.gap}px`);
       } else if (foot.gap > 40) {
         fail(`mobile: ${foot.gap}px of nothing between "${foot.lastText}" and the Build bar`);
       } else {
