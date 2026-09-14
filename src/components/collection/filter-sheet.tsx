@@ -19,6 +19,7 @@
 // open a dialog to reach — and the badge never counts it, for the same reason.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Sheet } from "../ui/sheet";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
@@ -63,11 +64,14 @@ export type CollectionFilterSheetProps = {
 };
 
 /** Closed renders nothing: a sheet is never a hidden duplicate of the row. */
-export function CollectionFilterSheet({ open, ...rest }: CollectionFilterSheetProps) {
-  return open ? <SheetBody {...rest} /> : null;
+export function CollectionFilterSheet(props: CollectionFilterSheetProps) {
+  // `Sheet` already returns null when closed, so the old open/closed split here
+  // would have been a second answer to the same question.
+  return <SheetBody {...props} />;
 }
 
 function SheetBody({
+  open,
   onDismiss,
   filters,
   onChange,
@@ -78,7 +82,7 @@ function SheetBody({
   availabilityOk,
   shown,
   total,
-}: Omit<CollectionFilterSheetProps, "open">) {
+}: CollectionFilterSheetProps) {
   const dialog = useRef<HTMLDivElement>(null);
   // The set list is a PANEL OF ITS OWN now, above this sheet (#6). Listing
   // hundreds of sets under a search field made them most of the sheet, and
@@ -133,34 +137,45 @@ function SheetBody({
     list.includes(code) ? list.filter((c) => c !== code) : [...list, code];
 
   return (
-    // z-50, not z-40: the phone tab bar is z-40 and paints later, so at z-40 it
-    // covers this sheet's own footer. `max-[999px]:flex` rather than a `sm:`
-    // utility, because the chassis owns the breakpoint at 1000 and Tailwind has
-    // no stop there — the deck sheet shipped as `sm:hidden` and left 640-999px
-    // opening a dialog CSS had already hidden.
-    <div className="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex">
-      <div
-        aria-hidden="true"
-        onClick={onDismiss}
-        className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
-      />
-      <div
-        ref={dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-label={copy.title}
-        tabIndex={-1}
-        // Every control here stays mounted for layout while the set panel is up,
-        // and the focus trap collects buttons by query — so without this, Tab or
-        // a screen reader reaches the covered `Done` underneath the panel.
-        inert={setsOpen}
-        className="relative z-10 flex max-h-[86vh] flex-col gap-[14px] overflow-y-auto rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
-      >
-        <div
-          aria-hidden="true"
-          className="h-[4px] w-[38px] shrink-0 self-center rounded-[2px] bg-[color:var(--border-strong)]"
-        />
-
+    <Sheet
+      open={open}
+      onDismiss={onDismiss}
+      ariaLabel={copy.title}
+      panelRef={dialog}
+      // Every control here stays mounted for layout while the set panel is up,
+      // and the focus trap collects buttons by query — so without this, Tab or a
+      // screen reader reaches the covered `Done` underneath the panel.
+      inert={setsOpen}
+      // z-50, not z-40: the phone tab bar is z-40 and paints later, so at z-40
+      // it covers this sheet's own footer. `max-[999px]:flex` rather than a
+      // `sm:` utility, because the chassis owns the breakpoint at 1000 and
+      // Tailwind has no stop there — the deck sheet shipped as `sm:hidden` and
+      // left 640-999px opening a dialog CSS had already hidden.
+      frameClassName="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex"
+      scrimClassName="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
+      // This route's box, kept as it is: the chassis handoff specifies the
+      // anchored panel and not the sheet, so collapsing the two vocabularies is
+      // a design ruling rather than a refactor.
+      panelClassName="relative z-10 flex max-h-[86vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+      // A SIBLING of the panel, never a child: the panel is `inert` while this
+      // is up, and an inert subtree takes its descendants out of the
+      // accessibility tree — so a panel nested inside it would be unreachable by
+      // the very readers the trap exists for.
+      beside={
+        setsOpen && (
+          <SetPanel
+            onDismiss={() => setSetsOpen(false)}
+            options={setOptions}
+            selected={filters.setCodes}
+            onToggle={(code) => onChange({ ...filters, setCodes: toggle(filters.setCodes, code) })}
+            shown={shown}
+            total={total}
+            returnFocusTo={setTrigger}
+          />
+        )
+      }
+    >
+      <div className="flex flex-col gap-[14px] px-[16px] pt-[4px] pb-[16px]">
         <div className="flex items-baseline gap-[10px]">
           <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
             {copy.title}
@@ -320,25 +335,7 @@ function SheetBody({
           {announcement}
         </span>
       </div>
-
-      {/* A SIBLING of the sheet, never a child of it: the sheet is `inert` while
-          this is up, and an inert subtree takes its descendants out of the
-          accessibility tree — so a panel nested inside it would be unreachable
-          by the very readers the trap exists for. */}
-      {setsOpen && (
-        <SetPanel
-          onDismiss={() => setSetsOpen(false)}
-          options={setOptions}
-          selected={filters.setCodes}
-          onToggle={(code) =>
-            onChange({ ...filters, setCodes: toggle(filters.setCodes, code) })
-          }
-          shown={shown}
-          total={total}
-          returnFocusTo={setTrigger}
-        />
-      )}
-    </div>
+    </Sheet>
   );
 }
 
