@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 const routerStub = vi.hoisted(() => ({ refresh: vi.fn() }));
+// Hoisted so a test can make the move refuse: the create-from-move path reads
+// the move's own answer, and refusing is a different outcome from filing.
+const actionStub = vi.hoisted(() => ({ move: vi.fn(async () => true) }));
 
 // The folder actions reach the database through the module they import, so the
 // view's own tests stub them. Their behaviour is covered in
@@ -12,7 +15,7 @@ vi.mock("../../app/decks/folder-actions", () => ({
     ok: true,
     folder: { id: "f-new", name },
   }),
-  moveDeckAction: async () => true,
+  moveDeckAction: (...args: unknown[]) => actionStub.move(...(args as [])),
   renameFolderAction: async (_id: string, name: string) => ({
     ok: true,
     folder: { id: "f-new", name },
@@ -80,6 +83,8 @@ function view(decks: DeckListItem[], folders: DeckFolderWithCount[] = []) {
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/decks");
+  actionStub.move.mockClear();
+  actionStub.move.mockResolvedValue(true);
   // `renderWide` replaces this stub; restore the phone default every test, or
   // the first wide render silently re-forms every test after it.
   Object.defineProperty(window, "matchMedia", {
@@ -613,6 +618,45 @@ describe("DecksView", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
+  });
+
+  it("leaves the panel open when the move the create asked for is refused", async () => {
+    // M6: a refused move changes nothing, so the panel goes back to its menu
+    // rather than closing. The folder was still made, and the announcement says
+    // that and nothing about a shelf the deck is not on.
+    actionStub.move.mockResolvedValueOnce(false);
+    const { container } = renderWide(view(shelvedDecks(), twoFolders));
+    const trigger = screen.getAllByRole("button", { name: /^Actions for/ })[0];
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() =>
+      expect(
+        [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Folder “Draft pile” created."),
+    );
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("files the deck, and says so, when the create came from a move", async () => {
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    const rows = screen.getAllByRole("button", { name: /New folder/ });
+    fireEvent.click(rows[rows.length - 1]);
+    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    // The deck whose panel asked — read off the tile the panel belongs to,
+    // because the grid's order is the sort's and not this test's — onto the
+    // folder the create returned.
+    const first = screen.getAllByRole("listitem")[0].querySelector("h3")?.textContent;
+    const asked = shelvedDecks().find((d) => d.name === first)?.id;
+    await waitFor(() => expect(actionStub.move).toHaveBeenCalledWith(asked, "f-new"));
+    const said = [...document.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent);
+    expect(said).toContain("Filed under Draft pile.");
   });
 
   it("ignores a hand-edited folder id", () => {

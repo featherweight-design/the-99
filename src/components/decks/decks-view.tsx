@@ -896,7 +896,11 @@ export function DecksView({
                 // from the destination list closes it (errata E21). This path
                 // never reaches that handler — the move happens here — so the
                 // card is told directly.
-                if (creatingFor)
+                // ONLY WHEN THE MOVE LANDED. A refused or thrown move both read
+                // as `filed: false`, and M6 says the panel goes back to its menu
+                // then, because nothing happened — so the close signal is gated
+                // on the move's own answer rather than on having asked.
+                if (creatingFor && filed)
                   setCreateFiled((prev) => ({ deckId: creatingFor, seq: (prev?.seq ?? 0) + 1 }));
                 say(
                   filed

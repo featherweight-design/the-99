@@ -13,6 +13,7 @@
 // It files a deck into a folder it creates, then unfiles it and removes the
 // folder, in a `finally`. Point it at `local-dev`, NEVER production.
 import { requireEnv } from "./lib/env.mjs";
+import { onPage } from "./lib/surface.mjs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -37,6 +38,9 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 // The rows THIS run made, so cleanup names them instead of matching a prefix:
 // a name prefix would reach another run's folder, and unfile decks it owns.
 const madeFolderIds = [];
+// The signed-in account, read off Clerk rather than assumed: folder names are
+// unique PER USER, so a name alone can name another account's folder.
+let userId = null;
 
 let failures = 0;
 const check = (label, actual, expected) => {
@@ -97,9 +101,11 @@ async function run(browser) {
   // any counter starts. Without this the probe fails a build with no defect in
   // it, which is worse than not checking at all.
   await page.goto(`${BASE}/decks`, { waitUntil: "load" });
-  await page.waitForSelector("[data-shelf-line]", { timeout: 30_000 });
+  await page.waitForSelector("main [data-shelf-line]", { timeout: 30_000 });
   await page.goto(`${BASE}/decks`, { waitUntil: "load" });
-  await page.waitForSelector("[data-shelf-line]", { timeout: 30_000 });
+  await page.waitForSelector("main [data-shelf-line]", { timeout: 30_000 });
+  userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
+  if (!userId) throw new Error("could not read the signed-in Clerk user id");
 
   // Every appearance of the route's loading screen, and every RSC round trip.
   await page.evaluate(() => {
@@ -128,7 +134,7 @@ async function run(browser) {
   page.on("framenavigated", (f) => { if (f === page.mainFrame()) loadUrls.push(`nav ${f.url()}`); });
 
   // Make a folder.
-  await page.getByRole("button", { name: /New folder/ }).first().click();
+  await onPage(page, "button").filter({ hasText: "New folder" }).first().click();
   await page.getByLabel("Folder name").fill(FOLDER);
   const rscBeforeCreate = rsc;
   await page.getByRole("button", { name: "Create" }).click();
@@ -145,7 +151,10 @@ async function run(browser) {
   console.log(`      navigations: ${JSON.stringify(loadUrls)}`);
 
   // The shelf the reader is on after a create. Hugh's call: it must not move.
-  const made = await pool.query("select id from deck_folders where name = $1", [FOLDER]);
+  const made = await pool.query("select id from deck_folders where name = $1 and user_id = $2", [
+    FOLDER,
+    userId,
+  ]);
   made.rows.forEach((r) => madeFolderIds.push(r.id));
   check("the create wrote exactly one folder row", made.rows.length, 1);
 
@@ -157,8 +166,8 @@ async function run(browser) {
   // File the first deck into it, from All decks.
   // The DECK's own menu, inside the grid: the shelf line's trigger carries the
   // same `Actions for …` prefix, and it opens rename and delete, not Move.
-  await page.locator("li button[aria-label^='Actions for']").first().click();
-  const menu = page.locator("button[aria-label^='Move ']").first();
+  await onPage(page, "li button[aria-label^='Actions for']").first().click();
+  const menu = onPage(page, "button[aria-label^='Move ']").first();
   await menu.waitFor({ timeout: 10_000 });
   await page.evaluate(() => { window.__flashes = 0; });
   const rscBeforeMove = rsc;
@@ -173,7 +182,7 @@ async function run(browser) {
   check("the move costs one server round trip", rsc - rscBeforeMove, 1);
 
   // And the menu is gone, rather than back at its first mode.
-  const menuOpen = await page.locator("[role=dialog] button[aria-label^='Move ']").count();
+  const menuOpen = await onPage(page, "[role=dialog] button[aria-label^='Move ']").count();
   check("the deck menu closes after the move", menuOpen, 0);
 
   // THE GRID MUST NOT GO STALE. Whatever invalidates the route, the segment's
@@ -190,12 +199,12 @@ async function run(browser) {
   // clean pass proves nothing.
   const rscBeforeRepeats = rsc;
   for (let i = 0; i < 4; i += 1) {
-    await page.locator("li button[aria-label^='Actions for']").first().click();
-    await page.locator("button[aria-label^='Move ']").first().click();
+    await onPage(page, "li button[aria-label^='Actions for']").first().click();
+    await onPage(page, "button[aria-label^='Move ']").first().click();
     await page.getByRole("button", { name: /^Unfiled$/ }).click();
     await page.waitForTimeout(1200);
-    await page.locator("li button[aria-label^='Actions for']").first().click();
-    await page.locator("button[aria-label^='Move ']").first().click();
+    await onPage(page, "li button[aria-label^='Actions for']").first().click();
+    await onPage(page, "button[aria-label^='Move ']").first().click();
     await page.getByRole("button", { name: new RegExp(`^${FOLDER}$`) }).click();
     await page.waitForTimeout(1200);
   }
@@ -206,13 +215,15 @@ async function run(browser) {
   // Rename and delete lean on the same invalidation. If the action's own
   // `revalidatePath` is the only refresh in the round, these are where a
   // missing one would show as a stale label or a segment that will not go.
-  await page.locator("[data-shelf-line] button[aria-label^='Actions for']").first().click()
-    .catch(async () => {
-      // The shelf menu only exists on a SELECTED named shelf.
-      await page.getByRole("button", { name: new RegExp(`^${FOLDER}`) }).first().click();
-      await page.waitForTimeout(800);
-      await page.locator("[data-shelf-line] button[aria-label^='Actions for']").first().click();
-    });
+  // The shelf menu exists only on a SELECTED named shelf, and after the moves
+  // above the reader is still on All decks (E20). Select it rather than clicking
+  // a locator with no matches and waiting out Playwright's full action timeout
+  // before a catch can recover.
+  await onPage(page, "[data-shelf-line] button").filter({ hasText: FOLDER }).first().click();
+  await onPage(page, "[data-shelf-line] button[aria-label^='Actions for']").first().waitFor({
+    timeout: 10_000,
+  });
+  await onPage(page, "[data-shelf-line] button[aria-label^='Actions for']").first().click();
   const rscBeforeRename = rsc;
   await page.getByRole("button", { name: "Rename" }).click();
   await page.getByLabel("Folder name").fill(`${FOLDER}-renamed`);
@@ -257,10 +268,14 @@ main()
     // By id, and only the ids this run made. A `like` on the name would reach a
     // concurrent run's folder and unfile decks belonging to it.
     if (madeFolderIds.length > 0) {
-      await c.query("update decks set folder_id = null where folder_id = any($1::uuid[])", [
+      await c.query(
+        "update decks set folder_id = null where folder_id = any($1::uuid[]) and user_id = $2",
+        [madeFolderIds, userId],
+      );
+      await c.query("delete from deck_folders where id = any($1::uuid[]) and user_id = $2", [
         madeFolderIds,
+        userId,
       ]);
-      await c.query("delete from deck_folders where id = any($1::uuid[])", [madeFolderIds]);
     }
     c.release();
     await pool.end();

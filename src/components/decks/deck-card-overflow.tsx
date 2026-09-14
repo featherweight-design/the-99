@@ -143,8 +143,13 @@ export function DeckCardOverflow({
     // to the shelf control instead.
     setOpen(false);
     setMode("menu");
+    // On All decks the ⋯ survives, so it takes focus. On a named shelf the deck
+    // has left the shelf being viewed and this card goes with it, so focus is
+    // handed to the view — the dialog's own rescue cannot be relied on, because
+    // it fires one frame after dismissal and the card is still mounted then.
     if (keepsFocus) buttonRef.current?.focus();
-  }, [closeAfterCreate, keepsFocus]);
+    else onMoved({ refused: false });
+  }, [closeAfterCreate, keepsFocus, onMoved]);
 
   useEffect(() => {
     if (mode !== "menu" || !wantsMoveRowFocus.current) return;
