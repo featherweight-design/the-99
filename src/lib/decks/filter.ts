@@ -10,10 +10,16 @@
 //   2. `This month` is the current calendar month, not a rolling thirty days: a
 //      window that silently drops a deck at midnight on the 31st is a figure
 //      that changes while you look at it.
-//   3. Within a heading, values OR; across headings, they AND. This is how every
+//   3. A pair deck's colour is the UNION of both commanders', matched through
+//      `deckIdentity` — the same helper the tiles and both deck-header spines
+//      word their colour with. Reading the primary's alone hid a deck from the
+//      colour its own tile claimed, and the search reaches the partner's name
+//      for the same reason: the tile prints it.
+//   4. Within a heading, values OR; across headings, they AND. This is how every
 //      filter the app already ships behaves, and neither surface offers a
 //      control that could say otherwise.
 
+import { deckIdentity } from "./format";
 import { parseDeckSort, serializeDeckSort, type DeckSort } from "./sort";
 import type { StatusPill } from "./status";
 
@@ -54,6 +60,11 @@ export type FilterableDeck = {
   name: string;
   commanderName: string;
   commanderColorIdentity: string[];
+  /** The partner's, where there is one. A pair deck's colour is the UNION of the
+      two — which every surface words — so a filter reading the primary's alone
+      hides a deck from the very colour its own tile claims. */
+  partnerName: string | null;
+  partnerColorIdentity: string[] | null;
   statusPill: StatusPill;
   lastPlayedAt: Date | null;
 };
@@ -81,8 +92,16 @@ export function filterDecks<T extends FilterableDeck>(
   const needle = f.search.trim().toLowerCase();
   return decks.filter((d) => {
     if (f.statuses.length && !f.statuses.includes(d.statusPill)) return false;
-    if (f.colours.length && !f.colours.every((c) => d.commanderColorIdentity.includes(c))) {
-      return false;
+    // The UNION, through the same helper every surface words its colour with. A
+    // pair whose red comes only from its partner reads `Jeskai` on its own tile
+    // and used to vanish when Red was ticked.
+    //
+    // Composed INSIDE the guard: `/decks` calls this once for the grid and again
+    // for every status and play option's count, so building a Set and two arrays
+    // per deck on the common unfiltered render would be work for no result.
+    if (f.colours.length) {
+      const identity = deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity);
+      if (!f.colours.every((c) => identity.includes(c))) return false;
     }
     if (f.played === "never" && d.lastPlayedAt) return false;
     if (f.played === "thisMonth" && (!d.lastPlayedAt || !inCurrentMonth(d.lastPlayedAt, now))) {
@@ -91,7 +110,8 @@ export function filterDecks<T extends FilterableDeck>(
     if (
       needle &&
       !d.name.toLowerCase().includes(needle) &&
-      !d.commanderName.toLowerCase().includes(needle)
+      !d.commanderName.toLowerCase().includes(needle) &&
+      !(d.partnerName ?? "").toLowerCase().includes(needle)
     ) {
       return false;
     }
