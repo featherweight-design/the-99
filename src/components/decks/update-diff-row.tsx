@@ -66,8 +66,9 @@ const ROW_BOX_STACKED = "min-h-[44px] p-[8px] md:pl-[9px] md:pr-[6px]";
  *  even an unpaired column at 1300px leaves about 574px against a line asking for
  *  a dot, a card name, a deck name, a price tag, a 44px control and the cost
  *  track. Whichever item was the flexible one went to zero: first the card name,
- *  which is the reported bug, then the deck name once the name had a floor.
- *  Two lines is what the phone already draws and what the row can honour. */
+ *  which is the reported bug, then the deck name once the row split in two.
+ *  Two lines is what the phone already draws and what the row can honour, and
+ *  both of those lines wrap for the same reason. */
 const ROW_SHELL_STACKED = `flex flex-col items-stretch gap-[8px] ${ROW_RADIUS}`;
 const STACK_LINE = "flex items-center gap-[9px]";
 
@@ -311,7 +312,6 @@ function DiffRowName({
   siblings,
   describedBy,
   recount,
-  floor,
 }: {
   oracleId: string;
   name: string;
@@ -319,12 +319,6 @@ function DiffRowName({
   siblings?: string[];
   describedBy?: string;
   recount?: DiffRowRecount;
-  /** Hold a minimum width instead of shrinking away. `truncate` sets a
-   *  min-content width of zero, so the name is the item a short line takes its
-   *  shortfall out of, and a flex line whose items can all reach zero never
-   *  wraps — it just prints nothing. On a stacked row the line is allowed to
-   *  wrap, so a floor here is what makes it do so. */
-  floor?: boolean;
 }) {
   const trigger = (
     <CardDetailTrigger
@@ -334,7 +328,7 @@ function DiffRowName({
       siblings={siblings}
       describedBy={describedBy}
       className={[
-        floor ? "min-w-[90px]" : "min-w-0",
+        "min-w-0",
         "truncate text-left text-[12.5px] md:text-[13px]",
         recount ? "" : "flex-auto",
       ].join(" ")}
@@ -346,7 +340,7 @@ function DiffRowName({
   if (!recount) return trigger;
   return (
     <span
-      className={`flex-auto flex items-baseline gap-[6px] ${floor ? "min-w-[90px]" : "min-w-0"}`}
+      className="flex-auto flex items-baseline gap-[6px] min-w-0"
     >
       {trigger}
       {/* The counts are the shipped recount's shape with the name taken off the
@@ -512,15 +506,8 @@ export function DiffRowIn({
         siblings={siblings}
         describedBy={describedBy}
         recount={recount}
-        floor={stacked}
       />
-      {/* The invisible half of the marker box is the update flow's rhythm, so a
-          stacked row gives it back: it costs 46px of a column that is about
-          150px wide inside its padding at the narrowest desktop, and the name is
-          what pays. A row that has a tag to draw still draws it. */}
-      {markerDrawn(card) && (!stacked || card.auto) ? (
-        <Marker auto={card.auto} />
-      ) : null}
+      {markerDrawn(card) ? <Marker auto={card.auto} /> : null}
     </>
   );
   const metaLine = (
@@ -588,10 +575,11 @@ export function DiffRowIn({
     >
       {stacked ? (
         <>
-          {/* Wraps for the same reason the meta line does. With the name holding
-              a floor, a costless add whose marker draws cannot fit its name, its
-              tag and the 54px cost track on one 150px line, so the track drops
-              below rather than the name printing an ellipsis and nothing else. */}
+          {/* Wraps for the same reason the meta line does. A costless card draws
+              the marker box, and the name, that box and the 54px cost track do
+              not fit one 150px line, so without this the name shrank to 13px.
+              `flex-wrap` measures items at their hypothetical size rather than
+              their shrunk one, so the track drops below instead. */}
           <span className={`${STACK_LINE} min-w-0 flex-wrap`}>
             {nameLine}
             {trailing}
@@ -604,7 +592,7 @@ export function DiffRowIn({
               desktop, and the deck name, the buy tag and a 44px control do not fit
               on one line there — the name is the flexible item, so it went to zero
               and the row named a deck it could not print. Wrapped, the control
-              drops to a line of its own and the name keeps its floor. */}
+              drops to a line of its own and the name keeps its own floor. */}
           <div className={`${STACK_LINE} flex-wrap pl-[16px]`}>{metaLine}</div>
         </>
       ) : (

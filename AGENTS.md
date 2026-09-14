@@ -264,6 +264,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   the second width — reverting the deck name's floor reads `deck 0px` at 820px and `deck 91px`
   at 1300px.
 
+  Its fixture card is deliberately **costless**. `markerDrawn` is `auto || !manaCost`, so only a
+  costless card draws the 46px marker box that the card name and the 54px cost track then have to
+  share a line with; on a costed card that line fits and every clause passes over the regression.
+  With the card costless and the first line's `flex-wrap` reverted it reads `name 13px` at 820px.
+  That one class is also the only one of three candidate fixes that measured anything — a `min-w`
+  floor on the name and suppressing the invisible half of the marker box both passed the mutation
+  and were dropped, because `flex-wrap` sizes items at their hypothetical width rather than their
+  shrunk one and so wraps the line before any item reaches zero.
+
   It writes three decks under the account it signs in as and deletes them in a `finally`;
   point it at `local-dev` or a scratch Neon branch, **never production**.
 - `pnpm probe:colour-box` measures the colour control's box on `/commanders` and `/discover` at
