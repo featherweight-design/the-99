@@ -67,6 +67,12 @@ export function FilterRack({
   // 1000-1023 while `/decks` was already wide — a route-specific breakpoint,
   // which is the thing one frame exists to stop.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+
+  // Composed ONCE and handed to both forms. The rack draws it on the result line
+  // and the sheet draws it in its header, and the sheet's own comment promises
+  // they are the same sentence; composing it in each place is what let the two
+  // disagree.
+  const resultLine = resultLineWithAside(shown, total, lane, excludedByExactly, sleevedByFree);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Same reason as `decks-view.tsx`: unmounting the sheet at the breakpoint
@@ -149,7 +155,7 @@ export function FilterRack({
         // would also fire a fresh request for a ranking nobody asked for.
         onChange({ ...defaultParams(lane), order: params.order })
       }
-      resultLine={resultLineWithAside(shown, total, lane, excludedByExactly, sleevedByFree)}
+      resultLine={resultLine}
       // Compact's persistent row is `search · sort · Filters` (STATES §156), so
       // the trigger joins the trailing cluster rather than sitting in the
       // controls ahead of it. Wide keeps sort alone past the hairline, where
@@ -216,6 +222,7 @@ export function FilterRack({
           onChange={onChange}
           shown={shown}
           total={total}
+          resultLine={resultLine}
         />
       )
       }

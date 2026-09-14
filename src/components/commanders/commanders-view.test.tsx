@@ -180,7 +180,7 @@ describe("CommandersView windowing", () => {
     fireEvent.click(control()!);
     expect(cards()).toHaveLength(30);
     expect(control()).toBeNull();
-    expect(screen.getByText(/End of ranking · 30/)).toBeInTheDocument();
+    expect(screen.getByText("End of ranking · 30")).toBeInTheDocument();
   });
 
   it("clamps to the list length rather than overshooting on rapid activations", () => {
@@ -560,6 +560,22 @@ describe("CommandersView ranking toggle", () => {
     it("stays off in the other mode", () => {
       const all = results(5);
       view(all, { avail: "all", freeItems: all.slice(0, 2) });
+      expect(resultLine()).not.toHaveTextContent(/sleeved/);
+    });
+
+    // The aside sits in a sentence that has just stated a count, so it has to
+    // explain THAT count. Subtracting the two whole lists claims rows the search
+    // had already excluded: here the query leaves one commander on either side,
+    // so free mode hid nothing the reader can see, and an aside would be
+    // accounting for rows that were never on screen.
+    it("counts only among the rows the other controls left", () => {
+      const all = results(6);
+      view(all, { avail: "free", freeItems: all.slice(0, 3) });
+      expect(resultLine()).toHaveTextContent("3 more are sleeved into decks you've built");
+
+      fireEvent.change(screen.getByRole("searchbox"), {
+        target: { value: all[0].name },
+      });
       expect(resultLine()).not.toHaveTextContent(/sleeved/);
     });
 

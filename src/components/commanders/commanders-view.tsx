@@ -293,16 +293,25 @@ export function CommandersView({
     return diff > 0 ? diff : null;
   }, [searched, colors, params.match]);
 
-  // What `Build from` cost, counted against the canonical list so the figure
-  // answers for one control alone — the same shape as `excludedByExactly` above.
-  // Null outside free mode and null where it hid nothing, because a "0 sleeved"
-  // aside is noise. Both lists are already on the client, so this is a
-  // subtraction rather than a read.
+  // What `Build from` cost, and it answers for that one control — the same shape
+  // as `excludedByExactly` above. Null outside free mode and null where it hid
+  // nothing, because a "0 sleeved" aside is noise.
+  //
+  // Counted over the rows the OTHER controls left, never over the two whole
+  // lists. The figure sits in a sentence that has just stated a count, so it has
+  // to explain THAT count: with a query lit, subtracting the raw lengths claims
+  // rows the search had already excluded, and a query matching nothing at all
+  // would still print an aside. So the canonical list is run through the same
+  // search and the same colour filter, and what free mode removed is the
+  // difference between that and what is on screen. Ordering is not applied —
+  // it cannot change a length.
   const sleevedByFree = useMemo(() => {
     if (avail !== "free" || !freeItems) return null;
-    const hidden = results.length - freeItems.length;
+    const q = params.q.trim().toLowerCase();
+    const searchedAll = q === "" ? results : results.filter((r) => matchesQuery(r.name, q));
+    const hidden = filterByColors(searchedAll, colors, params.match).length - filtered.length;
     return hidden > 0 ? hidden : null;
-  }, [avail, freeItems, results.length]);
+  }, [avail, freeItems, results, params.q, colors, params.match, filtered.length]);
 
   // Two rank maps, each built once over the FULL candidate set in that mode's
   // ordering. Both are pre-filter, so filtering still never renumbers: a hidden

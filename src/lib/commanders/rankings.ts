@@ -43,8 +43,15 @@ export type CommanderRankings = {
  * 2 — built commanders are no longer dropped from the persisted score set, so a
  * list assembled by version 1 can be short a commander whose deck has since been
  * deleted.
+ *
+ * 3 — free mode now lists from the free pool rather than only ranking against
+ * it, so version 2's `freeRanking` holds commanders whose own card a finished
+ * deck has sleeved. Nothing about the reader's rows changed, so nothing drops
+ * the tag: without this bump a warm entry keeps serving the old free list, and
+ * the defect this release fixes survives the deploy for up to the hour ceiling
+ * for every reader who does not write.
  */
-const PAYLOAD_VERSION = 2;
+const PAYLOAD_VERSION = 3;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];

@@ -142,14 +142,22 @@ async function pickCandidates(userId) {
   return rows;
 }
 
-/** The fixture: a deck with a committed version holding every copy of `target`. */
-async function buildHolder(userId, target, commander) {
+/**
+ * The fixture: a deck with a committed version holding every copy of `target`.
+ *
+ * `onDeck` is called with the id the instant the deck row exists, before any of
+ * the rows that hang off it. A helper that only returned at the end would leave
+ * a half-built deck behind whenever one of those later inserts threw: the call
+ * site's assignment never runs, and the `finally` deletes nothing.
+ */
+async function buildHolder(userId, target, commander, onDeck) {
   const { rows } = await pool.query(
     `insert into decks (user_id, name, commander_oracle_id, filled)
        values ($1, $2, $3, true) returning id`,
     [userId, "probe · build from", commander.oracle_id],
   );
   const deckId = rows[0].id;
+  onDeck(deckId);
   await pool.query(
     `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, $3, false)`,
     [deckId, target.oracle_id, target.owned],
@@ -230,7 +238,9 @@ async function run() {
     }
     note(`before · free lists ${target.name}`);
 
-    deckId = await buildHolder(userId, target, commander);
+    await buildHolder(userId, target, commander, (id) => {
+      deckId = id;
+    });
 
     // AFTER, at both widths: the rack draws inline above 1024px and inside a
     // sheet below it, and the result line is the rack's — so a line that only

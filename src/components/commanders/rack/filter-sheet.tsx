@@ -34,7 +34,6 @@ import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
 import { ColourControl } from "./colour-control";
-import { resultSentence } from "./result-line";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
@@ -48,6 +47,7 @@ export function FilterSheet({
   onChange,
   shown,
   total,
+  resultLine,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -58,6 +58,14 @@ export function FilterSheet({
       live — nothing here is staged. */
   shown: number;
   total: number;
+  /** The rack's composed sentence, asides and all. Passed in rather than rebuilt
+      here: the header's own promise is that it is the SAME sentence the result
+      line behind the scrim is showing, and a second call to compose it is a
+      second place the two could drift. They did — the sheet recomposed the
+      sentence alone, so both asides went missing the moment the reader opened
+      Filters, which below 1024px is the only place four of the lane's controls
+      exist. */
+  resultLine: string;
 }) {
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
@@ -211,7 +219,7 @@ export function FilterSheet({
               disagree. Silent because that line is the lane's one live region;
               the sheet's debounced announcer is what speaks here. */}
           <span className="ml-auto font-mono text-[11px] tabular-nums text-[color:var(--fg-body)]">
-            {resultSentence(shown, total, lane)}
+            {resultLine}
           </span>
         </div>
 
