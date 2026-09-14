@@ -21,6 +21,10 @@
 // The turn is only checked on a two-faced card, and the script says so rather than
 // passing quietly. Run it a second time against a `transform` card with
 // PROBE_TWO_FACED=1, which makes a missing turn control a failure.
+// Add PROBE_PRICED=1 where the card has a figure, which makes a missing tag a
+// failure rather than a state the run could not judge. It is the caller's claim
+// on purpose: read off the page it would be an assertion that cannot fail.
+//
 // PROBE_CARD can be any card the signed-in account owns. It no longer has to
 // reach the compact header: that check moved to `card-modal-price.test.tsx`,
 // where it can actually run — see the note at the foot of the phone pass.
@@ -36,6 +40,12 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
   "CLERK_SECRET_KEY",
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+/**
+ * The reader's claim that PROBE_CARD has a figure, which makes the tag's absence
+ * a defect. It cannot be read off the page: "there is a tag, so a tag was
+ * expected" is an assertion that cannot fail.
+ */
+const EXPECT_PRICED = process.env.PROBE_PRICED === "1";
 const CARD = process.env.PROBE_CARD;
 if (!CARD) throw new Error("Set PROBE_CARD to a card the account owns.");
 
@@ -161,7 +171,7 @@ async function readUnderCard(page) {
   });
 }
 
-function assertUnderCard(where, stack, expectedGap, expectedHint) {
+function assertUnderCard(where, stack, expectedGap, expectedHint, priced) {
   if (!stack) {
     console.log(`\nFAIL: ${where} drew nothing under the card at all.`);
     process.exitCode = 1;
@@ -189,6 +199,29 @@ function assertUnderCard(where, stack, expectedGap, expectedHint) {
   if (stack.zoomGlyphStillDrawn) {
     console.log(`\nFAIL: ${where} still draws the \u2922 plate the hint replaced.`);
     process.exitCode = 1;
+  }
+  // "THE TAG PAINTS AT ALL" is this probe's oldest claim, and it was reduced to a
+  // log line when the compact check went: every geometry check above passes on a
+  // card with no figure, because the hint stack is there either way.
+  //
+  // The EXPECTATION comes from the caller, never from the render. Reading it back
+  // off the page — "there is a tag, so a tag was expected" — is an assertion that
+  // cannot fail, which is worse than none: removing `priceTag` from the modal
+  // flips both sides together and the run stays green. `PROBE_PRICED=1` is the
+  // reader saying this card HAS a figure, and only then is its absence a defect.
+  if (priced) {
+    if (!stack.hasPrice) {
+      console.log(
+        `\nFAIL: ${where} has a figure for this printing and drew no tag under the card.`,
+      );
+      process.exitCode = 1;
+    }
+  } else {
+    console.log(
+      `\nNOT EXERCISED: ${where} — "the tag paints" was not checked. Run with`
+        + " PROBE_PRICED=1 against a card the feed has priced to assert it; the stack's"
+        + " geometry above is checked either way.",
+    );
   }
 }
 
@@ -271,7 +304,7 @@ try {
   console.log(JSON.stringify(desktop, null, 2));
   // The placement is the ruling; a stack that has drifted away from the art
   // satisfies nothing. Table row 1.1: 10px under the art at desktop, 9px at phone.
-  assertUnderCard("desktop", await readUnderCard(page), 10, "Click to zoom");
+  assertUnderCard("desktop", await readUnderCard(page), 10, "Click to zoom", EXPECT_PRICED);
 
   // WHAT THIS PROBE DELIBERATELY DOES NOT DO: pick a different printing.
   //
@@ -511,7 +544,7 @@ try {
   const phoneRead = await readPrice(phonePage);
   console.log(`\n── phone · ${CARD} ──`);
   console.log(JSON.stringify(phoneRead, null, 2));
-  assertUnderCard("phone", await readUnderCard(phonePage), 9, "Tap to zoom");
+  assertUnderCard("phone", await readUnderCard(phonePage), 9, "Tap to zoom", EXPECT_PRICED);
 
   // The phone zoom is a different pair of numbers (318x444) drawn by CSS alone, so
   // it is measured rather than assumed from the desktop pass.

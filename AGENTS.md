@@ -282,7 +282,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `name` with no `clickRole` to belong to, a row with no steps — each is a step that
   silently did not happen, which photographs a route in the wrong state and reads as
   coverage. `STEP_SPEC` there is the whole vocabulary; a verb added to `run` and not to it
-  throws on the inventory that first uses it. A row that exists at one
+  throws on the inventory that first uses it. Inventory selectors carry no `main` of their
+  own — the verb scopes them, and a second prefix chains `main` inside `main` and matches
+  nothing. A run that photographs NOTHING fails, whatever the cause: that backstop covers
+  the causes the preflight cannot name. A row that exists at one
   width only says so with `"widths": ["phone"]` or `["desktop"]`; the other width is skipped
   and reported as such rather than counted a failure. There is deliberately no optional
   click: a step that may find nothing cannot fail, and a cell that photographs a closed route

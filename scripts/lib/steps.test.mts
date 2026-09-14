@@ -46,6 +46,12 @@ describe("inventoryProblems", () => {
     expect(first({ fill: "" })).toContain("must not be empty");
   });
 
+  it("allows an empty `text`, which is how a field is cleared", () => {
+    // `run` passes `step.text ?? ""` on purpose: an empty SELECTOR is a step the
+    // runner skips, an empty VALUE is a step that does something.
+    expect(first({ fill: "input", text: "" })).toBe("");
+  });
+
   it("refuses a value of the wrong type", () => {
     expect(first({ click: 7 })).toContain("must be a string");
     expect(first({ settle: "soon" })).toContain("must be a number");

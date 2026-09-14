@@ -46,16 +46,21 @@ const STEP_SPEC = {
   // non-empty string that throws AFTER sign-in — which is a preflight that let
   // the thing through.
   name: { type: "regex", ownedBy: "clickRole" },
-  text: { type: "string", ownedBy: "fill" },
+  // `allowEmpty`, because `fill("")` is how a field is CLEARED — `run` passes
+  // `step.text ?? ""` deliberately. An empty selector is a step the runner
+  // skips; an empty value is a step that does something.
+  text: { type: "string", allowEmpty: true, ownedBy: "fill" },
 };
 
 export const STEP_KEYS = new Set(Object.keys(STEP_SPEC));
 
 function typeProblem(key, value) {
-  const { type } = STEP_SPEC[key];
+  const { type, allowEmpty } = STEP_SPEC[key];
   if (type === "string") {
     if (typeof value !== "string") return `must be a string, got ${JSON.stringify(value)}`;
-    if (value === "") return "must not be empty — an empty selector is a step the runner skips";
+    if (value === "" && allowEmpty !== true) {
+      return "must not be empty — an empty selector is a step the runner skips";
+    }
     return null;
   }
   if (type === "regex") {
