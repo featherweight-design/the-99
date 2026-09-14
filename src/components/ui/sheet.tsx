@@ -119,7 +119,16 @@ export function Sheet({
   // Closed returns null rather than hiding: a hidden duplicate would put a
   // second copy of every control in the accessibility tree, which is the rule
   // the rack's sheet states first and the one most easily lost in a rewrite.
-  if (!open) return null;
+  if (!open) {
+    // And it carries no gesture across the close. A caller that keeps this
+    // mounted and flips `open` mid-drag would otherwise reopen to a stale
+    // `translateY`, with the next gesture measured from the old coordinate.
+    // Adjusted during render rather than in an effect: React re-runs this pass
+    // before touching the DOM, so nothing paints with the stale value.
+    dragStartY.current = null;
+    if (dragY !== 0) setDragY(0);
+    return null;
+  }
 
   const onHandlePointerDown = (e: React.PointerEvent) => {
     dragStartY.current = e.clientY;

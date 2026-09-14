@@ -132,6 +132,18 @@ describe("Sheet", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
+  it("carries no gesture across a close", () => {
+    // A caller that keeps this mounted and flips `open` mid-drag would reopen to
+    // a stale offset, with the next gesture measured from the old coordinate.
+    const { rerender } = render(<Sheet {...props} open />);
+    fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle(), { clientY: 50, pointerId: 1 });
+    expect(screen.getByRole("dialog").getAttribute("style")).toContain("translateY(50px)");
+    rerender(<Sheet {...props} open={false} />);
+    rerender(<Sheet {...props} open />);
+    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
+  });
+
   it("draws no header of its own when the caller gives none", () => {
     // The deck sheet's header is a match sentence with no ✕; forcing one would
     // put two dismiss controls in a row.

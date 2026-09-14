@@ -202,3 +202,28 @@ describe("DeckFilterSheet mounting", () => {
     expect(document.body.style.overflow).not.toBe("hidden");
   });
 });
+
+describe("DeckFilterSheet drag-to-dismiss", () => {
+  it("dismisses on a drag past the threshold", () => {
+    // The route's own wiring, not the shell's. `sheet.test.tsx` proves the shell
+    // in isolation, so dropping `onDismiss` or the handle props here would leave
+    // every existing test green while /decks quietly lost the gesture.
+    const onDismiss = vi.fn();
+    render(
+      <DeckFilterSheet
+        open
+        filters={EMPTY_FILTERS}
+        onChange={() => {}}
+        shown={3}
+        total={9}
+        onDismiss={onDismiss}
+        autoFocusSearch={false}
+      />,
+    );
+    const handle = document.querySelector('[role="dialog"] [aria-hidden]')!;
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 90, pointerId: 1 });
+    fireEvent.pointerUp(handle, { clientY: 90, pointerId: 1 });
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+});
