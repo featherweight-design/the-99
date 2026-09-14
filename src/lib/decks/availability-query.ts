@@ -223,11 +223,36 @@ export async function loadAvailability(
     ),
     -- The CURRENT deck's own claim, and only it. A null excludeDeckId makes this
     -- empty, so every figure below collapses to the un-excluded model.
+    --
+    -- Read from the DRAFT — deck_cards plus the deck's live commander columns —
+    -- and NOT from all_claims, which for a sleeved deck states the version. The
+    -- difference is the whole of this fix: a card the draft added contributes nothing
+    -- to a version-shaped own_claim, so a deck whose only copy is sleeved senior
+    -- elsewhere computed free = owned - 0 - 1 = 0 and went silent, while
+    -- loadDeckBuyRows — which reads deck_cards — billed the purchase. free is
+    -- documented as this deck's surplus, so it has to be measured against what
+    -- this deck is asking for now.
     own_claims as (
-      select ac.oracle_id, sum(ac.quantity)::int as own_claim
-      from all_claims ac
-      where ${skip}::uuid is not null and ac.deck_id = ${skip}::uuid
-      group by ac.oracle_id
+      select t.oracle_id, sum(t.quantity)::int as own_claim
+      from (
+        select dc.oracle_id, dc.quantity
+        from deck_cards dc
+        where ${skip}::uuid is not null and dc.deck_id = ${skip}::uuid
+        union all
+        -- Both commanders, for the reason the claim model unions them: neither is
+        -- a deck_cards row, so without these arms the vantage deck's own
+        -- commander reads as a copy it is not using.
+        select d.commander_oracle_id, 1
+        from decks d
+        where ${skip}::uuid is not null and d.id = ${skip}::uuid
+          and d.user_id = ${userId}
+        union all
+        select d.partner_oracle_id, 1
+        from decks d
+        where ${skip}::uuid is not null and d.id = ${skip}::uuid
+          and d.user_id = ${userId} and d.partner_oracle_id is not null
+      ) t
+      group by t.oracle_id
     ),
     -- The vantage deck's own place in the queue. Read from decks rather than
     -- from claim_decks_all because a deck is still sleeved or not when it
@@ -311,11 +336,13 @@ export async function loadAvailability(
       -- brew takes the total too: it outranks nothing, so every hard claim is
       -- ahead of it.
       --
-      -- One consequence worth stating: own_claims also reads all_claims, so
-      -- on a committed deck's own page a card the DRAFT added contributes
-      -- nothing to own_claim and reads as free when a free copy exists. That
-      -- is correct — the deck has not sleeved it — and pnpm probe:claims
-      -- asserts it.
+      -- own_claim is the DRAFT's ask, not the version's, so a card the draft
+      -- added is measured like any other card this deck is asking for: with a
+      -- spare copy in the collection it still reads free, and with its only copy
+      -- sleeved senior elsewhere it reads short by one. Seniority is what decides
+      -- between the two, and it already puts an unsleeved card behind everything
+      -- sleeved — the draft add needs no separate rule, and must not get the
+      -- silence a version-shaped own_claim gave it.
       --
       -- The senior subtraction is capped at the supply, because the decks ahead of
       -- this one cannot take copies that do not exist. Four finished decks each

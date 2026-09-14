@@ -22,8 +22,8 @@ import { availabilityState } from "./availability";
  *
  * `selfExcluded` is mandatory and `free` is read, never recomputed. The map came
  * from a query given this deck's id, so on this list
- * `free = (owned − ownClaim) − (hard − ownHardClaim)`; `owned − hard` is the
- * off-decklist formula and is silently wrong here (Addendum 2 §6 / R5 §6).
+ * `free = owned − ownClaim − seniorHard`; `owned − hard` is the off-decklist
+ * formula and is silently wrong here (Addendum 2 §6 / R5 §6).
  *
  * Basics are never in Shopping — the fill never buys them, and asserting it here
  * means a future change to the fill fails this filter loudly.

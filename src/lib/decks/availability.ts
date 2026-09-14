@@ -61,10 +61,17 @@ export type Availability = {
    * finished decks want more copies than exist.
    *
    * Off-decklist (no `excludeDeckId`) this is `owned − hard`. On a deck's own
-   * decklist it is `(owned − ownClaim) − (hard − ownHardClaim)`, because
-   * Addendum 2 §6 excludes that deck from supply as well as claims. The query
-   * computes it either way; **never recompute it from `owned` and `hard`**,
-   * which is right only in the first case and silently wrong in the second.
+   * decklist it is `owned − ownClaim − seniorHard`, because Addendum 2 §6
+   * excludes that deck from supply as well as claims, and seniority decides
+   * which of two claimants goes short. The query computes it either way;
+   * **never recompute it from `owned` and `hard`**, which is right only in the
+   * first case and silently wrong in the second.
+   *
+   * `ownClaim` in that second form is the deck's DRAFT ask — its live
+   * `deck_cards` plus its commanders — not the ask its committed version
+   * states. A card the draft added therefore reads short when its only copy is
+   * sleeved senior elsewhere, which is what `loadDeckBuyRows` has always
+   * billed; a version-shaped figure made the two surfaces disagree.
    */
   free: number;
   /**

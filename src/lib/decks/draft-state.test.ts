@@ -57,10 +57,13 @@ describe("bucketDraftAdds / unfreeAdds", () => {
     { oracleId: "b", from: 1, to: 2 },
   ];
 
+  // `free` is the surplus with this draft's whole ask already subtracted, so
+  // `a` owning two and asking two is covered exactly and `b` owning none and
+  // asking two is two copies short.
   it("buckets against a read that came back", () => {
     const bucketed = bucketDraftAdds(adds, new Map([
-      ["a", { owned: 2, hard: 0, soft: 0, free: 2, claims: [] }],
-      ["b", { owned: 0, hard: 0, soft: 0, free: 0, claims: [] }],
+      ["a", { owned: 2, hard: 0, soft: 0, free: 0, claims: [] }],
+      ["b", { owned: 0, hard: 0, soft: 0, free: -2, claims: [] }],
     ]));
     expect(bucketed.map((a) => a.bucket)).toEqual(["free", "unowned"]);
     expect(unfreeAdds(bucketed).map((a) => a.oracleId)).toEqual(["b"]);

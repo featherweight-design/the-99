@@ -87,19 +87,26 @@ export function bucketAdds(
         bucket: "unowned" as const, heldBy: [],
       };
     }
-    if (entry.free >= needed) {
+    // `free >= 0`, not `free >= needed`. `free` is this deck's SURPLUS with its
+    // whole draft ask — this change included — already subtracted, so a
+    // non-negative figure means the collection covers the add and every other
+    // copy this list wants. Testing it against `needed` would subtract the delta
+    // a second time and call a covered add short.
+    if (entry.free >= 0) {
       return {
         oracleId: change.oracleId, needed, shortfall: 0,
         bucket: "free" as const, heldBy: [],
       };
     }
-    // free can be negative — on a deck's own page it is a surplus, and a
-    // shortfall there is already someone else's copy. Clamping it at zero
-    // stops a deficit being counted twice.
+    // Capped at `needed`, because the deficit is over the whole ask while this
+    // receipt is about this change. A deck going 1 → 2 whose single copy is
+    // sleeved senior elsewhere is two copies short in total and one copy short
+    // BY THIS EDIT, and the copy its version already owed is not this commit's
+    // purchase to quote.
     return {
       oracleId: change.oracleId,
       needed,
-      shortfall: needed - Math.max(entry.free, 0),
+      shortfall: Math.min(needed, -entry.free),
       bucket: entry.claims.length > 0 ? ("claimed" as const) : ("unowned" as const),
       heldBy: entry.claims,
     };

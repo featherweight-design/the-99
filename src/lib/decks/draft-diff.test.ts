@@ -5,6 +5,7 @@ const A = "00000000-0000-0000-0000-00000000000a";
 const B = "00000000-0000-0000-0000-00000000000b";
 const C = "00000000-0000-0000-0000-00000000000c";
 const D = "00000000-0000-0000-0000-00000000000d";
+const E = "00000000-0000-0000-0000-00000000000e";
 
 describe("draftDiff", () => {
   it("reports a card the draft added", () => {
@@ -58,10 +59,20 @@ describe("draftDiff", () => {
 });
 
 describe("bucketAdds", () => {
+  // Every `free` here is the DRAFT vantage: this deck's surplus with its whole
+  // ask, the add included, already subtracted. A non-negative figure therefore
+  // means the collection covers the add, and a negative one is the deficit over
+  // the whole ask — which is why the fixtures below state how much each deck is
+  // asking for rather than how many copies it owns.
   const avail = new Map([
+    // Two copies spare after the ask.
     [A, { free: 2, claims: [] as { id: string; name: string }[] }],
-    [B, { free: 0, claims: [{ id: "d1", name: "Scrim Recovery" }] }],
-    [D, { free: 1, claims: [{ id: "d1", name: "Scrim Recovery" }] }],
+    // One copy owned, sleeved senior in Scrim Recovery, and this draft wants it.
+    [B, { free: -1, claims: [{ id: "d1", name: "Scrim Recovery" }] }],
+    // Asking five against one copy held by Scrim Recovery: four short.
+    [D, { free: -4, claims: [{ id: "d1", name: "Scrim Recovery" }] }],
+    // The same arithmetic with nobody to name.
+    [E, { free: -4, claims: [] as { id: string; name: string }[] }],
   ]);
 
   it("calls a card with enough free copies free", () => {
@@ -103,7 +114,7 @@ describe("bucketAdds", () => {
   });
 
   it("calls a partially covered add unowned when nobody holds the rest", () => {
-    const [row] = bucketAdds([{ oracleId: A, from: 0, to: 5 }], avail);
+    const [row] = bucketAdds([{ oracleId: E, from: 0, to: 5 }], avail);
     expect(row.bucket).toBe("unowned");
     expect(row.heldBy).toEqual([]);
   });
@@ -121,11 +132,23 @@ describe("bucketAdds", () => {
     expect(row.shortfall).toBe(0);
   });
 
-  // A negative free is this deck's own deficit, already owed to a senior deck.
-  // Subtracting it would add the same missing copy to the bill twice.
-  it("does not double-charge when free is negative", () => {
+  // The deficit spans the deck's whole ask while the receipt covers one edit, so
+  // the shortfall is capped at the delta. A deck two copies short overall that
+  // added one copy this session is quoted one, not two: the other was already
+  // owed before this draft touched the card.
+  it("caps the shortfall at the copies this edit added", () => {
     const short = new Map([[B, { free: -2, claims: [] as { id: string; name: string }[] }]]);
-    const [row] = bucketAdds([{ oracleId: B, from: 0, to: 1 }], short);
+    const [row] = bucketAdds([{ oracleId: B, from: 1, to: 2 }], short);
+    expect(row.needed).toBe(1);
     expect(row.shortfall).toBe(1);
+  });
+
+  // Nothing spare and nothing missing. The collection covers the ask exactly, so
+  // the add is free — the figure is a surplus, and zero surplus is still covered.
+  it("calls an exactly covered add free", () => {
+    const exact = new Map([[B, { free: 0, claims: [{ id: "d1", name: "Scrim Recovery" }] }]]);
+    const [row] = bucketAdds([{ oracleId: B, from: 0, to: 1 }], exact);
+    expect(row.bucket).toBe("free");
+    expect(row.shortfall).toBe(0);
   });
 });
