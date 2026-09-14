@@ -297,19 +297,6 @@ export function ResumeDecks({
         </span>
       </div>
 
-      {/* Two-up only where two will FIT, and the threshold is arithmetic rather
-          than a guess. The dashboard's left column is the viewport less 52px of
-          page padding, a 20px gap and the 316px rail, and two rows split it with
-          a 12px gap. Each row needs its 116px portrait inset, then the meta
-          line's fixed content — a status pill at about 62, a 14px gap and a
-          non-shrinking count at about 45 — then 18px of right padding: 255px
-          before the commander's name gets a pixel, and that name is the only
-          child that shrinks.
-
-          At 640px each row is 120px, so the text had NEGATIVE room and was
-          clipped away entirely. Two rows clear 255 each at 1000px of viewport,
-          which is where they go side by side; below it they stack. The row
-          itself is untouched — same band, same portrait, same inset. */}
       {/* 2×2 above 1180px, stacked below, and the threshold is arithmetic. The
           old two-up line was drawn for a row with no stamp: the meta line's
           fixed content is a status pill at about 62, two 14px gaps, a

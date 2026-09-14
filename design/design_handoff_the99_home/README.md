@@ -112,12 +112,16 @@ these are the shipped figures.
 
 Two things the build added that this document did not ask for, both forced by the fourth row:
 
-- **The row is `flex: none` below 1000px.** The container is a column there, so `flex: 1` applies to
-  height and four rows in a short column each shrink below the stated 72. Two rows never overflowed,
-  which is why the defect arrives with the fourth.
-- **The two-column body starts at 1000px**, not at `sm`. Between 640 and 999 the old split put
-  Commitments in a rail beside the rows, so a reader at 900px met a different block order from a
-  reader at either width this handoff draws.
+- **The row is `flex: none` below the two-up threshold.** The container is a column there, so
+  `flex: 1` applies to height and four rows in a short column each shrink below the stated 72. Two
+  rows never overflowed, which is why the defect arrives with the fourth.
+- **The pair, and the two-column body with it, start at 1180px** — not at `sm`, and not at the 1000
+  this block carried before the stamp existed. The stamp adds ~78px of non-shrinking mono to a meta
+  line that already held 255, so a row needs ~347, a pair ~706, and with the page padding, the gap
+  and the 316px rail that is 1106px of viewport. At 1024 the stamp was clipped away entirely by the
+  row's own overflow. Between 640 and 1179 the old split also put Commitments in a rail beside the
+  rows, so a reader there met a different block order from a reader at either width this handoff
+  draws.
 
 ## Decisions log
 

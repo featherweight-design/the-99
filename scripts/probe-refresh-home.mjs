@@ -144,8 +144,9 @@ async function main() {
     { label: "tablet", width: 1100, height: 900 },
     // 1200 is the tightest two-up: the rows pair at 1180, so this is where the
     // meta line has least room for the pill, the count and the stamp together.
-    // At 1024 — inside the old 1000px threshold — every stamp was clipped away
-    // by the row's own overflow, which is the defect this width exists to hold.
+    // The clipping this width holds the line against was measured at 1024, back
+    // when the pair started at 1000 — that width now stacks, so it can no longer
+    // reproduce it, and 1200 is where the same arithmetic is tightest today.
     { label: "narrow-pair", width: 1200, height: 900 },
     { label: "mid", width: 900, height: 900 },
     { label: "phone", width: 390, height: 844, isMobile: true, hasTouch: true },
@@ -163,8 +164,24 @@ async function main() {
     const blocks = await page.evaluate(`(${READ_BLOCKS})()`);
     const rows = await page.evaluate(`(${READ_ROWS})()`);
 
+    // The prerequisite, stated once rather than discovered as a null three lines
+    // down. This probe reads the populated Home: a first-run account draws the
+    // checklist instead and has no blocks at all, and an account with fewer than
+    // four decks cannot satisfy the row checks. It does not build that fixture —
+    // Home renders the whole account, so a probe-owned deck would be four rows
+    // among the reader's own — so it asks for an account that has one.
+    if (rows === null || rows.length < 4) {
+      console.error(
+        `PREREQUISITE: ${BASE} must be signed in to an account with a collection read and at least ` +
+        `four decks. Home drew ${rows === null ? "no resume block at all" : `${rows.length} row(s)`}.`,
+      );
+      failures += 1;
+      await context.close();
+      break;
+    }
+
     // 1 + 2. The same blocks at every width, in the same READING order — and no
-    // rail. Reading order is not `y` order: above 1000px the page is two
+    // rail. Reading order is not `y` order: above 1180px the page is two
     // columns, and Commitments, as the whole right rail, starts higher up the
     // page than the resume block it follows. So the labels are grouped by
     // column first, which is how a reader takes them.
@@ -187,6 +204,22 @@ async function main() {
       blocks.some((b) => /Your decks/.test(b.text)),
       false,
     );
+    // And no rail ROWS, which the heading check alone cannot see: a rail whose
+    // label was removed, or whose rows moved under another container, would pass
+    // it. Every link to a DECK on this page has to be one of the four resume
+    // rows — `/decks/new` is the header's CTA and `/decks` the footer's, so the
+    // test is the id-shaped tail rather than the prefix.
+    const strayDeckLinks = await page.evaluate(`(() => {
+      const section = [...document.querySelectorAll('main h2')]
+        .find((h) => (h.textContent ?? '').trim().startsWith('Pick up'))
+        ?.closest('section') ?? null;
+      return [...document.querySelectorAll('main a[href^="/decks/"]')]
+        .filter((a) => a.getClientRects().length)
+        .filter((a) => !['/decks/new', '/decks/import'].includes(a.getAttribute('href')))
+        .filter((a) => !section || !section.contains(a))
+        .map((a) => a.getAttribute('href'));
+    })()`);
+    check(`${vp.label}: no deck link outside the resume block`, strayDeckLinks, []);
 
     // 3. Four rows, and how they are laid out.
     check(`${vp.label}: four resume rows`, rows.length, 4);
@@ -231,9 +264,9 @@ async function main() {
       console.log(`      (${rows.length - cropped.length} row(s) drew the artless identity gradient)`);
     }
 
-    // 7. The width nobody drew. A name clipped to nothing is the defect this
-    //    block already shipped once, at 640px, and the reason 1000 is the
-    //    threshold rather than a Tailwind stop.
+    // 7. The widths nobody drew. A name clipped to nothing is the defect this
+    //    block already shipped once, at 640px, and the reason 1180 is arithmetic
+    //    rather than a Tailwind stop.
     check(`${vp.label}: every row has room for its name`, rows.every((r) => r.nameWidth > 40), true);
 
     // 8. The phone's floor.
