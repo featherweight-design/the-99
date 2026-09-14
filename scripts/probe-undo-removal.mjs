@@ -133,10 +133,19 @@ async function readColumn(page) {
       const row = control.closest("li, div[class*='rounded']") ?? control.parentElement;
       const box = control.getBoundingClientRect();
       const rowBox = row.getBoundingClientRect();
+      // The NAME, which is the thing that wraps. The row's own height is a
+      // poor proxy: a wrapped name still fits inside a 44px control's box, so
+      // comparing the row to the control would call a two-line row one line.
+      const name = row.querySelector("button, a") ?? row;
+      const nameStyle = getComputedStyle(name);
+      const nameLines = Math.round(
+        name.getBoundingClientRect().height / (parseFloat(nameStyle.lineHeight) || 1),
+      );
       return {
         width: Math.round(box.width),
         height: Math.round(box.height),
         rowHeight: Math.round(rowBox.height),
+        nameLines,
         // Right-aligned: the label's own right edge sits within a few pixels of
         // its target's, never centred inside it.
         rightGap: Math.round(rowBox.right - box.right),
@@ -252,6 +261,9 @@ for (const [label, r] of Object.entries(report)) {
   // database, because the optimistic paint says nothing about the server.
   check("the draft actually grew", r.persisted, 6);
   check("page scrolls sideways", r.before.overflowsX, false);
+  // And after the row leaves: a reflow could push the page sideways at exactly
+  // the moment the feature acts, which is the one moment this probe watches.
+  check("page scrolls sideways after the restore", r.after.overflowsX, false);
   for (const [i, row] of r.before.rows.entries()) {
     // 44px square at 390px, 34px tall above it. The width floor is the phone's
     // target; desktop sizes to its label.
@@ -261,11 +273,10 @@ for (const [label, r] of Object.entries(report)) {
     } else {
       check(`row ${i} control height`, row.height >= 34, true);
     }
-    // One line. Measured against the control rather than a magic number: the
-    // row is the control's own box plus the row's padding, and a row that
-    // wrapped would clear twice the control's height. 62px on the phone is a
-    // 44px target with 9px of padding either side, not two lines.
-    check(`row ${i} is one line`, row.rowHeight < row.height * 2, true);
+    // One line, measured on the element that wraps rather than on the row: a
+    // wrapped name still fits inside a 44px control's box, so a row-to-control
+    // comparison would call a two-line row one line.
+    check(`row ${i} name is one line`, row.nameLines, 1);
     // Alignment is NOT checked here, and that is deliberate: the control's box
     // hugs its label at both widths, so centring and right-aligning render
     // within a pixel of each other and a measurement passes either way. The
