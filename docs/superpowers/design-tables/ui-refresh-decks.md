@@ -54,8 +54,16 @@ parentheses where they differ.
 
 ## Status → token map (the one rule, six instances)
 
-Per `STATES-deck-statuses.md`. Pill fill is the status colour at `2E` alpha (18%), border at `80`
-alpha (50%), label at full strength — one rule, six instances, no per-theme hex.
+Per `STATES-deck-statuses.md`, **corrected 2026-09-14 to the shipped component**. Pill fill is the
+status colour at 18% mixed into `--bg`, the border is **one opaque `1px solid var(--border-strong)`
+for every status** — dashed on Building alone — and the label is the token at full strength. One
+rule, six instances, no per-theme hex.
+
+The `80` alpha (50%) border this paragraph used to specify was retired by the art-wash readability
+amendment on 2026-09-11 and ratified on 2026-09-12, because a 50% fade of the status colour was the
+worst-reading edge in that report; the table below already drew the shipped hairline, so only this
+sentence was out of date. Building's dash survives that retirement: a line style is not an alpha
+fade, and it is the one status signal that survives greyscale and colour blindness.
 
 | Status | Token | Pill fill | Pill border | Pill label | Bar fill | List keyline |
 |---|---|---|---|---|---|---|
@@ -1476,10 +1484,11 @@ Cross-cutting conditions on the tile:
    phone sheet.
 7. **Inactive filter trigger (phone) is not drawn** — only the accent-bordered, badged active
    state.
-8. **The pill alpha rule has two exceptions in the drawing.** `STATES` states one rule (18% fill,
-   50% border); Draft is drawn at 16% with a `--border-strong` hairline and Building at 14% with a
-   `--border-dashed` hairline. The sheet's ON chips use a third pair (14% / 16% with a full-strength
-   border).
+8. ~~**The pill alpha rule has two exceptions in the drawing.**~~ **CLOSED 2026-09-14.** The
+   drawing was right and the prose rule was stale. `STATES-deck-statuses.md` now states all six
+   values per status — 18% fill, with Draft at 16% and Building at 14%, each over `--bg` — and one
+   opaque `--border-strong` hairline for every status, dashed on Building. `status-style.ts` is the
+   single writer. The sheet's ON chips are a different control and keep their own pair.
 9. **Colour pip hairline is specified but not drawn.** `STATES` §5 requires a `--border-strong`
    hairline on each 9px pip; no pip in the HTML has a border.
 10. **Progress semantics for Over are asserted, not derived.** The bar is full at 104/99; there is
