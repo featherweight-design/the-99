@@ -112,6 +112,10 @@ async function run(browser) {
   await page.waitForSelector("main [data-shelf-line]", { timeout: 30_000 });
   userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
   if (!userId) throw new Error("could not read the signed-in Clerk user id");
+  // Every folder this account already has. Anything outside this set after the
+  // create is this run's, and nothing inside it is ever touched by cleanup.
+  const before = await pool.query("select id from deck_folders where user_id = $1", [userId]);
+  const idsBefore = new Set(before.rows.map((r) => r.id));
 
   // Every appearance of the route's loading screen, and every RSC round trip.
   await page.evaluate(() => {
@@ -157,12 +161,16 @@ async function run(browser) {
   console.log(`      navigations: ${JSON.stringify(loadUrls)}`);
 
   // The shelf the reader is on after a create. Hugh's call: it must not move.
+  // A row this run did not create is never recorded. The name carries a
+  // timestamp, but a collision would mean the create was REFUSED and the id
+  // found belongs to somebody's real folder — which cleanup would then delete.
   const made = await pool.query("select id from deck_folders where name = $1 and user_id = $2", [
     FOLDER,
     userId,
   ]);
-  made.rows.forEach((r) => madeFolderIds.push(r.id));
-  check("the create wrote exactly one folder row", made.rows.length, 1);
+  const fresh = made.rows.filter((r) => !idsBefore.has(r.id));
+  fresh.forEach((r) => madeFolderIds.push(r.id));
+  check("the create wrote exactly one folder row", fresh.length, 1);
 
   const onShelf = await page.evaluate(
     () => new URLSearchParams(window.location.search).get("folder"),
@@ -171,10 +179,14 @@ async function run(browser) {
 
   // The deck about to be borrowed, and the shelf it is on now. Read before the
   // move, so the `finally` can put it back where it was.
-  const firstName = await onPage(page, "li h3").first().textContent();
+  // BY ID, off the tile's own link. Deck names are not unique per account, so a
+  // name lookup can borrow one row and restore another — and the deck it fails
+  // to restore is the one the probe actually moved.
+  const href = await onPage(page, "li a[href^='/decks/']").first().getAttribute("href");
+  const borrowedId = href?.split("/")[2] ?? null;
   const borrowed = await pool.query(
-    "select id, folder_id from decks where user_id = $1 and name = $2 limit 1",
-    [userId, firstName?.trim()],
+    "select id, folder_id from decks where user_id = $1 and id = $2",
+    [userId, borrowedId],
   );
   check("the borrowed deck was found in the database", borrowed.rows.length, 1);
   borrowedDeck = borrowed.rows[0] ?? null;

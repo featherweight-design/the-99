@@ -84,6 +84,7 @@ function view(decks: DeckListItem[], folders: DeckFolderWithCount[] = []) {
 beforeEach(() => {
   window.history.replaceState(null, "", "/decks");
   actionStub.move.mockClear();
+  routerStub.refresh.mockClear();
   actionStub.move.mockResolvedValue(true);
   // `renderWide` replaces this stub; restore the phone default every test, or
   // the first wide render silently re-forms every test after it.
@@ -681,14 +682,38 @@ describe("DecksView", () => {
     // folder the create returned.
     const first = screen.getAllByRole("listitem")[0].querySelector("h3")?.textContent;
     const asked = shelvedDecks().find((d) => d.name === first)?.id;
-    await waitFor(() => expect(actionStub.move).toHaveBeenCalledWith(asked, "f-new"));
-    const said = [...document.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent);
-    expect(said).toContain("Filed under Draft pile.");
+    // Both in the same wait: the call proves the action was reached, and the
+    // announcement proves `onCreate` resumed after awaiting it.
+    await waitFor(() => {
+      expect(actionStub.move).toHaveBeenCalledWith(asked, "f-new");
+      expect(
+        [...document.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
+      ).toContain("Filed under Draft pile.");
+    });
     // E21's other half: focus goes back to the card's own ⋯, which survives on
     // All decks. Not left on the dismissed dialog, and not on the body.
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getAllByRole("button", { name: /^Actions for/ })[0]),
     );
+  });
+
+  it("refetches the route only when a move threw", async () => {
+    // Every other outcome reaches this view through the action's own
+    // `revalidatePath`, and asking for the route again on top of that fetched an
+    // expensive payload twice per write. A rejection is the exception: it may
+    // have committed with its response lost, so no payload is coming.
+    actionStub.move.mockResolvedValueOnce(false);
+    renderWide(view(shelvedDecks(), twoFolders));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Actions for/ })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
+    await waitFor(() => expect(actionStub.move).toHaveBeenCalled());
+    expect(routerStub.refresh).not.toHaveBeenCalled();
+
+    actionStub.move.mockRejectedValueOnce(new Error("outage"));
+    fireEvent.click(screen.getByRole("button", { name: /^Move / }));
+    fireEvent.click(screen.getByRole("button", { name: "Commander night" }));
+    await waitFor(() => expect(routerStub.refresh).toHaveBeenCalledTimes(1));
   });
 
   it("ignores a hand-edited folder id", () => {

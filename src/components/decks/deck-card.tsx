@@ -122,7 +122,7 @@ interface DeckCardProps {
   /** Passed through to the menu's move mode — see `DeckCardOverflow`. */
   onCreateFolder: () => void;
   say: (announcement: string) => void;
-  onMoved: (result: { refused: boolean }) => void;
+  onMoved: (result: { refused: boolean; threw?: boolean }) => void;
   keepsFocus: boolean;
   /** The outcome of a create started from this card's move mode, once it lands. */
   closeAfterCreate: { seq: number; filed: boolean } | null;

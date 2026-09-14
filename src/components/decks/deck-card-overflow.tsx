@@ -39,7 +39,7 @@ interface DeckCardOverflowProps {
    * and says whether the move was refused, because a refusal can mean the deck
    * is gone and this card with it.
    */
-  onMoved: (result: { refused: boolean }) => void;
+  onMoved: (result: { refused: boolean; threw?: boolean }) => void;
   /**
    * Whether this card stays on screen after a move — true on All decks, false on
    * a named shelf, where the deck leaves the grid and the view takes focus.
@@ -307,14 +307,14 @@ export function DeckCardOverflow({
               currentId={shelf.id}
               onCreate={onCreateFolder}
               say={say}
-              onRefused={() => {
+              onRefused={({ threw }) => {
                 // M6: the row reverts to the shelf it named, which means the
                 // menu — not a destination list whose focused button is about
                 // to be refreshed away.
                 setMovedTo(null);
                 wantsMoveRowFocus.current = true;
                 setMode("menu");
-                onMoved({ refused: false });
+                onMoved({ refused: false, threw });
               }}
               onMoved={(next) => {
                 setMovedTo({ ...next, from: folderId });

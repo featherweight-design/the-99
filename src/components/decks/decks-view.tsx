@@ -8,7 +8,7 @@
 // with `history.replaceState` instead, which is what AGENTS.md's "Caching a
 // list a reader flips between" asks for on a re-parameterised list.
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -264,6 +264,11 @@ export function DecksView({
    * the deck is filed into the folder it just made, rather than being left
    * unfiled while the page walks off to the new empty shelf.
    */
+  // Held for ONE path only — a move whose action rejected, where the server may
+  // have committed with its response lost. Every other outcome arrives through
+  // that action's own `revalidatePath`, and refreshing on top of it fetched an
+  // expensive route twice per write.
+  const router = useRouter();
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   // Which card's overflow panel a finished create-from-move should close, and a
   // sequence so a second create on the same card closes it again.
@@ -923,7 +928,12 @@ export function DecksView({
                 // closes on a move that landed (errata E21) and returns to its
                 // MENU on one that did not (M6) — the state it would be in had
                 // the destination list performed the move itself.
-                if (creatingFor) panelTakesFocus.current = state.shelf === ALL_DECKS;
+                // Only where a panel will still be there to take it. A `false`
+                // move is allowed to mean the deck itself is gone, and then the
+                // card unmounts with nothing to focus — which is exactly when
+                // the dialog's own rescue is the answer.
+                if (creatingFor)
+                  panelTakesFocus.current = state.shelf === ALL_DECKS && answer !== false;
                 if (creatingFor)
                   setCreateFiled((prev) => ({
                     deckId: creatingFor,
@@ -1004,7 +1014,14 @@ export function DecksView({
                         ? { seq: createFiled.seq, filed: createFiled.filed }
                         : null
                     }
-                    onMoved={({ refused }) => {
+                    onMoved={({ refused, threw }) => {
+                      // THE ONE PATH THAT STILL REFRESHES. Every other outcome
+                      // reaches the client through the action's own
+                      // `revalidatePath`, which is why the blanket
+                      // `router.refresh()` went; a rejected action may have
+                      // committed on the server with its response lost, and no
+                      // payload is coming for that one.
+                      if (threw) router.refresh();
                       // Focus goes to the shelf whenever this card may not
                       // survive: on a named shelf a successful move takes it off
                       // the grid, and a REFUSAL can mean the deck itself is gone
