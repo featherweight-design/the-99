@@ -86,7 +86,7 @@ A task that appears to contradict one of these has misread the task.
 
 12. **`To buy, all decks` double-counts across decks, deliberately.** A card wanted by two decks and owned in zero copies is two copies to buy. The row is a shopping roll-up, not a distinct-card count.
 
-13. **Colour is status, and status only.** Draft `--fg-faint` · Building `--fg-body` · Over `--danger` · Unresolved `--warning` · To buy `--accent` · Complete `--success`. Pill fills are the status colour at `2E` alpha with an `80` alpha border and the status colour as label — one rule, six instances, **no per-theme hex anywhere**. No other element on Home or Decks is tinted.
+13. **Colour is status, and status only.** Draft `--fg-faint` · Building `--fg-body` · Over `--danger` · Unresolved `--warning` · To buy `--accent` · Complete `--success`. Pill fills are the status colour at `2E` alpha with an `80` alpha border and the status colour as label — one rule, six instances, **no per-theme hex anywhere**. No other element on Home or Decks is tinted. *(The border half is superseded — see the note at ruling 13's implementation section below.)*
 
 14. **One filled button per screen, and it is bone (`--fg` on `--bg`), never accent.** Accent means *in use / to buy*, so it is unavailable for actions. Everything else is a 32px hairline pill: `--border-strong`, 12.5px label, 14px side padding. Phone floors every target at 44px.
 
@@ -1415,6 +1415,8 @@ PR C changes no pixels, so it needs no design review — but it does need the Co
   - `<StatusPillBadge status={...} />` — the 22px pill.
 
 **Locked ruling 13 lives here and nowhere else.** Six values, one rule: pill fill is the status colour at `2E` alpha (18%), border at `80` alpha (50%), label at full. Every surface in this feature imports these three functions; **no component writes a status colour itself**, and no hex from `tokens.r6.json` appears anywhere.
+
+> **Superseded as to the border.** The art-wash readability amendment replaced the `80` alpha border with one opaque `1px solid var(--border-strong)` for every status (dashed on Building alone), **ratified 2026-09-08**; Draft and Building also take 16% and 14% fills. The fill-and-label half of the ruling stands, and `src/lib/decks/status-style.ts` is still the only writer. Current statement: `design/design_handoff_the99_refresh/STATES-deck-statuses.md`. This plan is left as the record of what was locked at the time.
 
 **Two drawn exceptions to that rule, per the design table's Status → token map.** `STATES-deck-statuses.md` states the flat rule in prose and then draws Draft and Building against it: both are statuses whose token IS a text colour, so a 50%-alpha border of it reads as a second, dimmer piece of text rather than an edge. The drawing gives them a hairline border token and a lighter fill:
 

@@ -6,17 +6,33 @@ The six values and their thresholds are the shipped set. This document adds only
 value** and the **card composition**. If the shipped thresholds and this table disagree, the
 shipped code wins and this table is the thing to correct.
 
-| Value | When | Token | Pill | Bar | Keyline (list rows) |
-|---|---|---|---|---|---|
-| Draft | 0 matched | `--fg-faint` | faint text, `--border-strong` hairline | empty track | `--fg-faint` |
-| Building | 1–98 matched | `--fg-body` | body text, `--border-dashed` hairline | `--fg-body`, proportional | `--fg-body` |
-| Over | 100+ matched | `--danger` | danger at 18% fill, 50% border | `--danger`, full | `--danger` |
-| Unresolved | 99 matched, some line unresolved | `--warning` | warning at 18% / 50% | `--warning`, full | `--warning` |
-| To buy | 99 matched, resolved, some unowned | `--accent` | accent at 18% / 50% | `--accent`, full | `--accent` |
-| Complete | 99 matched, resolved, all owned | `--success` | success at 18% / 50% | `--success`, full | `--success` |
+**Corrected 2026-09-14 to the shipped component, and sent for ratification.** The pill column below
+described a `50%` / `80`-alpha border of the status colour. That edge was retired by the art-wash
+readability amendment and **ratified 2026-09-08** (`design/design_handoff_the99_art_wash/README.md`
+§"Status pill borders", `docs/superpowers/gap-report-art-wash.md`): every status now takes **one opaque
+`1px solid var(--border-strong)` hairline**, because a 50% fade of the status colour was the
+worst-reading edge in that report. Building keeps a **dashed** line of the same colour and weight —
+a line style is not an alpha fade, so the readability rule never reached it, and with colour living
+only in fill and label it is the one status signal that survives greyscale and colour blindness.
+`--border-dashed` is a token this pill does not use; the dash is a `border-style`, not a colour.
 
-Pill fills are the status colour at `2E` alpha with an `80` alpha border and the status colour as
-label — one rule, six instances, no per-theme hex.
+The fills are also stated per value here rather than left to the flat rule, because two of them are
+exceptions: Draft and Building are the statuses whose own token IS a text colour, so they take a
+lighter plate and a quieter label than the four that key off a signal colour.
+
+| Value | When | Token | Pill fill | Pill label | Pill border | Bar | Keyline (list rows) |
+|---|---|---|---|---|---|---|---|
+| Draft | 0 matched | `--fg-faint` | token at **16%** | `--fg-muted` | solid `--border-strong` | empty track | `--fg-faint` |
+| Building | 1–98 matched | `--fg-body` | token at **14%** | `--fg-body` | **dashed** `--border-strong` | `--fg-body`, proportional | `--fg-body` |
+| Over | 100+ matched | `--danger` | token at 18% | `--danger` | solid `--border-strong` | `--danger`, full | `--danger` |
+| Unresolved | 99 matched, some line unresolved | `--warning` | token at 18% | `--warning` | solid `--border-strong` | `--warning`, full | `--warning` |
+| To buy | 99 matched, resolved, some unowned | `--accent` | token at 18% | `--accent` | solid `--border-strong` | `--accent`, full | `--accent` |
+| Complete | 99 matched, resolved, all owned | `--success` | token at 18% | `--success` | solid `--border-strong` | `--success`, full | `--success` |
+
+The fill mixes into `--bg` rather than into transparency — `color-mix(in srgb, var(--token) N%,
+var(--bg))` — so the plate is opaque at every alpha and a bright pixel of art behind it cannot reach
+the label. The alpha rides on the token, so the six themes each get their own value of one rule and
+no component names a colour. `src/lib/decks/status-style.ts` is where all of it is written, once.
 
 ## Card composition — one grid, one order, every status
 

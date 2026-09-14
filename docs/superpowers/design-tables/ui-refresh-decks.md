@@ -54,21 +54,36 @@ parentheses where they differ.
 
 ## Status → token map (the one rule, six instances)
 
-Per `STATES-deck-statuses.md`. Pill fill is the status colour at `2E` alpha (18%), border at `80`
-alpha (50%), label at full strength — one rule, six instances, no per-theme hex.
+Per `STATES-deck-statuses.md`, **corrected 2026-09-14 to the shipped component**. Pill fill is the
+status colour mixed into `--bg` — 18%, with Draft at 16% and Building at 14% — and the border is
+`1px var(--border-strong)` for every status, solid except Building's dash. The label is a **per
+value** token: the status colour for four of them, and `--fg-muted` on Draft.
+
+The `80` alpha (50%) border this paragraph used to specify was retired by the art-wash readability
+amendment and **ratified 2026-09-08**, because a 50% fade of the status colour was the worst-reading
+edge in that report. Building's dash survives that retirement: a line style is not an alpha fade,
+and it is the one status signal that survives greyscale and colour blindness.
 
 | Status | Token | Pill fill | Pill border | Pill label | Bar fill | List keyline |
 |---|---|---|---|---|---|---|
 | Draft | `var(--fg-faint)` | `--fg-faint` @ 16% (drawn `rgba(142,130,105,0.16)`) | `var(--border-strong)` hairline (drawn `#3A3229`) | `var(--fg-muted)` (drawn `#A89B84`) | — (empty track) | `var(--fg-faint)` |
-| Building | `var(--fg-body)` | `--fg-body` @ 14% (drawn `rgba(198,183,154,0.14)`) | `var(--border-dashed)` hairline (drawn `#4A4033`) | `var(--fg-body)` | `var(--fg-body)`, proportional | `var(--fg-body)` |
-| Over | `var(--danger)` | `--danger` @ 18% (drawn `rgba(198,83,63,0.18)`) | `--danger` @ 50% (drawn `rgba(198,83,63,0.5)`) | `var(--danger)` | `var(--danger)`, 100% | `var(--danger)` |
-| Unresolved | `var(--warning)` | `--warning` @ 18% (drawn `rgba(224,145,60,0.18)`) | `--warning` @ 50% (drawn `rgba(224,145,60,0.5)`) | `var(--warning)` | `var(--warning)`, 100% | `var(--warning)` |
-| To buy | `var(--accent)` | `--accent` @ 18% (drawn `rgba(201,162,75,0.18)`) | `--accent` @ 50% (drawn `rgba(201,162,75,0.5)`) | `var(--accent)` | `var(--accent)`, 100% | `var(--accent)` |
-| Complete | `var(--success)` | `--success` @ 18% (drawn `rgba(111,163,104,0.18)`) | `--success` @ 50% (drawn `rgba(111,163,104,0.5)`) | `var(--success)` | `var(--success)`, 100% | `var(--success)` |
+| Building | `var(--fg-body)` | `--fg-body` @ 14% | `var(--border-strong)`, **dashed** | `var(--fg-body)` | `var(--fg-body)`, proportional | `var(--fg-body)` |
+| Over | `var(--danger)` | `--danger` @ 18% | `var(--border-strong)`, solid | `var(--danger)` | `var(--danger)`, 100% | `var(--danger)` |
+| Unresolved | `var(--warning)` | `--warning` @ 18% | `var(--border-strong)`, solid | `var(--warning)` | `var(--warning)`, 100% | `var(--warning)` |
+| To buy | `var(--accent)` | `--accent` @ 18% | `var(--border-strong)`, solid | `var(--accent)` | `var(--accent)`, 100% | `var(--accent)` |
+| Complete | `var(--success)` | `--success` @ 18% | `var(--border-strong)`, solid | `var(--success)` | `var(--success)`, 100% | `var(--success)` |
 
-Note the two exceptions the drawing itself makes to the "18% / 50%" rule: **Draft** and
-**Building** use a hairline border token rather than a 50%-alpha status colour, and their fills are
-16% / 14% rather than 18%.
+**Corrected 2026-09-14.** Four of those border cells read `--danger` / `--warning` / `--accent` /
+`--success` @ 50%, and Building's read `var(--border-dashed)`; both were retired by the art-wash
+readability amendment, ratified 2026-09-08. Every status takes `var(--border-strong)` now, and
+Building's dash is a `border-style` rather than a second border token.
+
+The drawn `rgba(…)` values are dropped with them rather than re-derived: the fill is
+`color-mix(in srgb, var(--token) N%, var(--bg))`, which resolves per theme, so a single rgba triple
+was only ever true of one of the six.
+
+Two exceptions survive, and they are fills and labels rather than borders: **Draft** at 16% with a
+`--fg-muted` label, and **Building** at 14%. Both are statuses whose own token is a text colour.
 
 ---
 
@@ -1476,10 +1491,12 @@ Cross-cutting conditions on the tile:
    phone sheet.
 7. **Inactive filter trigger (phone) is not drawn** — only the accent-bordered, badged active
    state.
-8. **The pill alpha rule has two exceptions in the drawing.** `STATES` states one rule (18% fill,
-   50% border); Draft is drawn at 16% with a `--border-strong` hairline and Building at 14% with a
-   `--border-dashed` hairline. The sheet's ON chips use a third pair (14% / 16% with a full-strength
-   border).
+8. ~~**The pill alpha rule has two exceptions in the drawing.**~~ **CLOSED 2026-09-14.** The
+   drawing was right and the prose rule was stale. `STATES-deck-statuses.md` now states all six
+   values per status — 18% fill, with Draft at 16% and Building at 14%, each over `--bg` — and one
+   opaque `--border-strong` hairline for every status, dashed on Building, ratified 2026-09-08.
+   `status-style.ts` is the single writer. The sheet's ON chips are a different control and keep
+   their own pair.
 9. **Colour pip hairline is specified but not drawn.** `STATES` §5 requires a `--border-strong`
    hairline on each 9px pip; no pip in the HTML has a border.
 10. **Progress semantics for Over are asserted, not derived.** The bar is full at 104/99; there is

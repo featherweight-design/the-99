@@ -1267,11 +1267,14 @@ Targets that must be interactive per the design text:
    answers are deleted. One row remains, drawn at two widths: a 72px band with a 99px portrait,
    keyed by `art-wash.md`'s band × 1.37.
 
-4. **Resume status pill contradicts `STATES-deck-statuses.md`.** That doc specifies pill fills as
-   the status colour at `2E` alpha (≈18%) with an `80` alpha border. The Home resume pill in the
-   frame has no border and uses 16% (To buy) / 14% (Building). Which rule wins? — still open, and
-   untouched by this round: the pill is `StatusPillBadge`, shared with every other surface, and
-   changing it here would change it everywhere.
+4. ~~**Resume status pill contradicts `STATES-deck-statuses.md`.**~~ **CLOSED 2026-09-14**, and the
+   contradiction was between two documents rather than between a document and the code. The `80`
+   alpha border that doc specified was retired by the art-wash readability amendment and **ratified
+   2026-09-08**; `STATES-deck-statuses.md` simply never caught up. It is corrected to the shipped
+   component: one opaque `1px solid var(--border-strong)` for every status, dashed on Building
+   alone, fills at 18% with Draft at 16% and Building at 14%. No pixel moved — the pill is
+   `StatusPillBadge`, shared with every surface that draws a status, and `status-style.ts` has been
+   the single writer of all of it since the refresh.
 
 5. **Two border weights, one token.** Home uses `#2A241D` for outer card hairlines and `#211C16`
    for inner dividers and the rail's right edge. R6 offers only `--border` and `--border-strong`,
