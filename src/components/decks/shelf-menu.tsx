@@ -76,6 +76,24 @@ export function ShelfMenu({
     trigger.current?.focus();
   }
 
+  // The anchor moves: the page scrolls, the line's own scrollport scrolls, the
+  // window resizes. A fixed panel measured once would stay at the old viewport
+  // coordinates, detached from the trigger and floating over whatever is there
+  // now.
+  useEffect(() => {
+    if (!open) return;
+    function place() {
+      const box = trigger.current?.getBoundingClientRect();
+      if (box) setAt({ top: box.bottom + 6, right: window.innerWidth - box.right });
+    }
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [open]);
+
   // An outside press dismisses, because this popover has no backdrop —
   // `account-menu.tsx`'s rule, scoped to the wrapper so a press on the trigger
   // reaches its own toggle rather than being closed here and reopened.
@@ -213,7 +231,10 @@ function Panel({
   onDismiss: () => void;
   children: React.ReactNode;
 }) {
-  useDialogA11y(ref, onDismiss, {});
+  // `lockScroll: false`: this is a non-modal popover — no backdrop, and an
+  // outside press dismisses it — so freezing the page behind it is the account
+  // menu's own exemption, for the same reason.
+  useDialogA11y(ref, onDismiss, { lockScroll: false });
 
   // The hook focuses on MOUNT, and this panel swaps its contents without
   // unmounting — so the button a reader pressed to get here is removed while
@@ -236,7 +257,7 @@ function Panel({
       // `whitespace-nowrap`, and fixed positioning changes where a box is drawn,
       // not what it inherits — the delete sentence was running off the panel's
       // edge mid-word. The contact sheet caught that too.
-      className="absolute top-full right-0 z-50 mt-[6px] w-[248px] overflow-hidden rounded-[10px] whitespace-normal border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)]"
+      className="absolute top-full right-0 z-50 w-[248px] overflow-hidden rounded-[10px] whitespace-normal border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)]"
     >
       {children}
     </div>

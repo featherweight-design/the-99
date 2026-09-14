@@ -129,7 +129,7 @@ export function ShelfLine({
         return (
           <div
             key={segment.shelf ?? "all"}
-            className={`${SEGMENT} ${actions ? "pl-[11px] pr-[5px]" : "px-0"} ${
+            className={`${SEGMENT} ${actions ? "pr-[5px]" : "px-0"} ${
               selected
                 ? "border-[color:var(--border-strong)] bg-[color:var(--elevated)] font-medium text-[color:var(--fg)]"
                 : "border-transparent bg-transparent text-[color:var(--fg-muted)]"
@@ -140,9 +140,11 @@ export function ShelfLine({
               aria-current={selected ? "true" : undefined}
               aria-label={folderCopy.shelves.aria(segment.label, segment.count)}
               onClick={() => onSelect(segment.shelf)}
-              className={`flex h-[32px] cursor-pointer items-center border-none bg-transparent font-sans text-[13px] ${
-                actions ? "px-0" : "px-[11px]"
-              } ${selected ? "font-medium text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+              // The padding stays on the BUTTON: put on the wrapper it became a
+              // dead zone, where the segment looked pressable and was not.
+              className={`flex h-[32px] cursor-pointer items-center border-none bg-transparent px-[11px] font-sans text-[13px] ${
+                selected ? "font-medium text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"
+              }`}
             >
               <span className="max-w-[220px] overflow-hidden text-ellipsis" title={segment.label}>
                 {segment.label}
