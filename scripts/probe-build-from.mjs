@@ -93,22 +93,29 @@ async function signIn(page) {
 const pool = new Pool({ connectionString: DATABASE_URL });
 
 /**
- * Two commander candidates the account owns and no deck has spoken for.
+ * Cards the account owns that could be a commander, cheapest first.
  *
- * The first becomes the fixture's sleeved card, the second its commander. The
- * commander leaves BOTH lists — `notBuiltBy` drops any commander that helms a
- * deck, in either mode — which is why it must not be the card under test: its
- * disappearance would prove nothing about `Build from`.
+ * This asks NOTHING about claims, and that is a decision rather than an
+ * oversight. Three consecutive review rounds landed on the predicate that used
+ * to try: it excluded `deck_cards` rows the application does not treat as
+ * claims, then every historical version's commander columns rather than only
+ * the newest. Each fix was right and the next round found the next way the
+ * approximation had drifted, because `loadAvailability` is a large query with
+ * seniority, maturity and self-exclusion rules and this was a second copy of it
+ * written from memory.
  *
- * Ordered by the fewest copies owned, because every copy has to be claimed for
- * the card to leave the free pool, and a deck row is per oracle id.
+ * So it does not model the claim at all. The rendered free list is the oracle --
+ * it is the thing under test and the thing whose answer matters -- and
+ * `pickFree` below simply asks the page, candidate by candidate, until it has
+ * the two it needs. That cannot drift from the application, because it IS the
+ * application.
  *
- * `Legendary` + `Creature` rather than the app's own `isCommanderCandidate`:
- * this is a fixture picker, and it only has to find TWO cards that the page is
- * then asked to confirm it lists. A Planeswalker commander missed here costs a
- * candidate, never a wrong answer.
+ * `Legendary` + `Creature` rather than the app's `isCommanderCandidate`: a
+ * Planeswalker commander missed here costs a candidate, never a wrong answer.
+ * The `owned <= 2` cap keeps the fixture's claim small, since every copy has to
+ * be sleeved for the card to leave the free pool.
  */
-async function pickCandidates(userId) {
+async function ownedLegends(userId) {
   const { rows } = await pool.query(
     `select ci.oracle_id, c.name, sum(ci.quantity)::int as owned
        from collection_items ci
@@ -117,49 +124,37 @@ async function pickCandidates(userId) {
         and c.commander_legal
         and c.type_line like '%Legendary%'
         and c.type_line like '%Creature%'
-        and not exists (
-          select 1 from decks d
-           where d.user_id = $1
-             and (d.commander_oracle_id = ci.oracle_id or d.partner_oracle_id = ci.oracle_id)
-        )
-        and not exists (
-          select 1 from deck_cards dc
-            join decks d on d.id = dc.deck_id
-           where d.user_id = $1 and dc.oracle_id = ci.oracle_id
-        )
-        -- And the COMMITTED versions, which is where a claim actually comes
-        -- from. A deck whose draft has since dropped a card still holds it in
-        -- the version it is sleeved as, so a picker that read deck_cards alone
-        -- could choose a card that is already unavailable, and the pre-check
-        -- below would then stop the run over a card the fixture never touched.
-        -- Newest version per deck, matching loadAvailability.
-        and not exists (
-          select 1 from deck_version_cards dvc
-            join deck_versions v on v.id = dvc.version_id
-            join decks d on d.id = v.deck_id
-           where d.user_id = $1
-             and dvc.oracle_id = ci.oracle_id
-             and v.number = (select max(v2.number) from deck_versions v2 where v2.deck_id = v.deck_id)
-        )
-        and not exists (
-          select 1 from deck_versions v
-            join decks d on d.id = v.deck_id
-           where d.user_id = $1
-             and (v.commander_oracle_id = ci.oracle_id or v.partner_oracle_id = ci.oracle_id)
-        )
       group by ci.oracle_id, c.name
       having sum(ci.quantity) <= 2
       order by sum(ci.quantity), c.name
-      limit 40`,
+      limit 60`,
     [userId],
   );
-  if (rows.length < 2) {
-    throw new Error(
-      "No two unclaimed commander candidates in this collection. " +
-        "The fixture needs one card to sleeve and one to lead the deck.",
-    );
-  }
   return rows;
+}
+
+/**
+ * The first two of those the free list actually holds.
+ *
+ * The first becomes the fixture's sleeved card, the second its commander. The
+ * commander leaves BOTH lists -- `notBuiltBy` drops any commander that helms a
+ * deck, in either mode -- which is why it must not be the card under test: its
+ * disappearance would prove nothing about `Build from`.
+ *
+ * Both are confirmed present BEFORE anything is written, so a run that cannot
+ * find them stops instead of reporting a pass it never earned.
+ */
+async function pickFree(page, candidates) {
+  const found = [];
+  for (const candidate of candidates) {
+    const lane = await readLane(page, { avail: "free", query: candidate.name });
+    if (holds(lane, candidate.name)) found.push(candidate);
+    if (found.length === 2) return found;
+  }
+  throw new Error(
+    `Only ${found.length} of ${candidates.length} owned legends are on the free list. ` +
+      "The fixture needs one card to sleeve and one to lead the deck.",
+  );
 }
 
 /**
@@ -224,8 +219,16 @@ async function readLane(page, { avail, query }) {
   };
 }
 
-const holds = (lane, name) =>
-  lane.names.some((n) => n.toLowerCase().startsWith(name.toLowerCase().slice(0, 18)));
+/**
+ * Normalised for comparison: the row heading is uppercased by `text-transform`,
+ * which `innerText` reports as rendered.
+ *
+ * Compared WHOLE. A prefix match passed for any other commander sharing its
+ * first 18 characters, so a run could report the target gone while looking
+ * straight at it.
+ */
+const norm = (value) => value.toLowerCase().replace(/\s+/g, " ").trim();
+const holds = (lane, name) => lane.names.some((n) => norm(n) === norm(name));
 
 /**
  * How many commanders the aside says free mode hid, or 0 where it drew none.
@@ -253,20 +256,12 @@ async function run() {
     const page = await context.newPage();
     userId = await signIn(page);
 
-    const candidates = await pickCandidates(userId);
-    const [target, commander] = candidates;
+    const [target, commander] = await pickFree(page, await ownedLegends(userId));
     console.log(`\nfixture · sleeving ${target.name} (${target.owned} owned), led by ${commander.name}`);
 
-    // BEFORE. The target has to be on the free list to start with, or its
-    // absence afterwards says nothing. A run that cannot show it here stops
-    // rather than reporting a pass it never earned.
-    const before = await readLane(page, { avail: "free", query: target.name });
-    if (!holds(before, target.name)) {
-      throw new Error(
-        `${target.name} is not on the free list before the fixture exists. ` +
-          "Nothing this run measures afterwards would mean anything.",
-      );
-    }
+    // `pickFree` has already confirmed both are on the free list, which is the
+    // half that must be true before anything is written: the target's absence
+    // afterwards says nothing unless it was present first.
     const baseline = hiddenCount((await readLane(page, { avail: "free" })).line);
     if (baseline > 0) {
       note(`baseline already hides ${baseline} — another fixture on this database`);

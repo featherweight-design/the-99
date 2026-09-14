@@ -1,4 +1,4 @@
-// Gate 2 for #43 Task 6: the `Score against` toggle, driven rather than read.
+// Gate 2 for #43 Task 6: the `Build from` toggle, driven rather than read.
 //
 // Four things a component test cannot settle, because each of them is a fact
 // about the real page rather than about a render:
@@ -11,7 +11,7 @@
 //      navigate: both rankings ship in one render, so the page keeps its
 //      identity across the toggle. A reload here is the regression (#285).
 //   4. The receipt line renders in BOTH modes, so the second clause has to be
-//      visible under `Everything I own`, which is the view most players never
+//      visible under `All my cards`, which is the view most players never
 //      leave.
 //
 // Run by hand: `node scripts/probe-rank-toggle.mjs`. Not part of `pnpm test` —
@@ -192,9 +192,17 @@ for (const { label, width, height } of VIEWPORTS) {
   await page.evaluate(() => {
     window.__probeStamp = true;
   });
-  const other = page.getByRole("radio", { name: /everything you own/ }).first();
+  // The segment's own label, and a MISS IS FATAL. This read `/everything you
+  // own/` — the name the control carried before the 2026-09-14 rename — and a
+  // locator that finds nothing simply logged a line and fell through, so the
+  // twelve checks below stopped running and the probe went on printing a
+  // successful-looking run. A rename cannot quietly disable a check that throws.
+  const other = page.getByRole("radio", { name: /all my cards/i }).first();
   if ((await other.count()) === 0) {
-    console.log("  all segment not found");
+    throw new Error(
+      "No `All my cards` segment on /commanders. The control was renamed out from under this probe, " +
+        "and everything below this line measures the flip.",
+    );
   } else {
     await other.click();
     await page.waitForTimeout(2500);

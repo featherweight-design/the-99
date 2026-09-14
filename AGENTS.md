@@ -348,9 +348,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   is still called `mature`, but it is `cd.sleeved`), so the deck claims without needing a
   99-row body.
 
-  Its fixture picks TWO unclaimed candidates, and the second one is the point: the deck's own
-  commander leaves both lists through `notBuiltBy`, in either mode, so using the card under
-  test to lead the deck would prove nothing about this feature. It also asserts the row is
+  Its fixture picks TWO candidates, and the second one is the point: the deck's own commander
+  leaves both lists through `notBuiltBy`, in either mode, so using the card under test to lead
+  the deck would prove nothing about this feature. It picks them by ASKING THE PAGE which
+  owned legends the free list holds, rather than by writing a claim predicate of its own.
+  Three consecutive review rounds landed on the version that tried: it excluded `deck_cards`
+  rows the application does not treat as claims, then every historical version's commander
+  columns rather than only the newest. A second copy of `loadAvailability` written from memory
+  drifts from it, one round at a time; the rendered list cannot, because it is the thing under
+  test. It also asserts the row is
   still on `All my cards` and that the aside does NOT print there — a fix that hid the
   commander everywhere would pass a check that only looked at free mode. It searches for the
   name rather than scanning the list, because the list is windowed and a commander ranked past
