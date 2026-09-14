@@ -116,6 +116,11 @@ export function Sheet({
 }: SheetProps) {
   // Live offset under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
+  // Whether a gesture is IN PROGRESS, which is not the same as having travelled.
+  // The entrance animation is suppressed on this, not on the offset: tied to the
+  // offset, dragging back to the origin re-enabled `anim-sheet-in` mid-gesture
+  // and the keyframe reasserted its own transform, so the panel jumped.
+  const [dragging, setDragging] = useState(false);
   const dragStartY = useRef<number | null>(null);
   // WHICH pointer owns the gesture. Six review rounds found symptoms of this
   // being absent and one cause: a gesture with no identity. A second touch
@@ -150,6 +155,7 @@ export function Sheet({
     // state — a ref must not be written during render, which is what the effect
     // above is for.
     if (dragY !== 0) setDragY(0);
+    if (dragging) setDragging(false);
     return null;
   }
 
@@ -158,6 +164,7 @@ export function Sheet({
     if (activePointer.current !== null) return;
     activePointer.current = e.pointerId;
     dragStartY.current = e.clientY;
+    setDragging(true);
     // Captured, so the gesture still reports once the finger leaves the handle.
     // A drag is mostly vertical and the handle is 4px tall, so without this the
     // pointer exits almost immediately: move and up stop arriving, and the sheet
@@ -174,6 +181,7 @@ export function Sheet({
     dragStartY.current = null;
     activePointer.current = null;
     setDragY(0);
+    setDragging(false);
     e.currentTarget.releasePointerCapture?.(e.pointerId);
     if (travelled >= DRAG_DISMISS_PX) onDismiss();
   };
@@ -185,6 +193,7 @@ export function Sheet({
     dragStartY.current = null;
     activePointer.current = null;
     setDragY(0);
+    setDragging(false);
     // No release here. `pointercancel` IS the user agent ending the pointer, so
     // capture is already gone by the time this runs and asking again throws
     // `NotFoundError` on a cancelled touch — turning a snap-back into an error.
@@ -214,7 +223,11 @@ export function Sheet({
         // animation outranks a normal inline transform, so a drag begun inside
         // that window updated `dragY` while the panel sat still. Neither current
         // adopter uses the default class, so this is a trap set for the next one.
-        style={dragY ? { transform: `translateY(${dragY}px)`, animation: "none" } : undefined}
+        style={
+          dragging || dragY
+            ? { transform: `translateY(${dragY}px)`, animation: "none" }
+            : undefined
+        }
       >
         {/* Drag handle. `aria-hidden` and unfocusable on purpose: the ✕ below is
             the one accessible close control, and two identically-labelled

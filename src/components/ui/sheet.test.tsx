@@ -17,6 +17,12 @@ const drag = (handle: Element, distance: number) => {
 
 const handle = () => document.querySelector("[aria-hidden]")!;
 
+/** The live drag offset in px — 0 when the panel is not displaced. */
+const offset = () => {
+  const style = screen.getByRole("dialog").getAttribute("style") ?? "";
+  return Number(/translateY\((-?\d+)px\)/.exec(style)?.[1] ?? 0);
+};
+
 describe("Sheet", () => {
   it("renders nothing when closed", () => {
     // Not hidden: a hidden duplicate puts a second copy of every control in the
@@ -57,7 +63,7 @@ describe("Sheet", () => {
     render(<Sheet {...props} open onDismiss={onDismiss} />);
     drag(handle(), 79);
     expect(onDismiss).not.toHaveBeenCalled();
-    expect(screen.getByRole("dialog")).not.toHaveAttribute("style", expect.stringContaining("translateY"));
+    expect(offset()).toBe(0);
   });
 
   it("lets a route keep its own handle and offset", () => {
@@ -123,18 +129,28 @@ describe("Sheet", () => {
     expect(screen.getByRole("dialog").getAttribute("style")).toContain("animation: none");
   });
 
+  it("keeps the animation off after dragging back to the origin", () => {
+    // Tied to the offset, returning to 0 mid-gesture re-enabled `anim-sheet-in`
+    // and the keyframe reasserted its own transform — the panel jumped.
+    render(<Sheet {...props} open />);
+    fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle(), { clientY: 40, pointerId: 1 });
+    fireEvent.pointerMove(handle(), { clientY: 0, pointerId: 1 });
+    expect(screen.getByRole("dialog").getAttribute("style")).toContain("animation: none");
+  });
+
   it("follows the pointer mid-drag", () => {
     render(<Sheet {...props} open />);
     fireEvent.pointerDown(handle(), { clientY: 0 });
     fireEvent.pointerMove(handle(), { clientY: 40 });
-    expect(screen.getByRole("dialog").getAttribute("style")).toContain("translateY(40px)");
+    expect(offset()).toBe(40);
   });
 
   it("never follows the pointer upward", () => {
     render(<Sheet {...props} open />);
     fireEvent.pointerDown(handle(), { clientY: 60 });
     fireEvent.pointerMove(handle(), { clientY: 10 });
-    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
+    expect(offset()).toBe(0);
   });
 
   it("does not hold the page — every caller already does", () => {
@@ -154,7 +170,7 @@ describe("Sheet", () => {
     fireEvent.pointerDown(h, { clientY: 0, pointerId: 1 });
     fireEvent.pointerDown(h, { clientY: 300, pointerId: 2 });
     fireEvent.pointerMove(h, { clientY: 320, pointerId: 2 });
-    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
+    expect(offset()).toBe(0);
     fireEvent.pointerUp(h, { clientY: 10, pointerId: 1 });
     expect(onDismiss).not.toHaveBeenCalled();
   });
@@ -178,10 +194,10 @@ describe("Sheet", () => {
     const { rerender } = render(<Sheet {...props} open />);
     fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(handle(), { clientY: 50, pointerId: 1 });
-    expect(screen.getByRole("dialog").getAttribute("style")).toContain("translateY(50px)");
+    expect(offset()).toBe(50);
     rerender(<Sheet {...props} open={false} />);
     rerender(<Sheet {...props} open />);
-    expect(screen.getByRole("dialog").getAttribute("style") ?? "").not.toContain("translateY");
+    expect(offset()).toBe(0);
   });
 
   it("draws no header of its own when the caller gives none", () => {
