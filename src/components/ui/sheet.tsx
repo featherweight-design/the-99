@@ -124,8 +124,9 @@ export function Sheet({
     // mounted and flips `open` mid-drag would otherwise reopen to a stale
     // `translateY`, with the next gesture measured from the old coordinate.
     // Adjusted during render rather than in an effect: React re-runs this pass
-    // before touching the DOM, so nothing paints with the stale value.
-    dragStartY.current = null;
+    // before touching the DOM, so nothing paints with the stale value. Only the
+    // state — a ref must not be written during render, and `dragStartY` needs no
+    // clearing because every gesture overwrites it on pointerdown.
     if (dragY !== 0) setDragY(0);
     return null;
   }
