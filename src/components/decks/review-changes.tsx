@@ -431,6 +431,11 @@ export function ReviewChanges({
   // rather than hiding it, which is what leaves the note empty if it is opened
   // again — a half-typed reason for a version nobody committed is not a draft.
   const [commitSheetOpen, setCommitSheetOpen] = useState(commitOpen === true);
+  // The `?commit=1` arrival, and only while it lasts. The prop never changes,
+  // but closing the sheet drops the query — so a page that arrived that way,
+  // closed and reopened the sheet from the Commit button is an ordinary visit
+  // again, and `admitsReview` will refuse it the moment its last named row goes.
+  const [arrivedForCommit, setArrivedForCommit] = useState(commitOpen === true);
   // Cancelling takes `?commit=1` off the URL as well as closing the sheet. The
   // query is an instruction to open, and left behind it re-fires on a reload or
   // a back-forward return — the reader would be handed back the sheet they just
@@ -438,6 +443,10 @@ export function ReviewChanges({
   // mirror rule: the point is to avoid a navigation, not to make one.
   const closeCommitSheet = useCallback(() => {
     setCommitSheetOpen(false);
+    // The arrival is spent with the query it came in on: reopening the sheet
+    // from the Commit button is an ordinary visit, whatever brought the reader
+    // here first.
+    setArrivedForCommit(false);
     const url = new URL(window.location.href);
     if (!url.searchParams.has("commit")) return;
     url.searchParams.delete("commit");
@@ -591,6 +600,10 @@ export function ReviewChanges({
       // not happened. The stronger sentence is only earned when this write is
       // the only one in the air.
       const alone = !restoring;
+      // How many OTHER rows were in the air when this one was pressed. Measured
+      // here rather than at the announcement, where the set has already been
+      // emptied by whichever write settled first.
+      const othersInFlight = Math.max(inFlight.current.size - 1, 0);
       startRestore(async () => {
         addRestoredId(card.oracleId);
         let result: Awaited<ReturnType<typeof addCardToDeck>>;
@@ -633,7 +646,7 @@ export function ReviewChanges({
         // The ARRIVAL, not the sheet's current state: opening the sheet from
         // the Commit button carries no `?commit=1`, so that page is refused the
         // moment its last named row goes, exactly like any other.
-        const staysForBasics = commitOpen === true && state.basicsMoved;
+        const staysForBasics = arrivedForCommit && state.basicsMoved;
         const redirecting = alone && outAfter === 0 && inCount === 0 && !staysForBasics;
         // The DECK matches its version again only if nothing else moved, and a
         // basic that moved is something else. "Matches v1" over a draft that
@@ -643,12 +656,20 @@ export function ReviewChanges({
           matchesVersion
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
             : outAfter === 0 && alone
-              // `alone` here for the same reason it gates the sentence above:
-              // with another restore still in the air, "nothing going out" is a
-              // claim about a column the other write may yet put a row back
-              // into, and this sentence has already been spoken by then.
+              // `alone` for the same reason it gates the sentence above: with
+              // another restore in the air, "nothing going out" is a claim about
+              // a column that write may yet put a row back into, and this
+              // sentence has already been spoken by then.
               ? restoreCopy.announcedLastOut(card.name, cardsAfter)
-              : restoreCopy.announced(card.name, cardsAfter, Math.max(outAfter, 0));
+              // The rows still on screen PLUS the ones another write is holding
+              // optimistically hidden. Never a nought — the copy promises one is
+              // never drawn — and honest: those rows are going out as far as
+              // this write knows, and it is the one speaking.
+              : restoreCopy.announced(
+                  card.name,
+                  cardsAfter,
+                  outAfter + othersInFlight,
+                );
         // Focus before the refresh, while the tree this render built is still
         // in the document. The group heading the row left, never the next row's
         // control.
@@ -686,7 +707,7 @@ export function ReviewChanges({
       });
     },
     [
-      addRestoredId, commitOpen, deckId, descriptionId, inCount, liveCardCount,
+      addRestoredId, arrivedForCommit, deckId, descriptionId, inCount, liveCardCount,
       outCount, restoring, rows.out, router, state.basicsMoved, state.version,
     ],
   );

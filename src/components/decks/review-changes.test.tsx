@@ -1159,6 +1159,39 @@ describe("ReviewChanges", () => {
       await held.release();
       const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
       expect(spoken).not.toContain("nothing going out");
+      // And never a nought, which the copy promises is never drawn: the figure
+      // counts the rows another write is still holding hidden.
+      expect(spoken).not.toMatch(/\b0 going out\b/);
+    });
+
+    // The mixed draft — a basic moved AND a card cut — is the case `basicsMoved`
+    // was added for, and it is invisible to `basicsChanged`, which is false by
+    // design whenever anything else moved. Restoring the last named row leaves
+    // a draft that still changes the mana base.
+    it("calls a mixed draft's leftovers the mana base, not no changes", async () => {
+      const held = hold();
+      render(
+        <ReviewChanges
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE}
+          state={{ ...STATE, basicsChanged: false, basicsMoved: true }}
+          cardCount={CARD_COUNT}
+        />,
+      );
+
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+
+      // Not "0 changes": the deck still differs from its version.
+      expect(document.body.textContent).toContain(
+        deckVersioningCopy.review.basicsHeading(STATE.version?.number ?? 1),
+      );
+      await held.release();
+      // And it never claims the deck matches the version again, because a basic
+      // that moved is something that moved.
+      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
+      expect(spoken).not.toContain("matches v");
     });
 
     // The whole row is a button that opens the card. Without `stopPropagation`

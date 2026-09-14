@@ -87,6 +87,10 @@ export function pullHints(
 
 /** The adds that cost something. A null bucket is excluded with the free ones,
  *  for the opposite reason: not known to be free, but not known to be anything. */
+export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
+  return bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
+}
+
 /**
  * Whether any basic land moved in this diff, alone or alongside other cards.
  *
@@ -101,10 +105,6 @@ export function anyBasicMoved(
   basics: ReadonlySet<string>,
 ): boolean {
   return [...diff.adds, ...diff.removes].some((c) => basics.has(c.oracleId));
-}
-
-export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
-  return bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
 }
 
 /**
