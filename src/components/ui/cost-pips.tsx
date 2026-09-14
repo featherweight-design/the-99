@@ -72,7 +72,7 @@ type CostPipsProps = {
   track?: number;
   /**
    * Slots drawn before the run is capped. At the cap the last slot is a generic
-   * pip carrying `+N`. Omitted, nothing is capped and nothing shingles.
+   * pip carrying `+N`. Omitted, nothing is capped and the run is as long as its cost.
    */
   cap?: number;
   /**

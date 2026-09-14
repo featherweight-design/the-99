@@ -20,6 +20,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -64,14 +65,21 @@ function report(label, ok, detail) {
 }
 
 /**
+ * The gap a pair of neighbouring pips must clear. The component draws a 3px gap, so a run
+ * measuring 0 is as broken as one measuring -5 — it is just broken in a way a
+ * non-overlap assertion cannot see.
+ */
+const MIN_GAP = 3;
+
+/**
  * Every neighbouring pair of pips inside one run, measured.
  *
  * Grouped by parent rather than by a class on the run: the run's own className is the
  * caller's, and four surfaces pass four different ones. Two pips sharing a parent are a run
  * wherever they were drawn.
  */
-const MEASURE = () => {
-  const pips = [...document.querySelectorAll("main span.rounded-full")]
+const MEASURE = (page) => {
+  const pips = [...document.querySelectorAll(`${page} span.rounded-full`)]
     .filter((p) => p.getBoundingClientRect().width > 0);
   const byParent = new Map();
   for (const pip of pips) byParent.set(pip.parentElement, [...(byParent.get(pip.parentElement) ?? []), pip]);
@@ -122,16 +130,21 @@ async function run() {
       for (const route of [deck, `${deck}/changes`, "/collection?view=rows"]) {
         await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
         await page.waitForTimeout(4_000);
-        const m = await page.evaluate(MEASURE);
+        // Scoped through `lib/surface.mjs`'s own `PAGE`, never a selector of this probe's:
+        // the shell wraps `<main>` and draws pips of its own in the rail, and a probe that
+        // wrote its own boundary would drift from the one every other script uses.
+        const m = await page.evaluate(MEASURE, PAGE);
         // A surface with no run measured nothing, and says so rather than passing: every
         // route here draws costs, so an empty sweep is a probe that did not reach the page.
         failures += !report(
           `${width}px · ${route}`,
-          m.runs > 0 && m.worst !== null && m.worst >= 0,
+          m.runs > 0 && m.worst !== null && m.worst >= MIN_GAP - 0.5,
           m.runs === 0
-            ? `no run of two or more pips was on the page (${m.pips} pips) — nothing measured`
+            ? `no run of two or more pips was drawn — a collection of single-pip costs, or a`
+              + ` page this probe did not reach. NOT a pass: pick a fuller fixture, or a deck`
+              + ` with a multi-coloured card, with PROBE_DECK.`
             : `${m.runs} runs, ${m.pairs} neighbouring pairs, tightest gap`
-              + ` ${Math.round(m.worst * 100) / 100}px`,
+              + ` ${Math.round(m.worst * 100) / 100}px against a ${MIN_GAP}px floor`,
         );
       }
       await context.close();
