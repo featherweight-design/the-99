@@ -367,12 +367,13 @@ async function run() {
         await pool.query(`delete from decks where id = $1 and user_id = $2`, [deckId, userId]);
       }
     } catch (error) {
-      console.error(
-        `\n!! Could not delete fixture deck ${deckId}. It is still claiming cards on this ` +
-          `database and must be removed by hand.\n`,
-        error,
+      // A FAILURE, not just an exit code. Setting `process.exitCode` alone left
+      // the report below free to print its green line, so the run said the rule
+      // holds and the shell said it does not — and the reader believes the line.
+      failures.push(
+        `could not delete fixture deck ${deckId}: it is still claiming cards on this ` +
+          `database and must be removed by hand (${error?.message ?? error})`,
       );
-      process.exitCode = 1;
     } finally {
       await browser.close();
       await pool.end();

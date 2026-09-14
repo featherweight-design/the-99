@@ -22,7 +22,7 @@ import {
 } from "../../lib/commanders/lane-params";
 import { rankMap } from "../../lib/commanders/rank-maps";
 import { nearestFix } from "../../lib/commanders/nearest-fix";
-import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
+import { filterCopy } from "../../lib/copy/lanes";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { RecCard, type ScoreDelta } from "./rec-card";
@@ -467,14 +467,20 @@ export function CommandersView({
   useEffect(() => {
     if (prevAvail.current === avail) return;
     prevAvail.current = avail;
-    // The aside rides along, because this is the announcement for the change it
-    // explains: the mode flip is what hid those commanders, and the count in the
-    // same sentence is the count it changed. The compact sheet has its own
-    // region for the filters, and giving that one this sentence too put two
-    // announcements on one flip.
-    const aside = sleevedByFree ? `. ${commandersCopy.availability.sleevedAside(sleevedByFree)}` : "";
-    setAnnouncement(`${availabilityCopy.ranking.announce(avail, active.length)}${aside}`);
-  }, [avail, active.length, sleevedByFree]);
+    // The aside is NOT announced, in either form. It is drawn on the result line
+    // and in the sheet header, and `excludedByExactly` — the aside this one is
+    // modelled on — has never been announced either.
+    //
+    // Three attempts at announcing it each moved the same duplication somewhere
+    // else. This lane has two live regions: this one, and the chassis result
+    // line, which is silenced only while the compact sheet is open
+    // (`silentResult={!wide && sheetOpen}`). A flip therefore speaks twice on
+    // the wide rack and twice in the sheet, and it did so before this change —
+    // adding the aside to either region only made the second voice louder. The
+    // fix is one region for the lane, which is a piece of work about this lane's
+    // a11y rather than about free mode, and is in the PR's follow-up list.
+    setAnnouncement(availabilityCopy.ranking.announce(avail, active.length));
+  }, [avail, active.length]);
 
   return (
     <div>
