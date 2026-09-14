@@ -538,8 +538,28 @@ try {
   await phonePage.keyboard.press("Escape");
   await phonePage.waitForSelector('[data-testid="card-zoom"]', { state: "detached", timeout: 5_000 });
 
+  // THE COMPACT HEADER: A GATE, THEN ASSERTIONS.
+  //
+  // Three review rounds went into a tree of five conditions — figure present,
+  // header collapsed, printings owned, compact node present, node reachable —
+  // each new branch closing a state the previous shape could not tell from
+  // another. The tree was the problem. The check has exactly two preconditions,
+  // and once they hold every remaining question is an assertion with no
+  // qualifier: the run either could not ask, or it asked and got an answer.
   const phoneTrigger = phonePage.locator('button[aria-label*="printings owned"]').first();
-  if (await phoneTrigger.count()) {
+  if ((await phoneTrigger.count()) === 0) {
+    // A FAILURE, not a skip. `count() === 0` cannot be told apart from a picker
+    // that regressed or a trigger whose accessible name moved, and the probe's
+    // own contract is that PROBE_CARD is owned in more than twelve printings —
+    // so a run pointed at such a card that finds no trigger has found something.
+    console.log(
+      "\nFAIL: no printing picker. Either PROBE_CARD is owned in one printing — point it"
+        + " at a card owned in more than twelve, which is what a basic land is for — or the"
+        + " trigger regressed. This probe cannot tell those apart, so it reports the one"
+        + " that matters.",
+    );
+    process.exitCode = 1;
+  } else {
     // Read BEFORE the press. The trigger states the count in its own accessible
     // name, and opening the region rewrites that name — so a read afterwards
     // finds nothing and every check that leans on the figure quietly stops
@@ -548,6 +568,10 @@ try {
       (/([\d,]+) printings owned/.exec(await phoneTrigger.getAttribute("aria-label") ?? "")?.[1]
         ?? "").replace(/,/g, ""),
     ) || null;
+    // A figure to move, read before the picker opened. A card the feed has never
+    // priced has nothing to survive the collapse.
+    const hadPrice = Boolean(phoneRead.mobile);
+
     await phoneTrigger.click();
     // Same reason as the open above: waited for, not slept through. The compact
     // header is the state being measured, so the wait is for the thumb collapsing.
@@ -562,24 +586,11 @@ try {
       )
       .catch(() => {});
     const compact = await readPrice(phonePage);
-    // TWO preconditions, both measured, because the check is that a figure
-    // SURVIVES the move out of the art into the name block: there has to be a
-    // figure, and there has to be a move.
-    //
-    // `hadPrice` is read BEFORE the picker opened — a card the feed has never
-    // priced has nothing to survive. `collapsed` is the thumbnail's own width,
-    // because the header collapses past `OVERFLOW_THRESHOLD` and a card owned in
-    // two printings opens the picker without ever reaching the state.
-    const hadPrice = Boolean(phoneRead.mobile);
     const collapsed = await phonePage.evaluate(() => {
       const art = document.querySelector('[data-testid="modal-art-mobile"]');
       return art !== null && art.getBoundingClientRect().width < 100;
     });
-    // `owned` is read above, before the press. Without it, `!collapsed` would
-    // read as "the card has twelve or fewer" — so a card that HAS thirteen and
-    // stopped collapsing would report itself not exercised, which is the broken
-    // transition hiding behind the wording that excuses it.
-    console.log("\n── phone · printing region open (compact header past 12 entries) ──");
+    console.log(`\n── phone · printing region open (compact header past ${OVERFLOW_THRESHOLD}) ──`);
     console.log(JSON.stringify(
       {
         ...compact,
@@ -592,32 +603,41 @@ try {
       2,
     ));
 
-    // A card past the threshold MUST collapse. Checked before the outcomes
-    // below, because "not exercised" is only honest for a card that never had
-    // to reach the state.
-    if (owned !== null && owned > OVERFLOW_THRESHOLD && !collapsed) {
+    // TWO GATES, because there are two claims and they need different things.
+    //
+    // Folding them into one is what a first attempt did, and it swallowed a real
+    // catch: an unpriced card past the threshold stopped collapsing and the run
+    // said "no figure to check" rather than "the header is broken".
+
+    // CLAIM 1 — a card past the threshold collapses. A property of the render,
+    // gated only on the count, which is a property of the card.
+    const mustCollapse = owned !== null && owned > OVERFLOW_THRESHOLD;
+    if (mustCollapse && !collapsed) {
       console.log(
         `\nFAIL: owned in ${owned} printings, past the ${OVERFLOW_THRESHOLD} threshold, and`
           + " the header did not collapse. The compact state is broken, not unreachable.",
       );
       process.exitCode = 1;
     }
-    // THREE OUTCOMES, not two, and each precondition names itself. A single
-    // "no compact price" message covered all three and was wrong about two of
-    // them: it reported a failure for a state the run never entered.
-    if (!compact.compact && !hadPrice) {
+
+    // CLAIM 2 — a figure survives that collapse. Needs the collapse to have
+    // happened AND a figure to have existed, both of which the run measured.
+    // `local-dev` holds no card with more than twelve owned printings that the
+    // feed has also priced — every owned holding misses `printing_prices` — so
+    // this says so rather than failing about data no change to this app can
+    // produce.
+    const why = !mustCollapse
+      ? `owned in ${owned ?? "?"} printings, which is not past ${OVERFLOW_THRESHOLD}`
+      : !hadPrice
+        ? "the feed carries no figure for the printing it resolves to"
+        : !collapsed
+          ? "the header did not collapse, which is the failure above"
+          : null;
+    if (why !== null) {
       console.log(
-        "\nNOT EXERCISED: this card carries no figure at either size, so nothing was"
-          + " asked to survive the collapse. PROBE_CARD needs a `printing_prices` row for"
-          + " the printing it resolves to. On `local-dev` no card has that AND more than"
-          + " twelve printings — every owned holding misses the price table — so this"
-          + " check earns its keep on staging.",
-      );
-    } else if (!compact.compact && !collapsed) {
-      console.log(
-        "\nNOT EXERCISED: the header never collapsed, so there was no move to survive."
-          + " PROBE_CARD must be owned in MORE THAN TWELVE printings; a basic land is"
-          + " what that is for.",
+        `\nNOT EXERCISED: ${why}, so the compact figure was not checked. PROBE_CARD needs`
+          + " BOTH — more than twelve owned printings and a price row. On `local-dev` no"
+          + " card has both, so this check earns its keep on staging.",
       );
     } else if (!compact.compact) {
       console.log(
@@ -626,25 +646,10 @@ try {
           + " block (erratum E12).",
       );
       process.exitCode = 1;
-    } else if (!collapsed) {
-      // The mirror of the branch above. A compact figure in an EXPANDED header
-      // means the tag moved without the header doing so — the node exists, so
-      // every check below would pass while the placement is wrong.
-      console.log(
-        "\nFAIL: the compact price rendered while the header was still expanded. The"
-          + " figure belongs in the name block only once the art has collapsed to a thumb.",
-      );
-      process.exitCode = 1;
     } else if (compact.compact.hiddenFromScreenReaders) {
       console.log("\nFAIL: the figure is inside the aria-hidden heading (erratum E10).");
       process.exitCode = 1;
     }
-  } else {
-    // Same rule one level out: a card owned in one printing opens no picker, so
-    // the state was never reachable rather than broken.
-    console.log("\nNOT EXERCISED: no printing picker. PROBE_CARD is owned in one printing,"
-      + " so the compact header has no way to appear. Point it at a card owned in more than"
-      + " twelve — a basic land is what that is for.");
   }
   await phone.close();
 } finally {
