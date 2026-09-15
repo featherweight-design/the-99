@@ -362,3 +362,38 @@ describe("PendingBanner", () => {
     expect(screen.queryByRole("button", { name: copy.discardCta })).toBeNull();
   });
 });
+
+describe("a commit whose adds are all printed", () => {
+  // 19 adds, not 2: below `INLINE_CHANGE_MAX` the banner lists the changes by
+  // name and draws no money sentence at all, so a small fixture asserts nothing
+  // about either sentence.
+  const allProxied = (n: number): DraftState => ({
+    ...withChanges(n, 0),
+    adds: Array.from({ length: n }, (_, i) => ({
+      oracleId: `a${i}`, needed: 1, shortfall: 0, bucket: "proxied" as const, heldBy: [],
+    })),
+    unfreeCount: 0,
+    buyCount: 0,
+    total: null,
+  });
+
+  it("does not claim every card has a spare copy", () => {
+    // The state this PR can now produce: every add printed, so `unfreeCount` is
+    // 0 — which used to route straight to `moneyNone` and tell the player their
+    // collection covers nineteen cards it has never held.
+    const { container } = render(<PendingBanner deckId="d1" state={allProxied(19)} />);
+    expect(container.textContent).not.toContain(copy.moneyNone);
+    expect(container.textContent).toContain(copy.moneyProxiedOnly(19));
+  });
+
+  it("still says moneyNone when the adds are genuinely covered", () => {
+    const covered: DraftState = {
+      ...allProxied(19),
+      adds: Array.from({ length: 19 }, (_, i) => ({
+        oracleId: `a${i}`, needed: 1, shortfall: 0, bucket: "free" as const, heldBy: [],
+      })),
+    };
+    const { container } = render(<PendingBanner deckId="d1" state={covered} />);
+    expect(container.textContent).toContain(copy.moneyNone);
+  });
+});

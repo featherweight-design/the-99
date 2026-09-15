@@ -85,7 +85,17 @@ function moneyLine(state: DraftState): ReactNode | null {
   // in has enough spare copies" over an empty add list is vacuously true and
   // reads as an account of a purchase that was never on the table.
   if (state.addChanges.length === 0) return null;
-  if (state.unfreeCount === 0) return copy.moneyNone;
+  const proxiedCount = state.adds.filter((a) => a.bucket === "proxied").length;
+  if (state.unfreeCount === 0) {
+    // `moneyNone` says every card has a spare copy in the collection. A printed
+    // card has no copy anywhere, so over a proxy-only add list that sentence is
+    // exactly the assertion about where cardboard is that this vocabulary
+    // forbids. Same conclusion — the commit asks for nothing — different reason.
+    if (proxiedCount > 0 && proxiedCount === state.addChanges.length) {
+      return copy.moneyProxiedOnly(proxiedCount);
+    }
+    return copy.moneyNone;
+  }
   if (state.total === null) return null;
   const partial = state.pricedCopies < state.buyCount;
   const total = partial
