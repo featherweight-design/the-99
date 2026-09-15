@@ -184,11 +184,18 @@ const READ = (header) => {
 };
 
 let deckId = null;
-const browser = await clerkSetup().then(() => chromium.launch());
+let userId = null;
+let browser = null;
 try {
+  // Inside the guard, both of them. With `clerkSetup()` and the launch ahead of
+  // it, a failure in either skipped the only `finally` that ends the pool — and
+  // the pool is created at module scope, so the run hung instead of reporting
+  // what went wrong.
+  await clerkSetup();
+  browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
-  const userId = await signIn(page);
+  userId = await signIn(page);
   deckId = await buildBrew(userId, (id) => {
     deckId = id;
   });
@@ -325,12 +332,32 @@ try {
     }
   }
 } finally {
-  if (deckId) {
-    await pool.query(`delete from decks where id = $1`, [deckId]);
-    note(`fixture deck ${deckId} deleted`);
+  // The delete gets its own `try`, and each shutdown its own `finally`. In one
+  // block a delete that rejects — a database away at exactly the wrong moment —
+  // skips `browser.close()` and `pool.end()`, so the probe hangs instead of
+  // reporting whatever sent it here AND leaves the fixture behind. That is not a
+  // private problem: this database is shared, and a stray 99-card deck claims
+  // cards that change what every other run measures.
+  try {
+    if (deckId) {
+      // Its `deck_cards` rows cascade off the deck row.
+      await pool.query(`delete from decks where id = $1 and user_id = $2`, [deckId, userId]);
+      note(`fixture deck ${deckId} deleted`);
+    }
+  } catch (error) {
+    // A FAILURE, not just a log line: without this the report below is free to
+    // print its green sentence over a fixture still sitting in the database.
+    failures.push(
+      `could not delete fixture deck ${deckId}: it is still claiming cards on this ` +
+        `database and must be removed by hand (${error?.message ?? error})`,
+    );
+  } finally {
+    try {
+      if (browser) await browser.close();
+    } finally {
+      await pool.end();
+    }
   }
-  await pool.end();
-  await browser.close();
 }
 
 if (failures.length > 0) {
