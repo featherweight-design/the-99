@@ -152,7 +152,22 @@ export type FilterChassisProps = {
 const CHIP_LINE_HEIGHT_PX = 14;
 const CHIP_ROW_MIN_PX = CHIP_LINE_HEIGHT_PX + 6 + 2;
 
-/** The width at which the control row would have to wrap, so it changes form instead. */
+/**
+ * The width at which the control row would have to wrap, so it changes form
+ * instead.
+ *
+ * MEASURED, and deliberately not the design's 1024. The handoff for the
+ * commanders rack specifies `matchMedia('(min-width: 1024px)')`; the row's five
+ * controls stop fitting at 1000, so that is where the form changes, and the
+ * design tables carry an erratum saying so. Do not "correct" this to 1024 —
+ * between 1000 and 1023 the wide rack is right, and a sheet there would be a
+ * second door to controls already on screen.
+ *
+ * It is also the ONLY breakpoint the chassis has. A `useIsWide` hook sat beside
+ * it at 1024, claiming in its own header to be the filter rack's, with no caller
+ * anywhere in `src/`. The two read as rival live breakpoints and cost seven
+ * findings in one review before the dead one was retired.
+ */
 export const CHASSIS_WIDE_MIN_PX = 1000;
 
 /**
