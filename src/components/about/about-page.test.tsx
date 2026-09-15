@@ -220,6 +220,22 @@ describe("the figures", () => {
     expect(drawn.filter((t) => t.length > 0)).toHaveLength(3);
     expect(drawn.join(" ")).toContain("in a brew");
     expect(drawn.join(" ")).toContain("short 2");
+
+    // A caption ANNOTATES and never repeats the mark above it. The close-out
+    // contact sheet showed `◆ none free` sitting directly on top of the words
+    // `none free` — a stutter no assertion could see, because both halves were
+    // individually correct. `free` is exempt and has to be: it draws nothing,
+    // so its caption is the only thing saying what the blank means.
+    for (const [i, cell] of cells.entries()) {
+      const mark = (cell.firstElementChild?.textContent ?? "").trim();
+      const cap = (cell.lastElementChild?.textContent ?? "").trim();
+      if (i === 0 || mark === "") continue;
+      // Leading glyphs AND leading counts come off: the soft mark reads
+      // `◇ 1 in a brew`, so comparing it whole finds no overlap with a caption
+      // reading `in a brew` — which is the stutter, spelled without the count.
+      const words = mark.replace(/^[^a-z]+/i, "").toLowerCase();
+      expect(cap.toLowerCase(), `caption ${i} repeats its mark`).not.toContain(words);
+    }
   });
 
   it("draws all six statuses, each with the figure that explains it", () => {
