@@ -12,6 +12,7 @@
 // closed (design state 9), and this component unmounts on close, so both are
 // held by LastSlotsStrip and passed down.
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
@@ -132,12 +133,16 @@ function rowLabel(c: TopOffCandidate, newestAsOf: Date | null): string {
  *  mounts read the same `cost`, so they cannot drift; both are aria-hidden and
  *  the cost is spoken once from the row's own label. */
 function CostTrack({ cost }: { cost: string | null }) {
-  if (cost === null) return null;
+  // The FRONT face, not the string. A land-front, spell-back card stores
+  // `" // {3}{R}"` — non-null, and a cost this row never draws — so a null check
+  // would mount this flex item and give the phone row the track's `gap-[8px]`
+  // ahead of the score with nothing inside it.
+  if (!hasFrontFaceCost(cost)) return null;
   return (
     <span className="flex-none md:order-3">
-      <CostPips cost={cost} size={13} className="flex gap-[3px] md:hidden" />
+      <CostPips cost={cost ?? ""} size={13} className="flex gap-[3px] md:hidden" />
       <CostPips
-        cost={cost}
+        cost={cost ?? ""}
         size={COST_PIP_SIZE}
         cap={COST_PIP_CAP}
         track={COST_TRACK}

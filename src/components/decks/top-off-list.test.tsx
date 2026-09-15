@@ -562,3 +562,27 @@ describe("TopOffList", () => {
     expect(document.getElementById("list-1-cap")).toHaveTextContent(topOffCopy.list.cap);
   });
 });
+
+// A modal DFC whose front is a land and whose back is a spell stores
+// `" // {3}{R}"` — non-null, and a cost this row never draws, because the pips
+// read the front half. The track must stay unmounted for it: mounted, the phone
+// row gains the track's own gap ahead of the score with nothing inside it.
+describe("TopOffList — a cost that belongs to the back face", () => {
+  const backOnly = [
+    { ...candidate("owned-1", true), manaCost: " // {3}{R}" },
+    { ...candidate("owned-2", true), manaCost: "{1}{R}" },
+  ];
+
+  /** The row's own element, from the checkbox that names it. */
+  const rowOf = (name: string) => rowBox(name).closest("li") ?? rowBox(name).parentElement;
+
+  it("mounts no cost track for it, and still mounts one for a costed row", () => {
+    render(<Harness candidates={backOnly} />);
+
+    // Asserted per ROW rather than by counting: the list mounts a phone tree and
+    // a desktop tree, so a total is a number about the harness rather than about
+    // either card.
+    expect(rowOf("owned-1")?.querySelector("[class*='md:order-3']")).toBeNull();
+    expect(rowOf("owned-2")?.querySelector("[class*='md:order-3']")).not.toBeNull();
+  });
+});
