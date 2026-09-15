@@ -592,6 +592,65 @@ export const commanderScores = pgTable("commander_scores", {
   ),
 ]);
 
+/**
+ * One player's decision that a particular deck gets a particular copy of a card,
+ * overriding seniority.
+ *
+ * Seniority (`deckVersionCards.since`) is the DEFAULT and stays the default: when
+ * two committed decks want a card the collection has one of, the deck that
+ * committed it first gets it. This table is what the player writes when they
+ * disagree, and it is deliberately the smallest thing that can express that.
+ *
+ * WHAT IT DOES NOT DO, and why the alternatives were rejected:
+ *
+ * - It does not edit the losing deck's list, and no version is cut. Giving a copy
+ *   away is not a change to what that deck is trying to be — it still lists the
+ *   card and still bills the purchase. `pullCardFromDeck` is the act that DOES
+ *   edit a list, and the two must never be confused.
+ * - It does not rewrite `since`. That column means "when this card entered this
+ *   deck's committed version", and every other reader of it would inherit the lie.
+ *
+ * A reservation is INERT without a shortage: with enough copies for everyone it
+ * moves no figure. That is why it needs no expiry. It is deleted when the deck's
+ * newest committed version no longer lists the card — a deck that drops a card and
+ * adds it back must not resurrect a decision made about a different list — and it
+ * cascades when the deck is deleted.
+ *
+ * Commander copies are never reservable. A commander claim bounds what may be
+ * reserved rather than joining the queue ahead of it (see `claimModel`), because
+ * `loadDeckBuyRows` emits no commander row (#470), so a deck left short of its own
+ * commander is short in a way no surface can draw.
+ */
+export const cardAssignments = pgTable("card_assignments", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  /**
+   * How many copies this deck is reserved. One assignment is one copy by default,
+   * and the chooser writes no other value today — the column exists because the
+   * allocation arithmetic is a quantity model rather than a queue position, and a
+   * deck asking for four copies of a card can legitimately be handed two.
+   */
+  copies: integer("copies").notNull().default(1),
+  /**
+   * Orders reservations against each other when they compete for the same copies,
+   * `deckId` breaking the tie. Not decoration: two reservations for one copy are
+   * resolved by this, and without a total order the loser would change between two
+   * reads of unchanged data.
+   */
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  // The natural key IS the key. A surrogate id would allow two rows for a pair the
+  // model treats as one reservation.
+  primaryKey({ columns: [t.userId, t.oracleId, t.deckId] }),
+  // The claim model reads every reservation this player holds on the cards in one
+  // query, so it reads by user and narrows by oracle.
+  index("card_assignments_user_oracle_idx").on(t.userId, t.oracleId),
+  // A zero or negative value would be a durable row that reduces or inverts the
+  // supply arithmetic, and a caller-side guard does not survive the next caller.
+  check("card_assignments_copies_positive", sql`${t.copies} > 0`),
+]);
+
 export const csvUploads = pgTable("csv_uploads", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),

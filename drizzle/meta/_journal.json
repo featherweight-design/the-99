@@ -225,6 +225,13 @@
       "when": 1789335432417,
       "tag": "0031_real_bloodscream",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789434450334,
+      "tag": "0032_small_iron_monger",
+      "breakpoints": true
     }
   ]
 }
