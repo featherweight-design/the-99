@@ -170,6 +170,11 @@ export function ContestedCardRow({
     // one option is ever checked. Seniority allocates every other copy.
     setPicked(wasChosen ? new Set() : new Set([deckId]));
     startTransition(async () => {
+      // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
+      // session — exits this callback, and the optimistic accent and undo footer would then stand
+      // forever behind a write whose outcome nobody knows. Standing the state down is the one
+      // thing that must happen on every path out of here.
+      try {
       const result = await assignCopy(card.oracleId, deckId);
       // THE LIVE READ CARRIES NO RECEIPT. `arrived` and `ownedBefore` are facts about the import
       // this row came from, and `loadContestedCard` has no import to read — it returns nought for
@@ -178,13 +183,9 @@ export function ContestedCardRow({
       const fresh = result.card
         ? { ...result.card, arrived: card.arrived, ownedBefore: card.ownedBefore }
         : null;
+      // Including when the live read came back null, which the action's own type allows: the
+      // `finally` below is what makes that case, and a thrown one, stand down too.
       if (fresh) setCard(fresh);
-      // THE OPTIMISTIC SET ALWAYS STANDS DOWN when the server answers — including when the live
-      // read came back null, which the action's own type allows. Cleared only alongside a fresh
-      // card, a null read left the row wearing an accent and an undo footer backed by nothing,
-      // and nothing else would ever clear them. Authorship is read from data; this state exists
-      // only for the window before there is any.
-      setPicked(null);
       // ANNOUNCED FROM THE SERVER'S OWN ALLOCATION, once there is one. The trade is the news —
       // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
       // announces a trade that may not have happened.
@@ -211,6 +212,17 @@ export function ContestedCardRow({
         // A refusal announces the on-screen sentence verbatim rather than a summary of it.
         const said = refusalSentence(result.cause, result.card ?? card, deckName);
         if (said) setAnnounce(said);
+      }
+      } catch {
+        // Swallowed HERE and nowhere else: a thrown action is a transport failure, and the app's
+        // shipped treatment for that is not a refusal sentence on this row — the three sentences
+        // it owns each name a reason the server gave, and inventing a fourth for "we do not know"
+        // would tell the player something the server never said. What matters is that the
+        // optimistic state does not outlive the attempt, which the `finally` guarantees.
+      } finally {
+        // THE OPTIMISTIC SET ALWAYS STANDS DOWN. Authorship is read from data; this state exists
+        // only for the window before there is any, and a throw closes that window too.
+        setPicked(null);
       }
     });
   };

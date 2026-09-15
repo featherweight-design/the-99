@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 // The server action, stubbed: what these cases are about is what the ROW does with each answer.
 const assign = vi.hoisted(() => vi.fn());
@@ -472,6 +472,13 @@ describe("ContestedCardRow — the chooser", () => {
     // Past the commander, which cannot be chosen, and onto the third deck.
     expect(document.activeElement).toBe(radios[2]);
   });
+
+  // NOT TESTED HERE: a THROWN action standing the optimistic pick down. The component's
+  // `try/catch/finally` handles it, but every way of provoking it from this harness — a rejected
+  // mock, a deferred rejection, a throwing async mock, each inside `act` — is reported by the
+  // runner as an unhandled rejection attributed to the mock's own call site, and fails the test
+  // whatever the component does. The guarantee is the `finally`, which runs on every path out of
+  // that callback; it is stated there rather than proved here.
 
   it("draws no control on an option nobody can choose", async () => {
     render(<ContestedCardRow card={card({
