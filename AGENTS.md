@@ -113,6 +113,23 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   "transcribed verbatim from the handoff" — is invisible to any string matcher; four of those
   were found by grepping for the claim instead, and no check covers them.
 
+- `pnpm check:collection-routes` fails when a route renders a figure read out of
+  `collection_items` and the collection replace does not invalidate it. It walks every
+  `page.tsx`, follows its imports through `src/`, and compares what it finds against
+  `COLLECTION_ROUTES` in `src/lib/collection/invalidate.ts`. Static, no server, no database.
+
+  It exists because that list was assembled by READING and was wrong three review rounds
+  running, each round naming a route the previous one had missed — `/collection/replace`,
+  then `/decks/[id]/import`, then `/decks/new`. The sweep found a fourth nobody had named
+  (`/decks/import`), which is the whole argument for computing it: a list built by reading has
+  a tail.
+
+  It checks the `dynamic` flag as well as the path, and that half matters more than it looks.
+  `revalidatePath` needs its second argument for a route with a `[param]` and **silently does
+  nothing without one**, so a path that is present but flagged wrong is invalidated in the
+  code review's eyes and not in Next's. All three of the check's failure paths were run
+  against it before it was believed: a dropped route, a wrong `dynamic` flag, and a stale
+  route that no longer reads the collection.
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The

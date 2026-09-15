@@ -47,7 +47,8 @@
     "probe:scroll-lock": "node scripts/probe-scroll-lock.mjs",
     "probe:pip-gap": "node scripts/probe-pip-gap.mjs",
     "probe:build-from": "node scripts/probe-build-from.mjs",
-    "probe:arrivals": "tsx scripts/probe-arrivals.ts"
+    "probe:arrivals": "tsx scripts/probe-arrivals.ts",
+    "check:collection-routes": "node scripts/check-collection-routes.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",

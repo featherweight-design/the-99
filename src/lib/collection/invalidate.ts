@@ -1,0 +1,39 @@
+/**
+ * Every route that renders a figure read out of `collection_items`.
+ *
+ * A collection replace changes all of them at once, so the confirm has to invalidate all of
+ * them. This list was assembled by reading and it was wrong three review rounds running, each
+ * round naming a route the previous one had missed — so it is now a CHECKED list:
+ * `pnpm check:collection-routes` walks every `page.tsx`, follows its imports, and fails when
+ * what it finds disagrees with what is written here. Adding a route that reads the collection
+ * therefore breaks CI until it is named here.
+ *
+ * `dynamic` is not decoration. `revalidatePath` needs its second argument for a route with a
+ * `[param]` in it, and silently does nothing without one — which is exactly how a missing
+ * invalidation hides.
+ *
+ * The literal list lives in `src/` rather than being computed, because computing it means
+ * walking the filesystem, and a server action must not do that. The check is what keeps the
+ * literal honest.
+ */
+export type CollectionRoute = { path: string; dynamic: boolean };
+
+export const COLLECTION_ROUTES: CollectionRoute[] = [
+  { path: "/", dynamic: false },
+  { path: "/collection", dynamic: false },
+  // Reads `getCollectionStats` for the current card count the replace flow quotes back.
+  { path: "/collection/replace", dynamic: false },
+  { path: "/collection/sets", dynamic: false },
+  { path: "/collection/sets/[code]", dynamic: true },
+  { path: "/commanders", dynamic: false },
+  { path: "/commanders/[slug]", dynamic: true },
+  { path: "/decks", dynamic: false },
+  { path: "/decks/[id]", dynamic: true },
+  { path: "/decks/[id]/changes", dynamic: true },
+  // `getDeckDetail`'s rows carry an `owned` flag per card.
+  { path: "/decks/[id]/import", dynamic: true },
+  { path: "/decks/import", dynamic: false },
+  // The commander picker lists the legends the player owns.
+  { path: "/decks/new", dynamic: false },
+  { path: "/discover", dynamic: false },
+];

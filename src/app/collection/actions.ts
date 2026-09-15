@@ -12,6 +12,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
 import { ownedByOracle, writeArrivalsReceipt } from "../../lib/collection/arrivals-write";
+import { COLLECTION_ROUTES } from "../../lib/collection/invalidate";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
@@ -164,35 +165,22 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   });
   if (alreadyConfirmed) return;
 
-  // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached
-  // figure behind every one of these paths is already wrong; the receipt is a nicety by
-  // comparison. Ordered the other way, a failure while assembling the receipt would leave
-  // the caches stale too — and the early return above means no retry would ever repair
-  // either.
+  // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached figure
+  // behind every one of these routes is already wrong; the receipt is a nicety by comparison.
+  // Ordered the other way, a failure while assembling the receipt would leave the caches stale
+  // too — and the early return above means no retry would ever repair either.
   //
-  // Every cached list this reader has is a function of the rows just replaced.
+  // The ROUTE LIST is `COLLECTION_ROUTES`, and it is checked rather than remembered: this set
+  // was hand-assembled and wrong three review rounds running, each round naming a route the
+  // last had missed. `pnpm check:collection-routes` walks every page and fails when one reads
+  // the collection without being named there.
   revalidateUserLists(userId);
-  revalidatePath("/collection");
-  revalidatePath("/");
-  // The set pages read owned counts and completion ratios off the same rows. Pattern form
-  // for the dynamic one, exactly as `setCardArtPreference` does and for the same reason:
-  // the tag refreshes server payloads, not a client route already visited.
-  revalidatePath("/collection/sets");
-  revalidatePath("/collection/sets/[code]", "page");
-  // Wiping commander_scores above changes what /commanders renders, and slugs are
-  // assigned in rank order so cached detail pages can point at the wrong
-  // commander. '[slug]' needs the 'page' type — it is a dynamic segment.
-  revalidatePath("/commanders");
-  revalidatePath("/commanders/[slug]", "page");
-  // A REPLACE CHANGES EVERY CLAIM FIGURE THERE IS, and these were missing. The
-  // `user-lists` tag above covers the cached payloads behind the deck pages; it does not
-  // cover the paths, so a back navigation to a deck served the pre-import render with its
-  // buy tags still on. Pattern form for the dynamic segments, as `revalidateClaims`
-  // already does for the review page — there is no one deck to name here.
-  revalidatePath("/decks");
-  revalidatePath("/decks/[id]", "page");
-  revalidatePath("/decks/[id]/changes", "page");
-  revalidatePath("/discover");
+  for (const route of COLLECTION_ROUTES) {
+    // The second argument is load-bearing for a `[param]` route: without it revalidatePath
+    // silently does nothing, which is how a missing invalidation hides.
+    if (route.dynamic) revalidatePath(route.path, "page");
+    else revalidatePath(route.path);
+  }
 
   // THE RECEIPT. Assembled and stored by a helper the probe can call directly, because
   // everything above this line needs a request to exist and the receipt does not.
