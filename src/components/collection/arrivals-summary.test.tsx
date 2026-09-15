@@ -1,0 +1,135 @@
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { ArrivalsSummary } from "./arrivals-summary";
+import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import type { ArrivalsSummary as Summary } from "../../lib/collection/arrivals";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+
+const CARD = "o1";
+const DECK = "d1";
+
+function summary(over: Partial<Summary> = {}): Summary {
+  return {
+    version: 1,
+    totalBefore: 100,
+    totalAfter: 102,
+    arrived: 3,
+    left: 1,
+    issues: { unmatched: 0, parseErrors: 0 },
+    cleared: [],
+    still: [],
+    contested: [],
+    names: { cards: { [CARD]: "Brushland" }, decks: { [DECK]: "HD Avatar Aang" } },
+    ...over,
+  };
+}
+
+const view = (s: Summary | null, contested: ContestedCard[] = []) => (
+  <ArrivalsSummary
+    summary={s}
+    contested={contested}
+    preview={null}
+    filename="collection.csv"
+    stampDate="14 Sep 2026"
+  />
+);
+
+function contestedCard(): ContestedCard {
+  return {
+    oracleId: CARD,
+    cardName: "Brushland",
+    arrived: 1,
+    owned: 1,
+    brewNames: [],
+    claimants: [
+      { deckId: DECK, deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, since: 1, versionNumber: 7, allocated: 1 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, since: 2, versionNumber: 1, allocated: 0 },
+    ],
+  };
+}
+
+describe("ArrivalsSummary", () => {
+  it("names no price and no total anywhere", () => {
+    render(view(summary({
+      cleared: [{ deckId: DECK, oracleId: CARD, copies: 1 }],
+      still: [{ deckId: DECK, oracleId: CARD, owed: 1, reason: { kind: "gone" } }],
+    })));
+    // A cleared purchase has no honest figure — booster, trade and gift are all arrivals — and
+    // a figure for what is still owed belongs on the deck's Shopping list, where it can be
+    // acted on. So no currency mark reaches this page at all.
+    expect(document.body.textContent).not.toMatch(/[$£€]/);
+  });
+
+  it("renders for an empty result rather than redirecting", () => {
+    render(view(summary()));
+    expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
+    // …and still says what the file did, so "nothing moved" reads as a fact about DECKS.
+    expect(screen.getByText(copy.summary.fileStamp("14 Sep 2026", "collection.csv"))).toBeTruthy();
+    expect(screen.getByText(copy.summary.doneNoteEmpty)).toBeTruthy();
+  });
+
+  // The receipt is written after the replace commits, so a failure between the two leaves a
+  // confirmed upload with no payload. The design draws that as nothing-to-report rather than an
+  // error screen, and this pins it.
+  it("renders a lost receipt as nothing to report", () => {
+    render(view(null));
+    expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
+  });
+
+  it("drops a section with no rows rather than heading a nought", () => {
+    render(view(summary({ cleared: [{ deckId: DECK, oracleId: CARD, copies: 1 }] })));
+    expect(screen.getByText(copy.summary.sectionCleared(1))).toBeTruthy();
+    expect(screen.queryByText(/Still to buy/)).toBeNull();
+    expect(screen.queryByText(/Still short/)).toBeNull();
+  });
+
+  it("takes the no-contention lede when arrivals had copies to spare", () => {
+    render(view(summary({ cleared: [{ deckId: DECK, oracleId: CARD, copies: 1 }] })));
+    expect(screen.getByText(copy.summary.ledeNoContention(100, 3, 1))).toBeTruthy();
+  });
+
+  it("takes the contention lede when a copy has to cover two decks", () => {
+    render(view(summary({ contested: [{ oracleId: CARD, arrived: 1 }] }), [contestedCard()]));
+    expect(screen.getByText(copy.summary.lede(100, 3, 1))).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionShort(1))).toBeTruthy();
+  });
+
+  it("gives a still-owed row its reason, and the unmatched one its own words", () => {
+    render(view(summary({
+      still: [
+        { deckId: DECK, oracleId: CARD, owed: 1, reason: { kind: "partly", arrived: 1, wanted: 2 } },
+        { deckId: "d2", oracleId: CARD, owed: 1, reason: { kind: "unmatched" } },
+      ],
+    })));
+    expect(screen.getByText(copy.summary.reasonPartly(1, 2))).toBeTruthy();
+    // The one reason a player can act on without buying anything: they own the card, the line failed.
+    expect(screen.getByText(copy.summary.reasonUnmatched)).toBeTruthy();
+  });
+
+  it("truncates a money section at four and never the contested one", () => {
+    const many = Array.from({ length: 6 }, (_, i) => ({ deckId: `d${i}`, oracleId: CARD, copies: 1 }));
+    render(view(summary({ cleared: many })));
+    expect(screen.getByText(copy.summary.showAll(6))).toBeTruthy();
+    expect(screen.getAllByText("Brushland")).toHaveLength(4);
+  });
+
+  it("states the issues as counts and never as the list again", () => {
+    render(view(summary({ issues: { unmatched: 2, parseErrors: 1 } })));
+    expect(screen.getByText(copy.summary.issues(2, 1))).toBeTruthy();
+    // `IssueInspector` read the list out at the moment it could still change the decision.
+    // Re-listing it here would imply the app has just discovered something.
+    expect(screen.queryByRole("list", { name: /unmatched/i })).toBeNull();
+  });
+
+  it("uses the unmatched-only sentence when nothing failed to parse", () => {
+    render(view(summary({ issues: { unmatched: 1, parseErrors: 0 } })));
+    expect(screen.getByText(copy.summary.issuesUnmatchedOnly(1))).toBeTruthy();
+  });
+
+  it("says Done is a route, not a save", () => {
+    render(view(summary({ cleared: [{ deckId: DECK, oracleId: CARD, copies: 1 }] })));
+    const done = screen.getByText(copy.summary.done);
+    expect(done.getAttribute("href")).toBe("/collection");
+    expect(screen.getByText(copy.summary.doneNote)).toBeTruthy();
+  });
+});

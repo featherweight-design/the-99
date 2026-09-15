@@ -100,3 +100,19 @@ export function formatDeckDate(date: Date): string {
   const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
   return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`;
 }
+
+/**
+ * The same date without its year, for a stamp that sits beside a version number in a fixed
+ * slot — `v7 · 2 Aug`.
+ *
+ * Shares the rules above rather than restating them, and both of them matter here too: en-US
+ * months because en-GB writes `Sept`, and UTC because `deck_version_cards.since` is a
+ * `timestamp` WITHOUT time zone written by the database's clock. That second one is not a
+ * nicety on this stamp — it is the evidence behind `first committed wins`, so a reader west of
+ * UTC seeing `1 Aug` for a card committed on the 2nd is a wrong answer to the only question
+ * the stamp exists to answer.
+ */
+export function formatShortDeckDate(date: Date): string {
+  const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+  return `${date.getUTCDate()} ${month}`;
+}

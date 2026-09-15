@@ -1,0 +1,135 @@
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { ContestedCardRow } from "./contested-card-row";
+import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+
+const AUG = Date.UTC(2026, 7, 2);
+const SEP = Date.UTC(2026, 8, 9);
+
+function card(over: Partial<ContestedCard> = {}): ContestedCard {
+  return {
+    oracleId: "o1",
+    cardName: "Brushland",
+    arrived: 1,
+    owned: 1,
+    brewNames: [],
+    claimants: [
+      {
+        deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0,
+        since: AUG, versionNumber: 7, allocated: 1,
+      },
+      {
+        deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0,
+        since: SEP, versionNumber: 2, allocated: 0,
+      },
+    ],
+    ...over,
+  };
+}
+
+describe("ContestedCardRow", () => {
+  it("states the supply before the demand, because the shortage is why the row exists", () => {
+    render(<ContestedCardRow card={card()} />);
+    expect(screen.getByText(copy.contested.supply(1, 2))).toBeTruthy();
+  });
+
+  it("names the verb in the heading and never as a button", () => {
+    render(<ContestedCardRow card={card()} />);
+    expect(screen.getByText(copy.contested.heading(1))).toBeTruthy();
+    // The distinction from `Pull it` is the whole point: giving has no verb-button.
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("draws the queue in commit order, which is the explanation of the default", () => {
+    render(<ContestedCardRow card={card()} />);
+    const names = screen.getAllByText(/Aang|Dragons/).map((n) => n.textContent);
+    expect(names[0]).toContain("HD Avatar Aang");
+    expect(names[1]).toContain("Elemental Dragons");
+  });
+
+  it("gives each deck one outcome word and no quantity", () => {
+    render(<ContestedCardRow card={card()} />);
+    expect(screen.getByText(copy.contested.gets)).toBeTruthy();
+    expect(screen.getByText(copy.contested.buys)).toBeTruthy();
+    expect(screen.queryByText(/1 of 1/)).toBeNull();
+  });
+
+  it("stamps each option with the version the order derives from", () => {
+    render(<ContestedCardRow card={card()} />);
+    expect(screen.getByText(copy.contested.stamp(7, "2 Aug"))).toBeTruthy();
+    expect(screen.getByText(copy.contested.stamp(2, "9 Sep"))).toBeTruthy();
+  });
+
+  it("tags this deck without promoting it", () => {
+    render(<ContestedCardRow card={card()} thisDeckId="d2" />);
+    expect(screen.getByText(copy.contested.thisDeck)).toBeTruthy();
+    // Still second: the order is the explanation, and promoting your own deck hides why it lost.
+    const names = screen.getAllByText(/Aang|Dragons/).map((n) => n.textContent);
+    expect(names[0]).toContain("HD Avatar Aang");
+  });
+
+  // A commander's copy cannot be given away, so a card whose only copy is one has nothing to
+  // choose — and the row says that rather than drawing a queue nobody can change.
+  it("goes inert when every copy is a commander's", () => {
+    render(<ContestedCardRow card={card({
+      claimants: [
+        {
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          since: AUG, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          since: SEP, versionNumber: 1, allocated: 0,
+        },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.headingInert)).toBeTruthy();
+    expect(screen.getByText(copy.contested.commanderNote("Led By It"))).toBeTruthy();
+    // `keeps it`, not `gets it`: it had the card before the import, so nothing changed for it.
+    expect(screen.getByText(copy.contested.keeps)).toBeTruthy();
+    expect(screen.queryByText(copy.contested.gets)).toBeNull();
+  });
+
+  // The folded claim: one deck holds the card as its commander AND on its list, so exactly one
+  // of its two copies is in play. The row stays live and the heading narrows.
+  it("narrows the heading when only a spare copy is choosable", () => {
+    render(<ContestedCardRow card={card({
+      owned: 2,
+      arrived: 1,
+      claimants: [
+        {
+          deckId: "d1", deckName: "Folded", quantity: 2, commanderCopies: 1,
+          since: AUG, versionNumber: 3, allocated: 2,
+        },
+        {
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          since: SEP, versionNumber: 1, allocated: 0,
+        },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.headingSpare)).toBeTruthy();
+    expect(screen.getByText(copy.contested.commanderNoteFolded("Folded"))).toBeTruthy();
+  });
+
+  it("names a brew and excludes it, rather than counting it or offering it", () => {
+    render(<ContestedCardRow card={card({ brewNames: ["Muldrotha Lands"] })} />);
+    expect(screen.getByText(copy.contested.brewNote("Muldrotha Lands"))).toBeTruthy();
+    // The supply line counts committed decks only — a brew cannot be given a copy, so counting
+    // it would make the figure quietly wrong.
+    expect(screen.getByText(copy.contested.supply(1, 2))).toBeTruthy();
+  });
+
+  it("folds several brews into one line", () => {
+    render(<ContestedCardRow card={card({ brewNames: ["One", "Two", "Three"] })} />);
+    expect(screen.getByText(copy.contested.brewNoteMany(3))).toBeTruthy();
+  });
+
+  it("carries the cross-reference only when the card is also owed above", () => {
+    const { unmount } = render(<ContestedCardRow card={card()} />);
+    expect(screen.queryByText(/answer different questions/)).toBeNull();
+    unmount();
+    render(<ContestedCardRow card={card()} alsoAbove />);
+    expect(screen.getByText(/answer different questions/)).toBeTruthy();
+  });
+});

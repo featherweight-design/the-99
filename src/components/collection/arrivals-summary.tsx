@@ -1,0 +1,243 @@
+"use client";
+// The post-import summary: what the collection replace did to the decks.
+//
+// Three sections, any of which may be empty, and NO PRICES OR TOTALS ANYWHERE. A cleared
+// purchase has no honest figure — the app cannot know what the player paid, or whether they
+// paid, since booster, trade and gift are all arrivals — and a figure for what is still owed is
+// real but not actionable on a receipt. The place to act on a price is the deck's Shopping list,
+// which the section note points at. Dropping the totals also removed a defect rather than only
+// simplifying: a right-aligned figure on a heading rule, directly under the previous section's
+// last row, reads as THAT list's bottom total.
+//
+// The money sections are the frozen payload; the contested section is live. `Done` is a ROUTE
+// and says so: a page of consequences must not look like a form.
+
+import { useState } from "react";
+import type { UploadPreview } from "../../app/collection/actions";
+import type { ArrivalsSummary, StillRow } from "../../lib/collection/arrivals";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { IssueInspector } from "./issue-inspector";
+import { ContestedCardRow } from "../decks/contested-card-row";
+import { PrimaryButton } from "../ui/button";
+
+/** Money sections truncate at four; the contested section never does. */
+const MONEY_LIMIT = 4;
+
+function SectionHead({ label, note }: { label: string; note: string }) {
+  return (
+    <div className="mb-[10px]">
+      <h2
+        className="font-mono text-[11px] uppercase tracking-[0.16em] m-0"
+        style={{ color: "var(--fg-body)" }}
+      >
+        {label}
+      </h2>
+      <p className="text-[12.5px] mt-[5px] mb-0" style={{ color: "var(--fg-faint)" }}>{note}</p>
+    </div>
+  );
+}
+
+/** One money row: the card, the deck, and — on a still-owed row — why it is still owed. */
+function ReceiptRow({
+  cardName,
+  deckName,
+  reason,
+}: {
+  cardName: string;
+  deckName: string;
+  reason?: string;
+  /** `--warning` is reserved for the one reason a player can act on without buying anything. */
+  warn?: boolean;
+}) {
+  return (
+    <li
+      className="flex flex-col md:flex-row md:items-center gap-[2px] md:gap-[10px] py-[9px]"
+      style={{ borderTop: "1px solid var(--border)" }}
+    >
+      <span className="text-[13.5px] font-semibold md:flex-1 min-w-0 truncate" style={{ color: "var(--fg)" }}>
+        {cardName}
+      </span>
+      <span className="text-[13px] md:flex-none min-w-0 truncate" style={{ color: "var(--fg-body)" }}>
+        {deckName}
+      </span>
+      {reason ? (
+        <span className="font-mono text-[10.5px] md:text-[11px] md:flex-none" style={{ color: "var(--fg-faint)" }}>
+          {reason}
+        </span>
+      ) : null}
+    </li>
+  );
+}
+
+function reasonText(row: StillRow): { text: string; warn: boolean } {
+  switch (row.reason.kind) {
+    case "partly":
+      return { text: copy.summary.reasonPartly(row.reason.arrived, row.reason.wanted), warn: false };
+    case "unmatched":
+      return { text: copy.summary.reasonUnmatched, warn: true };
+    default:
+      return { text: copy.summary.reasonGone, warn: false };
+  }
+}
+
+export function ArrivalsSummary({
+  summary,
+  contested,
+  preview,
+  filename,
+  stampDate,
+}: {
+  /** Null when the receipt did not survive its write — renders the nothing-to-report state. */
+  summary: ArrivalsSummary | null;
+  contested: ContestedCard[];
+  /** For the issues line's route back. Null when the upload had no problems at all. */
+  preview: UploadPreview | null;
+  filename: string;
+  stampDate: string;
+}) {
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [showAllCleared, setShowAllCleared] = useState(false);
+  const [showAllStill, setShowAllStill] = useState(false);
+
+  const cleared = summary?.cleared ?? [];
+  const still = summary?.still ?? [];
+  const nothingToReport = cleared.length === 0 && still.length === 0 && contested.length === 0;
+  const names = summary?.names ?? { cards: {}, decks: {} };
+
+  const unmatched = summary?.issues.unmatched ?? 0;
+  const parseErrors = summary?.issues.parseErrors ?? 0;
+  const hasIssues = unmatched + parseErrors > 0;
+
+  return (
+    <div className="p-[18px] md:p-[28px_34px] max-w-[760px]">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] m-0" style={{ color: "var(--fg-faint)" }}>
+        {copy.summary.eyebrow}
+      </p>
+      <h1 className="font-display font-bold text-[24px] md:text-[30px] mt-[6px] mb-[8px]" style={{ color: "var(--fg)" }}>
+        {copy.summary.heading(summary?.totalAfter ?? 0)}
+      </h1>
+      <p className="text-[13.5px] m-0" style={{ color: "var(--fg-body)" }}>
+        {nothingToReport
+          ? copy.summary.ledeNothingToReport
+          : contested.length === 0
+            ? copy.summary.ledeNoContention(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
+            : copy.summary.lede(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)}
+      </p>
+      <p className="font-mono text-[10.5px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
+        {copy.summary.fileStamp(stampDate, filename)}
+      </p>
+
+      {/* The issues line. Counts and a route back, never the list again: `IssueInspector`
+          already read it out at the moment it could still change the decision. */}
+      {hasIssues ? (
+        <p className="text-[12.5px] mt-[14px] mb-0" style={{ color: "var(--warning)" }}>
+          {parseErrors > 0
+            ? copy.summary.issues(unmatched, parseErrors)
+            : copy.summary.issuesUnmatchedOnly(unmatched)}
+          {preview ? (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={() => setInspectorOpen(true)}
+                className="underline text-[color:var(--accent)]"
+              >
+                {copy.summary.issuesLink}
+              </button>
+            </>
+          ) : null}
+        </p>
+      ) : null}
+
+      {cleared.length > 0 ? (
+        <section className="mt-[26px]">
+          <SectionHead label={copy.summary.sectionCleared(cleared.length)} note={copy.summary.sectionClearedNote} />
+          <ul className="list-none p-0 m-0">
+            {(showAllCleared ? cleared : cleared.slice(0, MONEY_LIMIT)).map((row) => (
+              <ReceiptRow
+                key={`${row.deckId}:${row.oracleId}`}
+                cardName={names.cards[row.oracleId] ?? ""}
+                deckName={names.decks[row.deckId] ?? ""}
+              />
+            ))}
+          </ul>
+          {cleared.length > MONEY_LIMIT && !showAllCleared ? (
+            <button
+              type="button"
+              onClick={() => setShowAllCleared(true)}
+              className="font-mono text-[11px] mt-[8px] text-[color:var(--accent)]"
+            >
+              {copy.summary.showAll(cleared.length)}
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+
+      {still.length > 0 ? (
+        <section className="mt-[26px]">
+          <SectionHead label={copy.summary.sectionStill(still.length)} note={copy.summary.sectionStillNote} />
+          <ul className="list-none p-0 m-0">
+            {(showAllStill ? still : still.slice(0, MONEY_LIMIT)).map((row) => {
+              const reason = reasonText(row);
+              return (
+                <ReceiptRow
+                  key={`${row.deckId}:${row.oracleId}`}
+                  cardName={names.cards[row.oracleId] ?? ""}
+                  deckName={names.decks[row.deckId] ?? ""}
+                  reason={reason.text}
+                  warn={reason.warn}
+                />
+              );
+            })}
+          </ul>
+          {still.length > MONEY_LIMIT && !showAllStill ? (
+            <button
+              type="button"
+              onClick={() => setShowAllStill(true)}
+              className="font-mono text-[11px] mt-[8px] text-[color:var(--accent)]"
+            >
+              {copy.summary.showAll(still.length)}
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+
+      {contested.length > 0 ? (
+        <section className="mt-[26px]">
+          <SectionHead
+            label={copy.summary.sectionShort(contested.length)}
+            note={copy.summary.sectionShortNote}
+          />
+          <div className="flex flex-col gap-[9px]">
+            {contested.map((card) => (
+              <ContestedCardRow
+                key={card.oracleId}
+                card={card}
+                // The page's one cross-reference, and it points UP. Silence here would look
+                // like a bug; a sum across the two would BE one — they answer different
+                // questions, one about a deck's draft demand and one about committed claims.
+                alsoAbove={still.some((r) => r.oracleId === card.oracleId)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <div className="mt-[30px] flex items-center gap-[12px]">
+        <PrimaryButton href="/collection" className="px-[18px] py-[9px] text-[13.5px]">{copy.summary.done}</PrimaryButton>
+        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+          {nothingToReport ? copy.summary.doneNoteEmpty : copy.summary.doneNote}
+        </span>
+      </div>
+
+      {inspectorOpen && preview ? (
+        <IssueInspector
+          preview={preview}
+          initialTab={preview.unmatchedRows.length === 0 ? "errors" : "unmatched"}
+          onClose={() => setInspectorOpen(false)}
+        />
+      ) : null}
+    </div>
+  );
+}

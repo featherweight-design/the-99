@@ -49,7 +49,8 @@
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
-    "check:collection-routes": "node scripts/check-collection-routes.mjs"
+    "check:collection-routes": "node scripts/check-collection-routes.mjs",
+    "seed:summary": "tsx scripts/seed-summary-fixture.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
