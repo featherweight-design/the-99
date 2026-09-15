@@ -50,6 +50,22 @@ export function ProxyControl({
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [pending, setPending] = useState(false);
+  // The modal keys on oracle id alone, so this control stays mounted when the
+  // card is refreshed — and after `onSaved` evicts the cache, the refreshed card
+  // is exactly what arrives. Reconcile the server's value whenever nothing is in
+  // flight, or the tick can end up showing the opposite of the receipt beside it
+  // and submitting the wrong transition. During a write the optimistic value
+  // wins, which is the whole point of it.
+  // Keyed on the prop CHANGING, not on it differing. Differing is the normal
+  // state straight after a write — the parent has not re-read yet — and
+  // adopting it there reverted the tick the moment the write succeeded.
+  const [lastProxied, setLastProxied] = useState(proxied);
+  if (proxied !== lastProxied) {
+    setLastProxied(proxied);
+    // A write in flight keeps the optimistic value: a refreshed prop must not
+    // yank the tick back under the reader's finger.
+    if (!pending) setOn(proxied);
+  }
 
   const toggle = () => {
     // SERIALISED, because two quick taps are two writes whose ORDER the network

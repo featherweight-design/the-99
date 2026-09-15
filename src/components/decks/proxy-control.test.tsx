@@ -112,3 +112,36 @@ describe("the proxy control", () => {
     expect(screen.queryByText(proxyCopy.control.announceMarked("The Ozolith", "HD Gods"))).toBeNull();
   });
 });
+
+describe("the control reconciles with the server", () => {
+  it("follows a refreshed card when nothing is in flight", () => {
+    // The modal keys on oracle id, so this stays mounted when the card is
+    // re-read — which is exactly what `onSaved` causes. Without reconciliation
+    // the tick can end up showing the opposite of the receipt beside it.
+    const { rerender } = render(
+      <ProxyControl deckId="d1" deckName="HD Gods" oracleId="o1" cardName="The Ozolith" proxied={false} />,
+    );
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("false");
+
+    rerender(
+      <ProxyControl deckId="d1" deckName="HD Gods" oracleId="o1" cardName="The Ozolith" proxied />,
+    );
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("keeps the optimistic value while a write is in flight", async () => {
+    // The whole point of the optimism: a refreshed prop arriving mid-write must
+    // not yank the tick back under the reader's finger.
+    let release: (v: unknown) => void = () => {};
+    setCardProxied.mockImplementation(() => new Promise((r) => { release = r; }));
+    const { rerender } = render(
+      <ProxyControl deckId="d1" deckName="HD Gods" oracleId="o1" cardName="The Ozolith" proxied={false} onSaved={onSaved} />,
+    );
+    await act(async () => { fireEvent.click(screen.getByRole("switch")); });
+    rerender(
+      <ProxyControl deckId="d1" deckName="HD Gods" oracleId="o1" cardName="The Ozolith" proxied={false} onSaved={onSaved} />,
+    );
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
+    await act(async () => { release({ ok: true }); });
+  });
+});

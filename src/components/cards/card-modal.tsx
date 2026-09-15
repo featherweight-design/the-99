@@ -158,10 +158,14 @@ function ProxyDetail({ card }: { card: BrowseCard }) {
       <ul aria-labelledby="proxy-decks-heading" className="m-0 mt-[6px] list-none p-0">
         {decks.map((deck) => (
           <li key={deck.id} className="py-[2px] text-[13px]" style={{ color: "var(--fg-body)" }}>
+            {/* `block`, because `truncate` needs a block box to ellipsize in: an
+                inline link inside this `li` keeps its own intrinsic width, and a
+                deck name may be 120 characters — which then runs out of the
+                sheet rather than trailing off. */}
             <Link
               href={`/decks/${deck.id}`}
               aria-label={c.deckLinkAria(deck.name)}
-              className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+              className="block truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
             >
               {deck.name}
             </Link>
