@@ -2,8 +2,8 @@
 // Tests for the role-grouped Shopping view: group headers, gap clauses, footer
 // variants, empty-covered state, row heights, and the EDHREC figure meta line.
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -11,8 +11,9 @@ import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { PendingChangeProvider } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { cardTileCopy, viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { DECK_VIEW_KEY } from "./group-toggle";
 
 // ── Server-action mocks ───────────────────────────────────────────────────────
 vi.mock("../../app/decks/actions", () => ({
@@ -787,6 +788,77 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
 // figure in the count's position. Both sentences therefore render in both views,
 // and the card-view test below asserts the FIGURE they point at rather than the
 // sentences alone — which would pass with the tiles drawing nothing.
+describe("the key decodes what is beneath it, and the word differs by one", () => {
+  const unowned = { ...rampUnowned, owned: false };
+
+  // One test seeds the stored view, and the store outlives a render. Left set,
+  // it hands every later test in this file a card view they did not ask for —
+  // which would pass today and break on the first reordering.
+  afterEach(() => window.localStorage.removeItem(DECK_VIEW_KEY));
+
+  it("says the shop over rows", () => {
+    renderDecklist([unowned], { filter: "all" });
+
+    const key = within(screen.getByLabelText(proxyCopy.key.regionAria));
+    expect(key.getByText(proxyCopy.key.buy)).toBeInTheDocument();
+  });
+
+  it("says the tile's own word over cards", () => {
+    renderDecklist([unowned], { filter: "all" });
+    fireEvent.click(screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0]);
+
+    // `$` marks two different SETS on the two surfaces: the row draws it for
+    // `!owned || spokenFor`, the tile for `!owned` alone. A spoken-for card is
+    // owned, so `not owned` is false of it — no one word is true of both, which
+    // is why this is a differing word rather than shared copy.
+    // Scoped to the KEY. The word also appears on the tile — that is the point,
+    // and it is why an unscoped query finds two: the key prints the word the
+    // mark beneath it already speaks.
+    const key = within(screen.getByLabelText(proxyCopy.key.regionAriaCards));
+    expect(key.getByText(cardTileCopy.slotUnownedAria)).toBeInTheDocument();
+    expect(key.queryByText(proxyCopy.key.buy)).not.toBeInTheDocument();
+  });
+
+  it("labels the group for what is under it, on each view", () => {
+    renderDecklist([unowned], { filter: "all" });
+    fireEvent.click(screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0]);
+
+    // A sibling string, never an edit: the list still has rows.
+    expect(screen.getByLabelText(proxyCopy.key.regionAriaCards)).toBeInTheDocument();
+    expect(screen.queryByLabelText(proxyCopy.key.regionAria)).toBeNull();
+  });
+
+  it("says the shop over Shopping ROWS even when the stored view is card", () => {
+    // The reader's view is PERSISTED and its toggle only renders under `All`, so
+    // card view + Shopping is reached by carrying the stored preference into a
+    // filter that cannot change it — seeded here the way the browser would hold
+    // it, because clicking cannot produce this state.
+    //
+    // The Shopping branch renders rows: it calls `DecklistRow` directly and takes
+    // no `view`. Keyed on the stored value the legend prints `not owned` over
+    // rows whose `$` includes spoken-for cards the player OWNS, which is the one
+    // thing this key's ruling forbids.
+    window.localStorage.setItem(DECK_VIEW_KEY, "card");
+    renderDecklist([unowned], { filter: "shopping" });
+
+    const key = within(screen.getByLabelText(proxyCopy.key.regionAria));
+    expect(key.getByText(proxyCopy.key.buy)).toBeInTheDocument();
+    expect(screen.queryByLabelText(proxyCopy.key.regionAriaCards)).toBeNull();
+  });
+
+  it("keeps `P` the same word on both, because it marks the same cards", () => {
+    renderDecklist([{ ...rampOwned, proxied: true } as DeckDetailCard], { filter: "all" });
+    fireEvent.click(screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0]);
+
+    // `deckRowTag` returns `proxy` off `card.proxied` on both surfaces, so the
+    // set is identical and so is the word. This is what makes the divergence one
+    // word wide rather than a vocabulary wide.
+    expect(
+      within(screen.getByLabelText(proxyCopy.key.regionAriaCards)).getByText(proxyCopy.key.proxy),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("the pending-change notes follow the mark, which both views now draw", () => {
   const pendingChanges = new Map([["sol-ring", { from: 0, to: 1 }]]);
 

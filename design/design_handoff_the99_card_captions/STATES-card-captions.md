@@ -103,8 +103,8 @@ The `✕` keeps its floor because it is the only removal path in this view
 | unowned | — (hollow) | **dashed** stroke, plus the `$` in the slot |
 | committed | `--avail-hard-fg` | the words `none free`, and a solid diamond where hollow means soft |
 | over-committed | `--avail-over-fg` + border tint | the words `short N`, and a **doubled** glyph |
-| proxied | — (neutral skin) | the `P` **glyph**, the dashed edge, and `MarkKey`'s `P proxy` gloss |
-| to buy | `--warning` | the `$` **glyph**, and the tag's accessible name in full |
+| proxied | — (neutral skin) | the `P` **glyph**, the dashed edge, and the key's `P proxy` gloss (same word on both surfaces — `ADDENDUM-the-key.md`) |
+| to buy → **not owned** on the tile | `--warning` | the `$` **glyph**, the tag's accessible name in full, and the card-view key's `$ not owned` — the row's key says `$ to buy`, which is a different set of cards |
 | draft touched | `--accent` edge | the **pair** or the **signed figure** on the meta line |
 | two-faced | — | the `//` **glyph**, plus `sr-only` "two-faced card" |
 

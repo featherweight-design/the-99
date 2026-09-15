@@ -73,6 +73,14 @@ export const proxyCopy = {
     // The key is a group of samples, not a control. Labelled so a screen reader arriving at
     // it knows what it is looking at, since every glyph inside it is aria-hidden.
     regionAria: "What the marks on these rows mean",
+    // The same label for the card view's instance, where there are no rows. A
+    // SIBLING and never an edit: the list still has rows, and one string cannot
+    // be true of both surfaces.
+    //
+    // `cards`, not `tiles`. The reader is looking at cards; `tile` is the name
+    // of the component that draws one, and no string in this app says an
+    // internal noun out loud.
+    regionAriaCards: "What the marks on these cards mean",
   },
 
   // ── The control, in the card sheet ────────────────────────────────────
