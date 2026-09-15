@@ -34,6 +34,8 @@ import {
   useReportRemoveFailure,
 } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
+import { ProxyTag } from "./proxy-tag";
+import { deckRowTag } from "../../lib/decks/row-tag";
 
 /** Radius, plate and art shape — everything the undo tile shares with the live
  *  one, so a removed card leaves a hole exactly its own size. */
@@ -102,7 +104,21 @@ export function DeckCardTile({
               not own it is never empty. The marker only speaks about copies you
               own, so unowned takes the collapsed `$` instead — with no price:
               here the chip is the floor, not the shop. */}
-          {card.owned ? (
+          {/* THE SAME EXCLUSIVE DECISION THE LIST ROW MAKES. Read off
+              `card.owned` alone, this tile drew a buy tag on a printed card —
+              the Card view telling the player to buy something the List view
+              says they are printing, on one deck, one card, one glance apart. */}
+          {/* The inner span takes the pointer so the tag's `title` is reachable:
+              the wrapper's `pointer-events-none` would otherwise make the
+              tooltip — one of the mark's three word-carriers — unavailable on
+              this surface, while still keeping the art around it clickable. */}
+          {deckRowTag(card) === "proxy" ? (
+            <span className="absolute z-10 top-[6px] left-[6px] pointer-events-none">
+              <span className="pointer-events-auto">
+                <ProxyTag variant="band" />
+              </span>
+            </span>
+          ) : card.owned ? (
             card.availability && (
               <AvailabilityMarker
                 availability={card.availability}

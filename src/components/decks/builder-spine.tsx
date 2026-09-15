@@ -19,7 +19,9 @@ interface BuilderSpineProps {
    * is watching when they click. Leaving it on server counts would make the
    * headline number the last thing to move.
    */
-  counts: { built: number; ownedCount: number; toBuyCount: number };
+  counts: {
+    built: number; ownedCount: number; toBuyCount: number; proxiedCount?: number;
+  };
   onExport: () => void;
   /** Cards in this deck the player is short of. Design table §12. */
   overCommitted: number;

@@ -12,6 +12,8 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { PendingChangeProvider } from "./pending-change";
 import { COST_TRACK } from "../ui/cost-pips";
+import { proxyCopy } from "../../lib/copy/proxies";
+import { markerAria } from "../ui/availability-marker";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -625,6 +627,44 @@ describe("DecklistRow cost pips (#350)", () => {
 
 // #350 — the All tab collapses the tag; Shopping keeps it whole.
 describe("DecklistRow buy tag density (#350)", () => {
+  // One slot, one mark. The row draws the buy tag off `deckRowTag` now, so a
+  // printed card cannot also be told to buy itself — the state nobody drew.
+  it("draws the proxy mark instead of the buy tag on a printed card", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false, proxied: true }} />);
+
+    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.unowned.tag)).not.toBeInTheDocument();
+  });
+
+  it("draws no availability marker on a printed row", () => {
+    // The tile suppresses its chip for this state; the row must agree, or one
+    // card reads two ways a toggle apart. Printing IS the slot's answer, so a
+    // chip about the copies competing for it contradicts the mark beside it.
+    // `free < 0` — the over state, which is the one that still speaks from this
+    // row's own vantage. At `free === 0` self-excluded the marker is silent by
+    // design, so a fixture built there asserts nothing about suppression.
+    const availability = { owned: 1, hard: 1, soft: 0, free: -1, claims: [] };
+    const marker = markerAria(availability, { selfExcluded: true });
+    // The marker's own prose, not a testid it does not carry: the first version
+    // of this asserted `queryByTestId("availability-marker")`, which is absent
+    // whatever the row draws, so it passed with the suppression removed.
+    expect(marker).toBeTruthy();
+
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, owned: true, proxied: true, availability }} />,
+    );
+
+    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain(marker as string);
+  });
+
+  it("keeps the buy tag on an unowned card that is not printed", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }} />);
+
+    expect(screen.queryByText(proxyCopy.tag.aria)).not.toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
+  });
+
   it("collapses to $ on the All tab", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }} />);
     expect(screen.getByText("$")).toBeInTheDocument();

@@ -21,6 +21,9 @@ import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
+import { ProxyTag } from "./proxy-tag";
+import { proxyCopy } from "../../lib/copy/proxies";
+import { shortName } from "../../lib/cards/short-name";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -33,6 +36,9 @@ export interface SpineBandProps {
       name: string;
       colorIdentity: string[];
       artCropUri: string | null;
+      /** This deck prints its copy of this commander. Optional because the
+       *  fixtures that build this literal predate proxies; absent is unproxied. */
+      proxied?: boolean;
     };
     /**
      * The second commander, or null for the single-commander deck most decks
@@ -44,9 +50,17 @@ export interface SpineBandProps {
       name: string;
       colorIdentity: string[];
       artCropUri: string | null;
+      /** Per id: a pair deck can print one commander and own the other. */
+      proxied?: boolean;
     } | null;
   };
-  counts: { built: number; ownedCount: number; toBuyCount: number };
+  counts: {
+    built: number;
+    ownedCount: number;
+    toBuyCount: number;
+    /** Printed cards in this deck. The line under the bar, absent at zero. */
+    proxiedCount?: number;
+  };
   status: StatusPill;
   onExport: () => void;
   /** True on a deck with no version whose list has reached a full body — the
@@ -368,6 +382,14 @@ export function SpineDesktop({
               }}
             >
               <span style={TRUNCATES}>{commander.name}</span>
+              {/* The mark, on the caption's own line. A PAIR names its owner —
+                  two commanders, two independent flags and one row, so a bare
+                  glyph could belong to either — and a single commander never
+                  pays for that. `P×2` is banned by ruling 5, so both proxied
+                  draws two named marks in name order. */}
+              {commander.proxied ? (
+                <ProxyTag variant="band" pairName={partner ? shortName(commander.name) : undefined} />
+              ) : null}
               {partner ? (
                 <>
                   <span style={{ flex: "none" }}>+</span>
@@ -391,6 +413,9 @@ export function SpineDesktop({
                   >
                     {partner.name}
                   </CardDetailTrigger>
+                  {partner.proxied ? (
+                    <ProxyTag variant="band" pairName={shortName(partner.name)} />
+                  ) : null}
                 </>
               ) : null}
               <span style={{ flex: "none" }}>· {colorLabel(identity)}</span>
@@ -464,6 +489,21 @@ export function SpineDesktop({
               )}
             </div>
           </div>
+
+          {/* One mono line under the bar, absent at zero. A 99-card deck reading
+              `Complete` with seven printed cards is correct AND is the moment a
+              player could be misled, so the count says so plainly — no colour,
+              no control, and it qualifies the pill rather than replacing it.
+              NOT a roll-up band: those are alarm chrome for over-commitment, and
+              a proxy is not a problem to be solved. */}
+          {(counts.proxiedCount ?? 0) > 0 && (
+            <p
+              className="font-mono m-0"
+              style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
+            >
+              {proxyCopy.deckHeader.line(counts.proxiedCount ?? 0)}
+            </p>
+          )}
 
           {over && (
             <p

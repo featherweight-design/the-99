@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { shortName } from "../cards/short-name";
 import type { EdhrecTag } from "../edhrec/parse";
 import { CLAIM_BY, HARD_MAX, OK_MAX, OK_MIN, type ProseRejection } from "./accept";
 
@@ -57,21 +58,6 @@ export function proseInputHash(
     PROSE_PROMPT_VERSION,
   ]);
   return createHash("sha256").update(payload).digest("hex");
-}
-
-/**
- * The name players use for a commander: everything before the epithet, and the front face
- * of a split card.
- *
- * The subject has to be short because the front-loading rule spends the opening of the
- * sentence on it. "Uvilda, Dean of Perfection // Nassari, Dean of Expression" is 56
- * characters — one more than the whole claim budget — so a prompt that asks for the printed
- * name back is asking for a sentence the contract cannot accept.
- */
-export function shortName(commanderName: string): string {
-  const full = oneLine(commanderName);
-  const short = full.split(" // ")[0].split(",")[0].trim();
-  return short.length > 0 ? short : full;
 }
 
 /** What the front-loading rule leaves for the opening claim once the subject is spent. */
@@ -177,3 +163,5 @@ export function buildProseRetryPrompt(
     "Write a different sentence that does not repeat that mistake.",
   ].join("\n");
 }
+
+export { shortName };

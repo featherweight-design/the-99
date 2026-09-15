@@ -22,6 +22,12 @@ import type { PendingChangeMove } from "./pending-change";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
+import { BuyTag } from "./buy-tag";
+import { ProxyTag } from "./proxy-tag";
+import { MarkKey, type MarkKeyEntry } from "./mark-key";
+import { deckRowTag } from "../../lib/decks/row-tag";
+import { proxyCopy } from "../../lib/copy/proxies";
+import { useMemo } from "react";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
@@ -148,6 +154,49 @@ export function Decklist({
   // renders: the stored choice arrives on the pass after hydration.
   const [storedView, chooseView] = useStoredView(DECK_VIEW_KEY, isDeckView);
   const view = storedView ?? "list";
+
+  // The marks this view actually contains, which is what the key decodes. Only
+  // the current view's rows: a legend naming a mark the reader cannot see on
+  // screen teaches the wrong thing, and an empty one is furniture.
+  // The marks this view contains, decoded by a CANONICAL sample of each — not by
+  // the live component at whatever density the rows happen to be drawing.
+  //
+  // That distinction is a scope decision, taken after three consecutive review
+  // rounds on this one line. Sampling the real component per view meant the key
+  // had to track Shopping's full-density tag (which renders the word `buy`, so
+  // the line read `buy to buy`), the card view's tile plate, and the row's
+  // collapsed glyph — three variants of a legend whose whole job is to say what
+  // one character means. The glyph is the thing being decoded on every surface;
+  // the plate around it is not, so the key draws the glyph in the row's box and
+  // stops there.
+  // LIST VIEW ONLY, and that is a scope decision rather than a limitation.
+  //
+  // Five consecutive review rounds landed on this one line, each correct and
+  // each about the card view: the tile draws a different plate, does not draw a
+  // buy tag for an owned spoken-for card, and labels its `$` `not owned` — a
+  // FLOOR — where the row's identical glyph means `to buy`, the shop. A single
+  // legend cannot decode two vocabularies without becoming a third one.
+  //
+  // So the key decodes the rows it sits above. The card view's marks carry their
+  // own words already — the tile's `$` speaks `not owned` and `ProxyTag` speaks
+  // its own name — so nothing there is left undecoded, and a card-view decoder
+  // with its own vocabulary is a follow-up rather than this PR's problem.
+  const markKey = useMemo((): MarkKeyEntry[] => {
+    if (view === "card") return [];
+    const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
+    const entries: MarkKeyEntry[] = [];
+    if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
+      entries.push({
+        id: "buy",
+        sample: <BuyTag variant="row" density="collapsed" price={null} />,
+        word: proxyCopy.key.buy,
+      });
+    }
+    if (shown.some((c) => c.proxied)) {
+      entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
+    }
+    return entries;
+  }, [cards, filter, view]);
 
   // The toolbar's right slot while a draft exists. Needs both answers: a deck
   // with no version has no vN to count against, and a set with nothing in it has
@@ -419,6 +468,9 @@ export function Decklist({
             draftNote={draftNote}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+            <MarkKey marks={markKey} />
+          </div>
+          <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
           </div>
           {filled ? (
@@ -481,6 +533,10 @@ export function Decklist({
           shoppingCards={shoppingList}
           draftNote={draftNote}
         />
+
+        <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+          <MarkKey marks={markKey} />
+        </div>
 
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
           {autoBanner}
@@ -607,6 +663,13 @@ export function Decklist({
         shoppingCards={shoppingList}
         draftNote={draftNote}
       />
+
+      {/* The decoder, on the PRIMARY view. It was in the Shopping branch alone,
+          which is the one view a printed card is never in — so the surface that
+          actually draws `P` had nothing to decode it. */}
+      <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+        <MarkKey marks={markKey} />
+      </div>
 
       {/* Grouped card rows */}
       <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">

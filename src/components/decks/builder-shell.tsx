@@ -66,6 +66,7 @@ import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/deck
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
+import { proxiedCardCount } from "../../lib/decks/proxy-count";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
 // that has to switch views first — so they land identically.
@@ -241,6 +242,12 @@ export function BuilderShell({
     keepAllOptimisticAuto,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
+  // Printed CARDS, commanders included — the same figure the `/decks` tile
+  // draws, counted here off the rows the page already holds so the two surfaces
+  // cannot disagree about one deck. Distinct marks, never copies: one mark on a
+  // quantity-4 row is one printed card (ruling 5).
+  // One derivation, shared with its test — see `proxiedCardCount`.
+  const proxiedCount = proxiedCardCount(cards, deck.commander, deck.partner);
   const { built } = counts;
 
   // The ceiling this page measures against, derived once. A pair's commanders
@@ -701,7 +708,7 @@ export function BuilderShell({
                 the exception lives in the prose below it. */}
             <BuilderSpine
               deck={deck}
-              counts={counts}
+              counts={{ ...counts, proxiedCount }}
               onExport={openExport}
               // The server status, the same one the tab strip names. Passed
               // rather than recomputed inside the spine, which holds the
