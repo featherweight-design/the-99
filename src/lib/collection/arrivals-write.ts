@@ -115,14 +115,15 @@ export async function writeArrivalsReceipt(args: {
   const claims: Record<string, { owned: number; hard: number }> = {};
   for (const [oracleId, a] of availability) claims[oracleId] = { owned: a.owned, hard: a.hard };
 
-  // Names for the rows the diff can emit: every card either side of the collection, plus
-  // every card any deck owes. Frozen into the payload, so a later rename or a deleted deck
-  // cannot rewrite a receipt.
+  // Names for the rows the diff CAN EMIT, and nothing else: a card on a buy row either
+  // side of the replace, or a contested arrival. Not the collection — a player with three
+  // thousand cards would otherwise put three thousand parameters into one `IN` on every
+  // confirm, to name a handful of rows. Frozen into the payload, so a later rename or a
+  // deleted deck cannot rewrite a receipt.
   const named = new Set([
-    ...Object.keys(ownedBefore),
-    ...Object.keys(ownedAfter),
     ...buyBefore.map((r) => r.oracleId),
     ...buyAfter.map((r) => r.oracleId),
+    ...Object.keys(claims),
   ]);
 
   const summary = buildArrivalsSummary({
