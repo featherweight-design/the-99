@@ -18,6 +18,7 @@ import {
   selectCollectionRows,
 } from "../collection/browse";
 import { ownedCardsWhere } from "../collection/owned-cards";
+import { proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
@@ -728,50 +729,13 @@ export async function listDecksWithStats(
   // COMMANDER is not a body slot, and a proxied card the player also owns is
   // already inside `ownedCount`. Adding one total to `ownedCount` let a proxied
   // commander fill an unowned body slot, so a 98-owned 99-card deck read
-  // `Complete` with one card genuinely missing.
-  //
-  //   copies   — every printed copy, commander included. The tile's `N proxies`
-  //              line, which counts the commander with everything else.
-  //   covers   — printed copies of body rows the player does NOT own. The only
-  //              figure that may be added to `ownedCount`, and by construction
-  //              it cannot double-count or overflow the body.
+  // `Complete` with one card genuinely missing. See `proxyCounts`.
   //
   // Tolerated like the two reads above: a failed count leaves every deck reading
   // as it did before proxies existed, which is a missing line rather than a 500.
   const proxiedByDeck = rows.length > 0
-    ? await db.execute<{ deck_id: string; copies: number; covers: number }>(sql`
-        select
-          p.deck_id,
-          sum(
-            case
-              when dc.oracle_id is not null then dc.quantity
-              else 1
-            end
-          )::int as copies,
-          sum(
-            case
-              when dc.oracle_id is not null and not exists (
-                select 1 from collection_items ci
-                where ci.user_id = ${userId} and ci.oracle_id = p.oracle_id
-              ) then dc.quantity
-              else 0
-            end
-          )::int as covers
-        from deck_proxies p
-        join decks d on d.id = p.deck_id
-        left join deck_cards dc
-          on dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
-        where d.user_id = ${userId}
-          and (
-            dc.oracle_id is not null
-            or d.commander_oracle_id = p.oracle_id
-            or d.partner_oracle_id = p.oracle_id
-          )
-        group by p.deck_id
-      `)
-      .then((r) => new Map(r.rows.map((x) => [x.deck_id, x])))
-      .catch(() => new Map<string, { copies: number; covers: number }>())
-    : new Map<string, { copies: number; covers: number }>();
+    ? await proxyCounts(userId)
+    : new Map<string, ProxyCount>();
 
   // AFTER the proxy read, not before it. `deckIsFlippable` decides whether the
   // seniority query runs at all, and it asks whether a deck could reach
@@ -820,7 +784,11 @@ export async function listDecksWithStats(
       built: row.built,
       ownedCount: row.ownedCount,
       proxiedCount,
-      toBuyCount: row.built - row.ownedCount,
+      // The same definition `deckCounts` uses on the deck page: what is still to
+      // ACQUIRE. Left as `built - ownedCount` the two payloads disagreed about
+      // one deck — the tile saying a printed card was still to buy while the
+      // page it links to said it was covered.
+      toBuyCount: row.built - (row.ownedCount + (proxies?.covers ?? 0)),
       unresolvedCount: row.unresolvedCount,
       // Normalised here rather than trusted from the driver: `lastPlayedSql` is
       // raw SQL, so it carries none of the column mapping that would hand back a

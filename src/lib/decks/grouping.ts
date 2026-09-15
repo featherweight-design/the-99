@@ -194,7 +194,10 @@ export function deckCounts(
     built,
     ownedCount,
     coveredCount,
-    // What the player would still have to acquire, which a proxy answers.
+    // What the player would still have to ACQUIRE, which is what this figure has
+    // always meant on screen — and a printed card is acquired. `ownedCount` is
+    // the ownership figure and stays beside it untouched; the two answer
+    // different questions and the deck list uses the same definition as this.
     toBuyCount: built - coveredCount,
     total: built + unresolvedCount,
   };

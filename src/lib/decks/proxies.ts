@@ -42,3 +42,55 @@ export async function proxiedOracleIds(
     return new Set<string>();
   }
 }
+
+/**
+ * What one deck prints, in two figures that must not be conflated.
+ *
+ * `copies` — every printed copy, commander included. This is the tile's
+ *   `N proxies` line, which counts a printed commander with everything else.
+ *
+ * `covers` — printed copies of BODY rows the player does not own. The only
+ *   figure that may be added to `ownedCount`, and the reason the two are
+ *   separate: a proxied commander is not a body slot, and a proxied card the
+ *   player also owns is already inside `ownedCount`. Adding one total to
+ *   `ownedCount` let a proxied commander fill an unowned body slot, so a
+ *   98-owned 99-card deck read `Complete` with a card genuinely missing.
+ */
+export type ProxyCount = { copies: number; covers: number };
+
+export async function proxyCounts(userId: string): Promise<Map<string, ProxyCount>> {
+  // try/catch around the call, not only `.catch` on the promise, for the reason
+  // `proxiedOracleIds` states: a synchronous throw never reaches a rejection
+  // handler, and the answer either way is "no proxies", which is how every one
+  // of these surfaces read before the feature existed.
+  try {
+    const result = await db.execute<{ deck_id: string; copies: number; covers: number }>(sql`
+      select
+        p.deck_id,
+        sum(case when dc.oracle_id is not null then dc.quantity else 1 end)::int as copies,
+        sum(
+          case
+            when dc.oracle_id is not null and not exists (
+              select 1 from collection_items ci
+              where ci.user_id = ${userId} and ci.oracle_id = p.oracle_id
+            ) then dc.quantity
+            else 0
+          end
+        )::int as covers
+      from deck_proxies p
+      join decks d on d.id = p.deck_id
+      left join deck_cards dc
+        on dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
+      where d.user_id = ${userId}
+        and (
+          dc.oracle_id is not null
+          or d.commander_oracle_id = p.oracle_id
+          or d.partner_oracle_id = p.oracle_id
+        )
+      group by p.deck_id
+    `);
+    return new Map(result.rows.map((r) => [r.deck_id, { copies: r.copies, covers: r.covers }]));
+  } catch {
+    return new Map<string, ProxyCount>();
+  }
+}

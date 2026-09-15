@@ -112,9 +112,17 @@ export function pullHints(
 }
 
 /** The adds that cost something. A null bucket is excluded with the free ones,
- *  for the opposite reason: not known to be free, but not known to be anything. */
+ *  for the opposite reason: not known to be free, but not known to be anything.
+ *
+ *  `proxied` is excluded for a third reason again — it is not unknown and it is
+ *  not a spare copy, it is a card the deck is not asking the collection for.
+ *  Left in, it counted toward `unfreeCount`, had a price loaded for it, and
+ *  reached the banner that says N of the M adds are *short of spare copies* —
+ *  about a card with a shortfall of zero. */
 export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
-  return bucketed.filter((a) => a.bucket !== "free" && a.bucket !== null);
+  return bucketed.filter(
+    (a) => a.bucket !== "free" && a.bucket !== "proxied" && a.bucket !== null,
+  );
 }
 
 /**
