@@ -3,8 +3,7 @@
 // The card view's unit (#349) — Matrix 2 of STATES-card-surfaces.md.
 //
 // Built from `collection/grid-view.tsx`'s tile, with four deltas: the ownership
-// dot and the cost pips share the art's bottom-left scrim, the set/rarity
-// caption is gone, the quantity badge disappears at one copy, and the `✕` joins
+// dot sits in the art's bottom-left scrim, the set/rarity caption is gone, the quantity badge disappears at one copy, and the `✕` joins
 // the caption. It is not a fork of `suggestion-tile.tsx` — that one carries
 // evidence bars, an Add button and a two-line clamped name it needs to keep a
 // shelf of tiles in alignment, none of which a decklist tile has any use for.
@@ -15,7 +14,7 @@
 
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { cardTileCopy } from "../../lib/copy/card-surfaces";
+import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
 import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -180,11 +179,28 @@ export function DeckCardTile({
               className="w-[8px] h-[8px]"
               label={card.owned ? "Owned" : "Not owned"}
             />
+            {/* No drawn pips over art. The card prints its own cost in its own
+                top-right corner, and a run of discs over the bottom-left said
+                the same thing a second time in a worse hand. The list view keeps
+                its pips, because there the row has no art to read it off.
+
+                A tile with NO art keeps them, for that same reason read the
+                other way: the plate it draws instead prints nothing, so the pips
+                are the only cost anyone can see.
+
+                Either way the cost is SPOKEN. "The card is visible" is an
+                argument about a reader who can see the art; it reaches nobody
+                using a screen reader, for whom the pips were the only cost this
+                tile carried. */}
             {card.manaCost ? (
               // No pre-parse: `CostPips` draws nothing for a cost with no
-              // symbols in it, so a second parse here would only ask the same
-              // question twice per tile.
-              <CostPips cost={card.manaCost} size={11} className="flex gap-[3px]" spoken />
+              // symbols in it and `spokenManaCost` says nothing, so a second
+              // parse here would only ask the same question twice per tile.
+              card.imageUri ? (
+                <span className="sr-only">{spokenManaCost(card.manaCost)}</span>
+              ) : (
+                <CostPips cost={card.manaCost} size={11} className="flex gap-[3px]" spoken />
+              )
             ) : null}
           </span>
         </div>

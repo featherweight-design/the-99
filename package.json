@@ -50,7 +50,8 @@
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
-    "seed:summary": "tsx scripts/seed-summary-fixture.ts"
+    "seed:summary": "tsx scripts/seed-summary-fixture.ts",
+    "fetch:mana": "tsx scripts/fetch-mana-symbols.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
