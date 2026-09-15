@@ -999,8 +999,15 @@ third cost, which is why it takes the muted ink and no ground.
 
 A cost in a row keeps the front half alone: the 72px track caps at five pips and
 cannot hold two costs and a separator, and that reader is one tap from this
-modal. A `transform` back's cost is drawn nowhere at all — Scryfall keeps it in
-`card_faces` and the catalog stores only the top level.
+modal.
+
+**A castable back face counts as a second cost.** Scryfall keeps a two-sided
+card's costs in `card_faces` rather than at the top level, and the ingest joins
+them into the same `a // b` string a split card already carries — so a modal DFC
+(Birgi, God of Storytelling // Harnfel, Horn of Bounty) draws both halves here
+and its front half in a row. A `transform` back is free, so nothing is joined
+for it and only one cost is ever drawn. The costs appear after a catalog
+refresh, not at deploy.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|

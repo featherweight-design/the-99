@@ -3,6 +3,7 @@
 // Decklist Row — single card row with ownership dot, name, buy tag, remove button.
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { useId } from "react";
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -17,7 +18,6 @@ import {
   COST_PIP_SIZE,
   COST_TRACK,
   CostPips,
-  parseManaCost,
 } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_SHELL as SHARED_ROW_SHELL } from "../ui/row-shell";
@@ -153,7 +153,7 @@ export function DecklistRow({
   const hasShoppingMeta = !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
   // The cost joins that same line on the phone, so a row can now carry one
   // without being in Shopping at all.
-  const cost = card.manaCost && parseManaCost(card.manaCost).length > 0 ? card.manaCost : null;
+  const cost = hasFrontFaceCost(card.manaCost) ? card.manaCost : null;
   // Keyed on the GROUP, not on this row's own cost. Most costless cards are
   // lands, and lands are their own group under both groupings — but a handful
   // of spells have no printed cost either (Ancestral Vision, Restore Balance),

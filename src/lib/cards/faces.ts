@@ -72,10 +72,10 @@ export function frontFaceCost(cost: string): string {
  *
  * **The separator in the string is the whole test, and no `layout` lookup is
  * needed.** Scryfall carries no top-level `mana_cost` for a card printed on two
- * sides, so a stored cost containing ` // ` can only have come from a layout
- * that prints two costs on ONE side. A `transform` back's cost is not missing
- * from this list by choice: nothing in the catalog holds it. See the note in
- * `card-modal.tsx` for what that would take.
+ * sides, so the ingest joins those faces into the same shape (see
+ * `joinedFaceCost` in `scryfall/transform.ts`) — and a stored cost containing
+ * ` // ` therefore means two printed costs however the card is laid out. A
+ * `transform` back is free, so nothing is joined for it and it yields one.
  *
  * Empty halves are dropped, so a malformed `"{G} // "` yields one cost rather
  * than a second, silent, symbol-free run.
@@ -83,4 +83,22 @@ export function frontFaceCost(cost: string): string {
 export function faceCosts(cost: string | null | undefined): string[] {
   if (!cost) return [];
   return cost.split(" // ").map((half) => half.trim()).filter((half) => half.length > 0);
+}
+
+/**
+ * Does the FRONT face carry a cost — the question every surface that draws one
+ * face is actually asking.
+ *
+ * Truthiness of the stored string is not that question, and the difference is
+ * now reachable: a card whose front is a land and whose back is a spell stores
+ * `" // {3}{R}"`, which is a non-empty string describing a face the row does not
+ * show. A row gated on truthiness would treat that card as costed, draw an empty
+ * cost track for it, and — in the update flow — drop the invisible marker box a
+ * costless card is supposed to keep.
+ *
+ * `frontFaceCost` answers WHICH cost; this answers WHETHER, and both are here so
+ * neither is re-derived at a call site.
+ */
+export function hasFrontFaceCost(cost: string | null | undefined): boolean {
+  return /\{[^}]+\}/.test(frontFaceCost(cost ?? ""));
 }

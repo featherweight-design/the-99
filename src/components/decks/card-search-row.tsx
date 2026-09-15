@@ -4,6 +4,7 @@
 // bar's row "verbatim"; the only differences it draws are the column widths and
 // what sits in the right-hand slot, so those are the only two props.
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { CostPips } from "../ui/cost-pips";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
@@ -159,7 +160,9 @@ export function CardSearchRowBody({
       {/* A fixed slot whether or not the card has a cost, so the ownership
           column stays on one vertical line down the list. */}
       <span aria-hidden className="hidden md:flex flex-none w-[34px] justify-start">
-        {result.manaCost && <CostPips cost={result.manaCost} className="flex gap-[3px]" />}
+        {hasFrontFaceCost(result.manaCost) && (
+          <CostPips cost={result.manaCost ?? ""} className="flex gap-[3px]" />
+        )}
       </span>
 
       {/* Ownership as a word and a figure. Never colour alone.

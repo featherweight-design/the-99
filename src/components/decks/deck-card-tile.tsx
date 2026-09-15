@@ -18,6 +18,7 @@
 
 import { useId } from "react";
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
@@ -27,7 +28,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardTileCaption } from "../ui/card-tile-caption";
-import { CostPips, parseManaCost } from "../ui/cost-pips";
+import { CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
@@ -129,7 +130,7 @@ export function DeckCardTile({
   const fullName = printedNameOf(card);
   // Null unless the string holds symbols this app can draw, so both branches
   // below agree on what "has a cost" means.
-  const cost = card.manaCost && parseManaCost(card.manaCost).length > 0 ? card.manaCost : null;
+  const cost = hasFrontFaceCost(card.manaCost) ? card.manaCost : null;
 
   function handleRemove() {
     markSlotSpent(card);

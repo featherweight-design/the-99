@@ -3,7 +3,7 @@
 // `Gollum, Silent Slinker // Meager Meal` is `{3}{B} // {B}`. A pip run has no
 // way to say `//`, so the row drew four pips for a four-mana creature.
 import { describe, expect, it } from "vitest";
-import { faceCosts, frontFaceCost } from "./faces";
+import { faceCosts, frontFaceCost, hasFrontFaceCost } from "./faces";
 import { parseManaCost } from "../../components/ui/cost-pips";
 import { spokenFullManaCost, spokenManaCost } from "../copy/card-surfaces";
 
@@ -80,5 +80,31 @@ describe("the two labels, and why there are two", () => {
   it("says no mana cost through both for a land", () => {
     expect(spokenFullManaCost(null)).toBe(spokenManaCost(null));
     expect(spokenFullManaCost("")).toBe("no mana cost");
+  });
+});
+
+describe("hasFrontFaceCost", () => {
+  it("is true for an ordinary cost and for the front half of a joined one", () => {
+    expect(hasFrontFaceCost("{2}{U}")).toBe(true);
+    expect(hasFrontFaceCost("{G/U}{G/U} // {1}{G}{U}")).toBe(true);
+  });
+
+  it("is false for a land", () => {
+    expect(hasFrontFaceCost(null)).toBe(false);
+    expect(hasFrontFaceCost("")).toBe(false);
+  });
+
+  // The shape this function exists for. A land-front, spell-back modal DFC
+  // stores a NON-EMPTY string describing a face the row does not show, so every
+  // surface gated on truthiness would call that card costed: an empty cost track
+  // drawn for it, and the update flow's invisible marker box taken away from a
+  // row that draws no pips at all.
+  it("is false when only the BACK face has a cost", () => {
+    expect(" // {3}{R}").toBeTruthy();
+    expect(hasFrontFaceCost(" // {3}{R}")).toBe(false);
+  });
+
+  it("is false for a string with no symbols in it", () => {
+    expect(hasFrontFaceCost("???")).toBe(false);
   });
 });

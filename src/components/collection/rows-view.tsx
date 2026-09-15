@@ -5,6 +5,7 @@
 //   desktop: 52px 1fr 90px 150px 92px 18px   (qty · name · cost · type · set/rarity · chevron)
 // Rarity dot colors per §Rarity Dot Colors.
 
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { CostPips, COST_PIP_CAP, COST_PIP_SIZE } from "../ui/cost-pips";
@@ -146,8 +147,8 @@ export function RowsView({
               A land carries no cost, so the cell is empty — the grid template fixes
               its width, so nothing ragged-edges and there is no disc to keep. */}
           <span className="flex w-[76px] md:w-[90px] items-center justify-end">
-            {c.manaCost ? (
-              <CostPips cost={c.manaCost} size={COST_PIP_SIZE} cap={COST_PIP_CAP} />
+            {hasFrontFaceCost(c.manaCost) ? (
+              <CostPips cost={c.manaCost ?? ""} size={COST_PIP_SIZE} cap={COST_PIP_CAP} />
             ) : null}
           </span>
 
