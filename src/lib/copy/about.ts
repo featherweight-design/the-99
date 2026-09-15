@@ -130,8 +130,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     // ⚠ R4: strings inside this figure are FIXTURES, not read from source.
     // #639/#643 landed after the last read of main; the structure is the
-    // entry's subject and holds, the vocabulary wants one pass against
-    // copy/collection-replace.ts before build. See READINESS-r4.md.
+    // entry's subject and holds, and the vocabulary is in
+    // `src/lib/copy/card-assignments.ts` — the summary has no copy module of
+    // its own. See `design/design_handoff_the99_about/READINESS-r4.md`.
     //
     // One structural decision inside it, not a fixture: the `freed up` row
     // carries NO diamond. `3 cards freed up` means those copies became free,
@@ -163,7 +164,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'free — you own it and nothing has claimed it. No diamond at all, which is the commonest state in the app.',
       'in a brew — a deck you have never committed wants it. The claim is real but not binding, and it is the state a reader is least likely to guess.',
-      'none free — a committed deck holds every copy. The deck that sleeved it first keeps it.',
+      'none free — a committed deck holds every copy. The deck that sleeved it first keeps it by default, and you can hand it to another.',
       'short 2 — more decks want it than you own. The last row is different again: a card you never owned at all.',
     ],
     since: 1,
@@ -359,7 +360,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'inset',
     caption:
-      'The list is grouped by role by default, because that is how a deck is short. Turn the grouping off and the whole 99 orders instead — by name, by mana value, or by price when you are looking at what you still have to buy. Price is offered on the shopping filter only, where money is the question being asked.',
+      'The 99 is always in sections — by role, or by type — and the order you pick applies inside them rather than flattening the list. Name and mana value are always offered; price joins them on the shopping filter, where money is the question being asked.',
     keys: [],
     since: 1,
   },
@@ -387,7 +388,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // screen's `Put back` (deck-versioning.ts:249) is a second door and is
     // named in the caption rather than drawn. R3 drew one wearing the other.
     caption:
-      "Every removal can be undone from where it happened, with the card named. The review screen carries the same undo on a cut row, where it reads Put back. Putting a card back also puts back what it cost — the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed.",
+      "Every removal can be undone from where it happened, with the card named. The review screen offers it too, reading Put back, on a cut of a single copy — a whole stack that came out is put back on the deck itself. Putting a card back also puts back what it cost — the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed.",
     keys: [],
     since: 1,
   },
@@ -437,7 +438,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'The whole 99 as text a deckbuilding site will read, or just the cards you do not own. Buying is a link out, not a checkout — we hand Mana Pool the list and they take it from there, in a new tab, with nothing of yours attached.',
     keys: [
-      'the Shopping list tab is the cards you do not own, counted on the pill — the same set the library-wide roll-up totals.',
+      'the Shopping list tab is the cards this deck has to buy, counted on the pill — which includes one you own whose every copy another deck is already holding.',
       "the link opens in a new tab and carries the list, nothing else. A card's own link lands on every printing, because the app recommends a card rather than a printing.",
       'Copy to clipboard reads Copied ✓ for a second and a half, then returns. It and Download .txt are the same list in the form each site wants, and nothing here changes the deck.',
     ],
@@ -572,7 +573,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'the plane is the subtitle, not the name — you pick Neon Rain, not Kamigawa.',
       'the accent moves; the greens, ambers and reds that carry meaning do not.',
-      'your choice is remembered per account, so it follows you between devices rather than living in one browser.',
+      'the choice is remembered in this browser, so a different device starts on the default until you pick there too.',
     ],
     since: 1,
   },

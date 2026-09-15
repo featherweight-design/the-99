@@ -13,20 +13,51 @@ import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "./about";
+import { ABOUT_VERSION, aboutCopy, aboutEntries, aboutMenuCopy } from "./about";
 import pin from "./about.version.json";
 
 const APP_DIR = join(process.cwd(), "src", "app");
 
-/** The fields a reader sees. Comments and formatting are deliberately outside
- *  it: a typo fix in a code comment is not a change to the page, and a guard
- *  that fired on one would be re-pinned reflexively until it meant nothing. */
-function materialShape(e: AboutEntry) {
-  return [e.id, e.chapter, e.title, e.route, e.opens ?? "", e.width, e.caption, ...e.keys, e.since];
+/** Everything a reader sees, walked rather than listed.
+ *
+ *  Listing the fields by hand is how this guard first shipped, and it covered
+ *  `aboutEntries` alone — so the page title, the chapter headings, the NEW
+ *  badge, the dismiss and the account-menu row could all be rewritten without
+ *  the pin moving, while the test's own name promised otherwise. A walk cannot
+ *  drift from the object that way: a field added to `aboutCopy` tomorrow is in
+ *  the hash the moment it exists.
+ *
+ *  Functions are called rather than skipped, with 1 and 2, because every one of
+ *  them is a sentence with a number in it and the singular branch is a separate
+ *  string a reader meets. `dismissDestination` takes a route and gets the same
+ *  treatment: the result is nonsense prose, but it is deterministic nonsense
+ *  that changes when the template does, which is all the hash asks of it.
+ *
+ *  Comments and formatting stay outside: a typo fix in a code comment is not a
+ *  change to the page, and a guard that fired on one would be re-pinned
+ *  reflexively until it meant nothing. */
+function visibleStrings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (typeof value === "number") return [String(value)];
+  if (typeof value === "function") {
+    return [1, 2].map((n) => String((value as (arg: unknown) => unknown)(n)));
+  }
+  if (Array.isArray(value)) return value.flatMap(visibleStrings);
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .flatMap(([key, v]) => [key, ...visibleStrings(v)]);
+  }
+  return [];
 }
 
 function contentHash(): string {
-  return createHash("sha256").update(JSON.stringify(aboutEntries.map(materialShape))).digest("hex");
+  const shape = [
+    visibleStrings(aboutEntries),
+    visibleStrings(aboutCopy),
+    visibleStrings(aboutMenuCopy),
+  ];
+  return createHash("sha256").update(JSON.stringify(shape)).digest("hex");
 }
 
 /** `/collection?avail=inuse,over` is a real destination; its query is not part
