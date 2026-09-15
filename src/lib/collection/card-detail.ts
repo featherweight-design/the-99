@@ -4,7 +4,7 @@
 
 import { cache } from "react";
 import type { PrintingPrices } from "../cards/price-lookup";
-import type { BrowseCard, BrowsePrinting } from "./browse";
+import type { BrowseCard, BrowsePrinting, ProxyingDeck } from "./browse";
 import {
   aggregateCollection,
   coerceRarity,
@@ -137,6 +137,40 @@ export function catalogCard(
  * Untested-query pattern: the SQL is logic-free and the synthesis lives in `catalogCard`,
  * which is covered by tests.
  */
+/**
+ * The decks printing this card, newest first.
+ *
+ * Membership-scoped like every other proxy read: a row whose card has left the
+ * deck names no deck here. `pruneOrphanProxies` means such a row should not
+ * exist at all, and this is the reading half of that belt-and-braces pair.
+ *
+ * Failure is swallowed to null-ish, as the availability read beside it is: the
+ * modal omits a block rather than losing the card.
+ */
+async function proxyingDecks(userId: string, oracleId: string): Promise<ProxyingDeck[]> {
+  const { db } = await import("../../db");
+  const { sql } = await import("drizzle-orm");
+  return db
+    .execute<{ id: string; name: string }>(sql`
+      select d.id, d.name
+      from deck_proxies p
+      join decks d on d.id = p.deck_id
+      where d.user_id = ${userId}
+        and p.oracle_id = ${oracleId}
+        and (
+          exists (
+            select 1 from deck_cards dc
+            where dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
+          )
+          or d.commander_oracle_id = p.oracle_id
+          or d.partner_oracle_id = p.oracle_id
+        )
+      order by p.created_at desc, d.id
+    `)
+    .then((r) => r.rows)
+    .catch(() => []);
+}
+
 export const loadCardDetail = cache(async function loadCardDetail(
   userId: string,
   oracleId: string,
@@ -153,14 +187,15 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // between the reader pressing a card and the modal filling in. Each still
     // fails on its own — `Promise.all` over two already-caught promises settles
     // with a null in the failed slot rather than rejecting the pair.
-    const [availability, prices] = await Promise.all([
+    const [availability, prices, proxiedBy] = await Promise.all([
       (async () => {
         const { loadAvailability } = await import("../decks/availability-query");
         return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
       })().catch(() => null),
       pricesFor(oracleId),
+      proxyingDecks(userId, oracleId),
     ]);
-    return { ...owned[0], availability, prices };
+    return { ...owned[0], availability, prices, proxiedBy };
   }
 
   const { db } = await import("../../db");
@@ -191,6 +226,11 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // pair would add a whole round trip to the commonest open. Kicked off only after
   // the card is known to exist, so a miss costs no query at all.
   const prices = pricesFor(oracleId);
+  // Started here too, not only on the owned branch. A card the player owns no
+  // copy of is the COMMONEST proxy — the Ozolith case the spec is written
+  // around — so a receipt that could only list printing decks for owned cards
+  // would miss every one that matters.
+  const proxiedBy = proxyingDecks(userId, oracleId);
   const printingRows = await db
     .select({
       scryfallId: printings.scryfallId,
@@ -205,7 +245,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
     .leftJoin(sets, eq(sets.code, printings.setCode))
     .where(eq(printings.oracleId, oracleId));
-  return { ...catalogCard(card, printingRows), prices: await prices };
+  return { ...catalogCard(card, printingRows), prices: await prices, proxiedBy: await proxiedBy };
 });
 
 /**

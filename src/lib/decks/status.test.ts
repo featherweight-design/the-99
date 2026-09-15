@@ -98,3 +98,24 @@ describe("statusPill", () => {
       ));
   });
 });
+
+describe("a deck whose gaps are printed", () => {
+  it("reads Complete when proxies cover the rest", () => {
+    // 92 owned, 7 printed, 99 built. `ownedCount` alone says To buy; the slots
+    // are all filled, and the pill has always been a claim about the list.
+    expect(statusPill({
+      built: 99, ownedCount: 92, coveredCount: 99, unfundedCount: 0, bodySize: 99,
+    })).toBe("Complete");
+  });
+
+  it("still reads To buy when the proxies do not close the gap", () => {
+    expect(statusPill({
+      built: 99, ownedCount: 92, coveredCount: 97, unfundedCount: 2, bodySize: 99,
+    })).toBe("To buy");
+  });
+
+  it("defaults to the ownership answer for a caller that cannot count proxies", () => {
+    expect(statusPill({ built: 99, ownedCount: 99, bodySize: 99 })).toBe("Complete");
+    expect(statusPill({ built: 99, ownedCount: 92, bodySize: 99 })).toBe("To buy");
+  });
+});

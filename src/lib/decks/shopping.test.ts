@@ -74,3 +74,27 @@ describe("the shopping list against a bare !owned filter", () => {
     expect(bare).toEqual(["Sol Ring", "Forest"]);
   });
 });
+
+describe("a printed card is not shopping", () => {
+  it("leaves the list even though the player owns no copy", () => {
+    // The order inside the predicate is the whole test: `!c.owned` comes second,
+    // so a proxied card the player owns none of — the commonest case there is —
+    // would otherwise be added to Shopping the moment it was printed.
+    expect(isShoppingCard(card({ owned: false, proxied: true }))).toBe(false);
+  });
+
+  it("leaves the list when the copies are all spoken for", () => {
+    // The other half of `isShoppingCard`: an owned card whose copies are sleeved
+    // senior elsewhere is `over` and normally a purchase. Printing one answers it.
+    const over = card({
+      owned: true,
+      proxied: true,
+      availability: { owned: 1, hard: 1, soft: 0, free: -1, claims: [] },
+    });
+    expect(isShoppingCard(over)).toBe(false);
+  });
+
+  it("still shops for the same card when it is not printed", () => {
+    expect(isShoppingCard(card({ owned: false, proxied: false }))).toBe(true);
+  });
+});

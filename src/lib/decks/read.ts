@@ -6,6 +6,7 @@ import {
   collectionItems,
   deckCards,
   deckFolders,
+  deckProxies,
   deckGames,
   deckUnresolvedRows,
   deckVersions,
@@ -119,6 +120,14 @@ export type { DeckUnresolvedRow };
  */
 export type DeckCommander = {
   oracleId: string;
+  /**
+   * This deck prints its copy of this commander. Per id, because a pair deck can
+   * proxy one and own the other.
+   *
+   * Optional for the reason `DeckDetailCard.proxied` is: the literal is built in
+   * fixtures that cannot reach the database, and absent means not proxied.
+   */
+  proxied?: boolean;
   name: string;
   colorIdentity: string[];
   manaCost: string | null;
@@ -198,10 +207,23 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     .from(cards)
     .where(inArray(cards.oracleId, commanderIds));
 
-  const commander = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
-  if (!commander) return null;
-  const partner = deck.partnerOracleId
+  // Each commander's own proxy flag. Neither is a `deck_cards` row, so this is
+  // its own read rather than a column on the query above — and a pair deck can
+  // proxy one commander and not the other, so it is per id.
+  const proxiedCommanderRows = await db
+    .select({ oracleId: deckProxies.oracleId })
+    .from(deckProxies)
+    .where(and(eq(deckProxies.deckId, deckId), inArray(deckProxies.oracleId, commanderIds)));
+  const proxiedCommanders = new Set(proxiedCommanderRows.map((r) => r.oracleId));
+
+  const commanderRow = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
+  if (!commanderRow) return null;
+  const commander = { ...commanderRow, proxied: proxiedCommanders.has(commanderRow.oracleId) };
+  const partnerRow = deck.partnerOracleId
     ? (commanderRows.find((c) => c.oracleId === deck.partnerOracleId) ?? null)
+    : null;
+  const partner = partnerRow
+    ? { ...partnerRow, proxied: proxiedCommanders.has(partnerRow.oracleId) }
     : null;
 
   // Third: fetch all deck cards with owned flag.
@@ -223,6 +245,13 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       imageUri: cards.imageUri,
       layout: cards.layout,
       owned: ownedSql,
+      // The deck's own statement about this slot, which is NOT a fact about the
+      // collection and never touches `owned`. Selected here rather than joined
+      // downstream so the decklist and its counters read one row.
+      proxied: sql<boolean>`exists (
+        select 1 from deck_proxies p
+        where p.deck_id = ${deckCards.deckId} and p.oracle_id = ${deckCards.oracleId}
+      )`,
       quantity: deckCards.quantity,
       auto: deckCards.auto,
     })
@@ -293,6 +322,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     cmc: row.cmc,
     owned: row.owned,
+    proxied: row.proxied,
     quantity: row.quantity,
     auto: row.auto,
     availability: availability?.get(row.oracleId) ?? null,
@@ -457,6 +487,12 @@ export type DeckListItem = {
    * tile draws when nothing is spoken for — a clause is not worth a 500.
    */
   inUseElsewhere: number;
+  /**
+   * How many copies in this deck are printed. One figure, three readings: the
+   * tile's `N proxies` line, the covered count behind its status pill, and the
+   * subtitle on `/collection/proxies`.
+   */
+  proxiedCount: number;
   statusPill: StatusPill;
 };
 
@@ -680,15 +716,47 @@ export async function listDecksWithStats(
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
   const buyRows = canFlip ? await loadDeckBuyRows(userId).catch(() => []) : [];
+  // Printed copies per deck, counted off the same membership the claim model
+  // uses: `deck_cards` quantities plus either commander column. Tolerated like
+  // the two reads above — a failed count leaves every deck reading as it did
+  // before proxies existed, which is a missing line rather than a 500.
+  const proxiedByDeck = rows.length > 0
+    ? await db.execute<{ deck_id: string; copies: number }>(sql`
+        select d.id as deck_id, sum(t.copies)::int as copies
+        from decks d
+        join lateral (
+          select coalesce(dc.quantity, 1) as copies
+          from deck_proxies p
+          left join deck_cards dc
+            on dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
+          where p.deck_id = d.id
+            and (
+              dc.oracle_id is not null
+              or d.commander_oracle_id = p.oracle_id
+              or d.partner_oracle_id = p.oracle_id
+            )
+        ) t on true
+        where d.user_id = ${userId}
+        group by d.id
+      `)
+      .then((r) => new Map(r.rows.map((x) => [x.deck_id, x.copies])))
+      .catch(() => new Map<string, number>())
+    : new Map<string, number>();
   const unfundedByDeck = new Map<string, number>();
   for (const r of buyRows) {
     unfundedByDeck.set(r.deckId, (unfundedByDeck.get(r.deckId) ?? 0) + r.quantity);
   }
 
   return rows.map((row) => {
+    const proxiedCount = proxiedByDeck.get(row.id) ?? 0;
     const pill = statusPill({
       built: row.built,
       ownedCount: row.ownedCount,
+      // A printed slot is a filled slot, so a deck whose only gaps are proxies
+      // reads `Complete` here exactly as it does on its own page. Capped at
+      // `built` because a proxy on a commander is not a `deck_cards` row and
+      // would otherwise push the covered figure past the body count.
+      coveredCount: Math.min(row.built, row.ownedCount + proxiedCount),
       unresolvedCount: row.unresolvedCount,
       unfundedCount: unfundedByDeck.get(row.id) ?? 0,
       bodySize: deckBodySize(row.partnerName !== null),
@@ -707,6 +775,7 @@ export async function listDecksWithStats(
       folderName: row.folderName,
       built: row.built,
       ownedCount: row.ownedCount,
+      proxiedCount,
       toBuyCount: row.built - row.ownedCount,
       unresolvedCount: row.unresolvedCount,
       // Normalised here rather than trusted from the driver: `lastPlayedSql` is

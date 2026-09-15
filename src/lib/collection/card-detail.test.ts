@@ -224,6 +224,10 @@ describe("loadCardDetail availability", () => {
             leftJoin: () => ({ where: async () => [] }),
           }),
         }),
+        // The proxy read runs on both branches of this loader, so every stub of
+        // the db has to answer it. It returns no decks here, which is the state
+        // every case in this file is about.
+        execute: async () => ({ rows: [] }),
       },
     }));
 

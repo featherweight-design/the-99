@@ -30,6 +30,12 @@ import { availabilityState } from "./availability";
  */
 export function isShoppingCard(c: DeckDetailCard): boolean {
   if (isBasicLand(c.typeLine)) return false;
+  // BEFORE the ownership test, which is the whole point: a proxied card is
+  // usually one the player owns no copy of, so `!c.owned` would put it on the
+  // list the moment it was printed. This is the client-side twin of the
+  // `list_claims` anti-join, and the two must agree or the strip and the
+  // server's buy rows bill different baskets.
+  if (c.proxied) return false;
   if (!c.owned) return true;
   const a = c.availability;
   // A missing read degrades to the free rendering, as the builder always has:

@@ -23,6 +23,16 @@ export type DeckDetailCard = {
    */
   cmc: number;
   owned: boolean;
+  /**
+   * This deck prints its copy of the card. **Never folded into `owned`**, which
+   * stays a fact about the collection: a proxied row draws a hollow ownership
+   * dot and a proxy mark, and the two disagreeing is the honest reading —
+   * *not in your collection · this deck's slot is filled*.
+   *
+   * Optional for the reason `availability` is: six sites build this literal and
+   * none of them can reach the database. Absent means not proxied.
+   */
+  proxied?: boolean;
   quantity: number;
   auto: boolean;
   /**
@@ -164,12 +174,30 @@ export function deckCounts(
 ): {
   built: number;
   ownedCount: number;
+  coveredCount: number;
   toBuyCount: number;
   total: number;
 } {
   const built = cards.reduce((sum, c) => sum + c.quantity, 0);
   const ownedCount = cards.reduce((sum, c) => sum + (c.owned ? c.quantity : 0), 0);
-  return { built, ownedCount, toBuyCount: built - ownedCount, total: built + unresolvedCount };
+  // COVERED IS NOT OWNED, and both figures exist because the app must be able to
+  // say each without implying the other. `ownedCount` answers "how much of this
+  // list is in your collection"; `coveredCount` answers "how many slots are
+  // filled", which a printed card fills without the collection moving. The
+  // status pill reads the second — a deck whose only gaps are proxies IS
+  // finished — while every ownership figure keeps reading the first.
+  const coveredCount = cards.reduce(
+    (sum, c) => sum + (c.owned || c.proxied ? c.quantity : 0),
+    0,
+  );
+  return {
+    built,
+    ownedCount,
+    coveredCount,
+    // What the player would still have to acquire, which a proxy answers.
+    toBuyCount: built - coveredCount,
+    total: built + unresolvedCount,
+  };
 }
 
 const CARD_TYPE_GROUP_ORDER: CardTypeGroup[] = [

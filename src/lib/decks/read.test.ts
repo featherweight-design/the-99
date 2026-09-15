@@ -227,11 +227,15 @@ describe("deckCounts", () => {
       card({ oracleId: "a", owned: true, quantity: 2 }),
       card({ oracleId: "b", owned: false, quantity: 3 }),
     ]);
-    expect(counts).toEqual({ built: 5, ownedCount: 2, toBuyCount: 3, total: 5 });
+    expect(counts).toEqual({
+      built: 5, ownedCount: 2, coveredCount: 2, toBuyCount: 3, total: 5,
+    });
   });
 
   it("is zeroed for an empty deck", () => {
-    expect(deckCounts([])).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0, total: 0 });
+    expect(deckCounts([])).toEqual({
+      built: 0, ownedCount: 0, coveredCount: 0, toBuyCount: 0, total: 0,
+    });
   });
 
   it("puts unresolved rows in total and in nothing else", () => {
@@ -246,7 +250,9 @@ describe("deckCounts", () => {
   });
 
   it("reports a deck of nothing but unresolved rows as built 0 with a non-zero total", () => {
-    expect(deckCounts([], 3)).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0, total: 3 });
+    expect(deckCounts([], 3)).toEqual({
+      built: 0, ownedCount: 0, coveredCount: 0, toBuyCount: 0, total: 3,
+    });
   });
 });
 

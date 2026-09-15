@@ -65,6 +65,16 @@ export type StatusPill = "Draft" | "Building" | "Over" | "Unresolved" | "To buy"
 export function statusPill(args: {
   built: number;
   ownedCount: number;
+  /**
+   * Slots filled: owned, or printed. Defaults to `ownedCount`, so a caller that
+   * cannot compute proxies keeps the pre-proxy answer rather than having to
+   * restate it.
+   *
+   * The `Complete` branch reads THIS and not `ownedCount`: a deck whose only
+   * gaps are printed cards is finished, and the pill has always been a claim
+   * about the list rather than about a box.
+   */
+  coveredCount?: number;
   unresolvedCount?: number;
   unfundedCount?: number;
   /** 99, or 98 for a deck with a partner — see `deck-size.ts`. */
@@ -79,5 +89,6 @@ export function statusPill(args: {
   // seniority allocation still gets the ownership answer rather than a wrong
   // `Complete`.
   const unfunded = args.unfundedCount ?? 0;
-  return args.ownedCount === args.built && unfunded === 0 ? "Complete" : "To buy";
+  const covered = args.coveredCount ?? args.ownedCount;
+  return covered === args.built && unfunded === 0 ? "Complete" : "To buy";
 }
