@@ -8,7 +8,7 @@
 | `README.md` | The decisions log, with the reasoning behind each. 15 numbered decisions, the frame table, component notes, engineering notes, open questions, gap report. |
 | `STATES-assignments.md` | The state matrix. **A** is the summary route (15 states), **B** is `ContestedCardRow` (26 states). |
 | `card-assignments · copy strings.ts` | Every string, with the reasoning in comments — including what is deliberately absent and why. |
-| `READINESS.md` | **🟠 amber.** Five blocking items, what is ratified, metrics, contrast, accessibility, and what is deliberately not designed. |
+| `READINESS.md` | **🟢 green**, amended 2026-09-14. Read its amendment first: both rulings are made, the deck-page door is DROPPED, and the three remaining blockers were engineering contracts rather than design calls. R2 filed this as 🟠 amber and its five blocking items are kept below for the record. |
 | `The 99 - Card Assignments (R1).dc.html` | Kept for the diff only. **Drawn without the spec — do not read as a design record.** |
 | `brand/` | The locked brand sheet, copied in for self-containment. |
 | `The 99 - Card Assignments (R2) - standalone.html` | The canvas as one offline file, for sharing outside the project. |
@@ -22,6 +22,12 @@ migration, the reservation term, the arrivals diff, `summary_payload`, the confi
 the `/decks` invalidation fix) carry no design gate and can proceed now.
 
 ## The five things that need a ruling before build
+
+> **Superseded 2026-09-14 — all five are closed.** See `READINESS.md`'s amendment. Item 1 was
+> ruled AGAINST: the availability marker stays inert and the deck-page door is dropped, so this
+> handoff's deck-page sections (README 9 and 10, state 41) describe a surface that is not being
+> built. Item 5 was ruled FOR. Items 2, 3 and 4 were engineering contracts and ship in PRs 1 and
+> 3. Kept below as R2 filed them.
 
 1. **The marker becomes a tap target** — `availability-marker.tsx` rules it never is, and the
    deck-page door depends on it. The only shipped ruling this handoff contradicts.

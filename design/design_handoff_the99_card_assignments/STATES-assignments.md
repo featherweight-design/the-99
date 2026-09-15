@@ -1,7 +1,11 @@
 # States — post-import summary and the contested row (R2)
 
-Two tables. **A** is the summary route; **B** is `ContestedCardRow`, identical on the summary,
-`/decks/[id]/changes` and the deck page marker disclosure.
+Two tables. **A** is the summary route; **B** is `ContestedCardRow`, identical on the summary and
+`/decks/[id]/changes`.
+
+> **Amended 2026-09-14.** The deck page marker disclosure is **dropped** — see `READINESS.md`.
+> **State 41 is not built**, and state 44's compact option survives as the 390px form only, since
+> the deck-page panel that justified it at desktop no longer exists.
 
 ## A · `/collection/replace/summary/[uploadId]`
 
@@ -51,7 +55,7 @@ Two tables. **A** is the summary route; **B** is `ContestedCardRow`, identical o
 | 38 | **The card is also pullable** (`/changes`) | Decklist row keeps `Pull it`; the chooser is the panel beneath, caption `no list changes`. **Row template unchanged, row does not grow.** |
 | 39 | **Contested, not pullable** | No `Pull it`; the panel alone — identical to the summary's row. |
 | 40 | **`this deck` among the claimants** | Tagged `this deck`, **in commit order, never promoted.** |
-| 41 | **On the deck page** | The `over`-state marker is the disclosure trigger (`short 1, also in Sidisi Graveyard`). Closed by default, one open at a time, never reflows the list. `free`/`soft`/`hard` are never triggers. **The panel uses the compact two-line option at any width** — the decklist column is 345px, within a hair of the phone option's 336px, and a one-line option's fixed content leaves the deck name 18px. ⚠ Contradicts a shipped ruling — README decision 10. |
+| 41 | ~~**On the deck page**~~ **— DROPPED 2026-09-14, not built** | The `over`-state marker is the disclosure trigger (`short 1, also in Sidisi Graveyard`). Closed by default, one open at a time, never reflows the list. `free`/`soft`/`hard` are never triggers. **The panel uses the compact two-line option at any width** — the decklist column is 345px, within a hair of the phone option's 336px, and a one-line option's fixed content leaves the deck name 18px. ⚠ Contradicts a shipped ruling — README decision 10. |
 | 42 | **One claimant left** | Not contested; the row does not exist. Reached from 29 on the next load. |
 | 43 | **No shortage** | The row does not exist. Assignments are inert without contention. |
 | 44 | **Compact option · 390px and the deck-page panel** | Two-line, 52px: deck name over outcome, stamp demoted to the outcome line, `this deck` a `flex:none` plate on the name line. **The deck name never truncates to fit a price, and the stamp never truncates at all.** Chosen by column width, not viewport width. |

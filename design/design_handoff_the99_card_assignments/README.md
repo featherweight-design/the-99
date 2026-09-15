@@ -271,6 +271,11 @@ The money sections are the frozen payload; **only the contested section is live,
 move a figure above it.**
 
 ### 9. The second door: the chooser is never in a decklist row, and the deck page takes the compact option
+
+> **Half superseded 2026-09-14.** The `/changes` panel stands as drawn. **The deck-page panel is
+> dropped** along with the door in decision 10, so this section's 345px column argument — and the
+> compact option it justifies at desktop — no longer applies to any surface. The compact form
+> survives as the 390px one. `READINESS.md`'s amendment is the record.
 On `/changes` the row keeps name + one availability slot + `Pull it`; **the chooser hangs below as a
 panel** with the app's brass-violet left rule. Two geometries, two meanings; the card-row floor is
 held rather than bent. The caption `no list changes` is the one place the distinction is spelt out
@@ -285,6 +290,12 @@ becomes a plate sharing the name's line as a `flex:none` sibling, so the ellipsi
 the deck name — the marker's own split, and the reason it has one.
 
 ### 10. On the deck page, the marker is the trigger ⚠
+
+> **SUPERSEDED 2026-09-14 — ruled against, and the deck-page door is dropped.**
+> `availability-marker.tsx`'s ruling stands unchanged: the marker has no hover, no focus ring and
+> is never a tap target, in every state. The chooser appears on the summary and
+> `/decks/[id]/changes` only. Nothing in this section is to be built; it is kept as the record of
+> what was asked for and why.
 `marker.overAlsoIn` already renders `short 1, also in Sidisi Graveyard` on a deck's own list — the
 shortage and who has it. A contested arrival is exactly that state, so the row needs no new label
 and no new slot, and **only the over state is ever a trigger** (`free` renders nothing;
@@ -353,6 +364,9 @@ So:
    still change the decision. Re-listing after the confirm is a second copy, not a second chance.
 4. **The line reads *you saw them before you confirmed*, on purpose** — the summary must not imply
    the app has just discovered something, or a clean replace reads as a failed one.
+
+> **RATIFIED 2026-09-14 — in scope for PR 3.** The link ships; the counts-only fallback below is
+> not taken.
 
 ⚠ **To ratify:** the route back needs `IssueInspector` reachable **after** the confirm. The rows live
 on `csv_uploads`, which the spec is already adding `summary_payload` to, so the data is there — but
