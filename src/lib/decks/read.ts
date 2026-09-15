@@ -492,9 +492,14 @@ export type DeckListItem = {
    */
   inUseElsewhere: number;
   /**
-   * How many copies in this deck are printed. One figure, three readings: the
-   * tile's `N proxies` line, the covered count behind its status pill, and the
-   * subtitle on `/collection/proxies`.
+   * How many CARDS in this deck are printed — distinct marks, not copies. One
+   * mark on a quantity-4 row counts 1, because a proxy covers the deck's whole
+   * ask for a card and has no quantity (ruling 5); `proxyCounts` and the probe
+   * both pin that. Summing `deck_cards.quantity` here would read `4 proxies`
+   * off a single marked playset.
+   *
+   * One figure, three readings: the tile's `N proxies` line, the covered count
+   * behind its status pill, and the subtitle on `/collection/proxies`.
    */
   proxiedCount: number;
   statusPill: StatusPill;
