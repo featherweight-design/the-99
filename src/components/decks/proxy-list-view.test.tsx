@@ -4,6 +4,10 @@ import { ProxyListView } from "./proxy-list-view";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
 
+/** One run, shared by every row: `priceState` compares each row's own `asOf`
+ *  against this to tell a live figure from a frozen one. */
+const NEWEST = new Date("2026-09-15T09:00:00Z");
+
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(),
   clearCardArtPreference: vi.fn(),
@@ -12,12 +16,13 @@ vi.mock("../../app/collection/actions", () => ({
 const row = (over: Partial<ProxyRow> = {}): ProxyRow => ({
   oracleId: "o1", name: "The Ozolith", typeLine: "Legendary Artifact",
   manaCost: "{1}", cmc: 1, imageUri: null, setCode: "CMR", rarity: "rare",
-  decks: [{ id: "d1", name: "HD Gods" }], commander: false, priceCents: 4200, ...over,
+  decks: [{ id: "d1", name: "HD Gods" }], commander: false,
+  price: { cents: 4200, asOf: NEWEST, foilOnly: false } as unknown as ProxyRow["price"], ...over,
 });
 
 describe("the proxy list", () => {
   it("names each card's decks, and links them", () => {
-    render(<ProxyListView rows={[row()]} hasDecks hasCollection />);
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
     expect(screen.getByText("The Ozolith")).toBeTruthy();
     const deck = screen.getByRole("link", { name: proxyCopy.row.deckAria("HD Gods") });
     expect(deck.getAttribute("href")).toBe("/decks/d1");
@@ -27,7 +32,7 @@ describe("the proxy list", () => {
     // `isShoppingCard` has just removed every one of these from every Shopping
     // list. Drawing the tag they were removed from would put two surfaces in
     // direct disagreement about the same card.
-    render(<ProxyListView rows={[row()]} hasDecks hasCollection />);
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
     // Twice over: the row's own figure and the strip's total, which on a
     // one-card list are the same number.
     expect(screen.getAllByText("$42.00").length).toBeGreaterThanOrEqual(1);
@@ -36,7 +41,7 @@ describe("the proxy list", () => {
 
   it("says no stock rather than a zero", () => {
     // A card nobody is selling is not a free card.
-    render(<ProxyListView rows={[row({ priceCents: null })]} hasDecks hasCollection />);
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row({ price: null })]} hasDecks hasCollection />);
     expect(screen.getByText(proxyCopy.row.noStock)).toBeTruthy();
     expect(screen.queryByText("$0.00")).toBeNull();
   });
@@ -44,7 +49,8 @@ describe("the proxy list", () => {
   it("states the cost strip's own gap", () => {
     render(
       <ProxyListView
-        rows={[row(), row({ oracleId: "o2", name: "Mana Crypt", priceCents: null })]}
+        newestAsOf={NEWEST}
+        rows={[row(), row({ oracleId: "o2", name: "Mana Crypt", price: null })]}
         hasDecks hasCollection
       />,
     );
@@ -52,7 +58,7 @@ describe("the proxy list", () => {
   });
 
   it("names the printing, which tells two same-named cards apart", () => {
-    render(<ProxyListView rows={[row()]} hasDecks hasCollection />);
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
     expect(screen.getByText(/CMR/)).toBeTruthy();
   });
 
@@ -62,7 +68,8 @@ describe("the proxy list", () => {
     // provenance the loader does not read.
     render(
       <ProxyListView
-        rows={[row(), row({ oracleId: "o2", name: "Mana Crypt", priceCents: null })]}
+        newestAsOf={NEWEST}
+        rows={[row(), row({ oracleId: "o2", name: "Mana Crypt", price: null })]}
         hasDecks hasCollection
       />,
     );
@@ -70,24 +77,24 @@ describe("the proxy list", () => {
   });
 
   it("marks a commander, which is otherwise invisible in this list", () => {
-    render(<ProxyListView rows={[row({ commander: true })]} hasDecks hasCollection />);
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row({ commander: true })]} hasDecks hasCollection />);
     expect(screen.getByText(proxyCopy.row.commander)).toBeTruthy();
   });
 
   it("drops the collection clause for a player who has none", () => {
-    render(<ProxyListView rows={[row()]} hasDecks hasCollection={false} />);
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection={false} />);
     expect(screen.getByText(proxyCopy.page.subtitle(1, 1))).toBeTruthy();
     // No upload prompt, no banner: this route works perfectly well without one.
     expect(screen.queryByText(/upload/i)).toBeNull();
   });
 
   it("names the right precondition when there is nothing to show", () => {
-    const { rerender } = render(<ProxyListView rows={[]} hasDecks hasCollection />);
+    const { rerender } = render(<ProxyListView newestAsOf={NEWEST} rows={[]} hasDecks hasCollection />);
     expect(screen.getByText(proxyCopy.empty.heading)).toBeTruthy();
 
     // A different fact, so a different heading — and the only branch with a
     // filled button, because here there genuinely is one next act.
-    rerender(<ProxyListView rows={[]} hasDecks={false} hasCollection />);
+    rerender(<ProxyListView newestAsOf={NEWEST} rows={[]} hasDecks={false} hasCollection />);
     expect(screen.getByText(proxyCopy.empty.noDecksHeading)).toBeTruthy();
     expect(screen.getByText(proxyCopy.empty.noDecksAction)).toBeTruthy();
   });
@@ -95,7 +102,7 @@ describe("the proxy list", () => {
   it("offers no way to unmark from here", () => {
     // Read-only by ruling: a row belongs to several decks and the control is per
     // deck, so unmarking happens where the decision was made.
-    render(<ProxyListView rows={[row()]} hasDecks hasCollection />);
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
     expect(screen.queryByRole("switch")).toBeNull();
     expect(screen.queryByRole("button", { name: /unmark|remove/i })).toBeNull();
   });

@@ -11,7 +11,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
 import { GhostButton, PrimaryButton } from "../ui/button";
-import { formatCents } from "../../lib/decks/price";
+import { formatCents, priceOf, priceState } from "../../lib/decks/price";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
 
@@ -43,16 +43,27 @@ function Empty({ hasDecks }: { hasDecks: boolean }) {
 
 export function ProxyListView({
   rows,
+  newestAsOf,
   hasDecks,
   hasCollection,
 }: {
   rows: ProxyRow[];
+  /** The newest run in the price table — what `priceState` compares each row's
+   *  own `asOf` against to tell live stock from a frozen last-known figure. */
+  newestAsOf: Date | null;
   hasDecks: boolean;
   hasCollection: boolean;
 }) {
   const deckCount = new Set(rows.flatMap((r) => r.decks.map((d) => d.id))).size;
-  const priced = rows.filter((r) => r.priceCents !== null);
-  const total = priced.reduce((n, r) => n + (r.priceCents ?? 0), 0);
+  // Each row's STATE, via the app's own rule rather than a null check: a card
+  // can be priced, foil-only at a different figure, sold out with a frozen
+  // price, or never stocked at all, and only the first belongs in a total.
+  const states = new Map(rows.map((r) => [r.oracleId, priceState(r.price, newestAsOf)]));
+  const priced = rows.filter((r) => states.get(r.oracleId) === "priced");
+  const total = priced.reduce(
+    (n, r) => n + (r.price ? priceOf(r.price, "priced") ?? 0 : 0),
+    0,
+  );
   const unpriced = rows.length - priced.length;
 
   return (
@@ -161,12 +172,15 @@ export function ProxyListView({
                       drawing the tag they were removed from would put two
                       surfaces in direct disagreement. */}
                   <span
-                    className="font-mono text-[11.5px] flex-none"
-                    style={{ color: row.priceCents === null ? "var(--fg-locked)" : "var(--fg-body)" }}
+                    className={`font-mono text-[11.5px] flex-none ${
+                      states.get(row.oracleId) === "priced"
+                        ? "text-[color:var(--fg-body)]"
+                        : "text-[color:var(--fg-locked)]"
+                    }`}
                   >
-                    {row.priceCents === null
-                      ? proxyCopy.row.noStock
-                      : formatCents(row.priceCents)}
+                    {states.get(row.oracleId) === "priced"
+                      ? formatCents(row.price ? priceOf(row.price, "priced") ?? 0 : 0)
+                      : proxyCopy.row.noStock}
                   </span>
                 </li>
               ))}

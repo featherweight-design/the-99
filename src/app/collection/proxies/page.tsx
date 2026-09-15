@@ -19,7 +19,7 @@ export default async function ProxiesPage() {
   // `userHasDecks`, not `listDecksWithStats`: that loader runs an aggregate and,
   // for a flippable deck, the user-wide claim and seniority query behind
   // `loadDeckBuyRows` — all of it discarded here for one boolean.
-  const [rows, hasDecks, stats] = await Promise.all([
+  const [list, hasDecks, stats] = await Promise.all([
     loadProxyList(userId),
     userHasDecks(userId),
     getCollectionStats(userId),
@@ -27,7 +27,8 @@ export default async function ProxiesPage() {
 
   return (
     <ProxyListView
-      rows={rows}
+      rows={list.rows}
+      newestAsOf={list.newestAsOf}
       hasDecks={hasDecks}
       hasCollection={stats.totalCards > 0}
     />

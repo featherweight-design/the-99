@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import { loadPrices } from "./price-query";
+import type { PriceFact } from "./price";
 
 /**
  * One printed card, and every deck printing it.
@@ -27,12 +29,22 @@ export type ProxyRow = {
   /** This card is a commander of at least one deck printing it — ruling 3's case,
    *  otherwise invisible in a list where every row looks like a list card. */
   commander: boolean;
-  /** Cents for one copy, or null where the feed has never stocked it. NOT zero:
-   *  a card nobody is selling is not a free card. */
-  priceCents: number | null;
+  /**
+   * What the feed last carried for this card, and WHEN — never a bare figure.
+   *
+   * The whole fact, because the states are not one: a card the feed has never
+   * stocked is absent, a card whose newest row predates the table's newest run
+   * is sold out, and a foil-only card has a price that is not its non-foil
+   * price. A hand-rolled `min(price_cents)` collapsed all three into "no stock"
+   * or a confident dollar figure, which is how a frozen last-known price reads
+   * as current.
+   */
+  price: PriceFact | null;
 };
 
-export async function loadProxyList(userId: string): Promise<ProxyRow[]> {
+export type ProxyList = { rows: ProxyRow[]; newestAsOf: Date | null };
+
+export async function loadProxyList(userId: string): Promise<ProxyList> {
   const { rows } = await db.execute<{
     oracle_id: string;
     name: string;
@@ -44,7 +56,6 @@ export async function loadProxyList(userId: string): Promise<ProxyRow[]> {
     rarity: string | null;
     decks: { id: string; name: string }[];
     commander: boolean;
-    price_cents: number | null;
   }>(sql`
     with held as (
       -- Every LIVE proxy: a mark whose card the deck still holds, by the same
@@ -63,15 +74,6 @@ export async function loadProxyList(userId: string): Promise<ProxyRow[]> {
           or d.commander_oracle_id = p.oracle_id
           or d.partner_oracle_id = p.oracle_id
         )
-    ),
-    -- The newest price row per card, which is what the strip totals. A card the
-    -- feed has never carried has no row and stays null all the way out.
-    priced as (
-      select distinct on (pr.oracle_id) pr.oracle_id, pr.price_cents
-      from printing_prices pp
-      join printings pr on pr.scryfall_id = pp.scryfall_id
-      where pp.price_cents is not null
-      order by pr.oracle_id, pp.as_of desc, pp.price_cents asc
     )
     select
       h.oracle_id,
@@ -90,18 +92,24 @@ export async function loadProxyList(userId: string): Promise<ProxyRow[]> {
       -- normal case for a body-card proxy — and a null would travel out through
       -- a field the type says is boolean.
       coalesce(bool_or(h.is_commander), false) as commander,
-      min(priced.price_cents)::int as price_cents,
       -- Newest MARK first, which created_at is the only record of.
       max(h.created_at) as newest
     from held h
     join cards c on c.oracle_id = h.oracle_id
     left join printings pr on pr.oracle_id = h.oracle_id
-    left join priced on priced.oracle_id = h.oracle_id
     group by h.oracle_id, c.name, c.type_line, c.mana_cost, c.cmc, c.image_uri
     order by newest desc, c.name
   `);
 
-  return rows.map((r) => ({
+  // The app's own price read, rather than a second one written here. It carries
+  // the liveness and finish rules — live before stale, real non-foil stock
+  // before foil-only at any price — that `priceState` then reads to tell
+  // `priced` from `soldOut` from `foilOnly` from absent.
+  const prices = await loadPrices(rows.map((r) => r.oracle_id));
+
+  return {
+    newestAsOf: prices.newestAsOf,
+    rows: rows.map((r) => ({
     oracleId: r.oracle_id,
     name: r.name,
     typeLine: r.type_line,
@@ -112,8 +120,9 @@ export async function loadProxyList(userId: string): Promise<ProxyRow[]> {
     rarity: r.rarity,
     decks: r.decks ?? [],
     commander: r.commander,
-    priceCents: r.price_cents,
-  }));
+    price: prices.prices.get(r.oracle_id) ?? null,
+  })),
+  };
 }
 
 /**
