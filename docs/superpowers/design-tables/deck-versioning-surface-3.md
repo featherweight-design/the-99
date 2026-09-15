@@ -388,7 +388,7 @@ inside the sheet, which overrides both the Component notes' "two lists" and stat
 | Card rows inside the sheet | **Never** (§Errata) — the priced rows and the released names live one screen up |
 | A checklist, tick boxes, "mark as bought" | **Never** — the buy tag is already the outstanding state |
 | A "prices as of" line | Not drawn (gap 4) |
-| Commit as v1 | `locks this list as v1: nothing about the deck changes` (§Copy per state), drawn nowhere |
+| Commit as v1 | **RETIRED 2026-09-15** — the note this row recorded (`pending.firstCommitNote`) is cut with the key; the offer draws its control alone. See surface 1's FirstCommitOffer table |
 
 ---
 

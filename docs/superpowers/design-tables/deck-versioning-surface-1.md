@@ -451,7 +451,7 @@ State 2. Placement: **in the spine, beside `Export`** — not in a banner.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| wrapper display / align-items / gap / flex-wrap | (same rule) | `flex` · `center` · `12px` · `wrap` |
+| wrapper | **RETIRED 2026-09-15**, with the note it was arranging — `flex` · `center` · `12px` · `wrap` described a row holding the control and the note, and the offer is now the control alone. A flex container around a single item decides only how much of the row that item claims, which is the property that zeroed the deck's title column. Do not restore it. |
 | button font-family / weight / size | (same rule) | `var(--font-sans)` · `500` · `13px` |
 | button color | (same rule) | `#EDE6D8` (`--fg`) |
 | button background | (same rule) | none — **outline/ghost, never the cream primary** |
@@ -459,9 +459,7 @@ State 2. Placement: **in the spine, beside `Export`** — not in a banner.
 | button border-radius | (same rule) | `8px` |
 | button padding | (same rule) | `9px 16px` |
 | button text | (same rule) | `Commit as v1` (`pending.firstCommitCta`) |
-| note font-family / size / color | (same rule) | `var(--font-mono)` · `10px` · `#6A6152` (`--fg-locked`) |
-| note line-height | (same rule) | `1.45` |
-| note text | (same rule) | `locks this list as v1: nothing about the deck changes` (`pending.firstCommitNote`) |
+| note | **RETIRED 2026-09-15** — the mono note beside the control is CUT, and `pending.firstCommitNote` is deleted from `deck-versioning.ts`. It answered "what does this do to my deck" in two lines of 10px mono, which the control's own words raise and the review page it links to answers in full before anything is locked; on the desktop spine those lines were the widest thing in the band's narrowest row. Do not implement against it. |
 | gate | `deckBodySize(hasPartner)` — 99, or **98 with a partner** (§Errata); read exactly once, the only place this UI knows the number | same |
 
 ---
@@ -736,7 +734,7 @@ states, which live in this banner's box). Diff source: `deck_cards` against the 
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
 | A1 — Brew, below a full body | `versionCount === 0 && bodySize < deckBodySize(hasPartner)` | Nothing: no banner, no Commit, no Discard, **no Versions tab**; decklist unchanged | `versionCount`, `bodySize`, `hasPartner` |
-| A2 — Brew, at a full body | `versionCount === 0 && bodySize === deckBodySize(hasPartner)` | `FirstCommitOffer` in the spine beside `Export` — brass **outline** + mono note. No banner, no Versions tab | `versionCount`, `bodySize`, `hasPartner`, `firstCommitCta`, `firstCommitNote` |
+| A2 — Brew, at a full body | `versionCount === 0 && bodySize === deckBodySize(hasPartner)` | `FirstCommitOffer` in the spine beside `Export` — brass **outline**, the control alone (the mono note is retired, see above). No banner, no Versions tab | `versionCount`, `bodySize`, `hasPartner`, `firstCommitCta` |
 | A3 — Committed, clean | `versionCount > 0 && changeCount === 0` | `Versions · {n}` tab only. **No banner, no Commit, no Discard, no empty diff panel, no "no pending changes" reassurance** | `versionCount`, `currentVersion`, `versionLine(version, date)` |
 | A4 — Committed, 1–6 changes | `versionCount > 0 && 1 <= changeCount <= INLINE_CHANGE_MAX` | `PendingBanner` **names density** + marked decklist | `adds[]` (name, cost, bucket, holdingDeck, price), `removes[]` (name, cost), `currentVersion`, `nextVersion`, `INLINE_CHANGE_MAX` |
 | A5 — Committed, 7+ changes | `versionCount > 0 && changeCount > INLINE_CHANGE_MAX` | `PendingBanner` **counts density** + marked decklist. Names not shown at all | `addCount`, `removeCount`, `changeCount`, `currentVersion`, `nextVersion`, `unfreeCount`, `buyTotal`, `pullableCount` |

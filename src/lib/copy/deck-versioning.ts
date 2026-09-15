@@ -139,7 +139,11 @@ export const deckVersioningCopy = {
 
     // A versionless deck at a full body. Design's call, not the spec's — see READINESS.
     firstCommitCta: "Commit as v1",
-    firstCommitNote: "locks this list as v1: nothing about the deck changes",
+    // `firstCommitNote` is RETIRED. It stated that committing "locks this list
+    // as v1: nothing about the deck changes" — two mono lines answering a
+    // question the control's own words raise and the review page behind it
+    // answers in full, and on the desktop spine those lines were the widest
+    // thing in the band's narrowest row.
   },
 
   /* ---- §Surfaces 2 · review changes ---- */
