@@ -16,7 +16,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { PAGE, onPageRole } from "./lib/surface.mjs";
+import { PAGE, onPage, onPageRole } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -182,10 +182,17 @@ async function openCard(page, name) {
   // nothing happens. There is no state to wait for, only the absence of a
   // dialog, so the retry IS the wait.
   const row = onPageRole(page, "button", pattern).first();
+  // The wait is SCOPED, like the click. The shell's account sheet is also a
+  // `role="dialog"` and sits before `<main>` in document order, so an unscoped
+  // wait can report success off a dialog this function never opened. The card
+  // modal is mounted by `CardDetailProvider` inside the page's own section, so
+  // the scope reaches it — verified by this probe passing, which it cannot do
+  // if the wait looks somewhere the modal is not.
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await row.click({ timeout: 10_000 }).catch(() => {});
-    const opened = await page
-      .waitForSelector('[role="dialog"]', { timeout: 10_000 })
+    const opened = await onPage(page, '[role="dialog"]')
+      .first()
+      .waitFor({ state: "attached", timeout: 10_000 })
       .then(() => true)
       .catch(() => false);
     if (opened) {
