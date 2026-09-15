@@ -15,9 +15,9 @@ contradicted by the handoff's own STATES table, so the spec already says which w
 
 | Call | Verdict | Verified against |
 |---|---|---|
-| **4.1** aria coupling — "no divergence to ratify" | **Accept** | `markerAria` is consulted only at `spoken` (`availability-marker.tsx:326`), and the prop exists with a documented set of non-speaking callers (`:286-294`). `CoverageChip` is a `CardDetailTrigger` with a computed `aria-label`; `SynergyRow` carries `rowAria` on the `<li>`. The deck name never travelled through the marker on this page. The reasoning holds. |
+| **4.1** aria coupling — "no divergence to ratify" | **Accept** | `markerAria` is consulted only at `spoken` (`availability-marker.tsx:326`), and the prop's own doc names the non-speaking callers (`:274-286`). `CoverageChip` is a `CardDetailTrigger` with a computed `aria-label`; `SynergyRow` carries `rowAria` on the `<li>`. The deck name never travelled through the marker on this page. The reasoning holds. |
 | **4.2** legend — three keys to one, two forms | **Accept** | The conditional mechanism ships: `DotKey` reads every card in every role and draws its second entry only on `anyCommitted` (`coverage-section.tsx:66-80`). `anyMarker` is a one-line swap, not a new pattern. |
-| **4.3** sort sub-line | **Accept** | Every noun is shipped vocabulary: `wanted by a brew` (`copy/availability.ts:152`), `in use` (`:149-150`), `over-committed` (`:34`), and `Free to use first` is the existing sub-line's own opening. |
+| **4.3** sort sub-line | **Accept** | Every noun is shipped vocabulary: `wanted by a brew` (`copy/availability.ts:152`), `in use` (`:149-150`), `over-committed` (`copy/about.ts:159`, `:336`), and `Free to use first` is the existing sub-line's own opening. (`over-committed` appears in `copy/availability.ts` only as a source comment; it ships from `about.ts`.) |
 | **4.4** density on the chip | **Accept, with erratum 1** | 17.19 confirmed at `card-availability.md:506`. The `update-diff-row.tsx:259` precedent is real and reads as the handoff describes. |
 | **4.5** About entry | **Accept** | Drawn on the R4 §8 template, fields in order. |
 
@@ -36,10 +36,13 @@ contradicted by the handoff's own STATES table, so the spec already says which w
 
 ## The drawn defect
 
-**D1 — the `over` chip wraps its name to two lines, breaking the 28px height.**
+**D1 — the `over` chip wraps its name to two lines.**
 
 Visible in the canvas's `over` cell: `Swords to Plowshares` breaks across two lines and `short 2`
-breaks with it, inside a pill that has grown to roughly double height.
+breaks with it. The cell declares a fixed `height:28px` (canvas `:261`), as the shipped chip declares
+`h-[28px]` (`coverage-chip.tsx:98`) — neither sets a `min-height` — so whether the wrap grows the box
+or overflows it depends on the render. This audit does not assert which; **the wrap itself is the
+defect and the fix is the same either way.**
 
 **The handoff's own STATES contradicts the drawing** — *"No cell changes a height or a grid. The chip
 stays 28px"* — so this is an erratum against a stated rule, not an unruled question.
@@ -55,11 +58,15 @@ is already `flex-none whitespace-pre` at row density and stays whole. The chip b
 content and takes its own line in the `flex-wrap` — which §4.4's arithmetic already anticipates when
 it says a contended panel falls to three chips per line.
 
-**Open, and Design's to ratify:** a pathological name (`Asmoranomardicadaistinaculdacar`, 31
-characters ≈ 214px at 11.5px mono) plus an 89px marker plus a 34px plate exceeds a phone container.
-The app's shipped answer on the same surface is to truncate the name and keep the trailing item whole.
-This audit proposes extending that to the desktop chip with a `max-w` floor, matching `:162`, and asks
-Design to ratify the width rather than inventing one here.
+**The phone is already solved and is not in scope.** `CoverageChip` renders only in the desktop
+branch (`coverage-section.tsx:161`); the phone branch draws `CoverageRow` (`:274`), which already
+carries `flex-1 min-w-0 truncate`. An earlier draft of this item measured the pathological case
+against a phone container it cannot reach.
+
+**Open, and small:** a pathological name (`Asmoranomardicadaistinaculdacar`, 31 characters ≈ 214px at
+11.5px mono) plus an 89px marker plus a 34px plate is ~350px, which fits the narrowest desktop the
+chip renders at. So `nowrap` alone is sufficient today and a `max-w` floor is a hardening measure,
+not a fix. Eng may add one matching `:162`; it does not need a Design round.
 
 ---
 
@@ -79,10 +86,17 @@ Design to ratify the width rather than inventing one here.
    hairline crack in the other five — the exact bug `CHIP_SKIN`'s own comment records fixing
    ("so a theme change carries the chip with it instead of leaving one fixed dark rectangle").
 
-3. **`#6B3226` is not a shipped value.** It appears only in the `design_handoff_the99_availability`
-   addendum canvases and nowhere in `src/`. The chip border ships as
-   `color-mix(in_srgb, var(--success) 40%, var(--bg))`; the over branch should be the same expression
-   over `var(--danger)`. STATES' "container tint" row should name the expression.
+3. **`#6B3226` is correctly cited by Design, and the value itself has drifted.** It is the ratified
+   over-committed container tint in the design table of record — `card-availability.md:58`, row 4.5
+   (`:160`) and row 4.10 (`:170`) — so the handoff quoted the right source and this audit's first
+   draft was wrong to call it invented.
+
+   The finding that survives is about the TABLE, and predates this round: the hex ships nowhere in
+   `src/`. The marker's over branch is `var(--danger)` (`availability-marker.tsx:218`, `:235`) and the
+   chip border is a `color-mix` over a token, because the six-theme system replaced fixed darks with
+   token expressions — `CHIP_SKIN`'s own comment records that change. So eng writes the over branch as
+   `color-mix(in_srgb, var(--danger) 40%, var(--bg))`, matching the free branch's form, and the design
+   table's three `#6B3226` rows want a separate erratum against the theme system. Not this round's.
 
 4. **Design worked from the pre-round-1 brief.** READINESS dependency 3 quotes §5 as "six themed
    values" that "lands on every ownership dot in the app at once". The merged §5 asks for **one
