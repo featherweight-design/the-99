@@ -44,6 +44,7 @@ import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
+import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
   PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedMembership, proxiedOracleIds,
 } from "../../lib/decks/proxies";
@@ -444,6 +445,12 @@ export async function setCardProxied(
         delete from deck_proxies where deck_id = ${deckId} and oracle_id = ${oracleId}
       `);
     }
+    // A PROXY ENDS A CLAIM, so it ends any reservation made about that claim. The claim model
+    // anti-joins `deck_proxies`, so a proxied card is not claimed at all — and a reservation left
+    // behind would match again the moment the card is unproxied, arriving silently already
+    // holding somebody's contested copy. Same reconcile the commit runs, under this deck's row
+    // lock, taken above.
+    await pruneOrphanAssignments(tx, deckId);
     // NO `touchDeck`. The stamp means "this deck's list was edited", and a proxy
     // edits no list — Home's resume order would otherwise move a deck for a
     // decision that changed nothing about what is in it.

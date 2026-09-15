@@ -227,5 +227,63 @@ export const cardAssignmentsCopy = {
     wants: (n: number) => `wants ${n}`,
     /** In commit order, NEVER promoted: the order IS the explanation of the default. */
     thisDeck: "this deck",
+
+    /**
+     * A live pick. There is NO `your call` plate: a picked row already carried five signals for
+     * one bit of state, and the plate was the weakest of them. This sentence is the word carrier
+     * and a better one, because it NAMES THE DECK — the plate said "something here was chosen",
+     * this says which. It is therefore required wherever the chooser appears; it is the feature's
+     * only non-colour carrier of authorship, and in Canopy and Low Sun it is the only thing
+     * separating a pick from an outcome.
+     *
+     * One exception: a refusal note supersedes it. `refusedNoSupply` already names the holding
+     * deck and the way back in one sentence, and two competing instructions on one row is worse
+     * than one.
+     */
+    undoHint: (deck: string) => `Tap ${deck} again to undo this.`,
+    clear: "Back to first committed",
+
+    /**
+     * Refusals. Every sentence does four things in order: names the deck and card, gives the
+     * cause, says NOTHING MOVED, and states what is true now. That third clause is the row's
+     * own reason — the default allocation is still the truth, and the player has to know their
+     * pick did not take.
+     */
+    refusedNotWanted: (deck: string, card: string, holder: string) =>
+      `${deck}'s newest version doesn't list ${card} any more. Nothing moved: ${holder} still ` +
+      "has the copy. This card isn't contested now, so it will be gone from here next time " +
+      "you load it.",
+    /**
+     * Names a way forward, and it is NOT a retry: reservations resolve on
+     * `(created_at, deck_id)`, so pressing again cannot win.
+     */
+    refusedNoSupply: (holder: string, have: number, deck: string) =>
+      `There's no copy left to give. ${holder} was already given the one that arrived, and your ` +
+      `collection has ${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above ` +
+      `are what you actually have. Take it off ${holder} first if you want ${deck} to have it.`,
+    /** Reachable: the payload records one import, so a deck can promote the card between renders. */
+    refusedIsCommander: (card: string, deck: string) =>
+      `${card} is ${deck}'s commander now. A commander's copy can't be given away. Nothing ` +
+      "moved, and there is nothing left to choose on this card.",
+    /**
+     * DELIBERATELY ABSENT: a sentence for "the deck is not this player's". They cannot reach it
+     * from their own decks, and drawing a state for a request they cannot make would be drawing
+     * an attack. It falls back to the shipped transport treatment.
+     */
+
+    /** One announcement per settled pick, one per refusal, and no more. */
+    announcedPick: (deck: string, card: string, displaced: string) =>
+      `${deck} gets ${card}. ${displaced} buys it.`,
+    announcedCleared: (card: string, holder: string) =>
+      `Back to first committed. ${holder} has ${card}.`,
+
+    /** Accessible names. Never rendered. */
+    a11yGroup: (card: string, copies: number) =>
+      `Which decks get ${card} — ${copies === 1 ? "1 new copy" : `${copies} new copies`}`,
+    a11yOption: (deck: string, outcome: string) => `${deck}, ${outcome}`,
+    a11ySelected: (deck: string) =>
+      `${deck}, your choice. Choose again to go back to first committed.`,
+    a11yCommander: (deck: string, card: string) =>
+      `${deck} keeps ${card} as its commander. It cannot be moved.`,
   },
 } as const;

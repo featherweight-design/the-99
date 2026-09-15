@@ -350,6 +350,9 @@ describe("resolveUnresolvedRow", () => {
       ...claimSurfaces(DECK),
       "/commanders/[slug]",
       "/decks/[id]/changes",
+      // The import receipt: its contested rows are read live against the claim model, so any
+      // claim write can move what an older receipt says about who is short.
+      "/collection/replace/summary/[uploadId]",
       "/decks/[id]",
       "/collection/proxies",
     ]);

@@ -13,6 +13,7 @@ import { type CardQty, draftDiff } from "./draft-diff";
 import { touchDeck } from "./touch";
 import { averageManaValue } from "./mana-value";
 import { pruneOrphanProxies } from "./prune-proxies";
+import { pruneOrphanAssignments } from "./prune-assignments";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -188,6 +189,11 @@ async function commitVersionIn(
       })),
     );
   }
+  // A RESERVATION DIES WITH THE CLAIM IT WAS MADE ABOUT — the same reconcile the proxy path
+  // runs, and for the same reason. This commit has just decided what the deck claims, so a
+  // reservation for a card the new version does not list has nothing left to be about.
+  await pruneOrphanAssignments(tx, deckId);
+
   // Counted off the rows this just snapshotted, and returned rather than left to
   // the caller's own read of `deck_cards`. A path that INSERTS a card the deck
   // did not hold cannot be serialized by row locks — there is no row to lock —

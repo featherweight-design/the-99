@@ -18,6 +18,9 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
+import { assignCopyFor } from "../src/lib/decks/assign";
+import { commitVersion } from "../src/lib/decks/versions";
+import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -33,6 +36,9 @@ const USER_R = `probe-reserve-${Date.now()}`;
 // And the commander ceiling gets a third, for the reason its own header gives: its
 // figures are only computable against a fixture where nothing else claims the card.
 const USER_C = `probe-ceiling-${Date.now()}`;
+// And the chooser's own write gets a fourth. It calls the guarded write directly — the server
+// action around it needs a request, and what these cases are about is what the DATABASE refuses.
+const USER_W = `probe-write-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -529,6 +535,189 @@ async function commanderCeilingSection() {
   }
 }
 
+// ── THE CHOOSER'S WRITE ────────────────────────────────────────────────────────
+//
+// `assignCopy` authorizes itself inside its own transaction, and every guard it applies is a
+// question about what the database holds RIGHT NOW — the summary's rows come out of a payload
+// written at import time, so by the time a player presses one a deck can have committed a
+// removal, promoted the card to its commander, or had the last spare taken by another pick.
+// None of that is reachable from a unit test: the guards read committed versions, a collection
+// and other people's reservations.
+//
+// It calls the real action, which needs a signed-in reader — so the fixture writes under the id
+// `requireUserId` will return, and the run is pointed at a database where that account exists.
+async function assignmentWriteSection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 2
+  `);
+  if (legends.length < 2) throw new Error("catalog is empty — seed it first");
+  const card = legends[0].oracle_id;
+  const otherCmd = legends[1].oracle_id;
+
+  const decksMade: string[] = [];
+  const mk = async (name: string, cmd: string, ago: number, holds: boolean) => {
+    const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_W}, ${name}, ${cmd}) returning id
+    `);
+    decksMade.push(d.id);
+    const { rows: [v] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${d.id}, 1, now() - (${ago} * interval '1 minute'), ${cmd},
+              now() - (${ago} * interval '1 minute'))
+      returning id
+    `);
+    if (holds) {
+      await fixture.execute(sql`
+        insert into deck_version_cards (version_id, oracle_id, quantity, since)
+        values (${v.id}, ${card}, 1, now() - (${ago} * interval '1 minute'))
+      `);
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${card}, 1)
+      `);
+    }
+    return d.id;
+  };
+  const rowsFor = async (deckId: string) => {
+    const { rows } = await fixture.execute<{ n: number }>(sql`
+      select count(*)::int as n from card_assignments
+      where user_id = ${USER_W} and oracle_id = ${card} and deck_id = ${deckId}
+    `);
+    return rows[0].n;
+  };
+
+  try {
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_W}, ${card}, 1, 'probe')
+    `);
+    const senior = await mk("Write senior", otherCmd, 60, true);
+    const junior = await mk("Write junior", otherCmd, 30, true);
+
+    // 1. THE PICK. One copy, two committed claimants, and the junior deck is given it.
+    check("a pick is accepted", await assignCopyFor(USER_W, card, junior), null);
+    check("and writes exactly one row", await rowsFor(junior), 1);
+
+    // 2. THE TOGGLE. Pressing the same deck again takes the copy back, and a cleared row is
+    //    indistinguishable from one never written.
+    check("pressing the same deck clears it", await assignCopyFor(USER_W, card, junior), null);
+    check("and leaves no row behind", await rowsFor(junior), 0);
+
+    // 3. THE MOVE, AND IT IS ALWAYS A MOVE. One authored reservation per card, whatever the
+    //    supply: the chooser is a single-choice control by design, and two reservations would put
+    //    two checked radios in one group. Seniority allocates every copy this pick does not.
+    await assignCopyFor(USER_W, card, junior);
+    check("a second pick moves the reservation rather than adding one",
+      await assignCopyFor(USER_W, card, senior), null);
+    const { rows: [held] } = await fixture.execute<{ n: number }>(sql`
+      select count(*)::int as n from card_assignments
+      where user_id = ${USER_W} and oracle_id = ${card}
+    `);
+    check("leaving exactly one on the card", held.n, 1);
+    check("off the deck that had it", await rowsFor(junior), 0);
+    check("and onto the deck just named", await rowsFor(senior), 1);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+
+    // 4. A DRAFT-ONLY ADD IS REFUSED BY NAME. The deck has a version, and that version does not
+    //    list the card — reserving on a draft add would let it displace a hard claimant.
+    const drafter = await mk("Write drafter", otherCmd, 20, false);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${drafter}, ${card}, 1)
+    `);
+    check("a draft-only add is refused by name",
+      await assignCopyFor(USER_W, card, drafter), "claimant-no-longer-asks");
+    check("and writes nothing", await rowsFor(drafter), 0);
+
+    // 5. A COMMANDER IS REFUSED BY ITS OWN NAME, and before the claim check: a player told
+    //    instead that the deck is not asking for the card would go looking for a problem with a
+    //    list that is perfectly correct.
+    const { rows: [cmdDeck] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_W}, 'Write commander', ${card}) returning id
+    `);
+    decksMade.push(cmdDeck.id);
+    await fixture.execute(sql`
+      insert into deck_versions (deck_id, number, commander_oracle_id) values (${cmdDeck.id}, 1, ${card})
+    `);
+    check("a commander is refused by its own name",
+      await assignCopyFor(USER_W, card, cmdDeck.id), "target-is-commander");
+
+    // 6. NO SUPPLY LEFT. The commander deck above now holds the only copy, so the ceiling is
+    //    nought and there is nothing any pick can give away.
+    check("a pick with no giveable copy is refused by name",
+      await assignCopyFor(USER_W, card, senior), "no-supply-left");
+
+    // 6b. A FOLDED CLAIM IS RESERVABLE FOR ITS LIST COPY. A deck holding the card as its
+    //     commander AND on its list has one copy that cannot be given and one that can, and the
+    //     design draws that row as half-live. Refusing the whole deck — which an earlier guard
+    //     did, by asking only whether its commander was this card — made that state unreachable
+    //     for the deck it describes.
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_W}, ${card}, 1, 'probe2')
+    `);
+    const { rows: [cmdVersion] } = await fixture.execute<{ id: string }>(sql`
+      select id from deck_versions where deck_id = ${cmdDeck.id} order by number desc limit 1
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      values (${cmdVersion.id}, ${card}, 1, now())
+      on conflict do nothing
+    `);
+    check("a folded claim can be given its list copy",
+      await assignCopyFor(USER_W, card, cmdDeck.id), null);
+    await fixture.execute(sql`
+      delete from deck_version_cards where version_id = ${cmdVersion.id} and oracle_id = ${card}
+    `);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+
+    // 7. A PROXY ENDS THE CLAIM, SO IT ENDS THE PICK. The claim model anti-joins `deck_proxies`,
+    //    so a deck printing the card claims nothing — reserving a real copy for it would take one
+    //    from a deck that needs it. Refused on the way in…
+    // The commander deck from case 5 holds the only copy, which is what case 6 just proved — so
+    // it goes before anything here can be given away at all.
+    await fixture.execute(sql`delete from decks where id = ${cmdDeck.id}`);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    await fixture.execute(sql`
+      insert into deck_proxies (deck_id, oracle_id) values (${junior}, ${card})
+      on conflict do nothing
+    `);
+    check("a proxied deck cannot be given a copy",
+      await assignCopyFor(USER_W, card, junior), "claimant-no-longer-asks");
+    await fixture.execute(sql`delete from deck_proxies where deck_id = ${junior}`);
+
+    //    …and swept if the proxy lands AFTER the pick. Inert is not gone: the row would match
+    //    again the moment the card was unproxied, arriving silently already holding the copy.
+    // The senior deck still holds the reservation from case 3's move, and one copy exists — so
+    // the junior's pick would be a MOVE and land, but the fixture is clearer with the card free.
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    check("a pick before the proxy is accepted", await assignCopyFor(USER_W, card, junior), null);
+    check("a reservation exists before the proxy", await rowsFor(junior), 1);
+    await fixture.execute(sql`
+      insert into deck_proxies (deck_id, oracle_id) values (${junior}, ${card})
+      on conflict do nothing
+    `);
+    await pruneOrphanAssignments(fixture, junior);
+    check("and is gone after the deck prints the card", await rowsFor(junior), 0);
+    await fixture.execute(sql`delete from deck_proxies where deck_id = ${junior}`);
+
+    // 8. A COMMIT THAT DROPS THE CARD TAKES THE RESERVATION WITH IT. A deck that drops a card
+    //    and adds it back later must not resurrect a decision made about a different list.
+    await assignCopyFor(USER_W, card, senior);
+    check("a reservation exists before the commit", await rowsFor(senior), 1);
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${senior}`);
+    await commitVersion(senior, null);
+    check("and is gone after a commit without the card", await rowsFor(senior), 0);
+  } finally {
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    await fixture.execute(sql`delete from decks where user_id = ${USER_W}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_W}`);
+  }
+}
+
 // Wrapped in main() rather than run at top level: tsx transpiles this repo's
 // scripts to CJS, where a top-level await is a build error.
 async function main() {
@@ -664,6 +853,7 @@ try {
 
   await reservationSection();
   await commanderCeilingSection();
+  await assignmentWriteSection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
