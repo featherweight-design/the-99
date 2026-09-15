@@ -1,12 +1,15 @@
 # READINESS — Ordering the deck list (handoff R1)
 
-**Verdict: 🟢 Green.** Build starts now. Two calls are open and neither blocks: both are Hugh's,
-both are one string or one decision wide, and R1 draws a shippable answer to each.
+**Verdict: 🟢 Green.** Build starts now. Design left two calls open; **both were settled the same
+day, both as drawn**, so nothing is outstanding and nothing needs redrawing — see *Both calls,
+settled* below.
 
 - **Handoff:** `design/design_handoff_the99_decklist_sort/` (R1, 2026-09-14)
 - **Brief:** `docs/superpowers/design-briefs/2026-09-14-ordering-the-deck-list.md` (PR #631)
 - **Audited:** 2026-09-14 against `origin/main` at `0e008f2b`
 - **Design self-assessment:** 🟢 Green with one copy call and one figure to re-measure. **Upheld.**
+- **Open questions:** none. Both of Design's were answered 2026-09-14; the figure is an eng
+  measurement, planned as Task 8's probe.
 
 ## What was checked, and against what
 

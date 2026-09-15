@@ -14,7 +14,7 @@ must — this bar's own rule forbids the accent the borrowed branch applies.
 
 ---
 
-## Task 1 — The copy block and its three helpers
+## Task 1 — The copy block and its four helpers
 
 New `src/lib/copy/deck-sort.ts`, transcribed from the handoff's
 `decklist-sort · copy strings.ts` (which is itself shaped against `collectionFilterCopy.sort`).
@@ -24,8 +24,9 @@ New `src/lib/copy/deck-sort.ts`, transcribed from the handoff's
 - `DECK_DIRECTION_LABELS` — `A–Z`/`Z–A`, `Lowest`/`Highest`, `Curve up`/`Curve down`.
 - `DECK_DEFAULT_SORT_DIRECTION` — `price: "desc"`, the other two `asc`. **`price` is `desc`
   because that is what #629 already ships**; changing it re-sorts every shopping list on deploy.
-- `deckSortDirectionLabel`, `deckSortOrderLabel` (`"Name · A–Z"`), `buildDeckSortOptions(filter,
-  key, direction)` — hint on the chosen row only — and `nextDeckSortState(current, picked)`.
+- Four helpers: `deckSortDirectionLabel`, `deckSortOrderLabel` (`"Name · A–Z"`),
+  `buildDeckSortOptions(filter, key, direction)` — hint on the chosen row only — and
+  `nextDeckSortState(current, picked)`.
 - `deckSortCopy: FilterPanelCopy`, with the one departure: `triggerOne: (order) => order`, no
   `Sort:` prefix. The 38px it costs is the difference between the view well staying on the
   arrangement line at 390px and landing alone on a fourth.
