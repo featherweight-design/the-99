@@ -15,8 +15,9 @@
 // THE ORDER IS THE EXPLANATION, so `this deck` is tagged and never promoted: moving a player's
 // own deck to the top would hide why it lost.
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { previewAllocation } from "../../lib/decks/preview-allocation";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { formatShortDeckDate } from "../../lib/decks/format";
@@ -170,6 +171,13 @@ export function ContestedCardRow({
   // already had one, which is a different deck and the wrong name to print.
   const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
   const [announce, setAnnounce] = useState("");
+  // WHICH TAP IS STILL THE CURRENT ONE. Next dispatches Server Actions one at a time per client
+  // (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, "Sequential dispatch on
+  // the client"), so the WRITES cannot race or land out of order. The taps are not serialised
+  // though, and neither are they the only thing that can supersede a write: a fresher payload
+  // arriving from the server does it too. Both advance this, and a write whose number is stale
+  // neither draws its answer nor stands anything down.
+  const tap = useRef(0);
   const [, startTransition] = useTransition();
   // A fresh server payload always wins, and is filed on its way past. Adjusted during render
   // rather than in an effect, or the previous allocation paints once before being corrected.
@@ -180,6 +188,18 @@ export function ContestedCardRow({
     setRefusal(null);
     setPicked(null);
   }
+  // AND THE IN-FLIGHT WRITE LOSES ITS CLAIM ON THIS ROW. Adopting new props supersedes a pending
+  // write exactly as a newer tap does: its answer is an older reading, and drawing it would undo
+  // the fresher one.
+  //
+  // IN AN EFFECT, NOT IN THE RENDER ABOVE. The token is a ref, and a ref mutated during render
+  // survives a render React abandons — a concurrent update that starts with a new payload and
+  // is dropped would retire a write whose props never committed, and that write would then
+  // decline to stand its own preview down, leaving the accent and the undo footer stuck on the
+  // row for good. An effect runs only after a commit, so an abandoned render moves nothing.
+  useEffect(() => {
+    tap.current += 1;
+  }, [initial]);
 
   // AUTHORSHIP IS A FACT ABOUT THE DATA, not a fact about this component's lifetime. A deck with
   // a GRANTED reservation is a deck the player chose — seniority grants nothing, it only orders a
@@ -193,17 +213,18 @@ export function ContestedCardRow({
     const wasChosen = chosenIds.has(deckId);
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
-    // THE OPTIMISTIC SET SAYS ONLY WHAT THIS CLIENT KNOWS: that the deck just tapped is picked,
-    // or is no longer. It does NOT predict which reservation the server will evict, and that is a
-    // decision rather than an omission — three separate review findings turned out to be three
-    // faces of one mistake, a client re-deriving the model's queue. The server resolves
-    // reservations on `(created_at, deck_id)`, which is NOT the commit order this row is drawn
-    // in, so a prediction made from these claimants is right only by luck. The returned card
-    // carries the real allocation, and everything that depends on it waits for that.
+    // THE OPTIMISTIC SET SAYS WHERE THE GRANT WENT, and nothing else. The allocation that
+    // follows from it is not guessed: `previewAllocation` runs the model's own `allocate` over
+    // these claimants with the grant moved, so the marks can move on the tap. What is still
+    // never predicted is which of SEVERAL reservations the server would evict — it resolves
+    // those on `(created_at, deck_id)`, which is not an order this row holds — and that case
+    // cannot arise from a pick, because a pick moves the one authored reservation rather than
+    // adding a second. The returned card replaces all of it the moment it lands.
     // ONE AUTHORED PICK AT A TIME, which is what the write does and what the group's
     // `aria-checked` promises: a pick moves the reservation rather than adding to it, so at most
     // one option is ever checked. Seniority allocates every other copy.
     setPicked(wasChosen ? new Set() : new Set([deckId]));
+    const mine = ++tap.current;
     startTransition(async () => {
       // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
       // session — exits this callback, and the optimistic accent and undo footer would then stand
@@ -230,6 +251,9 @@ export function ContestedCardRow({
         : null;
       // Including when the live read came back null, which the action's own type allows: the
       // `finally` below is what makes that case, and a thrown one, stand down too.
+      // A superseded tap's answer is DISCARDED rather than drawn: the player has since named a
+      // different deck, and its own write — already queued behind this one — is the truth now.
+      if (mine !== tap.current) return;
       if (fresh) setCard(fresh);
       // ANNOUNCED FROM THE SERVER'S OWN ALLOCATION, once there is one. The trade is the news —
       // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
@@ -268,9 +292,16 @@ export function ContestedCardRow({
         // would tell the player something the server never said. What matters is that the
         // optimistic state does not outlive the attempt, which the `finally` guarantees.
       } finally {
-        // THE OPTIMISTIC SET ALWAYS STANDS DOWN. Authorship is read from data; this state exists
-        // only for the window before there is any, and a throw closes that window too.
-        setPicked(null);
+        // THE OPTIMISTIC SET ALWAYS STANDS DOWN — but only for the LATEST tap. Authorship is read
+        // from data; this state exists only for the window before there is any, and a throw
+        // closes that window too. An earlier tap finishing must leave a newer preview where it
+        // is, or the row falls back to the props while that newer write is still queued.
+        //
+        // UNTESTED, deliberately and not quietly: reaching it needs two Server Action promises
+        // held open across a React transition, and that shape strands the jsdom teardown however
+        // the assertions are written — three spellings of it hung on the harness rather than on
+        // the assertion. The sibling guard above IS covered, by the superseded-answer case.
+        if (mine === tap.current) setPicked(null);
       }
     });
   };
@@ -295,10 +326,19 @@ export function ContestedCardRow({
   // every server read — so the review door's figures track a collection that changes under it,
   // where the frozen `arrived` could not.
   const inPlay = card.fromImport ? card.arrived : giveable;
+  // THE MARKS MOVE ON THE TAP, not on the round trip. `picked` is non-null only while a write is
+  // in flight, and for that window the row draws the allocation the pick is about to produce —
+  // otherwise the deck that is losing the copy stays filled until the server answers, and the
+  // reader sees two full marks for a card with one copy. Replaced by the server's own reading
+  // the moment it lands, and stood down with `picked` on a refusal or a throw, so a wrong guess
+  // could only ever survive one round trip.
+  const claimants = picked
+    ? previewAllocation(card.claimants, card.owned, [...picked][0] ?? null)
+    : card.claimants;
   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
   // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
-    card.claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
+    claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
     inPlay,
   );
   // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the
@@ -325,7 +365,7 @@ export function ContestedCardRow({
   // The deck the shortage actually falls on — the one whose ask is not covered. Naming the
   // first commander claimant instead points at a deck that is keeping its copy, which is the
   // opposite of what the note says about it.
-  const payer = card.claimants.find((c) => c.allocated < c.quantity)?.deckName ?? "";
+  const payer = claimants.find((c) => c.allocated < c.quantity)?.deckName ?? "";
   const words = surfaceWords(card.fromImport);
 
   return (
@@ -368,7 +408,7 @@ export function ContestedCardRow({
         aria-label={words.group(card.cardName, inPlay)}
         aria-describedby={describedBy}
       >
-        {card.claimants.map((c) => {
+        {claimants.map((c) => {
           // `keeps it` rather than `gets it` for a commander: it had the card before the import,
           // so the arrival changed nothing for it. A folded claimant that ALSO took a spare copy
           // says both — `keeps it` alone would hide the second copy and contradict the heading,

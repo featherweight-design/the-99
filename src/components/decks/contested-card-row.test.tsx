@@ -438,6 +438,142 @@ describe("ContestedCardRow — the chooser", () => {
     expect(screen.getByText(copy.contested.clear)).toBeTruthy();
   });
 
+  it("moves the copy off the previous holder on the tap, before the server answers", async () => {
+    // THE BUG THIS EXISTS FOR. Only the radio was optimistic, so the picked deck went accent
+    // while the deck losing the copy stayed filled until the round trip finished: two full marks
+    // on a card with one copy, then one of them emptying a moment later.
+    //
+    // The action never resolves here, which is the point — everything asserted below is what the
+    // reader sees DURING the write, not after it.
+    let land: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((resolve) => { land = resolve; }));
+    render(<ContestedCardRow card={card()} />);
+    // `HD Avatar Aang` holds the copy by seniority; `Elemental Dragons` is about to take it.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.gets);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).textContent)
+        .toContain(copy.contested.gets);
+    });
+    // The whole finding: the previous holder gives it up in the same frame.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.buys);
+    // Let the write finish, so the transition does not outlive the test.
+    land({ ok: true, card: card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 0 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+    ] }) });
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { checked: true })).toBeTruthy();
+    });
+  });
+
+  it("previews against the copies owned, not the copies the import brought", async () => {
+    // THE SUPPLY THE ROW HANDS THE PREVIEW. `arrived` is smaller than `owned` whenever a deck
+    // already held a copy, and distributing the arrival starves the senior deck: it flips to
+    // `buys it` for one round trip and then flips back — the same flicker, reversed.
+    let land: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((resolve) => { land = resolve; }));
+    const twoCopies = card({
+      arrived: 1,
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 2, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    });
+    render(<ContestedCardRow card={twoCopies} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).textContent)
+        .toContain(copy.contested.gets);
+    });
+    // Two copies, two decks, one apiece: the senior deck loses nothing to this pick.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.gets);
+    // Resolved with the GRANT on it, so the settled state is observably different from the
+    // optimistic one: `picked` stands down here and authorship is read from the data instead.
+    // A payload granting nobody leaves the assertion passing on the optimistic render it was
+    // meant to outlive.
+    land({ ok: true, card: card({
+      arrived: 1,
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 2, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    }) });
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).getAttribute("aria-checked"))
+        .toBe("true");
+    });
+    // Read off the DATA now, not the optimistic set — the senior deck still holds its copy.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).textContent)
+      .toContain(copy.contested.gets);
+  });
+
+  it("discards a superseded tap's answer instead of drawing it", async () => {
+    // Next dispatches Server Actions one at a time per client, so these writes cannot race or
+    // land out of order — see `node_modules/next/dist/docs/01-app/02-guides/server-actions.md`,
+    // "Sequential dispatch on the client". The TAPS are not serialised though, so an earlier
+    // write can still answer after the player has named a different deck, and without a tap
+    // token its answer and its stand-down both landed on the newer pick.
+    const withGrant = (deckId: string) => card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: deckId === "d1" ? 1 : 0, since: AUG, versionNumber: 7, allocated: deckId === "d1" ? 1 : 0 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: deckId === "d2" ? 1 : 0, since: SEP, versionNumber: 2, allocated: deckId === "d2" ? 1 : 0 },
+    ] });
+    let landFirst: (v: unknown) => void = () => {};
+    assign
+      .mockImplementationOnce(() => new Promise((resolve) => { landFirst = resolve; }))
+      .mockResolvedValue({ ok: true, card: withGrant("d1") });
+
+    render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /HD Avatar Aang/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+        .toBe("true");
+    });
+
+    // The FIRST tap's write answers now, naming the deck the player has since moved off.
+    landFirst({ ok: true, card: withGrant("d2") });
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(2));
+    // Its answer is discarded: the row still shows the deck the player last named.
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+      .toBe("true");
+    expect(screen.getByRole("radio", { name: /Elemental Dragons/ }).getAttribute("aria-checked"))
+      .toBe("false");
+  });
+
+  it("lets a fresher payload retire a write that is still in flight", async () => {
+    // A revalidation can land while a pick is unanswered — another tab, or the action's own
+    // `revalidateClaims` reaching the parent first. Adopting those props retires the write: its
+    // answer is an older reading, and drawing it would undo the fresher one.
+    let land: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((resolve) => { land = resolve; }));
+    const { rerender } = render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    // New props arrive: the senior deck was granted the copy by something else entirely.
+    const fresher = card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 1, since: AUG, versionNumber: 7, allocated: 1 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 2, allocated: 0 },
+    ] });
+    rerender(<ContestedCardRow card={fresher} />);
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+        .toBe("true");
+    });
+    // The retired write answers, naming the other deck. It must not be drawn.
+    land({ ok: true, card: card({ claimants: [
+      { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 7, allocated: 0 },
+      { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 1, since: SEP, versionNumber: 2, allocated: 1 },
+    ] }) });
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked"))
+      .toBe("true");
+  });
+
   it("pressing the chosen deck again clears it", async () => {
     assign.mockResolvedValue({ ok: true, card: card() });
     render(<ContestedCardRow card={card()} />);
