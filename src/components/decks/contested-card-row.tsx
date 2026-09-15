@@ -163,8 +163,20 @@ export function ContestedCardRow({
           return (
             <li
               key={c.deckId}
-              className="flex flex-col md:flex-row md:items-start md:items-center gap-[1px] md:gap-[11px] py-[6px] px-[8px]"
-              style={{ borderRadius: 7, background: "var(--bg)" }}
+              // 52px two-line on a phone, 44px one-line from `md` — the handoff's own targets,
+              // stated rather than left to padding. `items-start` and `items-center` were both
+              // present, which resolves by utility order rather than by intent.
+              className="flex flex-col justify-center md:flex-row md:items-center gap-[1px] md:gap-[11px] py-[6px] px-[8px] min-h-[52px] md:min-h-[44px]"
+              style={{
+                borderRadius: 7,
+                background: "var(--bg)",
+                // A dashed border marks an option nobody can choose: a commander-only claimant,
+                // or any row on a card with no spare copy at all. NOT a folded claim — that one
+                // keeps its commander half and its spare is live, so it stays an ordinary option.
+                border: nothingToChoose || c.commanderCopies >= c.quantity
+                  ? "1px dashed var(--border)"
+                  : "1px solid transparent",
+              }}
             >
               <span className="flex items-center gap-[11px] md:gap-[11px] md:flex-1 min-w-0">
                 <AllocationMark

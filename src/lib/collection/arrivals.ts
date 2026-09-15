@@ -84,8 +84,14 @@ export type ContestedRow = {
 };
 
 export type ArrivalsSummary = {
-  /** Bumped when the shape changes, so a stored payload stays readable by a later build. */
-  version: 1;
+  /**
+   * Bumped when the shape changes, so a stored payload stays readable by a later build.
+   *
+   * 2 adds `ContestedRow.ownedBefore`. A version-1 receipt has no such field, and the reader
+   * treats its absence as nought — which makes `keeps it` unavailable on those rows rather than
+   * wrong, the safe direction for a word that claims the deck had the card before the import.
+   */
+  version: 2;
   totalBefore: number;
   totalAfter: number;
   /** Copies gained and lost across the whole collection, not per deck. */
@@ -235,7 +241,7 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
   }
 
   return {
-    version: 1,
+    version: 2,
     totalBefore: total(ownedBefore),
     totalAfter: total(ownedAfter),
     arrived,

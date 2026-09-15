@@ -10,7 +10,7 @@ const DECK = "d1";
 
 function summary(over: Partial<Summary> = {}): Summary {
   return {
-    version: 1,
+    version: 2,
     totalBefore: 100,
     totalAfter: 102,
     arrived: 3,

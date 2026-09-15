@@ -56,23 +56,29 @@ function ReceiptRow({
       className="flex flex-col md:flex-row md:items-center gap-[2px] md:gap-[10px] py-[9px]"
       style={{ borderTop: "1px solid var(--border)" }}
     >
-      <span className="text-[13.5px] font-semibold md:flex-1 min-w-0 truncate" style={{ color: "var(--fg)" }}>
+      <span className="text-[13.5px] font-semibold md:flex-1 min-w-0 md:truncate" style={{ color: "var(--fg)" }}>
         {cardName}
       </span>
-      <span className="text-[13px] md:flex-none min-w-0 truncate" style={{ color: "var(--fg-body)" }}>
-        {deckName}
-      </span>
-      {reason ? (
-        <span
-          className="font-mono text-[10.5px] md:text-[11px] md:flex-none"
-          // `--warning` is reserved for the one reason a player can act on without buying
-          // anything: they own the card and the CSV line failed. Every other reason is a fact
-          // about what they have to go and buy, and reads in the faint ramp.
-          style={{ color: warn ? "var(--warning)" : "var(--fg-faint)" }}
-        >
-          {reason}
+      {/* ONE SUBLINE ON A PHONE, two columns from `md`. Left as three flex children the row grew
+          a third line and the deck name was ellipsised at every width; the handoff's 390px row
+          puts the deck and its reason on one subline and keeps the name whole. Truncation is a
+          desktop-only affordance here for the same reason. */}
+      <span className="flex items-baseline gap-[8px] min-w-0 md:contents">
+        <span className="text-[13px] md:flex-none min-w-0 md:truncate" style={{ color: "var(--fg-body)" }}>
+          {deckName}
         </span>
-      ) : null}
+        {reason ? (
+          <span
+            className="font-mono text-[10.5px] md:text-[11px] flex-none md:flex-none"
+            // `--warning` is reserved for the one reason a player can act on without buying
+            // anything: they own the card and the CSV line failed. Every other reason is a fact
+            // about what they have to go and buy, and reads in the faint ramp.
+            style={{ color: warn ? "var(--warning)" : "var(--fg-faint)" }}
+          >
+            {reason}
+          </span>
+        ) : null}
+      </span>
     </li>
   );
 }
