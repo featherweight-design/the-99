@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION } from "../copy/about";
-import { cookieIsCurrent, cookieValue, gateApplies, gateHandles, safeNext } from "./gate";
+import {
+  cookieIsCurrent,
+  cookieValue,
+  gateApplies,
+  gateDecision,
+  gateHandles,
+  safeNext,
+} from "./gate";
 
 describe("safeNext", () => {
   it("keeps a same-origin path and its query", () => {
@@ -88,5 +95,48 @@ describe("gateHandles", () => {
   it("never gates a write, or a request for something that is not a page", () => {
     expect(gateHandles("POST", h({ accept: "text/html" }))).toBe(false);
     expect(gateHandles("GET", h({ accept: "application/json" }))).toBe(false);
+  });
+});
+
+describe("gateDecision", () => {
+  const base = { userId: "user_1", pathname: "/decks", search: "", version: 2 };
+
+  it("passes a current reader, and still writes the cookie", () => {
+    // The cookie is what makes the next navigation free. A pass that skipped it
+    // would read the database on every click for the rest of the session.
+    expect(gateDecision({ ...base, seen: 2 })).toEqual({
+      kind: "pass",
+      cookie: cookieValue("user_1", 2),
+    });
+  });
+
+  it("redirects a reader who is behind, carrying where they were going", () => {
+    const d = gateDecision({ ...base, seen: 1 });
+    expect(d).toEqual({
+      kind: "redirect",
+      to: "/about?next=%2Fdecks",
+      cookie: cookieValue("user_1", 2),
+    });
+  });
+
+  it("encodes the destination whole, query included", () => {
+    // Encoded as one value: an unencoded `&` inside the destination would read
+    // as the end of the `next` parameter, and the reader would come back to a
+    // truncated URL.
+    const d = gateDecision({ ...base, pathname: "/decks", search: "?a=1&b=2", seen: 0 });
+    expect(d).toEqual({
+      kind: "redirect",
+      to: `/about?next=${encodeURIComponent("/decks?a=1&b=2")}`,
+      cookie: cookieValue("user_1", 2),
+    });
+    // And the round trip is lossless.
+    const back = new URL(`https://x.invalid${(d as { to: string }).to}`);
+    expect(safeNext(back.searchParams.get("next"))).toBe("/decks?a=1&b=2");
+  });
+
+  it("treats a reader ahead of the version as current", () => {
+    // An older deployment serving an older ABOUT_VERSION must not re-show the
+    // page to someone who has already acknowledged a newer one.
+    expect(gateDecision({ ...base, seen: 5 }).kind).toBe("pass");
   });
 });

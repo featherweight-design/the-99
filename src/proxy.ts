@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { ABOUT_VERSION } from "./lib/copy/about";
 import {
   ABOUT_COOKIE,
   cookieIsCurrent,
-  cookieValue,
   gateApplies,
+  gateDecision,
   gateHandles,
 } from "./lib/about/gate";
 import { aboutVersionSeen } from "./lib/about/read";
@@ -24,44 +23,38 @@ import { aboutVersionSeen } from "./lib/about/read";
 const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (isPublic(req)) return;
-
-  // The gate runs AFTER this, never instead of it: an unauthenticated request
-  // is Clerk's to answer, and /about is auth-gated like every other route, so
-  // a pass-through here would send a signed-out reader into a loop.
-  const { userId } = await auth.protect();
+  // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
+  // uses constantly — it renders the dashboard, and it is where Clerk lands
+  // them after sign-in. Returning early on the whole matcher therefore left the
+  // most likely arrival in the app ungated, which is the one place the About
+  // page most needs to appear. So: protect what is not public, read the session
+  // on what is, and let the gate below judge both.
+  const { userId } = isPublic(req) ? await auth() : await auth.protect();
+  if (!userId) return;
 
   const path = req.nextUrl.pathname;
   if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return;
 
-  // The cookie is the fast path and it is the whole reason this costs nothing
-  // on a normal navigation: one database read per browser per version per
-  // account, and none at all after it.
+  // The cookie is the fast path and the reason this costs nothing on a normal
+  // navigation: one database read per browser per version per account.
   if (cookieIsCurrent(req.cookies.get(ABOUT_COOKIE)?.value, userId)) return;
 
   // A failed read must not lock the reader out of the app. The page is a
   // reference; the app is the point.
-  let seen = ABOUT_VERSION;
+  let seen: number;
   try {
     seen = await aboutVersionSeen(userId);
   } catch {
     return;
   }
 
-  const current = seen >= ABOUT_VERSION;
-  const response = current
-    ? NextResponse.next()
-    : NextResponse.redirect(
-        new URL(
-          `/about?next=${encodeURIComponent(path + req.nextUrl.search)}`,
-          req.url,
-        ),
-      );
+  const decision = gateDecision({ userId, pathname: path, search: req.nextUrl.search, seen });
+  const response =
+    decision.kind === "redirect"
+      ? NextResponse.redirect(new URL(decision.to, req.url))
+      : NextResponse.next();
 
-  // Written on BOTH answers, and on the redirect especially: a reader who
-  // reads the page and navigates away without pressing anything must not be
-  // bounced straight back to it. Without this the redirect is a trap.
-  response.cookies.set(ABOUT_COOKIE, cookieValue(userId), {
+  response.cookies.set(ABOUT_COOKIE, decision.cookie, {
     path: "/",
     httpOnly: true,
     sameSite: "lax",

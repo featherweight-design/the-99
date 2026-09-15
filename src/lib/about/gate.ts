@@ -100,3 +100,35 @@ export function gateHandles(method: string, headers: Headers): boolean {
   if (headers.get("RSC") === "1") return true;
   return (headers.get("accept") ?? "").includes("text/html");
 }
+
+/** What the gate wants done with a request it has decided to act on. Both
+ *  answers carry the cookie — see `gateDecision`. */
+export type GateDecision =
+  | { kind: "pass"; cookie: string }
+  | { kind: "redirect"; to: string; cookie: string };
+
+/**
+ * The gate's whole decision, given what the proxy has already read. Pure, so
+ * the `Location` it builds and the cookie it attaches are testable — the proxy
+ * around it is then only the mapping onto NextResponse.
+ *
+ * The cookie is attached to BOTH answers. On the redirect especially: a reader
+ * who reads the page and leaves without pressing anything must not be sent
+ * back to it on their next click, and a Server Component cannot set a cookie
+ * during render, so this response is the only place it can be written.
+ */
+export function gateDecision(args: {
+  userId: string;
+  pathname: string;
+  search: string;
+  seen: number;
+  version?: number;
+}): GateDecision {
+  const version = args.version ?? ABOUT_VERSION;
+  const cookie = cookieValue(args.userId, version);
+  if (args.seen >= version) return { kind: "pass", cookie };
+  // The destination is encoded WHOLE, query included, so a `&` inside it
+  // cannot read as the end of the `next` parameter.
+  const to = `/about?next=${encodeURIComponent(args.pathname + args.search)}`;
+  return { kind: "redirect", to, cookie };
+}
