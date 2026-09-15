@@ -99,7 +99,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'a chip per narrowing, each removable on its own, and one link that clears the lot. Nothing filters invisibly.',
       'By set is a grouping, not a filter — it reorders what is shown and never changes how much is shown.',
-      'grid or rows is a reading choice. Both it and your filters are still here when you come back.',
+      'grid or rows is a reading choice and it is remembered. The filters are not: they live on the URL, so a link carries them and a fresh visit starts clean.',
     ],
     since: 1,
   },
@@ -149,7 +149,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the issue inspector',
     width: 'inset',
     caption:
-      'Every line we could not put a card to, with the reason beside it. They are not errors and not a buy list — a misspelling and a printing we do not stock read differently and are labelled differently. A pasted list carries no set or collector number, which is why a pasted collection cannot drive set completion.',
+      'Every line we could not put a card to, with the reason beside it, split into names we could not match and lines we could not read. Neither is a buy list, and neither stops the rest of the import. A pasted list carries no set or collector number, which is why a pasted collection cannot drive set completion.',
     keys: [],
     since: 1,
   },
@@ -165,7 +165,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'free — you own it and nothing has claimed it. No diamond at all, which is the commonest state in the app.',
       'in a brew — a deck you have never committed wants it. The claim is real but not binding, and it is the state a reader is least likely to guess.',
       'none free — a committed deck holds every copy. The deck that sleeved it first keeps it by default, and you can hand it to another.',
-      'short 2 — the committed decks between them ask for two more copies than you own. The last row is different again: a card you never owned at all.',
+      'short 2 — the committed decks between them ask for two more copies than you own. A card you own none of is not on this lane at all; on a decklist it takes the buy mark instead.',
     ],
     since: 1,
   },
@@ -217,9 +217,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'plate',
     caption:
-      'Two commanders you could build today, picked from the top nine by fit and rotated daily — so the pair changes while the ranking behind it does not. Each card says how much of your collection fits and how much of that is already sleeved elsewhere.',
+      'The two commanders you could build today that score highest, off the top nine by fit. Each card says how much of your collection fits them and how much of that is already sleeved into something else.',
     keys: [
-      'the pair rotates daily out of the top nine by fit — a rank cut, never a score cut.',
+      'the nine are a rank cut, never a score cut — the floor moves with your collection rather than sitting at a fixed number.',
       'cards that fit, then how many are already in a committed deck. The second clause is absent at zero.',
       'the floor is the lowest score actually shown, so the count is checkable against the lane.',
     ],
@@ -304,7 +304,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'One page per deck: the commander, the status and how far along it is, then the list itself. Four tabs sit under the header — the deck, cards worth considering, the games you have played with it, and its committed versions — so everything about a deck lives on the deck.',
     keys: [
       'the badge and the bar are the same pair the library shows, so a deck reads the same from either direction.',
-      'the tabs carry counts, which is how you can tell a deck has never been played without opening it.',
+      'a tab drops its count rather than printing a nought, so a deck nobody has logged a game against simply has no number beside Games.',
       'Consider is the other half of the recommendation: cards this commander wants that are not in the list yet.',
     ],
     since: 1,
@@ -316,7 +316,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks/new',
     width: 'inset',
     caption:
-      'Pick a commander and we assemble as much of the 99 as your collection supports — typically most of it, never all of it. The rest is yours to fill, before or after you sleeve it up: Top off fills the remaining slots from what you own in one pass, and anything auto-added can be cleared in one action if you would rather start from your own picks.',
+      'Pick a commander and we assemble as much of the 99 as your collection supports, which is usually most of it. The rest is yours to fill, before or after you sleeve it up: Top off fills the remaining slots from what you own in one pass, and anything auto-added can be cleared in one action if you would rather start from your own picks.',
     keys: [],
     since: 1,
   },
@@ -328,7 +328,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'A decklist is rows, and each row answers four questions from left to right: do you own it, what is it, how many does the deck want, and is anything standing in the way. A row with nothing in the way carries no mark at all, so the marks you do see are all things to deal with.',
+      'A decklist is rows, and each row answers four questions from left to right: do you own it, what is it, how many does the deck want, and is anything standing in the way. A row with nothing in its way carries no obstacle mark, so the ones you do see are all things to deal with — the separate auto tag says we picked the card for you, which is a fact about where it came from rather than a problem.',
     keys: [
       'a filled green dot is a card you own; a dashed hollow one is a card you do not. Same shape, same place, every list in the app.',
       'the circled figure is how many copies this deck wants, and it is there whether that is one or four.',
@@ -388,7 +388,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // screen's `Put back` (deck-versioning.ts:249) is a second door and is
     // named in the caption rather than drawn. R3 drew one wearing the other.
     caption:
-      "Every removal can be undone from where it happened, with the card named. The review screen offers it too, reading Put back, on a cut of a single copy — a whole stack that came out is put back on the deck itself. Putting a card back also puts back what it cost — the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed.",
+      "Take a card out of your deck and the row turns into an undo, naming it. The review screen offers the same thing on a cut of a single copy, reading Put back — a whole stack that came out is put back on the deck itself. Putting a card back also puts back what it cost: the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed. Pulling a copy out of another deck is not this, and discarding a draft is not either.",
     keys: [],
     since: 1,
   },
