@@ -156,10 +156,10 @@ export function priceRank(row: PricedRank, newestAsOf: Date | null): number | nu
 }
 
 /**
- * What `priceRank` needs of a row: the fact the tag reads, and the name that
- * used to break its ties. Structural rather than `Pick<DeckDetailCard, …>` —
- * `grouping.ts` imports this module for `PriceFact`, so naming its type here
- * would close the cycle.
+ * What `priceRank` needs of a row: the fact the tag reads, and nothing else —
+ * ties are the comparator's business, in `sort-cards.ts`. Structural rather
+ * than `Pick<DeckDetailCard, …>`, because `grouping.ts` imports this module for
+ * `PriceFact` and naming its type here would close the cycle.
  */
 type PricedRank = { price?: PriceFact | null };
 

@@ -76,10 +76,10 @@ type GroupToggleProps = {
   /** Announced through the surface's own live region — see `BuilderShell`. */
   onSortAnnounce?: (message: string) => void;
   /**
-   * The draft's own note for this slot (#389, surface 1) — `n of these are not
-   * in vN yet`. While it is set the auto cluster's kept note stands down: the
+   * The draft's own note for this slot (#389, surface 1) — `n of these differ
+   * from vN`. While it is set the auto cluster's kept note stands down: the
    * slot holds one sentence, and "37 cards are yours now" beside "12 of these
-   * are not in v2 yet" is two counts of the same list that answer different
+   * differ from v2" is two counts of the same list that answer different
    * questions. The bulk controls themselves are untouched.
    */
   draftNote?: string | null;

@@ -575,7 +575,7 @@ export function DecklistRow({
           aria-label={
             card.quantity > 1
               ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)
-              : addPanelCopy.row.removeAria(card.name)
+              : addPanelCopy.row.removeAria(displayName)
           }
         >
           {addPanelCopy.row.remove}
@@ -636,7 +636,7 @@ function UndoRow({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
               bg-transparent border-0 md:border-b md:border-accent-shadow
               text-[13px] md:text-[12.5px] font-semibold md:leading-[1.4]
               text-accent md:hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default"
-            aria-label={addPanelCopy.undo.actionAria(card.name)}
+            aria-label={addPanelCopy.undo.actionAria(printedFaceName(card))}
           >
             {addPanelCopy.undo.action}
           </button>

@@ -4,6 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
+import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -471,7 +472,10 @@ export function BuilderShell({
     (card: DeckDetailCard) => {
       setAnnouncement(
         addPanelCopy.undo.announceUndone(
-          card.name,
+          // The name on the receipt the reader just pressed, not the oracle
+          // name behind it: the two differ on a renamed printing, and the
+          // announcement is the same act described twice.
+          printedFaceName(card),
           deckCounts(cards).built + card.quantity,
           bodySize,
         ),
