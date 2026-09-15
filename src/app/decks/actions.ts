@@ -415,6 +415,11 @@ export async function setCardProxied(
   proxied: boolean,
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  // `proxied` is wire input whatever its TypeScript type says, and it decides
+  // which branch runs: the string "false" is truthy, so an unvalidated call
+  // MARKS a card the reader was trying to unmark. Same reason the ids are
+  // checked rather than trusted.
+  if (typeof proxied !== "boolean") return { ok: false, message: proxyCopy.error.refused };
   if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: proxyCopy.error.refused };
   await requireDeck(deckId, userId);
 

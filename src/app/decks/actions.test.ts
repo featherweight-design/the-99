@@ -350,7 +350,9 @@ const stub = vi.hoisted(() => {
     // is the driver's own shape; returning `undefined` made every pull refuse,
     // because `proxiedOracleIds` fails CLOSED on that path by design.
     execute: async (query?: unknown) => {
-      const text = JSON.stringify((query as { queryChunks?: unknown })?.queryChunks ?? "");
+      // `sqlText`, not `JSON.stringify`: drizzle's table objects are circular,
+      // and this stub is the one the db-level readers go through.
+      const text = sqlText(query);
       state.executeTexts.push(text);
       if (state.executeError && (!state.executeErrorMatch || text.includes(state.executeErrorMatch))) {
         throw state.executeError;
@@ -1429,6 +1431,29 @@ describe("setCardProxied", () => {
     const check = texts.findIndex((t) => t.includes("deck_cards"));
     expect(lock).toBeGreaterThanOrEqual(0);
     expect(lock).toBeLessThan(check);
+  });
+
+  it("unmarks, and says so", async () => {
+    // Every other success case passes `true`. A regression that stopped deleting
+    // the row — or stopped revalidating after an unmark — would stay green
+    // without this, because the probe writes `deck_proxies` directly rather than
+    // through the action.
+    stub.state.executeRows = [{ held: true }];
+    const result = await setCardProxied(DECK_ID, CARD_A, false);
+    const texts = stub.state.executeTexts.join(" ");
+    stub.state.executeRows = null;
+    expect(result).toEqual({ ok: true });
+    expect(texts).toContain("delete from deck_proxies");
+    expect(texts).not.toContain("insert into deck_proxies");
+    expect(stub.state.revalidated).toContain("/collection/proxies");
+  });
+
+  it("refuses a non-boolean flag before touching the database", async () => {
+    // Wire input: the string "false" is truthy, so an unvalidated call marks the
+    // card the reader was unmarking.
+    const result = await setCardProxied(DECK_ID, CARD_A, "false" as unknown as boolean);
+    expect(result).toEqual({ ok: false, message: proxyCopy.error.refused });
+    expect(stub.state.executeTexts.join(" ")).not.toContain("deck_proxies");
   });
 
   it("does not stamp the deck as edited", async () => {
