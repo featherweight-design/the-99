@@ -128,6 +128,32 @@ describe("arrivals — an unmatched name overrides the buy-row reason", () => {
     expect(s.still[0].reason).toEqual({ kind: "gone" });
   });
 
+  // An upload can hold a good copy of a card AND a second line naming it that failed to
+  // match. The deck is then exactly as short as it was — nothing cleared, nothing reduced,
+  // nothing raised — so the row only exists because the name failed, and without it the one
+  // reason the player can act on is invisible.
+  it("emits an unchanged deficit when that card's own line failed to match", () => {
+    const rows = [{ deckId: DECK_A, oracleId: CARD, quantity: 1 }];
+    const s = buildArrivalsSummary(input({
+      buyBefore: rows,
+      buyAfter: rows,
+      unmatched: [{ name: "Brushland", line: 7 }],
+    }));
+    expect(s.still).toEqual([{
+      deckId: DECK_A, oracleId: CARD, owed: 1, reason: { kind: "unmatched" },
+    }]);
+  });
+
+  it("leaves every other unchanged deficit out of the receipt", () => {
+    const rows = [{ deckId: DECK_A, oracleId: CARD, quantity: 1 }];
+    const s = buildArrivalsSummary(input({
+      buyBefore: rows,
+      buyAfter: rows,
+      unmatched: [{ name: "Something Else", line: 7 }],
+    }));
+    expect(s.still).toEqual([]);
+  });
+
   it("counts parse errors without attributing them to a row", () => {
     const s = buildArrivalsSummary(input({
       buyAfter: [{ deckId: DECK_A, oracleId: CARD, quantity: 1 }],

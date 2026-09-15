@@ -26,7 +26,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { replaceCollection } from "../src/lib/collection/import";
-import { writeArrivalsReceipt } from "../src/app/collection/actions";
+import { writeArrivalsReceipt } from "../src/lib/collection/arrivals-write";
 import type { ArrivalsSummary } from "../src/lib/collection/arrivals";
 
 neonConfig.webSocketConstructor = ws;

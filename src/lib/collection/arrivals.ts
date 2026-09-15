@@ -113,14 +113,16 @@ function diffBuyRows(before: BuyRow[], after: BuyRow[]) {
   const cleared: ClearedRow[] = [];
   const reduced: { row: BuyRow; wanted: number }[] = [];
   const raised: BuyRow[] = [];
+  const unchanged: BuyRow[] = [];
   for (const [k, row] of b) {
     const now = a.get(k);
     if (!now) cleared.push({ deckId: row.deckId, oracleId: row.oracleId, copies: row.quantity });
     else if (now.quantity < row.quantity) reduced.push({ row: now, wanted: row.quantity });
     else if (now.quantity > row.quantity) raised.push(now);
+    else unchanged.push(now);
   }
   for (const [k, row] of a) if (!b.has(k)) raised.push(row);
-  return { cleared, reduced, raised };
+  return { cleared, reduced, raised, unchanged };
 }
 
 /** Total copies across a collection snapshot. */
@@ -146,13 +148,14 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
   // spelled `Fire/Ice` in the file still lines up with its card.
   const failedNames = new Set(unmatched.map((u) => normalizeCardName(u.name)));
 
-  const reasonFor = (oracleId: string, fallback: StillReason): StillReason => {
+  const isUnmatched = (oracleId: string): boolean => {
     const name = input.cardNames[oracleId];
-    if (name && failedNames.has(normalizeCardName(name))) return { kind: "unmatched" };
-    return fallback;
+    return Boolean(name && failedNames.has(normalizeCardName(name)));
   };
+  const reasonFor = (oracleId: string, fallback: StillReason): StillReason =>
+    (isUnmatched(oracleId) ? { kind: "unmatched" } : fallback);
 
-  const { cleared, reduced, raised } = diffBuyRows(input.buyBefore, input.buyAfter);
+  const { cleared, reduced, raised, unchanged } = diffBuyRows(input.buyBefore, input.buyAfter);
 
   const still: StillRow[] = [
     ...reduced.map(({ row, wanted }): StillRow => ({
@@ -171,6 +174,19 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
       owed: row.quantity,
       reason: reasonFor(row.oracleId, { kind: "gone" }),
     })),
+    // A DEFICIT THAT DID NOT MOVE, but only when the card's own CSV line failed. An upload
+    // can carry a valid copy of a card AND a duplicate line that failed to parse its name,
+    // so the deck stays exactly as short as it was — no clear, no reduction, no rise — while
+    // the reason the player can act on is sitting in the file. Every OTHER unchanged deficit
+    // stays out: it is not news about this import, and the deck page has always shown it.
+    ...unchanged
+      .filter((row) => isUnmatched(row.oracleId))
+      .map((row): StillRow => ({
+        deckId: row.deckId,
+        oracleId: row.oracleId,
+        owed: row.quantity,
+        reason: { kind: "unmatched" },
+      })),
   ];
 
   // A card this import brought copies of, that more committed decks want than the

@@ -1,20 +1,18 @@
 "use server";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "../../db";
-import { cardArtPreferences, cards, collectionItems, csvUploads, decks } from "../../db/schema";
+import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
-import {
-  buildArrivalsSummary, type ArrivalsSummary, type OwnedCounts,
-} from "../../lib/collection/arrivals";
-import { loadAvailability, loadDeckBuyRows } from "../../lib/decks/availability-query";
+import { ownedByOracle, writeArrivalsReceipt } from "../../lib/collection/arrivals-write";
+import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
 import { recommendCommanders } from "../../lib/recs/recommend";
@@ -123,125 +121,9 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
   return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }
 
-/**
- * The collection as the claim model reads it: copies per oracle id.
- *
- * Summed across printings, because every figure in the claim model is oracle-level — a
- * Brushland from any set is a Brushland. Basics are NOT excluded here even though the claim
- * model excludes them: this feeds the arrivals count, and a player who imports 40 Forests
- * has had 40 cards arrive whatever the decks make of them.
- */
-async function ownedByOracle(userId: string): Promise<OwnedCounts> {
-  const rows = await db
-    .select({
-      oracleId: collectionItems.oracleId,
-      quantity: sql<number>`sum(${collectionItems.quantity})::int`,
-    })
-    .from(collectionItems)
-    .where(eq(collectionItems.userId, userId))
-    .groupBy(collectionItems.oracleId);
-  const out: OwnedCounts = {};
-  for (const r of rows) out[r.oracleId] = r.quantity;
-  return out;
-}
 
-/**
- * The same shape, predicted from the rows about to be written.
- *
- * Exact rather than approximate: these ARE the rows the replace inserts, so reading the
- * collection back afterwards would return this and cost a second user-wide scan.
- */
-function pendingItemsToOwnedCounts(items: PendingItem[]): OwnedCounts {
-  const out: OwnedCounts = {};
-  for (const i of items) out[i.oracleId] = (out[i.oracleId] ?? 0) + i.quantity;
-  return out;
-}
 
-/** Printed names for the receipt, frozen into the payload so a later rename cannot rewrite it. */
-async function cardNamesFor(oracleIds: string[]): Promise<Record<string, string>> {
-  if (oracleIds.length === 0) return {};
-  const rows = await db
-    .select({ oracleId: cards.oracleId, name: cards.name })
-    .from(cards)
-    .where(inArray(cards.oracleId, oracleIds));
-  const out: Record<string, string> = {};
-  for (const r of rows) out[r.oracleId] = r.name;
-  return out;
-}
 
-/** Deck names, frozen for the same reason: a deck deleted later still has to render its row. */
-async function deckNamesFor(userId: string): Promise<Record<string, string>> {
-  const rows = await db
-    .select({ id: decks.id, name: decks.name })
-    .from(decks)
-    .where(eq(decks.userId, userId));
-  const out: Record<string, string> = {};
-  for (const r of rows) out[r.id] = r.name;
-  return out;
-}
-
-/**
- * Assembles the receipt for one confirmed upload and stores it.
- *
- * Extracted from `confirmUpload` so it can be exercised against a real database: the
- * action around it needs a request and a signed-in reader, and none of that is what the
- * receipt's correctness turns on. `pnpm probe:arrivals` calls this directly and reads the
- * stored payload back.
- *
- * Takes the BEFORE state as arguments rather than reading it, because by the time this
- * runs the replace has destroyed it.
- */
-export async function writeArrivalsReceipt(args: {
-  userId: string;
-  uploadId: string;
-  pendingItems: PendingItem[];
-  ownedBefore: OwnedCounts;
-  buyBefore: { deckId: string; oracleId: string; quantity: number }[];
-  unmatched: { name: string; line: number }[];
-  parseErrorCount: number;
-}): Promise<ArrivalsSummary> {
-  const { userId, uploadId, pendingItems, ownedBefore, buyBefore } = args;
-  const ownedAfter = pendingItemsToOwnedCounts(pendingItems);
-  const buyAfter = await loadDeckBuyRows(userId);
-
-  // Only the cards that GAINED copies. Contention is a question about arrivals, so the
-  // claim read is narrowed to them — passing every oracle in the old and new collection
-  // defeats the point of `oracleIds` and makes every confirm materialise the player's
-  // whole collection as claims.
-  const arrivedIds = Object.keys(ownedAfter).filter(
-    (oracleId) => (ownedAfter[oracleId] ?? 0) > (ownedBefore[oracleId] ?? 0),
-  );
-  const availability = arrivedIds.length
-    ? await loadAvailability(userId, { oracleIds: arrivedIds })
-    : new Map();
-  const claims: Record<string, { owned: number; hard: number }> = {};
-  for (const [oracleId, a] of availability) claims[oracleId] = { owned: a.owned, hard: a.hard };
-
-  // Names for the rows the diff can emit: every card either side of the collection, plus
-  // every card any deck owes. Frozen into the payload, so a later rename or a deleted deck
-  // cannot rewrite a receipt.
-  const named = new Set([
-    ...Object.keys(ownedBefore),
-    ...Object.keys(ownedAfter),
-    ...buyBefore.map((r) => r.oracleId),
-    ...buyAfter.map((r) => r.oracleId),
-  ]);
-
-  const summary = buildArrivalsSummary({
-    ownedBefore,
-    ownedAfter,
-    buyBefore,
-    buyAfter,
-    claims,
-    unmatched: args.unmatched,
-    parseErrorCount: args.parseErrorCount,
-    cardNames: await cardNamesFor([...named]),
-    deckNames: await deckNamesFor(userId),
-  });
-  await db.update(csvUploads).set({ summaryPayload: summary })
-    .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
-  return summary;
-}
 
 export async function confirmUpload(uploadId: string): Promise<void> {
   const userId = await requireUserId();
