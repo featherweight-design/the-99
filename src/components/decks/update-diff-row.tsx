@@ -33,6 +33,7 @@ import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips, CostTrack } from "..
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_RADIUS, ROW_SHELL } from "../ui/row-shell";
 import { BuyTag } from "./buy-tag";
+import { ProxyTag } from "./proxy-tag";
 
 const copy = deckImportCopy.update.diff;
 
@@ -114,6 +115,14 @@ export type DiffRowCard = {
    *  import's rows alike, so it carries no marker of its own. */
   auto: boolean;
   owned: boolean;
+  /**
+   * This deck prints its copy. **Tested before `owned`**, because a printed card
+   * is unowned by design: the shipped slot opened `if (buyable && !card.owned)`
+   * and so quoted a price on the review screen for a card its owner had decided
+   * not to buy — one deck, one card, one surface away from the decklist saying
+   * the opposite.
+   */
+  proxied?: boolean;
   /** Governs the availability marker only, never the slot's occupant. Null for
    *  an unowned card and for a failed rollup alike, and neither draws a marker.
    *  A card nothing competes for is NOT null: it carries a real rollup that the
@@ -222,6 +231,14 @@ function AvailabilitySlot({
   selfClaimed: boolean;
   buyable?: boolean;
 }) {
+  // FIRST, and before `buyable` is even consulted: a printed card asks the
+  // collection for nothing, so neither the buy tag nor the marker beside it has
+  // anything true to say about it. `deckRowTag` makes the same call on the
+  // decklist; this is that ruling reaching its third surface.
+  // `silent`: this row's full sentence rides `aria-describedby` on the card
+  // trigger, and the tag's own word would announce the same state twice — where
+  // the guard tags beside it speak exactly once.
+  if (card.proxied) return <ProxyTag variant="row" silent />;
   if (buyable && (!card.owned || card.committed || (card.shortfall ?? 0) > 0)) {
     return (
       <BuyTag variant="row" price={card.price ?? null} newestAsOf={card.newestAsOf ?? null} />

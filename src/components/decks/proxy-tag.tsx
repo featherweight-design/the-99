@@ -65,9 +65,21 @@ export function ProxyTag({
    *  either name. A single commander never pays for this, and `P×2` is banned
    *  by ruling 5. */
   pairName,
+  silent = false,
 }: {
   variant?: ProxyTagVariant;
   pairName?: string;
+  /**
+   * Drop the tag's own spoken label, for a surface that says the same state in a
+   * fuller sentence of its own.
+   *
+   * The review row does: its `aria-describedby` carries "…is a proxy in this
+   * deck, so this add asks nothing of your collection", and the tag's own
+   * `sr-only` word repeated that state a second time — where the guard tags
+   * beside it deliberately speak once. `BuyTag` takes the same option for the
+   * same reason.
+   */
+  silent?: boolean;
 }) {
   const word = pairName ? proxyCopy.tag.pairAria(pairName) : proxyCopy.tag.aria;
   return (
@@ -82,7 +94,7 @@ export function ProxyTag({
       <span aria-hidden="true">
         {pairName ? proxyCopy.tag.pair(pairName) : proxyCopy.tag.glyph}
       </span>
-      <span className="sr-only">{word}</span>
+      {silent ? null : <span className="sr-only">{word}</span>}
     </span>
   );
 }
