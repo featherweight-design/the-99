@@ -15,7 +15,7 @@
 // THE ORDER IS THE EXPLANATION, so `this deck` is tagged and never promoted: moving a player's
 // own deck to the top would hide why it lost.
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
 import { previewAllocation } from "../../lib/decks/preview-allocation";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
@@ -187,12 +187,19 @@ export function ContestedCardRow({
     setCard(initial);
     setRefusal(null);
     setPicked(null);
-    // AND THE IN-FLIGHT WRITE LOSES ITS CLAIM ON THIS ROW. Adopting new props is the same event
-    // as a newer tap for the purpose of the token below: without this, a write that started
-    // before the payload arrived would still pass its guard and overwrite the fresher reading
-    // with its own, older one.
-    tap.current += 1;
   }
+  // AND THE IN-FLIGHT WRITE LOSES ITS CLAIM ON THIS ROW. Adopting new props supersedes a pending
+  // write exactly as a newer tap does: its answer is an older reading, and drawing it would undo
+  // the fresher one.
+  //
+  // IN AN EFFECT, NOT IN THE RENDER ABOVE. The token is a ref, and a ref mutated during render
+  // survives a render React abandons — a concurrent update that starts with a new payload and
+  // is dropped would retire a write whose props never committed, and that write would then
+  // decline to stand its own preview down, leaving the accent and the undo footer stuck on the
+  // row for good. An effect runs only after a commit, so an abandoned render moves nothing.
+  useEffect(() => {
+    tap.current += 1;
+  }, [initial]);
 
   // AUTHORSHIP IS A FACT ABOUT THE DATA, not a fact about this component's lifetime. A deck with
   // a GRANTED reservation is a deck the player chose — seniority grants nothing, it only orders a
