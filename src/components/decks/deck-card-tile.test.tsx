@@ -7,6 +7,8 @@ import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { PendingChangeProvider } from "./pending-change";
 
 const { addCardToDeck, removeCardFromDeck } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -333,5 +335,69 @@ describe("DeckCardTile — the proxied state", () => {
     );
 
     expect(screen.getByText(addPanelCopy.row.quantity(2))).toBeInTheDocument();
+  });
+});
+
+describe("DeckCardTile — the draft touched this card", () => {
+  // Call B. The card view had NO draft treatment before this: `usePendingChange`
+  // had exactly one consumer, so a deck with an uncommitted draft photographed
+  // identically whether the draft was clean or not.
+  function renderWithDraft(moves: Array<[string, { from: number; to: number }]>, card_: DeckDetailCard) {
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <PendingChangeProvider value={{ moves: new Map(moves) }}>
+          <DeckCardTile deckId="d1" card={card_} />
+        </PendingChangeProvider>
+      </CardDetailProvider>,
+    );
+  }
+
+  it("prints the pair where the count was, and speaks it", () => {
+    renderWithDraft([[card.oracleId, { from: 1, to: 2 }]], { ...card, quantity: 2 });
+
+    // The pair TAKES the count's position rather than sitting beside it, which
+    // is what resolves the double statement — and it lands on the meta line
+    // rather than in the name's place, because at 178px the name has no 30px to
+    // give up.
+    expect(screen.getByText(deckVersioningCopy.pending.tilePair(1, 2))).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.row.quantity(2))).not.toBeInTheDocument();
+    expect(
+      screen.getByText(deckVersioningCopy.pending.addMarkRecountedA11y(1, 2)),
+    ).toBeInTheDocument();
+  });
+
+  it("prints a signed delta for a card the draft added", () => {
+    // The list view has no shape for this at all: a row the version did not hold
+    // has no count to move. It is the one thing the tile says that the row cannot.
+    renderWithDraft([[card.oracleId, { from: 0, to: 1 }]], card);
+
+    expect(screen.getByText(deckVersioningCopy.pending.tileAdded(1))).toBeInTheDocument();
+    expect(screen.getByText(deckVersioningCopy.pending.addMarkA11y)).toBeInTheDocument();
+  });
+
+  it("draws the accent edge on the caption, never the shell", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <PendingChangeProvider value={{ moves: new Map([[card.oracleId, { from: 1, to: 2 }]]) }}>
+          <DeckCardTile deckId="d1" card={card} />
+        </PendingChangeProvider>
+      </CardDetailProvider>,
+    );
+
+    // The shell's border already carries over-committed, and both are true at
+    // once often enough to matter. An accent ring 1px inside that tint would be
+    // two unrelated facts on one edge.
+    const edged = [...container.querySelectorAll<HTMLElement>("*")].filter((el) =>
+      el.style.boxShadow.includes("var(--accent)"),
+    );
+    expect(edged).toHaveLength(1);
+    expect(edged[0].className).toContain("items-stretch");
+  });
+
+  it("leaves a clean draft alone", () => {
+    renderWithDraft([["some-other-card", { from: 1, to: 2 }]], { ...card, quantity: 2 });
+
+    expect(screen.getByText(addPanelCopy.row.quantity(2))).toBeInTheDocument();
+    expect(screen.queryByText(deckVersioningCopy.pending.tilePair(1, 2))).not.toBeInTheDocument();
   });
 });

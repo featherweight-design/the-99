@@ -772,7 +772,7 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
 // no pending mark at all — so in card view each sentence would point at a marker
 // the reader cannot find. `toolbarNote` states a count and no marker, so it
 // stays in both views; the test below holds that distinction in place.
-describe("the pending-change notes are the row view's, because the mark is", () => {
+describe("the pending-change notes follow the mark, which both views now draw", () => {
   const pendingChanges = new Map([["sol-ring", { from: 0, to: 1 }]]);
 
   it("captions the list and heads the group in list view", () => {
@@ -846,19 +846,25 @@ describe("the pending-change notes are the row view's, because the mark is", () 
     ).not.toBeInTheDocument();
   });
 
-  it("says neither in card view, where no tile draws the rule", () => {
+  it("says both in card view too, now that the tiles draw the rule", () => {
     renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
 
     fireEvent.click(
       screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0],
     );
 
+    // This asserted the OPPOSITE until card captions (R1) call B, and the reason
+    // it gave was true at the time: the tiles carried no mark, so a sentence
+    // pointing at one would have pointed at nothing. The tiles carry it now — a
+    // 2px accent edge on the caption, and the draft's figure in the count's
+    // position — and the same 2px is deliberate, so a reader switching views
+    // sees one treatment rather than two.
     expect(
-      screen.queryByText(deckVersioningCopy.pending.changeListCaption(1)),
-    ).not.toBeInTheDocument();
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).toBeInTheDocument();
     expect(
-      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(1)),
-    ).not.toBeInTheDocument();
+      screen.getByText(deckVersioningCopy.pending.groupChangeNote(1)),
+    ).toBeInTheDocument();
   });
 });
 

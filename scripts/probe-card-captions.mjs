@@ -30,6 +30,7 @@
 // Run by hand, and not part of `pnpm test`:
 //   node scripts/probe-card-captions.mjs
 //   PROBE_BASE=http://localhost:3600 PROBE_DECK=<uuid> node scripts/probe-card-captions.mjs
+import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
@@ -38,7 +39,13 @@ import { onPageRole, PAGE } from "./lib/surface.mjs";
 const { deck: DECK_VIEW } = { deck: { card: "Card view" } };
 const viewToggleCopy = { deck: DECK_VIEW };
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+  // The draft block stages its own `deck_cards` row. Point this at `local-dev`
+  // or a scratch branch, NEVER production.
+  "DATABASE_URL",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
@@ -129,6 +136,35 @@ const ART = (page) =>
       return { marks, wash, shadow };
     });
 
+/**
+ * The draft's treatment on the tiles: the accent edge, and the figure standing
+ * in the count's position.
+ *
+ * `boxShadow` rather than a class, because the edge is an inline style and the
+ * question is which ELEMENT carries it — the caption, never the shell, whose
+ * border already carries over-committed.
+ */
+const DRAFT = ({ page }) => {
+  const edged = [...document.querySelectorAll(`${page} *`)].filter((el) =>
+    (el.style.boxShadow ?? "").includes("var(--accent)"),
+  );
+  return {
+    edges: edged.length,
+    // The caption is the flex row; the shell is the rounded plate above it. If
+    // the edge ever migrates, this is what says so.
+    onCaption: edged.filter((el) => el.className.includes("items-stretch")).length,
+    // SCOPED TO A CAPTION. Unscoped, this read the deck header's own `+1`
+    // pending-count chip and passed with the tile's figure deleted outright —
+    // the check existed and measured nothing. The caption is the only place the
+    // tile's figure can legitimately be.
+    figures: [...document.querySelectorAll(
+      `${page} [class*="min-h-[52px]"][class*="min-h-[46px]"] span`,
+    )]
+      .filter((el) => /^(\+\d+|\d+ → \d+)$/.test((el.textContent ?? "").trim()))
+      .map((el) => el.textContent.trim()),
+  };
+};
+
 /** Every caption's height, and every slot box's height, on the page. */
 const CAPTIONS = (page) => {
   // BOTH halves of the pair. `decklist-row`'s meta shell is also `min-h-[52px]`
@@ -185,9 +221,12 @@ const GRID = ({ page }) => {
 
 async function run() {
   await clerkSetup();
+  const sql = neon(DATABASE_URL);
   const browser = await chromium.launch();
   let failures = 0;
   let checks = 0;
+  /** Populated BEFORE the insert it covers, so a throw cannot strand the row. */
+  let staged = null;
 
   try {
     for (const width of [1300, 390]) {
@@ -291,9 +330,94 @@ async function run() {
           grid === null ? "no tiles" : `${grid.columns} columns, tile ${grid.tile}px`,
         );
       }
+      // The draft. Staged once, read at both widths, and torn down in the
+      // `finally` — a deck with a committed version is what makes a draft
+      // possible at all, since a brew has nothing to diff against.
+      if (staged === null) {
+        // A draft is a DIFF, so staging one needs a committed version to diff
+        // against — and the account this probe signs in as owns none. So it
+        // commits one itself, out of the deck's own current rows, which makes
+        // the version identical to the draft and the deck momentarily clean.
+        // Adding one card after that is then the only change there is, and `+1`
+        // is a figure whose true value is known rather than read back.
+        //
+        // The deck comes from the run's own discovery (`/decks` as the signed-in
+        // account). Picking one straight out of the database is how the first
+        // version of this block ended up navigating to ANOTHER USER'S deck and
+        // reading its not-found page as "no edges drawn".
+        const deckId = deck.replace(/^\/decks\//, "");
+        const [lead] = await sql`
+          select commander_oracle_id from decks where id = ${deckId}`;
+        const [spare] = await sql`
+          select c.oracle_id from cards c
+           where c.oracle_id not in (
+                 select dc.oracle_id from deck_cards dc where dc.deck_id = ${deckId})
+           limit 1`;
+        if (!lead?.commander_oracle_id || !spare) {
+          checks += 1;
+          failures += !report(
+            `${width}px · draft · a deck to stage one in`,
+            false,
+            "the discovered deck has no commander, or the catalog no spare card",
+          );
+        } else {
+          const [{ next }] = await sql`
+            select coalesce(max(number), 0) + 1 as next from deck_versions where deck_id = ${deckId}`;
+          // EVERY handle is recorded before the write it covers, so a throw
+          // part-way through cannot strand a version or a row in this player's
+          // deck. The same rule `probe:review` follows around the collection.
+          const versionId = crypto.randomUUID();
+          staged = { deckId, oracleId: spare.oracle_id, versionId };
+          await sql`
+            insert into deck_versions (id, deck_id, number, commander_oracle_id)
+            values (${versionId}, ${deckId}, ${next}, ${lead.commander_oracle_id})`;
+          await sql`
+            insert into deck_version_cards (version_id, oracle_id, quantity)
+            select ${versionId}, dc.oracle_id, dc.quantity
+              from deck_cards dc where dc.deck_id = ${deckId}`;
+          await sql`
+            insert into deck_cards (deck_id, oracle_id, quantity, auto)
+            values (${deckId}, ${spare.oracle_id}, 1, false)`;
+        }
+      }
+      if (staged) {
+        await page.goto(`${BASE}/decks/${staged.deckId}`, { waitUntil: "networkidle" });
+        await page.waitForTimeout(2_000);
+        const toggle = onPageRole(page, "button", viewToggleCopy.deck.card);
+        if ((await toggle.count()) > 0) {
+          await toggle.first().click();
+          await page.waitForTimeout(1_500);
+        }
+        const draft = await page.evaluate(DRAFT, { page: PAGE });
+        checks += 2;
+        // Exactly one tile is touched, so exactly one edge — and it is on the
+        // caption. Zero would mean the card view still photographs a dirty draft
+        // as a clean one, which is the state this whole call exists to end.
+        failures += !report(
+          `${width}px · draft · one accent edge, on the caption`,
+          draft.edges === 1 && draft.onCaption === 1,
+          `${draft.edges} edges, ${draft.onCaption} on a caption`,
+        );
+        failures += !report(
+          `${width}px · draft · a signed figure in the count's position`,
+          draft.figures.includes("+1"),
+          `figures ${draft.figures.join(" / ") || "none"}`,
+        );
+      }
       await context.close();
     }
   } finally {
+    if (staged) {
+      const clean = neon(DATABASE_URL);
+      await clean`
+        delete from deck_cards
+         where deck_id = ${staged.deckId} and oracle_id = ${staged.oracleId}`;
+      // The version's cards go with it by cascade; deleting the version last
+      // means a failure here leaves the deck clean rather than holding a card
+      // no version knows about.
+      await clean`delete from deck_versions where id = ${staged.versionId}`;
+      console.log("  ..   removed the staged version and its one added card");
+    }
     await browser.close();
   }
 
