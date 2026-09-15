@@ -163,10 +163,32 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   transaction (`where confirmed_at is null returning id`), and the transaction is abandoned when
   it returns no row — whether that stops a second confirm is a question about what the database
   did, and a read-then-write guard passes every unit test while replacing the collection twice.
-  Its third case starts two confirms of one upload together and asserts that exactly one wins,
-  which is the case the lock exists for; with the stamp made unconditional, two of its checks
-  fail. THE RECEIPT: the arrivals diff reads the collection either side of a write, and there is
-  no collection to read either side of anything in jsdom. It writes a fixture under a per-run
+  Its third case starts two confirms of ONE upload together and asserts exactly one wins; with
+  the stamp made unconditional, two of its checks fail. A separate case races two DIFFERENT
+  uploads, because the conditional stamp does nothing there — both rows are unconfirmed and both
+  pass it — and what serializes them is a per-user advisory lock taken inside the same
+  transaction. What that protects is the collection: two interleaved delete-and-reinserts leave a
+  MIXTURE of the two lists or raise 23505, so the check asserts the collection is exactly one of
+  the two. With the lock removed it fails on every run.
+
+  THE RECEIPT: the arrivals diff reads the collection either side of a write, and there is no
+  collection to read either side of anything in jsdom. It calls `writeArrivalsReceipt` — the
+  helper `confirmUpload` uses, extracted so a probe can reach it without a request — and reads
+  the stored column back rather than trusting the return value, because persistence is half of
+  what the case proves.
+
+  Three of its cases exist because a mutation run measured nothing without them. **A receipt with
+  no DECKS emits no rows**, so the frozen-name checks passed over an empty name map until the
+  fixture grew a committed deck that owes the arriving card. **Contention needs demand above
+  supply among committed decks**, so the claim read could be replaced by an empty map and every
+  other check still passed until a second deck asked for two copies against the two that arrived.
+  And the lock case above needed two uploads rather than one.
+
+  What it does NOT cover, deliberately: the ORDER of the invalidations and the receipt write
+  inside `confirmUpload`. That function needs a request and a signed-in reader, so the probe calls
+  the helper beneath it — skipping the receipt write in the action is invisible here. The
+  ordering's reason is in the code: the invalidations run first because the replace has already
+  committed, and a failed receipt must not leave stale caches behind as well. It writes a fixture under a per-run
   `user_id` and deletes it in a `finally` — point it at `local-dev` or a scratch branch, **never
   production**, and note that this one is stricter than the other probes about that:
   `replaceCollection` DELETES every collection row for the user it is given.
