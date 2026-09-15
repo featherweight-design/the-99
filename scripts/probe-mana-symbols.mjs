@@ -211,7 +211,14 @@ async function run() {
       // everything under `/mana/` the page fetched: the filter control draws the
       // five hues on `/collection` too, so a sweep of all requests reports five
       // healthy files over a modal whose every pip failed.
-      const wanted = [...new Set((cost ?? []).map((p) => p.url && new URL(p.url).pathname).filter(Boolean))];
+      // Resolved against BASE. `getComputedStyle` returns these ABSOLUTE, which is
+      // why the reading works and why the slug mutation named `/mana/3-typo.svg`
+      // rather than throwing — but a relative value would make `new URL` throw
+      // `Invalid URL` and take the whole check down with it, and a base costs
+      // nothing to pass and cannot change an already-absolute URL.
+      const wanted = [
+        ...new Set((cost ?? []).map((p) => p.url && new URL(p.url, BASE).pathname).filter(Boolean)),
+      ];
       const served = wanted.filter((path) => loaded.get(path)?.status === 200 && loaded.get(path)?.svg);
       failures += !report(
         `${width}px · the cost's own symbols resolved`,
