@@ -4,6 +4,14 @@ import type { db } from "../../db";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
+ * Anything that can run one statement: a transaction, or the db singleton.
+ * Structural rather than `Tx`, because every caller in `src/` passes a
+ * transaction and the probe passes the singleton — the statement is a single
+ * DELETE either way, so there is nothing a transaction gives it that it needs.
+ */
+type Runner = Pick<Tx, "execute">;
+
+/**
  * Delete this deck's proxy rows for cards it no longer holds.
  *
  * A proxy is one deck's statement about one slot, so it dies with the slot. The
@@ -25,7 +33,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * Idempotent, and safe to call when nothing was removed. `prune-proxies.test.ts`
  * fails when a `delete(deckCards)` appears without one of these beside it.
  */
-export async function pruneOrphanProxies(tx: Tx, deckId: string): Promise<void> {
+export async function pruneOrphanProxies(tx: Runner, deckId: string): Promise<void> {
   await tx.execute(sql`
     delete from deck_proxies p
     where p.deck_id = ${deckId}

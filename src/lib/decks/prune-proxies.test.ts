@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { globSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 // Every write that can remove a card from a deck must reconcile that deck's
 // proxy rows, or a card re-added later arrives silently already proxied.
@@ -58,8 +57,10 @@ describe("proxy rows are reconciled wherever deck membership shrinks", () => {
   it("covers every file that deletes deck_cards at all", () => {
     // The list above is a list, so it can go stale in the other direction: a
     // NEW file that deletes deck_cards would simply not be tested.
-    const all = globSync("src/**/*.ts", { exclude: (p) => p.includes(".test.") })
-      .filter((p) => /\.delete\(deckCards\)/.test(readFileSync(p, "utf8")));
+    const all = readdirSync("src", { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".ts") && !file.includes(".test."))
+      .map((file) => `src/${file}`)
+      .filter((file) => /\.delete\(deckCards\)/.test(readFileSync(file, "utf8")));
     expect(all.sort()).toEqual([...FILES].sort());
   });
 });

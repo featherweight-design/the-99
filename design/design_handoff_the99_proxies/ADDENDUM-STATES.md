@@ -56,6 +56,8 @@ Every purchase figure excludes the row.
 **Must not:** count it in `buy`, or in the banner's *short of spare copies*.
 
 ### 6.4 `groupInBreakdown`
+> **RATIFIED AFTER R2:** the fourth term ships — `3 free · 2 sleeved · 1 to buy ·
+> 1 proxied`, absent at zero. The line below records the R2 position it replaced.
 Under-sums by the number of proxied adds. Flagged, not redesigned.
 **Must not:** grow a fourth term without a ruling.
 

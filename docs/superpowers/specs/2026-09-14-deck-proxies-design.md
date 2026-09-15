@@ -89,19 +89,33 @@ record of when a printed copy entered a deck.
 
 **Every read joins `deck_proxies` against current membership** — a `deck_cards`
 row, or either of `decks.commander_oracle_id` / `partner_oracle_id`. A row whose
-card has since left the deck therefore does nothing at all.
+card has since left the deck therefore does nothing while it is absent.
 
-This is the whole answer to cleanup, and it is why this spec does not carry a
-list of write paths that must remember to prune. Six separate paths delete or
-replace `deck_cards` wholesale — `updateDeckFromList`, `removeCardFromDeck`,
-`clearAutoCards`, `undoFillPass`, `pullCardFromDeck`, `restoreDraftFromVersion` —
-and a spec that enumerates them is a list that rots the day a seventh is written,
-with the failure mode being a card that returns to a deck and is *silently
-already proxied*. Scoping the read to membership makes that unreachable by
-construction rather than by vigilance.
+**That is defence in depth, and it is not the guarantee.** The first version of
+this spec said it was, and that was wrong: an inert row is not a gone row, and
+re-adding the same card makes the anti-join match it again, so the card arrives
+*silently already proxied* — the exact failure the scoping was supposed to make
+unreachable. Worse on the fill's path, where the app itself re-adds a card and
+the player is then told they need not buy something they never said they were
+printing.
 
-Orphan rows are consequently harmless, and no path prunes them. The write still
-validates membership (see Writes), so they are rare as well as inert.
+So a removed slot takes its proxy with it. `pruneOrphanProxies(tx, deckId)` is
+**one reconcile statement** — *which of this deck's proxy rows have no membership
+now* — and every write that can shrink a deck's list calls it inside its own
+transaction: `removeCardFromDeck`, `clearAutoCards`, `undoFillPass`,
+`pullCardFromDeck`, `updateDeckFromList`, `restoreDraftFromVersion`.
+
+Asking the always-right question rather than "which cards went" is what makes it
+safe on the two paths that replace the list wholesale: there, a card the new list
+still holds has left and come back inside one transaction, and a
+difference-based prune would drop a proxy the player never retracted. On those
+paths the call sits **after** the rewrite.
+
+A list of six call sites is a list that rots, so it is enforced rather than
+remembered: `prune-proxies.test.ts` reads the source and fails when a
+`delete(deckCards)` appears in a transaction with no prune beside it, and when a
+file that deletes `deck_cards` is missing from its own list. The seventh path is
+the one that would otherwise ship this bug.
 
 ## The claim rule
 

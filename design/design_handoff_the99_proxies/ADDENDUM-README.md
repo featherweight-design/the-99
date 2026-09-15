@@ -122,6 +122,12 @@ add is not short of anything — it asks for nothing. Billing it is exactly what
 means, and it is the same class of error as printing `0 to buy` over a failed claim read, which
 `deck-versioning.ts` already refuses in four places.
 
+> **RATIFIED AFTER R2 — the fourth term ships.** Product overruled the
+> recommendation below on 2026-09-15: a breakdown that does not account for every
+> row in its group reads as a rendering fault, and the word already exists as the
+> row chip, so the term costs one copy function and one call site. The reasoning
+> below is kept as the record of what was weighed, not as the instruction.
+
 **3 · Flagged rather than decided: `groupInBreakdown(free, sleeved, buy)`.** A proxied add is in none
 of the three terms, so they stop summing to the group's count. **Recommendation: leave it
 under-summing rather than add a fourth term** — each term stays true, and it is the same posture as

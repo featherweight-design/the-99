@@ -28,6 +28,12 @@ of it.
 - **The list's three empty branches**, including the all-printed player with no collection.
 - **Copy.** Every string in `deck-proxies · copy strings.ts`, with singular forms and aria names.
 
+> **SUPERSEDED 2026-09-15.** Both amber items were ruled on by Product after this
+> file was written: the proxy list **stays read-only**, and decision 6 **ships as
+> drawn** (with the same fact added to the `/decks` tile, which is §11). The
+> `groupInBreakdown` item flagged below was overruled — the fourth term ships. The
+> package audited 🟢 Green; nothing here is open.
+
 ## What is amber
 
 ### The list is read-only, by decision
