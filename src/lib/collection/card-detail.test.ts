@@ -267,6 +267,26 @@ describe("loadCardDetail availability", () => {
     expect(card?.proxiedBy).toEqual([{ id: "d-1", name: "HD Gods" }]);
   });
 
+  // The OWNED branch, which is a different code path: availability, prices and
+  // this read start together there. Without a case here, dropping
+  // `proxyingDecks` from that `Promise.all` would leave every test green — the
+  // unowned case below would still pass, and it is the only other one asserting
+  // a non-empty list.
+  it("names the decks printing a card the player also owns", async () => {
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    vi.doMock("../../db", () => ({
+      db: { execute: async () => ({ rows: [{ id: "d-2", name: "Prismari Artistry" }] }) },
+    }));
+    vi.resetModules();
+    const { loadCardDetail: fresh } = await import("./card-detail");
+    const card = await fresh("user_1", "o-1");
+    vi.doUnmock("../../db");
+
+    expect(card?.proxiedBy).toEqual([{ id: "d-2", name: "Prismari Artistry" }]);
+  });
+
   // A failed proxy read costs the block, never the card — the same bargain the
   // availability and price reads beside it make.
   it("keeps the card when the proxy read fails", async () => {

@@ -37,7 +37,11 @@ export default async function DecksPage({
     // there without a request.
     // This is the one caller that draws the in-use-elsewhere clause, so it is
     // the one that pays for the availability read behind it.
-    listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeInUseElsewhere: true }),
+    listDecksWithStats(userId, DEFAULT_DECK_SORT, {
+      includeInUseElsewhere: true,
+      // This is the surface that draws `N proxies` and the covered status pill.
+      includeProxyStats: true,
+    }),
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.
     loadShoppingRollup(userId),

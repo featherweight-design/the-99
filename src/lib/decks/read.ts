@@ -559,7 +559,21 @@ export async function listDecksWithStats(
    * A caller that leaves it off gets `inUseElsewhere: 0`, which is what the
    * tile draws when nothing is spoken for anyway.
    */
-  opts: { includeInUseElsewhere?: boolean } = {},
+  opts: {
+    includeInUseElsewhere?: boolean;
+    /**
+     * Whether to count each deck's printed cards. Off by default, and the two
+     * callers that leave it off are the reason: `/` and `/decks/[id]` call this
+     * for a first-run check and a deck-name list, discard every figure, and
+     * would otherwise each pay a raw aggregate over the player's whole proxy
+     * table — on every deck page load.
+     *
+     * With it off a deck's `proxiedCount` is 0 and its pill falls back to the
+     * ownership answer. That is the same bargain `includeInUseElsewhere` makes
+     * beside it: a caller that does not draw the figure does not buy it.
+     */
+    includeProxyStats?: boolean;
+  } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (
@@ -724,7 +738,7 @@ export async function listDecksWithStats(
   //
   // Tolerated like the two reads above: a failed count leaves every deck reading
   // as it did before proxies existed, which is a missing line rather than a 500.
-  const proxiedByDeck = rows.length > 0
+  const proxiedByDeck = opts.includeProxyStats && rows.length > 0
     ? await proxyCounts(userId)
     : new Map<string, ProxyCount>();
 

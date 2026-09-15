@@ -122,22 +122,6 @@ export function catalogCard(
 }
 
 /**
- * Server query — the owned view of a card when the user has one, else the catalog view.
- * Returns null only when the oracle id is not in `cards` at all.
- *
- * Availability rides along because the modal renders it and every other surface that opens
- * the modal holds only an oracle id: `/collection` joins it onto its own rows, so without
- * this the same card showed its claims there and hid them everywhere else. The vantage is
- * the default one — `free = owned − hard`, card-availability row 1.5 — with no deck
- * excluded, because the modal is off any deck's own decklist even when opened from one.
- *
- * Quiet failure matches `/collection`: a failed read leaves availability null and the modal
- * simply omits the block, rather than losing the card.
- *
- * Untested-query pattern: the SQL is logic-free and the synthesis lives in `catalogCard`,
- * which is covered by tests.
- */
-/**
  * The decks printing this card, newest first.
  *
  * Membership-scoped like every other proxy read: a row whose card has left the
@@ -175,6 +159,22 @@ async function proxyingDecks(userId: string, oracleId: string): Promise<Proxying
   }
 }
 
+/**
+ * Server query — the owned view of a card when the user has one, else the catalog view.
+ * Returns null only when the oracle id is not in `cards` at all.
+ *
+ * Availability rides along because the modal renders it and every other surface that opens
+ * the modal holds only an oracle id: `/collection` joins it onto its own rows, so without
+ * this the same card showed its claims there and hid them everywhere else. The vantage is
+ * the default one — `free = owned − hard`, card-availability row 1.5 — with no deck
+ * excluded, because the modal is off any deck's own decklist even when opened from one.
+ *
+ * Quiet failure matches `/collection`: a failed read leaves availability null and the modal
+ * simply omits the block, rather than losing the card.
+ *
+ * Untested-query pattern: the SQL is logic-free and the synthesis lives in `catalogCard`,
+ * which is covered by tests.
+ */
 export const loadCardDetail = cache(async function loadCardDetail(
   userId: string,
   oracleId: string,

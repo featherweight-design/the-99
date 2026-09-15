@@ -1330,9 +1330,13 @@ export async function commitDeckVersion(
             ]),
           ),
           new Set(),
-          // The deck's printed cards. A commit receipt that billed one would be
-          // quoting a price for a card its owner has decided not to buy.
-          await proxiedOracleIds(deckId, userId),
+          // The deck's printed cards, and THROWING on failure like the pull's
+          // read does. The receipt quotes money: a swallowed failure would say
+          // "no proxies" and bill a card the player has decided not to buy. The
+          // outer catch already has the honest answer for an unreadable
+          // receipt — `buy = null`, meaning nobody asked — so failing into it is
+          // both safer and already drawn.
+          await proxiedOracleIds(deckId, userId, "throw"),
         ).filter((a) => a.bucket !== "free" && a.bucket !== "proxied");
       } catch {
         buy = null;
