@@ -220,6 +220,9 @@ export const proxyCopy = {
       n === 1
         ? "1 has never been stocked and is not in this figure"
         : `${n} have never been stocked and are not in this figure`,
+    // RENDERED since the loader took the app's own price read: `priceState`
+    // tells sold-out from never-stocked, and the two are different facts — one
+    // card was on sale and is not now, the other never has been.
     soldOut: (n: number) =>
       n === 1
         ? "1 is sold out and is not in this figure"

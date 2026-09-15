@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DeckCard } from "./deck-card";
 import type { DeckListItem } from "../../lib/decks/read";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 vi.mock("./deck-card-overflow", () => ({
   DeckCardOverflow: () => <button type="button">Actions</button>,
@@ -467,5 +468,55 @@ describe("DeckCard — the footer's second row", () => {
     const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
     expect(footer.className).toContain("[grid-template-areas:'chip_bar_count']");
     expect(footer.className).not.toContain("played");
+  });
+});
+
+describe("the tile's proxy line", () => {
+  it("draws it on a Complete deck, in the detail slot", () => {
+    // The deck page shows the marks; the grid shows a bare pill. Two `Complete`
+    // decks — one cardboard, one half paper — are otherwise identical here.
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now} deck={deck({ statusPill: "Complete", proxiedCount: 7 })} shopping={undefined} />);
+    expect(screen.getByText(proxyCopy.deckCard.line(7))).toBeTruthy();
+  });
+
+  it("is absent at zero", () => {
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now} deck={deck({ statusPill: "Complete", proxiedCount: 0 })} shopping={undefined} />);
+    expect(screen.queryByText(/proxies/)).toBeNull();
+  });
+
+  it("yields to the clause that says what is holding the deck up", () => {
+    // `3 in use elsewhere` answers a question; a proxy is not holding anything up.
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now}
+        deck={deck({ statusPill: "Building", built: 87, inUseElsewhere: 3, proxiedCount: 2 })}
+        shopping={undefined}
+      />,
+    );
+    expect(screen.queryByText(proxyCopy.deckCard.line(2))).toBeNull();
+  });
+
+  it("takes the slot on a Building deck with nothing in use elsewhere", () => {
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now}
+        deck={deck({ statusPill: "Building", built: 87, inUseElsewhere: 0, proxiedCount: 2 })}
+        shopping={undefined}
+      />,
+    );
+    expect(screen.getByText(proxyCopy.deckCard.line(2))).toBeTruthy();
+  });
+});
+
+describe("the tile's proxy line yields where the slot is deliberately empty", () => {
+  it("does not print over a To buy deck with no roll-up", () => {
+    // A deck whose only missing cards are BASICS has a `To buy` pill and no
+    // roll-up entry, so `statusDetailFor` returns null on purpose — and printing
+    // a proxy count there takes a slot that is meant to stay empty.
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} now={now}
+        deck={deck({ statusPill: "To buy", proxiedCount: 3 })}
+        shopping={undefined}
+      />,
+    );
+    expect(screen.queryByText(proxyCopy.deckCard.line(3))).toBeNull();
   });
 });
