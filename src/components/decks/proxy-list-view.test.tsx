@@ -118,3 +118,31 @@ describe("the route's landmark", () => {
     expect(container.querySelector("main")).toBeNull();
   });
 });
+
+describe("what the money says about itself", () => {
+  const OLD = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
+
+  it("counts a foil-only card as costable, not as never stocked", () => {
+    // `costToComplete`'s shared rule: a foil-only card is genuinely for sale and
+    // contributes at its foil price. Dropped from the total, it was also being
+    // counted in the "never stocked" caveat — twice wrong about one card.
+    const foil = row({
+      oracleId: "o3",
+      price: { cents: null, foilCents: 900, asOf: NEWEST } as unknown as ProxyRow["price"],
+    });
+    render(<ProxyListView newestAsOf={NEWEST} rows={[foil]} hasDecks hasCollection />);
+    expect(screen.queryByText(proxyCopy.cost.unpriced(1))).toBeNull();
+  });
+
+  it("discloses a stale feed once, beside the total", () => {
+    // Row-to-row comparison cannot see this: every figure is current relative to
+    // the others and out of date against the shop.
+    render(<ProxyListView newestAsOf={OLD} rows={[row()]} hasDecks hasCollection />);
+    expect(screen.getByText(/prices as of/)).toBeTruthy();
+  });
+
+  it("says nothing about provenance when the feed is fresh", () => {
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
+    expect(screen.queryByText(/prices as of/)).toBeNull();
+  });
+});

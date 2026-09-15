@@ -11,7 +11,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
 import { GhostButton, PrimaryButton } from "../ui/button";
-import { formatCents, priceOf, priceState } from "../../lib/decks/price";
+import { formatCents, priceOf, priceState, provenanceForm } from "../../lib/decks/price";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
 
@@ -76,6 +76,11 @@ export function ProxyListView({
   // the feed has never carried was never stocked, and a sold-out one was.
   const soldOut = rows.filter((r) => states.get(r.oracleId) === "soldOut").length;
   const neverStocked = rows.filter((r) => states.get(r.oracleId) === "absent").length;
+  // TABLE-level staleness, which row-to-row comparison cannot see: when the
+  // newest run itself is old, every figure here is current relative to the
+  // others and out of date against the shop. Disclosed once, beside the total,
+  // exactly as the price strip does it.
+  const provenance = newestAsOf ? provenanceForm(newestAsOf, new Date()) : null;
 
   return (
     // A SECTION, not a `main`: the shell already renders one around every route,
@@ -124,6 +129,11 @@ export function ProxyListView({
             {neverStocked > 0 && (
               <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
                 {proxyCopy.cost.unpriced(neverStocked)}
+              </span>
+            )}
+            {provenance?.behind && (
+              <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
+                {proxyCopy.cost.stale(provenance.when)}
               </span>
             )}
             {soldOut > 0 && (

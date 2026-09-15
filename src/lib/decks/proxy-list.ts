@@ -91,6 +91,11 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
       from held h
       group by h.oracle_id
     ),
+    -- ONE printing per card, chosen deterministically — and RESTRICTED to the
+    -- cards this list holds. Unjoined, the DISTINCT ON sorted every printing in
+    -- the catalog before the final join threw all but a handful away, so each
+    -- visit paid a global scan of a table with millions of rows.
+    --
     -- ONE printing per card, chosen deterministically. Independent min()s over
     -- the fan-out could take the set code from one printing and the rarity from
     -- another and describe a printing that does not exist — the same failure the
@@ -98,6 +103,7 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     printing as (
       select distinct on (pr.oracle_id) pr.oracle_id, pr.set_code, pr.rarity
       from printings pr
+      join by_card b on b.oracle_id = pr.oracle_id
       left join sets s on s.code = pr.set_code
       -- Through SETS for the date: printings has no released_at of its own, and
       -- the invalid reference typecheck could not see would have 500'd the route.
