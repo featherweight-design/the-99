@@ -271,14 +271,17 @@ async function run() {
             .map((a) => a.getAttribute("href"))
             .find((h) => h && !/\/(import|new)$/.test(h)) ?? null);
         })();
+      // NOT a `continue`. The draft block below builds its own deck and needs
+      // nothing from this discovery, so skipping the whole width on an account
+      // with no decks made the fixture unreachable in exactly the case it exists
+      // to cover. The route checks are the ones that need a reader's deck, and
+      // they are the ones that stand down.
       if (deck === null) {
         checks += 1;
         failures += !report(`${width}px · a deck to read`, false, "the account owns none");
-        await context.close();
-        continue;
       }
 
-      for (const [label, route, toggle] of [
+      for (const [label, route, toggle] of deck === null ? [] : [
         ["/collection", "/collection?view=grid", null],
         // PRESSED, never a URL parameter. The deck's view is client state with
         // no `?view=`, so a run that navigated to `?view=card` measured the LIST
@@ -377,12 +380,24 @@ async function run() {
         // version cards and deck cards all cascade. This is what
         // `probe:versions` and `probe:review` already do.
         const owner = await page.evaluate(() => window.Clerk.user.id);
+        // A commander the APP would accept: `createDeck` re-validates with
+        // `isCommanderCandidate`, so `commander_legal` alone selects artifacts
+        // and instants and builds a deck no route could have made. Legendary
+        // creature, and colourless so the body can be anything.
         const [lead] = await sql`
-          select oracle_id from cards where commander_legal
-           and color_identity = '{}' limit 1`;
+          select oracle_id from cards
+           where commander_legal
+             and type_line ilike '%Legendary%Creature%'
+             and color_identity = '{}'
+           limit 1`;
+        // And a body INSIDE that identity, for the same reason:
+        // `validateCardForDeck` rejects an off-identity card, so a fixture
+        // holding one is a state the UI cannot produce. A colourless commander
+        // admits only colourless cards, which is what makes the pair simple.
         const body = await sql`
           select oracle_id from cards
            where commander_legal and image_uri is not null
+             and color_identity = '{}'
              and oracle_id is distinct from ${lead?.oracle_id ?? null}
            limit 12`;
         if (!lead || body.length < 2) {
@@ -449,14 +464,20 @@ async function run() {
       await context.close();
     }
   } finally {
-    if (staged) {
+    // NESTED, so a rejected cleanup cannot leave Playwright running. The delete
+    // stays fatal — a fixture deck left behind is worth a loud failure — but the
+    // browser closes either way rather than the process hanging on it.
+    try {
+      if (staged) {
       // ONE DELETE, of a deck this run created. Versions, version cards and
       // deck cards all cascade, so there is no ordering to get right and no
       // row belonging to anyone else within reach.
-      await neon(DATABASE_URL)`delete from decks where id = ${staged.deckId}`;
-      console.log("  ..   removed the fixture deck");
+        await neon(DATABASE_URL)`delete from decks where id = ${staged.deckId}`;
+        console.log("  ..   removed the fixture deck");
+      }
+    } finally {
+      await browser.close();
     }
-    await browser.close();
   }
 
   console.log(`\n${checks - failures}/${checks} checks passed.`);
