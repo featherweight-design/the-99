@@ -100,6 +100,21 @@ export const deckVersioningCopy = {
     // row's own padding. This string is the row's ACCESSIBLE NAME only — it is never
     // rendered visually.
     addMarkA11y: "pending add",
+    /**
+     * The card view's two DRAWN figures, which the list has no use for.
+     *
+     * A tile's count has a line of its own, so the draft's figure takes that
+     * position rather than the name's — where the row must put it, because the
+     * row's count lives beside the name. The pair is therefore bare here: the
+     * name is already on the line below, and `deckImportCopy.update.diff
+     * .recountedItem` would repeat it.
+     *
+     * `tileAdded` is signed because it is a DELTA and not a count. The row has
+     * no shape for it at all — a row the version did not hold has no count to
+     * move — which is the one thing the tile says that the list cannot.
+     */
+    tilePair: (from: number, to: number) => `${from} → ${to}`,
+    tileAdded: (n: number) => `+${n}`,
     // A recounted row prints `Sol Ring 1 → 2` beside the name, but the name's
     // accessible label is the card's whole printed name and carries no count, so
     // the pair would never be spoken. It rides the same description as the word.

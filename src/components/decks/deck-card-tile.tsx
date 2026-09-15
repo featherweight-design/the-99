@@ -16,6 +16,8 @@
 // exception is a tile with NO art, whose plate prints no cost of its own and so
 // keeps the drawn pips; on a tile that has art the cost is spoken instead.
 
+import { useId } from "react";
+
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
@@ -30,7 +32,9 @@ import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
 import { TwoFacedMark } from "../cards/two-faced-mark";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { MutationError } from "./mutation-error";
+import { usePendingChange } from "./pending-change";
 import { UndoTile } from "./deck-card-undo-tile";
 import {
   useMarkSlotSpent,
@@ -79,6 +83,48 @@ export function DeckCardTile({
   // (`STATES-card-captions.md:31`), so three independent tests here is three
   // chances for them to disagree.
   const proxied = deckRowTag(card) === "proxy";
+  // The draft's second consumer (#389 surface 1; card captions R1 call B). The
+  // list has had this since versioning shipped and the card view has had
+  // nothing, so a deck with an uncommitted draft photographed identically in
+  // card view whether the draft was clean or not.
+  const pendingMove = usePendingChange()?.moves.get(card.oracleId);
+  // `from` is 0 for a card the version did not hold at all — the plain add —
+  // which `PendingChangeMove` already documents, so the two figures need no
+  // query the provider is not already making.
+  // DRAWN only when the count position is the draft's to take. A proxied tile
+  // leaves that position empty whatever the draft did — the two states are
+  // orthogonal, and `STATES-card-captions.md` says a proxied card in a dirty
+  // draft draws the caption edge and the `P`, not a figure. A proxy covers this
+  // deck's whole ask and takes no quantity, so a number here would contradict
+  // the same invariant that suppresses `×N` two positions along.
+  //
+  // The SPOKEN form is unaffected and still rendered: the draft touched this
+  // card either way, and gating the description on `proxied` would leave the
+  // trigger's `aria-describedby` pointing at nothing.
+  const draftFigure =
+    pendingMove && !proxied
+      ? pendingMove.from > 0
+        ? deckVersioningCopy.pending.tilePair(pendingMove.from, pendingMove.to)
+        : deckVersioningCopy.pending.tileAdded(pendingMove.to)
+      : null;
+  // Spoken separately: the figure is drawn in the count's position with no words
+  // around it, and an edge colour is not something a reader can be asked to
+  // infer. These are the row's own strings, including its distinction between a
+  // recount that went UP and one that came DOWN — calling a cut a pending add
+  // would say the opposite of what happened to the card.
+  const draftSpoken = pendingMove
+    ? pendingMove.from > 0
+      ? pendingMove.to > pendingMove.from
+        ? deckVersioningCopy.pending.addMarkRecountedA11y(pendingMove.from, pendingMove.to)
+        : deckVersioningCopy.pending.cutMarkRecountedA11y(pendingMove.from, pendingMove.to)
+      : deckVersioningCopy.pending.addMarkA11y
+    : null;
+  // The description has to be ASSOCIATED, not merely present. `CardDetailTrigger`
+  // is the tile's focusable element and its `aria-label` replaces everything
+  // nested inside it, so an `sr-only` sibling sitting in the caption is read in
+  // document order and skipped entirely by a reader tabbing between controls —
+  // which is how most people meet this tile. The row solves it the same way.
+  const draftDescriptionId = useId();
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
   // Null unless the string holds symbols this app can draw, so both branches
@@ -116,6 +162,7 @@ export function DeckCardTile({
             oracleId={card.oracleId}
             name={fullName}
             siblings={siblings}
+            describedBy={pendingMove ? draftDescriptionId : undefined}
             // `undefined` below one copy on purpose: that is what makes the
             // provider compose the label from `name`, which carries the full
             // printed name. The single-copy tile is the common case, and a
@@ -254,9 +301,31 @@ export function DeckCardTile({
                   covers this deck's whole ask for the card and takes no quantity
                   (proxies ruling 5), so a count here would claim a number the
                   state does not have. */}
-              {card.quantity > 1 && !proxied && (
-                <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
-                  {addPanelCopy.row.quantity(card.quantity)}
+              {/* The draft's figure TAKES the count's position rather than
+                  sitting beside it, which is what resolves the double statement
+                  the row resolves by suppressing `×N` beside the name. The row
+                  suppresses on a recount only, because an add there has no
+                  figure to put in the name's place; here both cases displace the
+                  count, because both have one. */}
+              {draftFigure ? (
+                <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
+                  {draftFigure}
+                </span>
+              ) : (
+                card.quantity > 1 && !proxied && (
+                  <span aria-hidden className="flex-none" style={{ color: "var(--fg-body)" }}>
+                    {addPanelCopy.row.quantity(card.quantity)}
+                  </span>
+                )
+              )}
+              {/* Rendered on `pendingMove`, NOT on `draftFigure`. A proxied tile
+                  draws no figure and the draft still touched it, so a
+                  description nested in the figure's branch would vanish exactly
+                  when the trigger's `aria-describedby` still names it — a
+                  dangling reference, and the state spoken nowhere. */}
+              {pendingMove && (
+                <span id={draftDescriptionId} className="sr-only">
+                  {draftSpoken}
                 </span>
               )}
             </>
@@ -268,6 +337,7 @@ export function DeckCardTile({
              testing-library query and reach no screen reader. The full name's
              home is the trigger above, which is a real `<button>` and is the
              tile's largest target. */
+          draftTouched={pendingMove !== undefined}
           name={displayName}
           nameTrail={<TwoFacedMark layout={card.layout} />}
           trailing={

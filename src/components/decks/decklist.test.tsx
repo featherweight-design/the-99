@@ -9,6 +9,7 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { PendingChangeProvider } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -90,11 +91,20 @@ function renderDecklist(
     keep: vi.fn(),
   };
 
+  // `Decklist` takes `pendingChanges` as a PROP, but the tiles below it read the
+  // same map out of context — which `BuilderShell` provides in the app and this
+  // helper did not. Without it every tile saw a null context, so a card-view
+  // assertion could pass with the tile's edge and figure missing entirely.
+  const withDraft = (node: React.ReactNode) =>
+    opts.pendingChanges
+      ? <PendingChangeProvider value={{ moves: new Map(opts.pendingChanges) }}>{node}</PendingChangeProvider>
+      : node;
+
   render(
     <CardDetailProvider
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
-      <AddOptimisticCardProvider value={deckEdits}>
+      <AddOptimisticCardProvider value={deckEdits}>{withDraft(
         <Decklist
           deckId="deck-1"
           cards={cards}
@@ -114,7 +124,7 @@ function renderDecklist(
           newestAsOf={opts.newestAsOf ?? null}
           onAnnounce={opts.onAnnounce}
         />
-      </AddOptimisticCardProvider>
+      )}</AddOptimisticCardProvider>
     </CardDetailProvider>,
   );
 }
@@ -767,12 +777,17 @@ describe("Removing a card from Shopping leaves its undo row in place", () => {
 });
 
 // Both pending notes promise a visual mapping: the caption says the brass rule
-// marks the changed rows, and the group note says how many of a heading's rows the
-// draft changed. Only `decklist-row.tsx` draws that rule — `DeckCardTile` carries
-// no pending mark at all — so in card view each sentence would point at a marker
-// the reader cannot find. `toolbarNote` states a count and no marker, so it
-// stays in both views; the test below holds that distinction in place.
-describe("the pending-change notes are the row view's, because the mark is", () => {
+// marks the changed rows, and the group note says how many of a heading's rows
+// the draft changed.
+//
+// That promise used to be keepable in list view only, because `decklist-row.tsx`
+// was the only thing drawing the rule — so in card view each sentence pointed at
+// a marker the reader could not find. Since card captions (R1) call B,
+// `DeckCardTile` draws it too: a 2px accent edge on the caption, and the draft's
+// figure in the count's position. Both sentences therefore render in both views,
+// and the card-view test below asserts the FIGURE they point at rather than the
+// sentences alone — which would pass with the tiles drawing nothing.
+describe("the pending-change notes follow the mark, which both views now draw", () => {
   const pendingChanges = new Map([["sol-ring", { from: 0, to: 1 }]]);
 
   it("captions the list and heads the group in list view", () => {
@@ -846,19 +861,30 @@ describe("the pending-change notes are the row view's, because the mark is", () 
     ).not.toBeInTheDocument();
   });
 
-  it("says neither in card view, where no tile draws the rule", () => {
+  it("says both in card view too, now that the tiles draw the rule", () => {
     renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
 
     fireEvent.click(
       screen.getAllByRole("button", { name: viewToggleCopy.deck.card })[0],
     );
 
+    // This asserted the OPPOSITE until card captions (R1) call B, and the reason
+    // it gave was true at the time: the tiles carried no mark, so a sentence
+    // pointing at one would have pointed at nothing. The tiles carry it now — a
+    // 2px accent edge on the caption, and the draft's figure in the count's
+    // position — and the same 2px is deliberate, so a reader switching views
+    // sees one treatment rather than two.
     expect(
-      screen.queryByText(deckVersioningCopy.pending.changeListCaption(1)),
-    ).not.toBeInTheDocument();
+      screen.getByText(deckVersioningCopy.pending.changeListCaption(1)),
+    ).toBeInTheDocument();
     expect(
-      screen.queryByText(deckVersioningCopy.pending.groupChangeNote(1)),
-    ).not.toBeInTheDocument();
+      screen.getByText(deckVersioningCopy.pending.groupChangeNote(1)),
+    ).toBeInTheDocument();
+    // And the notes point at something the reader can find. Asserting only the
+    // two sentences would pass with the tiles drawing nothing at all, which is
+    // the state this change exists to end. The fixture's move is
+    // `{ from: 0, to: 1 }` — an add — so the tile's figure is the signed delta.
+    expect(screen.getByText(deckVersioningCopy.pending.tileAdded(1))).toBeInTheDocument();
   });
 });
 

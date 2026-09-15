@@ -744,12 +744,15 @@ export function Decklist({
             nineteen adds the per-row version is nineteen copies of one
             sentence. The draft's figure less any spent slot, because this list
             holds every changed row that still draws a rule; Shopping draws its
-            own caption over the subset it shows. List
-            view only, with `groupChangeNote` below it, for the same reason: the
-            brass rule lives on the row, and the card view draws tiles that carry
-            no mark at all. A sentence pointing at a marker nobody can see is
-            worse than silence. */}
-        {markedPendingCount > 0 && view === "list" && (
+            own caption over the subset it shows.
+
+            BOTH VIEWS since card captions (R1) call B. It was list-only, and the
+            stated reason was that the card view's tiles carried no mark at all,
+            so the sentence would have pointed at a marker nobody could see. The
+            tiles carry the mark now — a 2px accent edge on the caption, and the
+            draft's figure in the count's position — so the caption describes
+            something the reader can find on either view. */}
+        {markedPendingCount > 0 && (
           <p className="m-0 mb-[8px] font-mono text-[10px] text-[color:var(--fg-faint)]">
             {deckVersioningCopy.pending.changeListCaption(markedPendingCount)}
           </p>
@@ -757,12 +760,11 @@ export function Decklist({
         {groups.map(([label, groupCards]) => {
           // Omitted at zero rather than printed as `0 changed in this draft`: a
           // group the draft did not touch has nothing to say about it.
-          // List view only: this note is the heading's half of one mark, and the
-          // card view's tiles draw the other half nowhere.
-          const changedInGroup =
-            view === "list"
-              ? groupCards.filter(isMarked).length
-              : 0;
+          //
+          // Both views, for the reason the caption above gives: this note is the
+          // heading's half of one mark, and since card captions (R1) the card
+          // view's tiles have drawn the other half.
+          const changedInGroup = groupCards.filter(isMarked).length;
           return (
             <DecklistGroup
               key={label}
