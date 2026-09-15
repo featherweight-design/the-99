@@ -21,6 +21,7 @@ import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
 import { proxiedMembership, proxyCounts } from "../src/lib/decks/proxies";
+import { loadProxyList } from "../src/lib/decks/proxy-list";
 import { listDecksWithStats } from "../src/lib/decks/read";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
@@ -381,6 +382,37 @@ try {
     where deck_id = ${printer.id} and oracle_id = ${card}
   `);
   check("marking twice is one mark", again.n, 1);
+
+  // 3f. THE LIST ROUTE'S OWN LOADER, which no unit test reaches: the view tests
+  //     inject rows, and every reader above is a different query. It is raw SQL
+  //     over five tables, and an invalid column reference in one — `released_at`
+  //     on `printings`, which lives on `sets` — typechecks perfectly and 500s the
+  //     route. Running it at all is most of this check's value.
+  const list = await loadProxyList(USER);
+  const listed = list.rows.find((r) => r.oracleId === card);
+  check("the list finds the printed card", Boolean(listed), true);
+  //     ONE ROW PER CARD, however many printings it has. `printings` fans out and
+  //     `jsonb_agg` does not deduplicate, so aggregating after that join listed
+  //     the same deck once per printing.
+  check("one row per card, not one per printing",
+    list.rows.filter((r) => r.oracleId === card).length, 1);
+  check("its deck is named once", listed?.decks.length, 1);
+  //     Scoped to this reader: another player's proxies are not this list.
+  const otherList = await loadProxyList("nobody-at-all");
+  check("another reader's list is empty", otherList.rows.length, 0);
+  //     A commander proxy is flagged, and the flag is a BOOLEAN — `bool_or`
+  //     returns null when every input is null, which is the body-card case.
+  const listCmdRow = list.rows.find((r) => r.oracleId === cmdB);
+  check("a commander proxy is flagged", listCmdRow?.commander, true);
+  check("a body-card proxy is flagged false, never null", listed?.commander, false);
+  //     And the printing identity comes from ONE printing rather than from
+  //     independent aggregates that could describe a printing nobody prints.
+  //     NULLABLE by design — a catalog card with no `printings` row has no set
+  //     to name — so what is asserted is that the field ARRIVES, which is what
+  //     the invalid `released_at` reference would have taken down with it.
+  check("the printing identity is present or honestly null",
+    listed !== undefined && (listed.setCode === null || typeof listed.setCode === "string"),
+    true);
 
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
   //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every

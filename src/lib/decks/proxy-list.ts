@@ -98,7 +98,11 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     printing as (
       select distinct on (pr.oracle_id) pr.oracle_id, pr.set_code, pr.rarity
       from printings pr
-      order by pr.oracle_id, pr.released_at desc nulls last, pr.scryfall_id
+      left join sets s on s.code = pr.set_code
+      -- Through SETS for the date: printings has no released_at of its own, and
+      -- the invalid reference typecheck could not see would have 500'd the route.
+      -- Newest set first, then the id, so the choice is stable between reads.
+      order by pr.oracle_id, s.released_at desc nulls last, pr.scryfall_id
     )
     select
       b.oracle_id,

@@ -59,12 +59,23 @@ export function ProxyListView({
   // can be priced, foil-only at a different figure, sold out with a frozen
   // price, or never stocked at all, and only the first belongs in a total.
   const states = new Map(rows.map((r) => [r.oracleId, priceState(r.price, newestAsOf)]));
-  const priced = rows.filter((r) => states.get(r.oracleId) === "priced");
-  const total = priced.reduce(
-    (n, r) => n + (r.price ? priceOf(r.price, "priced") ?? 0 : 0),
+  // COSTABLE, not `priced`. `costToComplete` states the shared rule: a foil-only
+  // card is genuinely for sale and contributes at its foil price, while a
+  // sold-out one contributes nothing — its row is a last-known figure for
+  // something nobody is selling, and quoting it puts a number in a total the
+  // reader cannot spend.
+  const costable = rows.filter((r) => {
+    const state = states.get(r.oracleId);
+    return state === "priced" || state === "foilOnly";
+  });
+  const total = costable.reduce(
+    (n, r) => n + (r.price ? priceOf(r.price, states.get(r.oracleId)!) ?? 0 : 0),
     0,
   );
-  const unpriced = rows.length - priced.length;
+  // The two non-costable states are DIFFERENT facts and the copy says so: a card
+  // the feed has never carried was never stocked, and a sold-out one was.
+  const soldOut = rows.filter((r) => states.get(r.oracleId) === "soldOut").length;
+  const neverStocked = rows.filter((r) => states.get(r.oracleId) === "absent").length;
 
   return (
     // A SECTION, not a `main`: the shell already renders one around every route,
@@ -98,11 +109,11 @@ export function ProxyListView({
               {proxyCopy.cost.label}
             </span>{" "}
             <span className="font-mono text-[13px]" style={{ color: "var(--fg)" }}>
-              {priced.length > 0 ? formatCents(total) : proxyCopy.cost.noneCostable}
+              {costable.length > 0 ? formatCents(total) : proxyCopy.cost.noneCostable}
             </span>{" "}
-            {priced.length > 0 && (
+            {costable.length > 0 && (
               <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-                {proxyCopy.cost.line(priced.length, rows.length)}
+                {proxyCopy.cost.line(costable.length, rows.length)}
               </span>
             )}
             {/* The caveat, which is what makes the gap above it legible: a
@@ -110,9 +121,14 @@ export function ProxyListView({
                 and "never stocked" is not the same fact as "sold out". This list
                 can only tell the first — a card with no price row at all — so it
                 says that one and nothing it cannot stand behind. */}
-            {unpriced > 0 && (
+            {neverStocked > 0 && (
               <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
-                {proxyCopy.cost.unpriced(unpriced)}
+                {proxyCopy.cost.unpriced(neverStocked)}
+              </span>
+            )}
+            {soldOut > 0 && (
+              <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
+                {proxyCopy.cost.soldOut(soldOut)}
               </span>
             )}
           </div>
