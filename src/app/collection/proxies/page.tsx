@@ -7,7 +7,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { loadProxyList } from "../../../lib/decks/proxy-list";
-import { listDecksWithStats } from "../../../lib/decks/read";
+import { userHasDecks } from "../../../lib/decks/proxy-list";
 import { ProxyListView } from "../../../components/decks/proxy-list-view";
 import { getCollectionStats } from "../../../lib/home/summary";
 
@@ -16,16 +16,19 @@ export default async function ProxiesPage() {
   // The deck count decides WHICH empty state renders, and the collection figure
   // decides whether the subtitle carries its second clause — a reader with no
   // collection needs no reassurance about one they never made.
-  const [rows, decks, stats] = await Promise.all([
+  // `userHasDecks`, not `listDecksWithStats`: that loader runs an aggregate and,
+  // for a flippable deck, the user-wide claim and seniority query behind
+  // `loadDeckBuyRows` — all of it discarded here for one boolean.
+  const [rows, hasDecks, stats] = await Promise.all([
     loadProxyList(userId),
-    listDecksWithStats(userId, "name"),
+    userHasDecks(userId),
     getCollectionStats(userId),
   ]);
 
   return (
     <ProxyListView
       rows={rows}
-      hasDecks={decks.length > 0}
+      hasDecks={hasDecks}
       hasCollection={stats.totalCards > 0}
     />
   );

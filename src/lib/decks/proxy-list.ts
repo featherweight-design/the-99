@@ -86,7 +86,10 @@ export async function loadProxyList(userId: string): Promise<ProxyRow[]> {
         jsonb_build_object('id', h.deck_id, 'name', h.deck_name)
         order by h.created_at desc, h.deck_id
       ) as decks,
-      bool_or(h.is_commander) as commander,
+      -- COALESCED. bool_or returns NULL when every input is NULL, which is the
+      -- normal case for a body-card proxy — and a null would travel out through
+      -- a field the type says is boolean.
+      coalesce(bool_or(h.is_commander), false) as commander,
       min(priced.price_cents)::int as price_cents,
       -- Newest MARK first, which created_at is the only record of.
       max(h.created_at) as newest
@@ -111,4 +114,18 @@ export async function loadProxyList(userId: string): Promise<ProxyRow[]> {
     commander: r.commander,
     priceCents: r.price_cents,
   }));
+}
+
+/**
+ * Does this player have any deck at all? One boolean, one indexed lookup.
+ *
+ * Its own query because the alternative — `listDecksWithStats` — is an aggregate
+ * that can pull the user-wide claim and seniority scan behind it, every figure
+ * of which this page throws away.
+ */
+export async function userHasDecks(userId: string): Promise<boolean> {
+  const { rows } = await db.execute<{ any_deck: boolean }>(sql`
+    select exists (select 1 from decks where user_id = ${userId}) as any_deck
+  `);
+  return rows[0]?.any_deck ?? false;
 }

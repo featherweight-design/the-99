@@ -122,6 +122,14 @@ export function ProxyListView({
                     >
                       {row.name}
                     </CardDetailTrigger>
+                    {/* The printing identity the loader carries, which is what
+                        tells two same-named cards apart — and what the commander
+                        plate sits after. */}
+                    {(row.setCode || row.rarity) && (
+                      <span className="mt-[2px] block font-mono text-[10.5px] uppercase tracking-[0.06em] text-[color:var(--fg-faint)]">
+                        {[row.setCode, row.rarity].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
                     <span className="mt-[2px] flex flex-wrap items-center gap-x-[8px] gap-y-[2px] font-mono text-[11px]">
                       {row.decks.map((deck) => (
                         <Link
