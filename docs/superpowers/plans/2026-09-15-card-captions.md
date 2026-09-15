@@ -1,0 +1,204 @@
+# Plan — Card captions
+
+**Handoff:** `design/design_handoff_the99_card_captions/` (R1).
+**Readiness:** `docs/superpowers/readiness-card-captions.md` — 🟢 Green, five errata.
+**Brief:** `docs/superpowers/design-briefs/2026-09-14-modifiers-below-the-card.md`.
+
+Both card views move their modifiers off the art and into a two-line caption. The art keeps
+nothing but its 1px inner edge. Grids standardize on a 178px tile.
+
+Written against `origin/main` at `f5745d11`.
+
+---
+
+## PR boundaries, named before implementation
+
+Three PRs. §10's size gate is ~20 files / ~800 lines.
+
+| PR | Scope | Ledger items |
+|---|---|---|
+| **1 — the caption chassis** | The shared caption, both tiles, both grids, the undo receipt's height | 1, 2, 3, 4, 5, 6, 8 |
+| **2 — draft state in card view** | The caption edge and the meta line's figure | 7 |
+| **3 — the legend and the lone copy** | `MarkKey` above the card grid; `×1` suppressed on `/collection` | 9, 10 |
+
+**Why the slot's three occupants cannot be split across PRs.** PR 1 moves the availability chip and
+the collapsed `$` into the caption. The proxy mark is already drawn on the tile's art
+(`deck-card-tile.tsx:121`), so leaving it there while the other two move would put one slot in two
+places — call D's first refusal, and the exact failure the handoff's dependency section warns
+about. Ledger item 8 is therefore PR 1's work, not PR 3's.
+
+**Why both routes are in one PR.** The readiness doc's ledger says items 3 and 4 ship in the same
+release: one caption on two surfaces, and splitting them leaves the app with two caption shapes for
+one idea.
+
+**If PR 1 trips the size gate**, the cut is *not* collection-versus-deck. It is to lift ledger items
+1 and 2 — the `plate` prop on both primitives, with their unit tests — into a PR 0. That is a
+genuine seam: the prop is additive and independently testable. It is not the default because a
+merged prop with no call site reads as speculative.
+
+---
+
+## PR 1 — the caption chassis
+
+### T1 · The shared caption
+
+New: `src/components/ui/card-tile-caption.tsx`.
+
+Per handoff §7, the caption block is shared and the tile is not. The deck's `✕` carries
+`useDeckMutation`, `useRemoveOptimisticCard`, `markSlotSpent` and an undo tile that `/collection`
+has no use for.
+
+```
+CardTileCaption({ meta, name, nameTrail, trailing, draftEdge })
+```
+
+- `meta` — the meta line's occupants, already ordered by the caller.
+- `name` — the printed front-face name; the component owns the truncation.
+- `nameTrail` — the `//` mark. Absent on `/collection` (spec errata 3).
+- `trailing` — the full-height right column. The deck's `✕`; `undefined` on `/collection`.
+- `draftEdge` — `inset 2px 0 0 0 var(--accent)` on the caption block.
+
+Exports `CARD_TILE_CAPTION_H` (`"min-h-[52px] md:min-h-[46px]"` — see T5 on why `min-h`) so the
+undo receipt reads the same figure rather than restating it.
+
+Geometry, from `STATES-card-captions.md` § Geometry:
+
+| | Desktop | Phone |
+|---|---|---|
+| caption height | 46px fixed | 52px fixed |
+| meta line | mono 9.5px, gap 6 | mono 9px |
+| name | 13px / 600, one line, never clamped | 12px / 600 |
+| pad left | 10px | 9px |
+| pad right | 3px with `trailing`, 10px without | 3px / 9px |
+| `//` | mono 11px, gap 6 | same |
+
+### T2 · The unified slot box
+
+Ledger 1 and 2, plus readiness erratum 3.
+
+`AvailabilityMarker` and `BuyTag` each gain `plate?: boolean` (default `true`). `plate={false}`
+drops the scrim **and the absolute positioning**, keeping the glyph, the border and the label.
+
+The size rides that prop, which is erratum 3's containment boundary. **Do not edit
+`CHIP_SKIN`, `PLACEMENT.tile` or `PLACEMENT.band` in place** — each is shared with a surface this
+handoff never drew:
+
+| Primitive | Variant | Also used by |
+|---|---|---|
+| `AvailabilityMarker` | `density="chip"` | `suggestion-tile.tsx:214` |
+| `BuyTag` | `variant="tile"` | `suggestion-tile.tsx:229`, `top-off-list.tsx:810` |
+| `ProxyTag` | `variant="band"` | `spine-desktop.tsx:391,417`, `spine-mobile.tsx:137,168,178` |
+
+`ProxyTag` gains a `caption` variant rather than a prop, because its two existing variants already
+differ by placement and it has no plate to drop — its `band` scrim is the only thing going.
+
+The box, all three: `font-mono rounded-[4px] px-[5px] py-[1px]`, `text-[8.5px] md:text-[9px]`.
+
+**Measure before building.** The chip goes `py-[2px]` → `py-[1px]`, but it draws diamond glyphs and
+not only text. If the glyph is what sets the box height, normalizing the padding aligns nothing and
+the three boxes still differ — which is the one thing call D promised a reader could see. Render the
+three side by side and measure before the caption is assembled.
+
+### T3 · The deck tile
+
+`decks/deck-card-tile.tsx`.
+
+- All four marks leave the art: chip, `$`, `P`, `×N`. The `deckRowTag` exclusivity moves with them,
+  unchanged — it already decides the slot.
+- The art's bottom scrim deletes. `inset 0 0 0 1px rgba(0,0,0,0.25)` stays: it keeps a pale card
+  frame from bleeding into the plate, which is a job nothing else does.
+- **`CostPips`, `spokenManaCost` and the no-art branch all stay** (readiness erratum 2). Ruling 2
+  means *no pips over art*, which main already shipped. A tile with art keeps its `sr-only` cost; a
+  tile with no art keeps its drawn pips, because the plate prints no cost of its own. The
+  bottom-left `<span>` survives for that one branch and the dot leaves it.
+- Caption becomes `CardTileCaption` with the dot, the slot, the count, the name, the `//` and the
+  `✕` column.
+
+### T4 · The collection tile
+
+`collection/grid-view.tsx`.
+
+- Chip and `×N` down onto the meta line; `SET · rarity` right-aligned on it, rarity dropped at the
+  phone as shipped.
+- No ownership dot (the route lists what you own), no `//`, no `trailing`.
+- Grid goes `md:grid-cols-6`.
+- The tile stays one `<button>`. The caption is inside it, so the `aria-hidden` name and its
+  `sr-only` sibling keep their current arrangement — `CardTileCaption` must not introduce a nested
+  interactive element on this route.
+
+### T5 · The undo receipt
+
+`decks/deck-card-undo-tile.tsx`, readiness erratum 4.
+
+It borrows `TILE_SHELL` and `TILE_ART_RATIO` so a removed card leaves a hole exactly its own size,
+then hardcodes `min-h-[44px] md:min-h-[36px]`. Replace with `CARD_TILE_CAPTION_H`.
+
+**`min-h`, not `h`.** The handoff's READINESS point 3 says the height is fixed and must stay fixed,
+and warns that swapping `min-h` for `h` under pressure is how the design fails — but the warning is
+about the *value* drifting per state, not about the property. `min-h` with no conditional occupant
+able to exceed one line is fixed in practice and degrades to taller rather than clipped if a future
+string is longer. The test asserts the two tiles report equal caption heights, which is the
+invariant that actually matters.
+
+### T6 · The grid floor
+
+`decks/decklist-group.tsx`, ledger 6.
+
+Keeps `auto-fill` — the Add panel is 340–346px and opens over the pane, so a fixed count would
+overflow or gutter. Raise `minmax(132px, 1fr)` to the floor that yields 178px at the default desktop
+width with the panel closed. **Compute against the deck pane's own measured width, not
+`/collection`'s** — the two containers differ and 178px is the target tile, not a shared arithmetic.
+
+### T7 · Tests
+
+- `card-tile-caption.test.tsx` — the six-state matrix per route, occupant presence and absence.
+- Both tiles' existing tests updated for the moved marks.
+- Equal-caption-height assertion across `DeckCardTile` and `UndoTile`.
+- Mutation-check every fix that ships with a test: revert, confirm red, restore.
+
+### T8 · Probe
+
+`scripts/probe-card-captions.mjs`, at 1300x900 and 390x844:
+
+- The art has **no** mark and no bottom scrim — computed styles, not class lists.
+- The caption's height is equal across a live tile and an undo receipt on the same grid.
+- The three slot occupants report the same box height — the erratum 3 invariant, and the one a
+  class-list assertion cannot see.
+- `/collection` reports six columns at 1300; the deck pane's tile measures 178px ± 2 with the Add
+  panel closed.
+- Each check gets its failure path exercised before the run is believed.
+
+---
+
+## PR 2 — draft state in card view
+
+Ledger 7. `usePendingChange` gains its second consumer.
+
+- The caption block draws `inset 2px 0 0 0 var(--accent)` when the draft touched the card. **Not
+  the shell** — the shell's border already carries over-committed, and both are true at once often
+  enough to matter (readiness, carried forward).
+- The meta line's count position is vacated by the figure: `1 → 2` for a recount between non-zero
+  counts, `+N` for an add. `×N` is suppressed either way, exactly as the row suppresses it.
+- `from === 0` is the add. `PendingChangeMove` already documents it (`pending-change.tsx:8-12`), so
+  this needs **no new query** — readiness erratum 1.
+- Copy is `card-captions · copy strings.ts`: `recounted(from, to)`, `added(n)`, and the two aria
+  forms. Both figures are drawn *and* spoken.
+- Zero motion. The edge does not transition in when a draft opens.
+
+## PR 3 — the legend and the lone copy
+
+- **Ledger 9.** `decklist.tsx:198` returns `[]` when `view === "card"`, so the card view is the one
+  view in the app with marks and no legend. Drop the guard. The entries are computed from the same
+  `cards`, so both marks decode correctly with no other change.
+- **Ledger 10, severable.** `×1` suppressed on `/collection`, matching the deck tile. The meta line
+  makes the redundancy louder by putting the count beside a chip. One condition, one line.
+
+---
+
+## Out of scope
+
+- List view on either route.
+- `/collection/sets/[code]` — ruling 4, unchanged at 146px.
+- The Consider tile, the top-off list and the commander spine. They share the primitives and are
+  protected by T2's variant boundary; none of them changes.
+- Any change to what a modifier means.
