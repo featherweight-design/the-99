@@ -57,6 +57,10 @@ export const STATUSES: StatusPill[] = [
  * whole point is that the sum is checkable, so a fixture whose parts did not
  * add up would teach the opposite.
  */
+/** The headline the lane prints beside the bar. */
+export const FIT_FULL_SCORE = 73;
+export const FIT_DEGRADED_SCORE = 27;
+
 export const FIT_FULL = fitSegments({
   fitPool: 15,
   fitRoles: 25,
@@ -93,4 +97,5 @@ export const CARDS = {
   owned: "Sol Ring",
   removed: "Rhystic Study",
   twoFaced: "Delver of Secrets",
+  proxied: "Mana Crypt",
 };

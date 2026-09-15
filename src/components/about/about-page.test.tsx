@@ -205,11 +205,21 @@ describe("the figures", () => {
   it("draws the four availability states, including the one that draws nothing", () => {
     const { container } = render(<AboutPage seen={0} />);
     const plate = figures(container)["availability"];
-    expect(plate.textContent).toContain("in a brew");
-    expect(plate.textContent).toContain("none free");
-    expect(plate.textContent).toContain("short 2");
-    // free renders no marker at all, and that IS the state.
-    expect(plate.textContent).toContain("free — nothing at all");
+    // Asserted on the MARKERS, not on the plate's text. The captions beside
+    // each cell repeat the same words, so a textContent sweep stays green with
+    // every AvailabilityMarker deleted — which is the third round running that
+    // an assertion here measured this page's annotation instead of the app's
+    // output.
+    const cells = [...plate.querySelectorAll(":scope > div > div")];
+    expect(cells).toHaveLength(4);
+    // The content box always holds the marker's typography wrapper, so its
+    // child COUNT is 1 either way — what separates the states is whether the
+    // marker inside it drew any text.
+    const drawn = cells.map((cell) => (cell.firstElementChild?.textContent ?? "").trim());
+    expect(drawn[0], "free draws nothing, and that IS the state").toBe("");
+    expect(drawn.filter((t) => t.length > 0)).toHaveLength(3);
+    expect(drawn.join(" ")).toContain("in a brew");
+    expect(drawn.join(" ")).toContain("short 2");
   });
 
   it("draws all six statuses, each with the figure that explains it", () => {
@@ -225,6 +235,9 @@ describe("the figures", () => {
     // The clause beside the badge, in the app's own words.
     expect(plate.textContent).toContain("created today");
     expect(plate.textContent).toContain("2 lines unresolved");
+    // The To buy clause carries its cost. A deck at a legal list you cannot
+    // sleeve is explained by what the shop trip costs, not by the count alone.
+    expect(plate.textContent).toContain("3 to buy · $12.40");
   });
 
   it("draws the decklist marks as rows, at the row's own geometry", () => {
@@ -271,6 +284,10 @@ describe("the figures", () => {
       .map((el) => el.textContent ?? "");
     expect(visible.some((t) => t.trim() === "$"), "the buy mark drew nothing").toBe(true);
     expect(visible.some((t) => /\$\d/.test(t)), "the shopping treatment leaked in").toBe(false);
+
+    // The slot is SHARED: a card you are printing takes `P` instead of `$`,
+    // and a figure that only ever drew the buy mark would document half of it.
+    expect(visible.some((t) => t.trim() === "P"), "the proxy mark drew nothing").toBe(true);
   });
 
   it("draws both fit shapes and writes no prose inside the frame", () => {
@@ -279,9 +296,12 @@ describe("the figures", () => {
     // Rule 4 of the copy file: a figure may only draw what the app draws.
     // The decomposition and the denominators are annotation under the bar,
     // never sentences inside it.
-    expect(plate.textContent).not.toContain("15 + 25 + 33");
-    expect(plate.textContent).toContain("out of 100");
-    expect(plate.textContent).toContain("out of 40");
+    // The headline beside each bar is the lane's own string, so a reader can
+    // check the sum against the figure the app would print.
+    expect(plate.textContent).toContain("/100 FIT");
+    expect(plate.textContent).toContain("/40 MEASURABLE FIT");
+    expect(plate.textContent).toContain("73");
+    expect(plate.textContent).toContain("27");
   });
 
   it("leaves an entry with no figure complete, and gives it no empty frame", () => {

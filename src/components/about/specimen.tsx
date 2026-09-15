@@ -82,3 +82,12 @@ export function SpecimenGrid({ children }: { children: React.ReactNode }) {
 export function SpecimenRows({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-[12px]">{children}</div>;
 }
+
+/** Rows when compact, the four-column grid from the app's wide stop. */
+export function SpecimenResponsive({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-[12px] min-[1000px]:grid-cols-4 min-[1000px]:gap-[14px]">
+      {children}
+    </div>
+  );
+}

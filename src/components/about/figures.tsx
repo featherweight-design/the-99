@@ -15,18 +15,28 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { BuyTag } from "../decks/buy-tag";
+import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { commandersCopy } from "../../lib/copy/lanes";
 import { FitBar } from "../commanders/fit-bar";
 import { TwoFacedMark } from "../cards/two-faced-mark";
-import { Specimen, SpecimenCell, SpecimenGrid, SpecimenRows } from "./specimen";
+import {
+  Specimen,
+  SpecimenCell,
+  SpecimenGrid,
+  SpecimenResponsive,
+  SpecimenRows,
+} from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
   AVAILABILITY,
   CARDS,
   COSTS,
   FIT_DEGRADED,
+  FIT_DEGRADED_SCORE,
   FIT_FULL,
+  FIT_FULL_SCORE,
   PRICES,
   STATUSES,
 } from "../../lib/about/fixtures";
@@ -41,7 +51,9 @@ function AvailabilityFigure({ width }: { width: AboutWidth }) {
   };
   return (
     <Specimen label="availability" width={width}>
-      <SpecimenGrid>
+      {/* Rows below the wide stop: `none free` and `short 2` are the longest
+          labels on the page, and a two-column grid at 390px wraps both. */}
+      <SpecimenResponsive>
         {AVAILABILITY.map(({ key, a }) => (
           <SpecimenCell key={key} caption={caption[key]}>
             {/* free renders null, and that IS the state — the cell keeps its
@@ -59,7 +71,7 @@ function AvailabilityFigure({ width }: { width: AboutWidth }) {
             </span>
           </SpecimenCell>
         ))}
-      </SpecimenGrid>
+      </SpecimenResponsive>
     </Specimen>
   );
 }
@@ -112,7 +124,7 @@ function StatusFigure({ width }: { width: AboutWidth }) {
     Building: detail.detailCopies(87),
     Over: detail.detailOver(5),
     Unresolved: detail.detailUnresolved(2),
-    "To buy": detail.detailToBuyNoPrice(3),
+    "To buy": detail.detailToBuy(3, "$12.40"),
     Complete: detail.detailCopies(99),
   };
   return (
@@ -152,14 +164,25 @@ function FitFigure({ width }: { width: AboutWidth }) {
           frame would be this page writing sentences the app does not ship,
           which is rule 4 of the copy file. */}
       <div className="flex flex-col gap-[14px]">
-        <SpecimenCell caption="three segments, out of 100">
+        {/* The headline beside each bar is the lane's OWN string — the entry's
+            key says the sum is printed and checkable, and a caption of my own
+            words would be this page inventing a figure the app renders. */}
+        <SpecimenCell caption="pool + roles + synergy, and the sum is printed">
           <div className="w-full">
             <FitBar fit={FIT_FULL} />
+            <p className="mt-[6px] font-mono text-[10.5px] text-[color:var(--fg-body)]">
+              {FIT_FULL_SCORE}
+              {commandersCopy.row.fitDenominator}
+            </p>
           </div>
         </SpecimenCell>
-        <SpecimenCell caption="synergy unmeasurable — two segments, out of 40">
+        <SpecimenCell caption="synergy unmeasurable — two segments, and the denominator moves">
           <div className="w-full">
             <FitBar fit={FIT_DEGRADED} />
+            <p className="mt-[6px] font-mono text-[10.5px] text-[color:var(--fg-body)]">
+              {FIT_DEGRADED_SCORE}
+              {commandersCopy.row.fitDenominatorMeasurable(40)}
+            </p>
           </div>
         </SpecimenCell>
       </div>
@@ -240,6 +263,20 @@ function MarksFigure({ width }: { width: AboutWidth }) {
         </div>
         <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
           not owned — the buy mark takes the slot, and `//` says two faces
+        </span>
+
+        {/* The same slot, and the other mark that can hold it: a card you are
+            printing is not bought and not owned, so `P` replaces `$` rather
+            than joining it. */}
+        <div className="flex items-center gap-[8px]">
+          <OwnershipDot owned={false} size={7} />
+          <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
+            {CARDS.proxied}
+          </span>
+          <ProxyTag variant="row" />
+        </div>
+        <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
+          one you are printing — `P` takes the slot instead of `$`
         </span>
       </div>
     </Specimen>
