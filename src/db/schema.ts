@@ -714,7 +714,38 @@ export const csvUploads = pgTable("csv_uploads", {
   previewPayload: jsonb("preview_payload").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // Set when the preview is confirmed into the collection; null = abandoned preview.
+  //
+  // Also the CONFIRM'S OWN LOCK. `replaceCollection` stamps it with a conditional
+  // update — `where confirmed_at is null returning id` — and aborts when no row comes
+  // back, so a double submit or a retried request cannot replace the collection twice.
+  // A read-then-write check here would not close that: two confirms both read null.
   confirmedAt: timestamp("confirmed_at"),
+  /**
+   * What the confirm did to the decks: what stopped being a purchase, what started,
+   * and which arrived cards more committed decks want than there are copies.
+   *
+   * WRITTEN AFTER `confirmedAt`, in its own statement, and that is a limitation rather
+   * than a choice: two of the three inputs to the diff are queries over the collection
+   * the replace has just written, so they cannot run inside the transaction that writes
+   * it. A null on a CONFIRMED row therefore means "the receipt did not survive", and the
+   * route renders the nothing-to-report state — which is the state the design already
+   * draws for an import that moved nothing. The invalidations run BEFORE this write for
+   * the same reason: a failed receipt must not also leave stale caches behind.
+   *
+   * What must never happen is a recompute on a later confirm. It would diff the new
+   * collection against itself, find nothing, and overwrite a real receipt with an empty
+   * one — so `confirmUpload` returns early on any already-stamped row.
+   *
+   * Shape: `ArrivalsSummary` in `src/lib/collection/arrivals.ts`, carrying its own
+   * version. Frozen on purpose: it is a receipt for one import, and its names are stored
+   * so a later rename or a deleted deck cannot rewrite history. The contested section is
+   * the exception and stores ids only — a reservation can be made or moved after this is
+   * written, so that row's allocation is read live.
+   *
+   * Null for an abandoned preview, and for any upload confirmed before this column
+   * existed.
+   */
+  summaryPayload: jsonb("summary_payload"),
 });
 
 /**

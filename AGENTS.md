@@ -113,6 +113,23 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   "transcribed verbatim from the handoff" — is invisible to any string matcher; four of those
   were found by grepping for the claim instead, and no check covers them.
 
+- `pnpm check:collection-routes` fails when a route renders a figure read out of
+  `collection_items` and the collection replace does not invalidate it. It walks every
+  `page.tsx`, follows its imports through `src/`, and compares what it finds against
+  `COLLECTION_ROUTES` in `src/lib/collection/invalidate.ts`. Static, no server, no database.
+
+  It exists because that list was assembled by READING and was wrong three review rounds
+  running, each round naming a route the previous one had missed — `/collection/replace`,
+  then `/decks/[id]/import`, then `/decks/new`. The sweep found a fourth nobody had named
+  (`/decks/import`), which is the whole argument for computing it: a list built by reading has
+  a tail.
+
+  It checks the `dynamic` flag as well as the path, and that half matters more than it looks.
+  `revalidatePath` needs its second argument for a route with a `[param]` and **silently does
+  nothing without one**, so a path that is present but flagged wrong is invalidated in the
+  code review's eyes and not in Next's. All three of the check's failure paths were run
+  against it before it was believed: a dropped route, a wrong `dynamic` flag, and a stale
+  route that no longer reads the collection.
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The
@@ -157,6 +174,41 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   computes the same allocation through a second, independently written expression, and a
   reservation that moved one and not the other would leave the deck page and the receipt
   disagreeing about the same card.
+- `pnpm probe:arrivals` proves the collection confirm's own lock and its receipt against a real
+  Postgres by calling the real `replaceCollection`. Two things live there that no unit test here
+  can reach. THE LOCK: `confirmed_at` is stamped by a conditional update inside the replace
+  transaction (`where confirmed_at is null returning id`), and the transaction is abandoned when
+  it returns no row — whether that stops a second confirm is a question about what the database
+  did, and a read-then-write guard passes every unit test while replacing the collection twice.
+  Its third case starts two confirms of ONE upload together and asserts exactly one wins; with
+  the stamp made unconditional, two of its checks fail. A separate case races two DIFFERENT
+  uploads, because the conditional stamp does nothing there — both rows are unconfirmed and both
+  pass it — and what serializes them is a per-user advisory lock taken inside the same
+  transaction. What that protects is the collection: two interleaved delete-and-reinserts leave a
+  MIXTURE of the two lists or raise 23505, so the check asserts the collection is exactly one of
+  the two. With the lock removed it fails on every run.
+
+  THE RECEIPT: the arrivals diff reads the collection either side of a write, and there is no
+  collection to read either side of anything in jsdom. It calls `writeArrivalsReceipt` — the
+  helper `confirmUpload` uses, extracted so a probe can reach it without a request — and reads
+  the stored column back rather than trusting the return value, because persistence is half of
+  what the case proves.
+
+  Three of its cases exist because a mutation run measured nothing without them. **A receipt with
+  no DECKS emits no rows**, so the frozen-name checks passed over an empty name map until the
+  fixture grew a committed deck that owes the arriving card. **Contention needs demand above
+  supply among committed decks**, so the claim read could be replaced by an empty map and every
+  other check still passed until a second deck asked for two copies against the two that arrived.
+  And the lock case above needed two uploads rather than one.
+
+  What it does NOT cover, deliberately: the ORDER of the invalidations and the receipt write
+  inside `confirmUpload`. That function needs a request and a signed-in reader, so the probe calls
+  the helper beneath it — skipping the receipt write in the action is invisible here. The
+  ordering's reason is in the code: the invalidations run first because the replace has already
+  committed, and a failed receipt must not leave stale caches behind as well. It writes a fixture under a per-run
+  `user_id` and deletes it in a `finally` — point it at `local-dev` or a scratch branch, **never
+  production**, and note that this one is stricter than the other probes about that:
+  `replaceCollection` DELETES every collection row for the user it is given.
 - `pnpm probe:folders` proves deck folders against a real Postgres by calling the real
   queries — a deck files and unfiles, a cross-user move is refused from either side, and
   deleting a folder unfiles its decks without deleting any of them. That last rule is the

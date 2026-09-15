@@ -46,7 +46,7 @@ export type MatchResult = {
  * index key and the incoming name to one spelling is what keeps those rows out of
  * `unmatched` — and doing both sides keeps the match symmetric whatever the source.
  */
-function normalizeName(name: string): string {
+export function normalizeCardName(name: string): string {
   return name.toLowerCase().replace(/\s*\/+\s*/g, " // ").trim();
 }
 
@@ -65,7 +65,7 @@ export function matchRows(
 
   const byName = new Map<string, string>();
   for (const c of catalog) {
-    const lower = normalizeName(c.name);
+    const lower = normalizeCardName(c.name);
     byName.set(lower, c.oracleId);
     const front = lower.split(" // ")[0];
     if (!byName.has(front)) byName.set(front, c.oracleId);
@@ -77,7 +77,7 @@ export function matchRows(
   // failure than silently importing a card the player does not own.
   const flavorCandidates = new Map<string, string | null>();
   for (const { flavorName, oracleId } of indexes.flavorNames ?? []) {
-    const lower = normalizeName(flavorName);
+    const lower = normalizeCardName(flavorName);
     for (const key of [lower, lower.split(" // ")[0]]) {
       const seen = flavorCandidates.get(key);
       if (seen === undefined) flavorCandidates.set(key, oracleId);
@@ -97,7 +97,7 @@ export function matchRows(
     // Checked before the name fallback: a known token id is definitively a token, and
     // importing it as a same-named real card would be worse than reporting it skipped.
     if (row.scryfallId && skippedIds.has(row.scryfallId)) { skipped.push(row); continue; }
-    const byNameId = byName.get(normalizeName(row.name));
+    const byNameId = byName.get(normalizeCardName(row.name));
     if (byNameId) matched.push({ row, oracleId: byNameId });
     else unmatched.push(row);
   }

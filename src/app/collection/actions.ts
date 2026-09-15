@@ -11,6 +11,10 @@ import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../l
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
+import { ownedByOracle, writeArrivalsReceipt } from "../../lib/collection/arrivals-write";
+import { COLLECTION_ROUTES } from "../../lib/collection/invalidate";
+import { loadDeckBuyRows } from "../../lib/decks/availability-query";
+
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
 import { recommendCommanders } from "../../lib/recs/recommend";
 import { collectionGeneration, persistScores } from "../../lib/recs/store";
@@ -118,26 +122,77 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
   return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }
 
+
+
+
+
 export async function confirmUpload(uploadId: string): Promise<void> {
   const userId = await requireUserId();
   const [upload] = await db.select().from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
   if (!upload) throw new Error("upload not found");
 
-  const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
+  // Already confirmed: the receipt is stored and there is nothing to replace. Returning
+  // rather than throwing is what makes a retried request idempotent — and re-running the
+  // diff here would find nothing moved and overwrite a real receipt with an empty one.
+  if (upload.confirmedAt) return;
+
+  const preview = upload.previewPayload as {
+    pendingItems: PendingItem[];
+    unmatched?: { name: string; line: number }[];
+    parseErrors?: { line: number; reason: string }[];
+  };
+  const pendingItems = preview.pendingItems;
   if (pendingItems.length === 0) throw new Error("Upload has no matched cards; refusing to replace collection");
+
+  // THE STATE BEFORE, read now because the replace destroys it. Both reads are
+  // point-in-time and deliberately not serialized against the write: the only race is
+  // the same player editing a deck in another tab during their own import, and its cost
+  // is a mis-stated line on a receipt — never a wrong claim figure, since every claim
+  // figure in the app is recomputed live and the chooser's write re-validates in its own
+  // transaction.
+  const ownedBefore = await ownedByOracle(userId);
+  const buyBefore = await loadDeckBuyRows(userId);
+
   // A preview written before migration 0008 carries no collectorNumber/finish;
   // replaceCollection coerces both rather than spreading undefined into the insert.
-  await replaceCollection(userId, pendingItems, { confirmUploadId: uploadId });
-  // Every cached list this reader has is a function of the rows just replaced.
+  //
+  // The upload row is the lock: the stamp inside that transaction is conditional on
+  // `confirmed_at is null`, so a double submit replaces the collection exactly once and
+  // the loser is told so rather than raising.
+  const { alreadyConfirmed } = await replaceCollection(userId, pendingItems, {
+    confirmUploadId: uploadId,
+  });
+  if (alreadyConfirmed) return;
+
+  // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached figure
+  // behind every one of these routes is already wrong; the receipt is a nicety by comparison.
+  // Ordered the other way, a failure while assembling the receipt would leave the caches stale
+  // too — and the early return above means no retry would ever repair either.
+  //
+  // The ROUTE LIST is `COLLECTION_ROUTES`, and it is checked rather than remembered: this set
+  // was hand-assembled and wrong three review rounds running, each round naming a route the
+  // last had missed. `pnpm check:collection-routes` walks every page and fails when one reads
+  // the collection without being named there.
   revalidateUserLists(userId);
-  revalidatePath("/collection");
-  revalidatePath("/");
-  // Wiping commander_scores above changes what /commanders renders, and slugs are
-  // assigned in rank order so cached detail pages can point at the wrong
-  // commander. '[slug]' needs the 'page' type — it is a dynamic segment.
-  revalidatePath("/commanders");
-  revalidatePath("/commanders/[slug]", "page");
+  for (const route of COLLECTION_ROUTES) {
+    // The second argument is load-bearing for a `[param]` route: without it revalidatePath
+    // silently does nothing, which is how a missing invalidation hides.
+    if (route.dynamic) revalidatePath(route.path, "page");
+    else revalidatePath(route.path);
+  }
+
+  // THE RECEIPT. Assembled and stored by a helper the probe can call directly, because
+  // everything above this line needs a request to exist and the receipt does not.
+  await writeArrivalsReceipt({
+    userId,
+    uploadId,
+    pendingItems,
+    ownedBefore,
+    buyBefore,
+    unmatched: preview.unmatched ?? [],
+    parseErrorCount: (preview.parseErrors ?? []).length,
+  });
 
   // Warm the new collection's scores without blocking the upload response. If this
   // is cut short by the route's max duration, the read path recomputes on first
