@@ -44,6 +44,7 @@ import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
+import { proxiedOracleIds } from "../../lib/decks/proxies";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1328,7 +1329,11 @@ export async function commitDeckVersion(
               { free: a.free, claims: pullSources(a) },
             ]),
           ),
-        ).filter((a) => a.bucket !== "free");
+          new Set(),
+          // The deck's printed cards. A commit receipt that billed one would be
+          // quoting a price for a card its owner has decided not to buy.
+          await proxiedOracleIds(deckId, userId),
+        ).filter((a) => a.bucket !== "free" && a.bucket !== "proxied");
       } catch {
         buy = null;
       }
@@ -1599,7 +1604,10 @@ export async function pullCardFromDeck(
     const sources = pullSources(askingAvailability.get(oracleId) ?? { claims: [] });
     const [bucketed] = bucketAdds([add], new Map(
       [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: pullSources(a) }]),
-    ));
+    ), new Set(), await proxiedOracleIds(askingDeckId, userId));
+    // A printed card asks the collection for nothing, so there is nothing to
+    // pull FOR — the guard below refuses it on `bucket !== "claimed"`, which is
+    // the same refusal a covered add already gets.
     if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
       return { ok: false, message: "That deck already has the copies it needs." };
     }

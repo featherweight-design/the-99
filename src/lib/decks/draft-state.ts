@@ -16,6 +16,7 @@ import {
   type AddBucket, type CardQty, type DraftChange,
 } from "./draft-diff";
 import type { DraftAdd, DraftState } from "./draft-shape";
+import { proxiedOracleIds } from "./proxies";
 import { releasableClaims } from "./draft-shape";
 import { pullSources, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
@@ -47,6 +48,10 @@ export function bucketDraftAdds(
   adds: DraftChange[],
   availability: Map<string, Availability> | null,
   basics: ReadonlySet<string> = new Set(),
+  /** The cards this deck prints. Answered ahead of everything below, including
+   *  a failed claim read: a printed card asks the collection for nothing, and
+   *  that is true whether or not the claim query succeeded. */
+  proxied: ReadonlySet<string> = new Set(),
 ): DraftAdd[] {
   if (!availability) {
     // A basic is free whatever the claim read did, because it was never part of
@@ -54,7 +59,12 @@ export function bucketDraftAdds(
     // would drop out of the column's `free · sleeved · buy` breakdown and make
     // the three terms disagree with the count above them.
     return adds.map((c) => (
-      basics.has(c.oracleId)
+      proxied.has(c.oracleId)
+        ? {
+            oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
+            bucket: "proxied" as const, heldBy: [],
+          }
+        : basics.has(c.oracleId)
         ? {
             oracleId: c.oracleId, needed: c.to - c.from, shortfall: 0,
             bucket: "free" as const, heldBy: [],
@@ -74,7 +84,7 @@ export function bucketDraftAdds(
       // `claimed` only where a pull would actually relieve the shortfall.
       { free: a.free, claims: pullSources(a) },
     ]),
-  ), basics);
+  ), basics, proxied);
 }
 
 /**
@@ -263,7 +273,11 @@ async function readDraft(
     : new Map<string, Availability>();
 
   const claimsKnown = availability !== null;
-  const bucketed = bucketDraftAdds(adds, availability, basics);
+  // This deck's printed cards, membership-scoped like every other proxy read.
+  // Without it the review screen prices a card the player has decided not to
+  // buy — the shipped `AvailabilitySlot` draws a buy tag on any unowned add.
+  const proxied = await proxiedOracleIds(deckId, userId);
+  const bucketed = bucketDraftAdds(adds, availability, basics, proxied);
   const unfree = unfreeAdds(bucketed);
   const priceAsked = (detailed ? changed : unfree.map((a) => a.oracleId)).filter(notBasic);
   const prices = priceAsked.length > 0

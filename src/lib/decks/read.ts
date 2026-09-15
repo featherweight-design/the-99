@@ -97,11 +97,21 @@ export function deckIsFlippable(r: {
   built: number;
   partnerName: string | null;
   ownedCount: number;
+  /**
+   * Slots filled, printed ones included. Defaults to `ownedCount` for a caller
+   * that cannot count proxies.
+   *
+   * It is what this test reads, because the question is "could this deck reach
+   * `Complete`" and a deck whose last gaps are printed now can. On `ownedCount`
+   * alone such a deck skipped the seniority query and then flipped to
+   * `Complete` without the check every other complete deck gets.
+   */
+  coveredCount?: number;
   unresolvedCount: number;
 }): boolean {
   return (
     r.built === deckBodySize(r.partnerName !== null) &&
-    r.ownedCount === r.built &&
+    (r.coveredCount ?? r.ownedCount) === r.built &&
     r.unresolvedCount === 0
   );
 }
@@ -154,6 +164,8 @@ export type DeckDetail = {
   unresolvedRows: DeckUnresolvedRow[];
   built: number;
   ownedCount: number;
+  /** Slots filled: owned, or printed. See `deckCounts`. */
+  coveredCount: number;
   toBuyCount: number;
   /** built plus the cards on unresolved lines — the size of the deck the player asked for. */
   total: number;
@@ -712,51 +724,83 @@ export async function listDecksWithStats(
   // scan whose result nothing reads — and `/decks` and Home both run
   // `loadShoppingRollup` alongside this, which asks the same question, so the
   // saving is a real second scan rather than a hypothetical one.
-  const canFlip = rows.some(deckIsFlippable);
+  // Two figures per deck, and conflating them was a real defect: a proxied
+  // COMMANDER is not a body slot, and a proxied card the player also owns is
+  // already inside `ownedCount`. Adding one total to `ownedCount` let a proxied
+  // commander fill an unowned body slot, so a 98-owned 99-card deck read
+  // `Complete` with one card genuinely missing.
+  //
+  //   copies   — every printed copy, commander included. The tile's `N proxies`
+  //              line, which counts the commander with everything else.
+  //   covers   — printed copies of body rows the player does NOT own. The only
+  //              figure that may be added to `ownedCount`, and by construction
+  //              it cannot double-count or overflow the body.
+  //
+  // Tolerated like the two reads above: a failed count leaves every deck reading
+  // as it did before proxies existed, which is a missing line rather than a 500.
+  const proxiedByDeck = rows.length > 0
+    ? await db.execute<{ deck_id: string; copies: number; covers: number }>(sql`
+        select
+          p.deck_id,
+          sum(
+            case
+              when dc.oracle_id is not null then dc.quantity
+              else 1
+            end
+          )::int as copies,
+          sum(
+            case
+              when dc.oracle_id is not null and not exists (
+                select 1 from collection_items ci
+                where ci.user_id = ${userId} and ci.oracle_id = p.oracle_id
+              ) then dc.quantity
+              else 0
+            end
+          )::int as covers
+        from deck_proxies p
+        join decks d on d.id = p.deck_id
+        left join deck_cards dc
+          on dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
+        where d.user_id = ${userId}
+          and (
+            dc.oracle_id is not null
+            or d.commander_oracle_id = p.oracle_id
+            or d.partner_oracle_id = p.oracle_id
+          )
+        group by p.deck_id
+      `)
+      .then((r) => new Map(r.rows.map((x) => [x.deck_id, x])))
+      .catch(() => new Map<string, { copies: number; covers: number }>())
+    : new Map<string, { copies: number; covers: number }>();
+
+  // AFTER the proxy read, not before it. `deckIsFlippable` decides whether the
+  // seniority query runs at all, and it asks whether a deck could reach
+  // `Complete` — which a deck whose last gaps are printed now can. Asked on
+  // `ownedCount` alone, such a deck never fetched its buy rows, so its
+  // `unfundedCount` stayed 0 and it flipped to `Complete` without the seniority
+  // check every other complete deck gets.
+  const canFlip = rows.some((r) =>
+    deckIsFlippable({ ...r, coveredCount: r.ownedCount + (proxiedByDeck.get(r.id)?.covers ?? 0) }),
+  );
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
   const buyRows = canFlip ? await loadDeckBuyRows(userId).catch(() => []) : [];
-  // Printed copies per deck, counted off the same membership the claim model
-  // uses: `deck_cards` quantities plus either commander column. Tolerated like
-  // the two reads above — a failed count leaves every deck reading as it did
-  // before proxies existed, which is a missing line rather than a 500.
-  const proxiedByDeck = rows.length > 0
-    ? await db.execute<{ deck_id: string; copies: number }>(sql`
-        select d.id as deck_id, sum(t.copies)::int as copies
-        from decks d
-        join lateral (
-          select coalesce(dc.quantity, 1) as copies
-          from deck_proxies p
-          left join deck_cards dc
-            on dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
-          where p.deck_id = d.id
-            and (
-              dc.oracle_id is not null
-              or d.commander_oracle_id = p.oracle_id
-              or d.partner_oracle_id = p.oracle_id
-            )
-        ) t on true
-        where d.user_id = ${userId}
-        group by d.id
-      `)
-      .then((r) => new Map(r.rows.map((x) => [x.deck_id, x.copies])))
-      .catch(() => new Map<string, number>())
-    : new Map<string, number>();
   const unfundedByDeck = new Map<string, number>();
   for (const r of buyRows) {
     unfundedByDeck.set(r.deckId, (unfundedByDeck.get(r.deckId) ?? 0) + r.quantity);
   }
 
   return rows.map((row) => {
-    const proxiedCount = proxiedByDeck.get(row.id) ?? 0;
+    const proxies = proxiedByDeck.get(row.id);
+    const proxiedCount = proxies?.copies ?? 0;
     const pill = statusPill({
       built: row.built,
       ownedCount: row.ownedCount,
       // A printed slot is a filled slot, so a deck whose only gaps are proxies
-      // reads `Complete` here exactly as it does on its own page. Capped at
-      // `built` because a proxy on a commander is not a `deck_cards` row and
-      // would otherwise push the covered figure past the body count.
-      coveredCount: Math.min(row.built, row.ownedCount + proxiedCount),
+      // reads `Complete` here exactly as it does on its own page. `covers` is
+      // already restricted to unowned body rows, so this neither double-counts
+      // an owned proxy nor lets a commander fill a body slot.
+      coveredCount: row.ownedCount + (proxies?.covers ?? 0),
       unresolvedCount: row.unresolvedCount,
       unfundedCount: unfundedByDeck.get(row.id) ?? 0,
       bodySize: deckBodySize(row.partnerName !== null),

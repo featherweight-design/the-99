@@ -150,7 +150,8 @@ export function catalogCard(
 async function proxyingDecks(userId: string, oracleId: string): Promise<ProxyingDeck[]> {
   const { db } = await import("../../db");
   const { sql } = await import("drizzle-orm");
-  return db
+  try {
+    return await db
     .execute<{ id: string; name: string }>(sql`
       select d.id, d.name
       from deck_proxies p
@@ -167,8 +168,11 @@ async function proxyingDecks(userId: string, oracleId: string): Promise<Proxying
         )
       order by p.created_at desc, d.id
     `)
-    .then((r) => r.rows)
-    .catch(() => []);
+    .then((r) => r.rows);
+  } catch {
+    // Synchronous throws too — a db stub with no `execute` is the usual one.
+    return [];
+  }
 }
 
 export const loadCardDetail = cache(async function loadCardDetail(
