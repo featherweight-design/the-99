@@ -14,6 +14,13 @@ File: `The 99 - Card Captions.dc.html` (canvas — pan/zoom). `STATES-card-capti
 states as a table, `card-captions · copy strings.ts` the strings, `READINESS.md` the two
 dependencies.
 
+**`ADDENDUM-the-key.md` answers erratum 7** of `docs/superpowers/readiness-card-captions.md`, which
+withdrew ledger item 9 and carried it back to Design: card view draws marks and has no legend.
+**Called: card view gets a key — the same component, in the same slot, with the tile's own word for
+`$` and the list's word for `P`.** The divergence is one word wide, because `$` marks two different
+sets of cards on the two surfaces while `P` marks the same one. Drawn as the addendum section at the
+top of the canvas.
+
 **The one-line summary:** *two lines, always, and the art keeps nothing — which is what lets the
 three slot occupants become one visible box.*
 
@@ -196,10 +203,13 @@ about cardboard, which the proxies handoff already ruled.
 first, so a proxied card is not a Shopping row at all. The tile never has to choose between a price
 and a mark; it only has to be a place the mark fits.
 
-**One thing this handoff asks for and does not draw: the key.** `MarkKey` renders under the decklist
-toolbar and lists only the marks the current view contains. In card view the marks are the same two,
-so **it must render above the grid on the same terms** — or card view is the one view in the app with
-marks and no legend.
+**One thing this handoff asked for and did not draw: the key** — now settled in
+`ADDENDUM-the-key.md`. R1 asked for `MarkKey` above the grid *"on the same terms as above the
+list"*, and **erratum 7 disproved it**: the terms are not the same, because the row draws `$` on
+unowned **and** spoken-for cards where the tile draws it on unowned only, so no one word is true of
+both. **Called: same component, same slot, one differing word** — `$ not owned` in card view against
+the row's `$ to buy`, and `P proxy` on both. The addendum has the entries, the placement at both
+widths, and the 9a–9d ledger.
 
 ---
 
@@ -222,7 +232,7 @@ and an optional trailing control is the share that pays; a shared tile is the co
 | 5 | **`decklist-group.tsx`** keeps `auto-fill`; eng picks the `minmax()` floor that yields 178px at the default desktop width with the panel closed (§6). | tune |
 | 6 | **`usePendingChange`** gains its second consumer: the tile reads the same touched / recounted pair as `decklist-row.tsx:124`, plus an `added` case the row has no shape for. | additive |
 | 7 | **`ProxyTag`** — one new call site, no change. `deckRowTag` already guarantees one occupant. | reuse |
-| 8 | **`MarkKey`** renders above the card grid on the same terms as above the list. | additive |
+| 8 | **`MarkKey`** — **superseded by `ADDENDUM-the-key.md`.** R1's "on the same terms as above the list" was withdrawn by erratum 7. Same component, same slot, one differing word (`$ not owned`), plus one new string (`key.regionAriaCards`). Four lines, 9a–9d. | additive |
 | 9 | **Severable:** `×1` suppressed on `/collection` too, matching the deck. The brief notes the redundancy and the meta line makes it louder by putting the count beside a chip. One condition, one line. | severable |
 
 ## Refused, across all four calls

@@ -1,6 +1,7 @@
 # READINESS — Card captions (R1 audit)
 
-**Verdict: 🟢 Green, with seven errata — one of which withdraws a claim this audit made.** All four calls the brief left open are called, every
+**Verdict: 🟢 Green, with nine errata — one withdrawing a claim this audit made, and one recording
+that Design then overturned the withdrawal with a better argument.** All four calls the brief left open are called, every
 named state is drawn, and nothing here waits on a design decision. The errata below are
 eng-resolvable under the handoff's own tie-break rule and do not return to Design.
 
@@ -203,6 +204,46 @@ Nothing else in the handoff depends on it. Card view's marks are not left undeco
 tile's `$` speaks `not owned` and `ProxyTag` speaks its own name, which is what the guard's own
 comment says.
 
+## Erratum 7 is OVERTURNED by `ADDENDUM-the-key.md`, and Design's reading is better
+
+Recorded 2026-09-15, after the addendum landed.
+
+Erratum 7 withdrew ledger item 9 and framed the legend as *two vocabularies for one glyph*, which
+implied a choice between them. The real constraint is narrower and firmer, and the addendum found
+it: **the two glyphs mark two different SETS of cards.** `row-tag.ts` returns `buy` for
+`!owned || spokenFor`, and only the row passes `spokenFor`. A spoken-for card **is owned**, so
+`not owned` is false of it; an unowned card outside Shopping is not `to buy`. No single word is true
+of both sets, so shared copy was never a compromise available to be taken.
+
+And `P` is `card.proxied` on both, identically — so **the divergence is one word wide, not a
+vocabulary wide**. Two keys differing by one entry, each true of what sits beneath it, are this
+component's own system instantiated twice rather than a third vocabulary. That is what makes
+reinstatement correct, and this audit missed it.
+
+The addendum also disposes of "no legend" on grounds this audit did not weigh: `proxies.ts` holds a
+one-character mark to **three** carriers, and with no key a sighted reader on a phone — the reader
+most likely to be in card view — has none.
+
+**Ledger item 9 is reinstated as 9a–9d and shipped.**
+
+## Erratum 9 — the addendum's sample figures are the caption's, not the key's
+
+The one thing in the addendum that does not hold, and it resolves toward less work rather than more.
+
+Its placement table gives the key's samples as mono **9px** desktop / **8.5px** phone and calls them
+*"canonical row variant — unchanged and not redrawn."* Both halves cannot be true. `MarkKey` renders
+`BuyTag variant="row"` and `ProxyTag variant="row"`, and that variant is
+`text-[9px] md:text-[9.5px]` — 9 at the phone, **9.5** on desktop. The quoted figures are the
+**caption slot box's**, which erratum 3 settled and PR #654 shipped. `BuyTag variant="row"` also
+carries a `--warning` 13% plate that the caption's plate-less box does not.
+
+It also reads erratum 3 slightly wrong: the tile's `$` and the band `P` are byte-identical **to each
+other**, not to the row's box.
+
+**Resolution — eng, and it is a deletion.** The ledger's own line is right: *samples unchanged*. The
+key keeps rendering the row variant exactly as it does today, on both instances, and nothing here
+redraws a box. The figures in that table are struck rather than implemented.
+
 ## Erratum 8 — the handoff is not on `main`
 
 It was delivered as an untracked drop inside `.worktrees/about-r3-audit/`, on branch
@@ -237,7 +278,7 @@ pressure will reach for exactly them:
 | 6 | `decklist-group.tsx` — same floor as `/collection`; the stale Add-panel comment corrected (erratum 5) | after 4 |
 | 7 | `usePendingChange` second consumer; caption edge + `1 → 2` / `+N` (erratum 1 — unblocked) | after 4 |
 | 8 | `ProxyTag` moves from the tile's art to the caption slot — already drawn at `deck-card-tile.tsx:121` (erratum 1) | after 4 |
-| ~~9~~ | ~~`MarkKey` above the card grid~~ — **withdrawn, erratum 7.** Open with Design | — |
+| 9 | `MarkKey` in card view — **reinstated by `ADDENDUM-the-key.md`** as 9a–9d: one new string, one optional prop, one guard becomes a branch. Samples unchanged (erratum 9) | no |
 | 10 | `×1` suppressed on `/collection` — severable, recommended | after 3 |
 
 Items 3 and 4 ship in the same release: one caption on two surfaces, and splitting them leaves the

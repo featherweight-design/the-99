@@ -58,7 +58,8 @@ export const cardCaptionCopy = {
 // | `$` and its full aria  | BuyTag density="collapsed" — glyph is the      |
 // |                        | component's, name keeps word + price in full   |
 // | `P`                    | ProxyTag — skin A, one density                 |
-// | `P proxy`, `$ to buy`  | MarkKey — the key's own glosses                |
+// | `P proxy`, `$ to buy`  | MarkKey — the LIST's glosses. Card view's key      |
+// |                        | says `$ not owned` — see the addendum below      |
 // | `//` + "two-faced card"| twoFacedCopy.mark / markAria                   |
 // | printed front name     | printedFaceName; full name printedNameOf       |
 // | `SET · rarity`         | grid-view.tsx composes from primarySetCode /   |
@@ -80,15 +81,33 @@ export const cardCaptionCopy = {
    ───────────────────────────────────────────────────────────────────────────── */
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   NO NEW VISIBLE WORDS
+   NO NEW VISIBLE WORDS ON EITHER TILE
 
    Count them: the caption gains a figure (`+1` / `1 → 2`) and a letter (`P`,
    which already ships one route over). No label, no legend inside the tile, no
    hover string, no `title`. The only prose added anywhere is the two aria forms
-   above.
+   above — and, per the addendum, one region label for the key ABOVE the grid,
+   which is not on the tile.
 
-   And one thing this handoff ASKS FOR rather than writes: MarkKey must render
-   above the card grid on the same terms it renders above the list — only the
-   marks the current view contains. Its strings already exist; the gap is a call
-   site, not a string. See README § C.
+   And one thing this handoff ASKED FOR rather than wrote — now settled, and
+   with one string after all. R1 asked for MarkKey above the card grid "on the
+   same terms it renders above the list"; erratum 7 disproved it. The row draws
+   `$` on unowned AND spoken-for cards, the tile on unowned only, and a
+   spoken-for card IS owned — so no one word is true of both sets.
+
+   CALLED: same component, same slot, one differing word. Card view's key reads
+   `$ not owned` · `P proxy`, and the buy entry's word is the tile's own shipped
+   string, cardTileCopy.slotUnownedAria — the key prints the word the tile
+   already speaks. `key.buy` is untouched; the list still has the shop.
+
+   ONE NEW STRING, beside key.buy / key.proxy:
+
+     key.regionAriaCards: "What the marks on these cards mean"
+
+   Because key.regionAria says "...on these rows" and cannot sit over tiles. It
+   is NOT edited — the list still has rows. "Cards" and not "tiles": the reader
+   is looking at cards, and nothing in this app names an internal noun.
+
+   See ADDENDUM-the-key.md for the entries, the placement at both widths, and
+   the 9a–9d ledger.
    ───────────────────────────────────────────────────────────────────────────── */

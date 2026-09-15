@@ -18,12 +18,23 @@ import { proxyCopy } from "../../lib/copy/proxies";
 
 export type MarkKeyEntry = { id: string; sample: ReactNode; word: string };
 
-export function MarkKey({ marks }: { marks: MarkKeyEntry[] }) {
+export function MarkKey({
+  marks,
+  regionAria = proxyCopy.key.regionAria,
+}: {
+  marks: MarkKeyEntry[];
+  /**
+   * The group's own label, taken as data for the same reason the marks are: the
+   * card view mounts a second instance over cards rather than rows, and its
+   * label cannot be the list's. Defaulted, so the list's call site is unchanged.
+   */
+  regionAria?: string;
+}) {
   if (marks.length === 0) return null;
   return (
     <div
       role="group"
-      aria-label={proxyCopy.key.regionAria}
+      aria-label={regionAria}
       // Wraps rather than scrolls: it grows by one pair per mark, and a
       // horizontally scrolling legend on a phone is a control nobody presses.
       className="flex flex-wrap items-center gap-x-[12px] gap-y-[6px] font-mono text-[10px] md:text-[10.5px]"

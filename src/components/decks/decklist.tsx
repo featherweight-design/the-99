@@ -33,6 +33,7 @@ import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
 import { BuyTag } from "./buy-tag";
 import { ProxyTag } from "./proxy-tag";
+import { cardTileCopy } from "../../lib/copy/card-surfaces";
 import { MarkKey, type MarkKeyEntry } from "./mark-key";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -182,27 +183,37 @@ export function Decklist({
   // one character means. The glyph is the thing being decoded on every surface;
   // the plate around it is not, so the key draws the glyph in the row's box and
   // stops there.
-  // LIST VIEW ONLY, and that is a scope decision rather than a limitation.
+  // BOTH VIEWS, with one differing word — `ADDENDUM-the-key.md`, which
+  // supersedes the scope decision that stood here.
   //
-  // Five consecutive review rounds landed on this one line, each correct and
-  // each about the card view: the tile draws a different plate, does not draw a
-  // buy tag for an owned spoken-for card, and labels its `$` `not owned` — a
-  // FLOOR — where the row's identical glyph means `to buy`, the shop. A single
-  // legend cannot decode two vocabularies without becoming a third one.
+  // That decision was right about the terms and wrong about the conclusion. The
+  // two surfaces do not draw `$` on the same cards: `deckRowTag` returns `buy`
+  // for `!owned || spokenFor`, and only the ROW passes `spokenFor`. A
+  // spoken-for card is owned, so `not owned` is false of it; an unowned card
+  // outside Shopping is not `to buy`. No single word is true of both sets, which
+  // is why shared copy was never an option rather than merely an unattractive
+  // one.
   //
-  // So the key decodes the rows it sits above. The card view's marks carry their
-  // own words already — the tile's `$` speaks `not owned` and `ProxyTag` speaks
-  // its own name — so nothing there is left undecoded, and a card-view decoder
-  // with its own vocabulary is a follow-up rather than this PR's problem.
+  // But `P` is `card.proxied` on both, identically — so the divergence is ONE
+  // WORD WIDE, not a vocabulary wide. Two keys that differ by one entry, each
+  // true of what sits beneath it, are the system this component's header
+  // describes instantiated twice, not a third vocabulary.
+  //
+  // Withdrawing it entirely is what this cannot do: a one-character mark is only
+  // safe when the word is reachable three ways, and with no key a sighted reader
+  // on a phone — the reader most likely to be in card view — has none.
   const markKey = useMemo((): MarkKeyEntry[] => {
-    if (view === "card") return [];
     const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
     const entries: MarkKeyEntry[] = [];
     if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
       entries.push({
         id: "buy",
+        // The word the surface beneath it already speaks. The tile's `$` carries
+        // `cardTileCopy.slotUnownedAria`; the row's carries the shop. The SAMPLE
+        // is the row variant on both, unchanged — the key's own box is not the
+        // caption's, and nothing here redraws it.
         sample: <BuyTag variant="row" density="collapsed" price={null} />,
-        word: proxyCopy.key.buy,
+        word: view === "card" ? cardTileCopy.slotUnownedAria : proxyCopy.key.buy,
       });
     }
     if (shown.some((c) => c.proxied)) {
@@ -210,6 +221,12 @@ export function Decklist({
     }
     return entries;
   }, [cards, filter, view]);
+
+  // One label, computed beside the entries and passed to every instance: the
+  // three call sites are three branches of one surface, and a label chosen per
+  // branch would be three chances to disagree about what is underneath.
+  const markKeyRegion =
+    view === "card" ? proxyCopy.key.regionAriaCards : proxyCopy.key.regionAria;
 
   // ONE SORT PER FILTER, both remembered together. `All` keeps its own order
   // while `Shopping` keeps `Price · Highest`, so switching lanes swaps which is
@@ -504,7 +521,7 @@ export function Decklist({
             draftNote={draftNote}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-            <MarkKey marks={markKey} />
+            <MarkKey marks={markKey} regionAria={markKeyRegion} />
           </div>
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
@@ -574,7 +591,7 @@ export function Decklist({
         />
 
         <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-          <MarkKey marks={markKey} />
+          <MarkKey marks={markKey} regionAria={markKeyRegion} />
         </div>
 
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
@@ -710,7 +727,7 @@ export function Decklist({
           which is the one view a printed card is never in — so the surface that
           actually draws `P` had nothing to decode it. */}
       <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-        <MarkKey marks={markKey} />
+        <MarkKey marks={markKey} regionAria={markKeyRegion} />
       </div>
 
       {/* Grouped card rows */}

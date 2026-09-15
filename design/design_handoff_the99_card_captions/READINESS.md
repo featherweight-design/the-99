@@ -39,9 +39,12 @@ site that already exists. **Nothing in calls A, B or D touches it.**
 on the *art* because the caption work is not in yet. That would put one slot in two places, which is
 call D's first refusal.
 
-**And the key travels with it.** `MarkKey` must render above the card grid on the same terms as
-above the list. If proxies ship before card view, this is a card-view task in the proxies PR's wake;
-if card view ships first, it is one line in the proxies PR. Either order works. **Card view must not
+**And the key travels with it — see `ADDENDUM-the-key.md`, which supersedes this paragraph.** R1 asked
+for `MarkKey` above the card grid *"on the same terms as above the list"*; erratum 7 disproved that
+and carried it back to Design, and the addendum calls it: **same component, same slot, one differing
+word** (`$ not owned` against the row's `$ to buy`; `P proxy` on both). It is **unblocked
+independently of this dependency** — it reads `deckRowTag` and `card.owned`, both shipped. **Card
+view must not
 end up the one view in the app with marks and no legend.**
 
 ## Dependency 2 — the draft pair's `added` case
@@ -92,7 +95,7 @@ card view says today, which is nothing.
 | 5 | `decklist-group.tsx` — `minmax()` floor tuned to yield 178px with the panel closed | after 4 |
 | 6 | `usePendingChange` second consumer; the tile's edge + pair | after 4, **and dependency 2** |
 | 7 | `ProxyTag` call site in the tile's slot | **after `feat/proxies`** |
-| 8 | `MarkKey` above the card grid | after 7 |
+| 8 | `MarkKey` in card view — **see `ADDENDUM-the-key.md` 9a–9d** (supersedes "same terms") | no |
 | 9 | `×1` suppressed on `/collection` (severable) | after 3 |
 
 Items 1–5 are unblocked today and are the whole of the brief's core ask. **Items 3 and 4 should land
