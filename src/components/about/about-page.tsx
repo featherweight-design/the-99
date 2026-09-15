@@ -67,13 +67,15 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
       </h3>
 
       {inset ? (
-        <div className="mt-[6px] flex flex-col gap-[10px] min-[1000px]:flex-row min-[1000px]:items-start min-[1000px]:gap-[18px]">
-          <div className="order-2 min-w-0 flex-1 min-[1000px]:order-1">
+        <div className="mt-[6px] flex flex-col gap-[10px] min-[1000px]:flex-row min-[1000px]:items-start min-[1000px]:gap-[20px]">
+          <div className="order-2 min-w-0 flex-1 min-[1000px]:order-2">
             <p className="text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
               {entry.caption}
             </p>
           </div>
-          <div className="order-1 min-[1000px]:order-2 min-[1000px]:w-[300px] min-[1000px]:flex-none">
+          {/* Figure column first at the wide stop, caption beside it; both
+                collapse to figure-above-caption below. */}
+          <div className="order-1 min-[1000px]:order-1 min-[1000px]:w-[300px] min-[1000px]:flex-none">
             <Figure width={entry.width} />
           </div>
         </div>

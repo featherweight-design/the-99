@@ -231,13 +231,32 @@ describe("the figures", () => {
     expect(pills).toHaveLength(6);
     // `TILE_CLASS` is the component's default and opens `absolute
     // bottom-[13px] left-[13px]`; defaulted here all six leave flow.
-    for (const pill of pills) expect(pill.className).not.toContain("absolute");
+    for (const pill of pills) {
+      expect(pill.className).not.toContain("absolute");
+      // The deck card's FOOTER treatment — 22px at 10.5px — not the tile's
+      // 24px at 11px. The component defaults to the tile box, so copying that
+      // box while merely removing `absolute` draws a badge a size too large.
+      expect(pill.className).toContain("h-[22px]");
+      expect(pill.className).toContain("text-[10.5px]");
+    }
     // The clause beside the badge, in the app's own words.
     expect(plate.textContent).toContain("created today");
     expect(plate.textContent).toContain("2 lines unresolved");
     // The To buy clause carries its cost. A deck at a legal list you cannot
     // sleeve is explained by what the shop trip costs, not by the count alone.
     expect(plate.textContent).toContain("3 to buy · $12.40");
+
+    // Building and Complete carry NO clause in the app — their count and their
+    // bar are the whole explanation — so a sentence for either would be a
+    // string the deck card never shows.
+    expect(plate.textContent).not.toContain("87 cards");
+    expect(plate.textContent).not.toContain("99 cards");
+    expect(plate.textContent).toContain("87 / 99");
+
+    // Five fills for six statuses: Draft draws an empty track, which is what
+    // an empty track means.
+    const fills = plate.querySelectorAll("[data-status-fill]");
+    expect(fills).toHaveLength(5);
   });
 
   it("draws the decklist marks as rows, at the row's own geometry", () => {
@@ -245,11 +264,18 @@ describe("the figures", () => {
     const plate = figures(container)["marks"];
     // A dot with no size draws at 0x0, and jsdom cannot see that — what a
     // unit test can read is whether the caller supplied one.
-    const dots = [...plate.querySelectorAll("span")].filter((el) =>
-      el.className.toString().includes("rounded-full"),
-    );
-    expect(dots.length).toBeGreaterThanOrEqual(3);
-    for (const dot of dots) expect((dot as HTMLElement).style.width).toBeTruthy();
+    // `rounded-full` alone also matches every mana pip, and a pip carries an
+    // inline width too — so that filter passed with all five dots deleted.
+    // The dot is the only 7px square in the plate.
+    const dots = [...plate.querySelectorAll("span")].filter((el) => {
+      const style = (el as HTMLElement).style;
+      return (
+        el.className.toString().includes("rounded-full") &&
+        style.width === "7px" &&
+        style.height === "7px"
+      );
+    });
+    expect(dots.length, "the ownership dots drew nothing").toBeGreaterThanOrEqual(4);
     // `//` renders only for a two-sided layout; called bare the mark is null.
     // Asserted on the MARK's own element — the row's note also contains the
     // characters, so a textContent sweep passes over a mark that never drew.

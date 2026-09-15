@@ -17,6 +17,8 @@ import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pi
 import { BuyTag } from "../decks/buy-tag";
 import { ProxyTag } from "../decks/proxy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
+import { statusBarStyle } from "../../lib/decks/status-style";
+import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { commandersCopy } from "../../lib/copy/lanes";
 import { FitBar } from "../commanders/fit-bar";
@@ -110,40 +112,76 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
- * All six statuses, each beside the figure that explains it — which is what
- * the entry's caption promises, and a plate of six words alone cannot keep.
+ * All six statuses as the deck card draws them: `[badge] [count] [bar]`, and
+ * the clause underneath for the four statuses that have one.
  *
- * Every clause is a shipped string from `refreshCopy.decks`, never retyped
- * here: a badge is only half of what the reader sees on a deck card, and the
- * figure beside it is the other half.
+ * The bar is here after being declined twice. The decline assumed it meant
+ * replicating `DeckCard`; it does not. `statusBarStyle` is a pure exported
+ * helper returning a width and a token, and the track is a 3px div — so the
+ * bar is shared code used as shared code, and refusing it left two of the six
+ * statuses with nothing to explain them. Building and Complete carry NO detail
+ * sentence in the app (`deck-card.tsx:84, :109`); their count and their bar are
+ * the whole explanation, which is exactly why a plate without the bar could not
+ * teach them.
  */
 function StatusFigure({ width }: { width: AboutWidth }) {
   const detail = refreshCopy.decks;
-  const clause: Record<string, string> = {
+  // Only what the app actually renders. `detailCopies` was used here for
+  // Building and Complete and prints `87 cards` — a string the deck card never
+  // shows for either, because their figure is the count beside the bar.
+  const clause: Partial<Record<StatusPill, string>> = {
     Draft: detail.detailDraft,
-    Building: detail.detailCopies(87),
     Over: detail.detailOver(5),
     Unresolved: detail.detailUnresolved(2),
     "To buy": detail.detailToBuy(3, "$12.40"),
-    Complete: detail.detailCopies(99),
   };
+  const built: Record<StatusPill, number> = {
+    Draft: 0,
+    Building: 87,
+    Over: 104,
+    Unresolved: 99,
+    "To buy": 99,
+    Complete: 99,
+  };
+  const BODY = 99;
   return (
     <Specimen label="status" width={width}>
-      <div className="flex flex-col gap-[8px]">
+      <div className="flex flex-col gap-[10px]">
         {STATUSES.map((status) => (
-          <div key={status} className="flex items-center gap-[10px]">
-            {/* The className is REQUIRED: the component defaults to
-                `TILE_CLASS`, which opens `absolute bottom-[13px] left-[13px]`
-                because its usual home is pinned to a tile's art. Defaulted
-                inside an unpositioned figure, all six leave flow and stack on
-                the page's corner, and this plate draws empty. */}
-            <StatusPillBadge
-              status={status}
-              className="flex h-[24px] flex-none items-center rounded-[6px] px-[9px] font-mono text-[11px] tracking-[0.06em]"
-            />
-            <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-              {clause[status]}
-            </span>
+          <div key={status} className="flex flex-col gap-[4px]">
+            <div className="flex items-center gap-[10px]">
+              {/* The className is REQUIRED and it is the FOOTER's, not the
+                  tile's: the component defaults to `TILE_CLASS`, which opens
+                  `absolute bottom-[13px] left-[13px]` and would pin all six to
+                  the page corner, and the deck card's own footer draws 22px
+                  tall at 10.5px rather than the tile's 24px at 11px. */}
+              <StatusPillBadge
+                status={status}
+                className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+              />
+              <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                {`${built[status]} / ${BODY}`}
+              </span>
+              {/* The track is drawn for every status; the fill is omitted
+                  entirely for Draft, which is what an empty track means. */}
+              <div
+                className="relative h-[3px] flex-1 rounded-full"
+                style={{ background: "var(--border)" }}
+              >
+                {status !== "Draft" && (
+                  <div
+                    data-status-fill
+                    className="absolute top-0 bottom-0 left-0 rounded-full"
+                    style={statusBarStyle(status, built[status], BODY)}
+                  />
+                )}
+              </div>
+            </div>
+            {clause[status] && (
+              <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">
+                {clause[status]}
+              </span>
+            )}
           </div>
         ))}
       </div>
