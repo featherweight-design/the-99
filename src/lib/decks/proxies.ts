@@ -12,6 +12,18 @@ import { db } from "../../db";
  * bug refuses for a different reason, or not at all, and an assertion on
  * `ok === false` alone would pass over both.
  */
+export const PROXY_READ_FAILED = "Could not check that deck just now. Try again.";
+
+/**
+ * Refusing a pull for a card the asking deck prints.
+ *
+ * Its own sentence because the generic refusal — "that deck already has the
+ * copies it needs" — is a claim about the collection, and a printed card means
+ * the deck is covered while owning nothing. Saying it the generic way would put
+ * the app on the wrong side of the one distinction this feature exists to keep.
+ */
+export const PULL_REFUSED_PROXIED = "That deck is running a proxy for this card.";
+
 /**
  * Is this card in this deck right now? A `deck_cards` row, or either commander
  * column.
@@ -34,18 +46,6 @@ export const proxiedMembership = (deckId: string, oracleId: string) => sql`exist
   where d.id = ${deckId}
     and (d.commander_oracle_id = ${oracleId} or d.partner_oracle_id = ${oracleId})
 )`;
-
-export const PROXY_READ_FAILED = "Could not check that deck just now. Try again.";
-
-/**
- * Refusing a pull for a card the asking deck prints.
- *
- * Its own sentence because the generic refusal — "that deck already has the
- * copies it needs" — is a claim about the collection, and a printed card means
- * the deck is covered while owning nothing. Saying it the generic way would put
- * the app on the wrong side of the one distinction this feature exists to keep.
- */
-export const PULL_REFUSED_PROXIED = "That deck is running a proxy for this card.";
 
 /**
  * The oracle ids this deck prints, as a set.

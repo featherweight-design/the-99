@@ -27,8 +27,22 @@ describe("the membership predicate", () => {
     expect(sql).toContain("d.partner_oracle_id");
   });
 
-  it("scopes both arms to the one deck", () => {
-    // Unscoped, any deck's membership would satisfy a mark on this one.
+  it("scopes BOTH arms to the one deck", () => {
+    // Both, and the list arm is the one worth stating: a predicate that kept
+    // `dc.oracle_id` but dropped `dc.deck_id` would let membership in ANOTHER
+    // deck authorize a mark on this one, and every other assertion here would
+    // still pass.
+    expect(sql).toContain("dc.deck_id =");
     expect(sql).toContain("d.id =");
+  });
+
+  it("binds the deck to a parameter on both arms", () => {
+    // Two `$1`s, one per arm: the ids are bound, never interpolated, and a
+    // literal that crept in would be both an injection surface and a predicate
+    // that stopped varying with its argument.
+    const listArm = sql.slice(0, sql.indexOf("union all"));
+    const deckArm = sql.slice(sql.indexOf("union all"));
+    expect(listArm).toMatch(/dc\.deck_id = \$\d/);
+    expect(deckArm).toMatch(/d\.id = \$\d/);
   });
 });
