@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colorLabel, deckIdentity, formatDeckDate } from "./format";
+import { colorLabel, deckIdentity, formatDeckDate, formatShortDeckDate } from "./format";
 
 describe("deckIdentity", () => {
   it("orders a lone primary WUBRG, so its pips match a pair's", () => {
@@ -101,6 +101,34 @@ describe("colorLabel", () => {
     expect(colorLabel(["W", "U", "B", "R", "R"])).toBe("Multi");
     expect(colorLabel(["W", "W", "U", "U", "B", "B"])).toBe("Multi");
     expect(colorLabel(["W", "W"])).toBe("Multi");
+  });
+});
+
+describe("formatShortDeckDate", () => {
+  it("prints the seniority stamp's shape, with no year", () => {
+    expect(formatShortDeckDate(new Date("2026-08-02T12:00:00Z"))).toBe("2 Aug");
+  });
+
+  // The whole reason this formatter exists rather than a bare toLocaleDateString: the stamp is
+  // the evidence behind `first committed wins`, and both instants below are the SAME UTC day
+  // while straddling a local one in the Americas. A zone-sensitive formatter shows a card
+  // committed on the 2nd as the 1st, which is a wrong answer to the only question the stamp
+  // is asked.
+  it("reads the UTC day, not the runtime's", () => {
+    expect(formatShortDeckDate(new Date("2026-08-02T00:30:00Z"))).toBe("2 Aug");
+    expect(formatShortDeckDate(new Date("2026-08-02T23:30:00Z"))).toBe("2 Aug");
+  });
+
+  // en-GB writes `Sept` where every other date in this app writes `Sep`. Two decks stamped by
+  // two formatters would then disagree in a column whose only job is to be compared.
+  it("abbreviates September as the rest of the app does", () => {
+    expect(formatShortDeckDate(new Date("2026-09-09T12:00:00Z"))).toBe("9 Sep");
+  });
+
+  it("agrees with the long form on the day and the month", () => {
+    const d = new Date("2025-12-31T23:59:59Z");
+    expect(formatDeckDate(d)).toBe("31 Dec 2025");
+    expect(formatShortDeckDate(d)).toBe("31 Dec");
   });
 });
 

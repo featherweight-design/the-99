@@ -23,6 +23,10 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/collection", dynamic: false },
   // Reads `getCollectionStats` for the current card count the replace flow quotes back.
   { path: "/collection/replace", dynamic: false },
+  // The receipt for one import. Its money sections are frozen, but its contested rows are read
+  // live against the claim model — so a later replace changes what an older receipt says about
+  // who is short, and a cached one would keep answering for a collection that is gone.
+  { path: "/collection/replace/summary/[uploadId]", dynamic: true },
   { path: "/collection/sets", dynamic: false },
   { path: "/collection/sets/[code]", dynamic: true },
   { path: "/commanders", dynamic: false },

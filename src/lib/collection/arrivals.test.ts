@@ -169,16 +169,30 @@ describe("arrivals — contention", () => {
     const s = buildArrivalsSummary(input({
       ownedBefore: {},
       ownedAfter: { [CARD]: 1 },
-      claims: { [CARD]: { owned: 1, hard: 2 } },
+      claims: { [CARD]: { owned: 1, hard: 2, committedDecks: 2 } },
     }));
-    expect(s.contested).toEqual([{ oracleId: CARD, arrived: 1 }]);
+    // `ownedBefore` rides along frozen: it is what decides whether a commander's option may say
+    // `keeps it`, which claims the deck had the card before this import.
+    expect(s.contested).toEqual([{ oracleId: CARD, arrived: 1, ownedBefore: 0 }]);
   });
 
   it("is not a card that arrived with copies to spare", () => {
     const s = buildArrivalsSummary(input({
       ownedBefore: {},
       ownedAfter: { [CARD]: 2 },
-      claims: { [CARD]: { owned: 2, hard: 2 } },
+      claims: { [CARD]: { owned: 2, hard: 2, committedDecks: 2 } },
+    }));
+    expect(s.contested).toEqual([]);
+  });
+
+  // A shortage is not a contention. One committed deck asking for three copies of a card the
+  // player owns one of is short by two and has nobody to be short against — drawn as a row it
+  // would offer a single option and no decision. Its purchase is reported in `Still to buy`.
+  it("is not a card only one committed deck wants, however many copies it wants", () => {
+    const s = buildArrivalsSummary(input({
+      ownedBefore: {},
+      ownedAfter: { [CARD]: 1 },
+      claims: { [CARD]: { owned: 1, hard: 3, committedDecks: 1 } },
     }));
     expect(s.contested).toEqual([]);
   });
@@ -187,7 +201,7 @@ describe("arrivals — contention", () => {
     const s = buildArrivalsSummary(input({
       ownedBefore: { [CARD]: 1 },
       ownedAfter: { [CARD]: 1 },
-      claims: { [CARD]: { owned: 1, hard: 3 } },
+      claims: { [CARD]: { owned: 1, hard: 3, committedDecks: 2 } },
     }));
     expect(s.contested).toEqual([]);
   });
@@ -223,7 +237,7 @@ describe("arrivals — the empty receipt", () => {
   it("is not empty when only the contested section has rows", () => {
     const s = buildArrivalsSummary(input({
       ownedAfter: { [CARD]: 1 },
-      claims: { [CARD]: { owned: 1, hard: 2 } },
+      claims: { [CARD]: { owned: 1, hard: 2, committedDecks: 2 } },
     }));
     expect(summaryIsEmpty(s)).toBe(false);
   });

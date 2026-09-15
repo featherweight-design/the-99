@@ -1,0 +1,52 @@
+{
+  "feature": "The post-import summary",
+  "note": "One route, two widths, and a fixture it cannot photograph without. `/collection/replace/summary/[uploadId]` needs a CONFIRMED upload carrying a summary_payload, and the contested section only draws where committed demand exceeds supply \u2014 the headless probe account has no committed deck at all, so a run with no fixture photographs a working feature as an empty one. `pnpm seed:summary <userId>` writes that fixture (two committed decks a month apart, and a receipt with all three sections populated) and prints the URL; it takes --clean. SUMMARY_UPLOAD comes from the environment for the same reason the other inventories take their deck id that way: no account's row id belongs in a checked-in file. The second row is the same route with its issues line opened, because IssueInspector reachable after the confirm is the one thing ruled IN scope for this PR that a still photograph of the page would otherwise miss. No `shares` block yet: ContestedCardRow's second surface is /decks/[id]/changes and lands in PR 4, and a shares block naming one route proves nothing. The third row exists because the phone's first screenful ends inside `Still to buy`: the contested section is the one thing this PR adds that a phone shot of the fold cannot show, and a row that photographs the top of the page reads as coverage while proving nothing about it.",
+  "rows": [
+    {
+      "id": "summary",
+      "label": "/collection/replace/summary \u2014 all three sections",
+      "view": "src/components/collection/arrivals-summary.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace/summary/${SUMMARY_UPLOAD}",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "summary-contested",
+      "label": "/collection/replace/summary \u2014 the contested row, below the fold on a phone",
+      "view": "src/components/decks/contested-card-row.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection/replace/summary/${SUMMARY_UPLOAD}",
+          "wait": "h1",
+          "settle": 2500,
+          "scroll": "bottom"
+        }
+      ]
+    },
+    {
+      "id": "summary-issues",
+      "label": "/collection/replace/summary \u2014 the issues line's route back, post-confirm",
+      "view": "src/components/collection/arrivals-summary.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace/summary/${SUMMARY_UPLOAD}",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Look at the file again",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}

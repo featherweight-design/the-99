@@ -42,8 +42,13 @@ export type OwnedCounts = Record<string, number>;
 /** One deck's purchase, as `loadDeckBuyRows` returns it: a positive DEFICIT. */
 export type BuyRow = { deckId: string; oracleId: string; quantity: number };
 
-/** What a claim read says about one arrived card. Version-shaped; see input 3. */
-export type ArrivedClaimState = { owned: number; hard: number };
+/**
+ * What a claim read says about one arrived card. Version-shaped; see input 3.
+ *
+ * `committedDecks` counts CLAIMANTS, not copies, and it is what separates a contested card from
+ * a merely short one: a chooser needs two decks to choose between.
+ */
+export type ArrivedClaimState = { owned: number; hard: number; committedDecks: number };
 
 /** A CSV line whose name matched no card. Carries no oracle id — that is what unmatched means. */
 export type UnmatchedLine = { name: string; line: number };
@@ -66,11 +71,27 @@ export type StillRow = { deckId: string; oracleId: string; owed: number; reason:
  * row's allocation is read live. What is frozen is which cards this import left
  * contested, and how many copies of each it brought.
  */
-export type ContestedRow = { oracleId: string; arrived: number };
+export type ContestedRow = {
+  oracleId: string;
+  arrived: number;
+  /**
+   * Copies held BEFORE this import. Frozen with the rest of the receipt, and what decides
+   * between `keeps it` and `gets it` on a commander's option: `keeps it` says the deck had the
+   * card before the import, which is false when the copy it is holding is the one that just
+   * turned up.
+   */
+  ownedBefore: number;
+};
 
 export type ArrivalsSummary = {
-  /** Bumped when the shape changes, so a stored payload stays readable by a later build. */
-  version: 1;
+  /**
+   * Bumped when the shape changes, so a stored payload stays readable by a later build.
+   *
+   * 2 adds `ContestedRow.ownedBefore`. A version-1 receipt has no such field, and the reader
+   * treats its absence as nought — which makes `keeps it` unavailable on those rows rather than
+   * wrong, the safe direction for a word that claims the deck had the card before the import.
+   */
+  version: 2;
   totalBefore: number;
   totalAfter: number;
   /** Copies gained and lost across the whole collection, not per deck. */
@@ -192,10 +213,18 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
   // A card this import brought copies of, that more committed decks want than the
   // collection now holds. Arrivals only: a card that was already contested and did not
   // move is not news about this import, and the deck pages have always shown it.
+  //
+  // TWO DECKS, NOT TWO COPIES OF DEMAND. `hard > owned` is a shortage, which is a different
+  // question: one committed deck asking for three Relentless Rats with one copy owned is short
+  // by two and has nobody to be short AGAINST. Drawn as a contested row it would offer a single
+  // option and no decision — a chooser with one choice. Its purchase is already reported in
+  // `Still to buy`, which is where a shortage belongs.
   const contested: ContestedRow[] = [];
   for (const [oracleId, state] of Object.entries(claims)) {
     const delta = (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0);
-    if (delta > 0 && state.hard > state.owned) contested.push({ oracleId, arrived: delta });
+    if (delta > 0 && state.committedDecks > 1 && state.hard > state.owned) {
+      contested.push({ oracleId, arrived: delta, ownedBefore: ownedBefore[oracleId] ?? 0 });
+    }
   }
 
   const cards: Record<string, string> = {};
@@ -212,7 +241,7 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
   }
 
   return {
-    version: 1,
+    version: 2,
     totalBefore: total(ownedBefore),
     totalAfter: total(ownedAfter),
     arrived,

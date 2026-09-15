@@ -35,8 +35,10 @@ export function ReplaceFlow({
     setConfirmError(null);
     try {
       await confirmUpload(preview.uploadId);
-      router.push("/collection");
-      router.refresh();
+      // The receipt, not the collection. A typed REPLACE is the most destructive action in
+      // the app and was the only one with no receipt; the summary route is keyed on the
+      // upload id, so it survives a reload and stays linkable.
+      router.push(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : "Confirm failed");
     } finally {
