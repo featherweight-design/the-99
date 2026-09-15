@@ -61,7 +61,10 @@ so `statusPill` can read `Complete`; the `"proxied"` member on `BucketedAdd.buck
 `bucketAdds` filing it. Unit tests throughout.
 
 ### PR 3 — the write
-`setCardProxied` with deck authorization **and** membership validation in one transaction;
+`setCardProxied` with deck authorization **and** membership validation in one transaction,
+taking the deck row's lock (`select 1 from decks where id = $1 for update`) **before** it
+validates — otherwise the validate-insert pair can straddle a concurrent removal's prune and
+leave the orphan the prune exists to prevent;
 `claimSurfaces` gaining the `/decks/[id]` pattern and the literal `/collection/proxies`;
 `src/lib/copy/proxies.ts` transcribed from the handoff's copy file, with the two em-dash
 strings recast and the ambiguous subtitle fixed.

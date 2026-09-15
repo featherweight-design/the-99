@@ -32,6 +32,18 @@ type Runner = Pick<Tx, "execute">;
  *
  * Idempotent, and safe to call when nothing was removed. `prune-proxies.test.ts`
  * fails when a `delete(deckCards)` appears without one of these beside it.
+ *
+ * THIS STATEMENT ALONE DOES NOT CLOSE THE RACE, and the other half is the
+ * writer's. A proxy write that validated membership, then inserted, could have
+ * its insert land after a concurrent removal's prune has already run — leaving
+ * exactly the orphan this exists to prevent, on a card that is no longer in the
+ * deck. So `setCardProxied` takes the deck row's lock first:
+ *
+ *   select 1 from decks where id = $1 for update
+ *
+ * which is the lock `removeCardFromDeck` and `clearAutoCards` already take
+ * before they touch a list, so the two serialise on the same row and the
+ * validate-insert pair cannot straddle a prune.
  */
 export async function pruneOrphanProxies(tx: Runner, deckId: string): Promise<void> {
   await tx.execute(sql`

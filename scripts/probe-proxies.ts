@@ -168,6 +168,29 @@ try {
   await proxy(printer.id, cmdB);
   check("a proxied commander releases its copy", await free(cmdB, holder.id), 1);
 
+  // 3a. A BREW'S ARMS. `all_claims` has six, and everything above exercises the
+  //     committed three. A brew claims from its LIVE list and its own commander
+  //     columns, so an anti-join accidentally scoped to `newest_version` would
+  //     pass every check so far while a brew's proxied card went on claiming.
+  const { rows: [brew] } = await fixture.execute<{ id: string }>(sql`
+    insert into decks (user_id, name, commander_oracle_id)
+    values (${USER}, 'Brew', ${cmdA}) returning id
+  `);
+  await fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity) values (${brew.id}, ${card}, 1)
+  `);
+  check("a brew's list card claims softly", await claimants(card, holder.id), 1);
+  await proxy(brew.id, card);
+  check("a proxied brew list card is not a claim", await claimants(card, holder.id), 0);
+  check("a proxied brew card leaves its buy row", await buyCopies(brew.id, card), 0);
+  //     …and the brew's commander arm, which is a different arm again: cmdA is
+  //     the holder's commander too, so the brew is the second claimant on it.
+  check("a brew's commander claims", await claimants(cmdA, holder.id), 1);
+  await proxy(brew.id, cmdA);
+  check("a proxied brew commander is not a claim", await claimants(cmdA, holder.id), 0);
+  //     The brew leaves; every figure below is about the two sleeved decks again.
+  await fixture.execute(sql`delete from decks where id = ${brew.id}`);
+
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
   //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every
   //    write that can shrink a deck's list calls.

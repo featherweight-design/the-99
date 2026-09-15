@@ -2,9 +2,8 @@
 
 Date: 2026-09-14
 Branch: `spec/deck-proxies`
-Handoff: not yet commissioned. The three UI surfaces in this spec are blocked on one;
-the backend is not.
-Status: proposed
+Handoff: `design/design_handoff_the99_proxies/` — R1 + R2, audited 🟢 Green on 2026-09-15.
+Status: accepted; see the addendum at the foot of this file for what the design rounds added
 
 ## Problem
 
@@ -265,9 +264,16 @@ One server action, `setCardProxied(deckId, oracleId, proxied)`:
    changes the new proxy list. Both are added: the `/decks/[id]` pattern, and the
    literal `/collection/proxies`.
 
-**No cleanup path.** Orphan rows are inert by construction (see the data model),
-so no write prunes them and no future write has to remember to. Deck deletion
-cascades anyway.
+**Cleanup is `pruneOrphanProxies`, at all six list-shrinking writes** — see the
+data model above, which supersedes the "no cleanup path" this section claimed in
+the spec's first version. Deck deletion cascades and needs none of it.
+
+**The write takes the deck row's lock before it validates.** `select 1 from decks
+where id = $1 for update`, which is the lock `removeCardFromDeck` and
+`clearAutoCards` already take. Without it, a proxy write could validate
+membership, then have its insert land after a concurrent removal's prune has
+run, leaving an orphan for a card that is no longer in the deck — the one hole a
+reconcile statement cannot close from its own side.
 
 **Unproxying can create a shortfall.** The deck starts claiming again and may
 find its copy senior-claimed elsewhere. That is the same arithmetic a pull
