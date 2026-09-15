@@ -98,11 +98,15 @@ export function ContestedCardRow({
   const spare = Math.max(card.owned - card.claimants.reduce((n, c) => n + c.commanderCopies, 0), 0);
   const nothingToChoose = spare === 0;
   const folded = card.claimants.some((c) => c.commanderCopies > 0 && c.quantity > c.commanderCopies);
-  // Copies already allocated by the default, for the cap beside the heading — CLAMPED to what
-  // this import brought. The allocation covers every copy owned, arrivals and older copies
-  // alike, so with one old copy and two arrivals it can reach three and the heading would
-  // claim more new copies were given out than turned up.
-  const givenOut = Math.min(card.claimants.reduce((n, c) => n + c.allocated, 0), card.arrived);
+  // Copies already allocated that COULD have gone elsewhere, for the cap beside the heading.
+  // Commander copies are not among them — they cannot be given away at all, so counting one
+  // says two copies were handed out when only one was ever in play. Clamped to what this import
+  // brought as well: the allocation covers every copy owned, so with one old copy and two
+  // arrivals it would otherwise claim three new copies were given.
+  const givenOut = Math.min(
+    card.claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
+    card.arrived,
+  );
   // The deck the shortage actually falls on — the one whose ask is not covered. Naming the
   // first commander claimant instead points at a deck that is keeping its copy, which is the
   // opposite of what the note says about it.
@@ -147,7 +151,11 @@ export function ContestedCardRow({
           // says both — `keeps it` alone would hide the second copy and contradict the heading,
           // which has just said there is a spare to give.
           const spareToThisDeck = c.allocated - Math.min(c.commanderCopies, c.allocated);
-          const outcome = c.commanderCopies > 0 && c.allocated > 0
+          // `keeps it` says the deck had the card BEFORE the import, so it is only available
+          // when a copy predates it. A first arrival landing on a commander's claim is a deck
+          // that GETS the card, however protected that copy is from here on.
+          const predates = card.ownedBefore > 0;
+          const outcome = c.commanderCopies > 0 && c.allocated > 0 && predates
             ? (spareToThisDeck > 0
                 ? copy.contested.keepsAndGets(Math.min(c.commanderCopies, c.allocated), spareToThisDeck)
                 : copy.contested.keeps)

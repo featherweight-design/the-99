@@ -71,7 +71,17 @@ export type StillRow = { deckId: string; oracleId: string; owed: number; reason:
  * row's allocation is read live. What is frozen is which cards this import left
  * contested, and how many copies of each it brought.
  */
-export type ContestedRow = { oracleId: string; arrived: number };
+export type ContestedRow = {
+  oracleId: string;
+  arrived: number;
+  /**
+   * Copies held BEFORE this import. Frozen with the rest of the receipt, and what decides
+   * between `keeps it` and `gets it` on a commander's option: `keeps it` says the deck had the
+   * card before the import, which is false when the copy it is holding is the one that just
+   * turned up.
+   */
+  ownedBefore: number;
+};
 
 export type ArrivalsSummary = {
   /** Bumped when the shape changes, so a stored payload stays readable by a later build. */
@@ -207,7 +217,7 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
   for (const [oracleId, state] of Object.entries(claims)) {
     const delta = (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0);
     if (delta > 0 && state.committedDecks > 1 && state.hard > state.owned) {
-      contested.push({ oracleId, arrived: delta });
+      contested.push({ oracleId, arrived: delta, ownedBefore: ownedBefore[oracleId] ?? 0 });
     }
   }
 

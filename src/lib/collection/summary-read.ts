@@ -41,6 +41,8 @@ export type ContestedCard = {
   cardName: string;
   /** Copies this import brought. Frozen — it is a fact about the import, not about now. */
   arrived: number;
+  /** Copies held before it. Frozen too, and what `keeps it` is allowed to be said about. */
+  ownedBefore: number;
   /** Copies the collection holds now. Live. */
   owned: number;
   claimants: ContestedClaimant[];
@@ -149,6 +151,9 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
       oracleId: row.oracleId,
       cardName: summary?.names.cards[row.oracleId] ?? "",
       arrived: row.arrived,
+      // A receipt written before this field existed reads as nought, which makes `keeps it`
+      // unavailable rather than wrong — the safe direction.
+      ownedBefore: row.ownedBefore ?? 0,
       owned: a.owned,
       claimants: allocate(a.owned, committed),
       brewNames: a.claims.filter((c) => !c.mature).map((c) => c.name),

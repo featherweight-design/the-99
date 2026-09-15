@@ -12,6 +12,10 @@ function card(over: Partial<ContestedCard> = {}): ContestedCard {
     oracleId: "o1",
     cardName: "Brushland",
     arrived: 1,
+    // A copy predated this import, so `keeps it` is available to a commander's option — the
+    // word says the deck had the card before the import, and the first-arrival case must not
+    // borrow it.
+    ownedBefore: 1,
     owned: 1,
     brewNames: [],
     claimants: [
@@ -198,6 +202,45 @@ describe("ContestedCardRow", () => {
     const { container } = render(<ContestedCardRow card={card()} />);
     const mark = container.querySelector("li > span:first-child > span[aria-hidden]");
     expect(mark?.getAttribute("style")).toContain("border-radius: 999px");
+  });
+
+  // `keeps it` claims the deck had the card before the import. On a first arrival it did not,
+  // however protected that copy is from here on.
+  it("says a commander GETS a copy that has only just arrived", () => {
+    render(<ContestedCardRow card={card({
+      ownedBefore: 0,
+      claimants: [
+        {
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          since: AUG, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d2", deckName: "Lists It", quantity: 1, commanderCopies: 0,
+          since: SEP, versionNumber: 1, allocated: 0,
+        },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.gets)).toBeTruthy();
+    expect(screen.queryByText(copy.contested.keeps)).toBeNull();
+  });
+
+  // A commander's copy is not giveable, so it is not one of the copies the cap counts out.
+  it("counts only giveable copies in the cap", () => {
+    render(<ContestedCardRow card={card({
+      arrived: 2,
+      owned: 2,
+      claimants: [
+        {
+          deckId: "d1", deckName: "Led By It", quantity: 1, commanderCopies: 1,
+          since: AUG, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d2", deckName: "Lists It", quantity: 2, commanderCopies: 0,
+          since: SEP, versionNumber: 1, allocated: 1,
+        },
+      ],
+    })} />);
+    expect(screen.getByText(copy.contested.cap(1, 2))).toBeTruthy();
   });
 
   it("names a brew and excludes it, rather than counting it or offering it", () => {

@@ -171,7 +171,9 @@ describe("arrivals — contention", () => {
       ownedAfter: { [CARD]: 1 },
       claims: { [CARD]: { owned: 1, hard: 2, committedDecks: 2 } },
     }));
-    expect(s.contested).toEqual([{ oracleId: CARD, arrived: 1 }]);
+    // `ownedBefore` rides along frozen: it is what decides whether a commander's option may say
+    // `keeps it`, which claims the deck had the card before this import.
+    expect(s.contested).toEqual([{ oracleId: CARD, arrived: 1, ownedBefore: 0 }]);
   });
 
   it("is not a card that arrived with copies to spare", () => {

@@ -39,6 +39,7 @@ function contestedCard(): ContestedCard {
     oracleId: CARD,
     cardName: "Brushland",
     arrived: 1,
+    ownedBefore: 0,
     owned: 1,
     brewNames: [],
     claimants: [
