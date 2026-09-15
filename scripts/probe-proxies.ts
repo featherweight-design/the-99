@@ -347,6 +347,44 @@ try {
     values (${USER}, ${partner}, 1, 'probe')
   `);
 
+  // 3e. THE WRITE'S OWN RULES, against the real table. The server action itself
+  //     needs a signed-in request, so what is proved here is the pair of
+  //     invariants its SQL carries: a mark for a card the deck does not hold is
+  //     refused by the membership predicate, and marking is idempotent.
+  const held = async (deckId: string, oracleId: string) => {
+    const { rows } = await fixture.execute<{ held: boolean }>(sql`
+      select exists (
+        select 1 from deck_cards dc
+        where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
+        union all
+        select 1 from decks d
+        where d.id = ${deckId}
+          and (d.commander_oracle_id = ${oracleId} or d.partner_oracle_id = ${oracleId})
+      ) as held
+    `);
+    return rows[0]?.held ?? null;
+  };
+  const { rows: [stranger] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+    order by oracle_id desc limit 1
+  `);
+  check("a card the deck holds passes the membership test", await held(printer.id, card), true);
+  check("this deck's commander passes it too", await held(printer.id, cmdB), true);
+  check("a card the deck never held does not", await held(printer.id, stranger.oracle_id), false);
+
+  //     Idempotent: the control's second press is the state the reader can
+  //     already see, not an error.
+  await fixture.execute(sql`
+    insert into deck_proxies (deck_id, oracle_id) values (${printer.id}, ${card})
+    on conflict (deck_id, oracle_id) do nothing
+  `);
+  const { rows: [again] } = await fixture.execute<{ n: number }>(sql`
+    select count(*)::int as n from deck_proxies
+    where deck_id = ${printer.id} and oracle_id = ${card}
+  `);
+  check("marking twice is one mark", again.n, 1);
+
   // 4. THE SLOT GOES, THE STATEMENT GOES. A proxy is one deck's answer about one
   //    slot, so the row dies with the slot — `pruneOrphanProxies`, which every
   //    write that can shrink a deck's list calls.

@@ -342,10 +342,16 @@ describe("resolveUnresolvedRow", () => {
     // Every other deck's review page comes with them by route pattern: a
     // membership change here decides whether a row over there still offers a
     // pull, and `claimSurfaces` names this deck's review page alone.
+    // `/decks/[id]` and `/collection/proxies` ride along since proxies: a claim
+    // change moves figures on OTHER decks' own pages — the copy it frees belongs
+    // to whichever deck was going short for it — and the proxy list reads the
+    // same facts.
     expect(stub.state.revalidated).toEqual([
       ...claimSurfaces(DECK),
       "/commanders/[slug]",
       "/decks/[id]/changes",
+      "/decks/[id]",
+      "/collection/proxies",
     ]);
     // And the reader's cached list payloads, which the revalidated pages read.
     expect(stub.state.updatedTags).toEqual(["user-lists:user_1"]);
