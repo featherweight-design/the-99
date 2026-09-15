@@ -39,10 +39,49 @@ export type DeckClaim = {
    */
   commander: boolean;
   /**
+   * When this card entered this deck's committed version, as EPOCH MILLIS.
+   *
+   * Millis rather than the timestamp's own rendering: the column is `timestamp`
+   * without time zone, so `jsonb_build_object` emits `2026-08-02T12:00:00` with no
+   * zone and `new Date()` reads that as LOCAL time. This repository has shipped
+   * that bug once already.
+   *
+   * Null for a brew, which has no version and therefore no seniority — the same
+   * null the ordering reads as "junior to everything committed".
+   *
+   * Optional on the type, always emitted by the query. Nineteen test files build
+   * `DeckClaim` literals and none of them care about seniority ordering; making it
+   * required would be a mechanical edit to all nineteen for nothing.
+   */
+  since?: number | null;
+  /**
+   * The number of the version this claim comes from — the `v7` of a `v7 · 2 Aug`
+   * stamp. Null for a brew, and optional for the same reason as `since`.
+   */
+  versionNumber?: number | null;
+  /**
+   * How many of `quantity` this deck holds as its commander or partner.
+   *
+   * `commander` above is this being greater than zero, and stays because that is
+   * what every current reader wants. This exists because the two are NOT the same
+   * question once a copy can be given away: a deck holding the card as its
+   * commander AND on its own list folds into one claim of quantity 2, of which only
+   * the list copy may be reserved. A boolean can only make that row wholly inert,
+   * which hides a legal choice.
+   */
+  commanderCopies?: number;
+  /**
    * `free` counts this claim, so releasing it could relieve the vantage deck's
    * shortfall. False for a sleeved deck that is JUNIOR to the vantage on this
    * card: seniority already leaves a junior claim out of `free`, so taking its
    * copy away moves no figure and costs that deck its slot for nothing.
+   *
+   * RESERVATIONS DO NOT ENTER THIS FLAG. A deck displaced by another deck's
+   * reservation is not offered a pull, and that is deliberate: its route back is to
+   * change the pick, which is reversible and cuts no version, where a pull cuts one.
+   * An exception here was tried and removed — it is wrong for a partial reservation,
+   * since pulling one copy from a deck asking for two still leaves its reservation
+   * granting one and moves no figure at all.
    *
    * True for every sleeved claim when there is no vantage deck, and when the
    * vantage has not sleeved this card — both cases where `free` subtracts the

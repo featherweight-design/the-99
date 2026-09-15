@@ -17,7 +17,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { loadAvailability } from "../src/lib/decks/availability-query";
+import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -25,6 +25,14 @@ const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-claim-${Date.now()}`;
+// The reservation section builds its own fixture under its own id. It needs a
+// contested card that IS a legendary creature — two of its cases hand a deck the
+// card as its commander — and the section above forbids that overlap outright,
+// so the two cannot share a fixture.
+const USER_R = `probe-reserve-${Date.now()}`;
+// And the commander ceiling gets a third, for the reason its own header gives: its
+// figures are only computable against a fixture where nothing else claims the card.
+const USER_C = `probe-ceiling-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -51,6 +59,475 @@ const pickCards = async () => {
   if (rows.length < 2 || !subject) throw new Error("catalog is empty — seed it first");
   return { cmdA: rows[0].oracle_id, cmdB: rows[1].oracle_id, card: subject.oracle_id };
 };
+
+// ── RESERVATIONS ──────────────────────────────────────────────────────────────
+//
+// card_assignments overriding seniority. Its own fixture, its own user id, and a
+// LEGENDARY contested card, because two of these cases give a deck that card as
+// its commander — the overlap pickCards above refuses for the seniority section.
+//
+// What each case is worth, since several of them pass for the wrong reason if the
+// fixture is even slightly off:
+//
+//  * The baseline pair is what makes every later figure readable. Without it a
+//    reservation that changed nothing would look identical to one that worked.
+//  * The ask cap and the supply cap fail in OPPOSITE directions — one grants too
+//    much, one grants nothing — so a run that only checked "the junior deck is
+//    covered" would pass over both.
+//  * The commander cases are the only proof the ceiling is in the arithmetic. A
+//    chooser that merely refuses to draw a commander option passes every other
+//    check here.
+async function reservationSection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 3
+  `);
+  if (legends.length < 3) throw new Error("catalog is empty — seed it first");
+  const card = legends[0].oracle_id;
+  const cmdA = legends[1].oracle_id;
+  const cmdB = legends[2].oracle_id;
+
+  const own = async (copies: number) => {
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_R}`);
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_R}, ${card}, ${copies}, 'probe')
+    `);
+  };
+  const free = async (deckId: string) => {
+    const a = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: deckId });
+    return a.get(card)?.free ?? null;
+  };
+  const claimOn = async (vantage: string, holder: string) => {
+    const a = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage });
+    return a.get(card)?.claims.find((c) => c.id === holder) ?? null;
+  };
+  const makeDeck = async (name: string, cmd: string) => {
+    const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_R}, ${name}, ${cmd}) returning id
+    `);
+    return d.id;
+  };
+  // `ago` is minutes, so two versions committed in one run still order.
+  const commit = async (
+    deckId: string, cmd: string, number: number,
+    opts: { holds?: number; ago?: number } = {},
+  ) => {
+    const ago = opts.ago ?? 0;
+    const { rows: [v] } = await fixture.execute<{ id: string; committed_at: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${deckId}, ${number}, now() - (${ago} * interval '1 minute'), ${cmd},
+              now() - (${ago} * interval '1 minute'))
+      returning id, committed_at
+    `);
+    if (opts.holds) {
+      await fixture.execute(sql`
+        insert into deck_version_cards (version_id, oracle_id, quantity, since)
+        values (${v.id}, ${card}, ${opts.holds}, ${v.committed_at})
+      `);
+    }
+    return v.id;
+  };
+  const assign = async (deckId: string, copies = 1, ago = 0) => {
+    await fixture.execute(sql`
+      insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
+      values (${USER_R}, ${card}, ${deckId}, ${copies}, now() - (${ago} * interval '1 minute'))
+      on conflict (user_id, oracle_id, deck_id) do update
+        set copies = ${copies}, created_at = excluded.created_at
+    `);
+  };
+  const clearAssignments = () =>
+    fixture.execute(sql`delete from card_assignments where user_id = ${USER_R}`);
+
+  try {
+    await own(1);
+    // A committed the card first, B second. Both list one copy; one copy exists.
+    const a = await makeDeck("Senior list", cmdA);
+    const b = await makeDeck("Junior list", cmdB);
+    await commit(a, cmdA, 1, { holds: 1, ago: 60 });
+    await commit(b, cmdB, 1, { holds: 1, ago: 30 });
+    for (const d of [a, b]) {
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d}, ${card}, 1)
+      `);
+    }
+
+    // 1. WITH NO ROWS IN THE TABLE, seniority answers exactly as it did before
+    //    reservations existed. This is the claim that the model change is inert,
+    //    measured rather than asserted.
+    check("inert: the senior deck is covered", await free(a), 0);
+    check("inert: the junior deck buys", await free(b), -1);
+
+    // 2. THE HEADLINE. A reservation for the junior deck beats an earlier `since`,
+    //    and the senior deck is the one told to buy. No list was edited either way.
+    await assign(b);
+    check("a reservation beats an earlier since", await free(b), 0);
+    check("the displaced senior deck buys instead", await free(a), -1);
+
+    // 2b. THE OTHER READ SITE. loadDeckBuyRows is what the deck tile, the Shopping
+    //     list and the price strip bill from, and it computes the same allocation
+    //     through a second, independently written expression. A reservation that
+    //     moved `free` and not this one would leave the deck page and the receipt
+    //     disagreeing about the same card — which is the exact class of defect the
+    //     three-term decomposition exists to prevent, so it is asserted rather than
+    //     assumed. (With the reservation terms dropped from this query alone, the
+    //     figures below swap.)
+    const owes = async (deckId: string) => {
+      const rows = await loadDeckBuyRows(USER_R, [deckId]);
+      return rows.filter((r) => r.oracleId === card).reduce((n, r) => n + r.quantity, 0);
+    };
+    check("the displaced senior deck is billed for a copy", await owes(a), 1);
+    check("and the reserving deck is billed for none", await owes(b), 0);
+
+    // 2b-ii. RESERVATIONS DO NOT TOUCH THE PULL GUARD. `senior` gates whether a pull
+    //     is offered and stays a pure seniority question: a junior claim is not a pull
+    //     source, reservation or no reservation. A deck displaced by somebody's pick
+    //     gets its copy back by CHANGING THE PICK — reversible, and it cuts nobody a
+    //     version — where a pull cuts one. An exception here was added during review
+    //     and then removed: it is wrong for a partial reservation, since pulling one
+    //     copy from a deck asking for two leaves its reservation granting one and
+    //     moves no figure at all. See the note on DeckClaim.senior.
+    const seniorFlag = async (vantage: string, holder: string) => {
+      const av = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage });
+      return av.get(card)?.claims.find((c) => c.id === holder)?.senior ?? null;
+    };
+    check("a reservation does not make its holder a pull source",
+      await seniorFlag(a, b), false);
+
+    // 2c. OFF ANY DECKLIST. With no vantage deck, `free` means what it has always
+    //     meant — copies not sleeved in a committed deck — and a reservation must not
+    //     move it: a reserved copy is still sleeved in the same deck it was. This is
+    //     the branch that reads the UNRESERVED hard total, and it exists only because
+    //     reserved copies are subtracted separately; reading the raw hard total there
+    //     subtracts them twice. Nothing else in this file takes this read, so the
+    //     branch is unproven without it. (With the split reverted this is the only
+    //     check that fails.)
+    const offDecklist = async () => {
+      const av = await loadAvailability(USER_R, { oracleIds: [card] });
+      return av.get(card)?.free ?? null;
+    };
+    // Two committed decks each claim the one copy, so this reads -1 with or without
+    // a reservation — that invariance IS the check. Reading the raw hard total here
+    // subtracts the reserved copy a second time and it reads -2.
+    check("off any decklist a reservation moves nothing", await offDecklist(), -1);
+
+    // 3. Capped at the deck's own ask — and the SUPPLY has to be generous for this
+    //    case to measure anything. With one copy owned the supply ceiling binds
+    //    first, so a reservation of three grants one whether or not the ask is
+    //    capped, and the check passes over a build with the cap removed (confirmed:
+    //    it did). With three copies owned the ask is the only thing standing between
+    //    a reservation of three and three granted copies, and the senior deck's
+    //    surplus is what reports it: 1 with the cap, -1 without.
+    await own(3);
+    await assign(b, 3);
+    check("a reservation is capped at the deck's ask", await free(a), 1);
+    check("and the reserving deck is covered", await free(b), 1);
+    await own(1);
+
+    // 4. Capped at the supply left when its turn comes. The senior deck reserves
+    //    too, LATER, against a card with nothing left: it grants nothing, and
+    //    neither figure moves. Without the window frame this case grants both.
+    await assign(b, 1, 10);
+    await assign(a, 1, 5);
+    check("a later reservation with no supply left grants nothing", await free(b), 0);
+    check("and the earlier reservation still holds", await free(a), -1);
+
+    // 5. Two copies, two reservations, both honoured.
+    await own(2);
+    check("two copies cover both reservations", await free(a), 0);
+    check("from either side", await free(b), 0);
+
+    // 5b. A RESERVED SENIOR IS NOT ALSO A SENIOR CLAIM. Three copies, two of them
+    //     reserved to a and b, and a third deck holding neither: it takes the copy
+    //     that is left. Counting a reserved claim in the seniority term as well as in
+    //     reserved_others bills that third deck twice for the same two copies and it
+    //     reads -1. The remainder cap hides this whenever the remainder is 0, which
+    //     is every other case in this section — confirmed: with the double count put
+    //     back, this is the only check in the file that fails.
+    await own(3);
+    const third = await makeDeck("Third list", cmdB);
+    await commit(third, cmdB, 1, { holds: 1, ago: 5 });
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${third}, ${card}, 1)
+    `);
+    await assign(a, 1, 40);
+    await assign(b, 1, 35);
+    check("a reserved senior claim is not counted twice", await free(third), 0);
+    await fixture.execute(sql`delete from decks where id = ${third}`);
+    await clearAssignments();
+    // Back to the two copies case 6 is written against.
+    await own(2);
+
+    // 6. NO SHORTAGE, WITH A LIVE RESERVATION — the state a player reaches by
+    //    choosing during a shortage and then buying the second copy. What must not
+    //    move is a PURCHASE: neither deck buys, before or after. `free` is not a
+    //    purchase — it is this deck's surplus — and it does move, from 1 to 0,
+    //    because a copy reserved to the other deck is not this deck's spare. That is
+    //    the same reading seniority already gives, with the reservation making a
+    //    junior claim senior for one copy.
+    //
+    //    Asserted rather than deleted: this case previously cleared the reservation
+    //    first, and so proved nothing about a reservation outliving its shortage.
+    await own(2);
+    await assign(b);
+    check("no shortage: the reserving deck buys nothing", await owes(b), 0);
+    check("no shortage: the other deck buys nothing either", await owes(a), 0);
+    check("and its surplus is the copy that is genuinely spare", await free(a), 0);
+    // Then with the reservation gone, the spare copy is the senior deck's again.
+    await clearAssignments();
+    check("with the reservation cleared the surplus returns", await free(a), 1);
+
+    // 7. The stamp the chooser draws its order and its `v7 · 2 Aug` from.
+    const senior = await claimOn(b, a);
+    check("a committed claim carries its version number", senior?.versionNumber, 1);
+    // The EXACT value, not just its type. `since` is promised as epoch millis, and a
+    // regression to epoch seconds — or to any other numeric stamp — stays a number
+    // while the UI renders 1970. The fixture knows what it inserted, so it compares.
+    const { rows: [vsince] } = await fixture.execute<{ ms: string }>(sql`
+      select (extract(epoch from vc.since) * 1000)::bigint::text as ms
+      from deck_version_cards vc
+      join deck_versions v on v.id = vc.version_id
+      where v.deck_id = ${a} and vc.oracle_id = ${card}
+    `);
+    check("a committed claim carries its since as epoch millis",
+      String(senior?.since), vsince.ms);
+    check("a list copy is no commander copies", senior?.commanderCopies, 0);
+
+    // 8. A BREW IS NOT RESERVABLE. It claims softly by design, and a reservation
+    //    for one would let it make a sleeved deck short — the inversion the whole
+    //    model is built to prevent. The join to the committed claim refuses it
+    //    with no rule of its own.
+    await own(1);
+    const brew = await makeDeck("Brew", cmdB);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${brew}, ${card}, 1)
+    `);
+    await assign(brew);
+    check("a reservation naming a brew grants nothing", await free(a), 0);
+    const brewClaim = await claimOn(a, brew);
+    check("and a brew's claim carries no version", brewClaim?.versionNumber, null);
+    check("nor a since stamp", brewClaim?.since, null);
+    await clearAssignments();
+
+    // 9. A DRAFT-ONLY ADD IS NOT RESERVABLE either, and for the same reason read
+    //    the other way: a sleeved deck's claim states its VERSION, so a card it
+    //    holds only in its draft has no committed claim to reserve against.
+    //    Without this a draft add could displace a hard claimant, which is the
+    //    precise thing seniority exists to prevent.
+    const drafter = await makeDeck("Draft add", cmdB);
+    await commit(drafter, cmdB, 1, { ago: 20 });
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${drafter}, ${card}, 1)
+    `);
+    await assign(drafter);
+    check("a reservation on a draft-only add grants nothing", await free(a), 0);
+    check("and the drafting deck still buys its copy", await free(drafter), -1);
+    await clearAssignments();
+
+    // 12. The row goes with the deck. LAST, because it deletes a deck every case
+    //     above depends on.
+    await assign(b);
+    await fixture.execute(sql`delete from decks where id = ${b}`);
+    const { rows: left } = await fixture.execute<{ n: number }>(sql`
+      select count(*)::int as n from card_assignments where user_id = ${USER_R}
+    `);
+    check("a reservation is deleted with its deck", left[0].n, 0);
+  } finally {
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_R}`);
+    await fixture.execute(sql`delete from decks where user_id = ${USER_R}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_R}`);
+  }
+}
+
+// ── THE COMMANDER CEILING ─────────────────────────────────────────────────────
+//
+// Its own fixture, and that is not tidiness. Every figure here is a subtraction
+// over EVERY deck that claims the card, so the section above — which deliberately
+// accumulates a brew, a draft-add deck and two list claimants — cannot host a case
+// whose expected value is worked out by hand. Read against that fixture the folded
+// case reports -2, which is correct arithmetic and proves nothing about commanders.
+//
+// What it proves: a commander's copy is not reservable, and on a folded claim
+// exactly the list half is. The ceiling lives in the arithmetic, so a chooser that
+// merely declines to draw a commander option would pass nothing here.
+async function commanderCeilingSection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 2
+  `);
+  if (legends.length < 2) throw new Error("catalog is empty — seed it first");
+  const card = legends[0].oracle_id;
+  const otherCmd = legends[1].oracle_id;
+
+  const own = async (copies: number) => {
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_C}`);
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_C}, ${card}, ${copies}, 'probe')
+    `);
+  };
+  const free = async (deckId: string) => {
+    const a = await loadAvailability(USER_C, { oracleIds: [card], excludeDeckId: deckId });
+    return a.get(card)?.free ?? null;
+  };
+
+  try {
+    await own(1);
+    // The commander deck is SENIOR here, which is the case worth testing: it holds
+    // the copy, and the question is whether a reservation can take it. (Junior, it
+    // never had the copy, so a refused reservation would change nothing and the
+    // check would measure nothing — which is exactly how the first draft of this
+    // passed while asserting the wrong numbers.)
+    const { rows: [cmdDeck] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_C}, 'Led by it', ${card}) returning id
+    `);
+    const { rows: [lister] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_C}, 'Lists it', ${otherCmd}) returning id
+    `);
+    const { rows: [vc] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${cmdDeck.id}, 1, now() - interval '90 minutes', ${card},
+              now() - interval '90 minutes')
+      returning id
+    `);
+    const { rows: [vl] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${lister.id}, 1, now() - interval '60 minutes', ${otherCmd},
+              now() - interval '60 minutes')
+      returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      values (${vl.id}, ${card}, 1, now() - interval '60 minutes')
+    `);
+    for (const d of [cmdDeck.id, lister.id]) {
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d}, ${card}, 1)
+      `);
+    }
+    // cmdDeck's draft lists a copy too, so its ask is 2 while its version holds the
+    // commander alone — remove that until the folded case wants it.
+    await fixture.execute(sql`
+      delete from deck_cards where deck_id = ${cmdDeck.id}
+    `);
+
+    check("baseline: the commander deck holds its copy", await free(cmdDeck.id), 0);
+    check("baseline: the deck listing it buys", await free(lister.id), -1);
+
+    await fixture.execute(sql`
+      insert into card_assignments (user_id, oracle_id, deck_id) values (${USER_C}, ${card}, ${lister.id})
+    `);
+    check("a commander's copy cannot be reserved away", await free(lister.id), -1);
+    check("and the commander deck keeps it", await free(cmdDeck.id), 0);
+
+    // THE FOLDED CLAIM. The commander deck lists a copy as well, so its ask is two
+    // and exactly one of the two is reservable. With two copies owned, giving one
+    // away leaves it holding its commander and buying its list copy.
+    await own(2);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      values (${vc.id}, ${card}, 1, now() - interval '90 minutes')
+    `);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${cmdDeck.id}, ${card}, 1)
+    `);
+    const a = await loadAvailability(USER_C, { oracleIds: [card], excludeDeckId: lister.id });
+    const folded = a.get(card)?.claims.find((c) => c.id === cmdDeck.id);
+    check("a folded claim asks for two", folded?.quantity, 2);
+    check("of which one is a commander copy", folded?.commanderCopies, 1);
+    await fixture.execute(sql`
+      update card_assignments set copies = 2 where user_id = ${USER_C} and deck_id = ${lister.id}
+    `);
+    check("only the list copy of a folded claim is reservable", await free(cmdDeck.id), -1);
+    check("so the reserving deck gets exactly one", await free(lister.id), 0);
+
+    // AND THE SAME CAP WHEN THE FOLDED DECK IS THE ONE RESERVING. Its ask is two,
+    // but one of those two is its commander and the ceiling already guarantees that
+    // copy — so a reservation of two would book three copies for an ask of two, and
+    // the deck that loses one is a third deck nobody was choosing between. Three
+    // copies owned, because at two the ceiling binds first and the cap is invisible
+    // (confirmed: with the commander subtraction removed, a two-copy fixture passes).
+    await own(3);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_C}`);
+    const { rows: [bystander] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_C}, 'Bystander', ${otherCmd}) returning id
+    `);
+    const { rows: [vb] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${bystander.id}, 1, now() - interval '120 minutes', ${otherCmd},
+              now() - interval '120 minutes')
+      returning id
+    `);
+    await fixture.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      values (${vb.id}, ${card}, 1, now() - interval '120 minutes')
+    `);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${bystander.id}, ${card}, 1)
+    `);
+    await fixture.execute(sql`
+      insert into card_assignments (user_id, oracle_id, deck_id, copies)
+      values (${USER_C}, ${card}, ${cmdDeck.id}, 2)
+    `);
+    check("a folded deck reserves its list copy only", await free(bystander.id), 1);
+
+    // A BREW'S COMMANDER SETS NO CEILING. The ceiling exists because a committed
+    // deck's commander copy is untouchable; a brew's is not — a brew claims softly,
+    // and counting its commander here would let one veto every reservation on its
+    // commander card. all_claims has three brew arms, two of them commander arms, so
+    // the restriction to committed decks is one join and easy to lose. Confirmed:
+    // with that join removed this is the only check in the file that fails.
+    await fixture.execute(sql`delete from decks where user_id = ${USER_C}`);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_C}`);
+    await own(1);
+    const mk = async (name: string, cmd: string, ago: number | null) => {
+      const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+        insert into decks (user_id, name, commander_oracle_id)
+        values (${USER_C}, ${name}, ${cmd}) returning id
+      `);
+      await fixture.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${card}, 1)
+      `);
+      if (ago !== null) {
+        const { rows: [v] } = await fixture.execute<{ id: string }>(sql`
+          insert into deck_versions
+            (deck_id, number, committed_at, commander_oracle_id, commander_since)
+          values (${d.id}, 1, now() - (${ago} * interval '1 minute'), ${cmd},
+                  now() - (${ago} * interval '1 minute'))
+          returning id
+        `);
+        await fixture.execute(sql`
+          insert into deck_version_cards (version_id, oracle_id, quantity, since)
+          values (${v.id}, ${card}, 1, now() - (${ago} * interval '1 minute'))
+        `);
+      }
+      return d.id;
+    };
+    const seniorList = await mk("Senior", otherCmd, 90);
+    const juniorList = await mk("Junior", otherCmd, 60);
+    // A brew LED BY the contested card, which is the whole point of this case.
+    await fixture.execute(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_C}, 'Brew led by it', ${card})
+    `);
+    await fixture.execute(sql`
+      insert into card_assignments (user_id, oracle_id, deck_id)
+      values (${USER_C}, ${card}, ${juniorList})
+    `);
+    check("a brew's commander sets no ceiling", await free(juniorList), 0);
+    check("and the displaced senior deck buys", await free(seniorList), -1);
+  } finally {
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_C}`);
+    await fixture.execute(sql`delete from decks where user_id = ${USER_C}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_C}`);
+  }
+}
 
 // Wrapped in main() rather than run at top level: tsx transpiles this repo's
 // scripts to CJS, where a top-level await is a build error.
@@ -184,6 +661,9 @@ try {
   check("the pull clears the shortfall", await free(older.id), 0);
   // …and the copy is now the older deck's, so the source has none spare.
   check("the source deck has no spare copy after the pull", await free(newer.id), 0);
+
+  await reservationSection();
+  await commanderCeilingSection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);

@@ -125,6 +125,38 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   columns — not what its committed version asked for. A card staged into the draft therefore
   counts against the supply the moment it is added, which is what makes a shortfall visible
   before the commit rather than after it.
+
+  Its second and third sections cover `card_assignments` — a player's own allocation of a
+  contested copy, overriding seniority. They are separate fixtures under their own `user_id`s
+  rather than more steps on the first, and that is not tidiness: every figure here is a
+  subtraction over EVERY deck claiming the card, and the first section deliberately accumulates
+  a brew, a draft-add deck and two list claimants, so a case whose expected value is worked out
+  by hand cannot live there. Read against that fixture the folded-commander case reports -2,
+  which is correct arithmetic and proves nothing about commanders.
+
+  Eight mutations were run against it and all eight fail. **Four of them failed nothing on the
+  first attempt**, and each one bought a case the reading had missed:
+
+  - **The ask cap needs a GENEROUS supply to be visible.** With one copy owned the supply
+    ceiling binds first, so a reservation of three grants one whether or not the ask is capped.
+    The case owns three.
+  - **The commander subtraction from the ask only bites when the folded deck is the one
+    RESERVING.** Assigning to a third deck never exercises it; a deck whose ask is
+    commander-plus-list booking two copies for an ask of two does, and the copy it steals lands
+    on a bystander nobody was choosing between.
+  - **A reserved senior is invisible whenever the remainder is 0**, which it is in every
+    headline case, because `least(senior, remainder)` absorbs the double count. It takes three
+    copies and two reserved seniors for a third deck to report it.
+  - **A brew's commander sets no ceiling**, and the brew has to be led BY the contested card for
+    the restriction to committed decks to matter at all.
+
+  The off-decklist read is asserted too, since it takes the one branch nothing else here
+  reaches, and its check is an INVARIANCE: two committed decks claiming one copy read -1 with or
+  without a reservation, because a reserved copy is still sleeved in the same deck it was.
+  `loadDeckBuyRows` is asserted beside `loadAvailability` rather than assumed to agree — it
+  computes the same allocation through a second, independently written expression, and a
+  reservation that moved one and not the other would leave the deck page and the receipt
+  disagreeing about the same card.
 - `pnpm probe:folders` proves deck folders against a real Postgres by calling the real
   queries — a deck files and unfiles, a cross-user move is refused from either side, and
   deleting a folder unfiles its decks without deleting any of them. That last rule is the

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#100D0A"/><rect x="18" y="38" width="84" height="12" rx="4" fill="#1A1713"/><rect x="18" y="56" width="84" height="12" rx="4" fill="#1E1A15" stroke="#C9A24B"/><text x="60" y="94" font-family="Georgia,serif" font-size="15" font-weight="700" fill="#C9A24B" text-anchor="middle">R1</text></svg></template>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Assigning a contested copy &middot; post-import summary + the contested row</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;text-wrap:pretty;">Giving a copy moves money. Pulling changes a deck.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Two actions sit on one surface and a player must never read one as the other.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Pull it</span> reaches into another deck's sleeves, takes the card out and <b style="color:#EDE6D8;font-weight:600;">cuts that deck a new version</b> &mdash; its list is different afterwards and there is no undo. Giving a newly-arrived copy to a deck <b style="color:#EDE6D8;font-weight:600;">changes no list and cuts no version</b>. It decides which committed deck sleeves a piece of cardboard that has just turned up, and it is one tap to change back.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">So R1 refuses to give the new action a verb-button.</b> Anything shaped like <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Pull it</span> and sitting beside it will be read as its sibling. Instead <b style="color:#EDE6D8;font-weight:600;">the deck names are the control</b> &mdash; a row of committed decks, each stating what it gets, under a heading that says what the tap does. A chooser cannot be mistaken for a button that takes something away. See <a href="#verbs">1</a>.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">And the word <i>claim</i> never appears in the interface.</b> It is engineering's word (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">revalidateClaims</span>) and in a player's ear it is adversarial &mdash; it sounds like taking a card off somebody, which is exactly what <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Pull it</span> does and this does not. <b style="color:#EDE6D8;font-weight:600;">A word that sounds like a pull is the one failure this feature cannot afford.</b></p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The second thing R1 fixes is a silence.</b> Today a collection replace bounces back to <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">/collection</span> and every consequence for every deck happens off-screen. The summary is the receipt for the app's most destructive action, and <b style="color:#EDE6D8;font-weight:600;">it shows even when there is nothing to report</b> &mdash; a redirect after a typed confirmation leaves a player unsure it happened at all. See <a href="#summary">2</a>.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Spec <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">docs/superpowers/specs/2026-09-14-card-assignments-design.md</span> <b style="color:#C6533F;font-weight:600;">is not in the project</b> &mdash; R1 is built from the brief plus the shipped vocabulary in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">deck-versioning.ts</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">undo-removal</span> and the collection replace flow. <b style="color:#C6B79A;font-weight:600;">One clause of the brief is contradicted on purpose</b> &mdash; see <a href="#buystate">6</a>. <a href="README.md">README</a> &middot; <a href="STATES-assignments.md">matrix</a> &middot; <a href="card-assignments · copy strings.ts">copy</a> &middot; <a href="READINESS.md">READINESS</a>.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">The whole vocabulary, on one line each</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px 26px;">
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Heading, not a verb-button:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">Give the new copy to</span> &mdash; plural <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">Give the 2 new copies to</span>.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">What each deck gets:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">gets it</span> &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">gets 1 of 2</span> &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">buys it &middot; $32.90</span>.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The fixed holder:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">commander</span> &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">keeps it</span>. No control, because no tap could move it.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Your choice, marked:</b> a brass <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">your call</span> tag and a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">back to first committed</span> link. Nothing is marked while the default stands.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The default, named:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">first committed wins</span>, with each deck's commit date on its own line so the order is legible rather than asserted.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Untouched:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span>, its border, its pronoun, its guards and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pulling&hellip;</span>. <b style="color:#EDE6D8;font-weight:600;">R1 changes no shipped control.</b></div>
+    </div>
+    <div style="font-size:13px;color:#C6B79A;line-height:1.6;margin-top:13px;padding-top:13px;border-top:1px solid #2A241D;"><b style="color:#EDE6D8;font-weight:600;">Rejected words, each for one reason:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Claim it</span> &mdash; sounds like a pull &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Take it</span> &mdash; sounds like a pull, harder &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Reserve</span> &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Assign</span> &mdash; clerical, and neither says a deck sleeves cardboard &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Mine</span> &mdash; every card is yours; that is the premise of the app.</div>
+  </div>
+
+  <section data-screen-label="01" id="verbs" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">1 &middot; The two actions, drawn against each other</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">the primary design call</span>
+    </div>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">Different geometry, different words, different consequence &mdash; and the consequence is stated on the surface, not left to the verb to imply.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;">
+
+      <div style="background:#181410;border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:6px;">Shipped &middot; changes another deck</div>
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;margin-bottom:12px;">Pull it</div>
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#E0913C;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cavern of Souls <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">in Atraxa Counters</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">$59.99</span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#EDE6D8;border:1px solid #3A3229;border-radius:7px;padding:0 10px;min-height:34px;display:flex;align-items:center;flex:none;">Pull it</span></div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The other deck's list changes.</b> The card comes out of its sleeves and that deck is cut a new version. Its count, its curve and its history all move.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Not reversible</b> except by rebuilding the other deck. Guarded when that deck has pending changes of its own, and refused outright on its commander.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">One deck named, one button, a bordered box.</b> Reads as an act against a named third party, which is what it is.</div>
+        </div>
+      </div>
+
+      <div style="background:#181410;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:6px;">New &middot; changes no deck</div>
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;margin-bottom:12px;">Give the new copy to&hellip;</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:9px;padding:11px 12px;margin-bottom:12px;">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13px;font-weight:600;color:#EDE6D8;">Cavern of Souls</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 2 decks want it</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Give the new copy to</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Atraxa Counters <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v4 &middot; 14 Jun</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan Ramp <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 9 Sep</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $59.99</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">No list changes and no version is cut.</b> Both decks keep exactly the cards they had a second ago. The only thing that moves is which of them the physical copy belongs to.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Reversible in one tap</b> &mdash; and the tap that reverses it is the same tap that made it.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Every deck named, no button, no border on the group.</b> A list of decks with outcomes beside them reads as a choice, and <b style="color:#EDE6D8;font-weight:600;">the money is the news</b>: one of these decks stops billing, one starts.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;margin-top:16px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:11px;">The sentence a player has to be able to say back</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:13px 26px;font-size:13px;color:#A89B84;line-height:1.65;">
+        <div><b style="color:#EDE6D8;font-weight:600;">&ldquo;Pulling takes the card off another deck.&rdquo;</b> True, and it is the only one of the two that can make somebody else's deck illegal, short, or newly expensive.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">&ldquo;Giving decides who sleeves the new one. Somebody pays either way.&rdquo;</b> True, and the row shows which somebody, in money, before the tap.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Neither sentence contains the other's verb</b>, and neither control carries the other's shape. <b style="color:#EDE6D8;font-weight:600;">That is the whole mitigation</b> &mdash; no tooltip, no explainer modal, no first-run coach mark.</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="02" id="summary" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">2 &middot; Post-import summary &middot; all three sections</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">/collection/replace/summary/[uploadId]</span>
+    </div>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">Three sections, each one a consequence of the replace rather than a property of the file. <b style="color:#EDE6D8;font-weight:600;">Two are money and one is a decision</b>, so the decision goes last &mdash; a player reads down, learns what changed, then chooses.</p>
+
+    <div style="background:#14110E;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;max-width:900px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:9px;">Collection replaced</div>
+      <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;margin:0 0 9px;color:#EDE6D8;">2,947 cards in the box</h3>
+      <p style="font-size:14px;line-height:1.65;color:#C6B79A;margin:0 0 6px;max-width:640px;text-wrap:pretty;">Was 2,933. <b style="color:#EDE6D8;font-weight:600;">61 arrived, 47 left.</b> Your decks are unchanged &mdash; no list was edited and no version was cut. What moved is what they cost you and which of them sleeves which copy.</p>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin-bottom:22px;">uploaded 14 Sep &middot; the-vault.csv</div>
+
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid #2A241D;padding-bottom:9px;margin-bottom:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;">No longer to buy &middot; 14</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">&minus;$212.40</span>
+      </div>
+      <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-bottom:11px;">These arrived in the new list, so the decks that were billing them stop.</div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:22px;">
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Hermit Druid</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Sidisi Graveyard</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;width:68px;text-align:right;flex:none;">&minus;$4.10</span></div>
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Mana Drain</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Kinnan Ramp</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;width:68px;text-align:right;flex:none;">&minus;$88.00</span></div>
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Survival of the Fittest</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Lotleth Aggro</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;width:68px;text-align:right;flex:none;">&minus;$41.50</span></div>
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Birthing Pod</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Atraxa Counters</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;width:68px;text-align:right;flex:none;">&minus;$12.75</span></div>
+        <div style="min-height:40px;display:flex;align-items:center;padding:0 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">Show all 14</span></div>
+      </div>
+
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid #2A241D;padding-bottom:9px;margin-bottom:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#E0913C;">Back on the buy list &middot; 6</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">+$88.15</span>
+      </div>
+      <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-bottom:11px;">These aren't in the new list, so the decks that list them are billing them again. <b style="color:#EDE6D8;font-weight:600;">Nothing was removed from any deck</b> &mdash; the cards are simply no longer in the box.</div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:22px;">
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#E0913C;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Necrotic Ooze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Sidisi Graveyard</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;width:68px;text-align:right;flex:none;">+$2.40</span></div>
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#E0913C;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Wooded Foothills</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Lotleth Aggro</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;width:68px;text-align:right;flex:none;">+$44.90</span></div>
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#E0913C;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Brainstorm</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Kinnan Ramp</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;width:68px;text-align:right;flex:none;">+$0.85</span></div>
+        <div style="min-height:40px;display:flex;align-items:center;padding:0 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">Show all 6</span></div>
+      </div>
+
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid #574463;padding-bottom:9px;margin-bottom:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">Still short &middot; 3</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">first committed wins</span>
+      </div>
+      <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-bottom:13px;text-wrap:pretty;">More decks want these than copies arrived. <b style="color:#EDE6D8;font-weight:600;">Each copy has gone to whichever deck committed first</b>, which is a guess about your intent and not a rule you set. Change it here, or leave it &mdash; either way no deck's list moves.</div>
+
+      <div style="display:flex;flex-direction:column;gap:9px;">
+
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Fauna Shaman</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 2 decks want it</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Give the new copy to</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Lotleth Aggro <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 11 Sep</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $32.90</span></div>
+          </div>
+        </div>
+
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Cavern of Souls</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">2 copies arrived &middot; 3 decks want 4</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Give the 2 new copies to</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Atraxa Counters <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v4 &middot; 14 Jun &middot; wants 2</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets 1 of 2 &middot; buys $59.99</span></div>
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan Ramp <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 9 Sep</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $59.99</span></div>
+          </div>
+        </div>
+
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Sidisi, Brood Tyrant</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 2 decks want it</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#6A6152;margin-bottom:8px;">The copy is spoken for</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#161310;border:1px dashed #3A3229;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#C6B79A;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;background:#2A241D;border-radius:4px;padding:2px 7px;flex:none;">commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">keeps it</span></div>
+            <div style="min-height:44px;background:#161310;border:1px dashed #3A3229;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#C6B79A;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan Ramp <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 9 Sep</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $4.80</span></div>
+          </div>
+          <div style="font-size:12px;color:#8E8269;line-height:1.55;margin-top:9px;">A commander can't be moved, so there is nothing to choose here &mdash; the row is listed because the shortage is real and Kinnan Ramp is paying for it.</div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:24px;padding-top:18px;border-top:1px solid #2A241D;">
+        <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#14110E;background:#E8E4D6;border-radius:8px;padding:0 20px;min-height:44px;display:flex;align-items:center;">Done</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">goes to your collection &middot; nothing here needs saving</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:18px;max-width:1180px;">
+      <div><b style="color:#EDE6D8;font-weight:600;">Nothing on this page needs saving, and it says so beside the only button.</b> Every pick writes immediately; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Done</span> is a route and not a commit. <b style="color:#EDE6D8;font-weight:600;">A page of consequences must not look like a form</b>, or a player will read the whole replace as still pending.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Money is signed, never coloured alone.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">&minus;$212.40</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">+$88.15</span> carry the sign in the figure; the hue repeats it. The deck name sits between the card and the money because <b style="color:#EDE6D8;font-weight:600;">whose money it is matters as much as how much</b>.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Four rows then <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show all 14</span>.</b> A real upload of ~2,900 rows can clear dozens of purchases, and this page is a receipt to be read, not a list to be worked. The contested section <b style="color:#EDE6D8;font-weight:600;">is never truncated</b> &mdash; it is the only part that asks for anything.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Reaching it again.</b> The route is keyed by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">uploadId</span> and stays readable &mdash; it is the receipt for that import. Contested cards also live permanently on each deck's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/changes</span>, so <b style="color:#EDE6D8;font-weight:600;">no decision is only available once</b>. See <a href="#seam">7</a>.</div>
+    </div>
+  </section>
+
+  <section data-screen-label="03" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">3 &middot; The summary's other two shapes</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">no count of nought is ever drawn</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px;">
+
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Arrivals, no contention &mdash; the third section is absent</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:14px;padding:20px 22px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">Collection replaced</div>
+          <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 8px;color:#EDE6D8;">2,961 cards in the box</h3>
+          <p style="font-size:13.5px;line-height:1.65;color:#C6B79A;margin:0 0 6px;text-wrap:pretty;">Was 2,933. <b style="color:#EDE6D8;font-weight:600;">31 arrived, 3 left.</b> Every arrival your decks were waiting for had a copy to spare, <b style="color:#EDE6D8;font-weight:600;">so there is nothing to decide</b>.</p>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin-bottom:18px;">uploaded 14 Sep &middot; the-vault.csv</div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid #2A241D;padding-bottom:9px;margin-bottom:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;">No longer to buy &middot; 9</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">&minus;$164.20</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:18px;">
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Mana Drain</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Kinnan Ramp</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;width:68px;text-align:right;flex:none;">&minus;$88.00</span></div>
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Birthing Pod</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Atraxa Counters</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;width:68px;text-align:right;flex:none;">&minus;$12.75</span></div>
+            <div style="min-height:40px;display:flex;align-items:center;padding:0 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">Show all 9</span></div>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid #2A241D;padding-bottom:9px;margin-bottom:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#E0913C;">Back on the buy list &middot; 1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">+$2.40</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 11px;display:flex;align-items:center;gap:10px;"><span style="width:7px;height:7px;border-radius:999px;background:#E0913C;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Necrotic Ooze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">Sidisi Graveyard</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;width:68px;text-align:right;flex:none;">+$2.40</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid #2A241D;"><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#14110E;background:#E8E4D6;border-radius:8px;padding:0 20px;min-height:44px;display:flex;align-items:center;">Done</span></div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">The good news is in the lede, not in an empty section.</b> <i>&ldquo;Nothing to decide&rdquo;</i> is worth a clause because a player who has met contention once will look for it. <b style="color:#EDE6D8;font-weight:600;">It is not worth a heading with a nought beside it.</b></div>
+      </div>
+
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Nothing to report &mdash; one screen, still shown</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:14px;padding:20px 22px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">Collection replaced</div>
+          <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 8px;color:#EDE6D8;">2,933 cards in the box</h3>
+          <p style="font-size:13.5px;line-height:1.65;color:#C6B79A;margin:0 0 6px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Nothing your decks care about moved.</b> No purchase cleared, nothing went back on the buy list, and no copy is contested. Your collection is the new file.</p>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin-bottom:18px;">uploaded 14 Sep &middot; the-vault.csv &middot; 12 cards differ from the old list</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#14110E;background:#E8E4D6;border-radius:8px;padding:0 20px;min-height:44px;display:flex;align-items:center;">Done</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">view your collection</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">
+          <div><b style="color:#EDE6D8;font-weight:600;">This page still renders, and that is a decision.</b> The obvious alternative &mdash; skip straight to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> when all three sections are empty &mdash; makes the app's <b style="color:#EDE6D8;font-weight:600;">most destructive action</b> the only one with no receipt, and makes the flow's ending depend on data the player cannot see. A player who typed <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">REPLACE</span> is owed a sentence.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">It still says what happened to the file</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">12 cards differ</span> &mdash; so &ldquo;nothing moved&rdquo; reads as a fact about decks, not as a failed import.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="04" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">4 &middot; The summary at 390px</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">the deck option goes two-line; the card row never does</span>
+    </div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:390px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;padding:14px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:7px;">Collection replaced</div>
+        <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;margin:0 0 7px;color:#EDE6D8;">2,947 cards in the box</h3>
+        <p style="font-size:13px;line-height:1.6;color:#C6B79A;margin:0 0 5px;text-wrap:pretty;">Was 2,933. <b style="color:#EDE6D8;font-weight:600;">61 arrived, 47 left.</b> No deck's list was edited.</p>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:16px;">uploaded 14 Sep &middot; the-vault.csv</div>
+
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid #2A241D;padding-bottom:8px;margin-bottom:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">No longer to buy &middot; 14</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">&minus;$212.40</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:18px;">
+          <div style="min-height:46px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:5px 9px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;min-width:0;"><span style="display:block;font-size:13px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Survival of the Fittest</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Lotleth Aggro</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">&minus;$41.50</span></div>
+          <div style="min-height:46px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:5px 9px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;min-width:0;"><span style="display:block;font-size:13px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Mana Drain</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Kinnan Ramp</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">&minus;$88.00</span></div>
+          <div style="min-height:44px;display:flex;align-items:center;padding:0 9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">Show all 14</span></div>
+        </div>
+
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid #574463;padding-bottom:8px;margin-bottom:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">Still short &middot; 3</span></div>
+        <div style="font-size:12px;color:#A89B84;line-height:1.55;margin-bottom:11px;">More decks want these than copies arrived. Each has gone to whichever deck committed first. <b style="color:#EDE6D8;font-weight:600;">No deck's list moves either way.</b></div>
+
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:11px 11px;margin-bottom:8px;">
+          <div style="font-size:13.5px;font-weight:600;color:#EDE6D8;margin-bottom:2px;">Fauna Shaman</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-bottom:8px;">1 copy arrived &middot; 2 decks want it</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:7px;">Give the new copy to</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:52px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:2px;"><span style="font-size:13px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard</span><span style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6FA368;">gets it</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">v7 &middot; 2 Aug</span></span></div>
+            <div style="min-height:52px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:2px;"><span style="font-size:13px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Lotleth Aggro</span><span style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#E0913C;">buys it &middot; $32.90</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">v2 &middot; 11 Sep</span></span></div>
+          </div>
+        </div>
+
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:11px 11px;">
+          <div style="font-size:13.5px;font-weight:600;color:#EDE6D8;margin-bottom:2px;">Cavern of Souls</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-bottom:8px;">2 copies arrived &middot; 3 decks want 4</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:7px;">Give the 2 new copies to</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:52px;background:#1E1A15;border:1px solid #C9A24B;border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:2px;"><span style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan Ramp</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#14110E;background:#C9A24B;border-radius:4px;padding:1px 6px;flex:none;">your call</span></span><span style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6FA368;">gets it</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">v2 &middot; 9 Sep</span></span></div>
+            <div style="min-height:52px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:2px;"><span style="font-size:13px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Atraxa Counters</span><span style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6FA368;">gets 1 of 2 &middot; buys $59.99</span></span></div>
+            <div style="min-height:52px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:2px;"><span style="font-size:13px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard</span><span style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#E0913C;">buys it &middot; $59.99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">v7 &middot; 2 Aug</span></span></div>
+          </div>
+          <div style="display:flex;align-items:center;min-height:44px;margin-top:3px;"><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;">Back to first committed</span></div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:300px;max-width:620px;display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+        <div><b style="color:#EDE6D8;font-weight:600;">The deck option is the one thing that goes two-line, and it always is.</b> Deck name over outcome, at both widths on phone &mdash; never a name that truncates to make room for a price. <b style="color:#EDE6D8;font-weight:600;">52px, above the 44px floor</b>, because the second line is data and not padding.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Commit dates demote to the outcome line on phone.</b> They exist to make <i>first committed wins</i> checkable, which is a second-order need; the outcome is the first-order one and keeps the eye-line.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Card rows in the money sections take the deck name as a sub-line</b> rather than truncating either. Same two-line rule, applied to a row that is a receipt entry and never interactive.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Cavern of Souls is shown mid-choice</b> &mdash; Kinnan Ramp is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">your call</span>, Sidisi Graveyard has dropped to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">buys it</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Back to first committed</span> has appeared. <b style="color:#EDE6D8;font-weight:600;">The displaced deck is visibly the one paying</b>, in the same row, on the same tap.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Order never changes on a pick.</b> Decks are listed oldest commit first and stay there &mdash; a list that re-sorts under a finger turns a correction into a second mistake.</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="05" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">5 &middot; The contested row, every state</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">five, and the fifth is two refusals</span>
+    </div>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">One component, two surfaces, identical in both. <b style="color:#EDE6D8;font-weight:600;">It never collapses and never hides a deck</b> &mdash; the reason a copy went where it went is the list of decks that wanted it.</p>
+
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:1180px;">
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:11px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#8E8269;border-radius:4px;padding:2px 7px;">01</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C6B79A;">Default &mdash; before any pick</span><span style="font-size:12.5px;color:#8E8269;">nothing is marked, because nothing was chosen</span></div>
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;max-width:660px;">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Fauna Shaman</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 2 decks want it</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Give the new copy to</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Lotleth Aggro <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 11 Sep</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $32.90</span></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:10px;max-width:900px;"><b style="color:#EDE6D8;font-weight:600;">No selected styling on the default holder.</b> Brass means <i>you decided this</i>, and nobody has. Marking the default as chosen would make <i>first committed wins</i> look like a preference the player expressed, which is the one thing this row exists to correct.</div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:11px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:4px;padding:2px 7px;">02</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">After a pick</span><span style="font-size:12.5px;color:#8E8269;">the displaced deck flips to buying, in the same row, on the same tap</span></div>
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;max-width:660px;">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Fauna Shaman</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 2 decks want it</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Give the new copy to</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $32.90</span></div>
+            <div style="min-height:44px;background:#1E1A15;border:1px solid #C9A24B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Lotleth Aggro</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#14110E;background:#C9A24B;border-radius:4px;padding:2px 7px;flex:none;">your call</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;flex:1;min-width:0;">v2 &middot; 11 Sep</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:9px;">
+            <span style="font-size:12px;color:#8E8269;line-height:1.55;">Tap Lotleth Aggro again to undo this.</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;min-height:34px;display:flex;align-items:center;">Back to first committed</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:10px;max-width:900px;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The trade is drawn, not implied.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sidisi Graveyard</span> went from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">gets it</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">buys it &middot; $32.90</span> and the player watched it happen. <b style="color:#EDE6D8;font-weight:600;">There is always a loser and the row says who</b> &mdash; a chooser that only lit up the winner would be the same silence this feature is fixing.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Two ways back, because the toggle is not discoverable.</b> The sentence teaches it; the link does it without needing to be taught. <b style="color:#EDE6D8;font-weight:600;">Both appear only once a pick is live</b>, and both vanish when the default is restored.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Optimistic, and the row is the receipt.</b> The outcome words move on tap. A transport failure puts them back and states itself through the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MutationError</span> &mdash; not a refusal, and not this feature's copy. <b style="color:#EDE6D8;font-weight:600;">A refusal is a different animal:</b> state 04.</div>
+        </div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:11px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#8E8269;border-radius:4px;padding:2px 7px;">03</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C6B79A;">A commander is the senior holder</span><span style="font-size:12.5px;color:#8E8269;">a row with nothing to pick, and it still earns its place</span></div>
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;max-width:660px;">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Sidisi, Brood Tyrant</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 2 decks want it</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#6A6152;margin-bottom:8px;">The copy is spoken for</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="min-height:44px;background:#161310;border:1px dashed #3A3229;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#C6B79A;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;background:#2A241D;border-radius:4px;padding:2px 7px;flex:none;">commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">keeps it</span></div>
+            <div style="min-height:44px;background:#161310;border:1px dashed #3A3229;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#C6B79A;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan Ramp <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 9 Sep</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $4.80</span></div>
+          </div>
+          <div style="font-size:12px;color:#8E8269;line-height:1.55;margin-top:9px;">A commander can't be moved, so there is nothing to choose here &mdash; the row is listed because the shortage is real and Kinnan Ramp is paying for it.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:10px;max-width:900px;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The whole row loses its controls, not just one option.</b> With one copy and a fixed holder there is no choice left, so nothing in the row is tappable and the heading changes to say so: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">The copy is spoken for</span>. <b style="color:#EDE6D8;font-weight:600;">Dashed borders repeat it</b>, and the only live thing on the row is the card name.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Borrowed exactly, from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span>'s third guard.</b> The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">commander</span> tag word, the plate and the no-control ruling all ship already: <i>no route releases it, so an action that led somewhere would lead somewhere that cannot help.</i> <b style="color:#EDE6D8;font-weight:600;">R1 introduces no new guard vocabulary</b>, and this is the one place the two features are allowed to look alike &mdash; because here they agree.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">If more copies arrive than commanders claim, the row is ordinary again.</b> Two copies, a commander and two other decks: the commander keeps one, the remaining copy is a live choice between the other two, and the heading reverts to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Give the new copy to</span>. The guard is per option; only a row with no free choice at all loses its heading.</div>
+        </div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #4A2F28;border-radius:11px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#C6533F;border-radius:4px;padding:2px 7px;">04</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;">The pick is refused</span><span style="font-size:12.5px;color:#8E8269;">two causes, two sentences &mdash; and the row must not keep the default silently</span></div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:13px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">a &middot; that deck no longer asks for the card</div>
+            <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Fauna Shaman</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 1 deck wants it</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Give the new copy to</div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;background:#1A1310;border:1px solid #4A2F28;border-left:3px solid #C6533F;border-radius:8px;padding:10px 12px;margin-top:9px;">
+                <div style="font-size:12.5px;color:#C6B79A;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Lotleth Aggro doesn't ask for Fauna Shaman any more</b> &mdash; its list changed while this page was open. Nothing moved: Sidisi Graveyard still has the copy. <b style="color:#EDE6D8;font-weight:600;">This card isn't contested now</b>, so it will be gone from here next time you load it.</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">b &middot; there is nothing left to give</div>
+            <div style="background:#181410;border:1px solid #3A3229;border-radius:11px;padding:13px 14px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;">Cavern of Souls</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1 copy arrived &middot; 3 decks want 4</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Give the new copy to</div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Atraxa Counters <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v4 &middot; 14 Jun</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+                <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $59.99</span></div>
+                <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan Ramp <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 9 Sep</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $59.99</span></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;background:#1A1310;border:1px solid #4A2F28;border-left:3px solid #C6533F;border-radius:8px;padding:10px 12px;margin-top:9px;">
+                <div style="font-size:12.5px;color:#C6B79A;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">There's no copy left to give.</b> One of the two has gone &mdash; your collection now has one, not two. Nothing moved, and the decks above are what you actually have. <b style="color:#EDE6D8;font-weight:600;">Try again if you still want Kinnan Ramp to have it.</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:13px;max-width:1120px;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Every refusal sentence does four things, in this order:</b> names the deck and card, gives the cause, says <b style="color:#EDE6D8;font-weight:600;">nothing moved</b>, and states what is true now. The third clause is the one the brief demanded and the one a player will actually look for &mdash; <b style="color:#EDE6D8;font-weight:600;">&ldquo;nothing moved&rdquo; is not the same news as &ldquo;that failed&rdquo;</b>.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The row re-reads from the server before it draws the refusal</b>, so the options above the message are current rather than the stale set that was tapped. In (a) the deck that dropped its claim is <b style="color:#EDE6D8;font-weight:600;">gone from the list</b> and the count corrects to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 deck wants it</span>; in (b) the arrival count corrects to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 copy arrived</span>. <b style="color:#EDE6D8;font-weight:600;">A refusal that leaves wrong numbers on screen is a worse silence than the one we started with.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Only (b) invites a retry, because only (b) can succeed later.</b> In (a) the deck has stopped wanting the card and the row is about to disappear, so a retry would be an invitation to fail; the message says the row is leaving instead. <b style="color:#EDE6D8;font-weight:600;">Neither offers a button</b> &mdash; the options are still there, and tapping one is the retry.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The message persists until the row changes or the page reloads.</b> No toast, no timeout: a refusal that vanishes on its own is the silence the brief names, wearing a costume. It clears when the player taps any option in that row, and <b style="color:#EDE6D8;font-weight:600;">one live-region announcement is made per refusal</b>, word-for-word the sentence on screen.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="06" id="buystate" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">6 &middot; Where R1 contradicts the brief</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;">one clause, and it is load-bearing</span>
+    </div>
+    <div style="border:1px solid #4A2F28;border-left:3px solid #C6533F;border-radius:12px;background:#1A1310;padding:18px 20px;max-width:1180px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;line-height:1.7;background:#161310;border:1px solid #3A3229;border-radius:8px;padding:12px 14px;margin-bottom:14px;">&ldquo;Claiming a copy changes nothing about the other deck &mdash; its list, its version and <b style="color:#C6533F;font-weight:600;">its own buy state</b> are untouched; only the allocation of a physical copy moves.&rdquo;</div>
+      <div style="display:flex;flex-direction:column;gap:11px;font-size:13px;color:#A89B84;line-height:1.65;">
+        <div><b style="color:#EDE6D8;font-weight:600;">List and version: true, and R1 says so everywhere.</b> <b style="color:#EDE6D8;font-weight:600;">Buy state: it cannot be.</b> The feature's own premise is that a deck bills a card it lists and does not own. Move the copy away and that deck lists a card it does not own &mdash; <b style="color:#EDE6D8;font-weight:600;">so it bills it.</b> Buy state is derived from allocation; it is the same derivation this whole feature is about.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Drawing the clause as written would make the row lie about money.</b> A player would give a copy to one deck, see nothing change elsewhere, and find a purchase on another deck's page later &mdash; <b style="color:#EDE6D8;font-weight:600;">the exact silent-consequence bug in the ticket, reintroduced by the fix.</b></div>
+        <div><b style="color:#EDE6D8;font-weight:600;">So R1 draws the trade,</b> and turns it into the strongest thing on the surface: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">gets it</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">buys it</span> side by side, moving together on one tap. <b style="color:#EDE6D8;font-weight:600;">It is also the cleanest way to separate the two verbs</b> &mdash; giving moves money between decks, pulling changes what a deck is.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">A ratification question, not a Design call, if the clause was literal.</b> If allocation really is meant to be invisible to buy state, then a deck's buy count stops describing what the player must purchase, every money figure on this page is wrong, and <b style="color:#EDE6D8;font-weight:600;">the row should carry no money at all</b> &mdash; which would leave the chooser with no stated consequence and no reason for a player to care which deck wins. <b style="color:#EDE6D8;font-weight:600;">R1 assumes the charitable reading:</b> the clause means <i>no list is edited and no version is cut</i>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="07" id="seam" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">7 &middot; The seam &mdash; both actions on one page</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">/decks/[id]/changes</span>
+    </div>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">Here a card can be <b style="color:#EDE6D8;font-weight:600;">both</b> contested and pullable, and the two offers must not blur. <b style="color:#EDE6D8;font-weight:600;">The decklist row keeps its shape and its single control</b>; the chooser hangs below it, indented, with its own heading. Two geometries, two meanings.</p>
+
+    <div style="background:#14110E;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;max-width:900px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#6FA368;">19</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">in</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E0913C;">17</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">out</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E0913C;">8</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">to buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">$254.10</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">5</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">can be pulled</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #574463;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">still short</span></div>
+      </div>
+
+      <div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid #574463;padding-bottom:7px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:#EDE6D8;">Lands</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">4</span></div>
+
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Misty Rainforest</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:70px;flex:none;"><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;flex:none;"></span></span></div>
+
+        <div>
+          <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px 7px 0 0;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#E0913C;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cavern of Souls <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">in Atraxa Counters</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">$59.99</span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#EDE6D8;border:1px solid #3A3229;border-radius:7px;padding:0 10px;min-height:34px;display:flex;align-items:center;flex:none;">Pull it</span></div>
+          <div style="background:#181410;border:1px solid #26211B;border-top:none;border-left:3px solid #574463;border-radius:0 0 7px 7px;padding:11px 12px 12px 14px;">
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:#C9A24B;">Give the 2 new copies to</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">2 arrived &middot; 3 decks want 4 &middot; no list changes</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Atraxa Counters <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v4 &middot; 14 Jun &middot; wants 2</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets 1 of 2 &middot; buys $59.99</span></div>
+              <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi Graveyard <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v7 &middot; 2 Aug</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;flex:none;">gets it</span></div>
+              <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 10px;display:flex;align-items:center;gap:10px;"><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan Ramp <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">v2 &middot; 9 Sep &middot; this deck</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;flex:none;">buys it &middot; $59.99</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Overgrown Tomb</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:70px;flex:none;"><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;flex:none;"></span></span></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:18px;max-width:1180px;">
+      <div><b style="color:#EDE6D8;font-weight:600;">The card-row floor is held, not bent.</b> The decklist row keeps name + one availability slot + one action, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span> keeps that action. <b style="color:#EDE6D8;font-weight:600;">The chooser is not in the row</b> &mdash; it is a panel attached beneath it, carrying the brass-violet left rule the app already uses for a group boundary. Nothing was displaced and no row grew.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">The two offers read as different kinds of thing at a glance</b> &mdash; one bordered button on a row, one list of decks in a panel &mdash; and the panel's caption <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no list changes</span> is the one place the distinction is spelt out on this surface. <b style="color:#EDE6D8;font-weight:600;">It is a caption and not a warning</b>, because giving is the safe action of the two.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">This deck is named, never assumed.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Kinnan Ramp &middot; this deck</span> &mdash; it sits in commit order with the rest rather than being promoted to the top, because the order <i>is</i> the explanation of the default. <b style="color:#EDE6D8;font-weight:600;">Promoting your own deck would hide why it lost.</b></div>
+      <div><b style="color:#EDE6D8;font-weight:600;">A new count chip, and one word taken from the summary:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2 still short</span>, alongside <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">can be pulled</span>. <b style="color:#EDE6D8;font-weight:600;">Both surfaces use the same word for the same fact</b>, so a player who met it on the summary meets no second vocabulary here. It is the only addition to a shipped strip in R1.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Contested and unpullable is the common case,</b> and then the row has no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span> and the panel is alone &mdash; which is the summary's row exactly. <b style="color:#EDE6D8;font-weight:600;">One component, both surfaces, no variant.</b></div>
+    </div>
+  </section>
+
+  <sc-if value="{{ showEngNotes }}" hint-placeholder-val="{{ true }}">
+  <section data-screen-label="08" style="max-width:1400px;margin-bottom:20px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">8 &middot; The contract</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">one route, one component, one new chip</span>
+    </div>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:320px;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The whole inventory</div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="background:#1A1713;border:1px solid #26211B;border-radius:9px;padding:12px 14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;margin-bottom:6px;">ContestedCardRow</div><div style="font-size:12.5px;color:#A89B84;line-height:1.6;">Card name + mono supply line, a brass uppercase heading, and one option per committed claimant. <b style="color:#EDE6D8;font-weight:600;">Radio semantics</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role=radiogroup</span> labelled by the heading, options 44px desktop / 52px phone, <b style="color:#EDE6D8;font-weight:600;">with the selected option also being the clear control</b>. Used unchanged on both surfaces.</div></div>
+          <div style="background:#1A1713;border:1px solid #26211B;border-radius:9px;padding:12px 14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;margin-bottom:6px;">Outcome words</div><div style="font-size:12.5px;color:#A89B84;line-height:1.6;">Mono 11px. <span style="color:#6FA368;">gets it</span> / <span style="color:#6FA368;">gets n of m &middot; buys $x</span> / <span style="color:#E0913C;">buys it &middot; $x</span> / <span style="color:#6FA368;">keeps it</span>. <b style="color:#EDE6D8;font-weight:600;">Always a word before a hue</b>, never a hue alone.</div></div>
+          <div style="background:#1A1713;border:1px solid #26211B;border-radius:9px;padding:12px 14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;margin-bottom:6px;">your call &middot; Back to first committed</div><div style="font-size:12.5px;color:#A89B84;line-height:1.6;">Brass plate on mono 10px, and a borderless brass link at 34px / 44px target. <b style="color:#EDE6D8;font-weight:600;">Both exist only while a pick is live.</b></div></div>
+          <div style="background:#1A1713;border:1px solid #26211B;border-radius:9px;padding:12px 14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;margin-bottom:6px;">Refusal note</div><div style="font-size:12.5px;color:#A89B84;line-height:1.6;">In-row, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span> left rule on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#1A1310</span>, full-opacity ink, no icon, no dismiss. <b style="color:#EDE6D8;font-weight:600;">Two causes, two strings, one shape.</b></div></div>
+          <div style="background:#1A1713;border:1px solid #26211B;border-radius:9px;padding:12px 14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;margin-bottom:6px;">Summary route + <span style="font-family:'IBM Plex Mono',monospace;">still short</span> chip</div><div style="font-size:12.5px;color:#A89B84;line-height:1.6;">One new page, and one chip added to the shipped review strip. <b style="color:#EDE6D8;font-weight:600;">That is the only edit to a shipped surface in R1.</b></div></div>
+          <div style="background:#161310;border:1px dashed #3A3229;border-radius:9px;padding:12px 14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">Not in R1</div><div style="font-size:12.5px;color:#8E8269;line-height:1.6;">No new hex, no new font size, no modal, no toast, no confirm, no tooltip, no spinner, no drag, no bulk allocation, no motion, no first-run explainer, no onboarding of the two verbs, no change to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span> or either of its guards, and <b style="color:#C6B79A;font-weight:600;">no use of the word <i>claim</i> in any string</b>.</div></div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:320px;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Notes for engineering</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">A pick is a reservation row, not a deck edit.</b> It must not touch <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck_cards</span>, must not create a version, and must not appear in a deck's history. <b style="color:#EDE6D8;font-weight:600;">If it can ever produce a version, the copy on this canvas is false.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Picking the held deck clears the reservation</b> and the default reasserts itself &mdash; it is not a write of &ldquo;first committed&rdquo; as an explicit choice. A cleared row must be indistinguishable from one never touched.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Refusals are two cases and the response must say which:</b> the claimant no longer asks for the card, or supply is exhausted. <b style="color:#EDE6D8;font-weight:600;">A generic failure is not enough to draw either sentence</b> &mdash; the row would have to fall back to the transport treatment and the brief's requirement would go unmet.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">A refusal response carries the row's fresh state</b> (arrivals, claimants, allocation) so the row can redraw correct numbers with the message. One round trip, not two.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Optimistic on success, authoritative on refusal.</b> Outcome words move on tap; a refusal replaces them with server truth. The <b style="color:#EDE6D8;font-weight:600;">displaced deck's outcome must be computed client-side on the optimistic hop</b>, or the trade will lag the tap that caused it.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Seniority is the existing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since</span> ordering</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">versions.ts:175</span>), and the commit date shown per option is the fact that ordering is derived from. If they can disagree, the row is misleading and the date must be dropped rather than approximated.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Commander claims come from the availability model</b> and are the same fixed holders <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span>'s third guard reads. <b style="color:#EDE6D8;font-weight:600;">No second source of truth.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The summary reads the upload, not live state.</b> Its two money sections are the delta that import produced and must not drift as the player picks; only the contested section is live. <b style="color:#EDE6D8;font-weight:600;">A receipt that rewrites itself is not a receipt.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The route survives reload and stays keyed by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">uploadId</span></b>. It replaces the bounce to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> and renders for an empty result.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Two live-region messages, never more:</b> one per settled pick (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Lotleth Aggro gets Fauna Shaman. Sidisi Graveyard buys it, $32.90.</span>) and one per refusal, verbatim. <b style="color:#EDE6D8;font-weight:600;">No motion anywhere.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Focus after a pick stays on the option tapped</b> &mdash; it is a radio group and the tapped option is now both the selection and the way back. Focus after a refusal goes to the message.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;margin-top:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Card-row parity &middot; gaps</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px 26px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+        <div><b style="color:#EDE6D8;font-weight:600;">Name + one availability slot:</b> held. The chooser is a panel beneath the row, not an occupant of it, and <b style="color:#EDE6D8;font-weight:600;">no decklist row grows or changes template.</b></div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Words, never colour alone:</b> every outcome is a word first. Signed money in both summary sections; the hue only repeats the sign.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Gap &mdash; no bulk allocation.</b> Ten contested cards is ten choices. Correct first shipment, and the obvious second want.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Gap &mdash; the summary has no windowing.</b> The money sections truncate to four; the contested section does not, and a pathological import could make it long.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Gap &mdash; two players, one collection</b> is out of scope and refusal (b) is the seam where it would show.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Gap &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.lede</span> is wrong by one again</b> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/changes</span>: <i>&ldquo;nothing here is a decision except the pulls&rdquo;</i> now omits two. Flagged, not edited &mdash; a ratification question, as in #390.</div>
+      </div>
+    </div>
+  </section>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showEngNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas sections&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { showEngNotes: this.props.showEngNotes ?? true };
+  }
+}
+
+</script>
+</body>
+</html>
