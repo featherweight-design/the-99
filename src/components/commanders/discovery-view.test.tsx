@@ -27,7 +27,7 @@ vi.mock("next/navigation", () => ({
 const { findExcluded } = vi.hoisted(() => ({ findExcluded: vi.fn() }));
 vi.mock("../../app/commanders/actions", () => ({ findExcludedMatches: findExcluded }));
 
-// The rack mounts exactly one treatment, chosen in JS off `useIsWide()`, so a
+// The rack mounts exactly one treatment, chosen in JS off `CHASSIS_WIDE_MIN_PX`, so a
 // test that does not say which width it is at gets the phone — where the pips
 // live inside a sheet that has to be opened first. Every test here runs at the
 // rack width unless it says otherwise.

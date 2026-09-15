@@ -7,7 +7,7 @@
 // result line. The rack never collapses, never reorders and never changes
 // height when the results change (STATES invariants).
 //
-// `useIsWide()` is called HERE and nowhere below: the controls take `wide` as a
+// The breakpoint is read HERE and nowhere below: the controls take `wide` as a
 // prop, so exactly one treatment is ever mounted — never a desktop copy and a
 // phone copy hidden past each other, which would put two of every radiogroup in
 // the accessibility tree.
@@ -62,10 +62,10 @@ export function FilterRack({
       a list already in memory. */
   orderPending?: boolean;
 }) {
-  // The chassis's breakpoint, not this file's own: `useIsWide` is 1024 and the
-  // chassis switches at 1000, which would leave these two lanes compact from
-  // 1000-1023 while `/decks` was already wide — a route-specific breakpoint,
-  // which is the thing one frame exists to stop.
+  // The chassis's breakpoint, and the only one there is. A 1024 hook used to sit
+  // beside it, which would have left these two lanes compact from 1000 to 1023
+  // while `/decks` was already wide — a route-specific breakpoint, which is the
+  // thing one frame exists to stop. It had no callers and is retired.
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
 
   // Composed ONCE and handed to both forms. The rack draws it on the result line
