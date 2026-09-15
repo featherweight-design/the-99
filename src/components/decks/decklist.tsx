@@ -17,7 +17,7 @@ import {
   DECK_SORT_STORAGE_KEY,
   isStoredDeckSort,
   parseDeckSort,
-  serialiseDeckSort,
+  withLaneOrder,
   type DeckSortState,
 } from "../../lib/decks/sort-memory";
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
@@ -219,26 +219,11 @@ export function Decklist({
   const [storedSort, chooseSort] = useStoredView(DECK_SORT_STORAGE_KEY, isStoredDeckSort);
   const sortMemory = parseDeckSort(storedSort);
   const sort = sortMemory[filter];
-  // MERGED AGAINST THE LATEST STORED VALUE, not against this render's snapshot.
-  // The store syncs across tabs, so a second tab holding an older snapshot would
-  // otherwise write it whole and silently restore the other lane's order —
-  // `All → Mana value` lost because this tab wrote `Shopping → Name` from a
-  // render that predated it. Only the lane being changed is this render's to
-  // decide; the other lane's value is read fresh.
-  //
-  // It is a read-modify-write and therefore still not atomic: two tabs changing
-  // DIFFERENT lanes inside the same tick can both read the same value and the
-  // later write wins. Left as it is, deliberately. What is lost in that window
-  // is one list's row order on the next visit, restored by one press of a
-  // control that is always on screen — against a revision counter and a retry
-  // loop, or two keys where the handoff recommends one. The fresh read closes
-  // the case that is actually reachable by a person: two tabs open, one lane
-  // changed in each, seconds or minutes apart.
+  // `withLaneOrder` owns the merge, including reading the stored value fresh
+  // and refusing one the guard rejects. Three review rounds landed on a copy of
+  // that logic living here; it is one tested function now.
   const setSort = (next: DeckSortState) =>
-    chooseSort(serialiseDeckSort({
-      ...parseDeckSort(readRaw(DECK_SORT_STORAGE_KEY)),
-      [filter]: next,
-    }));
+    chooseSort(withLaneOrder(readRaw(DECK_SORT_STORAGE_KEY), filter, next));
 
   // The one comparator every group below orders its rows with. `newestAsOf` is
   // only read by the price key; the other two ignore it.

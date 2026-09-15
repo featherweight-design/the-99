@@ -152,7 +152,8 @@ reversed — six labels become two, `A–Z` goes, and the mana-value question ab
 legible trade, two locked decisions, and a component shared with `/collection`: Hugh's call.** R1
 draws the ruled shape and states the alternative rather than quietly taking it. **Settled
 2026-09-14: the ruled shape stands** — direction stays re-pick, no direction group, and
-`/collection` is untouched. The paragraph is kept for the argument, not as an open question. Its per-row icons
+`/collection`'s sort SHAPE is unchanged. (Its mount does change: the two ornament fixes below
+apply there too, deliberately, and remove the same permanent border and badge.) The paragraph is kept for the argument, not as an open question. Its per-row icons
 and accent-ink chosen row are declined on their own merits — `leadingGlyph` exists and exactly one
 mount uses it, for rows distinguished by a mark rather than a word.
 

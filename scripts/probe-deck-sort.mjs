@@ -134,12 +134,17 @@ async function buildFixture(userId, onCreated) {
   // fixture that cut a row would leave `pendingChange` null and the draft note
   // unrendered, which is the state this probe exists to measure. An add keeps a
   // row on the list and puts the note in the slot.
+  // NOT THE COMMANDER. A commander is not a `deck_cards` row, so excluding what
+  // the table already holds does not exclude it — and inserting it here would
+  // put the deck's own commander in its 99, which the app's validator refuses
+  // and which changes both the list and the Shopping count being measured.
   const { rows: extra } = await pool.query(
     `select c.oracle_id from cards c
       where c.oracle_id not in (select oracle_id from deck_cards where deck_id = $1)
+        and c.oracle_id <> $2
         and c.type_line not like 'Basic Land%'
       limit 1`,
-    [deckId],
+    [deckId, template[0].commander_oracle_id],
   );
   await pool.query(
     `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)`,
@@ -357,10 +362,11 @@ async function run() {
         );
       }
 
-      // Not scoped to `[role=dialog]`: the desktop form is a popover with no
-      // dialog role, so that selector counted zero at 1300 while the sheet
-      // answered fine at 390 — a check that passed at one width by measuring
-      // the other one's markup.
+      // `[role=option]` rather than a dialog-scoped selector: both forms draw
+      // the same listbox rows, so one selector answers at both widths. (The
+      // popover carries `role="dialog"` too — an earlier note here claimed it
+      // did not, and the zero-row reading that prompted it was the scroll
+      // dismissal `openSortPanel` now avoids.)
       const rows = await onPage(page, "[role=option]").count();
       failures += !report(
         `the panel offers two orders under All at ${width}`,

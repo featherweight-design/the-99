@@ -90,6 +90,41 @@ function isDirection(value: string | undefined): value is DeckSortDirection {
   return DIRECTIONS.includes(value as DeckSortDirection);
 }
 
+/**
+ * The value to store after one lane's order changes — the only write path.
+ *
+ * It lives here rather than in `Decklist` because three consecutive review
+ * rounds landed on that component's copy of it, each one a different way for a
+ * read-modify-write to be wrong: a stale in-render snapshot, then atomicity,
+ * then a malformed stored value being half-resurrected. Two of those were real.
+ * One function with one test file ends the class.
+ *
+ * `raw` is read FRESH at write time, not taken from the render: this key syncs
+ * across tabs, so a snapshot would carry an older value for the lane it is not
+ * changing and silently restore it.
+ *
+ * And it is validated the same way the hook validates it. `parseDeckSort`
+ * salvages per lane, which is right for reading one value but wrong for writing
+ * the next: a half-damaged `all:mana:desc` reads as absence on screen — both
+ * lanes showing their defaults — so merging a Shopping change into its parse
+ * would resurrect an All preference the reader cannot see and was not offered.
+ * Anything the guard rejects starts from the defaults.
+ *
+ * It remains a read-modify-write, and two tabs changing different lanes inside
+ * one tick can still lose one of them. Declined deliberately: what that costs is
+ * one list's row order on the next visit, restored by one press of a control
+ * that is always on screen, against a revision counter and a retry loop or two
+ * keys where the handoff recommends one.
+ */
+export function withLaneOrder(
+  raw: string | null,
+  lane: "all" | "shopping",
+  next: DeckSortState,
+): string {
+  const base = raw !== null && isStoredDeckSort(raw) ? parseDeckSort(raw) : DEFAULT_DECK_SORT;
+  return serialiseDeckSort({ ...base, [lane]: next });
+}
+
 /** The default a lane adopts when nothing is stored for it. */
 export function defaultFor(lane: "all" | "shopping"): DeckSortState {
   const key = DEFAULT_DECK_SORT[lane].key;

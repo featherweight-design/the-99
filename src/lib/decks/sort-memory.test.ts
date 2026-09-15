@@ -5,6 +5,7 @@ import {
   isStoredDeckSort,
   parseDeckSort,
   serialiseDeckSort,
+  withLaneOrder,
 } from "./sort-memory";
 
 // The wire format `useStoredView` holds. Its own tests cover the store; none of
@@ -90,5 +91,37 @@ describe("changing one lane", () => {
     const next = serialiseDeckSort({ ...memory, all: { key: "mana", direction: "asc" } });
     expect(next).toBe("all:mana:asc|shopping:price:desc");
     expect(parseDeckSort(next).shopping).toEqual({ key: "price", direction: "desc" });
+  });
+});
+
+// The one write path. It had three lives inside `Decklist` and drew a finding
+// in each; the cases below are those findings, plus the ones they implied.
+describe("withLaneOrder", () => {
+  it("changes the named lane and leaves the other exactly as stored", () => {
+    expect(withLaneOrder("all:name:asc|shopping:price:desc", "all", { key: "mana", direction: "desc" }))
+      .toBe("all:mana:desc|shopping:price:desc");
+    expect(withLaneOrder("all:mana:desc|shopping:price:desc", "shopping", { key: "name", direction: "asc" }))
+      .toBe("all:mana:desc|shopping:name:asc");
+  });
+
+  it("starts from the defaults when nothing is stored", () => {
+    expect(withLaneOrder(null, "shopping", { key: "mana", direction: "asc" }))
+      .toBe("all:name:asc|shopping:mana:asc");
+  });
+
+  // A half-damaged value reads as ABSENCE on screen — the hook rejects it, so
+  // both lanes show their defaults. Merging into its parse would resurrect an
+  // All preference the reader cannot see and was never offered.
+  it("does not resurrect a lane from a value the guard rejects", () => {
+    expect(isStoredDeckSort("all:mana:desc")).toBe(false);
+    expect(withLaneOrder("all:mana:desc", "shopping", { key: "name", direction: "asc" }))
+      .toBe("all:name:asc|shopping:name:asc");
+  });
+
+  it("refuses a key the target lane does not offer, by never storing one", () => {
+    // `price` under All is not reachable through the panel; if it ever were, the
+    // value written would still have to survive its own guard.
+    const written = withLaneOrder(null, "all", { key: "name", direction: "desc" });
+    expect(isStoredDeckSort(written)).toBe(true);
   });
 });
