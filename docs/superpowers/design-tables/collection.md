@@ -804,12 +804,12 @@ on this row.
 | text-overflow | ellipsis | ellipsis |
 
 ### Grid Tile: Set/Rarity Caption
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 9.5px | 10px |
-| color | #8E8269 | #8E8269 |
-| margin-top | 2px | 3px |
+
+> **Retired 2026-09-15 — card captions (R1), call A.** It was its own row under the name at mono
+> 9.5/10px with a 2/3px `margin-top`. The set line is now an occupant of the **Meta Line** above,
+> right-aligned, at that line's own 9/9.5px and with no margin of its own — see `Grid Tile: Meta
+> Line`. Two sections describing one caption at two sizes is how a property table stops being a
+> single source of truth, so this one keeps only its copy, below.
 
 ### Copy (caption format)
 | Context | Copy |

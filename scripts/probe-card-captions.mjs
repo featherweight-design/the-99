@@ -21,6 +21,12 @@
 // pays `md:px-[26px]`) and lands on 181px. No floor produces 178 there, and a shared ±2 would
 // pass or fail on whether a scrollbar happens to render.
 //
+// PREREQUISITE: the account needs at least one card in a MARKED state — claimed,
+// over-committed, unowned or proxied. The slot draws nothing for a free, owned,
+// un-proxied card, so a collection in which everything is free renders no slot box
+// anywhere and the one-box check has nothing to compare. It fails rather than
+// passing quietly in that case, and says which it was.
+//
 // Run by hand, and not part of `pnpm test`:
 //   node scripts/probe-card-captions.mjs
 //   PROBE_BASE=http://localhost:3600 PROBE_DECK=<uuid> node scripts/probe-card-captions.mjs
@@ -248,19 +254,24 @@ async function run() {
           caps.captions > 0 && caps.heights.length === 1,
           `${caps.captions} captions, heights ${caps.heights.join(" / ") || "none"}`,
         );
-        // Zero boxes is a FAILURE, not a pass: a page with no card in a marked state has
-        // not proved anything, it has measured nothing.
+        // Zero boxes is a FAILURE, and it names a missing PREREQUISITE rather than a
+        // defect. The slot draws nothing for a free, owned, un-proxied card, so a
+        // collection in which every card is free legitimately renders no box at all —
+        // and a run over one has measured nothing, which must not read as a sweep.
+        // See the header: the account needs at least one card in a marked state.
         //
         // It reports the KINDS it saw, and that line is the point. On a fixture whose cards
         // are all owned and none printed, every box is a chip and this check compares one
         // component against itself — it passed a mutation that put the chip's border back,
         // which is the exact defect it was written for. The invariant that the three agree
-        // is pinned in `card-tile-caption.test.tsx`, which can force all three; here the
-        // kinds line says how much of it this run actually exercised.
+        // is pinned in `card-tile-caption.test.tsx`, which forces all three; here the kinds
+        // line says how much of it this run actually exercised.
         failures += !report(
           `${width}px · ${label} · one slot box`,
           caps.boxes > 0 && caps.boxHeights.length === 1,
-          `${caps.boxes} boxes, heights ${caps.boxHeights.join(" / ") || "none"}, kinds ${caps.kinds.join("+") || "none"}`,
+          caps.boxes === 0
+            ? "no card in a marked state — seed one, this run proves nothing"
+            : `${caps.boxes} boxes, heights ${caps.boxHeights.join(" / ")}, kinds ${caps.kinds.join("+")}`,
         );
 
         // BOTH widths. This was gated to 1300 alone, which left the phone's
