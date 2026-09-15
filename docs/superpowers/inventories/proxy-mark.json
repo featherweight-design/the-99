@@ -1,0 +1,47 @@
+{
+  "feature": "Deck proxies \u2014 the mark",
+  "note": "The three surfaces that draw `ProxyTag`, which must draw the SAME one: the decklist row, the commander caption on the deck head, and the review row. Its own inventory rather than a section of `proxies.json`, because `check:shared` asks the `shares` block of every row in its file \u2014 and that file also photographs the list route and the `/decks` tile, neither of which draws a mark. The deck head is a separate row from the decklist even though one `goto` reaches both: the caption is in a `<header>` outside `<main>`, and a shot scrolled to the rows does not show it.",
+  "shares": {
+    "module": "src/components/decks/proxy-tag.tsx",
+    "binding": "ProxyTag",
+    "note": "Each view renders it as-is \u2014 no wrapper between them \u2014 so the check is asked of the file each row already names."
+  },
+  "rows": [
+    {
+      "id": "deck-all",
+      "label": "/decks/[id] \u2014 the mark on a row, and the key that decodes it",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PROXY_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        }
+      ]
+    },
+    {
+      "id": "review-proxied",
+      "label": "/decks/[id]/changes \u2014 a printed add, marked rather than billed",
+      "view": "src/components/decks/update-diff-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PROXY_DECK}/changes",
+          "wait": "h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "commander-caption",
+      "label": "/decks/[id] \u2014 the mark on a commander caption",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PROXY_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        }
+      ]
+    }
+  ]
+}

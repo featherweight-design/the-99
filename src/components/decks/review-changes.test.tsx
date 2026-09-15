@@ -15,6 +15,7 @@ import type { ShapeCard } from "../../lib/decks/draft-state";
 import { cardDetailCopy } from "../cards/card-detail-provider";
 import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -1230,5 +1231,45 @@ describe("ReviewChanges", () => {
       await settle();
       expect(screen.queryByText(cardDetailCopy.loading)).toBeNull();
     });
+  });
+});
+
+describe("a printed add on the review screen", () => {
+  // Built from the suite's own `row()` so every required field is present — the
+  // literal I first wrote was missing several and failed inside the component.
+  const proxiedRow = (over: Partial<Row> = {}) =>
+    row({
+      name: "The Ozolith",
+      owned: false,
+      proxied: true,
+      bucket: "proxied" as Row["bucket"],
+      ...over,
+    });
+
+  it("draws the mark, not a buy tag", () => {
+    // THE SHIPPED DEFECT. `AvailabilitySlot` opened on `!card.owned`, and a
+    // printed card is unowned by design — so this screen quoted a price for a
+    // card its owner had decided not to buy.
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    expect(screen.getByText(proxyCopy.tag.aria)).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.unowned.tag)).not.toBeInTheDocument();
+  });
+
+  it("says a full sentence to a screen reader, not a bare word", () => {
+    // The row's visible mark is the tag; its per-row word is read aloud. A bare
+    // `proxied` would not say why the row costs nothing, which is the whole
+    // reason it is not simply silent like a `free` add.
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    expect(screen.getByText(proxyCopy.review.a11y("The Ozolith"))).toBeInTheDocument();
+  });
+
+  it("is not silent, which a `free` add would have been", () => {
+    // Silence was available at no cost — `bucketWord` returns null for `free` —
+    // and it is wrong: `free` means the collection has a spare copy for this.
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [proxiedRow()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    const freeRow = row({ name: "Sol Ring", bucket: "free" as Row["bucket"] });
+    cleanup();
+    render(<ReviewChanges deckId="d" deckName="Korvold" rows={{ in: [freeRow], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />);
+    expect(screen.queryByText(proxyCopy.review.a11y("Sol Ring"))).not.toBeInTheDocument();
   });
 });

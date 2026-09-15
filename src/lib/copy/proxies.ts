@@ -176,6 +176,11 @@ export const proxyCopy = {
   // Names the cause, like the tag does, and unlike its two neighbours (`to buy`, `can be
   // pulled`) which name what you can do about it. There is nothing to do about this one.
   review: {
+    // NOT RENDERED. The review row's visible mark is `ProxyTag` in the
+    // availability slot — the same slot and the same treatment the buy tag
+    // takes, which is what keeps the two exclusive — and its per-row word is
+    // read aloud rather than drawn. Kept because the handoff authored it and a
+    // future surface that draws a word-chip per row would want this one.
     chip: "proxied",
     // Never rendered — the row's accessible description, riding `describedBy`, which is
     // where this page already carries the availability word "so the buy tag's colour is

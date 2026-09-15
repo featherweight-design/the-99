@@ -36,6 +36,7 @@ import { PutBackControl } from "./put-back-control";
 import { MutationError } from "./mutation-error";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
+import { proxyCopy } from "../../lib/copy/proxies";
 
 const copy = deckVersioningCopy.review;
 const restoreCopy = deckVersioningCopy.restore;
@@ -86,6 +87,11 @@ function groupHeadingId(prefix: string, column: "in" | "out", group: string): st
 function bucketWord(bucket: DraftRow["bucket"]): string | null {
   if (bucket === "unowned") return copy.chipBuy;
   if (bucket === "claimed") return copy.chipPullable;
+  // `proxied` is deliberately absent here. This function feeds the row's
+  // SR-ONLY description, and a printed add gets a full sentence rather than a
+  // word — see the `word` composition below, which names the card and says why
+  // the row costs nothing. Returning the bare chip too would only make the
+  // sentence unreachable.
   return null;
 }
 
@@ -223,7 +229,13 @@ function Column({
             ? copy.commanderGuardA11y(pullClaim.name, row.name)
             : pullClaim?.pending
               ? copy.pullGuardA11y(pullClaim.name, row.name)
-              : bucketWord(row.bucket);
+              // A full sentence for a printed add, shaped like the two guards
+              // above it: it names the card and offers no action, because there
+              // is none to offer. The chip alone says `proxied`, which on its own
+              // does not say why the row costs nothing.
+              : row.bucket === "proxied"
+                ? proxyCopy.review.a11y(row.name)
+                : bucketWord(row.bucket);
           const wordId = `${descriptionId}-${row.oracleId}`;
           const card = {
             oracleId: row.oracleId,
@@ -231,6 +243,10 @@ function Column({
             typeLine: row.typeLine,
             auto: row.auto,
             owned: row.owned,
+            // Carried so `AvailabilitySlot` can test it BEFORE `owned` — the
+            // shipped slot drew a buy tag on any unowned add, and a printed card
+            // is unowned by design.
+            proxied: row.proxied,
             availability: row.availability ?? null,
             manaCost: row.manaCost ?? null,
             // Dropped outright when the claim read failed: the buy tag still says
