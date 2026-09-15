@@ -169,25 +169,29 @@ export function Decklist({
   // one character means. The glyph is the thing being decoded on every surface;
   // the plate around it is not, so the key draws the glyph in the row's box and
   // stops there.
+  // LIST VIEW ONLY, and that is a scope decision rather than a limitation.
+  //
+  // Five consecutive review rounds landed on this one line, each correct and
+  // each about the card view: the tile draws a different plate, does not draw a
+  // buy tag for an owned spoken-for card, and labels its `$` `not owned` — a
+  // FLOOR — where the row's identical glyph means `to buy`, the shop. A single
+  // legend cannot decode two vocabularies without becoming a third one.
+  //
+  // So the key decodes the rows it sits above. The card view's marks carry their
+  // own words already — the tile's `$` speaks `not owned` and `ProxyTag` speaks
+  // its own name — so nothing there is left undecoded, and a card-view decoder
+  // with its own vocabulary is a follow-up rather than this PR's problem.
   const markKey = useMemo((): MarkKeyEntry[] => {
+    if (view === "card") return [];
     const shown = filter === "shopping" ? cards.filter(isShoppingCard) : cards;
-    // Each view draws its own set of marks, so the key asks each view's OWN
-    // condition. The tile does not draw a buy tag for an owned spoken-for card —
-    // it draws the availability marker — so a key built from the row's rule
-    // would name a `$` that is not on screen in card view.
-    const drawsBuy = (c: DeckDetailCard) =>
-      view === "card"
-        ? deckRowTag(c) === "buy"
-        : deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy";
     const entries: MarkKeyEntry[] = [];
-    if (shown.some(drawsBuy)) {
+    if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
       entries.push({
         id: "buy",
         sample: <BuyTag variant="row" density="collapsed" price={null} />,
         word: proxyCopy.key.buy,
       });
     }
-    // Both views draw the proxy mark, on the same condition.
     if (shown.some((c) => c.proxied)) {
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
     }
