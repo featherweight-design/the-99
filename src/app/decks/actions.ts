@@ -1437,6 +1437,11 @@ export async function getVersionDiff(
  * already has pending changes, committing would sweep them into a version its
  * owner never asked for. That case sends the player to the source deck instead.
  */
+/** The refusal a failed proxy read produces on the pull path. Named so the test
+ *  can tell it from every other refusal — a fail-open bug would refuse for some
+ *  OTHER reason and a test asserting only `ok === false` would pass over it. */
+export const PROXY_READ_FAILED = "Could not check that deck just now. Try again.";
+
 export type PullResult =
   | {
       ok: true;
@@ -1602,9 +1607,19 @@ export async function pullCardFromDeck(
     // `free`, so the answer over one is no: the copy would leave that deck's box and
     // the figure would not move. Refused, and the purchase stands.
     const sources = pullSources(askingAvailability.get(oracleId) ?? { claims: [] });
+    // FAIL CLOSED here, unlike every rendering caller. This read is part of the
+    // authorization for a destructive act — the pull takes a copy out of another
+    // deck — and a swallowed failure would say "no proxies", authorize a pull for
+    // a card the asking deck is not actually short of, and empty somebody's box.
+    let askingProxies: ReadonlySet<string>;
+    try {
+      askingProxies = await proxiedOracleIds(askingDeckId, userId, "throw");
+    } catch {
+      return { ok: false, message: PROXY_READ_FAILED };
+    }
     const [bucketed] = bucketAdds([add], new Map(
       [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: pullSources(a) }]),
-    ), new Set(), await proxiedOracleIds(askingDeckId, userId));
+    ), new Set(), askingProxies);
     // A printed card asks the collection for nothing, so there is nothing to
     // pull FOR — the guard below refuses it on `bucket !== "claimed"`, which is
     // the same refusal a covered add already gets.

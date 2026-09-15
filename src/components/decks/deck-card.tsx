@@ -70,10 +70,10 @@ function statusDetailFor(
     case "To buy": {
       // Every figure here comes from the roll-up, never from `deck.toBuyCount`.
       // The roll-up excludes basics, as every Shopping surface does;
-      // `toBuyCount` is `built − ownedCount`, which neither excludes basics nor
-      // knows about seniority, so the two are different definitions of "to buy"
-      // and mixing them prints a cost that covers fewer copies than the number
-      // beside it.
+      // `toBuyCount` is `built − coveredCount`, which neither excludes basics
+      // nor knows about seniority, so the two are different definitions of "to
+      // buy" and mixing them prints a cost that covers fewer copies than the
+      // number beside it.
       //
       // A deck whose only unowned cards are basics therefore has a `To buy`
       // pill — that threshold counts them — and no roll-up entry at all. It

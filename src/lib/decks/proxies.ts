@@ -15,6 +15,18 @@ import { db } from "../../db";
 export async function proxiedOracleIds(
   deckId: string,
   userId: string,
+  /**
+   * What a failed read means. `"empty"` degrades to "no proxies", which is how
+   * every rendering surface read before the feature existed — a missing mark is
+   * the right cost for a query that did not run.
+   *
+   * `"throw"` is for a caller AUTHORIZING something destructive. `pullCardFromDeck`
+   * takes a copy out of another deck, and it decides that partly on this answer:
+   * a printed add asks the collection for nothing, so no pull is warranted. If
+   * the read fails and we say "no proxies", the pull is authorized on a card the
+   * asking deck was never short of, and another deck loses a copy. Fail closed.
+   */
+  onError: "empty" | "throw" = "empty",
 ): Promise<ReadonlySet<string>> {
   // try/catch around the call and not only `.catch` on the promise: a throw
   // here can be synchronous — a db stub with no `execute` at all is the usual
@@ -38,7 +50,8 @@ export async function proxiedOracleIds(
         )
     `);
     return new Set(result.rows.map((x) => x.oracle_id));
-  } catch {
+  } catch (err) {
+    if (onError === "throw") throw err;
     return new Set<string>();
   }
 }
@@ -67,7 +80,19 @@ export async function proxyCounts(userId: string): Promise<Map<string, ProxyCoun
     const result = await db.execute<{ deck_id: string; copies: number; covers: number }>(sql`
       select
         p.deck_id,
-        sum(case when dc.oracle_id is not null then dc.quantity else 1 end)::int as copies,
+        -- A card can be BOTH this deck's commander and a row on its own list,
+        -- which the claim model folds into one claim of 1 + listQuantity. The
+        -- count follows it: the body quantity plus one for the commander, or
+        -- either alone. Written as a sum of two terms rather than a branch,
+        -- because a branch is how the folded state gets undercounted.
+        sum(
+          coalesce(dc.quantity, 0)
+          + case
+              when d.commander_oracle_id = p.oracle_id
+                or d.partner_oracle_id = p.oracle_id then 1
+              else 0
+            end
+        )::int as copies,
         sum(
           case
             when dc.oracle_id is not null and not exists (

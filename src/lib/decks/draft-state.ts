@@ -208,6 +208,9 @@ type DraftRead = {
   names: Map<string, NameFact>;
   /** Empty unless the caller asked for detail. */
   detail: Map<string, DetailFact>;
+  /** The cards this deck prints. Empty on a failed read, which is how every
+   *  rendering surface read before proxies existed. */
+  proxied: ReadonlySet<string>;
 };
 
 /**
@@ -234,6 +237,8 @@ async function readDraft(
   };
   const bare = (state: DraftState): DraftRead => ({
     state, availability: null, prices: null, names: new Map(), detail: new Map(),
+    // A brew and a clean deck have no changes to draw, so nothing reads this.
+    proxied: new Set<string>(),
   });
 
   // A brew has no version to differ from, so it has no draft state at all — not
@@ -337,6 +342,7 @@ async function readDraft(
     : new Map<string, DetailFact>();
 
   return {
+    proxied,
     state: {
       version,
       adds: bucketed,
@@ -506,6 +512,10 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
       // unlimited. Stated here rather than in the row, so no component has to
       // learn what a basic is.
       owned: isBasicLand(name.typeLine) || detail.owned,
+      // The deck's own statement about this slot, carried so the review row has
+      // it. `owned` is NOT set true for a printed card — the collection has not
+      // moved — so the flag rides beside it and the row decides what to draw.
+      proxied: read.proxied?.has(change.oracleId) ?? false,
       quantity: Math.abs(to - from),
       auto: false,
       availability: read.availability?.get(change.oracleId) ?? null,

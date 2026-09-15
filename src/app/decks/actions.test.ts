@@ -16,6 +16,8 @@ const stub = vi.hoisted(() => {
     insertCalls: [] as { table: string; values: unknown; returning: unknown[] | null }[],
     // Tracks whether the transaction was called and whether it should reject
     transactionError: null as Error | null,
+    /** Makes raw reads throw — the proxy readers go through `db.execute`. */
+    executeError: null as Error | null,
     // The rows already in the deck, returned by the in-transaction read
     deckRows: [] as { oracleId: string; quantity: number }[],
     // The same read, per deck, for the one action that reads TWO decks' drafts
@@ -264,7 +266,13 @@ const stub = vi.hoisted(() => {
         },
       }),
     }),
-    execute: async () => {},
+    // `{ rows: [] }`, not `undefined`: that is the shape the driver returns, and
+    // readers destructure it. `proxiedOracleIds` fails CLOSED on the pull path,
+    // so a stub that throws here refuses every pull rather than testing one.
+    execute: async () => {
+      if (state.executeError) throw state.executeError;
+      return { rows: [] };
+    },
     // Table-aware, because `recordFillPass` reads the highest ordinal the deck
     // has used and would otherwise be handed deck card rows. That read is an
     // aggregate, so it always returns exactly one row.
@@ -307,6 +315,13 @@ const stub = vi.hoisted(() => {
     selectDistinctOn: () => makeSelectBuilder(),
     insert: (table: unknown) => makeInsertBuilder(table),
     delete: (table: unknown) => makeDeleteBuilder(table),
+    // Raw reads go through here — the proxy readers among them. `{ rows: [] }`
+    // is the driver's own shape; returning `undefined` made every pull refuse,
+    // because `proxiedOracleIds` fails CLOSED on that path by design.
+    execute: async () => {
+      if (state.executeError) throw state.executeError;
+      return { rows: [] };
+    },
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
       if (state.transactionError) throw state.transactionError;
       return fn(tx);
@@ -374,7 +389,7 @@ vi.mock("../../lib/decks/draft-state", () => ({
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
-  pullCardFromDeck, restoreAutoCards,
+  PROXY_READ_FAILED, pullCardFromDeck, restoreAutoCards,
 } from "./actions";
 import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
@@ -450,6 +465,7 @@ beforeEach(() => {
   stub.state.decks.length = 0;
   stub.state.insertCalls.length = 0;
   stub.state.transactionError = null;
+  stub.state.executeError = null;
   stub.state.deckRows.length = 0;
   stub.state.updateReturning.length = 0;
   stub.state.fillPasses.length = 0;
@@ -1457,6 +1473,20 @@ describe("pullCardFromDeck", () => {
   // Ownership proves the player may touch both decks, not that the app ever
   // offered this pull. Otherwise any two owned decks can be named and the source
   // made to lose a card nothing asked for.
+  // The proxy read is part of the authorization here, not decoration: a printed
+  // add asks the collection for nothing, so no pull is warranted for it. A
+  // swallowed failure would read as "no proxies", authorize the pull, and take a
+  // copy out of another deck on the strength of a query that threw.
+  it("refuses the pull when the proxy read fails", async () => {
+    stub.state.executeError = new Error("proxy read down");
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    stub.state.executeError = null;
+    // The MESSAGE, not just the refusal. Fail open and this pull refuses for a
+    // different reason entirely, so `ok === false` alone passes over the bug.
+    expect(result).toEqual({ ok: false, message: PROXY_READ_FAILED });
+    expect(stub.state.updateCalls).toEqual([]);
+  });
+
   it("refuses a card the asking deck is not waiting on", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     // Both decks sleeved with exactly this list: the source holds the card, and
