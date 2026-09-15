@@ -385,8 +385,11 @@ describe("ContestedCardRow — the chooser", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
     expect(screen.getByRole("radio", { checked: true })).toBeTruthy();
     expect(assign).toHaveBeenCalledWith("o1", "d2");
+    // Settled with the DEFAULT allocation, where no deck holds a granted reservation — so the
+    // optimistic check stands down rather than persisting. Asserting a checked radio here could
+    // only ever pass by racing the transition.
     settle({ ok: true, card: card() });
-    await waitFor(() => expect(screen.getByRole("radio", { checked: true })).toBeTruthy());
+    await waitFor(() => expect(screen.queryByRole("radio", { checked: true })).toBeNull());
   });
 
   it("names the deck in the undo hint, which is the only non-colour carrier of authorship", async () => {

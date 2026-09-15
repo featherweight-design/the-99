@@ -10,7 +10,6 @@
 // THIS module is a server action anybody can call — so it stays where a caller cannot reach it
 // with somebody else's id.
 
-import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { assignCopyFor, type AssignRefusal } from "../../lib/decks/assign";
 import { loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
@@ -39,13 +38,9 @@ export async function assignCopy(oracleId: string, deckId: string): Promise<Assi
   // EVERY claimant's page, not just this deck's. One reservation changes the allocation figures of
   // every deck claiming the card, so the pattern form is what keeps a losing deck from going on
   // drawing the marker and buy state it had before the pick.
+  // Every claimant's page AND the import receipt — `revalidateClaims` carries the summary route
+  // now, because a commit and a proxy toggle move those same figures and were leaving it stale.
   revalidateClaims(deckId, userId);
-  // AND THE SURFACE THE PICK WAS MADE ON. `revalidateClaims` covers the deck pages and the review
-  // page; the import receipt is a claim reader too — its contested rows are read live against the
-  // model — and leaving it out means navigating away and back restores the old allocation from
-  // the router cache, on the one page the chooser actually lives on. Pattern form: the route is
-  // keyed by upload id and there is no one path to name.
-  revalidatePath("/collection/replace/summary/[uploadId]", "page");
 
   // The row's fresh state, read after the write: the page is about to redraw it, and a refusal
   // without it would leave the player looking at exactly the state that lost.

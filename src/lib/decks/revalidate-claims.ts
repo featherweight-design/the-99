@@ -46,6 +46,12 @@ export function revalidateClaims(deckId: string, userId: string): void {
   // Pattern form and the `"page"` argument for the same reason the commander
   // page takes them — a dynamic route, and no one path to name.
   revalidatePath("/decks/[id]/changes", "page");
+  // The import receipt. Its contested rows are read LIVE against the claim model, so a commit, a
+  // proxy toggle or a pick all change what an older receipt says about who is short — and a
+  // cached one would go on answering for a claim that has moved. Pattern form: the route is keyed
+  // by upload id and there is no one path to name. Here rather than at one caller, because every
+  // claim write has the same effect on it.
+  revalidatePath("/collection/replace/summary/[uploadId]", "page");
   // EVERY OTHER DECK'S OWN PAGE, by pattern. `claimSurfaces` names this deck's
   // literal path alone, which was right while a claim change only moved figures
   // on the deck that made it and on the shared lists. A proxy breaks that: the
