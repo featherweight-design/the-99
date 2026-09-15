@@ -43,6 +43,7 @@ import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -415,7 +416,11 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
     if (!row) return;
     const where = and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
     if (row.quantity > 1) await tx.update(deckCards).set({ quantity: row.quantity - 1 }).where(where);
-    else await tx.delete(deckCards).where(where);
+    else {
+      await tx.delete(deckCards).where(where);
+      // The slot is gone, so the deck's statement about it goes with it.
+      await pruneOrphanProxies(tx, deckId);
+    }
     // Inside the `if (!row)` guard's shadow deliberately: a removal that found
     // nothing wrote nothing, and a stamp for a write that did not happen is the
     // one lie this column can tell.
@@ -573,7 +578,10 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
     const rows = await tx.delete(deckCards)
       .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
       .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
-    if (rows.length > 0) await touchDeck(tx, deckId);
+    if (rows.length > 0) {
+      await pruneOrphanProxies(tx, deckId);
+      await touchDeck(tx, deckId);
+    }
     return rows;
   });
   revalidateClaims(deckId, userId);
@@ -966,6 +974,7 @@ export async function undoFillPass(
         inArray(deckCards.oracleId, oracleIds),
       )).returning({ quantity: deckCards.quantity });
       removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
+      if (deleted.length > 0) await pruneOrphanProxies(tx, deckId);
     }
 
     const [built] = await tx
@@ -1638,6 +1647,7 @@ export async function pullCardFromDeck(
     if (decremented.length === 0) {
       await tx.delete(deckCards)
         .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
+      await pruneOrphanProxies(tx, sourceDeckId);
     }
     // The source deck's list really did change, so the column stays truthful.
     // Both stamps are `clock_timestamp()`, so the commit on the next line is

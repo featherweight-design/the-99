@@ -1,0 +1,42 @@
+import { sql } from "drizzle-orm";
+import type { db } from "../../db";
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Delete this deck's proxy rows for cards it no longer holds.
+ *
+ * A proxy is one deck's statement about one slot, so it dies with the slot. The
+ * reads are membership-scoped as well, which makes an orphan row inert for as
+ * long as it exists — but inert is not gone, and **a card re-added later would
+ * match the anti-join again and arrive silently already proxied**. That is the
+ * failure this closes, and the reads' scoping is defence in depth behind it
+ * rather than the guarantee itself.
+ *
+ * ONE RECONCILE STATEMENT, NOT A LIST OF WHAT LEFT. Every caller has just
+ * removed or replaced some part of the deck's list, and several of them (a
+ * re-import, a discard back to a version) delete every row and write a new set.
+ * Passing "the cards that went" would be wrong for those — the cards that came
+ * back are in the new set — so this asks the only question that is always right:
+ * which proxy rows have no membership NOW. Both commander columns count as
+ * membership, or proxying a commander would be undone by the next edit to the
+ * list below it.
+ *
+ * Idempotent, and safe to call when nothing was removed. `prune-proxies.test.ts`
+ * fails when a `delete(deckCards)` appears without one of these beside it.
+ */
+export async function pruneOrphanProxies(tx: Tx, deckId: string): Promise<void> {
+  await tx.execute(sql`
+    delete from deck_proxies p
+    where p.deck_id = ${deckId}
+      and not exists (
+        select 1 from deck_cards dc
+        where dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
+      )
+      and not exists (
+        select 1 from decks d
+        where d.id = p.deck_id
+          and (d.commander_oracle_id = p.oracle_id or d.partner_oracle_id = p.oracle_id)
+      )
+  `);
+}
