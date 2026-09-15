@@ -19,7 +19,7 @@ import { StatusPillBadge } from "../decks/status-pill";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { FitBar } from "../commanders/fit-bar";
 import { TwoFacedMark } from "../cards/two-faced-mark";
-import { Specimen, SpecimenCell, SpecimenGrid } from "./specimen";
+import { Specimen, SpecimenCell, SpecimenGrid, SpecimenRows } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
   AVAILABILITY,
@@ -66,6 +66,9 @@ function AvailabilityFigure({ width }: { width: AboutWidth }) {
 
 /** The four claims a buy tag makes, which are not four ways of saying "cost". */
 function BuyTagFigure({ width }: { width: AboutWidth }) {
+  // An inset frame is capped at 300px, which gives a four-column grid about
+  // 55px a cell — `$2.10 foil` wraps, and the annotation under it wraps twice.
+  const Layout = width === "inset" ? SpecimenRows : SpecimenGrid;
   const caption: Record<string, string> = {
     priced: "a figure — stocked today",
     foilOnly: "foil only",
@@ -75,7 +78,7 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
   const newest = PRICES[0].fact.asOf;
   return (
     <Specimen label="buy-tag" width={width}>
-      <SpecimenGrid>
+      <Layout>
         {PRICES.map(({ state, fact }) => (
           <SpecimenCell key={state} caption={caption[state]}>
             <BuyTag
@@ -89,7 +92,7 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
             />
           </SpecimenCell>
         ))}
-      </SpecimenGrid>
+      </Layout>
     </Specimen>
   );
 }
@@ -165,24 +168,27 @@ function FitFigure({ width }: { width: AboutWidth }) {
 }
 
 /**
- * What a decklist ROW puts in each of its slots, in the order it puts them.
+ * The marks a decklist row can carry, and what each one means.
  *
- * Rows, not tiles. The tile treatment was retired when the marks moved to
- * per-column annotation (STATES-about-r4 §I: "full-width rows, unchanged —
- * the row already IS the reduction"), so a 2×2 grid of glyphs teaches a
- * surface the reader will not meet.
+ * **A legend, not a replica**, and that is a scope decision rather than a
+ * shortcut. Two review rounds landed on this figure, and each round's findings
+ * asked it to match the row more closely: the slot order, the dot's responsive
+ * size, the row's phone pip treatment against its desktop one. Following that
+ * to its end is a second implementation of `DecklistRow` living on a reference
+ * page, drifting from the first one edit at a time — and the row cannot simply
+ * be mounted, because it takes a deck id, mutation handlers and a card record
+ * that a reference page has none of and must not invent.
  *
- * Every part is the app's own component at the row's own size: the dot at 7px,
- * the cost at COST_PIP_SIZE inside COST_TRACK, the marker in the row's mono.
- * The ROW ITSELF is not mounted — it takes a deck id, mutation handlers and a
- * card record, none of which a reference page has or should invent — so this
- * assembles its parts rather than forking it.
+ * So: every MARK is the app's own component, in the row's order and at the
+ * row's desktop treatment, and the figure claims nothing about layout. One
+ * treatment per mark, because a legend shows a mark once; the row's breakpoint
+ * forks are the row's business.
  */
 function MarksFigure({ width }: { width: AboutWidth }) {
   const rows = [
-    { name: CARDS.owned, owned: true, cost: COSTS.simple, a: AVAILABILITY[0].a, note: "yours, and nothing wants it" },
-    { name: CARDS.removed, owned: true, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "a brew wants it" },
-    { name: "Cyclonic Rift", owned: true, cost: COSTS.simple, a: AVAILABILITY[3].a, note: "more asked for than you own" },
+    { name: CARDS.owned, cost: COSTS.simple, a: AVAILABILITY[0].a, note: "yours, and nothing wants it" },
+    { name: CARDS.removed, cost: COSTS.crowded, a: AVAILABILITY[1].a, note: "a brew wants it" },
+    { name: "Cyclonic Rift", cost: COSTS.simple, a: AVAILABILITY[3].a, note: "more asked for than you own" },
   ];
   return (
     <Specimen label="marks" width={width}>
@@ -190,10 +196,19 @@ function MarksFigure({ width }: { width: AboutWidth }) {
         {rows.map((row) => (
           <div key={row.name} className="flex flex-col gap-[4px]">
             <div className="flex items-center gap-[8px]">
-              <OwnershipDot owned={row.owned} size={7} />
+              <OwnershipDot owned size={7} />
               <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
                 {row.name}
               </span>
+              {/* Cost before marker, which is the order the row draws them. */}
+              <CostPips
+                cost={row.cost}
+                size={COST_PIP_SIZE}
+                track={COST_TRACK}
+                cap={COST_PIP_CAP}
+              />
+              {/* `density="row"` leaves the font to the caller, and the real
+                  row supplies these two classes. */}
               <span className="font-mono text-[11px] min-[1000px]:text-[11.5px]">
                 <AvailabilityMarker
                   availability={row.a}
@@ -201,27 +216,27 @@ function MarksFigure({ width }: { width: AboutWidth }) {
                   seam="var(--surface-sunken)"
                 />
               </span>
-              <CostPips
-                cost={row.cost}
-                size={COST_PIP_SIZE}
-                track={COST_TRACK}
-                cap={COST_PIP_CAP}
-              />
             </div>
             <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
               {row.note}
             </span>
           </div>
         ))}
-        {/* The two-faced mark rides beside a name rather than in a slot of its
-            own, which is where the row draws it. */}
         <div className="flex items-center gap-[8px]">
           <OwnershipDot owned={false} size={7} />
           <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--fg)]">
             {CARDS.twoFaced}
           </span>
           <TwoFacedMark layout="transform" />
-          <BuyTag variant="row" price={PRICES[0].fact} newestAsOf={PRICES[0].fact.asOf} density="full" />
+          {/* `collapsed`, not `full`: the row draws the shopping treatment only
+              inside Shopping, and everywhere else the mark is a bare `$` —
+              which is the mark this entry's key line names. */}
+          <BuyTag
+            variant="row"
+            price={PRICES[0].fact}
+            newestAsOf={PRICES[0].fact.asOf}
+            density="collapsed"
+          />
         </div>
         <span className="font-mono text-[10px] leading-[1.35] text-[color:var(--fg-faint)]">
           not owned — the buy mark takes the slot, and `//` says two faces
@@ -236,7 +251,12 @@ function MarksFigure({ width }: { width: AboutWidth }) {
  * and its key lines, which is what every entry did before this PR and is still
  * a complete answer for a workflow.
  */
-export const FIGURES: Record<string, (props: { width: AboutWidth }) => React.JSX.Element> = {
+// `Partial`, because it IS partial: a plain Record tells TypeScript every
+// entry id has a renderer, which makes `FIGURES[id]` look non-nullable and
+// would let a caller invoke a missing one with no type error.
+export const FIGURES: Partial<
+  Record<string, (props: { width: AboutWidth }) => React.JSX.Element>
+> = {
   availability: AvailabilityFigure,
   "buy-tag": BuyTagFigure,
   statuses: StatusFigure,

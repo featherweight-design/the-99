@@ -160,6 +160,36 @@ describe("the figures", () => {
     }
   });
 
+  it("draws the buy tag's four claims, which are not four ways of saying cost", () => {
+    // The frame is not the figure: asserting `data-width` alone leaves three
+    // of the four states deletable with the suite still green.
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["buy-tag"];
+    // `sold out` is a live-row comparison, so it only appears when the fixture
+    // is stale against the newest stamp — a wrong date silently makes it a
+    // fourth priced tag.
+    expect(plate.textContent).toContain("sold out");
+    expect(plate.textContent).toContain("foil");
+    // The priced state prints a figure; absent prints nothing at all.
+    expect(plate.textContent).toMatch(/\$\d/);
+    const tags = [...plate.querySelectorAll("span")].filter((el) =>
+      el.className.toString().includes("rounded"),
+    );
+    expect(tags.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("mounts a real bar in each fit shape", () => {
+    // `out of 100` and `out of 40` are SpecimenCell captions and print whether
+    // or not FitBar returned anything, so the annotation cannot stand in for
+    // the figure.
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["fit"];
+    const tracks = [...plate.querySelectorAll("div")].filter((el) =>
+      el.className.toString().includes("rounded-full"),
+    );
+    expect(tracks.length).toBeGreaterThanOrEqual(2);
+  });
+
   it("gives an inset entry the inset frame and a plate entry the plate", () => {
     const { container } = render(<AboutPage seen={0} />);
     const f = figures(container);
@@ -215,6 +245,32 @@ describe("the figures", () => {
     );
     expect(flip.length, "the two-faced mark drew nothing").toBeGreaterThan(0);
     expect(plate.textContent).toContain("Sol Ring");
+
+    // The other three slot components, each deletable without the assertions
+    // above noticing: the marker's words, the cost's pips, and the unowned
+    // row's buy mark — `$` and not the shopping treatment.
+    expect(plate.textContent).toContain("in a brew");
+    expect(plate.textContent).toContain("short 2");
+    // The cost draws a fixed-width track; jsdom sees the style even though it
+    // lays nothing out, and an omitted CostPips leaves no element carrying it.
+    const tracks = [...plate.querySelectorAll("span")].filter(
+      (el) => (el as HTMLElement).style.width === "72px",
+    );
+    expect(tracks.length, "the cost track drew nothing").toBeGreaterThan(0);
+    // `collapsed` is a bare `$`; `full` is the shopping treatment and prints a
+    // figure. The entry's key line names the bare mark, so a price here would
+    // teach the wrong one — and the visible text is what tells them apart,
+    // since `full` keeps the word in the accessible name either way.
+    // Leaf spans with no sr-only ANCESTOR. `collapsed` draws `$` and keeps the
+    // sentence in an sr-only sibling, so two things defeat a naive sweep:
+    // every ancestor span reads back as `$buy·$2.10`, and the figure inside
+    // the sr-only subtree is itself a leaf whose own class is not sr-only.
+    // Both made the two densities indistinguishable.
+    const visible = [...plate.querySelectorAll("span")]
+      .filter((el) => el.childElementCount === 0 && el.closest(".sr-only") === null)
+      .map((el) => el.textContent ?? "");
+    expect(visible.some((t) => t.trim() === "$"), "the buy mark drew nothing").toBe(true);
+    expect(visible.some((t) => /\$\d/.test(t)), "the shopping treatment leaked in").toBe(false);
   });
 
   it("draws both fit shapes and writes no prose inside the frame", () => {

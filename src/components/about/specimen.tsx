@@ -77,3 +77,8 @@ export function SpecimenCell({
 export function SpecimenGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-[14px] min-[1000px]:grid-cols-4">{children}</div>;
 }
+
+/** An inset's stack. One cell per line, because 300px does not hold four. */
+export function SpecimenRows({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col gap-[12px]">{children}</div>;
+}

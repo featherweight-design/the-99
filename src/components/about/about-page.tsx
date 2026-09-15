@@ -51,20 +51,39 @@ function NewMark() {
 
 function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
   const Figure = FIGURES[entry.id];
+  // An inset runs beside its prose at the wide stop — that is what makes it an
+  // inset rather than a narrow plate. Both collapse to one column below it:
+  // at 390px there is no room for a figure beside anything.
+  const inset = entry.width === "inset" && Figure;
   return (
-    // No per-entry rule below `min-[1000px]:`: the chapter hairline is the only one the
-    // compact state draws, and a rule per entry turned a chapter into a table.
+    // No per-entry rule below the wide stop — a rule per entry turns a chapter
+    // into a table. The chapter's OWN hairline stays at both widths and is
+    // drawn on the section, not here: removing this border without putting one
+    // there left the compact page with no rules at all.
     <li className="pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]">
       <h3 className="font-display text-[15px] min-[1000px]:text-[16px]" style={{ color: "var(--fg)" }}>
         {entry.title}
         {marked && <NewMark />}
       </h3>
 
-      <p className="mt-[6px] text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
-        {entry.caption}
-      </p>
+      {inset ? (
+        <div className="mt-[6px] flex flex-col gap-[10px] min-[1000px]:flex-row min-[1000px]:items-start min-[1000px]:gap-[18px]">
+          <div className="order-2 min-w-0 flex-1 min-[1000px]:order-1">
+            <p className="text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+              {entry.caption}
+            </p>
+          </div>
+          <div className="order-1 min-[1000px]:order-2 min-[1000px]:w-[300px] min-[1000px]:flex-none">
+            <Figure width={entry.width} />
+          </div>
+        </div>
+      ) : (
+        <p className="mt-[6px] text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+          {entry.caption}
+        </p>
+      )}
 
-      {Figure && <Figure width={entry.width} />}
+      {Figure && !inset && <Figure width={entry.width} />}
 
       {entry.keys.length > 0 && (
         <ul className="mt-[8px] list-none space-y-[4px] p-0">
@@ -165,7 +184,11 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
       </nav>
 
       {CHAPTERS.map((n) => (
-        <section key={n} id={`chapter-${n}`} className="mt-[28px] scroll-mt-[20px]">
+        <section
+          key={n}
+          id={`chapter-${n}`}
+          className="mt-[28px] border-t border-solid border-[color:var(--border)] pt-[18px] scroll-mt-[20px]"
+        >
           <h2 className="font-display text-[19px] min-[1000px]:text-[21px]" style={{ color: "var(--fg)" }}>
             <span className="font-mono text-[12px]" style={{ color: "var(--fg-faint)" }}>
               {n}
