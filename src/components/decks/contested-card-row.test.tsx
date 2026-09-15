@@ -224,6 +224,30 @@ describe("ContestedCardRow", () => {
     expect(screen.queryByText(copy.contested.keeps)).toBeNull();
   });
 
+  // `ownedBefore` is a fact about the COLLECTION, not about one deck. With an old copy, an
+  // earlier list claimant and a later commander claimant, the queue gives the old copy to the
+  // list deck and the arriving one to the commander — so the commander kept nothing, however
+  // true it is that a copy existed before.
+  it("says gets it when the old copy went to an earlier deck", () => {
+    render(<ContestedCardRow card={card({
+      ownedBefore: 1,
+      arrived: 1,
+      owned: 2,
+      claimants: [
+        {
+          deckId: "d1", deckName: "Earlier, by list", quantity: 1, commanderCopies: 0,
+          since: AUG, versionNumber: 1, allocated: 1,
+        },
+        {
+          deckId: "d2", deckName: "Later, by commander", quantity: 1, commanderCopies: 1,
+          since: SEP, versionNumber: 1, allocated: 1,
+        },
+      ],
+    })} />);
+    expect(screen.queryByText(copy.contested.keeps)).toBeNull();
+    expect(screen.getAllByText(copy.contested.gets)).toHaveLength(2);
+  });
+
   // A commander's copy is not giveable, so it is not one of the copies the cap counts out.
   it("counts only giveable copies in the cap", () => {
     render(<ContestedCardRow card={card({

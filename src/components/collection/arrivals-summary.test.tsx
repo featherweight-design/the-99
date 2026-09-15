@@ -107,7 +107,7 @@ describe("ArrivalsSummary", () => {
   });
 
   it("takes the contention lede when a copy has to cover two decks", () => {
-    render(view(summary({ contested: [{ oracleId: CARD, arrived: 1 }] }), [contestedCard()]));
+    render(view(summary({ contested: [{ oracleId: CARD, arrived: 1, ownedBefore: 0 }] }), [contestedCard()]));
     expect(screen.getByText(copy.summary.lede(100, 3, 1))).toBeTruthy();
     expect(screen.getByText(copy.summary.sectionShort(1))).toBeTruthy();
   });

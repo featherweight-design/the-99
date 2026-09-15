@@ -95,14 +95,21 @@ export const cardAssignmentsCopy = {
      * "you saw them before you confirmed" is load-bearing: without it the line implies the app
      * has just discovered something, and a clean replace reads as a failed one.
      */
+    /**
+     * COUNTS, AND NO CLAIM ABOUT WHICH CARDS ARE MISSING. An earlier form ended "those cards
+     * aren't in your collection now", which is false in both reachable cases: an upload can
+     * carry a good line for a card AND a duplicate line that failed to match it, so the card is
+     * there; and a parse error has no card identity at all, so nothing can be said about what
+     * it was. The per-row `name didn't match` clause is where absence IS asserted, because
+     * there it is asserted about one row the diff proved is still owed.
+     */
     issues: (unmatched: number, parseErrors: number) =>
       `${unmatched} ${unmatched === 1 ? "name" : "names"} didn't match and ${parseErrors} ` +
-      `${parseErrors === 1 ? "line wouldn't" : "lines wouldn't"} parse. Those cards aren't in ` +
-      "your collection now, so any deck that lists them is billing them again — you saw them " +
-      "before you confirmed.",
+      `${parseErrors === 1 ? "line wouldn't" : "lines wouldn't"} parse. Any deck still billing ` +
+      "one of those is marked below — you saw them before you confirmed.",
     issuesUnmatchedOnly: (n: number) =>
-      `${n} ${n === 1 ? "name" : "names"} didn't match, so ${n === 1 ? "that card" : "those cards"} ` +
-      "aren't in your collection now — you saw them before you confirmed.",
+      `${n} ${n === 1 ? "name" : "names"} didn't match. Any deck still billing ` +
+      `${n === 1 ? "that card" : "one of those"} is marked below — you saw them before you confirmed.`,
     issuesLink: "Look at the file again",
 
     sectionCleared: (n: number) => `No longer to buy · ${n}`,

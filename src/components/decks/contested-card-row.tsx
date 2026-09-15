@@ -107,6 +107,20 @@ export function ContestedCardRow({
     card.claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
     card.arrived,
   );
+  // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the
+  // collection. `ownedBefore > 0` is not enough on its own: with one old copy, an earlier list
+  // claimant and a later commander claimant, the queue gives the old copy to the list deck and
+  // the arriving one to the commander — so the commander did NOT keep anything, however true it
+  // is that a copy existed. Re-running the same queue over the pre-import supply answers it.
+  const heldBefore = new Set<string>();
+  {
+    let left = card.ownedBefore;
+    for (const c of card.claimants) {
+      const took = Math.min(c.quantity, left);
+      if (took > 0) heldBefore.add(c.deckId);
+      left -= took;
+    }
+  }
   // The deck the shortage actually falls on — the one whose ask is not covered. Naming the
   // first commander claimant instead points at a deck that is keeping its copy, which is the
   // opposite of what the note says about it.
@@ -154,7 +168,7 @@ export function ContestedCardRow({
           // `keeps it` says the deck had the card BEFORE the import, so it is only available
           // when a copy predates it. A first arrival landing on a commander's claim is a deck
           // that GETS the card, however protected that copy is from here on.
-          const predates = card.ownedBefore > 0;
+          const predates = heldBefore.has(c.deckId);
           const outcome = c.commanderCopies > 0 && c.allocated > 0 && predates
             ? (spareToThisDeck > 0
                 ? copy.contested.keepsAndGets(Math.min(c.commanderCopies, c.allocated), spareToThisDeck)
