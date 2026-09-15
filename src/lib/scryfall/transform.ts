@@ -61,7 +61,7 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
  * two costs on one side.
  *
  * A modal DFC's back face is castable and printed with its own cost — Birgi, God
- * of Storytelling turns to Harnfel, Horn of Bounty at `{3}{R}` — and storing the
+ * of Storytelling turns to Harnfel, Horn of Bounty at `{4}{R}` — and storing the
  * front alone left that cost nowhere in the app. Joining them means every reader
  * is already right: a row takes `frontFaceCost`, which is the face that row
  * shows, and the card modal takes `faceCosts`, which draws both halves with a
