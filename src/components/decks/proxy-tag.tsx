@@ -57,7 +57,10 @@ const PLATE: Record<ProxyTagVariant, React.CSSProperties> = {
 
 export function ProxyTag({
   variant = "row",
-  /** The commander's short name, on a PAIR deck only. Two commanders, two
+  /** The commander's SHORT name — `shortName()`, everything before the epithet —
+   *  on a PAIR deck only. The caption beside it already carries the full name,
+   *  so `P · Kraum, Ludevic's Opus` would repeat it and spend the narrow
+   *  header's width saying so twice. Two commanders, two
    *  independent flags and one caption row: a bare `P` there could belong to
    *  either name. A single commander never pays for this, and `P×2` is banned
    *  by ruling 5. */

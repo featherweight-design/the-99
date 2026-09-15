@@ -245,10 +245,15 @@ export function BuilderShell({
   // draws, counted here off the rows the page already holds so the two surfaces
   // cannot disagree about one deck. Distinct marks, never copies: one mark on a
   // quantity-4 row is one printed card (ruling 5).
-  const proxiedCount =
-    cards.filter((c) => c.proxied).length
-    + (deck.commander.proxied ? 1 : 0)
-    + (deck.partner?.proxied ? 1 : 0);
+  // A SET of oracle ids, not a row count plus two booleans: a commander can also
+  // be a row on its own list, and adding the two counted that one printed card
+  // twice. The server's `proxyCounts` folds the same case for the same reason —
+  // the primary key says one mark — so the header and the tile agree.
+  const proxiedCount = new Set([
+    ...cards.filter((c) => c.proxied).map((c) => c.oracleId),
+    ...(deck.commander.proxied ? [deck.commander.oracleId] : []),
+    ...(deck.partner?.proxied ? [deck.partner.oracleId] : []),
+  ]).size;
   const { built } = counts;
 
   // The ceiling this page measures against, derived once. A pair's commanders

@@ -23,6 +23,7 @@ import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { shortName } from "../../lib/prose/prompt";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -413,7 +414,7 @@ export function SpineDesktop({
                     {partner.name}
                   </CardDetailTrigger>
                   {partner.proxied ? (
-                    <ProxyTag variant="band" pairName={partner.name} />
+                    <ProxyTag variant="band" pairName={shortName(partner.name)} />
                   ) : null}
                 </>
               ) : null}

@@ -23,6 +23,7 @@ import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { shortName } from "../../lib/prose/prompt";
 
 /** The rename glyph's drawn size. Named because the measurement below has to
     keep the glyph inside the block, and the heading reserves the same figure. */
@@ -133,7 +134,7 @@ export function SpineMobile({
             {/* The pair names its owner, here as on desktop: two flags on one
                 caption row make a bare glyph ambiguous. */}
             {commander.proxied ? (
-              <ProxyTag variant="band" pairName={commander.name} />
+              <ProxyTag variant="band" pairName={shortName(commander.name)} />
             ) : null}
             <span style={{ flex: "none" }}>+</span>
             {/* The partner's printing opens from the word that names it. The
@@ -164,7 +165,7 @@ export function SpineMobile({
                 {partner.name}
               </span>
             </CardDetailTrigger>
-            {partner.proxied ? <ProxyTag variant="band" pairName={partner.name} /> : null}
+            {partner.proxied ? <ProxyTag variant="band" pairName={shortName(partner.name)} /> : null}
           </>
         ) : (
           <>
