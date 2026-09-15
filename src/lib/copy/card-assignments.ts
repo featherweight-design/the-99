@@ -285,6 +285,16 @@ export const cardAssignmentsCopy = {
       `There's no copy left to give. ${holder} was already given the one that arrived, and your ` +
       `collection has ${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above ` +
       `are what you actually have. Take it off ${holder} first if you want ${deck} to have it.`,
+    /**
+     * The same refusal on a surface with no import behind it. `refusedNoSupply` says the holder
+     * was given "the one that arrived", which is false on the deck's own review page — nothing
+     * arrived there, and the copy in question is one the player already owned.
+     */
+    refusedNoSupplyOwned: (holder: string, have: number, deck: string) =>
+      `There's no copy left to give. ${holder} already has ` +
+      `${have === 1 ? "the only one" : "one"}, and your collection has ` +
+      `${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above are what you ` +
+      `actually have. Take it off ${holder} first if you want ${deck} to have it.`,
     /** Reachable: the payload records one import, so a deck can promote the card between renders. */
     refusedIsCommander: (card: string, deck: string) =>
       `${card} is ${deck}'s commander now. A commander's copy can't be given away. Nothing ` +

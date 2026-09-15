@@ -449,6 +449,25 @@ describe("ContestedCardRow — the chooser", () => {
     expect(screen.queryByText(copy.contested.clear)).toBeNull();
   });
 
+  it("does not say a copy arrived when the refusal comes from the review page", async () => {
+    assign.mockResolvedValue({
+      ok: false,
+      cause: "no-supply-left",
+      card: card({ cardName: "Brushland", fromImport: false }),
+    });
+    render(<ContestedCardRow card={card({ fromImport: false })} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ }));
+    await waitFor(() => {
+      expect(screen.getAllByText(
+        copy.contested.refusedNoSupplyOwned("HD Avatar Aang", 1, "Elemental Dragons"),
+      )).toHaveLength(2);
+    });
+    // The arrival wording belongs to the receipt, and nothing arrived here.
+    expect(screen.queryByText(
+      copy.contested.refusedNoSupply("HD Avatar Aang", 1, "Elemental Dragons"),
+    )).toBeNull();
+  });
+
   it("has a sentence for each drawable cause", async () => {
     for (const [cause, expected] of [
       ["claimant-no-longer-asks", copy.contested.refusedNotWanted("Elemental Dragons", "Brushland", "HD Avatar Aang")],

@@ -97,7 +97,12 @@ function refusalSentence(cause: AssignRefusal, card: ContestedCard, deckName: st
     case "claimant-no-longer-asks":
       return copy.contested.refusedNotWanted(deckName, card.cardName, holder);
     case "no-supply-left":
-      return copy.contested.refusedNoSupply(holder, card.owned, deckName);
+      // The arrival wording belongs to a receipt. This refusal is reachable on the review page
+      // too — a race, or a pick made while another tab took the last copy — and there nothing
+      // arrived at all.
+      return card.fromImport
+        ? copy.contested.refusedNoSupply(holder, card.owned, deckName)
+        : copy.contested.refusedNoSupplyOwned(holder, card.owned, deckName);
     case "target-is-commander":
       return copy.contested.refusedIsCommander(card.cardName, deckName);
     // `not-your-deck` has no sentence by design: a player cannot reach it from their own decks,
