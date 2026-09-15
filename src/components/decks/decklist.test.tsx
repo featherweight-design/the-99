@@ -1007,3 +1007,73 @@ describe("the deck list's sort control", () => {
       .not.toContain("border-[color:var(--accent)]");
   });
 });
+
+// One sort per lane, remembered. The two lanes answer different questions —
+// `Price` is not even offered under `All` — so the orders are held apart and
+// restored per lane. The state lives in `the99:deck-sort`, so this walks it the
+// way a reader would: choose in one lane, come back to the other, return.
+describe("the deck list remembers one order per lane", () => {
+  const NEWEST = new Date("2026-09-01T09:00:00.000Z");
+  const priced = (cents: number) => ({
+    cents, foilCents: null, etchedCents: null, asOf: NEWEST,
+  });
+  const rows = [
+    makeCard({ oracleId: "crypt", name: "Mana Crypt", owned: false, auto: false, cmc: 0, role: "ramp", price: priced(18999) } as never),
+    makeCard({ oracleId: "signet", name: "Arcane Signet", owned: false, auto: false, cmc: 2, role: "ramp", price: priced(85) } as never),
+  ];
+  const triggerText = () =>
+    screen.getByRole("button", { name: /Sort the deck list/ }).textContent ?? "";
+  const pick = (name: RegExp) => {
+    fireEvent.click(screen.getByRole("button", { name: /Sort the deck list/ }));
+    fireEvent.click(screen.getByRole("option", { name }));
+  };
+
+  it("keeps All's order out of Shopping's, and restores each", () => {
+    window.localStorage.removeItem("the99:deck-sort");
+
+    // Shopping opens on #629's order and is moved to Name.
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    expect(triggerText()).toContain("Price · Highest");
+    pick(/^Name/);
+    expect(triggerText()).toContain("Name · A–Z");
+    cleanup();
+
+    // All has its own, untouched by that — and `Price` is not on offer here.
+    renderDecklist(rows, { filter: "all", newestAsOf: NEWEST });
+    expect(triggerText()).toContain("Name · A–Z");
+    pick(/^Mana value/);
+    expect(triggerText()).toContain("Mana value · Curve up");
+    cleanup();
+
+    // Back to Shopping: its own choice, not All's.
+    renderDecklist(rows, { newestAsOf: NEWEST });
+    expect(triggerText()).toContain("Name · A–Z");
+    cleanup();
+
+    // And All still holds what All was left in.
+    renderDecklist(rows, { filter: "all", newestAsOf: NEWEST });
+    expect(triggerText()).toContain("Mana value · Curve up");
+  });
+
+  // The comparator is threaded into BOTH grouping branches, and only one of
+  // them is the default. A regression that dropped it from `groupByCardType`
+  // would pass every other test here.
+  it("orders the rows inside a TYPE group too, not only a role group", () => {
+    window.localStorage.removeItem("the99:deck-sort");
+    renderDecklist(rows, { filter: "all", grouping: "type", newestAsOf: NEWEST });
+
+    const order = (wanted: string[]) => {
+      const text = [...document.querySelectorAll("*")]
+        .filter((el) => el.children.length === 0)
+        .map((el) => el.textContent?.trim() ?? "");
+      return wanted
+        .map((name) => ({ name, at: text.findIndex((t) => t === name) }))
+        .sort((a, b) => a.at - b.at)
+        .map((r) => r.name);
+    };
+
+    expect(order(["Mana Crypt", "Arcane Signet"])).toEqual(["Arcane Signet", "Mana Crypt"]);
+    pick(/^Mana value/);
+    expect(order(["Mana Crypt", "Arcane Signet"])).toEqual(["Mana Crypt", "Arcane Signet"]);
+  });
+});
