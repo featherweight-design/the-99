@@ -5,6 +5,9 @@
 // `keys`; the audit flagged that as the one finding that blocked build rather
 // than degrading it. It now matches the canvas entry for entry, in order.
 //
+// R4: one entry added (`post-import`, #639/#643), `deck-import` and `export`
+// corrected against source, `put-back` retitled to `undo-removal`. 33 entries.
+//
 // Voice: Kitchen Table. An entry explains a thing the app already does, to a
 // player who has met it and wants to know what it meant.
 //
@@ -103,6 +106,32 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or a list pasted straight in. We read owned counts, sets and finishes. An import replaces what is there rather than adding to it, and you see a preview before anything is written.',
     keys: [],
+    since: 1,
+  },
+  {
+    id: 'post-import',
+    chapter: '01',
+    title: 'What a replace did to your decks',
+    route: '/collection/replace',
+    opens: 'opens the import summary',
+    width: 'plate',
+    caption:
+      'An import replaces your collection, so it can change what your decks can supply. The summary says what moved and which decks felt it. No deck is edited — a deck keeps every card it had; what changes is whether you own it.',
+    keys: [
+      'before and after, both printed, so the change is checkable rather than asserted.',
+      "a deck's line is the availability it gained or lost, in the same marks the deck itself draws — and a deck whose cards came free carries no mark, because free carries nothing anywhere.",
+      'decks nothing happened to are counted, not listed — the summary is what changed, not an inventory.',
+    ],
+    // ⚠ R4: strings inside this figure are FIXTURES, not read from source.
+    // #639/#643 landed after the last read of main; the structure is the
+    // entry's subject and holds, the vocabulary wants one pass against
+    // copy/collection-replace.ts before build. See READINESS-r4.md.
+    //
+    // One structural decision inside it, not a fixture: the `freed up` row
+    // carries NO diamond. `3 cards freed up` means those copies became free,
+    // and free carries nothing anywhere in the app — the availability entry
+    // two above this one teaches exactly that. A solid diamond there would be
+    // the `none free` mark on a row announcing the opposite.
     since: 1,
   },
   {
@@ -329,14 +358,18 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
-    id: 'put-back',
+    id: 'undo-removal',
     chapter: '03',
-    title: 'Put back',
+    title: 'Undoing a removal',
     route: '/decks',
     opens: 'opens a deck',
     width: 'inset',
+    // R4: the specimen is the DECK PAGE control — `Rhystic Study removed` +
+    // `Undo` (decks-builder.ts, undo.removed / undo.action). The review
+    // screen's `Put back` (deck-versioning.ts:249) is a second door and is
+    // named in the caption rather than drawn. R3 drew one wearing the other.
     caption:
-      "Every removal can be undone from where it happened, with the card named. Putting a card back also puts back what it cost — the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed.",
+      "Every removal can be undone from where it happened, with the card named. The review screen carries the same undo on a cut row, where it reads Put back. Putting a card back also puts back what it cost — the deck's count, its shopping total and any claim it had on your collection all return together, so undo never leaves the figures half-changed.",
     keys: [],
     since: 1,
   },
@@ -346,8 +379,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Bring a deck over, or update one',
     route: '/decks/import',
     width: 'inset',
+    // R4: there is NO link mode. copy/deck-import.ts:26-30 — "that mode does
+    // not exist and is not being built (#282)". The doors are `Paste a list`
+    // and `Upload a file` (:37-40); the phone line is "Paste it or drop a
+    // file". Import reads a Moxfield CSV *export*, which is the collection
+    // entry's claim, not this one's.
     caption:
-      'A Moxfield link, a pasted list or a file. The same route updates a deck you already have. A line we cannot put a card to does not stop the import — the deck is still made, the line is flagged inside it, and it counts toward the 99 but not toward what is built.',
+      'Paste a list or upload a file. The same route updates a deck you already have — there is no link mode, from Moxfield or anywhere else. A line we cannot put a card to does not stop the import — the deck is still made, the line is flagged inside it, and it counts toward the 99 but not toward what is built.',
     keys: [],
     since: 1,
   },
@@ -373,12 +411,17 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     opens: 'opens the export dialog',
     width: 'plate',
+    // R4: the tabs are `Decklist` and `Shopping list` (export-dialog.tsx:2,52);
+    // the primary is `Copy to clipboard`, swapping to `Copied ✓` for 1.5s
+    // (export-copy-button.tsx:72); the secondary is `Download .txt`
+    // (export-dialog.tsx:561). `Buy these at Mana Pool` was already right
+    // (decks-builder.ts:472).
     caption:
       'The whole 99 as text a deckbuilding site will read, or just the cards you do not own. Buying is a link out, not a checkout — we hand Mana Pool the list and they take it from there, in a new tab, with nothing of yours attached.',
     keys: [
-      'the Shopping tab is the cards you do not own, counted on the pill — the same set the library-wide roll-up totals.',
+      'the Shopping list tab is the cards you do not own, counted on the pill — the same set the library-wide roll-up totals.',
       "the link opens in a new tab and carries the list, nothing else. A card's own link lands on every printing, because the app recommends a card rather than a printing.",
-      'copy and .txt are the same list in the form each site wants. Nothing here changes the deck.',
+      'Copy to clipboard reads Copied ✓ for a second and a half, then returns. It and Download .txt are the same list in the form each site wants, and nothing here changes the deck.',
     ],
     since: 1,
   },

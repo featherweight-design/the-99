@@ -1,25 +1,64 @@
-# About The 99 — R3
+# About The 99 — R4
 
-R2 was the right artifact with wrong figures in three places and eight features missing.
-**R3 makes all five corrections, draws all eight missing entries, regenerates the copy file to
-match, and adds the thing that stops it recurring: a blank per-entry template.**
-The specimen grammar from R2 is unchanged, and every locked decision from R1 and R2 holds.
+R3's three unscreenshotted figures were all wrong, as R3 predicted. **R4 corrects them, pastes the
+six per-theme `--avail-*` blocks, and adds entry 33 — the post-import summary — drawn on §8's own
+template.** The specimen grammar is unchanged and every locked decision from R1 and R2 holds.
 
-**Deliverable:** `The 99 - About Page (R3).dc.html` (canvas, six-theme `theme` prop).
-R1 and R2 are kept for the audit trail. Both are superseded.
+**Deliverable:** `The 99 - About Page (R4).dc.html` (canvas, six-theme `theme` prop).
+R1–R3 are kept for the audit trail and are superseded.
 
 | File | What it is |
 |---|---|
-| `The 99 - About Page (R3).dc.html` | The deliverable. Grammar and annotation key (§1), the mark (§2), **the page at desktop — four chapters, thirty-two figures (§3)**, the behind and current readers (§4), phone (§5), account menu (§6), the contract (§7), **the blank per-entry template (§8)**. |
-| `about · copy strings.ts` | **Regenerated.** 32 entries in canvas order with `caption`, `keys[]`, `width`, `chapter` and `since`. Replaces R1's 26. |
-| `READINESS-r3.md` | This round: what each correction changed, what is still unverified, the one thing Product must do. |
-| `STATES-about-r3.md` | The states R3 adds or changes. Supersedes `STATES-about-r2.md` where they disagree. |
-| `READINESS-r3-audit.md` | The audit this round answers. |
-| Earlier rounds | `The 99 - About Page (R1/R2).dc.html`, `READINESS.md`, `READINESS-r2.md`, `STATES-about.md`, `STATES-about-r2.md`. |
+| `The 99 - About Page (R4).dc.html` | **The deliverable.** Grammar and annotation key (§1), the mark (§2), **the page at desktop — four chapters, thirty-three figures (§3)**, the behind and current readers (§4), phone (§5), account menu (§6), the contract (§7), the blank per-entry template (§8). |
+| `about · copy strings.ts` | 33 entries in canvas order. R4 adds `post-import`, corrects `deck-import` and `export` against source, retitles `put-back` → `undo-removal`. Source citations are inline comments. |
+| `READINESS-r4.md` | This round: the three corrections, why the deck page won the Put back call, and the one thing still unverified. |
+| `STATES-about-r4.md` | The states R4 changes. Supersedes the earlier STATES files where they disagree. |
+| `READINESS-r4-audit.md` | The audit this round answers. |
+| Earlier rounds | `The 99 - About Page (R1/R2/R3).dc.html`, `READINESS.md`, `READINESS-r2.md`, `READINESS-r3.md`, `READINESS-r3-audit.md`, `STATES-about.md`, `STATES-about-r2.md`, `STATES-about-r3.md`. |
 
 ---
 
-## The five corrections
+## R4's three corrections
+
+**Deck import — no link mode.** The figure promised "A Moxfield link, a pasted list or a file".
+`copy/deck-import.ts:26-30` says that mode "does not exist and is not being built (#282)". The
+doors are **Paste a list** and **Upload a file**; the caption now says there is no link mode
+outright. Import still *reads* a Moxfield CSV export — that claim belongs to the collection entry,
+where it was already correct.
+
+**Export — real tabs, real button.** **Decklist** / **Shopping list**, primary **Copy to
+clipboard** swapping to **Copied ✓** for 1.5s, secondary **Download .txt**. `Buy these at Mana
+Pool` was right.
+
+**Undoing a removal — one surface, chosen.** R3 drew the deck page's tile wearing the review
+screen's button over an invented line. **The deck page wins:** it is where a removal happens, it
+needs no explanation of what a review screen is, and as an inset it has no key lines to spend on a
+second surface. `Rhystic Study removed` + `Undo`, retitled from `Put back` — titling an entry with
+a button from a surface it does not draw is how the error happened. The review screen's `Put back`
+is named in the caption.
+
+## Entry 33 — and the template's first real use
+
+The **post-import summary** (#639, #643) shipped while R3 was being drawn. It is now chapter 01's
+eighth entry, immediately after `Import a collection`, because it is the consequence of an import
+rather than a deck feature. Plate, three key lines, `since: 1`.
+
+It was drawn from the template artboard's fields in order and §8's worked example is now this
+entry. **It touched two places: the entry and chapter 01's count.** That is the template working —
+and the second demonstration in two rounds of why the rule matters.
+
+⚠ **Its strings are fixtures.** `ImportSummary`'s vocabulary has not been read from source; the
+structure is the entry's subject and holds. One pass against `copy/collection-replace.ts` closes
+it. See `READINESS-r4.md`.
+
+## The hexes, closed
+
+All six per-theme blocks pasted from `globals.css`. No structural change — every diamond already
+read the token, so this was five value swaps. `--avail-over-border: #752619` is the one constant.
+
+---
+
+## R3's five corrections, for the record
 
 **Fit denominator.** `41/65` was impossible — `measurableTotalFor` returns 40 or 100 and nothing
 between. The degraded specimen now reads `27/40`, and the lane caption says the denominator drops
