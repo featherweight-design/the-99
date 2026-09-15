@@ -82,7 +82,17 @@ function allocate(owned: number, claimants: Omit<ContestedClaimant, "allocated">
 }
 
 export async function loadSummaryView(uploadId: string, userId: string): Promise<SummaryView | null> {
-  const [upload] = await db.select().from(csvUploads)
+  // Projected, not `select()`. `preview_payload` carries every aggregated row of the import —
+  // thousands of them on a real collection — and this route reads none of it. The issues line's
+  // route back fetches that separately, and only when there are issues to show.
+  const [upload] = await db
+    .select({
+      id: csvUploads.id,
+      filename: csvUploads.filename,
+      confirmedAt: csvUploads.confirmedAt,
+      summaryPayload: csvUploads.summaryPayload,
+    })
+    .from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
   // Scoped to this reader, so another player's receipt is a not-found rather than a refusal.
   if (!upload) return null;

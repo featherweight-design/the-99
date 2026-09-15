@@ -52,8 +52,11 @@ export function ContestedCardRow({
   const spare = Math.max(card.owned - card.claimants.reduce((n, c) => n + c.commanderCopies, 0), 0);
   const nothingToChoose = spare === 0;
   const folded = card.claimants.some((c) => c.commanderCopies > 0 && c.quantity > c.commanderCopies);
-  // Copies already allocated by the default, for the cap beside the heading.
-  const givenOut = card.claimants.reduce((n, c) => n + c.allocated, 0);
+  // Copies already allocated by the default, for the cap beside the heading — CLAMPED to what
+  // this import brought. The allocation covers every copy owned, arrivals and older copies
+  // alike, so with one old copy and two arrivals it can reach three and the heading would
+  // claim more new copies were given out than turned up.
+  const givenOut = Math.min(card.claimants.reduce((n, c) => n + c.allocated, 0), card.arrived);
   // The deck the shortage actually falls on — the one whose ask is not covered. Naming the
   // first commander claimant instead points at a deck that is keeping its copy, which is the
   // opposite of what the note says about it.

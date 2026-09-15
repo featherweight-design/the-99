@@ -20,6 +20,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
+import { createHash } from "node:crypto";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -31,11 +32,22 @@ const userId = process.argv[2];
 const clean = process.argv.includes("--clean");
 if (!userId) throw new Error("usage: pnpm seed:summary <userId> [--clean]");
 
-// Fixed ids, so a re-run replaces its own fixture rather than accumulating receipts, and the
-// inventory can name the URL without reading anything back.
-const UPLOAD_ID = "5ea50000-0000-4000-8000-00000000f1ce";
-const DECK_A = "5ea50000-0000-4000-8000-00000000dec1";
-const DECK_B = "5ea50000-0000-4000-8000-00000000dec2";
+/**
+ * Ids derived FROM THE USER, so a re-run replaces its own fixture rather than accumulating
+ * receipts and two accounts on one database do not collide.
+ *
+ * Fixed ids were the first version and they cannot work: these are primary keys, so they are
+ * global to the database however carefully the DELETEs are scoped — the second account's insert
+ * would simply fail on the first account's row. Derived ids give every account its own, and the
+ * run prints the URL, so nothing has to be read back.
+ */
+const digest = createHash("sha256").update(userId).digest("hex");
+const fixtureId = (suffix: string) =>
+  [digest.slice(0, 8), digest.slice(8, 12), `4${digest.slice(13, 16)}`,
+   `8${digest.slice(17, 20)}`, `${digest.slice(20, 26)}${suffix}`].join("-");
+const UPLOAD_ID = fixtureId("f1cef0");
+const DECK_A = fixtureId("dec001");
+const DECK_B = fixtureId("dec002");
 const FIXTURE_NAME = "Summary fixture";
 
 async function main() {
