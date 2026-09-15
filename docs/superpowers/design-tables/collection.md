@@ -744,8 +744,14 @@ on this row.
 |----------|--------|---------|
 | min-height | **52px** | **46px** |
 | layout | two lines: a mono meta line, then the name | same |
-| padding | `6px 9px` | `6px 10px` |
+| padding | `8px 9px` | `6px 10px` |
 | line gap | 3px | 3px |
+
+> The two paddings differ so both widths land on a whole figure with the same two
+> lines: `8 + 13 + 3 + 20 + 8 = 52` at the phone, `6 + 14 + 3 + 17 + 6 = 46` on
+> desktop. Both lines carry an explicit height for the same reason — sized to
+> their own text they land at 49px on some tiles and 50px on others, and a floor
+> that content always exceeds is not a fixed height.
 
 > **Rebuilt 2026-09-15 — card captions (R1), call A.** The caption was a name over a set line at
 > `7px 9px 9px` / `13px 15px 15px`. It is two lines at a fixed height now, because the marks that
