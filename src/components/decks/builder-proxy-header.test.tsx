@@ -37,6 +37,11 @@ const deck = (over: Partial<DeckDetail>): DeckDetail => ({
 } as unknown as DeckDetail);
 
 const card = (over: Record<string, unknown>) => ({
+  cmc: 1,
+  auto: false,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
   oracleId: "sol-ring",
   name: "Sol Ring",
   quantity: 1,
@@ -45,7 +50,7 @@ const card = (over: Record<string, unknown>) => ({
   role: "other" as const,
   owned: true,
   ...over,
-});
+} as unknown as DeckDetail["cards"][number]);
 
 async function mount(detail: DeckDetail) {
   await act(async () => {
@@ -57,7 +62,7 @@ async function mount(detail: DeckDetail) {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-        initialView="list"
+        initialView="deck"
       />,
     );
   });
